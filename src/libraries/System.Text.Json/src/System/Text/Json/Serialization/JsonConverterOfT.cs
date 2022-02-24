@@ -336,7 +336,7 @@ namespace System.Text.Json.Serialization
             bool ignoreCyclesPopReference = false;
 
             if (
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
                 // Short-circuit the check against "is not null"; treated as a constant by recent versions of the JIT.
                 !typeof(T).IsValueType &&
 #else
@@ -440,7 +440,7 @@ namespace System.Text.Json.Serialization
                 VerifyWrite(originalPropertyDepth, writer);
 
                 if (
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
                     // Short-circuit the check against ignoreCyclesPopReference; treated as a constant by recent versions of the JIT.
                     !typeof(T).IsValueType &&
 #endif

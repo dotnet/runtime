@@ -13,7 +13,7 @@ namespace System.IO.Pipes
     public static class PipesAclExtensions { }
     public class PipeSecurity { }
 
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
     public static class AnonymousPipeServerStreamAcl { }
     public static class NamedPipeServerStreamAcl { }
 #endif

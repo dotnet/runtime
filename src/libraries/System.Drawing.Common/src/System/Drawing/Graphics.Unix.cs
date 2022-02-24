@@ -546,7 +546,7 @@ namespace System.Drawing
             throw new NotImplementedException();
         }
 
-#if NETCOREAPP3_1_OR_GREATER
+#if NETCOREAPP
         [EditorBrowsable(EditorBrowsableState.Never)]
         [SupportedOSPlatform("windows")]
         public void GetContextInfo(out PointF offset)

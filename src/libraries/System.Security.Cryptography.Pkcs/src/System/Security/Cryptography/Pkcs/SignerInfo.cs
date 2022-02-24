@@ -291,7 +291,7 @@ namespace System.Security.Cryptography.Pkcs
             return new SignerInfoCollection(signerInfos.ToArray());
         }
 
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
         [Obsolete(Obsoletions.SignerInfoCounterSigMessage, DiagnosticId = Obsoletions.SignerInfoCounterSigDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
  #endif
         public void ComputeCounterSignature()

@@ -19,18 +19,18 @@ namespace System.Security.Policy
         public void AddFullTrustAssembly(StrongName sn) { }
         [Obsolete("Because all GAC assemblies always get full trust, the full trust list is no longer meaningful. You should install any assemblies that are used in security policy in the GAC to ensure they are trusted.")]
         public void AddFullTrustAssembly(StrongNameMembershipCondition snMC) { }
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public void AddNamedPermissionSet(NamedPermissionSet permSet) { }
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public NamedPermissionSet ChangeNamedPermissionSet(string name, PermissionSet pSet) { return default(NamedPermissionSet); }
         [Obsolete("Code Access Security is not supported or honored by the runtime.")]
         public static PolicyLevel CreateAppDomainLevel() { return default(PolicyLevel); }
         public void FromXml(SecurityElement e) { }
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public NamedPermissionSet GetNamedPermissionSet(string name) { return default(NamedPermissionSet); }
@@ -39,11 +39,11 @@ namespace System.Security.Policy
         public void RemoveFullTrustAssembly(StrongName sn) { }
         [Obsolete("Because all GAC assemblies always get full trust, the full trust list is no longer meaningful. You should install any assemblies that are used in security policy in the GAC to ensure they are trusted.")]
         public void RemoveFullTrustAssembly(StrongNameMembershipCondition snMC) { }
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public NamedPermissionSet RemoveNamedPermissionSet(NamedPermissionSet permSet) { return default(NamedPermissionSet); }
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public NamedPermissionSet RemoveNamedPermissionSet(string name) { return default(NamedPermissionSet); }
