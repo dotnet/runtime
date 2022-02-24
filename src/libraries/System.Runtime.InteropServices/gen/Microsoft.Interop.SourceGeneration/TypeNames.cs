@@ -60,16 +60,12 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_CompilerServices_SkipLocalsInitAttribute = "System.Runtime.CompilerServices.SkipLocalsInitAttribute";
 
-        private const string System_Runtime_CompilerServices_Unsafe = "System.Runtime.CompilerServices.Unsafe";
-
-
-        public static string Unsafe(InteropGenerationOptions options)
-        {
-            return System_Runtime_CompilerServices_Unsafe;
-        }
+        public const string System_Runtime_CompilerServices_Unsafe = "System.Runtime.CompilerServices.Unsafe";
 
         public const string System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute = "System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute";
+
         public const string DefaultDllImportSearchPathsAttribute = "System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute";
+
         public const string DllImportSearchPath = "System.Runtime.InteropServices.DllImportSearchPath";
     }
 }

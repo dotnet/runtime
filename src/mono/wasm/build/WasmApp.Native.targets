@@ -156,6 +156,9 @@
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
+      <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
+      <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == ''">false</WasmEmitSymbolMap>
+
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
       <_WasmRuntimeICallTablePath>$(_WasmIntermediateOutputPath)runtime-icall-table.h</_WasmRuntimeICallTablePath>
       <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)pinvoke-table.h</_WasmPInvokeTablePath>
@@ -375,6 +378,7 @@
 
       <_EmccLinkStepArgs Include="@(_EmccLDFlags)" />
       <_EmccLinkStepArgs Include="@(_EmccLDSFlags)" />
+      <_EmccLinkStepArgs Include="--emit-symbol-map" Condition="'$(WasmEmitSymbolMap)' == 'true'" />
 
       <_EmccLinkStepArgs Include="--%(_WasmExtraJSFile.Kind) &quot;%(_WasmExtraJSFile.Identity)&quot;" Condition="'%(_WasmExtraJSFile.Kind)' != ''" />
       <_WasmLinkDependencies Include="@(_WasmExtraJSFile)" />
@@ -406,16 +410,21 @@
     <ItemGroup>
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.js" />
+      <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true'" />
     </ItemGroup>
 
-    <Message Text="Optimizing dotnet.wasm ..." Importance="High" />
-    <Exec Command='wasm-opt$(_ExeExt) --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <Message Text="Stripping symbols from dotnet.wasm ..." Importance="High" Condition="'$(WasmNativeStrip)' == 'true'" />
+    <Exec Command='wasm-opt$(_ExeExt) --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"'
+          Condition="'$(WasmNativeStrip)' == 'true'"
+          IgnoreStandardErrorWarningFormat="true"
+          EnvironmentVariables="@(EmscriptenEnvVars)" />
   </Target>
 
   <Target Name="_CompleteWasmBuildNative">
     <ItemGroup>
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.js" />
+      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true' and Exists('$(_WasmIntermediateOutputPath)dotnet.js.symbols')" />
     </ItemGroup>
   </Target>
 
