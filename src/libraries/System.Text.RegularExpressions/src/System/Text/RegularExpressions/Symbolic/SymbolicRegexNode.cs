@@ -72,7 +72,7 @@ namespace System.Text.RegularExpressions.Symbolic
             var key = (kind, left, right, lower, upper, set, alts, info);
             if (!builder._nodeCache.TryGetValue(key, out node))
             {
-                // Do not internalize top level Or-nodes or else Antimirov mode will become ineffective
+                // Do not internalize top level Or-nodes or else NFA mode will become ineffective
                 if (kind == SymbolicRegexNodeKind.Or)
                 {
                     node = new(builder, kind, left, right, lower, upper, set, alts, info);
@@ -234,11 +234,11 @@ namespace System.Text.RegularExpressions.Symbolic
                         break;
 
                     case SymbolicRegexNodeKind.BeginningAnchor:
-                        is_nullable = CharKind.Prev(context) == CharKind.StartStop;
+                        is_nullable = CharKind.Prev(context) == CharKind.BeginningEnd;
                         break;
 
                     case SymbolicRegexNodeKind.EndAnchor:
-                        is_nullable = CharKind.Next(context) == CharKind.StartStop;
+                        is_nullable = CharKind.Next(context) == CharKind.BeginningEnd;
                         break;
 
                     case SymbolicRegexNodeKind.BOLAnchor:
@@ -266,7 +266,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     case SymbolicRegexNodeKind.EndAnchorZ:
                         // \Z anchor is nullable when the next character is either the last Newline or Stop
                         // note: CharKind.NewLineS == CharKind.Newline|CharKind.StartStop
-                        is_nullable = (CharKind.Next(context) & CharKind.StartStop) != 0;
+                        is_nullable = (CharKind.Next(context) & CharKind.BeginningEnd) != 0;
                         break;
 
                     case SymbolicRegexNodeKind.CaptureStart:
@@ -279,7 +279,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         // EndAnchorZRev (rev(\Z)) anchor is nullable when the prev character is either the first Newline or Start
                         // note: CharKind.NewLineS == CharKind.Newline|CharKind.StartStop
                         Debug.Assert(_kind == SymbolicRegexNodeKind.EndAnchorZReverse);
-                        is_nullable = (CharKind.Prev(context) & CharKind.StartStop) != 0;
+                        is_nullable = (CharKind.Prev(context) & CharKind.BeginningEnd) != 0;
                         break;
                 }
 
@@ -816,7 +816,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 return this;
             }
 
-            if (Kind == SymbolicRegexNodeKind.Or && !_isInternalizedUnion && !_builder._antimirov)
+            if (Kind == SymbolicRegexNodeKind.Or && !_isInternalizedUnion)
             {
                 // Internalize the node before proceeding
                 // this node could end up being internalized or replaced by
@@ -885,20 +885,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         #region d(a, AB) = d(a,A)B | (if A nullable then d(a,B))
                         Debug.Assert(_left is not null && _right is not null);
                         SymbolicRegexNode<S> leftd = _left.CreateDerivative(elem, context);
-                        SymbolicRegexNode<S> first = _builder._nothing;
-                        if (_builder._antimirov && leftd._kind == SymbolicRegexNodeKind.Or)
-                        {
-                            // push concatenations into the union
-                            Debug.Assert(leftd._alts is not null);
-                            foreach (SymbolicRegexNode<S> d in leftd._alts)
-                            {
-                                first = _builder.Or(first, _builder.CreateConcat(d, _right));
-                            }
-                        }
-                        else
-                        {
-                            first = _builder.CreateConcat(leftd, _right);
-                        }
+                        SymbolicRegexNode<S> first = _builder.CreateConcat(leftd, _right);
 
                         if (_left.IsNullableFor(context))
                         {
@@ -2173,12 +2160,12 @@ namespace System.Text.RegularExpressions.Symbolic
             switch (_kind)
             {
                 case SymbolicRegexNodeKind.BeginningAnchor:
-                    return prevKind == CharKind.StartStop ?
+                    return prevKind == CharKind.BeginningEnd ?
                         this :
                         _builder._nothing; //start anchor is only nullable if the previous character is Start
 
                 case SymbolicRegexNodeKind.EndAnchorZReverse:
-                    return ((prevKind & CharKind.StartStop) != 0) ?
+                    return ((prevKind & CharKind.BeginningEnd) != 0) ?
                         this :
                         _builder._nothing; //rev(\Z) is only nullable if the previous characters is Start or the very first \n
 
