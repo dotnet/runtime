@@ -72,40 +72,49 @@ namespace System.Reflection.Emit
         internal bool creating;
         private DynamicILInfo? il_info;
 
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         public DynamicMethod(string name, Type? returnType, Type[]? parameterTypes, Module m) : this(name, returnType, parameterTypes, m, false)
         {
         }
 
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         public DynamicMethod(string name, Type? returnType, Type[]? parameterTypes, Type owner) : this(name, returnType, parameterTypes, owner, false)
         {
         }
 
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         public DynamicMethod(string name, Type? returnType, Type[]? parameterTypes, Module m, bool skipVisibility) : this(name, MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, returnType, parameterTypes, m, skipVisibility)
         {
         }
 
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         public DynamicMethod(string name, Type? returnType, Type[]? parameterTypes, Type owner, bool skipVisibility) : this(name, MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, returnType, parameterTypes, owner, skipVisibility)
         {
         }
 
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         public DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Type owner, bool skipVisibility) : this(name, attributes, callingConvention, returnType, parameterTypes, owner, owner?.Module, skipVisibility, false, true)
         {
         }
 
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         public DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Module m, bool skipVisibility) : this(name, attributes, callingConvention, returnType, parameterTypes, null, m, skipVisibility, false, false)
         {
         }
 
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         public DynamicMethod(string name, Type? returnType, Type[]? parameterTypes) : this(name, returnType, parameterTypes, false)
         {
         }
 
         // FIXME: "Visibility is not restricted"
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         public DynamicMethod(string name, Type? returnType, Type[]? parameterTypes, bool restrictedSkipVisibility)
             : this(name, MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, returnType, parameterTypes, null, null, restrictedSkipVisibility, true, false)
         {
         }
 
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         [DynamicDependency(nameof(owner))]  // Automatically keeps all previous fields too due to StructLayout
         private DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Type? owner, Module? m, bool skipVisibility, bool anonHosted, bool typeOwner)
         {
