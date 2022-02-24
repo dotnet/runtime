@@ -14031,7 +14031,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* tree)
 
     bool knownPositiveIsOp2;
     if (knownPositiveOp->IsIntegralConst() ||
-        ((knownPositiveOp->OperIs(GT_CAST) && knownPositiveOp->gtGetOp1()->OperIs(GT_ARR_LENGTH))))
+        ((knownPositiveOp->OperIs(GT_CAST) && knownPositiveOp->AsCast()->CastOp()->OperIs(GT_ARR_LENGTH))))
     {
         // op2 is either a LONG constant or (T)ARR_LENGTH
         knownPositiveIsOp2 = true;
@@ -14045,7 +14045,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* tree)
         knownPositiveIsOp2 = false;
     }
 
-    if (castedOp->OperIs(GT_CAST) && varTypeIsLong(castedOp->CastToType()) && castedOp->gtGetOp1()->TypeIs(TYP_INT) &&
+    if (castedOp->OperIs(GT_CAST) && varTypeIsLong(castedOp->CastToType()) && castedOp->AsCast()->CastOp()->TypeIs(TYP_INT) &&
         castedOp->IsUnsigned() && !castedOp->gtOverflow())
     {
         bool knownPositiveFitsIntoU32 = false;
@@ -14056,11 +14056,10 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* tree)
             knownPositiveFitsIntoU32 = true;
         }
         else if (knownPositiveOp->OperIs(GT_CAST) && varTypeIsLong(knownPositiveOp->CastToType()) &&
-                 knownPositiveOp->gtGetOp1()->OperIs(GT_ARR_LENGTH))
+                 knownPositiveOp->AsCast()->CastOp()->OperIs(GT_ARR_LENGTH))
         {
             knownPositiveFitsIntoU32 = true;
-            // TODO: we need to recognize Span._length here as well
-            // https://github.com/dotnet/runtime/issues/59922#issuecomment-933495507
+            // TODO-Casts: recognize Span.Length here as well.
         }
 
         if (!knownPositiveFitsIntoU32)
@@ -14077,11 +14076,11 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* tree)
         // Drop cast from castedOp
         if (knownPositiveIsOp2)
         {
-            tree->gtOp1 = castedOp->gtGetOp1();
+            tree->gtOp1 = castedOp->AsCast()->CastOp();
         }
         else
         {
-            tree->gtOp2 = castedOp->gtGetOp1();
+            tree->gtOp2 = castedOp->AsCast()->CastOp();
         }
         DEBUG_DESTROY_NODE(castedOp);
 
@@ -14090,11 +14089,11 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* tree)
             // Drop cast from knownPositiveOp too
             if (knownPositiveIsOp2)
             {
-                tree->gtOp2 = knownPositiveOp->gtGetOp1();
+                tree->gtOp2 = knownPositiveOp->AsCast()->CastOp();
             }
             else
             {
-                tree->gtOp1 = knownPositiveOp->gtGetOp1();
+                tree->gtOp1 = knownPositiveOp->AsCast()->CastOp();
             }
             DEBUG_DESTROY_NODE(knownPositiveOp);
         }
