@@ -14,7 +14,7 @@ namespace System.Reflection
         internal RuntimeModule() { throw new NotSupportedException(); }
 
         #region FCalls
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetType", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetType", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void GetType(QCallModule module, string className, bool throwOnError, bool ignoreCase, ObjectHandleOnStack type, ObjectHandleOnStack keepAlive);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetScopeName")]

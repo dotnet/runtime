@@ -42,24 +42,24 @@ namespace DllImportGenerator.IntegrationTests
             }
         }
 
-        public partial class Unicode
+        public partial class Utf16
         {
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReturnLength, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReturnLength, StringMarshalling = StringMarshalling.Utf16)]
             public static partial int ReturnLength(string s);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseReturn, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseReturn, StringMarshalling = StringMarshalling.Utf16)]
             public static partial string Reverse_Return(string s);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseOut, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseOut, StringMarshalling = StringMarshalling.Utf16)]
             public static partial void Reverse_Out(string s, out string ret);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace, StringMarshalling = StringMarshalling.Utf16)]
             public static partial void Reverse_Ref(ref string s);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace, StringMarshalling = StringMarshalling.Utf16)]
             public static partial void Reverse_In(in string s);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseReplace, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseReplace, StringMarshalling = StringMarshalling.Utf16)]
             public static partial void Reverse_Replace_Ref(ref string s);
         }
 
@@ -68,8 +68,8 @@ namespace DllImportGenerator.IntegrationTests
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReturnLength)]
             public static partial int ReturnLength([MarshalAs(UnmanagedType.LPTStr)] string s);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReturnLength, CharSet = CharSet.None)]
-            public static partial int ReturnLength_IgnoreCharSet([MarshalAs(UnmanagedType.LPTStr)] string s);
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReturnLength, StringMarshalling = StringMarshalling.Custom)]
+            public static partial int ReturnLength_IgnoreStringMarshalling([MarshalAs(UnmanagedType.LPTStr)] string s);
 
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseReturn)]
             [return: MarshalAs(UnmanagedType.LPTStr)]
@@ -93,8 +93,8 @@ namespace DllImportGenerator.IntegrationTests
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReturnLength)]
             public static partial int ReturnLength([MarshalAs(UnmanagedType.LPWStr)] string s);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReturnLength, CharSet = CharSet.None)]
-            public static partial int ReturnLength_IgnoreCharSet([MarshalAs(UnmanagedType.LPWStr)] string s);
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReturnLength, StringMarshalling = StringMarshalling.Custom)]
+            public static partial int ReturnLength_IgnoreStringMarshalling([MarshalAs(UnmanagedType.LPWStr)] string s);
 
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseReturn)]
             [return: MarshalAs(UnmanagedType.LPWStr)]
@@ -118,8 +118,8 @@ namespace DllImportGenerator.IntegrationTests
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReturnLength)]
             public static partial int ReturnLength([MarshalAs(UnmanagedType.LPUTF8Str)] string s);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReturnLength, CharSet = CharSet.None)]
-            public static partial int ReturnLength_IgnoreCharSet([MarshalAs(UnmanagedType.LPUTF8Str)] string s);
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReturnLength, StringMarshalling = StringMarshalling.Custom)]
+            public static partial int ReturnLength_IgnoreStringMarshalling([MarshalAs(UnmanagedType.LPUTF8Str)] string s);
 
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseReturn)]
             [return: MarshalAs(UnmanagedType.LPUTF8Str)]
@@ -138,24 +138,24 @@ namespace DllImportGenerator.IntegrationTests
             public static partial void Reverse_Replace_Ref([MarshalAs(UnmanagedType.LPUTF8Str)] ref string s);
         }
 
-        public partial class Ansi
+        public partial class Utf8
         {
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReturnLength, CharSet = CharSet.Ansi)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReturnLength, StringMarshalling = StringMarshalling.Utf8)]
             public static partial int ReturnLength(string s);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseReturn, CharSet = CharSet.Ansi)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseReturn, StringMarshalling = StringMarshalling.Utf8)]
             public static partial string Reverse_Return(string s);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseOut, CharSet = CharSet.Ansi)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseOut, StringMarshalling = StringMarshalling.Utf8)]
             public static partial void Reverse_Out(string s, out string ret);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, CharSet = CharSet.Ansi)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, StringMarshalling = StringMarshalling.Utf8)]
             public static partial void Reverse_Ref(ref string s);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, CharSet = CharSet.Ansi)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, StringMarshalling = StringMarshalling.Utf8)]
             public static partial void Reverse_In(in string s);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, CharSet = CharSet.Ansi)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, StringMarshalling = StringMarshalling.Utf8)]
             public static partial void Reverse_Replace_Ref(ref string s);
         }
 
@@ -164,8 +164,8 @@ namespace DllImportGenerator.IntegrationTests
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReturnLength)]
             public static partial int ReturnLength([MarshalAs(UnmanagedType.LPStr)] string s);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReturnLength, CharSet = CharSet.None)]
-            public static partial int ReturnLength_IgnoreCharSet([MarshalAs(UnmanagedType.LPStr)] string s);
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReturnLength, StringMarshalling = StringMarshalling.Custom)]
+            public static partial int ReturnLength_IgnoreStringMarshalling([MarshalAs(UnmanagedType.LPStr)] string s);
 
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseReturn)]
             [return: MarshalAs(UnmanagedType.LPStr)]
@@ -182,51 +182,6 @@ namespace DllImportGenerator.IntegrationTests
 
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace)]
             public static partial void Reverse_Replace_Ref([MarshalAs(UnmanagedType.LPStr)] ref string s);
-        }
-
-        public partial class Auto
-        {
-            public partial class Unix
-            {
-                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReturnLength, CharSet = CharSet.Auto)]
-                public static partial int ReturnLength(string s);
-
-                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseReturn, CharSet = CharSet.Auto)]
-                public static partial string Reverse_Return(string s);
-
-                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseOut, CharSet = CharSet.Auto)]
-                public static partial void Reverse_Out(string s, out string ret);
-
-                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, CharSet = CharSet.Auto)]
-                public static partial void Reverse_Ref(ref string s);
-
-                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, CharSet = CharSet.Auto)]
-                public static partial void Reverse_In(in string s);
-
-                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, CharSet = CharSet.Auto)]
-                public static partial void Reverse_Replace_Ref(ref string s);
-            }
-
-            public partial class Windows
-            {
-                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReturnLength, CharSet = CharSet.Auto)]
-                public static partial int ReturnLength(string s);
-
-                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseReturn, CharSet = CharSet.Auto)]
-                public static partial string Reverse_Return(string s);
-
-                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseOut, CharSet = CharSet.Auto)]
-                public static partial void Reverse_Out(string s, out string ret);
-
-                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace, CharSet = CharSet.Auto)]
-                public static partial void Reverse_Ref(ref string s);
-
-                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace, CharSet = CharSet.Auto)]
-                public static partial void Reverse_In(in string s);
-
-                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace, CharSet = CharSet.Auto)]
-                public static partial void Reverse_Replace_Ref(ref string s);
-            }
         }
     }
 
@@ -247,12 +202,12 @@ namespace DllImportGenerator.IntegrationTests
         public void UnicodeStringMarshalledAsExpected(string value)
         {
             int expectedLen = value != null ? value.Length : -1;
-            Assert.Equal(expectedLen, NativeExportsNE.Unicode.ReturnLength(value));
+            Assert.Equal(expectedLen, NativeExportsNE.Utf16.ReturnLength(value));
             Assert.Equal(expectedLen, NativeExportsNE.LPWStr.ReturnLength(value));
             Assert.Equal(expectedLen, NativeExportsNE.LPTStr.ReturnLength(value));
 
-            Assert.Equal(expectedLen, NativeExportsNE.LPWStr.ReturnLength_IgnoreCharSet(value));
-            Assert.Equal(expectedLen, NativeExportsNE.LPTStr.ReturnLength_IgnoreCharSet(value));
+            Assert.Equal(expectedLen, NativeExportsNE.LPWStr.ReturnLength_IgnoreStringMarshalling(value));
+            Assert.Equal(expectedLen, NativeExportsNE.LPTStr.ReturnLength_IgnoreStringMarshalling(value));
         }
 
         [Theory]
@@ -261,12 +216,12 @@ namespace DllImportGenerator.IntegrationTests
         {
             string expected = ReverseChars(value);
 
-            Assert.Equal(expected, NativeExportsNE.Unicode.Reverse_Return(value));
+            Assert.Equal(expected, NativeExportsNE.Utf16.Reverse_Return(value));
             Assert.Equal(expected, NativeExportsNE.LPWStr.Reverse_Return(value));
             Assert.Equal(expected, NativeExportsNE.LPTStr.Reverse_Return(value));
 
             string ret;
-            NativeExportsNE.Unicode.Reverse_Out(value, out ret);
+            NativeExportsNE.Utf16.Reverse_Out(value, out ret);
             Assert.Equal(expected, ret);
 
             ret = null;
@@ -285,7 +240,7 @@ namespace DllImportGenerator.IntegrationTests
             string refValue = value;
             string expected = ReverseChars(value);
 
-            NativeExportsNE.Unicode.Reverse_In(in refValue);
+            NativeExportsNE.Utf16.Reverse_In(in refValue);
             Assert.Equal(value, refValue); // Should not be updated when using 'in'
 
             NativeExportsNE.LPWStr.Reverse_In(in refValue);
@@ -295,7 +250,7 @@ namespace DllImportGenerator.IntegrationTests
             Assert.Equal(value, refValue); // Should not be updated when using 'in'
 
             refValue = value;
-            NativeExportsNE.Unicode.Reverse_Ref(ref refValue);
+            NativeExportsNE.Utf16.Reverse_Ref(ref refValue);
             Assert.Equal(expected, refValue);
 
             refValue = value;
@@ -307,7 +262,7 @@ namespace DllImportGenerator.IntegrationTests
             Assert.Equal(expected, refValue);
 
             refValue = value;
-            NativeExportsNE.Unicode.Reverse_Replace_Ref(ref refValue);
+            NativeExportsNE.Utf16.Reverse_Replace_Ref(ref refValue);
             Assert.Equal(expected, refValue);
 
             refValue = value;
@@ -325,7 +280,8 @@ namespace DllImportGenerator.IntegrationTests
         {
             int expectedLen = value != null ? Encoding.UTF8.GetByteCount(value) : -1;
             Assert.Equal(expectedLen, NativeExportsNE.LPUTF8Str.ReturnLength(value));
-            Assert.Equal(expectedLen, NativeExportsNE.LPUTF8Str.ReturnLength_IgnoreCharSet(value));
+            Assert.Equal(expectedLen, NativeExportsNE.LPUTF8Str.ReturnLength_IgnoreStringMarshalling(value));
+            Assert.Equal(expectedLen, NativeExportsNE.Utf8.ReturnLength(value));
         }
 
         [Theory]
@@ -335,6 +291,7 @@ namespace DllImportGenerator.IntegrationTests
             string expected = ReverseBytes(value, Encoding.UTF8);
 
             Assert.Equal(expected, NativeExportsNE.LPUTF8Str.Reverse_Return(value));
+            Assert.Equal(expected, NativeExportsNE.Utf8.Reverse_Return(value));
 
             string ret;
             NativeExportsNE.LPUTF8Str.Reverse_Out(value, out ret);
@@ -351,12 +308,23 @@ namespace DllImportGenerator.IntegrationTests
             NativeExportsNE.LPUTF8Str.Reverse_In(in refValue);
             Assert.Equal(value, refValue); // Should not be updated when using 'in'
 
+            NativeExportsNE.Utf8.Reverse_In(in refValue);
+            Assert.Equal(value, refValue); // Should not be updated when using 'in'
+
             refValue = value;
             NativeExportsNE.LPUTF8Str.Reverse_Ref(ref refValue);
             Assert.Equal(expected, refValue);
 
             refValue = value;
+            NativeExportsNE.Utf8.Reverse_Ref(ref refValue);
+            Assert.Equal(expected, refValue);
+
+            refValue = value;
             NativeExportsNE.LPUTF8Str.Reverse_Replace_Ref(ref refValue);
+            Assert.Equal(expected, refValue);
+
+            refValue = value;
+            NativeExportsNE.Utf8.Reverse_Replace_Ref(ref refValue);
             Assert.Equal(expected, refValue);
         }
 
@@ -368,10 +336,8 @@ namespace DllImportGenerator.IntegrationTests
                 ? OperatingSystem.IsWindows() ? GetLengthAnsi(value) : Encoding.UTF8.GetByteCount(value)
                 : -1;
 
-            Assert.Equal(expectedLen, NativeExportsNE.Ansi.ReturnLength(value));
             Assert.Equal(expectedLen, NativeExportsNE.LPStr.ReturnLength(value));
-
-            Assert.Equal(expectedLen, NativeExportsNE.LPStr.ReturnLength_IgnoreCharSet(value));
+            Assert.Equal(expectedLen, NativeExportsNE.LPStr.ReturnLength_IgnoreStringMarshalling(value));
         }
 
         [Theory]
@@ -380,14 +346,9 @@ namespace DllImportGenerator.IntegrationTests
         {
             string expected = OperatingSystem.IsWindows() ? ReverseAnsi(value) : ReverseBytes(value, Encoding.UTF8);
 
-            Assert.Equal(expected, NativeExportsNE.Ansi.Reverse_Return(value));
             Assert.Equal(expected, NativeExportsNE.LPStr.Reverse_Return(value));
 
             string ret;
-            NativeExportsNE.Ansi.Reverse_Out(value, out ret);
-            Assert.Equal(expected, ret);
-
-            ret = null;
             NativeExportsNE.LPStr.Reverse_Out(value, out ret);
             Assert.Equal(expected, ret);
         }
@@ -399,104 +360,16 @@ namespace DllImportGenerator.IntegrationTests
             string refValue = value;
             string expected = OperatingSystem.IsWindows() ? ReverseAnsi(value) : ReverseBytes(value, Encoding.UTF8);
 
-            NativeExportsNE.Ansi.Reverse_In(in refValue);
-            Assert.Equal(value, refValue); // Should not be updated when using 'in'
-
             NativeExportsNE.LPStr.Reverse_In(in refValue);
             Assert.Equal(value, refValue); // Should not be updated when using 'in'
-
-            refValue = value;
-            NativeExportsNE.Ansi.Reverse_Ref(ref refValue);
-            Assert.Equal(expected, refValue);
 
             refValue = value;
             NativeExportsNE.LPStr.Reverse_Ref(ref refValue);
             Assert.Equal(expected, refValue);
 
             refValue = value;
-            NativeExportsNE.Ansi.Reverse_Replace_Ref(ref refValue);
-            Assert.Equal(expected, refValue);
-
-            refValue = value;
             NativeExportsNE.LPStr.Reverse_Replace_Ref(ref refValue);
             Assert.Equal(expected, refValue);
-        }
-
-        [Theory]
-        [MemberData(nameof(UnicodeStrings))]
-        public void AutoStringMarshalledAsExpected(string value)
-        {
-            if (OperatingSystem.IsWindows())
-            {
-                int expectedLen = value != null ? value.Length : -1;
-                Assert.Equal(expectedLen, NativeExportsNE.Auto.Windows.ReturnLength(value));
-            }
-            else
-            {
-                int expectedLen = value != null ? Encoding.UTF8.GetByteCount(value) : -1;
-                Assert.Equal(expectedLen, NativeExportsNE.Auto.Unix.ReturnLength(value));
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(UnicodeStrings))]
-        public void AutoStringReturn(string value)
-        {
-            if (OperatingSystem.IsWindows())
-            {
-                string expected = ReverseChars(value);
-                Assert.Equal(expected, NativeExportsNE.Auto.Windows.Reverse_Return(value));
-
-                string ret;
-                NativeExportsNE.Auto.Windows.Reverse_Out(value, out ret);
-                Assert.Equal(expected, ret);
-            }
-            else
-            {
-                string expected = ReverseBytes(value, Encoding.UTF8);
-                Assert.Equal(expected, NativeExportsNE.Auto.Unix.Reverse_Return(value));
-
-                string ret;
-                NativeExportsNE.Auto.Unix.Reverse_Out(value, out ret);
-                Assert.Equal(expected, ret);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(UnicodeStrings))]
-        public void AutoStringByRef(string value)
-        {
-            string refValue = value;
-
-            if (OperatingSystem.IsWindows())
-            {
-                string expected = ReverseChars(value);
-                NativeExportsNE.Auto.Windows.Reverse_In(in refValue);
-                Assert.Equal(value, refValue); // Should not be updated when using 'in'
-
-                refValue = value;
-                NativeExportsNE.Auto.Windows.Reverse_Ref(ref refValue);
-                Assert.Equal(expected, refValue);
-
-                refValue = value;
-                NativeExportsNE.Auto.Windows.Reverse_Replace_Ref(ref refValue);
-                Assert.Equal(expected, refValue);
-
-            }
-            else
-            {
-                string expected = ReverseBytes(value, Encoding.UTF8);
-                NativeExportsNE.Auto.Unix.Reverse_In(in refValue);
-                Assert.Equal(value, refValue); // Should not be updated when using 'in'
-
-                refValue = value;
-                NativeExportsNE.Auto.Unix.Reverse_Ref(ref refValue);
-                Assert.Equal(expected, refValue);
-
-                refValue = value;
-                NativeExportsNE.Auto.Unix.Reverse_Replace_Ref(ref refValue);
-                Assert.Equal(expected, refValue);
-            }
         }
 
         private static string ReverseChars(string value)

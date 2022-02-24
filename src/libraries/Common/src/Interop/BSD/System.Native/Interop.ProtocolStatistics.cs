@@ -155,7 +155,7 @@ internal static partial class Interop
             public readonly ulong Flags;
         }
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNativeIPInterfaceStatistics", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNativeIPInterfaceStatistics", StringMarshalling = StringMarshalling.Utf8)]
         public static partial int GetNativeIPInterfaceStatistics(string name, out NativeIPInterfaceStatistics stats);
 
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNumRoutes")]

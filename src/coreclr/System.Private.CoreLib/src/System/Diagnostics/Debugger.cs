@@ -77,7 +77,7 @@ namespace System.Diagnostics
         // report the message depending on its settings.
         public static void Log(int level, string? category, string? message) => LogInternal(level, category, message);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Log", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Log", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void LogInternal(int level, string? category, string? message);
 
         // Checks to see if an attached debugger has logging enabled

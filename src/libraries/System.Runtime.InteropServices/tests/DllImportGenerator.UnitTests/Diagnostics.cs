@@ -343,6 +343,42 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
+        [ConditionalFact]
+        public async Task StringMarshallingForwardingNotSupported_ReportsDiagnostic()
+        {
+            string source = @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial void Method1(string s);
+
+    [GeneratedDllImport(""DoesNotExist"", StringMarshalling = StringMarshalling.Custom)]
+    public static partial void Method2(string s);
+}
+" + CodeSnippets.GeneratedDllImportAttributeDeclaration;
+
+            // Compile against Standard so that we generate forwarders
+            Compilation comp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            DiagnosticResult[] expectedDiags = new DiagnosticResult[]
+            {
+                (new DiagnosticResult(GeneratorDiagnostics.CannotForwardToDllImport))
+                    .WithSpan(6, 32, 6, 39)
+                    .WithArguments($"{nameof(TypeNames.GeneratedDllImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}", $"{nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Utf8)}"),
+                (new DiagnosticResult(GeneratorDiagnostics.CannotForwardToDllImport))
+                    .WithSpan(9, 32, 9, 39)
+                    .WithArguments($"{nameof(TypeNames.GeneratedDllImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}", $"{nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Custom)}"),
+                (new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupported))
+                    .WithSpan(9, 47, 9, 48)
+            };
+            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
+            var newCompDiags = newComp.GetDiagnostics();
+            Assert.Empty(newCompDiags);
+        }
+
         private static void VerifyDiagnostics(DiagnosticResult[] expectedDiagnostics, Diagnostic[] actualDiagnostics)
         {
             Assert.Equal(expectedDiagnostics.Length, actualDiagnostics.Length);

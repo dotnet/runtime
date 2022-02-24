@@ -391,7 +391,7 @@ internal static partial class Interop
             out int pkgnum,
             out SafeFreeContextBuffer_SECURITY handle);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int AcquireCredentialsHandleW(
             string? principal,
             string moduleName,
@@ -403,7 +403,7 @@ internal static partial class Interop
             ref CredHandle handlePtr,
             out long timeStamp);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int AcquireCredentialsHandleW(
             string? principal,
             string moduleName,
@@ -415,7 +415,7 @@ internal static partial class Interop
             ref CredHandle handlePtr,
             out long timeStamp);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int AcquireCredentialsHandleW(
             string? principal,
             string moduleName,
@@ -427,7 +427,7 @@ internal static partial class Interop
             ref CredHandle handlePtr,
             out long timeStamp);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int AcquireCredentialsHandleW(
             string? principal,
             string moduleName,
@@ -468,7 +468,7 @@ internal static partial class Interop
         internal static partial SECURITY_STATUS SspiFreeAuthIdentity(
             IntPtr authData);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial SECURITY_STATUS SspiEncodeStringsAsAuthIdentity(
             string userName,
             string domainName,

@@ -14,7 +14,7 @@ internal static partial class Interop
             UF_HIDDEN = 0x8000
         }
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LChflags", CharSet = CharSet.Ansi, SetLastError = true)]
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LChflags", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static partial int LChflags(string path, uint flags);
 
         internal static readonly bool CanSetHiddenFlag = (LChflagsCanSetHiddenFlag() != 0);
