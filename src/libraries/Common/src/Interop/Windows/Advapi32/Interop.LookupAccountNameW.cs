@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Advapi32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial bool LookupAccountNameW(
             string? lpSystemName,
             ref char lpAccountName,

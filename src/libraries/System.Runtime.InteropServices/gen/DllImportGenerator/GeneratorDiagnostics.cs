@@ -11,7 +11,6 @@ using System.Text;
 
 namespace Microsoft.Interop
 {
-
     /// <summary>
     /// Class for reporting diagnostics in the DLL import generator
     /// </summary>
@@ -20,12 +19,24 @@ namespace Microsoft.Interop
         public class Ids
         {
             public const string Prefix = "DLLIMPORTGEN";
-            public const string TypeNotSupported = Prefix + "001";
-            public const string ConfigurationNotSupported = Prefix + "002";
-            public const string TargetFrameworkNotSupported = Prefix + "003";
+            public const string InvalidGeneratedDllImportAttributeUsage = Prefix + "001";
+            public const string TypeNotSupported = Prefix + "002";
+            public const string ConfigurationNotSupported = Prefix + "003";
+            public const string TargetFrameworkNotSupported = Prefix + "004";
+            public const string CannotForwardToDllImport = Prefix + "005";
         }
 
         private const string Category = "SourceGeneration";
+
+        public static readonly DiagnosticDescriptor InvalidStringMarshallingConfiguration =
+            new DiagnosticDescriptor(
+            Ids.InvalidGeneratedDllImportAttributeUsage,
+            GetResourceString(nameof(Resources.InvalidLibraryImportAttributeUsageTitle)),
+            GetResourceString(nameof(Resources.InvalidStringMarshallingConfigurationMessage)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            description: GetResourceString(nameof(Resources.InvalidStringMarshallingConfigurationDescription)));
 
         public static readonly DiagnosticDescriptor ParameterTypeNotSupported =
             new DiagnosticDescriptor(
@@ -127,9 +138,37 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.TargetFrameworkNotSupportedDescription)));
 
+        public static readonly DiagnosticDescriptor CannotForwardToDllImport =
+            new DiagnosticDescriptor(
+                Ids.CannotForwardToDllImport,
+                GetResourceString(nameof(Resources.CannotForwardToDllImportTitle)),
+                GetResourceString(nameof(Resources.CannotForwardToDllImportMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(Resources.CannotForwardToDllImportDescription)));
+
         private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 
         public IEnumerable<Diagnostic> Diagnostics => _diagnostics;
+
+        /// <summary>
+        /// Report diagnostic for invalid configuration for string marshalling.
+        /// </summary>
+        /// <param name="attributeData">Attribute specifying the invalid configuration</param>
+        /// <param name="methodName">Name of the method</param>
+        /// <param name="detailsMessage">Specific reason the configuration is invalid</param>
+        public void ReportInvalidStringMarshallingConfiguration(
+            AttributeData attributeData,
+            string methodName,
+            string detailsMessage)
+        {
+            _diagnostics.Add(
+                attributeData.CreateDiagnostic(
+                    GeneratorDiagnostics.InvalidStringMarshallingConfiguration,
+                    methodName,
+                    detailsMessage));
+        }
 
         /// <summary>
         /// Report diagnostic for configuration that is not supported by the DLL import source generator
@@ -272,6 +311,21 @@ namespace Microsoft.Interop
                     TargetFrameworkNotSupported,
                     Location.None,
                     minimumSupportedVersion.ToString(2)));
+        }
+
+        /// <summary>
+        /// Report diagnostic for configuration that cannot be forwarded to <see cref="DllImportAttribute" />
+        /// </summary>
+        /// <param name="method">Method with the configuration that cannot be forwarded</param>
+        /// <param name="name">Configuration name</param>
+        /// <param name="value">Configuration value</param>
+        public void ReportCannotForwardToDllImport(MethodDeclarationSyntax method, string name, string? value = null)
+        {
+            _diagnostics.Add(
+                Diagnostic.Create(
+                    CannotForwardToDllImport,
+                    Location.Create(method.SyntaxTree, method.Identifier.Span),
+                    value is null ? name : $"{name}={value}"));
         }
 
         private static LocalizableResourceString GetResourceString(string resourceName)

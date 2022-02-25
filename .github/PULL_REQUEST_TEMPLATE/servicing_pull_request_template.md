@@ -21,3 +21,8 @@ main PR <!-- Link to PR if any that fixed this in the main branch. -->
 # Risk
 
 <!-- Please assess the risk of taking this fix. Provide details backing up your assessment. -->
+
+# Package authoring signed off?
+
+
+IMPORTANT: If this change touches code that ships in a NuGet package, please make certain that you have added any necessary [package authoring](https://github.com/dotnet/runtime/blob/main/docs/project/library-servicing.md) and gotten it explicitly reviewed.

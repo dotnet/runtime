@@ -16,8 +16,9 @@ namespace System.Runtime.Serialization
     {
         private static readonly ConcurrentDictionary<MemberHolder, MemberInfo[]> s_memberInfoTable = new ConcurrentDictionary<MemberHolder, MemberInfo[]>();
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "The Type is annotated with All, which will preserve base type fields.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:UnrecognizedReflectionPattern",
+            Justification = "The parentType is read from an array which currently can't be annotated," +
+                            "but the input type is annotated with All, so all of its base types are also All.")]
         private static FieldInfo[] InternalGetSerializableMembers(
             // currently the only way to preserve base, non-public fields is to use All
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)

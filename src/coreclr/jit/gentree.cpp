@@ -3855,6 +3855,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_Log:
                         case NI_System_Math_Log2:
                         case NI_System_Math_Log10:
+                        case NI_System_Math_Max:
+                        case NI_System_Math_Min:
                         case NI_System_Math_Pow:
                         case NI_System_Math_Round:
                         case NI_System_Math_Sin:
@@ -4372,6 +4374,12 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         // register requirement.
                         level += 2;
                         break;
+
+                    case NI_System_Math_Max:
+                    case NI_System_Math_Min:
+                        level++;
+                        break;
+
                     default:
                         assert(!"Unknown binary GT_INTRINSIC operator");
                         break;
@@ -4804,6 +4812,35 @@ DONE:
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
+
+#ifdef DEBUG
+bool GenTree::OperSupportsReverseOpEvalOrder(Compiler* comp) const
+{
+    if (OperIsBinary())
+    {
+        if ((AsOp()->gtGetOp1() == nullptr) || (AsOp()->gtGetOp2() == nullptr))
+        {
+            return false;
+        }
+        if (OperIs(GT_COMMA, GT_BOUNDS_CHECK))
+        {
+            return false;
+        }
+        if (OperIs(GT_INTRINSIC))
+        {
+            return !comp->IsIntrinsicImplementedByUserCall(AsIntrinsic()->gtIntrinsicName);
+        }
+        return true;
+    }
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+    if (OperIsMultiOp())
+    {
+        return AsMultiOp()->GetOperandCount() == 2;
+    }
+#endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
+    return false;
+}
+#endif // DEBUG
 
 /*****************************************************************************
  *
@@ -5784,19 +5821,6 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
     //
     indNode->gtFlags |= GTF_IND_NONFAULTING;
 
-    // String Literal handles are indirections that return a TYP_REF, and
-    // these are pointers into the GC heap.  We don't currently have any
-    // TYP_BYREF pointers, but if we did they also must be pointers into the GC heap.
-    //
-    // Also every GTF_ICON_STATIC_HDL also must be a pointer into the GC heap
-    // we will set GTF_GLOB_REF for these kinds of references.
-    //
-    if ((varTypeIsGC(indType)) || (iconFlags == GTF_ICON_STATIC_HDL))
-    {
-        // This indirection also points into the gloabal heap
-        indNode->gtFlags |= GTF_GLOB_REF;
-    }
-
     if (isInvariant)
     {
         assert(iconFlags != GTF_ICON_STATIC_HDL); // Pointer to a mutable class Static variable
@@ -5812,6 +5836,13 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
             indNode->gtFlags |= GTF_IND_NONNULL;
         }
     }
+    else
+    {
+        // GLOB_REF needs to be set for indirections returning values from mutable
+        // locations, so that e. g. args sorting does not reorder them with calls.
+        indNode->gtFlags |= GTF_GLOB_REF;
+    }
+
     return indNode;
 }
 
@@ -9178,7 +9209,7 @@ void Compiler::gtDispZeroFieldSeq(GenTree* tree)
         if (map->Lookup(tree, &fldSeq))
         {
             printf(" Zero");
-            gtDispFieldSeq(fldSeq);
+            gtDispAnyFieldSeq(fldSeq);
         }
     }
 }
@@ -10295,9 +10326,28 @@ void Compiler::gtDispConst(GenTree* tree)
     }
 }
 
+//------------------------------------------------------------------------
+// gtDispFieldSeq: "gtDispFieldSeq" that also prints "<NotAField>".
+//
+// Useful for printing zero-offset field sequences.
+//
+void Compiler::gtDispAnyFieldSeq(FieldSeqNode* fieldSeq)
+{
+    if (fieldSeq == FieldSeqStore::NotAField())
+    {
+        printf(" Fseq<NotAField>");
+        return;
+    }
+
+    gtDispFieldSeq(fieldSeq);
+}
+
+//------------------------------------------------------------------------
+// gtDispFieldSeq: Print out the fields in this field sequence.
+//
 void Compiler::gtDispFieldSeq(FieldSeqNode* pfsn)
 {
-    if (pfsn == FieldSeqStore::NotAField() || (pfsn == nullptr))
+    if ((pfsn == nullptr) || (pfsn == FieldSeqStore::NotAField()))
     {
         return;
     }
@@ -10758,6 +10808,9 @@ void Compiler::gtDispTree(GenTree*     tree,
                     case GenTreePutArgStk::Kind::RepInstr:
                         printf(" (RepInstr)");
                         break;
+                    case GenTreePutArgStk::Kind::PartialRepInstr:
+                        printf(" (PartialRepInstr)");
+                        break;
                     case GenTreePutArgStk::Kind::Unroll:
                         printf(" (Unroll)");
                         break;
@@ -10870,6 +10923,12 @@ void Compiler::gtDispTree(GenTree*     tree,
                     break;
                 case NI_System_Math_Log10:
                     printf(" log10");
+                    break;
+                case NI_System_Math_Max:
+                    printf(" max");
+                    break;
+                case NI_System_Math_Min:
+                    printf(" min");
                     break;
                 case NI_System_Math_Pow:
                     printf(" pow");
@@ -16002,10 +16061,11 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
 //------------------------------------------------------------------------
 // IsFieldAddr: Is "this" a static or class field address?
 //
-// Recognizes the following three patterns:
-//    this: [Zero FldSeq]
-//    this: ADD(baseAddr, CONST FldSeq)
-//    this: ADD(CONST FldSeq, baseAddr)
+// Recognizes the following patterns:
+//    this: ADD(baseAddr, CONST [FldSeq])
+//    this: ADD(CONST [FldSeq], baseAddr)
+//    this: CONST [FldSeq]
+//    this: Zero [FldSeq]
 //
 // Arguments:
 //    comp      - the Compiler object
@@ -16030,7 +16090,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
     *pFldSeq   = FieldSeqStore::NotAField();
 
     GenTree*      baseAddr = nullptr;
-    FieldSeqNode* fldSeq   = nullptr;
+    FieldSeqNode* fldSeq   = FieldSeqStore::NotAField();
 
     if (OperIs(GT_ADD))
     {
@@ -16054,25 +16114,27 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
             assert(!baseAddr->TypeIs(TYP_REF) || !comp->GetZeroOffsetFieldMap()->Lookup(baseAddr));
         }
     }
+    else if (IsCnsIntOrI() && IsIconHandle(GTF_ICON_STATIC_HDL))
+    {
+        assert(!comp->GetZeroOffsetFieldMap()->Lookup(this) && (AsIntCon()->gtFieldSeq != nullptr));
+        fldSeq   = AsIntCon()->gtFieldSeq;
+        baseAddr = nullptr;
+    }
     else if (comp->GetZeroOffsetFieldMap()->Lookup(this, &fldSeq))
     {
         baseAddr = this;
     }
     else
     {
-        // TODO-VNTypes-CQ: recognize the simple GTF_ICON_STATIC_HDL case here. It
-        // is not recognized right now to preserve previous behavior of this method.
         return false;
     }
 
-    // If we don't have a valid sequence, bail. Note that above we have overloaded an empty
-    // ("nullptr") sequence as "NotAField", as that's the way it is treated on tree nodes.
-    if ((fldSeq == nullptr) || (fldSeq == FieldSeqStore::NotAField()) || fldSeq->IsPseudoField())
+    assert(fldSeq != nullptr);
+
+    if ((fldSeq == FieldSeqStore::NotAField()) || fldSeq->IsPseudoField())
     {
         return false;
     }
-
-    assert(baseAddr != nullptr);
 
     // The above screens out obviously invalid cases, but we have more checks to perform. The
     // sequence returned from this method *must* start with either a class (NOT struct) field
@@ -21496,7 +21558,7 @@ GenTree* Compiler::gtNewSimdZeroNode(var_types   type,
 #if defined(TARGET_XARCH)
     intrinsic = (simdSize == 32) ? NI_Vector256_get_Zero : NI_Vector128_get_Zero;
 #elif defined(TARGET_ARM64)
-    intrinsic     = (simdSize == 16) ? NI_Vector128_get_Zero : NI_Vector64_get_Zero;
+    intrinsic     = (simdSize > 8) ? NI_Vector128_get_Zero : NI_Vector64_get_Zero;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64

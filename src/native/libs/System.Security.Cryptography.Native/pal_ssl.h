@@ -406,6 +406,15 @@ Returns 1 if success and 0 in case of failure
 PALEXPORT int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509);
 
 /*
+Adds the names of the given certificates to the list of acceptable issuers sent to
+client when requesting a client certificate. Shims the SSL_add_client_CA function.
+
+No transfer of ownership or refcount changes.
+Returns 1 if success and 0 in case of failure
+*/
+PALEXPORT int32_t CryptoNative_SslAddClientCAs(SSL* ssl, X509** x509s, uint32_t count);
+
+/*
 Shims the ssl_ctx_set_alpn_select_cb method.
 */
 PALEXPORT void CryptoNative_SslCtxSetAlpnSelectCb(SSL_CTX* ctx, SslCtxSetAlpnCallback cb, void *arg);

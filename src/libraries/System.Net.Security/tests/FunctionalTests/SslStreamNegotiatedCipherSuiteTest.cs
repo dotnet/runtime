@@ -31,10 +31,12 @@ namespace System.Net.Security.Tests
         private static bool CipherSuitesPolicySupported => s_cipherSuitePolicySupported.Value;
         private static bool Tls13Supported { get; set; } = IsKnownPlatformSupportingTls13 || ProtocolsSupported(SslProtocols.Tls13);
         private static bool CipherSuitesPolicyAndTls13Supported => Tls13Supported && CipherSuitesPolicySupported;
+        private static IReadOnlyList<TlsCipherSuite> SupportedNonTls13CipherSuites => s_supportedNonTls13CipherSuites.Value;
 
         private static HashSet<TlsCipherSuite> s_tls13CipherSuiteLookup = new HashSet<TlsCipherSuite>(GetTls13CipherSuites());
         private static HashSet<TlsCipherSuite> s_tls12CipherSuiteLookup = new HashSet<TlsCipherSuite>(GetTls12CipherSuites());
         private static HashSet<TlsCipherSuite> s_tls10And11CipherSuiteLookup = new HashSet<TlsCipherSuite>(GetTls10And11CipherSuites());
+        private static readonly Lazy<IReadOnlyList<TlsCipherSuite>> s_supportedNonTls13CipherSuites = new Lazy<IReadOnlyList<TlsCipherSuite>>(GetSupportedNonTls13CipherSuites);
 
         private static Dictionary<SslProtocols, HashSet<TlsCipherSuite>> s_protocolCipherSuiteLookup = new Dictionary<SslProtocols, HashSet<TlsCipherSuite>>()
         {
@@ -54,8 +56,6 @@ namespace System.Net.Security.Tests
 
             return false;
         });
-
-        private static IReadOnlyList<TlsCipherSuite> SupportedNonTls13CipherSuites = GetSupportedNonTls13CipherSuites();
 
         [ConditionalFact(nameof(IsKnownPlatformSupportingTls13))]
         public void Tls13IsSupported_GetValue_ReturnsTrue()
@@ -699,13 +699,7 @@ namespace System.Net.Security.Tests
                 clientOptions.EnabledSslProtocols = clientParams.SslProtocols;
                 clientOptions.CipherSuitesPolicy = clientParams.CipherSuitesPolicy;
                 clientOptions.TargetHost = "test";
-                clientOptions.RemoteCertificateValidationCallback =
-                    new RemoteCertificateValidationCallback((object sender,
-                                                             X509Certificate certificate,
-                                                             X509Chain chain,
-                                                             SslPolicyErrors sslPolicyErrors) => {
-                                                                 return true;
-                                                             });
+                clientOptions.RemoteCertificateValidationCallback = delegate { return true; };
 
                 Exception failure = WaitForSecureConnection(client, clientOptions, server, serverOptions).GetAwaiter().GetResult();
 

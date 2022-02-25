@@ -35,7 +35,7 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509StackField")]
         internal static partial IntPtr GetX509StackField(SafeSharedX509StackHandle stack, int loc);
 
-        [GeneratedDllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial int CryptoNative_X509StackAddDirectoryStore(SafeX509StackHandle stack, string storePath);
 
         internal static void X509StackAddDirectoryStore(SafeX509StackHandle stack, string storePath)

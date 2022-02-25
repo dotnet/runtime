@@ -1704,7 +1704,7 @@ public:
         return (DebugOperKind() & DBK_NOTLIR) == 0;
     }
 
-    bool        OperSupportsReverseOps() const;
+    bool OperSupportsReverseOpEvalOrder(Compiler* comp) const;
     static bool RequiresNonNullOp2(genTreeOps oper);
     bool IsValidCallArgument();
 #endif // DEBUG
@@ -2045,7 +2045,7 @@ public:
 
     void SetUnsigned()
     {
-        assert(OperIs(GT_ADD, GT_SUB, GT_CAST) || OperIsMul());
+        assert(OperIs(GT_ADD, GT_SUB, GT_CAST, GT_LE, GT_LT, GT_GT, GT_GE) || OperIsMul());
         gtFlags |= GTF_UNSIGNED;
     }
 
@@ -5323,6 +5323,34 @@ public:
         return (CorInfoType)gtSimdBaseJitType;
     }
 
+    CorInfoType GetNormalizedSimdBaseJitType() const
+    {
+        CorInfoType simdBaseJitType = GetSimdBaseJitType();
+        switch (simdBaseJitType)
+        {
+            case CORINFO_TYPE_NATIVEINT:
+            {
+#ifdef TARGET_64BIT
+                return CORINFO_TYPE_LONG;
+#else
+                return CORINFO_TYPE_INT;
+#endif
+            }
+
+            case CORINFO_TYPE_NATIVEUINT:
+            {
+#ifdef TARGET_64BIT
+                return CORINFO_TYPE_ULONG;
+#else
+                return CORINFO_TYPE_UINT;
+#endif
+            }
+
+            default:
+                return simdBaseJitType;
+        }
+    }
+
     void SetSimdBaseJitType(CorInfoType simdBaseJitType)
     {
         gtSimdBaseJitType = (unsigned char)simdBaseJitType;
@@ -6086,10 +6114,13 @@ struct GenTreeIndir : public GenTreeOp
     }
 
 #if DEBUGGABLE_GENTREE
-protected:
-    friend GenTree;
     // Used only for GenTree::GetVtableForOper()
     GenTreeIndir() : GenTreeOp()
+    {
+    }
+#else
+    // Used by XARCH codegen to construct temporary trees to pass to the emitter.
+    GenTreeIndir() : GenTreeOp(GT_NOP, TYP_UNDEF)
     {
     }
 #endif
@@ -6775,7 +6806,7 @@ public:
     // block node.
 
     enum class Kind : __int8{
-        Invalid, RepInstr, Unroll, Push, PushAllSlots,
+        Invalid, RepInstr, PartialRepInstr, Unroll, Push, PushAllSlots,
     };
     Kind gtPutArgStkKind;
 #endif
@@ -6823,6 +6854,11 @@ public:
 #if defined(FEATURE_PUT_STRUCT_ARG_STK)
         DEBUG_ARG_SLOTS_ASSERT(m_byteSize == gtNumSlots * TARGET_POINTER_SIZE);
 #endif
+    }
+
+    GenTree*& Data()
+    {
+        return gtOp1;
     }
 
 #if FEATURE_FASTTAILCALL
@@ -7702,16 +7738,23 @@ inline bool GenTree::IsSIMDZero() const
 //
 inline bool GenTree::IsFloatPositiveZero() const
 {
-    return IsCnsFltOrDbl() && !IsCnsNonZeroFltOrDbl();
+    if (IsCnsFltOrDbl())
+    {
+        // This implementation is almost identical to IsCnsNonZeroFltOrDbl
+        // but it is easier to parse out
+        // rather than using !IsCnsNonZeroFltOrDbl.
+        double constValue = AsDblCon()->gtDconVal;
+        return *(__int64*)&constValue == 0;
+    }
+
+    return false;
 }
 
 //-------------------------------------------------------------------
-// IsVectorZero: returns true if this is an integral or floating-point (SIMD or HW intrinsic) vector
-// with all its elements equal to zero.
+// IsVectorZero: returns true if this node is a HWIntrinsic that is Vector*_get_Zero.
 //
 // Returns:
-//     True if this represents an integral or floating-point const (SIMD or HW intrinsic) vector with all its elements
-//     equal to zero.
+//     True if this represents a HWIntrinsic node that is Vector*_get_Zero.
 //
 // TODO: We already have IsSIMDZero() and IsIntegralConstVector(0),
 //       however, IsSIMDZero() does not cover hardware intrinsics, and IsIntegralConstVector(0) does not cover floating
@@ -7720,46 +7763,17 @@ inline bool GenTree::IsFloatPositiveZero() const
 //       separate ones; preferably this one.
 inline bool GenTree::IsVectorZero() const
 {
-#ifdef FEATURE_SIMD
-    if (gtOper == GT_SIMD)
-    {
-        const GenTreeSIMD* node = AsSIMD();
-
-        if (node->GetSIMDIntrinsicId() == SIMDIntrinsicInit)
-        {
-            return (node->Op(1)->IsIntegralConst(0) || node->Op(1)->IsFloatPositiveZero());
-        }
-    }
-#endif
-
 #ifdef FEATURE_HW_INTRINSICS
     if (gtOper == GT_HWINTRINSIC)
     {
-        const GenTreeHWIntrinsic* node         = AsHWIntrinsic();
-        const var_types           simdBaseType = node->GetSimdBaseType();
+        const GenTreeHWIntrinsic* node        = AsHWIntrinsic();
+        const NamedIntrinsic      intrinsicId = node->GetHWIntrinsicId();
 
-        if (varTypeIsIntegral(simdBaseType) || varTypeIsFloating(simdBaseType))
-        {
-            const NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
-
-            if (node->GetOperandCount() == 0)
-            {
 #if defined(TARGET_XARCH)
-                return (intrinsicId == NI_Vector128_get_Zero) || (intrinsicId == NI_Vector256_get_Zero);
+        return (intrinsicId == NI_Vector128_get_Zero) || (intrinsicId == NI_Vector256_get_Zero);
 #elif defined(TARGET_ARM64)
-                return (intrinsicId == NI_Vector64_get_Zero) || (intrinsicId == NI_Vector128_get_Zero);
+        return (intrinsicId == NI_Vector64_get_Zero) || (intrinsicId == NI_Vector128_get_Zero);
 #endif // !TARGET_XARCH && !TARGET_ARM64
-            }
-            else if ((node->GetOperandCount() == 1) &&
-                     (node->Op(1)->IsIntegralConst(0) || node->Op(1)->IsFloatPositiveZero()))
-            {
-#if defined(TARGET_XARCH)
-                return (intrinsicId == NI_Vector128_Create) || (intrinsicId == NI_Vector256_Create);
-#elif defined(TARGET_ARM64)
-                return (intrinsicId == NI_Vector64_Create) || (intrinsicId == NI_Vector128_Create);
-#endif // !TARGET_XARCH && !TARGET_ARM64
-            }
-        }
     }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -7859,22 +7873,7 @@ inline GenTree* GenTree::gtGetOp1() const
     }
 }
 
-inline bool GenTree::OperSupportsReverseOps() const
-{
-    if (OperIsBinary() && !OperIs(GT_COMMA, GT_INTRINSIC, GT_BOUNDS_CHECK))
-    {
-        return (AsOp()->gtGetOp1() != nullptr) && (AsOp()->gtGetOp2() != nullptr);
-    }
-#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
-    if (OperIsMultiOp())
-    {
-        return AsMultiOp()->GetOperandCount() == 2;
-    }
-#endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
-    return false;
-}
 #endif // DEBUG
-
 inline GenTree* GenTree::gtGetOp2() const
 {
     assert(OperIsBinary());
