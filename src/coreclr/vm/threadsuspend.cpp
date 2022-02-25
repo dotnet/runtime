@@ -2551,12 +2551,12 @@ int RedirectedHandledJITCaseExceptionFilter(
     // Unlink the frame in preparation for resuming in managed code
     pFrame->Pop();
 
-    // Copy the saved context record into the EH context;
-    // NB: cannot use ReplaceExceptionContextRecord here.
-    //     these contexts may contain extended registers and may have different format
-    //     for reasons such as alignment or context compaction
+    // Copy everything in the saved context record into the EH context.
+    // Historically the EH context has enough space for every enabled context feature.
+    // That may not hold for the future features beyond AVX, but this codepath is
+    // supposed to be used only on OSes that do not have RtlRestoreContext.
     CONTEXT* pTarget = pExcepPtrs->ContextRecord;
-    if (!CopyContext(pTarget, pTarget->ContextFlags, pCtx))
+    if (!CopyContext(pTarget, pCtx->ContextFlags, pCtx))
     {
         STRESS_LOG1(LF_SYNC, LL_ERROR, "ERROR: Could not set context record, lastError = 0x%x\n", GetLastError());
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
