@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using Microsoft.Win32.SafeHandles;
 
@@ -61,8 +62,22 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static string GetCertificateSubject(SafeX509Handle certHandle)
         {
-            X500DistinguishedName dn = Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetSubjectName(certHandle));
-            return dn.Name;
+            bool addedRef = false;
+
+            try
+            {
+                // Ensure that certHandle stays alive while we use an interior pointer.
+                certHandle.DangerousAddRef(ref addedRef);
+                X500DistinguishedName dn = Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetSubjectName(certHandle));
+                return dn.Name;
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    certHandle.DangerousRelease();
+                }
+            }
         }
 
         internal bool ShouldLogElementStatuses()
@@ -462,6 +477,8 @@ namespace System.Security.Cryptography.X509Certificates
             EventId_CrlCacheExpired,
             Level = EventLevel.Verbose,
             Message = "The cached CRL's nextUpdate value ({1:O}) is not after the verification time ({0:O}).")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "verificationTime and nextUpdate are DateTime values, which are trimmer safe")]
         internal void CrlCacheExpired(DateTime verificationTime, DateTime nextUpdate)
         {
             if (IsEnabled())
@@ -486,6 +503,8 @@ namespace System.Security.Cryptography.X509Certificates
             EventId_CrlCacheAcceptedFile,
             Level = EventLevel.Verbose,
             Message = "The cached crl nextUpdate value ({0:O}) is acceptable, using the cached file.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "nextUpdate is a DateTime value, which is trimmer safe")]
         internal void CrlCacheAcceptedFile(DateTime nextUpdate)
         {
             if (IsEnabled())
@@ -684,9 +703,11 @@ namespace System.Security.Cryptography.X509Certificates
 
         [Event(
             EventId_RevocationCheckStart,
-            Message = "Starting '{1}' revocation check in mode '{0}' with a {2}-element chain.",
+            Message = "Starting revocation check in mode '{0}' with scope '{1}' on a {2}-element chain.",
             Opcode = EventOpcode.Start,
             Level = EventLevel.Informational)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "revocationMode and revocationFlag are enums, and are trimmer safe")]
         internal void RevocationCheckStart(X509RevocationMode revocationMode, X509RevocationFlag revocationFlag, int chainSize)
         {
             if (IsEnabled())
