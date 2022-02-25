@@ -40,6 +40,7 @@ namespace System.Text.Json
             static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options) => new JsonTypeInfo(type, options);
         }
 
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         private static JsonConverter[] GetDefaultFactoryConverters()
         {
             return new JsonConverter[]
