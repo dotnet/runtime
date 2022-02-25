@@ -19,7 +19,6 @@ using System.Security.Authentication;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Internal;
 
 namespace System.Net.Http
 {
@@ -542,7 +541,7 @@ namespace System.Net.Http
             // There were no available idle connections. This request has been added to the request queue.
             if (NetEventSource.Log.IsEnabled()) Trace($"No available HTTP/1.1 connections; request queued.");
 
-            ValueStopwatch stopwatch = ValueStopwatch.StartNew();
+            long startingTimestamp = Stopwatch.GetTimestamp();
             try
             {
                 return await waiter.WaitWithCancellationAsync(async, cancellationToken).ConfigureAwait(false);
@@ -551,7 +550,7 @@ namespace System.Net.Http
             {
                 if (HttpTelemetry.Log.IsEnabled())
                 {
-                    HttpTelemetry.Log.Http11RequestLeftQueue(stopwatch.GetElapsedTime().TotalMilliseconds);
+                    HttpTelemetry.Log.Http11RequestLeftQueue(Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds);
                 }
             }
         }
@@ -787,7 +786,7 @@ namespace System.Net.Http
             // There were no available connections. This request has been added to the request queue.
             if (NetEventSource.Log.IsEnabled()) Trace($"No available HTTP/2 connections; request queued.");
 
-            ValueStopwatch stopwatch = ValueStopwatch.StartNew();
+            long startingTimestamp = Stopwatch.GetTimestamp();
             try
             {
                 return await waiter.WaitWithCancellationAsync(async, cancellationToken).ConfigureAwait(false);
@@ -796,7 +795,7 @@ namespace System.Net.Http
             {
                 if (HttpTelemetry.Log.IsEnabled())
                 {
-                    HttpTelemetry.Log.Http20RequestLeftQueue(stopwatch.GetElapsedTime().TotalMilliseconds);
+                    HttpTelemetry.Log.Http20RequestLeftQueue(Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds);
                 }
             }
         }
@@ -925,19 +924,19 @@ namespace System.Net.Http
                     ThrowGetVersionException(request, 3);
                 }
 
-                ValueStopwatch queueDuration = HttpTelemetry.Log.IsEnabled() ? ValueStopwatch.StartNew() : default;
+                long queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() ? Stopwatch.GetTimestamp() : 0;
 
                 ValueTask<Http3Connection> connectionTask = GetHttp3ConnectionAsync(request, authority, cancellationToken);
 
                 if (HttpTelemetry.Log.IsEnabled() && connectionTask.IsCompleted)
                 {
                     // We avoid logging RequestLeftQueue if a stream was available immediately (synchronously)
-                    queueDuration = default;
+                    queueStartingTimestamp = 0;
                 }
 
                 Http3Connection connection = await connectionTask.ConfigureAwait(false);
 
-                HttpResponseMessage response = await connection.SendAsync(request, queueDuration, cancellationToken).ConfigureAwait(false);
+                HttpResponseMessage response = await connection.SendAsync(request, queueStartingTimestamp, cancellationToken).ConfigureAwait(false);
 
                 // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
                 // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
