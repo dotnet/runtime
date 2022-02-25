@@ -1,5 +1,6 @@
 parameters:
   alwaysRun: false
+  buildConfig: 'Release'
   extraBuildArgs: ''
   extraHelixArgs: ''
   isExtraPlatformsBuild: false
@@ -17,7 +18,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
+    buildConfig: ${{ parameters.buildConfig }}
     runtimeFlavor: mono
     platforms: ${{ parameters.platforms }}
     variables:
