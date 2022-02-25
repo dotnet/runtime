@@ -2898,9 +2898,10 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
         pCtx = m_pSavedRedirectContext = ThreadStore::GrabOSContext(&m_pOSContextBuffer);
     }
 
-    // We may not have a preallocated context, could be short on memory, and cannot allocate
-    // here since we have a thread stopped in a random place, possibly holding some lock.
-    // Other ways and attempts at suspending may yet succeed, but this one is a failure.
+    // We may not have a preallocated context. Could be short on memory when we tried to preallocate.
+    // We cannot allocate here since we have a thread stopped in a random place, possibly holding locks
+    // that we would need while allocating.
+    // Other ways and attempts at suspending may yet succeed, but this redirection cannot continue.
     if (!pCtx)
         return (FALSE);
 
