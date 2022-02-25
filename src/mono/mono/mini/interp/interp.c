@@ -2664,9 +2664,9 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 			context->pending_unwind = TRUE;
 			return;
 		}
-		MonoObject *obj = mono_llvm_load_exception ();
+		MonoObject *obj = mini_llvmonly_load_exception ();
 		g_assert (obj);
-		mono_llvm_clear_exception ();
+		mini_llvmonly_clear_exception ();
 		mono_error_set_exception_instance (error, (MonoException*)obj);
 		return;
 	}

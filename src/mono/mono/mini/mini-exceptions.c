@@ -75,6 +75,7 @@
 #include "trace.h"
 #include "seq-points.h"
 #include "llvm-runtime.h"
+#include "llvmonly-runtime.h"
 #include "mini-llvm.h"
 #include "aot-runtime.h"
 #include "mini-runtime.h"
@@ -124,6 +125,8 @@ static gboolean mono_install_handler_block_guard (MonoThreadUnwindState *ctx);
 static void mono_uninstall_current_handler_block_guard (void);
 static gboolean mono_exception_walk_trace_internal (MonoException *ex, MonoExceptionFrameWalk func, gpointer user_data);
 static void throw_exception (MonoObject *ex, gboolean rethrow);
+static void llvmonly_raise_exception (MonoException *e);
+static void llvmonly_reraise_exception (MonoException *e);
 
 static gboolean
 first_managed (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer addr)
@@ -233,8 +236,8 @@ mono_exceptions_init (void)
 	cbs.mono_walk_stack_with_state = mono_walk_stack_with_state;
 
 	if (mono_llvm_only) {
-		cbs.mono_raise_exception = mono_llvm_raise_exception;
-		cbs.mono_reraise_exception = mono_llvm_reraise_exception;
+		cbs.mono_raise_exception = llvmonly_raise_exception;
+		cbs.mono_reraise_exception = llvmonly_reraise_exception;
 	} else {
 		cbs.mono_raise_exception = (void (*)(MonoException *))mono_get_throw_exception ();
 		cbs.mono_reraise_exception = (void (*)(MonoException *))mono_get_rethrow_exception ();
@@ -3473,7 +3476,7 @@ throw_exception (MonoObject *ex, gboolean rethrow)
 }
 
 void
-mono_llvm_throw_exception (MonoObject *ex)
+mini_llvmonly_throw_exception (MonoObject *ex)
 {
 	g_assert (mono_llvm_only);
 
@@ -3496,41 +3499,41 @@ mono_llvm_throw_exception (MonoObject *ex)
 }
 
 void
-mono_llvm_rethrow_exception (MonoObject *ex)
+mini_llvmonly_rethrow_exception (MonoObject *ex)
 {
 	throw_exception (ex, TRUE);
 }
 
 void
-mono_llvm_raise_exception (MonoException *e)
-{
-	mono_llvm_throw_exception ((MonoObject*)e);
-}
-
-void
-mono_llvm_reraise_exception (MonoException *e)
-{
-	mono_llvm_rethrow_exception ((MonoObject*)e);
-}
-
-void
-mono_llvm_throw_corlib_exception (guint32 ex_token_index)
+mini_llvmonly_throw_corlib_exception (guint32 ex_token_index)
 {
 	guint32 ex_token = MONO_TOKEN_TYPE_DEF | ex_token_index;
 	MonoException *ex;
 
 	ex = mono_exception_from_token (m_class_get_image (mono_defaults.exception_class), ex_token);
 
-	mono_llvm_throw_exception ((MonoObject*)ex);
+	mini_llvmonly_throw_exception ((MonoObject*)ex);
+}
+
+static void
+llvmonly_raise_exception (MonoException *e)
+{
+	mini_llvmonly_throw_exception ((MonoObject*)e);
+}
+
+static void
+llvmonly_reraise_exception (MonoException *e)
+{
+	mini_llvmonly_rethrow_exception ((MonoObject*)e);
 }
 
 /*
- * mono_llvm_resume_exception:
+ * mini_llvmonly_resume_exception:
  *
  *   Resume exception propagation.
  */
 void
-mono_llvm_resume_exception (void)
+mini_llvmonly_resume_exception (void)
 {
 	mono_llvm_cpp_throw_exception ();
 }
@@ -3572,12 +3575,12 @@ print_lmf_chain (MonoLMF *lmf)
 }
 
 /*
- * mono_llvm_resume_exception_il_state:
+ * mini_llvmonly_resume_exception_il_state:
  *
  *   Called from AOTed code to execute catch clauses.
  */
 void
-mono_llvm_resume_exception_il_state (MonoLMF *lmf, gpointer info)
+mini_llvmonly_resume_exception_il_state (MonoLMF *lmf, gpointer info)
 {
 	MonoMethodILState *il_state = (MonoMethodILState *)info;
 	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
@@ -3603,12 +3606,12 @@ mono_llvm_resume_exception_il_state (MonoLMF *lmf, gpointer info)
 }
 
 /*
- * mono_llvm_load_exception:
+ * mini_llvmonly_load_exception:
  *
  *   Return the currently thrown exception.
  */
 MonoObject *
-mono_llvm_load_exception (void)
+mini_llvmonly_load_exception (void)
 {
 	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
@@ -3657,12 +3660,12 @@ mono_llvm_load_exception (void)
 }
 
 /*
- * mono_llvm_clear_exception:
+ * mini_llvmonly_clear_exception:
  *
  *   Mark the currently thrown exception as handled.
  */
 void
-mono_llvm_clear_exception (void)
+mini_llvmonly_clear_exception (void)
 {
 	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 
@@ -3676,13 +3679,13 @@ mono_llvm_clear_exception (void)
 }
 
 /*
- * mono_llvm_match_exception:
+ * mini_llvmonly_match_exception:
  *
  *   Return the innermost clause containing REGION_START-REGION_END which can handle
  * the current exception.
  */
 gint32
-mono_llvm_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end, gpointer rgctx, MonoObject *this_obj)
+mini_llvmonly_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end, gpointer rgctx, MonoObject *this_obj)
 {
 	ERROR_DECL (error);
 	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
