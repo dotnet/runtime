@@ -235,7 +235,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return null;
 
                 ValueOrError<JToken> valueOrError = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
-                if (valueOrError.HasError)
+                if (valueOrError.IsError)
                 {
                     logger.LogDebug($"ResolveAsLocalOrThisMember failed with : {valueOrError.Error}");
                     return null;
@@ -262,7 +262,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return null;
 
                     ValueOrError<JToken> valueOrError = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
-                    if (valueOrError.HasError)
+                    if (valueOrError.IsError)
                     {
                         logger.LogDebug($"ResolveAsInstanceMember failed with : {valueOrError.Error}");
                         return null;

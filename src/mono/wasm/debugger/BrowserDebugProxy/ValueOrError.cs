@@ -12,8 +12,7 @@ public struct ValueOrError<TValue>
     public TValue? Value { get; init; }
     public Result? Error { get; init; }
 
-    public bool HasValue => Value != null;
-    public bool HasError => !HasValue;
+    public bool IsError => Error != null;
 
     private ValueOrError(TValue? value = default, Result? error = default)
     {

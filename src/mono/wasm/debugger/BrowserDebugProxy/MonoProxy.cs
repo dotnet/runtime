@@ -463,7 +463,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             break;
 
                         var valueOrError = await RuntimeGetPropertiesInternal(id, objectId, args, token, true);
-                        if (valueOrError.HasError)
+                        if (valueOrError.IsError)
                         {
                             logger.LogDebug($"Runtime.getProperties: {valueOrError.Error}");
                             SendResponse(id, valueOrError.Error.Value, token);
