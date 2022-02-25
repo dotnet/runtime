@@ -1,0 +1,26 @@
+{% metadata_file .yamato/Globals.metafile %}
+---
+name: Test Linux x64
+
+agent:
+  type: Unity::VM
+  image: platform-foundation/linux-ubuntu-18.04-mono-bokken:0.1.7-978398
+  flavor: b1.large
+
+dependencies:
+  - path: .yamato/build_linux_x64.yml
+
+commands:
+# build/run tests
+  - ./build.sh -subset libs.tests -test -a x64 -c release -ci -ninja
+  - command: ./src/tests/build.sh x64 release ci
+    retries: 1
+  - ./src/tests/run.sh x64 release
+  - ./build.sh clr.paltests
+  - ./artifacts/bin/coreclr/$(uname).x64.Debug/paltests/runpaltests.sh $(pwd)/artifacts/bin/coreclr/$(uname).x64.Debug/paltests
+
+triggers:
+  pull_requests:
+    - targets:
+        only:
+          - "unity-main"

@@ -1,0 +1,23 @@
+{% metadata_file .yamato/Globals.metafile %}
+---
+name: Test Windows x86
+
+agent:
+  type: Unity::VM
+  image: platform-foundation/windows-vs2019-il2cpp-bokken:v1.1.6-1025111
+  flavor: b1.xlarge
+
+dependencies:
+  - path: .yamato/build_windows.yml
+
+commands:
+# build/run tests
+  - build.cmd libs.tests -test -a x86 -c release -ci
+  - src\tests\build.cmd x86 release ci
+  - src\tests\run.cmd x86 release
+
+triggers:
+  pull_requests:
+    - targets:
+        only:
+          - "unity-main"

@@ -1,0 +1,25 @@
+{% metadata_file .yamato/Globals.metafile %}
+---
+name: Test OSX x64
+
+agent:
+  type: Unity::VM::osx
+  image: platform-foundation/mac-bokken:v0.1.8-972754
+  flavor: m1.mac
+
+dependencies:
+  - path: .yamato/build_osx_x64.yml
+
+commands:
+# build/run tests
+  - LD_LIBRARY_PATH=/usr/local/opt/openssl/lib ./build.sh -subset libs.tests -test -a x64 -c release -ci -ninja
+  - ./src/tests/build.sh x64 release ci
+  - ./src/tests/run.sh x64 release
+  - ./build.sh clr.paltests
+  - ./artifacts/bin/coreclr/OSX.x64.Debug/paltests/runpaltests.sh $(pwd)/artifacts/bin/coreclr/OSX.x64.Debug/paltests
+
+triggers:
+  pull_requests:
+    - targets:
+        only:
+          - "unity-main"

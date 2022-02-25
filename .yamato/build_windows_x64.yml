@@ -1,9 +1,14 @@
-name: Build and Test Windows x64
+{% metadata_file .yamato/Globals.metafile %}
+---
+name: Build Windows x64
 
 agent:
   type: Unity::VM
-  image: platform-foundation/windows-vs2019-il2cpp-bokken:latest
+  image: platform-foundation/windows-vs2019-il2cpp-bokken:v1.1.6-1025111
   flavor: b1.xlarge
+
+variables:
+  ARTIFACT_FILENAME: {{globals.artifact_base_name}}-win-x64.7z
 
 commands:
   - |
@@ -13,19 +18,12 @@ commands:
   - build.cmd -subset clr+libs -a x64 -c release -ci
   - copy unity\unitygc\Release\unitygc.dll artifacts\bin\microsoft.netcore.app.runtime.win-x64\Release\runtimes\win-x64\native 
   - powershell .yamato\scripts\download_7z.ps1
-  - artifacts\7za-win-x64\7za.exe a artifacts\unity\dotnet-runtime-unity-win-x64.7z .\artifacts\bin\microsoft.netcore.app.runtime.win-x64\Release\runtimes\win-x64
-# build/run tests
-  - build.cmd libs.tests -test -a x64 -c release -ci
-  - src\tests\build.cmd x64 release ci
-  - src\tests\run.cmd x64 release
+  - artifacts\7za-win-x64\7za.exe a artifacts\unity\%ARTIFACT_FILENAME% .\artifacts\bin\microsoft.netcore.app.runtime.win-x64\Release\runtimes\win-x64
 
-triggers:
-  pull_requests:
-    - targets:
-        only:
-          - "unity-main"
-
-artifacts: 
-  win64:
+artifacts:
+  win-x64-7z:
     paths:
-      - artifacts\unity\dotnet-runtime-unity-win-x64.7z
+      - artifacts\unity\**
+  win-x64:
+    paths:
+      - artifacts\bin\**
