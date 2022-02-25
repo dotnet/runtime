@@ -10,6 +10,7 @@
     <BinPlaceRuntime>false</BinPlaceRuntime>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <UseLiveBuiltDotNetHost Condition="'$(TargetArchitecture)' == 's390x'">true</UseLiveBuiltDotNetHost>
+    <UseLiveBuiltDotNetHost Condition="'$(TargetArchitecture)' == 'ppc64le'">true</UseLiveBuiltDotNetHost>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
