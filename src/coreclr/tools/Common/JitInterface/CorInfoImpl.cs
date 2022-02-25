@@ -2945,7 +2945,9 @@ namespace Internal.JitInterface
         {
 #if !READYTORUN
             MetadataType type = HandleToObject(baseType) as MetadataType;
-            if (type == null)
+
+            if (type == null || type.IsCanonicalSubtype(CanonicalFormKind.Any) ||
+                type.HasVariance || type.IsArray || type.IsNullable)
             {
                 return 0;
             }
@@ -2968,8 +2970,8 @@ namespace Internal.JitInterface
             {
                 Debug.Assert(!implClass.IsInterface);
 
-                if (implClass.IsCanonicalSubtype(CanonicalFormKind.Universal) || implClass.HasVariance ||
-                    implClass.IsArray)
+                if (implClass.IsCanonicalSubtype(CanonicalFormKind.Any) ||
+                    implClass.HasVariance || implClass.IsArray || implClass.IsNullable)
                 {
                     // Give up if we see shared types among implementations
                     return 0;
