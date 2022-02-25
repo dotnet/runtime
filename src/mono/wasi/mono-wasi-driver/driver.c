@@ -250,20 +250,13 @@ int32_t SystemNative_Write2(intptr_t fd, const void* buffer, int32_t bufferSize)
 	return SystemNative_Write((int)fd == -1 ? 1: fd, buffer, bufferSize);
 }
 
-int64_t SystemNative_GetTimestamp2()
-{
+int64_t SystemNative_GetTimestamp2() {
 	// libSystemNative's implementation of SystemNative_GetTimestamp causes the process to exit. It probably
 	// relies on calling into JS.
 	struct timeval time;
-    if (gettimeofday(&time, NULL) == 0)
-    {
-		// Ideally we'd have a nanosecond-level timer here, but microsecond-level will do
-		return (int64_t)(time.tv_sec) * 1000000000 + (time.tv_usec * 1000);
-    }
-	else
-	{
-		return 0;
-	}
+	return (gettimeofday(&time, NULL) == 0)
+		? (int64_t)(time.tv_sec) * 1000000000 + (time.tv_usec * 1000)
+		: 0;
 }
 
 static PinvokeImport SystemNativeImports [] = {
