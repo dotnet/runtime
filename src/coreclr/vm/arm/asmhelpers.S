@@ -899,7 +899,6 @@ DelayLoad_MethodCall:
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 
-    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
     PATCH_LABEL ExternalMethodFixupPatchLabel
     bx r12
 
