@@ -2941,8 +2941,6 @@ namespace Internal.JitInterface
             throw new NotImplementedException("For LoongArch64, would be implemented later");
         }
 
-        private CORINFO_CLASS_STRUCT_* getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args)
-
         private int getExactClasses(CORINFO_CLASS_STRUCT_* baseType, int maxExactClasses, CORINFO_CLASS_STRUCT_** exactClsRet)
         {
 #if !READYTORUN
