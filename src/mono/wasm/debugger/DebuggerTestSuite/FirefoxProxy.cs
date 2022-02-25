@@ -425,8 +425,13 @@ public class DebuggerTestFirefox : DebuggerTestBase
                 }),
                 to = client.BreakpointActorId
             });
+        
+        if (condition != "")
+            bp1_req["options"] = JObject.FromObject(new { condition });
+
         var bp1_res = await cli.SendCommand("setBreakpoint", bp1_req, token);
         Assert.True(bp1_res.IsOk);
+
         var arr = new JArray(JObject.FromObject(new { 
                 lineNumber = m_line + lineOffset,
                 columnNumber = -1

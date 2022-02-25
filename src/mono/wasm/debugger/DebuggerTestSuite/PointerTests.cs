@@ -22,7 +22,7 @@ namespace DebuggerTests
                 { $"invoke_static_method_async ('[debugger-test] DebuggerTests.PointerTests:LocalPointersAsync');", "DebuggerTests.PointerTests", "LocalPointersAsync", 32, "LocalPointersAsync", true }
             };
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersTestData))]
         public async Task InspectLocalPointersToPrimitiveTypes(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -68,7 +68,7 @@ namespace DebuggerTests
                await CheckPointerValue(props, "*cp", TSymbol("113 'q'"));
            });
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersTestData))]
         public async Task InspectLocalPointerArrays(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -99,7 +99,7 @@ namespace DebuggerTests
                });
            });
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersTestData))]
         public async Task InspectLocalDoublePointerToPrimitiveTypeArrays(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -142,7 +142,7 @@ namespace DebuggerTests
                }
            });
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersTestData))]
         public async Task InspectLocalPointersToValueTypes(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -210,7 +210,7 @@ namespace DebuggerTests
                }
            });
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersTestData))]
         public async Task InspectLocalPointersToValueTypeArrays(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -243,7 +243,7 @@ namespace DebuggerTests
                }
            });
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersTestData))]
         public async Task InspectLocalPointersToGenericValueTypeArrays(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -310,7 +310,7 @@ namespace DebuggerTests
                }
            });
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersTestData))]
         public async Task InspectLocalDoublePointersToValueTypeArrays(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -352,7 +352,7 @@ namespace DebuggerTests
                }
            });
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersTestData))]
         public async Task InspectLocalPointersInClasses(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -380,7 +380,7 @@ namespace DebuggerTests
                 { $"invoke_static_method ('[debugger-test] DebuggerTests.PointerTests:LocalPointers');", "DebuggerTests.PointerTests", "PointersAsArgsTest", 2, "PointersAsArgsTest", true },
             };
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersAsMethodArgsTestData))]
         public async Task InspectPrimitiveTypePointersAsMethodArgs(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -453,7 +453,7 @@ namespace DebuggerTests
                }
            });
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersAsMethodArgsTestData))]
         public async Task InspectValueTypePointersAsMethodArgs(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -517,7 +517,7 @@ namespace DebuggerTests
                await CheckArrayElements(dtppa_elems, exp_elems);
            });
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("invoke_static_method ('[debugger-test] Math:UseComplex', 0, 0);", "Math", "UseComplex", 3, "UseComplex", false)]
         [InlineData("invoke_static_method ('[debugger-test] Math:UseComplex', 0, 0);", "Math", "UseComplex", 3, "UseComplex", true)]
         public async Task DerefNonPointerObject(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(

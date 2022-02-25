@@ -328,7 +328,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int RemoteId { get; set; }
         public BreakpointState State { get; set; }
         public string StackId { get; private set; }
-        public string Condition { get; private set; }
+        public string Condition { get; set; }
         public bool ConditionAlreadyEvaluatedWithError { get; set; }
         public static bool TryParseId(string stackId, out int id)
         {
@@ -382,6 +382,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public string DebugId { get; set; }
         public Dictionary<string, BreakpointRequest> BreakpointRequests { get; } = new Dictionary<string, BreakpointRequest>();
+        public int breakpointId;
         public TaskCompletionSource<DebugStore> ready;
         public bool IsRuntimeReady => ready != null && ready.Task.IsCompleted;
         public bool IsSkippingHiddenMethod { get; set; }
@@ -394,8 +395,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         public PauseOnExceptionsKind PauseOnExceptions { get; set; }
 
         public List<Frame> CallStack { get; set; }
-
-        public TaskCompletionSource<JObject> CallStackObject { get; set; } = new TaskCompletionSource<JObject>();
 
         public string[] LoadedFiles { get; set; }
         internal DebugStore store;
@@ -432,7 +431,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             CallStack = null;
             SdbAgent.ClearCache();
             perScopeCaches.Clear();
-            CallStackObject = new TaskCompletionSource<JObject>();
         }
     }
 

@@ -15,7 +15,7 @@ namespace DebuggerTests
 
     public class CustomViewTests : DebuggerTests
     {
-        [ConditionalFact("RunningOnChrome")]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task UsingDebuggerDisplay()
         {
             var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest", "run", 15);
@@ -34,7 +34,7 @@ namespace DebuggerTests
             await CheckObject(locals, "person2", "DebuggerTests.Person", description: "FirstName: Lisa, SurName: Müller, Age: 41");
         }
 
-        [ConditionalFact("RunningOnChrome")]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task UsingDebuggerTypeProxy()
         {
             var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest", "run", 15);
@@ -66,7 +66,7 @@ namespace DebuggerTests
 
         }
 
-        [ConditionalFact("RunningOnChrome")]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task UsingDebuggerDisplayConcurrent()
         {
             async Task<bool> CheckProperties(JObject pause_location)

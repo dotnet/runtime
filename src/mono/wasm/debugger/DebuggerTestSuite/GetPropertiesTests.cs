@@ -161,7 +161,7 @@ namespace DebuggerTests
             return data;
         }
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberData(nameof(ClassGetPropertiesTestData), parameters: true)]
         [MemberData(nameof(ClassGetPropertiesTestData), parameters: false)]
         [MemberData(nameof(StructGetPropertiesTestData), parameters: true)]
@@ -190,7 +190,7 @@ namespace DebuggerTests
         public static IEnumerable<object[]> MembersForLocalNestedStructData(bool is_async)
             => StructGetPropertiesTestData(false).Select(datum => datum[1..]);
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberData(nameof(MembersForLocalNestedStructData), parameters: false)]
         [MemberData(nameof(MembersForLocalNestedStructData), parameters: true)]
         public async Task MembersForLocalNestedStruct(bool? own_properties, bool? accessors_only, string[] expected_names, Dictionary<string, (JObject, bool)> all_props, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
@@ -275,7 +275,7 @@ namespace DebuggerTests
             }
         };
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberData(nameof(JSGetPropertiesTestData), parameters: true)]
         // Note: Disabled because we don't match JS's behavior here!
         //       We return inherited members too for `ownProperties:true`
@@ -335,7 +335,7 @@ namespace DebuggerTests
             //AssertEqual(expected_names.Length, filtered_props.Count(), $"expected number of properties");
         }
 
-        [ConditionalFact("RunningOnChrome")]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task GetObjectValueWithInheritance()
         {
             var pause_location = await EvaluateAndCheck(

@@ -361,8 +361,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             case "_mono_wasm_fire_debugger_agent_message":
                                 {
                                     pausedOnWasm = true;
-                                    await OnReceiveDebuggerAgentEvent(sessionId, args, token);
-                                    return false;
+                                    return await OnReceiveDebuggerAgentEvent(sessionId, args, token);
                                 }
                             default:
                                 pausedOnWasm = false;
@@ -472,19 +471,30 @@ namespace Microsoft.WebAssembly.Diagnostics
                             return false;
                         Result resp = await SendCommand(sessionId, "", args, token);
 
-                        string bpid = "";
-
                         var req = JObject.FromObject(new
                         {
                             url = args["location"]["sourceUrl"].Value<string>(),
                             lineNumber = args["location"]["line"].Value<int>() - 1,
                             columnNumber = args["location"]["column"].Value<int>()
                         });
+
+                        var bp = context.BreakpointRequests.Where(request => request.Value.CompareRequest(req)).FirstOrDefault();
+
+                        if (bp.Value != null)
+                        {
+                            bp.Value.UpdateCondition(args["options"]?["condition"]?.Value<string>());
+                            return true;
+                        }
+
+                        string bpid = Interlocked.Increment(ref context.breakpointId).ToString();
+
                         if (args["options"]?["condition"]?.Value<string>() != null)
                             req["condition"] = args["options"]?["condition"]?.Value<string>();
 
                         var request = BreakpointRequest.Parse(bpid, req);
                         bool loaded = context.Source.Task.IsCompleted;
+
+                        context.BreakpointRequests[bpid] = request;
 
                         if (await IsRuntimeAlreadyReadyAlready(sessionId, token))
                         {
@@ -494,15 +504,41 @@ namespace Microsoft.WebAssembly.Diagnostics
                             await SetBreakpoint(sessionId, store, request, !loaded, token);
                         }
 
-                        if (loaded)
-                        {
-                            context.BreakpointRequests[bpid] = request;
-                        }
                         var o = JObject.FromObject(new
                         {
                             from = args["to"].Value<string>()
                         });
                         //SendEventInternal(id, "", o, token);
+                        return true;
+                    }
+                case "removeBreakpoint":
+                    {
+                        if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                            return false;
+                        Result resp = await SendCommand(sessionId, "", args, token);
+
+                        var reqToRemove = JObject.FromObject(new
+                        {
+                            url = args["location"]["sourceUrl"].Value<string>(),
+                            lineNumber = args["location"]["line"].Value<int>() - 1,
+                            columnNumber = args["location"]["column"].Value<int>()
+                        });
+
+                        foreach (var req in context.BreakpointRequests.Values)
+                        {
+                            if (req.CompareRequest(reqToRemove))
+                            {
+                                foreach (var bp in req.Locations)
+                                {
+                                    var breakpoint_removed = await context.SdbAgent.RemoveBreakpoint(bp.RemoteId, token);
+                                    if (breakpoint_removed)
+                                    {
+                                        bp.RemoteId = -1;
+                                        bp.State = BreakpointState.Disabled;
+                                    }
+                                }
+                            }
+                        }
                         return true;
                     }
                 case "prototypeAndProperties":
@@ -583,6 +619,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!DotnetObjectId.TryParse(args?["to"], out DotnetObjectId objectId))
                             return false;
                         ExecutionContext ctx = GetContext(sessionId);
+                        if (ctx.CallStack == null)
+                            return false;
                         Frame scope = ctx.CallStack.FirstOrDefault(s => s.Id == objectId.Value);
                         var res = await RuntimeGetPropertiesInternal(sessionId, objectId, args, token);
                         var variables = ConvertToFirefoxContent(res);
@@ -613,8 +651,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             try
                             {
                                 ExecutionContext ctx = GetContext(sessionId);
-                                var callStack = await ctx.CallStackObject.Task;
-                                SendEvent(sessionId, "", callStack, token);
+                                await GetFrames(sessionId, ctx, args, token);
                                 return true;
                             }
                             catch (Exception) //if the page is refreshed maybe it stops here.
@@ -780,19 +817,56 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         protected override async Task<bool> SendCallStack(SessionId sessionId, ExecutionContext context, string reason, int thread_id, Breakpoint bp, JObject data, JObject args, EventKind event_kind, CancellationToken token)
         {
-            var framesArgs = JObject.FromObject(new
+            Frame frame = null;
+            var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(thread_id);
+            commandParamsWriter.Write(0);
+            commandParamsWriter.Write(1);
+            var retDebuggerCmdReader = await context.SdbAgent.SendDebuggerAgentCommand(CmdThread.GetFrameInfo, commandParamsWriter, token);
+            var frame_count = retDebuggerCmdReader.ReadInt32();
+            if (frame_count > 0)
             {
-                to = args["from"].Value<string>(),
-                type = "frames",
-                start = 0,
-                count =  1000
-            });
-            var orig_callframes = await SendCommand(sessionId, "frames", framesArgs, token);
+                var frame_id = retDebuggerCmdReader.ReadInt32();
+                var methodId = retDebuggerCmdReader.ReadInt32();
+                var il_pos = retDebuggerCmdReader.ReadInt32();
+                retDebuggerCmdReader.ReadByte();
+                var method = await context.SdbAgent.GetMethodInfo(methodId, token);
+
+                if (await ShouldSkipMethod(sessionId, context, event_kind, 0, method, token))
+                {
+                    await SendResume(sessionId, token);
+                    return true;
+                }
+
+                SourceLocation location = method?.Info.GetLocationByIl(il_pos);
+                if (location == null)
+                {
+                    return false;
+                }
+
+                Log("debug", $"frame il offset: {il_pos} method token: {method.Info.Token} assembly name: {method.Info.Assembly.Name}");
+                Log("debug", $"\tmethod {method.Name} location: {location}");
+                frame = new Frame(method, location, frame_id);
+                context.CallStack = new List<Frame>();
+                context.CallStack.Add(frame);
+            }
+            if (!await EvaluateCondition(sessionId, context, frame, bp, token))
+            {
+                context.ClearState();
+                await SendResume(sessionId, token);
+                return true;
+            }
+            return false;
+        }
+
+        protected async Task<bool> GetFrames(SessionId sessionId, ExecutionContext context, JObject args, CancellationToken token)
+        {
+            var orig_callframes = await SendCommand(sessionId, "frames", args, token);
 
             var callFrames = new List<object>();
             var frames = new List<Frame>();
             var commandParamsWriter = new MonoBinaryWriter();
-            commandParamsWriter.Write(thread_id);
+            commandParamsWriter.Write(context.ThreadId);
             commandParamsWriter.Write(0);
             commandParamsWriter.Write(-1);
             var retDebuggerCmdReader = await context.SdbAgent.SendDebuggerAgentCommand(CmdThread.GetFrameInfo, commandParamsWriter, token);
@@ -804,9 +878,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var il_pos = retDebuggerCmdReader.ReadInt32();
                 retDebuggerCmdReader.ReadByte();
                 var method = await context.SdbAgent.GetMethodInfo(methodId, token);
-
-                if (await ShouldSkipMethod(sessionId, context, event_kind, j, method, token))
-                    return true;
 
                 SourceLocation location = method?.Info.GetLocationByIl(il_pos);
                 if (location == null)
@@ -837,11 +908,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 callFrames.Add(frameItem);
 
                 context.CallStack = frames;
-                context.ThreadId = thread_id;
             }
-            string[] bp_list = new string[bp == null ? 0 : 1];
-            if (bp != null)
-                bp_list[0] = bp.StackId;
             foreach (JObject frame in orig_callframes.Value["result"]?["value"]?["frames"])
             {
                 string function_name = frame["displayName"]?.Value<string>();
@@ -859,14 +926,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 frames = callFrames,
                 from = threadName
             });
-            context.CallStackObject.TrySetResult(o);
-            if (!await EvaluateCondition(sessionId, context, context.CallStack.First(), bp, token))
-            {
-                context.ClearState();
-                await SendResume(sessionId, token);
-                return true;
-            }
-            return true;
+            SendEvent(sessionId, "", o, token);
+            return false;
         }
         internal async Task<bool> OnGetBreakableLines(MessageId msg_id, string script_id, CancellationToken token)
         {

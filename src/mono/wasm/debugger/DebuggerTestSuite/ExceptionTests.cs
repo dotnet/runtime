@@ -14,7 +14,7 @@ namespace DebuggerTests
 
     public class ExceptionTests : DebuggerTests
     {
-        [ConditionalFact("RunningOnChrome")]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task ExceptionTestAll()
         {
             string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";
@@ -61,7 +61,7 @@ namespace DebuggerTests
             await CheckString(exception_members, "message", "not implemented uncaught");
         }
 
-        [ConditionalFact("RunningOnChrome")]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task JSExceptionTestAll()
         {
             await SetPauseOnException("all");
@@ -98,7 +98,7 @@ namespace DebuggerTests
 
         // FIXME? BUG? We seem to get the stack trace for Runtime.exceptionThrown at `call_method`,
         // but JS shows the original error type, and original trace
-        [ConditionalFact("RunningOnChrome")]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task ExceptionTestNone()
         {
             //Collect events
@@ -133,7 +133,7 @@ namespace DebuggerTests
             Assert.True(false, "Expected to get an ArgumentException from the uncaught user exception");
         }
 
-        [ConditionalFact("RunningOnChrome")]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task JSExceptionTestNone()
         {
             await SetPauseOnException("none");
@@ -166,7 +166,7 @@ namespace DebuggerTests
             Assert.True(false, "Expected to get an ArgumentException from the uncaught user exception");
         }
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("function () { exceptions_test (); }", null, 0, 0, "exception_uncaught_test", "RangeError", "exception uncaught")]
         [InlineData("function () { invoke_static_method ('[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions'); }",
             "dotnet://debugger-test.dll/debugger-exception-test.cs", 28, 16, "run",
@@ -192,7 +192,7 @@ namespace DebuggerTests
             await CheckString(exception_members, "message", exception_message);
         }
 
-        [ConditionalFact("RunningOnChrome")]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task ExceptionTestUncaughtWithReload()
         {
             string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";
@@ -232,7 +232,7 @@ namespace DebuggerTests
             await CheckString(exception_members, "message", "not implemented uncaught");
         }
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClassDefault:TestExceptions", "System.Exception", 76)]
         [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions", "DebuggerTests.CustomException", 28)]
         public async Task ExceptionTestAllWithReload(string entry_method_name, string class_name, int line_number)

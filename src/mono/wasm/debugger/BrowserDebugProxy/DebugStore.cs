@@ -64,7 +64,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public string File { get; private set; }
         public int Line { get; set; }
         public int Column { get; set; }
-        public string Condition { get; private set; }
+        public string Condition { get; set; }
         public MethodInfo Method { get; set; }
 
         private JObject request;
@@ -136,6 +136,24 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
 
             return store.AllSources().FirstOrDefault(source => TryResolve(source)) != null;
+        }
+
+        public bool CompareRequest(JObject req)
+        {
+            if (this.request["url"].Value<string>() == req["url"].Value<string>() &&
+                this.request["lineNumber"].Value<int>() == req["lineNumber"].Value<int>() &&
+                this.request["columnNumber"].Value<int>() == req["columnNumber"].Value<int>())
+                return true;
+            return false;
+        }
+
+        public void UpdateCondition(string condition)
+        {
+            Condition = condition;
+            foreach (var loc in Locations)
+            {
+                loc.Condition = condition;
+            }
         }
 
     }

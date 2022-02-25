@@ -289,7 +289,7 @@ namespace DebuggerTests
             await CheckProps(props, new object[0], "${local_var_name_prefix}_arr_empty");
         }
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectObjectArrayMembers(bool use_cfo)
@@ -477,7 +477,7 @@ namespace DebuggerTests
                 TPoint(45, 51, "point#Id", "Green"));
         }
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectValueTypeArrayLocalsInAsyncStaticStructMethod(bool use_cfo)
@@ -509,7 +509,7 @@ namespace DebuggerTests
             }, "InspectValueTypeArrayLocalsInAsyncStaticStructMethod#locals");
         }
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectValueTypeArrayLocalsInAsyncInstanceStructMethod(bool use_cfo)
@@ -558,7 +558,7 @@ namespace DebuggerTests
                 label: "this#0");
         }
 
-        [ConditionalFact("RunningOnChrome")]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InvalidArrayId() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
@@ -580,7 +580,7 @@ namespace DebuggerTests
                await GetProperties($"dotnet:array:{id.Value}", expect_ok: false);
            });
 
-        [ConditionalFact("RunningOnChrome")]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InvalidAccessors() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
@@ -612,7 +612,7 @@ namespace DebuggerTests
                 }
            });
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectPrimitiveTypeMultiArrayLocals(bool use_cfo)

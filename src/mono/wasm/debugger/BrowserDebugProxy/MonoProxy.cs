@@ -984,7 +984,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 });
 
                 context.CallStack = frames;
-                context.ThreadId = thread_id;
             }
             string[] bp_list = new string[bp == null ? 0 : 1];
             if (bp != null)
@@ -1035,6 +1034,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (event_kind == EventKind.Step)
                     await context.SdbAgent.ClearSingleStep(request_id, token);
                 int thread_id = retDebuggerCmdReader.ReadInt32();
+                context.ThreadId = thread_id;
                 switch (event_kind)
                 {
                     case EventKind.MethodUpdate:
@@ -1448,7 +1448,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        private async Task RemoveBreakpoint(SessionId msg_id, JObject args, bool isEnCReset, CancellationToken token)
+        protected async Task RemoveBreakpoint(SessionId msg_id, JObject args, bool isEnCReset, CancellationToken token)
         {
             string bpid = args?["breakpointId"]?.Value<string>();
 

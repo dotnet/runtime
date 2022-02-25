@@ -16,7 +16,7 @@ namespace DebuggerTests
     {
         public override async Task InitializeAsync() => await Task.CompletedTask;
 
-        [ConditionalFact("RunningOnChrome")]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InvalidInitCommands()
         {
             var bad_cmd_name = "non-existant.command";

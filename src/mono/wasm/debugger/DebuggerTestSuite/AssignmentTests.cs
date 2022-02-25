@@ -37,7 +37,7 @@ namespace DebuggerTests
             { "MONO_TYPE_R8",          TNumber(0),                                              TNumber("3.1415") },
         };
 
-        [ConditionalTheory("RunningOnChrome")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberData("GetTestData")]
         async Task InspectVariableBeforeAndAfterAssignment(string clazz, JObject checkDefault, JObject checkValue)
         {
