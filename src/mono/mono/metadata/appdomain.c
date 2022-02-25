@@ -775,7 +775,7 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)load_Context;
 
 #if HOST_WASI
-	// On WASI, mono_assembly_get_alc isn't supported
+	// On WASI, mono_assembly_get_alc isn't yet supported. However it should be possible to make it work.
 	if (!alc)
 		alc = mono_alc_get_default ();
 #endif
