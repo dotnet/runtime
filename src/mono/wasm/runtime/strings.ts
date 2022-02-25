@@ -129,21 +129,19 @@ function _store_string_in_intern_table(string: string, ptr: MonoString, internIt
     // Store the managed string into the managed intern table. This can theoretically
     //  provide a different managed object than the one we passed in, so update our
     //  pointer (stored in the root) with the result.
-    if (internIt) {
-        ptr = cwraps.mono_wasm_intern_string(ptr);
-        rootBuffer.set(index, ptr);
-    }
+    if (internIt)
+        cwraps.mono_wasm_intern_string_ref(rootBuffer.get_address(index));
 
-    if (!ptr)
-        throw new Error("mono_wasm_intern_string produced a null pointer");
+    if (!rootBuffer.get(index))
+        throw new Error("mono_wasm_intern_string_ref produced a null pointer");
 
-    interned_js_string_table.set(string, ptr);
-    interned_string_table.set(ptr, string);
+    interned_js_string_table.set(string, <MonoString><any>rootBuffer.get(index));
+    interned_string_table.set(<MonoString><any>rootBuffer.get(index), string);
 
     if ((string.length === 0) && !_empty_string_ptr)
-        _empty_string_ptr = ptr;
+        _empty_string_ptr = <MonoString><any>rootBuffer.get(index);
 
-    return ptr;
+    return <MonoString><any>rootBuffer.get(index);
 }
 
 export function js_string_to_mono_string_interned(string: string | symbol): MonoString {

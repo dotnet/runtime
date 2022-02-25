@@ -4,6 +4,7 @@
 import cwraps from "./cwraps";
 import { Module } from "./imports";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types/emscripten";
+import { MonoObjectRef } from "./types";
 
 const maxScratchRoots = 8192;
 let _scratch_root_buffer: WasmRootBuffer | null = null;
@@ -207,7 +208,7 @@ export class WasmRootBuffer {
             this._throw_index_out_of_range();
     }
 
-    get_address(index: number): NativePointer {
+    get_address(index: number): MonoObjectRef {
         this._check_in_range(index);
         return <any>this.__offset + (index * 4);
     }
@@ -261,7 +262,7 @@ export class WasmRootBuffer {
 }
 
 export interface WasmRoot<T extends ManagedPointer | NativePointer> {
-    get_address(): NativePointer;
+    get_address(): MonoObjectRef;
     get_address_32(): number;
     get(): T;
     set(value: T): T;
@@ -282,7 +283,7 @@ class WasmJsOwnedRoot<T extends ManagedPointer | NativePointer> implements WasmR
         this.__index = index;
     }
 
-    get_address(): NativePointer {
+    get_address(): MonoObjectRef {
         return this.__buffer.get_address(this.__index);
     }
 
@@ -349,8 +350,8 @@ class WasmExternalRoot<T extends ManagedPointer | NativePointer> implements Wasm
         this.__external_address_32 = <number><any>address >>> 2;
     }
 
-    get_address(): NativePointer {
-        return this.__external_address;
+    get_address(): MonoObjectRef {
+        return <MonoObjectRef><any>this.__external_address;
     }
 
     get_address_32(): number {

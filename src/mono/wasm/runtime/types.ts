@@ -31,6 +31,10 @@ export interface MonoArray extends MonoObject {
 export interface MonoAssembly extends MonoObject {
     __brand: "MonoAssembly"
 }
+// Pointer to a MonoObject* (i.e. the address of a root)
+export interface MonoObjectRef extends NativePointer {
+    __brandMonoObject: "MonoObjectRef"
+}
 export const MonoMethodNull: MonoMethod = <MonoMethod><any>0;
 export const MonoObjectNull: MonoObject = <MonoObject><any>0;
 export const MonoArrayNull: MonoArray = <MonoArray><any>0;
