@@ -192,7 +192,7 @@ namespace DebuggerTests
                             (line.Contains("console.error: [MONO]") || line.Contains("console.warning: [MONO]")))
                     {
                         args["__forMethod"] = method;
-                        Client.Fail(new ArgumentException($"Possibly problematic runtime message detected: {line}{Environment.NewLine}{args}"));
+                        Client.Fail(new ArgumentException($"Unexpected runtime error/warning message detected: {line}{Environment.NewLine}{args}"));
                         return;
                     }
 
