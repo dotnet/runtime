@@ -9,6 +9,7 @@ const fs = require('fs');
 
 let generatedRuntimeConfigsFile = path.join(__dirname, '..', 'generated', 'areapods-runtime.json');
 let generatedApiDocsConfigsFile = path.join(__dirname, '..', 'generated', 'areapods-dotnet-api-docs.json');
+let generatedMachineLearningConfigsFile = path.join(__dirname, '..', 'generated', 'areapods-machinelearning.json');
 
 let areaPods = [
   {
@@ -100,6 +101,9 @@ let areaPods = [
       "area-System.Numerics.Tensors",
       "area-System.Runtime",
       "area-System.Runtime.Intrinsics"
+    ],
+    "repos": [
+      "machinelearning"
     ]
   },
   {
@@ -116,7 +120,7 @@ let areaPods = [
 ];
 
 let areaPodConfig = {
-  issueTriageRemove: ({pod, areas}) => ({
+  issueRemove: ({pod, areas}) => ({
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -128,9 +132,9 @@ let areaPodConfig = {
           {
             "name": "isInProjectColumn",
             "parameters": {
-            "projectName": `Area Pod: ${pod} - Issue Triage`,
-            "columnName": "Needs Triage",
-            "isOrgProject": true
+              "projectName": `Area Pod: ${pod} - Issue Triage`,
+              "columnName": "Needs Triage",
+              "isOrgProject": true
             }
           },
           {
@@ -164,7 +168,7 @@ let areaPodConfig = {
       ]
     }
   }),
-  issueTriageNeedsTriage: ({pod, areas}) => ({
+  issueNeedsTriage: ({pod, areas}) => ({
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -184,13 +188,13 @@ let areaPodConfig = {
                 "operator": "and",
                 "operands":
                 [
-                  {
+                  (!!areas && {
                     "operator": "or",
                     "operands": areas.map(area => ({
                       "name": "hasLabel",
                       "parameters": { "label": area }
                     }))
-                  },
+                  }),
                   {
                     "operator": "or",
                     "operands":
@@ -214,16 +218,16 @@ let areaPodConfig = {
                       }
                     ]
                   }
-                ]
+                ].filter(op => !!op) // We will have a falsy element in the array of we're not filtering by area label
               },
-              {
+              (!!areas && {
                 "operator": "or",
                 "operands": areas.map(area => ({
                   "name": "labelAdded",
                   "parameters": { "label": area }
                 }))
-              }
-            ]
+              })
+            ].filter(op => !!op) // We will have a falsy element in the array of we're not filtering by area label
           },
           {
             "name": "isOpen",
@@ -282,7 +286,7 @@ let areaPodConfig = {
       ]
     }
   }),
-  issueTriageNeedsFurtherTriage: ({pod, areas}) => ({
+  issueNeedsFurtherTriage: ({pod, areas}) => ({
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssueCommentResponder",
@@ -294,13 +298,13 @@ let areaPodConfig = {
         "operator": "and",
         "operands":
         [
-          {
+          (!!areas && {
             "operator": "or",
             "operands": areas.map(area => ({
               "name": "hasLabel",
               "parameters": { "label": area }
             }))
-          },
+          }),
           {
             "operator": "not",
             "operands":
@@ -352,7 +356,7 @@ let areaPodConfig = {
               }
             ]
           }
-        ]
+        ].filter(op => !!op) // We will have a falsy element in the array of we're not filtering by area label
       },
       "eventType": "issue",
       "eventNames":
@@ -374,7 +378,7 @@ let areaPodConfig = {
       ]
     }
   }),
-  issueTriageTriaged: ({pod, areas}) => ({
+  issueTriaged: ({pod, areas}) => ({
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -472,13 +476,13 @@ let areaPodConfig = {
       "conditions": {
         "operator": "and",
         "operands": [
-          {
+          (!!areas && {
             "operator": "or",
             "operands": areas.map(area => ({
               "name": "hasLabel",
               "parameters": { "label": area }
             }))
-          },
+          }),
           {
             "operator": "not",
             "operands": [
@@ -491,7 +495,7 @@ let areaPodConfig = {
               }
             ]
           }
-        ]
+        ].filter(op => !!op) // We will have a falsy element in the array of we're not filtering by area label
       },
       "eventType": "pull_request",
       "eventNames": [
@@ -512,7 +516,7 @@ let areaPodConfig = {
       ]
     }
   }),
-  prRemove: ({pod, areas}) => ({
+  pullRequestRemove: ({pod, areas}) => ({
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
@@ -529,7 +533,7 @@ let areaPodConfig = {
             "isOrgProject": true
             }
           },
-          {
+          (!!areas && {
             "operator": "and",
             "operands": areas.map(area => ({
               "operator": "not",
@@ -540,8 +544,8 @@ let areaPodConfig = {
                 }
               ]
             }))
-          }
-        ]
+          })
+        ].filter(op => !!op) // We will have a falsy element in the array of we're not filtering by area label
       },
       "eventType": "pull_request",
       "eventNames": [
@@ -568,12 +572,12 @@ let generatedRuntimeTasks = areaPods
   .filter(areaPod => areaPod.enabled)
   .flatMap(areaPod =>
     [
-      areaPodConfig.issueTriageNeedsTriage(areaPod),
-      areaPodConfig.issueTriageNeedsFurtherTriage(areaPod),
-      areaPodConfig.issueTriageRemove(areaPod),
-      areaPodConfig.issueTriageTriaged(areaPod),
+      areaPodConfig.issueNeedsTriage(areaPod),
+      areaPodConfig.issueNeedsFurtherTriage(areaPod),
+      areaPodConfig.issueRemove(areaPod),
+      areaPodConfig.issueTriaged(areaPod),
       areaPodConfig.pullRequestAdd(areaPod),
-      areaPodConfig.prRemove(areaPod),
+      areaPodConfig.pullRequestRemove(areaPod),
     ]);
 
 let generatedRuntimeJson = JSON.stringify(generatedRuntimeTasks, null, 2);
@@ -585,14 +589,36 @@ let generatedApiDocsTasks = areaPods
   .filter(areaPod => areaPod.enabled)
   .flatMap(areaPod =>
     [
-      areaPodConfig.issueTriageNeedsTriage(areaPod),
-      areaPodConfig.issueTriageNeedsFurtherTriage(areaPod),
-      areaPodConfig.issueTriageRemove(areaPod),
-      // areaPodConfig.issueTriageTriaged(areaPod),
+      areaPodConfig.issueNeedsTriage(areaPod),
+      areaPodConfig.issueNeedsFurtherTriage(areaPod),
+      areaPodConfig.issueRemove(areaPod),
+      // We're not using milestones in the dotnet-api-docs repo, so we can't automatically move to triaged
+      // areaPodConfig.issueTriaged(areaPod),
       areaPodConfig.pullRequestAdd(areaPod),
-      areaPodConfig.prRemove(areaPod),
+      areaPodConfig.pullRequestRemove(areaPod),
     ]);
 
 let generatedApiDocsJson = JSON.stringify(generatedApiDocsTasks, null, 2);
 fs.writeFileSync(generatedApiDocsConfigsFile, generatedApiDocsJson);
 console.log(`Written generated tasks to ${generatedApiDocsConfigsFile}`);
+
+// Generate machinelearning automation
+let generatedMachineLearningTasks = areaPods
+  .filter(areaPod => areaPod.enabled)
+  // Filter to the pod that includes the machinelearning repo
+  .filter(({repos}) => repos && repos.includes("machinelearning"))
+  // Remove the `areas` property from the pod
+  .map(({areas, ...podWithoutAreas}) => podWithoutAreas)
+  .flatMap(areaPod =>
+    [
+      areaPodConfig.issueNeedsTriage(areaPod),
+      areaPodConfig.issueNeedsFurtherTriage(areaPod),
+      areaPodConfig.issueTriaged(areaPod),
+      areaPodConfig.pullRequestAdd(areaPod)
+      // Issues and PRs don't get removed from the boards because that
+      // only applies when moved to a different pod via area label
+    ]);
+
+let generatedMachineLearningJson = JSON.stringify(generatedMachineLearningTasks, null, 2);
+fs.writeFileSync(generatedMachineLearningConfigsFile, generatedMachineLearningJson);
+console.log(`Written generated tasks to ${generatedMachineLearningConfigsFile}`);
