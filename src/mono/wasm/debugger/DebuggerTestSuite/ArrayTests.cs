@@ -552,6 +552,8 @@ namespace DebuggerTests
         }
 
         [Fact]
+        [Trait("Category", "windows-failing")] // https://github.com/dotnet/runtime/issues/65742
+        [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/65742
         public async Task InvalidArrayId() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",

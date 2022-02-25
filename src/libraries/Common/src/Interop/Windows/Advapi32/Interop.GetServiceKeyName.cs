@@ -12,7 +12,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "GetServiceKeyNameW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "GetServiceKeyNameW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial bool GetServiceKeyName(SafeServiceHandle? SCMHandle, string displayName, char* KeyName, ref int KeyNameLength);
     }
 }

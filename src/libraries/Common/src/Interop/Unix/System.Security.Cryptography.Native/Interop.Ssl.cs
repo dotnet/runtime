@@ -53,7 +53,7 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetVersion")]
         internal static partial IntPtr SslGetVersion(SafeSslHandle ssl);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetTlsExtHostName", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetTlsExtHostName", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SslSetTlsExtHostName(SafeSslHandle ssl, string host);
 
@@ -220,6 +220,17 @@ internal static partial class Interop
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslAddExtraChainCert")]
         internal static partial bool SslAddExtraChainCert(SafeSslHandle ssl, SafeX509Handle x509);
+
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslAddClientCAs")]
+        private static unsafe partial bool SslAddClientCAs(SafeSslHandle ssl, IntPtr* x509s, int count);
+
+        internal static unsafe bool SslAddClientCAs(SafeSslHandle ssl, Span<IntPtr> x509handles)
+        {
+            fixed (IntPtr* pHandles = &MemoryMarshal.GetReference(x509handles))
+            {
+                return SslAddClientCAs(ssl, pHandles, x509handles.Length);
+            }
+        }
 
         internal static bool AddExtraChainCertificates(SafeSslHandle ssl, X509Certificate2[] chain)
         {

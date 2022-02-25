@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "ReportEventW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         public static partial bool ReportEvent(
             SafeEventLogWriteHandle hEventLog,
             short wType,

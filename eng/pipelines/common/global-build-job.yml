@@ -69,6 +69,9 @@ jobs:
         - ${{ parameters.dependsOn }}
 
     variables:
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - group: DotNet-HelixApi-Access
+
       - name: _osParameter
         value: -os ${{ parameters.osGroup }}
 
@@ -151,9 +154,6 @@ jobs:
         displayName: Update machine certs
         inputs:
           filePath: $(Build.SourcesDirectory)/eng/pipelines/mono/update-machine-certs.ps1
-
-      - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
-        displayName: Install native dependencies
 
     # Build
     - ${{ if eq(parameters.buildingOnSourceBuildImage, false) }}:

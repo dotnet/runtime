@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
+using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
@@ -15,10 +14,10 @@ namespace Microsoft.Interop
     public enum DllImportMember
     {
         None = 0,
-        CharSet = 1 << 0,
-        EntryPoint = 1 << 1,
-        ExactSpelling = 1 << 2,
-        SetLastError = 1 << 3,
+        EntryPoint = 1 << 0,
+        SetLastError = 1 << 1,
+        StringMarshalling = 1 << 2,
+        StringMarshallingCustomType = 1 << 3,
         All = ~None
     }
 
@@ -29,15 +28,15 @@ namespace Microsoft.Interop
     /// The names of these members map directly to those on the
     /// DllImportAttribute and should not be changed.
     /// </remarks>
-    public sealed record GeneratedDllImportData(string ModuleName)
+    internal sealed record GeneratedDllImportData(string ModuleName)
     {
         /// <summary>
         /// Value set by the user on the original declaration.
         /// </summary>
         public DllImportMember IsUserDefined { get; init; }
-        public CharSet CharSet { get; init; }
         public string? EntryPoint { get; init; }
-        public bool ExactSpelling { get; init; }
         public bool SetLastError { get; init; }
+        public StringMarshalling StringMarshalling { get; init; }
+        public INamedTypeSymbol? StringMarshallingCustomType { get; init; }
     }
 }
