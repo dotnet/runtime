@@ -418,7 +418,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	appctx_values [0] = "/";
 	appctx_values [1] = "browser-wasm";
 
-	char *file_name = RUNTIMECONFIG_BIN_FILE;
+	const char *file_name = RUNTIMECONFIG_BIN_FILE;
 	int str_len = strlen (file_name) + 1; // +1 is for the "/"
 	char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
 	int num_char = snprintf (file_path, (str_len + 1), "/%s", file_name);
