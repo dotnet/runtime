@@ -498,6 +498,8 @@ netcore_probe_for_module_variations (const char *mdirname, const char *file_name
 	char *full_name = NULL;
 	MonoDl *module = NULL;
 
+	ERROR_DECL (bad_image_error);
+
 	while (module == NULL && (full_name = mono_dl_build_path (mdirname, file_name, &iter))) {
 		mono_error_cleanup (error);
 		error_init_reuse (error);
@@ -505,9 +507,18 @@ netcore_probe_for_module_variations (const char *mdirname, const char *file_name
 		if (!module)
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "DllImport error loading library '%s': '%s'.", full_name, mono_error_get_message_without_fields (error));
 		g_free (full_name);
-		if (!module && !is_ok (error) && mono_error_get_error_code (error) == MONO_ERROR_BAD_IMAGE)
-			break;
+		if (!module && !is_ok (error) && mono_error_get_error_code (error) == MONO_ERROR_BAD_IMAGE) {
+			mono_error_cleanup (bad_image_error);
+			mono_error_move (bad_image_error, error);
+		}
 	}
+
+	if (!module && !is_ok (bad_image_error)) {
+		mono_error_cleanup (error);
+		mono_error_move (error, bad_image_error);
+	}
+
+	mono_error_cleanup (bad_image_error);
 
 	return module;
 }
@@ -521,18 +532,22 @@ netcore_probe_for_module (MonoImage *image, const char *file_name, int flags, Mo
 	// TODO: this algorithm doesn't quite match CoreCLR, so respecting DLLIMPORTSEARCHPATH_LEGACY_BEHAVIOR makes little sense
 	// If the difference becomes a problem, overhaul this algorithm to match theirs exactly
 
+	ERROR_DECL (bad_image_error);
+
 	// Try without any path additions
 	module = netcore_probe_for_module_variations (NULL, file_name, lflags, error);
 	if (!module && !is_ok (error) && mono_error_get_error_code (error) == MONO_ERROR_BAD_IMAGE)
-		return NULL;
+		mono_error_move (bad_image_error, error);
 
 	// Check the NATIVE_DLL_SEARCH_DIRECTORIES
 	for (int i = 0; i < pinvoke_search_directories_count && module == NULL; ++i) {
 		mono_error_cleanup (error);
 		error_init_reuse (error);
 		module = netcore_probe_for_module_variations (pinvoke_search_directories[i], file_name, lflags, error);
-		if (!module && !is_ok (error) && mono_error_get_error_code (error) == MONO_ERROR_BAD_IMAGE)
-			return NULL;
+		if (!module && !is_ok (error) && mono_error_get_error_code (error) == MONO_ERROR_BAD_IMAGE) {
+			mono_error_cleanup (bad_image_error);
+			mono_error_move (bad_image_error, error);
+		}
 	}
 
 	// Check the assembly directory if the search flag is set and the image exists
@@ -547,6 +562,13 @@ netcore_probe_for_module (MonoImage *image, const char *file_name, int flags, Mo
 	}
 
 	// TODO: Pass remaining flags on to LoadLibraryEx on Windows where appropriate, see https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.dllimportsearchpath?view=netcore-3.1
+
+	if (!module && !is_ok (bad_image_error)) {
+		mono_error_cleanup (error);
+		mono_error_move (error, bad_image_error);
+	}
+
+	mono_error_cleanup (bad_image_error);
 
 	return module;
 }
