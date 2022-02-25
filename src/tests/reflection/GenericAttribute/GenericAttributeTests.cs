@@ -17,8 +17,8 @@ class Program
         Assert(((ICustomAttributeProvider)assembly).IsDefined(typeof(SingleAttribute<int>), true));
         Assert(CustomAttributeExtensions.IsDefined(assembly, typeof(SingleAttribute<bool>)));
         Assert(((ICustomAttributeProvider)assembly).IsDefined(typeof(SingleAttribute<bool>), true));
-        Assert(!CustomAttributeExtensions.GetCustomAttributes(assembly, typeof(SingleAttribute<>), false).GetEnumerator().MoveNext());
-        Assert(!CustomAttributeExtensions.GetCustomAttributes(assembly, typeof(SingleAttribute<>), true).GetEnumerator().MoveNext());
+        Assert(!CustomAttributeExtensions.GetCustomAttributes(assembly, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());
+        Assert(!CustomAttributeExtensions.GetCustomAttributes(assembly, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());
 
         TypeInfo programTypeInfo = typeof(Class).GetTypeInfo();
         Assert(CustomAttributeExtensions.GetCustomAttribute<SingleAttribute<int>>(programTypeInfo) != null);
@@ -157,10 +157,10 @@ class Program
 
         Module module = programTypeInfo.Module;
         AssertAny(CustomAttributeExtensions.GetCustomAttributes(module), a => a is SingleAttribute<long>);
-        Assert(CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<long>), false).GetEnumerator().MoveNext());
-        Assert(CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<long>), false).GetEnumerator().MoveNext());
-        Assert(!CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<>), false).GetEnumerator().MoveNext());
-        Assert(!CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<>), true).GetEnumerator().MoveNext());	
+        Assert(CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<long>)).GetEnumerator().MoveNext());
+        Assert(CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<long>)).GetEnumerator().MoveNext());
+        Assert(!CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());
+        Assert(!CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());	
 
         // Test coverage for CustomAttributeData api surface
         var a1_data = CustomAttributeData.GetCustomAttributes(programTypeInfo);
