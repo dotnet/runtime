@@ -528,11 +528,11 @@ namespace DebuggerTests
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                await EvaluateOnCallFrameAndCheck(id,
-                   ("this.CallMethod()", TNumber(1)),
-                   ("this.CallMethod()", TNumber(1)),
-                   ("this.CallMethodReturningChar()", TString("A")),
-                   ("this.ParmToTestObj.MyMethod()", TString("methodOK")),
-                   ("this.ParmToTestObj.ToString()", TString("DebuggerTests.EvaluateMethodTestsClass+ParmToTest")),
+                    ("this.CallMethod()", TNumber(1)),
+                    ("this.CallMethod()", TNumber(1)),
+                    ("this.CallMethodReturningChar()", TChar('A')),
+                    ("this.ParmToTestObj.MyMethod()", TString("methodOK")),
+                    ("this.ParmToTestObj.ToString()", TString("DebuggerTests.EvaluateMethodTestsClass+ParmToTest")),
                    ("this.objToTest.MyMethod()", TString("methodOK")));
            });
 
@@ -1070,9 +1070,10 @@ namespace DebuggerTests
                    ("test.GetInt64Nullable()", TNumber(1)),
                    ("test.GetUInt64Nullable()", TNumber(1)),
 
-                   ("test.GetChar()", TString("T")),
-                   ("test.GetCharNullable()", TString("T")),
-                   ("test.GetUnicodeChar()", TString("ą")),
+                   ("test.GetChar()", TChar('T')),
+                   ("test.GetCharNullable()", TChar('T')),
+                   ("test.GetUnicodeChar()", TChar('ą')),
+
                    ("test.GetString()", TString("1.23")),
                    ("test.GetUnicodeString()", TString("żółć")),
                    ("test.GetString(null)", TObject("string", is_null: true)),

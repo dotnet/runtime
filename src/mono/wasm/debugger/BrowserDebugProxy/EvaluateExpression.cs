@@ -224,18 +224,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                 switch (type)
                 {
                     case "string":
-                    {
+                        {
                         var str = value?.Value<string>();
                         str = str.Replace("\"", "\\\"");
                         valueRet = $"\"{str}\"";
                         typeRet = "string";
                         break;
                     }
-                    case "symbol":
+                    case "char":
                      {
-                         var str = value?.Value<string>()?.Replace("\'", "")?.LastOrDefault();
-                         valueRet = $"\"{str}\"";
-                         typeRet = "string";
+                         valueRet = $"\'{value?.Value<char>()}\'";
+                         typeRet = "char";
                          break;
                      }
                     case "number":
@@ -431,6 +430,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return new { type = "object", subtype = "null", className = type?.ToString(), description = type?.ToString() };
             if (v is string s)
                 return new { type = "string", value = s, description = s };
+            if (v is char c)
+                return new { type = "char", value = c, description = $"{(int)c} '{c}'" };
             if (NumericTypes.Contains(v.GetType()))
                 return new { type = "number", value = v, description = Convert.ToDouble(v).ToString(CultureInfo.InvariantCulture) };
             if (v is JObject)

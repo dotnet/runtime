@@ -1765,8 +1765,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public JObject CreateJObjectForChar(int value)
         {
-            var description = $"{value.ToString()} '{Convert.ToChar(value)}'";
-            return CreateJObject<string>(description, "symbol", description, true);
+            char charValue = Convert.ToChar(value);
+            var description = $"{value} '{charValue}'";
+            return CreateJObject<char>(charValue, "char", description, true);
         }
 
         public async Task<JObject> CreateJObjectForPtr(ElementType etype, MonoBinaryReader retDebuggerCmdReader, string name, CancellationToken token)
@@ -1840,7 +1841,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 description = await GetDelegateMethodDescription(objectId, token);
                 if (description == "")
                 {
-                    return CreateJObject<string>(className.ToString(), "symbol", className.ToString(), false);
+                    return CreateJObject<string>(className.ToString(), "symbol", className.ToString(), false); //back to symbol?
                 }
             }
             return CreateJObject<string>(null, "object", description, false, className, $"dotnet:object:{objectId}");
