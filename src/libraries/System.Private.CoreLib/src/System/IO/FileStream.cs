@@ -497,7 +497,11 @@ namespace System.IO
         // _strategy can be null only when ctor has thrown
         protected override void Dispose(bool disposing) => _strategy?.DisposeInternal(disposing);
 
-        public override ValueTask DisposeAsync() => _strategy.DisposeAsync();
+        public override ValueTask DisposeAsync()
+        {
+            GC.SuppressFinalize(this);
+            return _strategy.DisposeAsync();
+        }
 
         public override void CopyTo(Stream destination, int bufferSize)
         {
