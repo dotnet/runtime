@@ -1286,6 +1286,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 SendResponse(msg_id, ree.Error, token);
             }
+            catch (ExpressionEvaluationFailedException eefe)
+            {
+                logger.LogDebug($"Error in EvaluateOnCallFrame for expression '{expression}' with '{eefe}.");
+                SendResponse(msg_id, Result.Exception(eefe), token);
+            }
             catch (Exception e)
             {
                 logger.LogDebug($"Error in EvaluateOnCallFrame for expression '{expression}' with '{e}.");

@@ -910,7 +910,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             Result res = await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(proxy.RuntimeId, GetNewId(), (int)GetCommandSetForCommand(command), (int)(object)command, arguments?.ToBase64().data ?? string.Empty), token);
             return !res.IsOk && throwOnError
-                        ? throw new DebuggerAgentException($"SendDebuggerAgentCommand failed for {command}: {res.Error}")
+                        ? throw new DebuggerAgentException($"SendDebuggerAgentCommand failed for {command}")
                         : MonoBinaryReader.From(res);
         }
 
@@ -2825,5 +2825,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return result;
         }
+
+        public static bool IsNullValuedObject(this JObject obj)
+            => obj != null && obj["type"]?.Value<string>() == "object" && obj["subtype"]?.Value<string>() == "null";
+
     }
 }
