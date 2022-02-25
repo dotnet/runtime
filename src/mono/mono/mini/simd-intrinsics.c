@@ -261,6 +261,52 @@ emit_xcompare (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum etype, MonoInst 
 }
 
 static MonoInst*
+emit_xcompare_for_intrinsic (MonoCompile *cfg, MonoClass *klass, int intrinsic_id, MonoTypeEnum etype, MonoInst *arg1, MonoInst *arg2)
+{
+	MonoInst *ins = emit_xcompare (cfg, klass, etype, arg1, arg2);
+
+	gboolean is_unsigned;
+	switch (etype) {
+		case MONO_TYPE_U1:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_U8:
+			is_unsigned = TRUE;
+			break;
+		default:
+			is_unsigned = FALSE;
+			break;
+	}
+
+	switch (intrinsic_id) {
+	case SN_GreaterThan:
+	case SN_GreaterThanAll:
+	case SN_GreaterThanAny:
+		ins->inst_c0 = is_unsigned ? CMP_GT_UN : CMP_GT;
+		break;
+	case SN_GreaterThanOrEqual:
+	case SN_GreaterThanOrEqualAll:
+	case SN_GreaterThanOrEqualAny:
+		ins->inst_c0 = is_unsigned ? CMP_GE_UN : CMP_GE;
+		break;
+	case SN_LessThan:
+	case SN_LessThanAll:
+	case SN_LessThanAny:
+		ins->inst_c0 = is_unsigned ? CMP_LT_UN : CMP_LT;
+		break;
+	case SN_LessThanOrEqual:
+	case SN_LessThanOrEqualAll:
+	case SN_LessThanOrEqualAny:
+		ins->inst_c0 = is_unsigned ? CMP_LE_UN : CMP_LE;
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+
+	return ins;
+}
+
+static MonoInst*
 emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoInst *arg1, MonoInst *arg2)
 {
 	return emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
@@ -621,9 +667,17 @@ static guint16 sri_vector_methods [] = {
 	SN_GetLower,
 	SN_GetUpper,
 	SN_GreaterThan,
+	SN_GreaterThanAll,
+	SN_GreaterThanAny,
 	SN_GreaterThanOrEqual,
+	SN_GreaterThanOrEqualAll,
+	SN_GreaterThanOrEqualAny,
 	SN_LessThan,
+	SN_LessThanAll,
+	SN_LessThanAny,
 	SN_LessThanOrEqual,
+	SN_LessThanOrEqualAll,
+	SN_LessThanOrEqualAny,
 	SN_Max,
 	SN_Min,
 	SN_Multiply,
@@ -861,32 +915,49 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
 	}
 	case SN_GreaterThan:
+	case SN_GreaterThanAll:
+	case SN_GreaterThanAny:
 	case SN_GreaterThanOrEqual:
+	case SN_GreaterThanOrEqualAll:
+	case SN_GreaterThanOrEqualAny:
 	case SN_LessThan:
-	case SN_LessThanOrEqual: {
+	case SN_LessThanAll:
+	case SN_LessThanAny:
+	case SN_LessThanOrEqual:
+	case SN_LessThanOrEqualAll:
+	case SN_LessThanOrEqualAny: {
 		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
 		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
 			return NULL;
 
-		gboolean is_unsigned = type_is_unsigned (fsig->params [0]);
-		MonoInst *ins = emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
+		MonoInst *cmp = emit_xcompare_for_intrinsic (cfg, klass, id, arg0_type, args [0], args [1]);
+
 		switch (id) {
-		case SN_GreaterThan:
-			ins->inst_c0 = is_unsigned ? CMP_GT_UN : CMP_GT;
-			break;
-		case SN_GreaterThanOrEqual:
-			ins->inst_c0 = is_unsigned ? CMP_GE_UN : CMP_GE;
-			break;
-		case SN_LessThan:
-			ins->inst_c0 = is_unsigned ? CMP_LT_UN : CMP_LT;
-			break;
-		case SN_LessThanOrEqual:
-			ins->inst_c0 = is_unsigned ? CMP_LE_UN : CMP_LE;
-			break;
-		default:
-			g_assert_not_reached ();
+			case SN_GreaterThan:
+			case SN_GreaterThanOrEqual:
+			case SN_LessThan:
+			case SN_LessThanOrEqual:
+				return cmp;
+			case SN_GreaterThanAll:
+			case SN_GreaterThanOrEqualAll:
+			case SN_LessThanAll:
+			case SN_LessThanOrEqualAll: {
+				MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+				MonoInst *zero = emit_xzero (cfg, arg_class);
+				MonoInst *all_bits_set = emit_xcompare (cfg, arg_class, arg0_type, zero, zero);
+				return emit_xequal (cfg, arg_class, cmp, all_bits_set);
+			}
+			case SN_GreaterThanAny:
+			case SN_GreaterThanOrEqualAny:
+			case SN_LessThanAny:
+			case SN_LessThanOrEqualAny: {
+				MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+				MonoInst *zero = emit_xzero (cfg, arg_class);
+				return emit_not_xequal (cfg, arg_class, cmp, zero);
+			}
+			default:
+				g_assert_not_reached();
 		}
-		return ins;
 	}
 	case SN_Negate:
 	case SN_OnesComplement: {
