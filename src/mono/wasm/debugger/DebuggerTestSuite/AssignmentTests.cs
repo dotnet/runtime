@@ -23,7 +23,10 @@ namespace DebuggerTests
             { "MONO_TYPE_VALUETYPE",   TValueType("DebuggerTests.Point"),                       TValueType("DebuggerTests.Point") },
             { "MONO_TYPE_VALUETYPE2",  TValueType("System.Decimal","0"),                        TValueType("System.Decimal", "1.1") },
             { "MONO_TYPE_GENERICINST", TObject("System.Func<int>", is_null: true),              TDelegate("System.Func<int>", "int Prepare ()") },
-            { "MONO_TYPE_FNPTR",       TPointer("*()",  is_null: true),                         TPointer("*()") },
+
+            // Disabled due to https://github.com/dotnet/runtime/issues/65881
+            //{ "MONO_TYPE_FNPTR",       TPointer("*()",  is_null: true),                         TPointer("*()") },
+
             { "MONO_TYPE_PTR",         TPointer("int*", is_null: true),                         TPointer("int*") },
             { "MONO_TYPE_I1",          TNumber(0),                                              TNumber(-1) },
             { "MONO_TYPE_I2",          TNumber(0),                                              TNumber(-1) },
