@@ -9,7 +9,7 @@ import { _mono_array_root_to_js_array, _wrap_delegate_root_as_function } from ".
 import { mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle } from "./gc-handles";
 import { _wrap_js_thenable_as_task } from "./js-to-cs";
 import { wrap_error } from "./method-calls";
-import { conv_string } from "./strings";
+import { conv_string_rooted } from "./strings";
 import { JSHandle, MonoArray, MonoObject, MonoObjectNull, MonoString } from "./types";
 import { Module } from "./imports";
 import { Int32Ptr } from "./types/emscripten";
@@ -34,7 +34,7 @@ export function mono_wasm_web_socket_open(uri: MonoString, subProtocols: MonoArr
     const sub_root = mono_wasm_new_root(subProtocols);
     const on_close_root = mono_wasm_new_root(on_close);
     try {
-        const js_uri = conv_string(uri_root.value);
+        const js_uri = conv_string_rooted(uri_root);
         if (!js_uri) {
             return wrap_error(is_exception, "ERR12: Invalid uri '" + uri_root.value + "'");
         }
@@ -193,7 +193,7 @@ export function mono_wasm_web_socket_close(webSocket_js_handle: JSHandle, code: 
             return MonoObjectNull;// no promise
         }
 
-        const js_reason = conv_string(reason_root.value);
+        const js_reason = conv_string_rooted(reason_root);
 
         if (wait_for_close_received) {
             const { promise, promise_control } = _create_cancelable_promise();
@@ -270,7 +270,7 @@ function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer: Uin
     ws.send(buffer);
     ws[wasm_ws_pending_send_buffer] = null;
 
-    // if the remaining send buffer is small, we don't block so that the throughput doesn't suffer. 
+    // if the remaining send buffer is small, we don't block so that the throughput doesn't suffer.
     // Otherwise we block so that we apply some backpresure to the application sending large data.
     // this is different from Managed implementation
     if (ws.bufferedAmount < ws_send_buffer_blocking_threshold) {

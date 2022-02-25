@@ -104,6 +104,10 @@ export function conv_string(mono_obj: MonoString): string | null {
     return string_decoder.copy(mono_obj);
 }
 
+export function conv_string_rooted(root: WasmRoot<MonoString>): string | null {
+    return string_decoder.copy_rooted(root);
+}
+
 // Ensures the string is already interned on both the managed and JavaScript sides,
 //  then returns the interned string value (to provide fast reference comparisons like C#)
 export function mono_intern_string(string: string): string {

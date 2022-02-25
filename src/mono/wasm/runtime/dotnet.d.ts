@@ -244,6 +244,7 @@ declare function mono_wasm_load_config(configFilePath: string): Promise<void>;
 declare function mono_wasm_load_icu_data(offset: VoidPtr): boolean;
 
 declare function conv_string(mono_obj: MonoString): string | null;
+declare function conv_string_rooted(root: WasmRoot<MonoString>): string | null;
 declare function js_string_to_mono_string(string: string): MonoString;
 
 declare function js_to_mono_obj(js_obj: any): MonoObject;
@@ -326,6 +327,7 @@ declare const BINDING: {
     js_to_mono_obj: typeof js_to_mono_obj;
     mono_array_to_js_array: typeof mono_array_to_js_array;
     conv_string: typeof conv_string;
+    conv_string_rooted: typeof conv_string_rooted;
     bind_static_method: typeof mono_bind_static_method;
     call_assembly_entry_point: typeof mono_call_assembly_entry_point;
     unbox_mono_obj: typeof unbox_mono_obj;

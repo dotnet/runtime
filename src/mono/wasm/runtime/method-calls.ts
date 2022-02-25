@@ -17,7 +17,7 @@ import {
     _decide_if_result_is_marshaled, find_method,
     BoundMethodToken
 } from "./method-binding";
-import { conv_string, js_string_to_mono_string } from "./strings";
+import { conv_string, conv_string_rooted, js_string_to_mono_string } from "./strings";
 import cwraps from "./cwraps";
 import { bindings_lazy_init } from "./startup";
 import { _create_temp_frame, _release_temp_frame } from "./memory";
@@ -117,6 +117,7 @@ function _convert_exception_for_method_call(result: MonoString, exception: MonoO
     if (exception === MonoObjectNull)
         return null;
 
+    // FIXME: rooted
     const msg = conv_string(result);
     const err = new Error(msg!); //the convention is that invoke_method ToString () any outgoing exception
     // console.warn (`error ${msg} at location ${err.stack});
@@ -293,7 +294,7 @@ export function mono_call_assembly_entry_point(assembly: string, args?: any[], s
 export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: MonoString, args: MonoArray, is_exception: Int32Ptr): any {
     const argsRoot = mono_wasm_new_root(args), nameRoot = mono_wasm_new_root(method_name);
     try {
-        const js_name = conv_string(nameRoot.value);
+        const js_name = conv_string_rooted(nameRoot);
         if (!js_name || (typeof (js_name) !== "string")) {
             return wrap_error(is_exception, "ERR12: Invalid method name object '" + nameRoot.value + "'");
         }
@@ -323,7 +324,7 @@ export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: 
 export function mono_wasm_get_object_property(js_handle: JSHandle, property_name: MonoString, is_exception: Int32Ptr): any {
     const nameRoot = mono_wasm_new_root(property_name);
     try {
-        const js_name = conv_string(nameRoot.value);
+        const js_name = conv_string_rooted(nameRoot);
         if (!js_name) {
             return wrap_error(is_exception, "Invalid property name object '" + nameRoot.value + "'");
         }
@@ -349,7 +350,7 @@ export function mono_wasm_set_object_property(js_handle: JSHandle, property_name
     const valueRoot = mono_wasm_new_root(value), nameRoot = mono_wasm_new_root(property_name);
     try {
 
-        const property = conv_string(nameRoot.value);
+        const property = conv_string_rooted(nameRoot);
         if (!property) {
             return wrap_error(is_exception, "Invalid property name object '" + property_name + "'");
         }
@@ -429,7 +430,7 @@ export function mono_wasm_set_by_index(js_handle: JSHandle, property_index: numb
 export function mono_wasm_get_global_object(global_name: MonoString, is_exception: Int32Ptr): MonoObject {
     const nameRoot = mono_wasm_new_root(global_name);
     try {
-        const js_name = conv_string(nameRoot.value);
+        const js_name = conv_string_rooted(nameRoot);
 
         let globalObj;
 

@@ -35,7 +35,7 @@ import {
 } from "./startup";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
-import { conv_string, js_string_to_mono_string, mono_intern_string } from "./strings";
+import { conv_string, conv_string_rooted, js_string_to_mono_string, mono_intern_string } from "./strings";
 import { js_to_mono_obj, js_typed_array_to_array, mono_wasm_typed_array_to_array } from "./js-to-cs";
 import {
     mono_array_to_js_array, mono_wasm_create_cs_owned_object, unbox_mono_obj
@@ -119,6 +119,7 @@ const BINDING = {
     js_to_mono_obj,
     mono_array_to_js_array,
     conv_string,
+    conv_string_rooted,
     bind_static_method: mono_bind_static_method,
     call_assembly_entry_point: mono_call_assembly_entry_point,
     unbox_mono_obj,

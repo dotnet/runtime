@@ -7,14 +7,14 @@ import { JSHandle, GCHandle, MonoString, MonoStringNull } from "./types";
 import { _wrap_delegate_gc_handle_as_function } from "./cs-to-js";
 import { mono_wasm_get_jsobj_from_js_handle, _js_owned_object_finalized, _lookup_js_owned_object, _use_finalization_registry } from "./gc-handles";
 import { wrap_error } from "./method-calls";
-import { conv_string } from "./strings";
+import { conv_string_rooted } from "./strings";
 
 const listener_registration_count_symbol = Symbol.for("wasm listener_registration_count");
 
 export function mono_wasm_add_event_listener(js_handle: JSHandle, name: MonoString, listener_gc_handle: GCHandle, optionsHandle: JSHandle): MonoString {
     const nameRoot = mono_wasm_new_root(name);
     try {
-        const sName = conv_string(nameRoot.value);
+        const sName = conv_string_rooted(nameRoot);
 
         const obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
         if (!obj)
@@ -60,7 +60,7 @@ export function mono_wasm_remove_event_listener(js_handle: JSHandle, name: MonoS
         // Removing a nonexistent listener should not be treated as an error
         if (!listener)
             return MonoStringNull;
-        const sName = conv_string(nameRoot.value);
+        const sName = conv_string_rooted(nameRoot);
 
         obj.removeEventListener(sName, listener, !!capture);
         // We do not manually remove the listener from the delegate registry here,
