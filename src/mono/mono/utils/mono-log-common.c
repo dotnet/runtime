@@ -111,8 +111,10 @@ mono_log_write_logfile (const char *log_domain, GLogLevelFlags level, mono_bool 
 #ifdef HAVE_LOCALTIME_R
 		struct tm tod;
 #ifdef HOST_WASI
-		// libSystemNative and WASI SDK disagree about the signature of "time" (libSystemNative says int32, whereas
-		// WASI SDK says int64). To avoid the mismatch, use a different API.
+		// In the WASI prototype, this is being compiled using WASI SDK which says that time() returns int64, but is
+		// linked with libSystem.Native.a which was built with Emscripten which says time() returns int32. As a temporary
+		// workaround, avoid the conflict by using clock_gettime() instead of time() here.
+		// TODO: For WASI builds, build libSystem.Native.a using WASI SDK instead of Emscripten.
 		struct timespec time_info;
 		clock_gettime(CLOCK_REALTIME, &time_info);
 		t = time_info.tv_sec;

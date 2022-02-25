@@ -115,8 +115,10 @@ static WasmSatelliteAssembly *satellite_assemblies;
 static int satellite_assembly_count;
 
 int32_t time(int32_t x) {
-	// libSystem.Native.a defines this function as returning an int32, whereas it's an int64 according
-	// to WASI SDK. Here we're providing an int32-returning version to satisfy libSystem.Native.a.
+	// In the current prototype, libSystem.Native.a is built using Emscripten, whereas the WASI-enabled runtime is being built
+	// using WASI SDK. Emscripten says that time() returns int32, whereas WASI SDK says it returns int64.
+	// TODO: Build libSystem.Native.a using WASI SDK.
+	// In the meantime, as a workaround we can define an int32-returning implementation for time() here.
 	struct timeval time;
 	return (gettimeofday(&time, NULL) == 0) ? time.tv_sec : 0;
 }
