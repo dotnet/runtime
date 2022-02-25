@@ -42,6 +42,7 @@ export const MonoAssemblyNull: MonoAssembly = <MonoAssembly><any>0;
 export const MonoClassNull: MonoClass = <MonoClass><any>0;
 export const MonoTypeNull: MonoType = <MonoType><any>0;
 export const MonoStringNull: MonoString = <MonoString><any>0;
+export const MonoObjectRefNull: MonoObjectRef = <MonoObjectRef><any>0;
 export const JSHandleDisposed: JSHandle = <JSHandle><any>-1;
 export const JSHandleNull: JSHandle = <JSHandle><any>0;
 export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;

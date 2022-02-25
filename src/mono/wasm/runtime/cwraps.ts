@@ -14,6 +14,7 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_register_root", "number", ["number", "number", "string"]],
     ["mono_wasm_deregister_root", null, ["number"]],
     ["mono_wasm_string_get_data", null, ["number", "number", "number", "number"]],
+    ["mono_wasm_string_get_data_ref", null, ["number", "number", "number", "number"]],
     ["mono_wasm_set_is_debugger_attached", "void", ["bool"]],
     ["mono_wasm_send_dbg_command", "bool", ["number", "number", "number", "number", "number"]],
     ["mono_wasm_send_dbg_command_with_parms", "bool", ["number", "number", "number", "number", "number", "number", "string"]],
@@ -75,6 +76,7 @@ export interface t_Cwraps {
     mono_wasm_register_root(start: VoidPtr, size: number, name: string): number;
     mono_wasm_deregister_root(addr: VoidPtr): void;
     mono_wasm_string_get_data(string: MonoString, outChars: CharPtrPtr, outLengthBytes: Int32Ptr, outIsInterned: Int32Ptr): void;
+    mono_wasm_string_get_data_ref(stringRef: MonoObjectRef, outChars: CharPtrPtr, outLengthBytes: Int32Ptr, outIsInterned: Int32Ptr): void;
     mono_wasm_set_is_debugger_attached(value: boolean): void;
     mono_wasm_send_dbg_command(id: number, command_set: number, command: number, data: VoidPtr, size: number): boolean;
     mono_wasm_send_dbg_command_with_parms(id: number, command_set: number, command: number, data: VoidPtr, size: number, valtype: number, newvalue: string): boolean;
@@ -128,6 +130,11 @@ export interface t_Cwraps {
     mono_wasm_set_main_args(argc: number, argv: VoidPtr): void;
     mono_profiler_init_aot(desc: string): void;
     mono_wasm_exec_regression(verbose_level: number, image: string): number;
+<<<<<<< HEAD
+=======
+    mono_wasm_write_managed_pointer_unsafe(destination: VoidPtr | MonoObjectRef, pointer: ManagedPointer): void;
+    mono_wasm_copy_managed_pointer(destination: VoidPtr | MonoObjectRef, source: VoidPtr | MonoObjectRef): void;
+>>>>>>> 4499a7cb781 (Checkpoint (strings are broken for some reason))
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

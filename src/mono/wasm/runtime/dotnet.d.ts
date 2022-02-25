@@ -90,10 +90,11 @@ declare class WasmRootBuffer {
     constructor(offset: VoidPtr, capacity: number, ownsAllocation: boolean, name?: string);
     _throw_index_out_of_range(): void;
     _check_in_range(index: number): void;
-    get_address(index: number): NativePointer;
+    get_address(index: number): MonoObjectRef;
     get_address_32(index: number): number;
     get(index: number): ManagedPointer;
     set(index: number, value: ManagedPointer): ManagedPointer;
+    copy_value_from_address(index: number, sourceAddress: MonoObjectRef): void;
     _unsafe_get(index: number): number;
     _unsafe_set(index: number, value: ManagedPointer | NativePointer): void;
     clear(): void;
@@ -101,12 +102,16 @@ declare class WasmRootBuffer {
     toString(): string;
 }
 interface WasmRoot<T extends ManagedPointer | NativePointer> {
-    get_address(): NativePointer;
+    get_address(): MonoObjectRef;
     get_address_32(): number;
     get(): T;
     set(value: T): T;
     get value(): T;
     set value(value: T);
+    copy_from_address(source: MonoObjectRef): void;
+    copy_to_address(destination: MonoObjectRef): void;
+    copy_from(source: WasmRoot<T>): void;
+    copy_to(destination: WasmRoot<T>): void;
     valueOf(): T;
     clear(): void;
     release(): void;
@@ -121,6 +126,9 @@ interface MonoString extends MonoObject {
 }
 interface MonoArray extends MonoObject {
     __brand: "MonoArray";
+}
+interface MonoObjectRef extends NativePointer {
+    __brandMonoObject: "MonoObjectRef";
 }
 declare type MonoConfig = {
     isError: false;

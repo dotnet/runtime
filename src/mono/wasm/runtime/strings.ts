@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_wasm_new_root_buffer, WasmRootBuffer } from "./roots";
-import { MonoString, MonoStringNull, } from "./types";
+import { MonoString, MonoStringNull, MonoObjectRef, MonoObjectRefNull } from "./types";
 import { Module } from "./imports";
 import cwraps from "./cwraps";
-import { mono_wasm_new_root } from "./roots";
+import { mono_wasm_new_root, WasmRoot } from "./roots";
 import { getI32 } from "./memory";
 import { NativePointer, CharPtr } from "./types/emscripten";
 
@@ -15,23 +15,35 @@ export class StringDecoder {
     private mono_text_decoder: TextDecoder | undefined | null;
     private mono_wasm_string_decoder_buffer: NativePointer | undefined;
 
-    copy(mono_string: MonoString): string | null {
+    init_fields(): void {
         if (!this.mono_wasm_string_decoder_buffer) {
             this.mono_text_decoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-16le") : null;
             this.mono_wasm_string_root = mono_wasm_new_root();
             this.mono_wasm_string_decoder_buffer = Module._malloc(12);
         }
+    }
+
+    copy(mono_string: MonoString): string | null {
+        this.init_fields();
         if (mono_string === MonoStringNull)
             return null;
 
         this.mono_wasm_string_root.value = mono_string;
+        const result = this.copy_rooted(this.mono_wasm_string_root);
+        this.mono_wasm_string_root.value = MonoStringNull;
+        return result;
+    }
+
+    copy_rooted(root: WasmRoot<MonoString>): string | null {
+        this.init_fields();
+        if (root.value === MonoStringNull)
+            return null;
 
         const ppChars = <any>this.mono_wasm_string_decoder_buffer + 0,
             pLengthBytes = <any>this.mono_wasm_string_decoder_buffer + 4,
             pIsInterned = <any>this.mono_wasm_string_decoder_buffer + 8;
 
-        // TODO: Create new version of this API that takes the address of the root instead
-        cwraps.mono_wasm_string_get_data(this.mono_wasm_string_root.value, <any>ppChars, <any>pLengthBytes, <any>pIsInterned);
+        cwraps.mono_wasm_string_get_data_ref(root.get_address(), <any>ppChars, <any>pLengthBytes, <any>pIsInterned);
 
         let result = mono_wasm_empty_string;
         const lengthBytes = getI32(pLengthBytes),
@@ -41,21 +53,19 @@ export class StringDecoder {
         if (pLengthBytes && pChars) {
             if (
                 isInterned &&
-
-                interned_string_table.has(<any>mono_string) //TODO remove 2x lookup
+                interned_string_table.has(root.value) //TODO remove 2x lookup
             ) {
-                result = interned_string_table.get(<any>mono_string)!;
+                result = interned_string_table.get(root.value)!;
                 // console.log(`intern table cache hit ${mono_string} ${result.length}`);
             } else {
                 result = this.decode(<any>pChars, <any>pChars + lengthBytes);
                 if (isInterned) {
                     // console.log("interned", mono_string, result.length);
-                    interned_string_table.set(<any>mono_string, result);
+                    interned_string_table.set(root.value, result);
                 }
             }
         }
 
-        this.mono_wasm_string_root.value = 0;
         return result;
     }
 
@@ -105,11 +115,9 @@ export function mono_intern_string(string: string): string {
     return result!;
 }
 
-function _store_string_in_intern_table(string: string, ptr: MonoString, internIt: boolean) {
-    if (!ptr)
+function _store_string_in_intern_table(string: string, root: WasmRoot<MonoString>, internIt: boolean): void {
+    if (!root.value)
         throw new Error("null pointer passed to _store_string_in_intern_table");
-    else if (typeof (ptr) !== "number")
-        throw new Error(`non-pointer passed to _store_string_in_intern_table: ${typeof (ptr)}`);
 
     const internBufferSize = 8192;
 
@@ -124,7 +132,7 @@ function _store_string_in_intern_table(string: string, ptr: MonoString, internIt
 
     const rootBuffer = _interned_string_current_root_buffer;
     const index = _interned_string_current_root_buffer_count++;
-    rootBuffer.set(index, ptr);
+    rootBuffer.copy_value_from_address(index, root.get_address());
 
     // Store the managed string into the managed intern table. This can theoretically
     //  provide a different managed object than the one we passed in, so update our
@@ -140,8 +148,6 @@ function _store_string_in_intern_table(string: string, ptr: MonoString, internIt
 
     if ((string.length === 0) && !_empty_string_ptr)
         _empty_string_ptr = <MonoString><any>rootBuffer.get(index);
-
-    return <MonoString><any>rootBuffer.get(index);
 }
 
 export function js_string_to_mono_string_interned(string: string | symbol): MonoString {
@@ -149,17 +155,28 @@ export function js_string_to_mono_string_interned(string: string | symbol): Mono
         ? (string.description || Symbol.keyFor(string) || "<unknown Symbol>")
         : string;
 
+    if (typeof(text) !== "string") {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        throw new Error(`Argument to js_string_to_mono_string_interned must be a string but was ${string}`);
+    }
+
     if ((text.length === 0) && _empty_string_ptr)
         return _empty_string_ptr;
 
-    let ptr = interned_js_string_table.get(text);
+    const ptr = interned_js_string_table.get(text);
     if (ptr)
         return ptr;
 
-    ptr = js_string_to_mono_string_new(text);
-    ptr = _store_string_in_intern_table(text, ptr, true);
-
-    return ptr;
+    const root = mono_wasm_new_root<MonoString>();
+    try {
+        root.value = js_string_to_mono_string_new(text);
+        _store_string_in_intern_table(text, root, true);
+        return root.value;
+    } finally {
+        if (root)
+            root.release();
+    }
 }
 
 export function js_string_to_mono_string(string: string): MonoString {

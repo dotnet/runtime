@@ -1118,10 +1118,10 @@ mono_wasm_intern_string_ref (MonoString **string)
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_string_get_data (
-	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
+mono_wasm_string_get_data_ref (
+	MonoString **string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
 ) {
-	if (!string) {
+	if (!string || !(*string)) {
 		if (outChars)
 			*outChars = 0;
 		if (outLengthBytes)
@@ -1132,12 +1132,19 @@ mono_wasm_string_get_data (
 	}
 
 	if (outChars)
-		*outChars = mono_string_chars (string);
+		*outChars = mono_string_chars (*string);
 	if (outLengthBytes)
-		*outLengthBytes = mono_string_length (string) * 2;
+		*outLengthBytes = mono_string_length (*string) * 2;
 	if (outIsInterned)
-		*outIsInterned = mono_string_instance_is_interned (string);
+		*outIsInterned = mono_string_instance_is_interned (*string);
 	return;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_string_get_data (
+	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
+) {
+	mono_wasm_string_get_data_ref(&string, outChars, outLengthBytes, outIsInterned);
 }
 
 EMSCRIPTEN_KEEPALIVE MonoType *
