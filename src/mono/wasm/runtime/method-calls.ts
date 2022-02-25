@@ -235,6 +235,7 @@ function _call_method_with_converted_args(
     is_result_marshaled: boolean, argsRootBuffer?: WasmRootBuffer
 ): any {
     const resultRoot = mono_wasm_new_root<MonoString>(), exceptionRoot = mono_wasm_new_root<MonoObject>();
+    // TODO: Create new invoke_method variant that writes the result into resultRoot directly
     resultRoot.value = <any>cwraps.mono_wasm_invoke_method(method, this_arg, buffer, <any>exceptionRoot.get_address());
     return _handle_exception_and_produce_result_for_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled);
 }

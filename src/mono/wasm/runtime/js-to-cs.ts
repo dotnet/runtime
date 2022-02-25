@@ -180,7 +180,9 @@ export function js_array_to_mono_array(js_array: any[], asString: boolean, shoul
             if (asString)
                 obj = obj.toString();
 
+            // TODO: pass elemRoot into new API that copies
             elemRoot.value = _js_to_mono_obj(should_add_in_flight, obj);
+            // TODO: Create new API that copies and pass in elemRoot.address
             cwraps.mono_wasm_obj_array_set(arrayRoot.value, i, elemRoot.value);
         }
 
@@ -203,7 +205,7 @@ export function _wrap_js_thenable_as_task(thenable: Promise<any>): {
     // ideally, this should be hold alive by lifespan of the resulting C# Task, but this is good cheap aproximation
     const thenable_js_handle = mono_wasm_get_js_handle(thenable);
 
-    // Note that we do not implement promise/task roundtrip. 
+    // Note that we do not implement promise/task roundtrip.
     // With more complexity we could recover original instance when this Task is marshaled back to JS.
     // TODO optimization: return the tcs.Task on this same call instead of _get_tcs_task
     const tcs_gc_handle = corebindings._create_tcs();

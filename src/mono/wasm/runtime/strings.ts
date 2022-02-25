@@ -30,7 +30,8 @@ export class StringDecoder {
             pLengthBytes = <any>this.mono_wasm_string_decoder_buffer + 4,
             pIsInterned = <any>this.mono_wasm_string_decoder_buffer + 8;
 
-        cwraps.mono_wasm_string_get_data(mono_string, <any>ppChars, <any>pLengthBytes, <any>pIsInterned);
+        // TODO: Create new version of this API that takes the address of the root instead
+        cwraps.mono_wasm_string_get_data(this.mono_wasm_string_root.value, <any>ppChars, <any>pLengthBytes, <any>pIsInterned);
 
         let result = mono_wasm_empty_string;
         const lengthBytes = getI32(pLengthBytes),

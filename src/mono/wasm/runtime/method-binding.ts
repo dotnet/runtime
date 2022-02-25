@@ -124,7 +124,7 @@ export function _create_primitive_converters(): void {
     result.set("m", { steps: [{}], size: 0 });
     result.set("s", { steps: [{ convert: js_string_to_mono_string.bind(BINDING) }], size: 0, needs_root: true });
     result.set("S", { steps: [{ convert: js_string_to_mono_string_interned.bind(BINDING) }], size: 0, needs_root: true });
-    // note we also bind first argument to false for both _js_to_mono_obj and _js_to_mono_uri, 
+    // note we also bind first argument to false for both _js_to_mono_obj and _js_to_mono_uri,
     // because we will root the reference, so we don't need in-flight reference
     // also as those are callback arguments and we don't have platform code which would release the in-flight reference on C# end
     result.set("o", { steps: [{ convert: _js_to_mono_obj.bind(BINDING, false) }], size: 0, needs_root: true });
@@ -480,6 +480,7 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
     // The end result is that bound method invocations don't always allocate, so no more nursery GCs. Yay! -kg
     body.push(
         "",
+        // TODO: Create new invoke_method variant that writes the result into resultRoot directly
         "resultRoot.value = invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());",
         `_handle_exception_for_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
         "",
