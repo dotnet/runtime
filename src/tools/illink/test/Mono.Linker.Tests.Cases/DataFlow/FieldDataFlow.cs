@@ -34,6 +34,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.WriteUnknownValue ();
 
 			_ = _annotationOnWrongType;
+
+			TestStringEmpty ();
 		}
 
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
@@ -146,6 +148,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static void MakeArrayValuesUnknown (object[] array)
 			{
 			}
+		}
+
+		private static void TestStringEmpty ()
+		{
+			RequirePublicMethods (string.Empty);
+		}
+
+		private static void RequirePublicMethods (
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			string s)
+		{
 		}
 
 		private static void RequirePublicParameterlessConstructor (
