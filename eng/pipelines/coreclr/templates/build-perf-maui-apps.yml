@@ -157,7 +157,7 @@ steps:
         ../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
         mv ./bin/Release/net6.0-android/com.companyname.MauiTesting-Signed.apk ./MauiAndroidDefault.apk
       displayName: Build MAUI Android
-      workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+      workingDirectory: $(Build.SourcesDirectory)/MauiTesting 
   # -- end newmaui --
 
   - ${{ if eq(parameters.appname, 'podcast') }}:
@@ -177,7 +177,7 @@ steps:
         pwd
         chmod -R a+r .
         ../../../dotnet publish Microsoft.NetConf2021.Maui.csproj -bl:MauiAndroid.binlog -f net6.0-android -c Release
-        mv ./bin/Release/net6.0-android/com.companyname.MauiTesting-Signed.apk ./MauiAndroidDefault.apk
+        mv ./bin/Release/net6.0-android/android-arm64/com.Microsoft.NetConf2021.Maui-Signed.apk ./MauiAndroidDefault.apk
       displayName: Build podcast app for MAUI
       workingDirectory:  $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile
    #--- end podcast ---
