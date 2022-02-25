@@ -8333,11 +8333,31 @@ inline bool GenTree::IsIntegralConst() const
 #endif // !TARGET_64BIT
 }
 
+//-------------------------------------------------------------------------
+// IsIntegralConstPow2: Determines whether the node is an integral constant
+//                      of the power of 2.
+//
+// Arguments:
+//     None
+//
+// Return Value:
+//     Returns true if this GenTree is an integral constant of the power
+//     of 2.
 inline bool GenTree::IsIntegralConstPow2() const
 {
     return IsIntegralConst() && isPow2(AsIntConCommon()->IconValue());
 }
 
+//-------------------------------------------------------------------------
+// IsIntegralConstAbsPow2: Determines whether the absolute value of
+//                         an integral constant is the power of 2.
+//
+// Arguments:
+//     None
+//
+// Return Value:
+//     Returns true if the absolute value of a GenTree's integral constant
+//     is the power of 2.
 inline bool GenTree::IsIntegralConstAbsPow2() const
 {
     if (IsIntegralConst())

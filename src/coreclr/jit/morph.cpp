@@ -11404,16 +11404,23 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             if (!optValnumCSE_phase)
             {
 #ifdef TARGET_ARM64
-                // a % b = a & (b - 1);
+                // Transformation: a % b = a & (b - 1);
                 if (oper == GT_UMOD && op2->IsIntegralConstPow2())
                 {
                     tree = fgMorphUModToAndSub(tree->AsOp());
                     op1  = tree->AsOp()->gtOp1;
                     op2  = tree->AsOp()->gtOp2;
                 }
-                // a % b = a - (a / b) * b;
+                // Transformation: a % b = a - (a / b) * b;
+                // ARM64 architecture manual suggests this transformation
+                // for the mod operator.
                 else
 #else
+                // X64 only applies this transformation if we know
+                // that magic division will be used - which is determined
+                // when 'b' is not a power of 2 constant and mod operator is signed.
+                // Lowering for X64 does this optimization already,
+                // but is also done here to take advantage of CSE.
                 if (oper == GT_MOD && !op2->IsIntegralConstAbsPow2())
 #endif
                 {
