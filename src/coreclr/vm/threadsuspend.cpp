@@ -1968,14 +1968,15 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
     {
         HMODULE hm = GetModuleHandleW(_T("kernel32.dll"));
         pfnInitializeContext2 = (PINITIALIZECONTEXT2)GetProcAddress(hm, "InitializeContext2");
+    }
 
 #ifdef TARGET_X86
-        if (pfnRtlRestoreContext == NULL)
-        {
-            pfnRtlRestoreContext = (PRTLRESTORECONTEXT)GetProcAddress(hm, "RtlRestoreContext");
-        }
-#endif //TARGET_X86
+    if (pfnRtlRestoreContext == NULL)
+    {
+        HMODULE hm = GetModuleHandleW(_T("ntdll.dll"));
+        pfnRtlRestoreContext = (PRTLRESTORECONTEXT)GetProcAddress(hm, "RtlRestoreContext");
     }
+#endif //TARGET_X86
 
     // Determine if the processor supports AVX so we could
     // retrieve extended registers
