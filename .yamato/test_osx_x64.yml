@@ -4,7 +4,7 @@ name: Test OSX x64
 
 agent:
   type: Unity::VM::osx
-  image: platform-foundation/mac-bokken:latest
+  image: platform-foundation/mac-bokken:v0.1.8-972754
   flavor: m1.mac
 
 dependencies:

@@ -4,7 +4,7 @@ name: Build Windows x86
 
 agent:
   type: Unity::VM
-  image: platform-foundation/windows-vs2019-il2cpp-bokken:latest
+  image: platform-foundation/windows-vs2019-il2cpp-bokken:v1.1.6-1025111
   flavor: b1.xlarge
 
 variables:
