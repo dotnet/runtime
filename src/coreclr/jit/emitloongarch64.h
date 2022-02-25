@@ -77,6 +77,11 @@ bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src
 bool IsRedundantLdStr(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt); // New functions end.
 
+/************************************************************************/
+/*           Public inline informational methods                        */
+/************************************************************************/
+
+public:
 // Returns true if 'value' is a legal signed immediate 12 bit encoding.
 static bool isValidSimm12(ssize_t value)
 {
@@ -89,11 +94,6 @@ static bool isValidSimm20(ssize_t value)
     return -(((int)1) << 19) <= value && value < (((int)1) << 19);
 };
 
-/************************************************************************/
-/*           Public inline informational methods                        */
-/************************************************************************/
-
-public:
 // Returns the number of bits used by the given 'size'.
 inline static unsigned getBitWidth(emitAttr size)
 {

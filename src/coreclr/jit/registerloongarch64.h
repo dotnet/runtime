@@ -52,6 +52,11 @@ REGDEF(S8,     31, 0x80000000, "s8"  )
 //NOTE for LoongArch64:
 //  The `REG_R21` which alias `REG_X0` is specially reserved !!!
 //  It can be used only by manully and should be very careful!!!
+//  e.g. right now LoongArch64's backend-codegen/emit, there is usually
+//  needed a extra regitster for some case liking
+//  constructing a large imm or offset, saving some intermediate result
+//  of the overflowing check and integer-comparing result.
+//  Using the a specially reserved register maybe more efficient.
 REGALIAS(R21, X0)
 
 #define FBASE 32

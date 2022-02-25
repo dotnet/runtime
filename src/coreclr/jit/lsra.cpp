@@ -1573,16 +1573,19 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
 #endif // FEATURE_SIMD
 
         case TYP_STRUCT:
-// TODO-1stClassStructs: support vars with GC pointers. The issue is that such
-// vars will have `lvMustInit` set, because emitter has poor support for struct liveness,
-// but if the variable is tracked the prolog generator would expect it to be in liveIn set,
-// so an assert in `genFnProlog` will fire.
+        {
+            // TODO-1stClassStructs: support vars with GC pointers. The issue is that such
+            // vars will have `lvMustInit` set, because emitter has poor support for struct liveness,
+            // but if the variable is tracked the prolog generator would expect it to be in liveIn set,
+            // so an assert in `genFnProlog` will fire.
+            bool isRegCandidate = compiler->compEnregStructLocals() && !varDsc->HasGCPtr();
 #ifdef TARGET_LOONGARCH64
-            return !genIsValidFloatReg(varDsc->GetOtherArgReg()) && compiler->compEnregStructLocals() &&
-                   !varDsc->HasGCPtr();
-#else
-            return compiler->compEnregStructLocals() && !varDsc->HasGCPtr();
+            // The LoongArch64's ABI which the float args within a struct maybe passed by integer register
+            // when no float register left but free integer register.
+            isRegCandidate &= !genIsValidFloatReg(varDsc->GetOtherArgReg());
 #endif
+            return isRegCandidate;
+        }
 
         case TYP_UNDEF:
         case TYP_UNKNOWN:
@@ -7728,7 +7731,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             }
         }
     }
-#endif
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
     VarToRegMap sameVarToRegMap = sharedCriticalVarToRegMap;
     regMaskTP   sameWriteRegs   = RBM_NONE;
@@ -7808,7 +7811,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             {
                 sameToReg = REG_NA;
             }
-#endif
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
             // If the var is live only at those blocks connected by a split edge and not live-in at some of the
             // target blocks, we will resolve it the same way as if it were in diffResolutionSet and resolution

@@ -13742,9 +13742,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef TARGET_LOONGARCH64
                 assertImp((genActualType(op1->TypeGet()) == TYP_LONG || genActualType(op1->TypeGet()) == TYP_INT) ||
                           (genActualType(op2->TypeGet()) == TYP_LONG || genActualType(op2->TypeGet()) == TYP_INT) ||
-                          genActualType(op1->TypeGet()) == genActualType(op2->TypeGet()) ||
-                          varTypeIsI(op1->TypeGet()) && varTypeIsI(op2->TypeGet()) ||
-                          varTypeIsFloating(op1->gtType) && varTypeIsFloating(op2->gtType));
+                          (genActualType(op1->TypeGet()) == genActualType(op2->TypeGet())) ||
+                          (varTypeIsI(op1->TypeGet()) && varTypeIsI(op2->TypeGet())) ||
+                          (varTypeIsFloating(op1->gtType) && varTypeIsFloating(op2->gtType)));
 #else
                 assertImp(genActualType(op1->TypeGet()) == genActualType(op2->TypeGet()) ||
                           (varTypeIsI(op1->TypeGet()) && varTypeIsI(op2->TypeGet())) ||
@@ -14035,7 +14035,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             return;
                     }
 
-                    op1->gtType == TYP_INT;
+                    op1->gtType = TYP_INT;
 
                     impPushOnStack(op1, tiRetVal);
                     break;

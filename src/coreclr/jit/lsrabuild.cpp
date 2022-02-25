@@ -594,6 +594,8 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
         RefPosition* pos         = newRefPosition(physicalReg, theLocation, RefTypeFixedReg, nullptr, mask);
         assert(theInterval != nullptr);
 #ifndef TARGET_LOONGARCH64
+        // The LoongArch64's ABI which the float args maybe passed by integer register
+        // when no float register left but free integer register.
         assert((allRegs(theInterval->registerType) & mask) != 0);
 #endif
     }
@@ -3946,8 +3948,8 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
     srcCandidates  = RBM_WRITE_BARRIER_SRC;
 
 #elif defined(TARGET_LOONGARCH64)
-    // the 'addr' goes into (REG_WRITE_BARRIER_DST)
-    // the 'src'  goes into (REG_WRITE_BARRIER_SRC)
+    // the 'addr' goes into t6 (REG_WRITE_BARRIER_DST)
+    // the 'src'  goes into t7 (REG_WRITE_BARRIER_SRC)
     //
     addrCandidates = RBM_WRITE_BARRIER_DST;
     srcCandidates  = RBM_WRITE_BARRIER_SRC;

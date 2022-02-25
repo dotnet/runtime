@@ -2496,9 +2496,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         assert(callType == EC_FUNC_TOKEN);
         assert(addr != NULL);
-        assert(((long)addr & 3) == 0);
+        assert((((size_t)addr) & 3) == 0);
 
-        addr                  = (void*)((long)addr + (isJump ? 0 : 1)); // NOTE: low-bit0 is used for jirl ra/r0,rd,0
+        addr = (void*)(((size_t)addr) + (isJump ? 0 : 1)); // NOTE: low-bit0 is used for jirl ra/r0,rd,0
         id->idAddr()->iiaAddr = (BYTE*)addr;
 
         if (emitComp->opts.compReloc)
@@ -2599,7 +2599,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
 
         *(code_t*)dst = 0x1e00000e;
 
-        long addr = (long)id->idAddr()->iiaAddr; // get addr.
+        size_t addr = (size_t)(id->idAddr()->iiaAddr); // get addr.
         // should assert(addr-dst < 38bits);
 
         int reg2 = (int)addr & 1;

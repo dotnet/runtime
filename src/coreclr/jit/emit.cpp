@@ -4217,8 +4217,10 @@ AGAIN:
                                         // offset of the jump
         UNATIVE_OFFSET dstOffs;
         NATIVE_OFFSET  jmpDist; // the relative jump distance, as it will be encoded
+#ifndef TARGET_LOONGARCH64
         UNATIVE_OFFSET oldSize;
         UNATIVE_OFFSET sizeDif;
+#endif
 
 #ifdef TARGET_XARCH
         assert(jmp->idInsFmt() == IF_LABEL || jmp->idInsFmt() == IF_RWR_LABEL || jmp->idInsFmt() == IF_SWR_LABEL);
@@ -4635,10 +4637,10 @@ AGAIN:
 
                 jmp->idInsOpt(INS_OPTS_JIRL);
                 jmp->idCodeSize(jmp->idCodeSize() + extra);
-                jmpIG->igSize += extra; // the placeholder sizeof(INS_OPTS_JIRL) - sizeof(INS_OPTS_J).
-                adjLJ += extra;
-                adjIG += extra;
-                emitTotalCodeSize += extra;
+                jmpIG->igSize += (unsigned short)extra; // the placeholder sizeof(INS_OPTS_JIRL) - sizeof(INS_OPTS_J).
+                adjLJ += (UNATIVE_OFFSET)extra;
+                adjIG += (UNATIVE_OFFSET)extra;
+                emitTotalCodeSize += (UNATIVE_OFFSET)extra;
                 jmpIG->igFlags |= IGF_UPD_ISZ;
                 isLinkingEnd_LA |= 0x1;
             }
@@ -4711,7 +4713,7 @@ AGAIN:
                     }
                     else
                     {
-                        assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000); // TODO:later will be deleted!!!
+                        assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
                         extra = 8;
                     }
                 }
@@ -4724,20 +4726,20 @@ AGAIN:
                     // assert((emitTotalCodeSize + emitCounts_INS_OPTS_J*4) < 0x8000000);
                     assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
                 }
-                else // if (ins == INS_b || ins == INS_bl)
+                else
                 {
                     assert(ins == INS_b || ins == INS_bl);
                     // assert((emitTotalCodeSize + emitCounts_INS_OPTS_J*4) < 0x8000000);
-                    assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000); // TODO
+                    assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
                     continue;
                 }
 
                 jmp->idInsOpt(INS_OPTS_JIRL);
                 jmp->idCodeSize(jmp->idCodeSize() + extra);
-                jmpIG->igSize += extra; // the placeholder sizeof(INS_OPTS_JIRL) - sizeof(INS_OPTS_J).
-                adjLJ += extra;
-                adjIG += extra;
-                emitTotalCodeSize += extra;
+                jmpIG->igSize += (unsigned short)extra; // the placeholder sizeof(INS_OPTS_JIRL) - sizeof(INS_OPTS_J).
+                adjLJ += (UNATIVE_OFFSET)extra;
+                adjIG += (UNATIVE_OFFSET)extra;
+                emitTotalCodeSize += (UNATIVE_OFFSET)extra;
                 jmpIG->igFlags |= IGF_UPD_ISZ;
                 isLinkingEnd_LA |= 0x1;
             }
@@ -4884,8 +4886,6 @@ AGAIN:
         // The size of IF_LARGEJMP/IF_LARGEADR/IF_LARGELDC are 8 or 12.
         // All other code size is 4.
         assert((sizeDif == 4) || (sizeDif == 8));
-#elif defined(TARGET_LOONGARCH64)
-        assert(sizeDif == 0);
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -6815,8 +6815,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     }
 
 #ifdef TARGET_LOONGARCH64
-    // cp = cp - 4;
-    unsigned actualCodeSize = cp - codeBlock;
+    unsigned actualCodeSize = (unsigned)(cp - codeBlock);
 #endif
 
 #if EMIT_TRACK_STACK_DEPTH

@@ -21,11 +21,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "gcinfo.h"
 #include "gcinfoencoder.h"
 
-static short splitLow(int value)
-{
-    return (value & 0xffff);
-}
-
 // Returns true if 'value' is a legal signed immediate 12 bit encoding.
 static bool isValidSimm12(ssize_t value)
 {
@@ -3951,8 +3946,8 @@ void CodeGen::genCkfinite(GenTree* treeNode)
     GenTree*  op1        = treeNode->AsOp()->gtOp1;
     var_types targetType = treeNode->TypeGet();
     ssize_t   expMask    = (targetType == TYP_FLOAT) ? 0xFF : 0x7FF; // Bit mask to extract exponent.
-    ssize_t   size       = (targetType == TYP_FLOAT) ? 8 : 11;       // Bit size to extract exponent.
-    ssize_t   pos        = (targetType == TYP_FLOAT) ? 23 : 52;      // Bit pos of exponent.
+    int       size       = (targetType == TYP_FLOAT) ? 8 : 11;       // Bit size to extract exponent.
+    int       pos        = (targetType == TYP_FLOAT) ? 23 : 52;      // Bit pos of exponent.
 
     emitter* emit = GetEmitter();
     emitAttr attr = emitActualTypeSize(treeNode);
@@ -6086,7 +6081,6 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
             // unsigned gcPtrCount; // The count of GC pointers in the struct
             unsigned srcSize;
-            bool     isHfa;
 
             // gcPtrCount = treeNode->gtNumSlots;
             // Setup the srcSize and layout
@@ -6570,7 +6564,7 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
             offset = genTypeSize(type);
             type   = pRetTypeDesc->GetReturnRegType(1);
             reg    = call->GetRegNumByIdx(1);
-            offset = offset < genTypeSize(type) ? genTypeSize(type) : offset;
+            offset = (offset < (int)genTypeSize(type)) ? genTypeSize(type) : offset;
             GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
         }
 
@@ -9489,7 +9483,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
         }
         else
         {
-            for (int i = 0; i < regArgNum; i++)
+            for (unsigned i = 0; i < regArgNum; i++)
             {
                 LclVarDsc* varDsc2     = compiler->lvaTable + regArgsVars[i];
                 var_types  destMemType = varDsc2->GetRegisterType();
