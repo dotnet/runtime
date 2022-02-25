@@ -599,6 +599,7 @@ void StubPrecode::StaticInitialize()
     #define ENUM_PAGE_SIZE(size) \
         case size: \
             StubPrecodeCode = StubPrecodeCode##size; \
+            StubPrecodeCode_End = StubPrecodeCode##size##_End; \
             _ASSERTE(((BYTE*)StubPrecodeCode##size##_End - (BYTE*)StubPrecodeCode##size) <= StubPrecode::CodeSize); \
             break;
 
