@@ -125,18 +125,21 @@ namespace Microsoft.Interop
 
             ImmutableArray<AttributeListSyntax>.Builder additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
 
-            // Define additional attributes for the stub definition.
-            additionalAttrs.Add(
-                AttributeList(
-                    SingletonSeparatedList(
-                        Attribute(ParseName(TypeNames.System_CodeDom_Compiler_GeneratedCodeAttribute),
-                            AttributeArgumentList(
-                                SeparatedList(
-                                    new[]
-                                    {
-                                        AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal("Microsoft.Interop.DllImportGenerator"))),
-                                        AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(GeneratorVersion)))
-                                    }))))));
+            if (env.TargetFramework != TargetFramework.Unknown)
+            {
+                // Define additional attributes for the stub definition.
+                additionalAttrs.Add(
+                    AttributeList(
+                        SingletonSeparatedList(
+                            Attribute(ParseName(TypeNames.System_CodeDom_Compiler_GeneratedCodeAttribute),
+                                AttributeArgumentList(
+                                    SeparatedList(
+                                        new[]
+                                        {
+                                            AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal("Microsoft.Interop.DllImportGenerator"))),
+                                            AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(GeneratorVersion)))
+                                        }))))));
+            }
 
             if (env.TargetFrameworkVersion >= new Version(5, 0) && !MethodIsSkipLocalsInit(env, method))
             {
