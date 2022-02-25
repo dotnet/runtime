@@ -124,10 +124,69 @@ namespace System.Text.RegularExpressions
                 runtextend += beginning;
             }
 
-            Scan(runregex!, s, beginning, beginning + text.Length, runtextstart + beginning, -1, quick, runregex!.internalMatchTimeout);
+            InternalScan(runregex!, beginning, beginning + text.Length);
         }
 
+        /// <summary>
+        /// This method's body is only kept since it is a protected member that could be called by someone outside
+        /// the assembly.
+        /// </summary>
         protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, TimeSpan timeout)
+        {
+            InitializeTimeout(timeout);
+
+            // We set runtext before calling InitializeForScan so that runmatch object is initialized with the text
+            runtext = text;
+
+            InitializeForScan(regex, text, textstart, quick);
+
+            // InitializeForScan will default runtextstart and runtextend to 0 and length of string
+            // since it is configured to work over a sliced portion of text so we adjust those values.
+            runtextstart = textstart;
+            runtextend = textend;
+
+            // Configure the additional value to "bump" the position along each time we loop around
+            // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
+            // bump by 1 and stop at textend, but if we're examining right-to-left, we instead bump
+            // by -1 and stop at textbeg.
+            int bump = 1, stoppos = textend;
+            if (regex.RightToLeft)
+            {
+                bump = -1;
+                stoppos = textbeg;
+            }
+
+            // If previous match was empty or failed, advance by one before matching.
+            if (prevlen == 0)
+            {
+                if (textstart == stoppos)
+                {
+                    return Match.Empty;
+                }
+
+                runtextpos += bump;
+            }
+
+            Match match = InternalScan(regex, textbeg, textend);
+            runtext = null; //drop reference
+            runmatch!.Text = null;
+
+            if (match.FoundMatch)
+            {
+                if (quick)
+                {
+                    return null;
+                }
+
+                runmatch = null;
+                match.Tidy(runtextpos);
+            }
+
+            return match;
+
+        }
+
+        private Match InternalScan(Regex regex, int textbeg, int textend)
         {
             // Configure the additional value to "bump" the position along each time we loop around
             // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
@@ -254,7 +313,6 @@ namespace System.Text.RegularExpressions
                     // Environment.TickCount is an int that cycles. We intentionally let timeoutOccursAt
                     // overflow it will still stay ahead of Environment.TickCount for comparisons made
                     // in DoCheckTimeout().
-                    Regex.ValidateMatchTimeout(timeout); // validate timeout as this could be called from user code due to being protected
                     _ignoreTimeout = false;
                     _timeout = (int)(timeout.TotalMilliseconds + 0.5); // Round;
                     _timeoutOccursAt = Environment.TickCount + _timeout;
