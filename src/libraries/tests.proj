@@ -283,10 +283,12 @@
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunDisabledWasmTests)' != 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.NETCore.Platforms\tests\Microsoft.NETCore.Platforms.Tests.csproj" />
 
-    <!-- https://github.com/dotnet/runtime/issues/35970 -->
+    <!-- This test is disabled via an assembly-level attribute in source. We exclude it here to avoid queuing/running a work item entirely.
+         https://github.com/dotnet/runtime/issues/35970 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Caching.Memory\tests\Microsoft.Extensions.Caching.Memory.Tests.csproj" />
 
-    <!-- https://github.com/mono/mono/issues/16417 -->
+    <!-- This test is disabled via an assembly-level attribute in source. We exclude it here to avoid queuing/running a work item entirely.
+         https://github.com/mono/mono/issues/16417 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Composition\tests\System.ComponentModel.Composition.Tests.csproj" />
 
     <!-- Mono-Browser ignores runtimeconfig.template.json (e.g. for this it has "System.Globalization.EnforceJapaneseEraYearRanges": true) -->
