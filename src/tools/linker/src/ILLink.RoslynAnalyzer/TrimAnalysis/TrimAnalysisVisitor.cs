@@ -70,7 +70,14 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public override MultiValue VisitFieldReference (IFieldReferenceOperation fieldRef, StateValue state)
 		{
-			return fieldRef.Field.Type.IsTypeInterestingForDataflow () ? new FieldValue (fieldRef.Field) : TopValue;
+			if (!fieldRef.Field.Type.IsTypeInterestingForDataflow ())
+				return TopValue;
+
+			var field = fieldRef.Field;
+			if (field.Name is "Empty" && field.ContainingType.HasName ("System.String"))
+				return new KnownStringValue (string.Empty);
+
+			return new FieldValue (fieldRef.Field);
 		}
 
 		public override MultiValue VisitTypeOf (ITypeOfOperation typeOfOperation, StateValue state)

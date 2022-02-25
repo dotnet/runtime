@@ -100,10 +100,11 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task GetTypeDataFlow ()
 		{
-			return RunTest (nameof (GetTypeDataFlow));
+			// https://github.com/dotnet/linker/issues/2273
+			return RunTest (allowMissingWarnings: true);
 		}
 
 		[Fact]
