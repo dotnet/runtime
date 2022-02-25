@@ -1948,6 +1948,9 @@ typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCON
 PINITIALIZECONTEXT2 pfnInitializeContext2 = NULL;
 
 #ifdef TARGET_X86
+typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);
+PRTLRESTORECONTEXT pfnRtlRestoreContext = NULL;
+
 #define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_FLOATING_POINT |       \
                           CONTEXT_DEBUG_REGISTERS | CONTEXT_EXTENDED_REGISTERS | CONTEXT_EXCEPTION_REQUEST)
 #else
@@ -1965,6 +1968,13 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
     {
         HMODULE hm = GetModuleHandleW(_T("kernel32.dll"));
         pfnInitializeContext2 = (PINITIALIZECONTEXT2)GetProcAddress(hm, "InitializeContext2");
+
+#ifdef TARGET_X86
+        if (pfnRtlRestoreContext == NULL)
+        {
+            pfnRtlRestoreContext = (PRTLRESTORECONTEXT)GetProcAddress(hm, "RtlRestoreContext");
+        }
+#endif //TARGET_X86
     }
 
     // Determine if the processor supports AVX so we could
@@ -2688,50 +2698,53 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
         }
 
 #ifdef TARGET_X86
-        RestoreContextSimulated(pThread, pCtx, &frame);
-
-#else // TARGET_X86
+        if (!pfnRtlRestoreContext)
+        {
+            RestoreContextSimulated(pThread, pCtx, &frame);
+        }
+        else
+#endif // TARGET_X86
+        {
 
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
-        //
-        // If GCStress interrupts an IL stub or inlined p/invoke while it's running in preemptive mode, it switches the mode to
-        // cooperative - but we will resume to preemptive below.  We should not trigger an abort in that case, as it will fail
-        // due to the GC mode.
-        //
-        if (!pThread->m_fPreemptiveGCDisabledForGCStress)
+            //
+            // If GCStress interrupts an IL stub or inlined p/invoke while it's running in preemptive mode, it switches the mode to
+            // cooperative - but we will resume to preemptive below.  We should not trigger an abort in that case, as it will fail
+            // due to the GC mode.
+            //
+            if (!pThread->m_fPreemptiveGCDisabledForGCStress)
 #endif
-        {
-
-            UINT_PTR uAbortAddr;
-            UINT_PTR uResumePC = (UINT_PTR)GetIP(pCtx);
-            CopyOSContext(pThread->m_OSContext, pCtx);
-            uAbortAddr = (UINT_PTR)COMPlusCheckForAbort();
-            if (uAbortAddr)
             {
-                LOG((LF_EH, LL_INFO100, "thread abort in progress, resuming thread under control... (handled jit case)\n"));
 
-                CONSISTENCY_CHECK(CheckPointer(pCtx));
+                UINT_PTR uAbortAddr;
+                UINT_PTR uResumePC = (UINT_PTR)GetIP(pCtx);
+                CopyOSContext(pThread->m_OSContext, pCtx);
+                uAbortAddr = (UINT_PTR)COMPlusCheckForAbort();
+                if (uAbortAddr)
+                {
+                    LOG((LF_EH, LL_INFO100, "thread abort in progress, resuming thread under control... (handled jit case)\n"));
 
-                STRESS_LOG1(LF_EH, LL_INFO10, "resume under control: ip: %p (handled jit case)\n", uResumePC);
+                    CONSISTENCY_CHECK(CheckPointer(pCtx));
 
-                SetIP(pThread->m_OSContext, uResumePC);
+                    STRESS_LOG1(LF_EH, LL_INFO10, "resume under control: ip: %p (handled jit case)\n", uResumePC);
+
+                    SetIP(pThread->m_OSContext, uResumePC);
 
 #if defined(TARGET_ARM)
-                // Save the original resume PC in Lr
-                pCtx->Lr = uResumePC;
+                    // Save the original resume PC in Lr
+                    pCtx->Lr = uResumePC;
 
-                // Since we have set a new IP, we have to clear conditional execution flags too.
-                ClearITState(pThread->m_OSContext);
+                    // Since we have set a new IP, we have to clear conditional execution flags too.
+                    ClearITState(pThread->m_OSContext);
 #endif // TARGET_ARM
 
-                SetIP(pCtx, uAbortAddr);
+                    SetIP(pCtx, uAbortAddr);
+                }
             }
-        }
 
-        // Unlink the frame in preparation for resuming in managed code
-        frame.Pop();
+            // Unlink the frame in preparation for resuming in managed code
+            frame.Pop();
 
-        {
             // Allow future use of the context
             pThread->UnmarkRedirectContextInUse(pCtx);
 
@@ -2744,12 +2757,14 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
 #endif
 
             LOG((LF_SYNC, LL_INFO1000, "Resuming execution with RtlRestoreContext\n"));
-
             SetLastError(dwLastError); // END_PRESERVE_LAST_ERROR
 
+#ifdef TARGET_X86
+            pfnRtlRestoreContext(pCtx, NULL);
+#else
             RtlRestoreContext(pCtx, NULL);
+#endif
         }
-#endif // TARGET_X86
     }
 }
 
