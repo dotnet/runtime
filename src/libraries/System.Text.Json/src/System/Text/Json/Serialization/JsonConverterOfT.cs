@@ -227,7 +227,7 @@ namespace System.Text.Json.Serialization
             JsonTypeInfo originalJsonTypeInfo = state.Current.JsonTypeInfo;
 #endif
             state.Push();
-            Debug.Assert(TypeToConvert.IsAssignableFrom(state.Current.JsonTypeInfo.Type));
+            Debug.Assert(TypeToConvert == state.Current.JsonTypeInfo.Type);
 
 #if !DEBUG
             // For performance, only perform validation on internal converters on debug builds.
@@ -462,7 +462,7 @@ namespace System.Text.Json.Serialization
             JsonTypeInfo originalJsonTypeInfo = state.Current.JsonTypeInfo;
 #endif
             state.Push();
-            Debug.Assert(TypeToConvert.IsAssignableFrom(state.Current.JsonTypeInfo.Type));
+            Debug.Assert(TypeToConvert == state.Current.JsonTypeInfo.Type);
 
             if (!isContinuation)
             {
@@ -528,7 +528,7 @@ namespace System.Text.Json.Serialization
 
             // Extension data properties change how dictionary key naming policies are applied.
             state.Current.IsWritingExtensionDataProperty = true;
-            state.Current.DeclaredJsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
+            state.Current.JsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
 
             success = dictionaryConverter.OnWriteResume(writer, value, options, ref state);
             if (success)

@@ -1118,6 +1118,15 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
             }
 
+            // Internal calls typically turn into fcalls that do not always
+            // probe for GC. Be conservative here and always let JIT know that
+            // this method may not do GC checks so the JIT might need to make
+            // callers fully interruptible.
+            if (method.IsInternalCall)
+            {
+                result |= CorInfoFlag.CORINFO_FLG_NOGCCHECK;
+            }
+
             return (uint)result;
         }
 
@@ -1159,7 +1168,7 @@ namespace Internal.JitInterface
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
 
-        private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, ref uint pRestrictions)
+        private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd)
         {
             MethodDesc callerMethod = HandleToObject(callerHnd);
             MethodDesc calleeMethod = HandleToObject(calleeHnd);
@@ -2927,6 +2936,13 @@ namespace Internal.JitInterface
             }
         }
 
+        private uint getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
+        {
+            throw new NotImplementedException("For LoongArch64, would be implemented later");
+        }
+
+        private CORINFO_CLASS_STRUCT_* getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args)
+
         private int getExactClasses(CORINFO_CLASS_STRUCT_* baseType, int maxExactClasses, CORINFO_CLASS_STRUCT_** exactClsRet)
         {
 #if !READYTORUN
@@ -3910,6 +3926,10 @@ namespace Internal.JitInterface
 
         private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
         {
+            InstructionSet_ARM64 asArm64 = (InstructionSet_ARM64)instructionSet;
+            InstructionSet_X64 asX64 = (InstructionSet_X64)instructionSet;
+            InstructionSet_X86 asX86 = (InstructionSet_X86)instructionSet;
+
             if (supportEnabled)
             {
                 _actualInstructionSetSupported.AddInstructionSet(instructionSet);
@@ -3920,6 +3940,10 @@ namespace Internal.JitInterface
                 // set is not a reason to not support usage of it.
                 if (!isMethodDefinedInCoreLib())
                 {
+                    // If a vector instruction set is marked as attempted to be used, but is also explicitly unsupported
+                    // then we need to mark as explicitly unsupported the implied instruction set associated with the vector set. 
+                    instructionSet = InstructionSetFlags.ConvertToImpliedInstructionSetForVectorInstructionSets(_compilation.TypeSystemContext.Target.Architecture, instructionSet);
+
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
                 }
             }

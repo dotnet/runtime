@@ -1,20 +1,22 @@
 <Project>
 
-  <PropertyGroup Condition="$(TargetFramework.Contains('-'))">
-    <_OriginalTargetFramework>$(TargetFramework)</_OriginalTargetFramework>
-    <TargetFrameworkSuffix>$(TargetFramework.SubString($([MSBuild]::Add($(TargetFramework.IndexOf('-')), 1))))</TargetFrameworkSuffix>
-    <!-- Strip away the TargetPlatform during the build for non .NETCoreApp frameworks because the assets file does not know about the TargetPlatform. -->
-    <TargetFramework>$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFramework)', '$(TargetFrameworkPattern)', '${1}'))</TargetFramework>
+  <PropertyGroup>
+    <TargetPlatformSupported>true</TargetPlatformSupported>
+    <TargetPlatformVersionSupported>true</TargetPlatformVersionSupported>
+
+    <!-- Value of 0.0 produces versionless SupportedOSPlatform attribute.
+         This is required for platforms not expected to have a version,
+         and we currently omit the version for all platforms. -->
+    <SupportedOSPlatformVersion>0.0</SupportedOSPlatformVersion>
+
+    <!-- Disable setting a default Windows platform for .NETStandard and .NET Framework libraries.
+         This ensures that the TargetPlatformIdentifier property is empty for non .NETCoreApp tfms. -->
+    <_EnableDefaultWindowsPlatform>false</_EnableDefaultWindowsPlatform>
+    <_targetPlatformIdentifier Condition="$(TargetFramework.Contains('-'))">$(TargetFramework.SubString($([MSBuild]::Add($(TargetFramework.IndexOf('-')), 1))))</_targetPlatformIdentifier>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisDirectory)targetframeworksuffix.props" Condition="'$(DesignTimeBuild)' == 'true'" />
-
-  <PropertyGroup>
-    <IntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(BaseIntermediateOutputPath)', '$(TargetFramework)-$(Configuration)'))</IntermediateOutputPath>
-    <IntermediateOutputPath Condition="'$(TargetFrameworkSuffix)' != '' and !$(TargetFramework.Contains('-'))">$([MSBuild]::NormalizeDirectory('$(BaseIntermediateOutputPath)', '$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)'))</IntermediateOutputPath>
-    <!-- setting the output paths -->
-    <OutputPath>$([MSBuild]::NormalizeDirectory('$(BaseOutputPath)', '$(TargetFramework)-$(Configuration)'))</OutputPath>
-    <OutputPath Condition="'$(TargetFrameworkSuffix)' != '' and !$(TargetFramework.Contains('-'))">$([MSBuild]::NormalizeDirectory('$(BaseOutputPath)', '$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)'))</OutputPath>
+  <PropertyGroup Condition="'$(_targetPlatformIdentifier)' != '' and '$(_targetPlatformIdentifier)' != 'windows'">
+    <TargetPlatformVersion>1.0</TargetPlatformVersion>
   </PropertyGroup>
 
 </Project>

@@ -37,13 +37,8 @@ namespace System.Security.AccessControl
 
         #region Constructors
 
-        internal AceEnumerator(GenericAcl collection)
+        internal AceEnumerator(GenericAcl collection!!)
         {
-            if (collection == null)
-            {
-                throw new ArgumentNullException(nameof(collection));
-            }
-
             _acl = collection;
             Reset();
         }
@@ -167,13 +162,8 @@ namespace System.Security.AccessControl
 
         #region ICollection Implementation
 
-        void ICollection.CopyTo(Array array, int index)
+        void ICollection.CopyTo(Array array!!, int index)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
-
             if (array.Rank != 1)
             {
                 throw new RankException(SR.Rank_MultiDimNotSupported);
@@ -240,13 +230,8 @@ namespace System.Security.AccessControl
 
         #region Private Methods
 
-        private static void VerifyHeader(byte[] binaryForm, int offset, out byte revision, out int count, out int length)
+        private static void VerifyHeader(byte[] binaryForm!!, int offset, out byte revision, out int count, out int length)
         {
-            if (binaryForm == null)
-            {
-                throw new ArgumentNullException(nameof(binaryForm));
-            }
-
             if (offset < 0)
             {
                 //
@@ -286,13 +271,9 @@ namespace System.Security.AccessControl
             throw new ArgumentOutOfRangeException(nameof(binaryForm), SR.ArgumentOutOfRange_ArrayTooSmall);
         }
 
-        private void MarshalHeader(byte[] binaryForm, int offset)
+        private void MarshalHeader(byte[] binaryForm!!, int offset)
         {
-            if (binaryForm == null)
-            {
-                throw new ArgumentNullException(nameof(binaryForm));
-            }
-            else if (offset < 0)
+            if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
@@ -566,13 +547,8 @@ namespace System.Security.AccessControl
         // Adds an ACE at the specified index
         //
 
-        public void InsertAce(int index, GenericAce ace)
+        public void InsertAce(int index, GenericAce ace!!)
         {
-            if (ace == null)
-            {
-                throw new ArgumentNullException(nameof(ace));
-            }
-
             if (BinaryLength + ace.BinaryLength > MaxBinaryLength)
             {
                 throw new OverflowException(SR.AccessControl_AclTooLong);
@@ -1857,14 +1833,9 @@ namespace System.Security.AccessControl
         //   copy of the ACL passed in
         //
 
-        internal CommonAcl(bool isContainer, bool isDS, RawAcl rawAcl, bool trusted, bool isDacl)
+        internal CommonAcl(bool isContainer, bool isDS, RawAcl rawAcl!!, bool trusted, bool isDacl)
             : base()
         {
-            if (rawAcl == null)
-            {
-                throw new ArgumentNullException(nameof(rawAcl));
-            }
-
             _isContainer = isContainer;
             _isDS = isDS;
 
@@ -1985,13 +1956,8 @@ namespace System.Security.AccessControl
         // Helper function behind all the AddXXX methods for qualified aces
         //
 
-        internal void AddQualifiedAce(SecurityIdentifier sid, AceQualifier qualifier, int accessMask, AceFlags flags, ObjectAceFlags objectFlags, Guid objectType, Guid inheritedObjectType)
+        internal void AddQualifiedAce(SecurityIdentifier sid!!, AceQualifier qualifier, int accessMask, AceFlags flags, ObjectAceFlags objectFlags, Guid objectType, Guid inheritedObjectType)
         {
-            if (sid == null)
-            {
-                throw new ArgumentNullException(nameof(sid));
-            }
-
             ThrowIfNotCanonical();
 
             bool aceMerged = false; // if still false after all attempts to merge, create new entry
@@ -2068,13 +2034,8 @@ namespace System.Security.AccessControl
         // Helper function behind all the SetXXX methods
         //
 
-        internal void SetQualifiedAce(SecurityIdentifier sid, AceQualifier qualifier, int accessMask, AceFlags flags, ObjectAceFlags objectFlags, Guid objectType, Guid inheritedObjectType)
+        internal void SetQualifiedAce(SecurityIdentifier sid!!, AceQualifier qualifier, int accessMask, AceFlags flags, ObjectAceFlags objectFlags, Guid objectType, Guid inheritedObjectType)
         {
-            if (sid == null)
-            {
-                throw new ArgumentNullException(nameof(sid));
-            }
-
             if (qualifier == AceQualifier.SystemAudit &&
                 ((flags & AceFlags.AuditFlags) == 0))
             {
@@ -2856,13 +2817,8 @@ namespace System.Security.AccessControl
             OnAclModificationTried();
         }
 
-        public void Purge(SecurityIdentifier sid)
+        public void Purge(SecurityIdentifier sid!!)
         {
-            if (sid == null)
-            {
-                throw new ArgumentNullException(nameof(sid));
-            }
-
             ThrowIfNotCanonical();
 
             for (int i = Count - 1; i >= 0; i--)

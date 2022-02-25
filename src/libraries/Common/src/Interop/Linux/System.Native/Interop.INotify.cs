@@ -13,7 +13,7 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_INotifyInit", SetLastError = true)]
         internal static partial SafeFileHandle INotifyInit();
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_INotifyAddWatch", CharSet = CharSet.Ansi, SetLastError = true)]
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_INotifyAddWatch", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static partial int INotifyAddWatch(SafeFileHandle fd, string pathName, uint mask);
 
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_INotifyRemoveWatch", SetLastError = true)]

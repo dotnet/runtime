@@ -2433,7 +2433,7 @@ OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken meta
     _ASSERTE(TypeFromToken(metaTok) == mdtString);
 
     Module* module = GetModule(scopeHnd);
-    return module->ResolveStringRef(metaTok, module->GetAssembly()->Parent(), false);
+    return module->ResolveStringRef(metaTok, module->GetAssembly()->Parent());
 }
 
 /*********************************************************************/
@@ -5668,6 +5668,10 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
 #endif
 }
 HCIMPLEND_RAW
+
+// These two do take args but have a custom calling convention.
+EXTERN_C void JIT_ValidateIndirectCall();
+EXTERN_C void JIT_DispatchIndirectCall();
 
 //========================================================================
 //

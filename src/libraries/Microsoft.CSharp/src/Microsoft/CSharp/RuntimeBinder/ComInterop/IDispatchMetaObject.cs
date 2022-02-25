@@ -23,7 +23,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args)
         {
-            Requires.NotNull(binder, nameof(binder));
+            Requires.NotNull(binder);
 
             if (_self.TryGetMemberMethod(binder.Name, out ComMethodDesc method) ||
                 _self.TryGetMemberMethodExplicit(binder.Name, out method))
@@ -40,7 +40,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject BindInvoke(InvokeBinder binder, DynamicMetaObject[] args)
         {
-            Requires.NotNull(binder, nameof(binder));
+            Requires.NotNull(binder);
 
             if (_self.TryGetGetItem(out ComMethodDesc method))
             {
@@ -75,7 +75,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             ComBinder.ComGetMemberBinder comBinder = binder as ComBinder.ComGetMemberBinder;
             bool canReturnCallables = comBinder?._canReturnCallables ?? false;
 
-            Requires.NotNull(binder, nameof(binder));
+            Requires.NotNull(binder);
 
             // 1. Try methods
             if (_self.TryGetMemberMethod(binder.Name, out ComMethodDesc method))
@@ -149,7 +149,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes)
         {
-            Requires.NotNull(binder, nameof(binder));
+            Requires.NotNull(binder);
 
             if (_self.TryGetGetItem(out ComMethodDesc getItem))
             {
@@ -164,7 +164,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value)
         {
-            Requires.NotNull(binder, nameof(binder));
+            Requires.NotNull(binder);
 
             if (_self.TryGetSetItem(out ComMethodDesc setItem))
             {
@@ -188,7 +188,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value)
         {
-            Requires.NotNull(binder, nameof(binder));
+            Requires.NotNull(binder);
 
             return
                 // 1. Check for simple property put

@@ -3,9 +3,9 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
@@ -81,7 +81,7 @@ namespace System.Globalization
             return result;
         }
 
-        internal static int IcuGetTwoDigitYearMax(CalendarId calendarId)
+        internal static int IcuGetTwoDigitYearMax()
         {
             Debug.Assert(!GlobalizationMode.UseNls);
 
@@ -258,7 +258,9 @@ namespace System.Globalization
         /// </remarks>
         private static string NormalizeDatePattern(string input)
         {
-            StringBuilder destination = StringBuilderCache.Acquire(input.Length);
+            var destination = input.Length < 128 ?
+                new ValueStringBuilder(stackalloc char[128]) :
+                new ValueStringBuilder(input.Length);
 
             int index = 0;
             while (index < input.Length)
@@ -287,7 +289,7 @@ namespace System.Globalization
                         // maps closest to 3 or 4 'd's in .NET
                         // 'c' in ICU is the stand-alone day of the week, which has no representation in .NET, but
                         // maps closest to 3 or 4 'd's in .NET
-                        NormalizeDayOfWeek(input, destination, ref index);
+                        NormalizeDayOfWeek(input, ref destination, ref index);
                         break;
                     case 'L':
                     case 'M':
@@ -332,10 +334,10 @@ namespace System.Globalization
                 }
             }
 
-            return StringBuilderCache.GetStringAndRelease(destination);
+            return destination.ToString();
         }
 
-        private static void NormalizeDayOfWeek(string input, StringBuilder destination, ref int index)
+        private static void NormalizeDayOfWeek(string input, ref ValueStringBuilder destination, ref int index)
         {
             char dayChar = input[index];
             int occurrences = CountOccurrences(input, dayChar, ref index);

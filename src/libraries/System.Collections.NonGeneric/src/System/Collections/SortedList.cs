@@ -151,12 +151,9 @@ namespace System.Collections
         // by the keys of all entries in the given dictionary as well as keys
         // subsequently added to the sorted list.
         //
-        public SortedList(IDictionary d, IComparer? comparer)
-            : this(comparer, (d != null ? d.Count : 0))
+        public SortedList(IDictionary d!!, IComparer? comparer)
+            : this(comparer, d.Count)
         {
-            if (d == null)
-                throw new ArgumentNullException(nameof(d), SR.ArgumentNull_Dictionary);
-
             d.Keys.CopyTo(keys, 0);
             d.Values.CopyTo(values, 0);
 
@@ -173,10 +170,8 @@ namespace System.Collections
         // Adds an entry with the given key and value to this sorted list. An
         // ArgumentException is thrown if the key is already present in the sorted list.
         //
-        public virtual void Add(object key, object? value)
+        public virtual void Add(object key!!, object? value)
         {
-            if (key == null) throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
-
             int i = Array.BinarySearch(keys, 0, _size, key, comparer);
             if (i >= 0)
                 throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate_OldAndNewKeys, GetKey(i), key));
@@ -334,10 +329,8 @@ namespace System.Collections
         }
 
         // Copies the values in this SortedList to an array.
-        public virtual void CopyTo(Array array, int arrayIndex)
+        public virtual void CopyTo(Array array!!, int arrayIndex)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Array);
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             if (arrayIndex < 0)
@@ -465,7 +458,7 @@ namespace System.Collections
             }
             set
             {
-                if (key == null) throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
+                ArgumentNullException.ThrowIfNull(key);
                 int i = Array.BinarySearch(keys, 0, _size, key, comparer);
                 if (i >= 0)
                 {
@@ -484,10 +477,8 @@ namespace System.Collections
         // the given key does not occur in this sorted list. Null is an invalid
         // key value.
         //
-        public virtual int IndexOfKey(object key)
+        public virtual int IndexOfKey(object key!!)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
             int ret = Array.BinarySearch(keys, 0, _size, key, comparer);
             return ret >= 0 ? ret : -1;
         }
@@ -558,10 +549,8 @@ namespace System.Collections
 
         // Returns a thread-safe SortedList.
         //
-        public static SortedList Synchronized(SortedList list)
+        public static SortedList Synchronized(SortedList list!!)
         {
-            if (list == null)
-                throw new ArgumentNullException(nameof(list));
             return new SyncSortedList(list);
         }
 
@@ -737,11 +726,8 @@ namespace System.Collections
                 }
             }
 
-            public override int IndexOfKey(object key)
+            public override int IndexOfKey(object key!!)
             {
-                if (key == null)
-                    throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
-
                 lock (_root)
                 {
                     return _list.IndexOfKey(key);
@@ -981,8 +967,7 @@ namespace System.Collections
 
             public int IndexOf(object? key)
             {
-                if (key == null)
-                    throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
+                ArgumentNullException.ThrowIfNull(key);
 
                 int i = Array.BinarySearch(sortedList.keys, 0,
                                            sortedList.Count, key, sortedList.comparer);
@@ -1104,13 +1089,8 @@ namespace System.Collections
         {
             private readonly SortedList _sortedList;
 
-            public SortedListDebugView(SortedList sortedList)
+            public SortedListDebugView(SortedList sortedList!!)
             {
-                if (sortedList == null)
-                {
-                    throw new ArgumentNullException(nameof(sortedList));
-                }
-
                 _sortedList = sortedList;
             }
 

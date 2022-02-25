@@ -592,43 +592,6 @@ LOCAL_LABEL(stackProbe_loop):
     NESTED_END stackProbe, _TEXT
 
 //------------------------------------------------
-// ExternalMethodFixupStub
-//
-// In NGEN images, calls to cross-module external methods initially
-// point to a jump thunk that calls into the following function that will
-// call into a VM helper. The VM helper is responsible for patching up the
-// thunk, upon executing the precode, so that all subsequent calls go directly
-// to the actual method body.
-//
-// This is done lazily for performance reasons.
-//
-// On entry:
-//
-// R12 = Address of thunk + 4
-
-    NESTED_ENTRY ExternalMethodFixupStub, _TEXT, NoHandler
-
-    PROLOG_WITH_TRANSITION_BLOCK
-
-    add         r0, sp, #__PWTB_TransitionBlock // pTransitionBlock
-
-    // Adjust (read comment above for details) and pass the address of the thunk
-    sub         r1, r12, #4                     // pThunk
-
-    mov         r2, #0  // sectionIndex
-    mov         r3, #0  // pModule
-    bl          C_FUNC(ExternalMethodFixupWorker)
-
-    // mov the address we patched to in R12 so that we can tail call to it
-    mov         r12, r0
-
-    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL ExternalMethodFixupPatchLabel
-    bx r12
-
-    NESTED_END ExternalMethodFixupStub, _TEXT
-
-//------------------------------------------------
 // JIT_RareDisableHelper
 //
 // The JIT expects this helper to preserve registers used for return values
@@ -936,8 +899,8 @@ DelayLoad_MethodCall:
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 
-    // Share the patch label
-    b C_FUNC(ExternalMethodFixupPatchLabel)
+    PATCH_LABEL ExternalMethodFixupPatchLabel
+    bx r12
 
     NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT
 

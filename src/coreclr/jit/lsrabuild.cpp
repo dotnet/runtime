@@ -859,7 +859,7 @@ regMaskTP LinearScan::getKillSetForModDiv(GenTreeOp* node)
 //
 regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 {
-    regMaskTP killMask = RBM_NONE;
+    regMaskTP killMask = RBM_CALLEE_TRASH;
 #ifdef TARGET_X86
     if (compiler->compFloatingPointUsed)
     {
@@ -873,38 +873,30 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
         }
     }
 #endif // TARGET_X86
-#if defined(TARGET_X86) || defined(TARGET_ARM)
     if (call->IsHelperCall())
     {
         CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
         killMask                 = compiler->compHelperCallKillSet(helpFunc);
     }
-    else
-#endif // defined(TARGET_X86) || defined(TARGET_ARM)
+
+    // if there is no FP used, we can ignore the FP kills
+    if (!compiler->compFloatingPointUsed)
     {
-        // if there is no FP used, we can ignore the FP kills
-        if (compiler->compFloatingPointUsed)
-        {
-            killMask = RBM_CALLEE_TRASH;
-        }
-        else
-        {
-            killMask = RBM_INT_CALLEE_TRASH;
-        }
-#ifdef TARGET_ARM
-        if (call->IsVirtualStub())
-        {
-            killMask |= compiler->virtualStubParamInfo->GetRegMask();
-        }
-#else  // !TARGET_ARM
-        // Verify that the special virtual stub call registers are in the kill mask.
-        // We don't just add them unconditionally to the killMask because for most architectures
-        // they are already in the RBM_CALLEE_TRASH set,
-        // and we don't want to introduce extra checks and calls in this hot function.
-        assert(!call->IsVirtualStub() || ((killMask & compiler->virtualStubParamInfo->GetRegMask()) ==
-                                          compiler->virtualStubParamInfo->GetRegMask()));
-#endif // !TARGET_ARM
+        killMask &= ~RBM_FLT_CALLEE_TRASH;
     }
+#ifdef TARGET_ARM
+    if (call->IsVirtualStub())
+    {
+        killMask |= compiler->virtualStubParamInfo->GetRegMask();
+    }
+#else  // !TARGET_ARM
+    // Verify that the special virtual stub call registers are in the kill mask.
+    // We don't just add them unconditionally to the killMask because for most architectures
+    // they are already in the RBM_CALLEE_TRASH set,
+    // and we don't want to introduce extra checks and calls in this hot function.
+    assert(!call->IsVirtualStub() ||
+           ((killMask & compiler->virtualStubParamInfo->GetRegMask()) == compiler->virtualStubParamInfo->GetRegMask()));
+#endif // !TARGET_ARM
     return killMask;
 }
 
@@ -1619,12 +1611,12 @@ void LinearScan::buildUpperVectorRestoreRefPosition(Interval* lclVarInterval, Ls
 int LinearScan::ComputeOperandDstCount(GenTree* operand)
 {
     // GT_ARGPLACE is the only non-LIR node that is currently in the trees at this stage, though
-    // note that it is not in the linear order. It seems best to check for !IsLIR() rather than
-    // GT_ARGPLACE directly, since it's that characteristic that makes it irrelevant for this method.
-    if (!operand->IsLIR())
+    // note that it is not in the linear order.
+    if (operand->OperIs(GT_ARGPLACE))
     {
         return 0;
     }
+
     if (operand->isContained())
     {
         int dstCount = 0;
@@ -3299,7 +3291,7 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
     assert(varDsc->lvTracked);
     unsigned  varIndex       = varDsc->lvVarIndex;
     Interval* varDefInterval = getIntervalForLocalVar(varIndex);
-    if ((storeLoc->gtFlags & GTF_VAR_DEATH) == 0)
+    if (!storeLoc->IsLastUse(index))
     {
         VarSetOps::AddElemD(compiler, currentLiveVars, varIndex);
     }
@@ -3404,7 +3396,8 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
     //
     for (unsigned int i = 0; i < dstCount; ++i)
     {
-        LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
+        LclVarDsc*   fieldVarDsc  = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
+        RefPosition* singleUseRef = nullptr;
 
         if (isMultiRegSrc)
         {
@@ -3416,10 +3409,10 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
                 srcCandidates = allByteRegs();
             }
 #endif // TARGET_X86
-            BuildUse(op1, srcCandidates, i);
+            singleUseRef = BuildUse(op1, srcCandidates, i);
         }
         assert(isCandidateVar(fieldVarDsc));
-        BuildStoreLocDef(storeLoc, fieldVarDsc, nullptr, i);
+        BuildStoreLocDef(storeLoc, fieldVarDsc, singleUseRef, i);
         if (isMultiRegSrc && (i < (dstCount - 1)))
         {
             currentLoc += 2;

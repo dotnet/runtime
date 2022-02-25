@@ -115,6 +115,33 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The generated &apos;DllImportAttribute&apos; will not have a value corresponding to &apos;{0}&apos;..
+        /// </summary>
+        internal static string CannotForwardToDllImportDescription {
+            get {
+                return ResourceManager.GetString("CannotForwardToDllImportDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &apos;{0}&apos; has no equivalent in &apos;DllImportAtttribute&apos; and will not be forwarded.
+        /// </summary>
+        internal static string CannotForwardToDllImportMessage {
+            get {
+                return ResourceManager.GetString("CannotForwardToDllImportMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Specified &apos;GeneratedDllImportAttribute&apos; arguments cannot be forwarded to &apos;DllImportAttribute&apos;.
+        /// </summary>
+        internal static string CannotForwardToDllImportTitle {
+            get {
+                return ResourceManager.GetString("CannotForwardToDllImportTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The &apos;BlittableTypeAttribute&apos; and &apos;NativeMarshallingAttribute&apos; attributes are mutually exclusive..
         /// </summary>
         internal static string CannotHaveMultipleMarshallingAttributesDescription {
@@ -223,6 +250,15 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Automatically converting a P/Invoke with &apos;PreserveSig&apos; set to &apos;false&apos; to a source-generated P/Invoke may produce invalid code.
+        /// </summary>
+        internal static string ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode {
+            get {
+                return ResourceManager.GetString("ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Convert to &apos;GeneratedDllImport&apos;.
         /// </summary>
         internal static string ConvertToGeneratedDllImport {
@@ -264,6 +300,15 @@ namespace Microsoft.Interop {
         internal static string ConvertToGeneratedDllImportWarning {
             get {
                 return ResourceManager.GetString("ConvertToGeneratedDllImportWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Convert to &apos;GeneratedDllImport&apos; with &apos;{0}&apos; suffix.
+        /// </summary>
+        internal static string ConvertToGeneratedDllImportWithSuffix {
+            get {
+                return ResourceManager.GetString("ConvertToGeneratedDllImportWithSuffix", resourceCulture);
             }
         }
         
@@ -372,6 +417,51 @@ namespace Microsoft.Interop {
         internal static string GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage {
             get {
                 return ResourceManager.GetString("GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid &apos;LibraryImportAttribute&apos; usage.
+        /// </summary>
+        internal static string InvalidLibraryImportAttributeUsageTitle {
+            get {
+                return ResourceManager.GetString("InvalidLibraryImportAttributeUsageTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The configuration of &apos;StringMarshalling&apos; and &apos;StringMarshallingCustomType&apos; is invalid..
+        /// </summary>
+        internal static string InvalidStringMarshallingConfigurationDescription {
+            get {
+                return ResourceManager.GetString("InvalidStringMarshallingConfigurationDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The configuration of &apos;StringMarshalling&apos; and &apos;StringMarshallingCustomType&apos; on method &apos;{0}&apos; is invalid. {1}.
+        /// </summary>
+        internal static string InvalidStringMarshallingConfigurationMessage {
+            get {
+                return ResourceManager.GetString("InvalidStringMarshallingConfigurationMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &apos;StringMarshallingCustomType&apos; must be specified when &apos;StringMarshalling&apos; is set to &apos;StringMarshalling.Custom&apos;..
+        /// </summary>
+        internal static string InvalidStringMarshallingConfigurationMissingCustomType {
+            get {
+                return ResourceManager.GetString("InvalidStringMarshallingConfigurationMissingCustomType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &apos;StringMarshalling&apos; should be set to &apos;StringMarshalling.Custom&apos; when &apos;StringMarshallingCustomType&apos; is specified..
+        /// </summary>
+        internal static string InvalidStringMarshallingConfigurationNotCustom {
+            get {
+                return ResourceManager.GetString("InvalidStringMarshallingConfigurationNotCustom", resourceCulture);
             }
         }
         
@@ -507,6 +597,15 @@ namespace Microsoft.Interop {
         internal static string RefValuePropertyUnsupportedMessage {
             get {
                 return ResourceManager.GetString("RefValuePropertyUnsupportedMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to .
+        /// </summary>
+        internal static string RuntimeMarshallingMustBeDisabled {
+            get {
+                return ResourceManager.GetString("RuntimeMarshallingMustBeDisabled", resourceCulture);
             }
         }
         
