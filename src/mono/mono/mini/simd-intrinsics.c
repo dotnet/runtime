@@ -670,9 +670,7 @@ static gboolean
 is_element_type_primitive (MonoType *vector_type)
 {
 	MonoType *element_type = get_vector_t_elem_type (vector_type);
-	if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (element_type))
-		return FALSE;
-	return TRUE;
+	return MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (element_type);
 }
 
 static MonoInst*
