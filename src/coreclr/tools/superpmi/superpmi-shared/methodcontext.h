@@ -1108,8 +1108,8 @@ enum mcPackets
     Packet_GetModuleAssembly = 190,
     Packet_GetAssemblyName = 191,
     Packet_IsIntrinsic = 192,
-    Packet_UpdateEntryPointForTailCall = 193
-    Packet_GetLoongArch64PassStructInRegisterFlags = 194,
+    Packet_UpdateEntryPointForTailCall = 193,
+    Packet_GetLoongArch64PassStructInRegisterFlags = 194
 };
 
 void SetDebugDumpVariables();
