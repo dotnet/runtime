@@ -112,6 +112,8 @@ export function mono_intern_string(string: string): string {
 
     const ptr = js_string_to_mono_string_interned(string);
     const result = interned_string_table.get(ptr);
+    if (!result)
+        throw new Error("internal error: interned_string_table did not contain string after js_string_to_mono_string_interned");
     return result!;
 }
 
@@ -132,22 +134,25 @@ function _store_string_in_intern_table(string: string, root: WasmRoot<MonoString
 
     const rootBuffer = _interned_string_current_root_buffer;
     const index = _interned_string_current_root_buffer_count++;
-    rootBuffer.copy_value_from_address(index, root.get_address());
 
     // Store the managed string into the managed intern table. This can theoretically
     //  provide a different managed object than the one we passed in, so update our
     //  pointer (stored in the root) with the result.
-    if (internIt)
-        cwraps.mono_wasm_intern_string_ref(rootBuffer.get_address(index));
+    if (internIt) {
+        cwraps.mono_wasm_intern_string_ref(root.get_address());
+        if (!root.value)
+            throw new Error("mono_wasm_intern_string_ref produced a null pointer");
+    }
 
-    if (!rootBuffer.get(index))
-        throw new Error("mono_wasm_intern_string_ref produced a null pointer");
-
-    interned_js_string_table.set(string, <MonoString><any>rootBuffer.get(index));
-    interned_string_table.set(<MonoString><any>rootBuffer.get(index), string);
+    interned_js_string_table.set(string, root.value);
+    interned_string_table.set(root.value, string);
 
     if ((string.length === 0) && !_empty_string_ptr)
-        _empty_string_ptr = <MonoString><any>rootBuffer.get(index);
+        _empty_string_ptr = root.value;
+
+    // Copy the final pointer into our interned string root buffer to ensure the string
+    //  remains rooted. TODO: Is this actually necessary?
+    rootBuffer.copy_value_from_address(index, root.get_address());
 }
 
 export function js_string_to_mono_string_interned(string: string | symbol): MonoString {
@@ -174,8 +179,7 @@ export function js_string_to_mono_string_interned(string: string | symbol): Mono
         _store_string_in_intern_table(text, root, true);
         return root.value;
     } finally {
-        if (root)
-            root.release();
+        root.release();
     }
 }
 
