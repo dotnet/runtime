@@ -20,11 +20,21 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <!-- This doesn't run on V8 because it lacks websocket support -->
     <Scenario>WasmTestOnBrowser</Scenario>
-    <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
+    <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
+
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="package.json" />
+    <WasmExtraFilesToDeploy Include="package-lock.json" />
+
+    <NodeNpmModule Include="ws" Alias="WebSocket" />
+    <NodeNpmModule Include="node-fetch" />
+    <NodeNpmModule Include="node-abort-controller" />
+  </ItemGroup>
 
   <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
 

@@ -73,7 +73,7 @@ namespace System.Threading
 
 namespace System.Text.RegularExpressions
 {
-    internal class RegexReplacement
+    internal sealed class RegexReplacement
     {
         public RegexReplacement(string rep, RegexNode concat, Hashtable caps) { }
 
@@ -83,9 +83,4 @@ namespace System.Text.RegularExpressions
         public const int LastGroup = -3;
         public const int WholeString = -4;
     }
-}
-
-namespace System.Runtime.CompilerServices
-{
-    internal static class IsExternalInit { }
 }

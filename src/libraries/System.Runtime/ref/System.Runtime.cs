@@ -2709,10 +2709,10 @@ namespace System
         public string ToString(string? format) { throw null; }
         [System.ObsoleteAttribute("The provider argument is not used. Use ToString(String) instead.")]
         public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
-        public static bool TryParse(System.Type enumType, System.ReadOnlySpan<char> value, bool ignoreCase, out object? result) { throw null; }
-        public static bool TryParse(System.Type enumType, System.ReadOnlySpan<char> value, out object? result) { throw null; }
-        public static bool TryParse(System.Type enumType, string? value, bool ignoreCase, out object? result) { throw null; }
-        public static bool TryParse(System.Type enumType, string? value, out object? result) { throw null; }
+        public static bool TryParse(System.Type enumType, System.ReadOnlySpan<char> value, bool ignoreCase, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
+        public static bool TryParse(System.Type enumType, System.ReadOnlySpan<char> value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
+        public static bool TryParse(System.Type enumType, string? value, bool ignoreCase, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
+        public static bool TryParse(System.Type enumType, string? value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
         public static bool TryParse<TEnum>(System.ReadOnlySpan<char> value, bool ignoreCase, out TEnum result) where TEnum : struct { throw null; }
         public static bool TryParse<TEnum>(System.ReadOnlySpan<char> value, out TEnum result) where TEnum : struct { throw null; }
         public static bool TryParse<TEnum>([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value, bool ignoreCase, out TEnum result) where TEnum : struct { throw null; }
@@ -4931,6 +4931,7 @@ namespace System
         public static int Compare<T>(T? n1, T? n2) where T : struct { throw null; }
         public static bool Equals<T>(T? n1, T? n2) where T : struct { throw null; }
         public static System.Type? GetUnderlyingType(System.Type nullableType) { throw null; }
+        public static ref readonly T GetValueRefOrDefaultRef<T>(in T? nullable) where T : struct { throw null; }
     }
     public partial struct Nullable<T> where T : struct
     {
@@ -13367,6 +13368,74 @@ namespace System.Runtime.CompilerServices
     {
         public TypeForwardedToAttribute(System.Type destination) { }
         public System.Type Destination { get { throw null; } }
+    }
+    public static partial class Unsafe
+    {
+        public static ref T AddByteOffset<T>(ref T source, System.IntPtr byteOffset) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ref T AddByteOffset<T>(ref T source, nuint byteOffset) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static void* Add<T>(void* source, int elementOffset) { throw null; }
+        public static ref T Add<T>(ref T source, int elementOffset) { throw null; }
+        public static ref T Add<T>(ref T source, System.IntPtr elementOffset) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ref T Add<T>(ref T source, nuint elementOffset) { throw null; }
+        public static bool AreSame<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref T right) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static void* AsPointer<T>(ref T value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static ref T AsRef<T>(void* source) { throw null; }
+        public static ref T AsRef<T>(in T source) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("o")]
+        public static T? As<T>(object? o) where T : class? { throw null; }
+        public static ref TTo As<TFrom, TTo>(ref TFrom source) { throw null; }
+        public static System.IntPtr ByteOffset<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref T origin, [System.Diagnostics.CodeAnalysis.AllowNull] ref T target) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void CopyBlock(ref byte destination, ref byte source, uint byteCount) { }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static void CopyBlock(void* destination, void* source, uint byteCount) { }
+        [System.CLSCompliantAttribute(false)]
+        public static void CopyBlockUnaligned(ref byte destination, ref byte source, uint byteCount) { }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static void CopyBlockUnaligned(void* destination, void* source, uint byteCount) { }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static void Copy<T>(void* destination, ref T source) { }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static void Copy<T>(ref T destination, void* source) { }
+        [System.CLSCompliantAttribute(false)]
+        public static void InitBlock(ref byte startAddress, byte value, uint byteCount) { }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static void InitBlock(void* startAddress, byte value, uint byteCount) { }
+        [System.CLSCompliantAttribute(false)]
+        public static void InitBlockUnaligned(ref byte startAddress, byte value, uint byteCount) { }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static void InitBlockUnaligned(void* startAddress, byte value, uint byteCount) { }
+        public static bool IsAddressGreaterThan<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref T right) { throw null; }
+        public static bool IsAddressLessThan<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref T right) { throw null; }
+        public static bool IsNullRef<T>(ref T source) { throw null; }
+        public static ref T NullRef<T>() { throw null; }
+        public static T ReadUnaligned<T>(ref byte source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static T ReadUnaligned<T>(void* source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static T Read<T>(void* source) { throw null; }
+        public static void SkipInit<T>(out T value) { throw null; }
+        public static int SizeOf<T>() { throw null; }
+        public static ref T SubtractByteOffset<T>(ref T source, System.IntPtr byteOffset) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ref T SubtractByteOffset<T>(ref T source, nuint byteOffset) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static void* Subtract<T>(void* source, int elementOffset) { throw null; }
+        public static ref T Subtract<T>(ref T source, int elementOffset) { throw null; }
+        public static ref T Subtract<T>(ref T source, System.IntPtr elementOffset) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ref T Subtract<T>(ref T source, nuint elementOffset) { throw null; }
+        public static ref T Unbox<T>(object box) where T : struct { throw null; }
+        public static void WriteUnaligned<T>(ref byte destination, T value) { }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static void WriteUnaligned<T>(void* destination, T value) { }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static void Write<T>(void* destination, T value) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
     public sealed partial class UnsafeValueTypeAttribute : System.Attribute

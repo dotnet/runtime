@@ -143,6 +143,8 @@ To run a test with `FooBar` in the name:
 
 Additional arguments for `dotnet test` can be passed via `MSBUILD_ARGS` or `TEST_ARGS`. For example `MSBUILD_ARGS="/p:WasmDebugLevel=5"`. Though only one of `TEST_ARGS`, or `TEST_FILTER` can be used at a time.
 
+- Chrome can be installed for testing by setting `InstallChromeForDebuggerTests=true` when building the tests.
+
 ## Run samples
 
 The samples in `src/mono/sample/wasm` can be build and run like this:
@@ -194,3 +196,42 @@ Bumping Emscripten version involves these steps:
 * Is enforced via [eslint](https://eslint.org/) and rules are in `./.eslintrc.js`
 * You could check the style by running `npm run lint` in `src/mono/wasm/runtime` directory
 * You can install [plugin into your VS Code](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) to show you the errors as you type
+
+
+## Builds on CI
+
+* For PRs, tests are generally triggered based on path changes. But if you have a change which would not trigger the relevant builds, then you can run `runtime-wasm` pipeline manually to run all of them. Comment `/azp run runtime-wasm` on the PR.
+
+### How do I know which jobs run on CI, and when?
+
+## PR:
+* `runtime-extra-platforms`, and `runtime-wasm` run only when manually triggered with a comment - `/azp run <pipeline-name>`
+* `runtime`, and `runtime-staging`, run jobs only when relevant paths change. And for `EAT`, and `AOT`, only smoke tests are run.
+* And when `runtime-wasm` is triggered manually, it runs *all* the wasm jobs completely
+
+| .                 | runtime               | runtime-staging         | runtime-extra-platforms(manual only) | runtime-wasm (manual only) |
+| ----------------- | --------------------  | ---------------         | ------------------------------------ | -------                    |
+| libtests          | linux: all,   only-pc | windows: all,   only-pc | linux+windows: all, only-pc          | linux+windows: all, always |
+| libtests eat      | linux: smoke, only-pc | -                       | linux:         all, only-pc          | linux:         all, always |
+| libtests aot      | linux: smoke, only-pc | windows: smoke, only-pc | linux+windows: all, only-pc          | linux+windows: all, always |
+|                   |                       |                         |                                      |                            |
+| Wasm.Build.Tests  | linux:        only-pc | windows:        only-pc | linux+windows: only-pc               | linux+windows              |
+| Debugger tests    | -                     | linux+windows:  only-pc | linux+windows: only-pc               | linux+windows              |
+| Runtime tests     | linux:        only-pc | -                       | linux: only-pc                       | linux                      |
+
+## Rolling build (twice a day):
+
+* `runtime`, and `runtime-staging`, run all the wasm jobs unconditionally, but `EAT`, and `AOT` still run only smoke tests.
+* `runtime-extra-platforms` also runs by default. And it runs only the cases not covered by the above two pipelines.
+
+* jobs w/o `only-pc` are always run
+
+| .                 | runtime                   | runtime-staging       | runtime-extra-platforms (always run) | runtime-wasm (manual only) |
+| ----------------- | -------------             | ---------------       | ------------------------------------ | ------                     |
+| libtests          | linux: all(v8/chr)        | windows: all          | none                                 | N/A                        |
+| libtests eat      | linux: smoke              | -                     | linux: all                           |                            |
+| libtests aot      | linux: smoke              | windows: smoke        | linux+windows: all                   |                            |
+|                   |                           |                       |                                      |                            |
+| Wasm.Build.Tests  | linux: always             | windows: always       | none                                 |                            |
+| Debugger tests    | -                         | linux+windows: always | none                                 |                            |
+| Runtime tests     | linux: always             | -                     | none                                 |                            |

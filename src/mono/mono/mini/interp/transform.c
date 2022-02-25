@@ -2285,17 +2285,14 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			td->ip += 5;
 			return TRUE;
 		}
-	} else if (((in_corlib && !strcmp (klass_name_space, "Internal.Runtime.CompilerServices"))
-				|| !strcmp (klass_name_space, "System.Runtime.CompilerServices"))
-			   && !strcmp (klass_name, "Unsafe")) {
+	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.CompilerServices") && !strcmp (klass_name, "Unsafe")) {
 		if (!strcmp (tm, "AddByteOffset"))
 #if SIZEOF_VOID_P == 4
 			*op = MINT_ADD_I4;
 #else
 			*op = MINT_ADD_I8;
 #endif
-		else if (!strcmp (tm, "ByteOffset"))
-			*op = MINT_INTRINS_UNSAFE_BYTE_OFFSET;
+
 		else if (!strcmp (tm, "As") || !strcmp (tm, "AsRef"))
 			*op = MINT_MOV_P;
 		else if (!strcmp (tm, "AsPointer")) {
@@ -2303,6 +2300,44 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_MP);
 			td->ip += 5;
 			return TRUE;
+		} else if (!strcmp (tm, "AreSame")) {
+			*op = MINT_CEQ_P;
+		} else if (!strcmp (tm, "ByteOffset")) {
+			*op = MINT_INTRINS_UNSAFE_BYTE_OFFSET;
+		} else if (!strcmp (tm, "Unbox")) {
+			MonoGenericContext *ctx = mono_method_get_context (target_method);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+
+			MonoType *type = ctx->method_inst->type_argv [0];
+			MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+			interp_add_ins (td, MINT_UNBOX);
+			td->sp--;
+			interp_ins_set_sreg (td->last_ins, td->sp [0].local);
+			push_simple_type (td, STACK_TYPE_MP);
+			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+			td->last_ins->data [0] = get_data_item_index (td, klass);
+
+			td->ip += 5;
+			return TRUE;
+		} else if (!strcmp (tm, "Copy")) {
+			MonoGenericContext *ctx = mono_method_get_context (target_method);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+
+			MonoType *type = ctx->method_inst->type_argv [0];
+			MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+			interp_emit_ldobj (td, klass);
+			interp_emit_stobj (td, klass);
+
+			td->ip += 5;
+			return TRUE;
+		} else if (!strcmp (tm, "CopyBlockUnaligned") || !strcmp (tm, "CopyBlock")) {
+			*op = MINT_CPBLK;
 		} else if (!strcmp (tm, "IsAddressLessThan")) {
 			MonoGenericContext *ctx = mono_method_get_context (target_method);
 			g_assert (ctx);
@@ -2314,6 +2349,19 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			td->sp -= 2;
 			interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
 			push_type (td, stack_type [mint_type (m_class_get_byval_arg (k))], k);
+			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+			td->ip += 5;
+			return TRUE;
+		} else if (!strcmp (tm, "IsAddressGreaterThan")) {
+			MonoGenericContext *ctx = mono_method_get_context (target_method);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+
+			interp_add_ins (td, MINT_CGT_UN_P);
+			td->sp -= 2;
+			interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
+			push_simple_type (td, STACK_TYPE_I4);
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 			td->ip += 5;
 			return TRUE;
@@ -2331,11 +2379,15 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 			td->ip += 5;
 			return TRUE;
-		} else if (!strcmp (tm, "AreSame")) {
-			*op = MINT_CEQ_P;
 		} else if (!strcmp (tm, "SkipInit")) {
 			*op = MINT_NOP;
-		} else if (!strcmp (tm, "InitBlockUnaligned")) {
+		} else if (!strcmp (tm, "SubtractByteOffset")) {
+#if SIZEOF_VOID_P == 4
+			*op = MINT_SUB_I4;
+#else
+			*op = MINT_SUB_I8;
+#endif
+		} else if (!strcmp (tm, "InitBlockUnaligned") || !strcmp (tm, "InitBlock")) {
 			*op = MINT_INITBLK;
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.CompilerServices") && !strcmp (klass_name, "RuntimeHelpers")) {
@@ -5853,6 +5905,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		}
 		case CEE_CONV_R_UN:
 			switch (td->sp [-1].type) {
+			case STACK_TYPE_R4:
+				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R8, MINT_CONV_R8_R4);
+				break;
 			case STACK_TYPE_R8:
 				break;
 			case STACK_TYPE_I8:

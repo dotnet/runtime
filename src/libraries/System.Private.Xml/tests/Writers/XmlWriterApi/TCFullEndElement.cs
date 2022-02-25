@@ -6352,12 +6352,12 @@ namespace System.Xml.Tests
                 [XmlWriterInlineData]
                 public void var_1(XmlWriterUtils utils)
                 {
-                    using (XmlWriter writer = utils.CreateWriter())
-                    {
-                        writer.WriteStartElement("Root");
-                        writer.WriteStartElement("Nesting");
-                        writer.WriteStartElement("SomeDeep");
-                    }
+                    XmlWriter writer = utils.CreateWriter();
+                    writer.WriteStartElement("Root");
+                    writer.WriteStartElement("Nesting");
+                    writer.WriteStartElement("SomeDeep");
+                    writer.Close();
+
                     Assert.True(utils.CompareReader("<Root><Nesting><SomeDeep /></Nesting></Root>"));
                 }
 

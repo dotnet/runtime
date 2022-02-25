@@ -808,7 +808,7 @@ namespace System.Drawing
 #endif
             HandleRef imageattr, ColorAdjustType type, bool enableFlag, ColorChannelFlag flags);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipSetImageAttributesOutputChannelColorProfile(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -1008,7 +1008,7 @@ namespace System.Drawing
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipCloneFontFamily(IntPtr fontfamily, out IntPtr clonefontfamily);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipCreateFontFamilyFromName(string name,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -1031,7 +1031,7 @@ namespace System.Drawing
 #endif
             HandleRef fontFamily);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipGetFamilyName(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -1082,7 +1082,7 @@ namespace System.Drawing
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipDeletePrivateFontCollection(ref IntPtr fontCollection);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipPrivateAddFontFile(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -2575,10 +2575,10 @@ namespace System.Drawing
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipDisposeImage(IntPtr image);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipCreateBitmapFromFile(string filename, out IntPtr bitmap);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipCreateBitmapFromFileICM(string filename, out IntPtr bitmap);
 
             [GeneratedDllImport(LibraryName)]
@@ -2695,25 +2695,25 @@ namespace System.Drawing
 #endif
                 WmfPlaceableFileHeader wmfplacealbeHeader, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipCreateMetafileFromFile(string file, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipRecordMetafile(IntPtr referenceHdc, EmfType emfType, IntPtr pframeRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipRecordMetafile(IntPtr referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipRecordMetafileI(IntPtr referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipRecordMetafileFileName(string fileName, IntPtr referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipRecordMetafileFileName(string fileName, IntPtr referenceHdc, EmfType emfType, IntPtr pframeRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipRecordMetafileFileNameI(string fileName, IntPtr referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
             [GeneratedDllImport(LibraryName)]
@@ -2976,7 +2976,7 @@ namespace System.Drawing
 #endif
             HandleRef brush, Rectangle* rects, int count);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, SetLastError = true)]
+            [GeneratedDllImport(LibraryName,  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipDrawString(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -3189,7 +3189,7 @@ namespace System.Drawing
 #endif
             HandleRef brush, int x, int y, int width, int height, float startAngle, float sweepAngle);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipMeasureString(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -3204,7 +3204,7 @@ namespace System.Drawing
 #endif
             HandleRef stringFormat, ref RectangleF boundingBox, out int codepointsFitted, out int linesFilled);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipMeasureCharacterRanges(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -3430,10 +3430,10 @@ namespace System.Drawing
 #endif
             HandleRef graphics, int destSpace, int srcSpace, Point* points, int count);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipLoadImageFromFileICM(string filename, out IntPtr image);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipLoadImageFromFile(string filename, out IntPtr image);
 
             [GeneratedDllImport(LibraryName)]
