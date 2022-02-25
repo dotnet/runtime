@@ -772,6 +772,25 @@ int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509)
     return 0;
 }
 
+int32_t CryptoNative_SslAddClientCAs(SSL* ssl, X509** x509s, uint32_t count)
+{
+    if (!x509s || !ssl)
+    {
+        return 0;
+    }
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        int res = SSL_add_client_CA(ssl, x509s[i]);
+        if (res != 1)
+        {
+            return res;
+        }
+    }
+
+    return 1;
+}
+
 void CryptoNative_SslCtxSetAlpnSelectCb(SSL_CTX* ctx, SslCtxSetAlpnCallback cb, void* arg)
 {
     // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
