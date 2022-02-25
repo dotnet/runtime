@@ -1287,8 +1287,11 @@ _DelayLoad_MethodCall@0 proc public
 
     STUB_EPILOG
 
-    ; Share the patch label
-    jmp _ExternalMethodFixupPatchLabel@0
+_ExternalMethodFixupPatchLabel@0:
+public _ExternalMethodFixupPatchLabel@0
+
+    ; Tailcall target
+    jmp eax
 
     ; This will never be executed. It is just to help out stack-walking logic
     ; which disassembles the epilog to unwind the stack.

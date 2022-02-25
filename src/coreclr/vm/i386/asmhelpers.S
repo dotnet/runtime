@@ -698,8 +698,9 @@ NESTED_ENTRY DelayLoad_MethodCall, _TEXT, NoHandler
 
     STUB_EPILOG
 
-    // Share the patch label
-    jmp C_FUNC(ExternalMethodFixupPatchLabel)
+PATCH_LABEL ExternalMethodFixupPatchLabel
+    // Tailcall target
+    jmp eax
 
     // This will never be executed. It is just to help out stack-walking logic
     // which disassembles the epilog to unwind the stack.
