@@ -7180,32 +7180,19 @@ HRESULT DacDbiInterfaceImpl::GetObjectFields(COR_TYPEID id, ULONG32 celt, COR_FI
         }
         else if (fieldHandle.IsByRef())
         {
-            TypeHandle tgtType = fieldHandle.GetTypeParam();
-            corField->id.token1 = CoreLibBinder::GetElementType(ELEMENT_TYPE_I).GetAddr();
-            if (!tgtType.IsNull())
-            {
-                PTR_MethodTable cmt = tgtType.GetMethodTable();
-                corField->id.token2 = (ULONG64)cmt.GetAddr();
-            }
-
             corField->fieldType = ELEMENT_TYPE_BYREF;
+            // All ByRefs intentionally return IntPtr's MethodTable.
+            corField->id.token1 = CoreLibBinder::GetElementType(ELEMENT_TYPE_I).GetAddr();
+            corField->id.token2 = 0;
         }
         else
         {
+            // Note that pointer types are handled in this path.
+            // IntPtr's MethodTable is set for all pointer types and is expected.
             PTR_MethodTable mt = fieldHandle.GetMethodTable();
             corField->fieldType = mt->GetInternalCorElementType();
             corField->id.token1 = (ULONG64)mt.GetAddr();
-
-            if (!mt->IsArray())
-            {
-                corField->id.token2 = 0;
-            }
-            else
-            {
-                TypeHandle hnd = mt->GetArrayElementTypeHandle();
-                PTR_MethodTable cmt = hnd.GetMethodTable();
-                corField->id.token2 = (ULONG64)cmt.GetAddr();
-            }
+            corField->id.token2 = 0;
         }
     }
 
