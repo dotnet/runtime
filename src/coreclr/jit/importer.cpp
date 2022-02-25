@@ -21635,7 +21635,7 @@ void Compiler::considerGuardedDevirtualization(
 
     JITDUMP("Considering guarded devirtualization at IL offset %u (0x%x)\n", ilOffset, ilOffset);
 
-    const int maxExactClasses = 1;
+    const int            maxExactClasses               = 1;
     CORINFO_CLASS_HANDLE exactClasses[maxExactClasses] = {0};
     int exactClassesCount = info.compCompHnd->getExactClasses(baseClass, maxExactClasses, exactClasses);
 
@@ -21675,7 +21675,7 @@ void Compiler::considerGuardedDevirtualization(
             //
             CLRRandom* const random =
                 impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-            likelyClasses[0].clsHandle = getRandomClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random);
+            likelyClasses[0].clsHandle  = getRandomClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random);
             likelyClasses[0].likelihood = 100;
             if (likelyClasses[0].clsHandle != NO_CLASS_HANDLE)
             {

@@ -2945,25 +2945,43 @@ namespace Internal.JitInterface
         {
 #if !READYTORUN
             MetadataType type = HandleToObject(baseType) as MetadataType;
-
             if (type == null)
+            {
                 return 0;
-
-            // Give up on shared types
-            if (type.IsCanonicalSubtype(CanonicalFormKind.Any) || type.HasVariance || type.IsArray)
-                return 0;
+            }
 
             // type is already sealed, return it
-            if (_compilation.IsEffectivelySealed(type))
+            if (!type.IsInterface && _compilation.IsEffectivelySealed(type))
             {
                 *exactClsRet = baseType;
                 return 1;
             }
 
-            // TODO: find all implementations/subclasses
-            // the number of them must be <= maxExactClasses
-#endif
+            TypeDesc[] implClasses = _compilation.DevirtualizationManager?.GetImplementingClasses(type);
+            if (implClasses == null || implClasses.Length > maxExactClasses)
+            {
+                return 0;
+            }
+
+            int index = 0;
+            foreach (TypeDesc implClass in implClasses)
+            {
+                Debug.Assert(!implClass.IsInterface);
+
+                if (implClass.IsCanonicalSubtype(CanonicalFormKind.Universal) || implClass.HasVariance ||
+                    implClass.IsArray)
+                {
+                    // Give up if we see shared types among implementations
+                    return 0;
+                }
+                exactClsRet[index++] = ObjectToHandle(implClass);
+            }
+
+            Debug.Assert(index <= maxExactClasses);
+            return index;
+#else
             return 0;
+#endif
         }
 
         private CORINFO_CLASS_STRUCT_* getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args)

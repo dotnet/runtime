@@ -34,6 +34,7 @@ namespace ILCompiler
         public CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
         public Logger Logger => _logger;
         public PInvokeILProvider PInvokeILProvider { get; }
+        public DevirtualizationManager DevirtualizationManager => _devirtualizationManager;
 
         private readonly TypeGetTypeMethodThunkCache _typeGetTypeMethodThunks;
         private readonly AssemblyGetExecutingAssemblyMethodThunkCache _assemblyGetExecutingAssemblyMethodThunks;

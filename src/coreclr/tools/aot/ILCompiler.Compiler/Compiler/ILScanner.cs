@@ -364,9 +364,10 @@ namespace ILCompiler
 
         private class ScannedDevirtualizationManager : DevirtualizationManager
         {
-            private HashSet<TypeDesc> _constructedTypes = new HashSet<TypeDesc>();
-            private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
-            private HashSet<TypeDesc> _abstractButNonabstractlyOverridenTypes = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _constructedTypes = new();
+            private HashSet<TypeDesc> _unsealedTypes = new();
+            private HashSet<TypeDesc> _abstractButNonabstractlyOverridenTypes = new();
+            private Dictionary<TypeDesc, HashSet<TypeDesc>> _interfaceImplementators = new();
 
             public ScannedDevirtualizationManager(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
@@ -395,12 +396,24 @@ namespace ILCompiler
 
                             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
 
+                            // Record all interfaces this class implements to _interfaceImplementators
+                            foreach (DefType baseInterface in canonType.RuntimeInterfaces)
+                            {
+                                RecordImplementation(baseInterface, canonType);
+                            }
+
                             bool hasNonAbstractTypeInHierarchy = canonType is not MetadataType mdType || !mdType.IsAbstract;
                             TypeDesc baseType = canonType.BaseType;
                             bool added = true;
                             while (baseType != null && added)
                             {
                                 baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
+
+                                Debug.Assert(!baseType.IsInterface);
+
+                                // Record all base types this class subclasses to _interfaceImplementators
+                                RecordImplementation(baseType, canonType);
+
                                 added = _unsealedTypes.Add(baseType);
 
                                 bool currentTypeIsAbstract = ((MetadataType)baseType).IsAbstract;
@@ -413,6 +426,19 @@ namespace ILCompiler
                         }
                     }
                 }
+            }
+
+            private void RecordImplementation(TypeDesc type, TypeDesc implType)
+            {
+                Debug.Assert(!implType.IsInterface);
+
+                HashSet<TypeDesc> implList;
+                if (!_interfaceImplementators.TryGetValue(type, out implList))
+                {
+                    implList = new();
+                    _interfaceImplementators[type] = implList;
+                }
+                implList.Add(implType);
             }
 
             public override bool IsEffectivelySealed(TypeDesc type)
@@ -463,6 +489,21 @@ namespace ILCompiler
             }
 
             public override bool CanConstructType(TypeDesc type) => _constructedTypes.Contains(type);
+
+            public override TypeDesc[] GetImplementingClasses(TypeDesc type)
+            {
+                if (type.IsInterface && _interfaceImplementators.TryGetValue(type, out HashSet<TypeDesc> implementations))
+                {
+                    var types = new TypeDesc[implementations.Count];
+                    int index = 0;
+                    foreach (TypeDesc implementation in implementations)
+                    {
+                        types[index++] = implementation;
+                    }
+                    return types;
+                }
+                return null;
+            }
         }
 
         private class ScannedInliningPolicy : IInliningPolicy
