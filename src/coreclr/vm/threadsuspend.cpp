@@ -2515,18 +2515,17 @@ void RedirectedThreadFrame::ExceptionUnwind()
 int RedirectedHandledJITCaseExceptionFilter(
     PEXCEPTION_POINTERS pExcepPtrs,     // Exception data
     RedirectedThreadFrame *pFrame,      // Frame on stack
-    BOOL fDone,                         // Whether redirect completed without exception
     CONTEXT *pCtx)                      // Saved context
 {
     // !!! Do not use a non-static contract here.
     // !!! Contract may insert an exception handling record.
     // !!! This function assumes that GetCurrentSEHRecord() returns the exception record set up in
-    // !!! Thread::RedirectedHandledJITCase
+    // !!! Thread::RestoreContextSimulated
     //
     // !!! Do not use an object with dtor, since it injects a fs:0 entry.
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_ANY;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
 
     if (pExcepPtrs->ExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW)
     {
@@ -2535,38 +2534,8 @@ int RedirectedHandledJITCaseExceptionFilter(
 
     // Get the thread handle
     Thread *pThread = GetThread();
-
-    STRESS_LOG2(LF_SYNC, LL_INFO100, "In RedirectedHandledJITCaseExceptionFilter fDone = %d pFrame = %p\n", fDone, pFrame);
-
-    // If we get here via COM+ exception, gc-mode is unknown.  We need it to
-    // be cooperative for this function.
-    GCX_COOP_NO_DTOR();
-
-    // If the exception was due to the called client, then we need to figure out if it
-    // is an exception that can be eaten or if it needs to be handled elsewhere.
-    if (!fDone)
-    {
-        if (pExcepPtrs->ExceptionRecord->ExceptionFlags & EXCEPTION_NONCONTINUABLE)
-        {
-            return (EXCEPTION_CONTINUE_SEARCH);
-        }
-
-        // Get the latest thrown object
-        OBJECTREF throwable = CLRException::GetThrowableFromExceptionRecord(pExcepPtrs->ExceptionRecord);
-
-        // If this is an uncatchable exception, then let the exception be handled elsewhere
-        if (IsUncatchable(&throwable))
-        {
-            pThread->EnablePreemptiveGC();
-            return (EXCEPTION_CONTINUE_SEARCH);
-        }
-    }
-#ifdef _DEBUG
-    else
-    {
-        _ASSERTE(pExcepPtrs->ExceptionRecord->ExceptionCode == EXCEPTION_HIJACK);
-    }
-#endif
+    STRESS_LOG1(LF_SYNC, LL_INFO100, "In RedirectedHandledJITCaseExceptionFilter pFrame = %p\n", pFrame);
+    _ASSERTE(pExcepPtrs->ExceptionRecord->ExceptionCode == EXCEPTION_HIJACK);
 
     // Unlink the frame in preparation for resuming in managed code
     pFrame->Pop();
@@ -2642,6 +2611,38 @@ extern "C" PCONTEXT __stdcall GetCurrentSavedRedirectContext()
     return pContext;
 }
 
+#ifdef TARGET_X86
+
+void  __stdcall Thread::RestoreContextSimulated(Thread* pThread, CONTEXT* pCtx, void* pFrame)
+{
+    pThread->HandleThreadAbort();        // Might throw an exception.
+
+    // A counter to avoid a nasty case where an
+    // up-stack filter throws another exception
+    // causing our filter to be run again for
+    // some unrelated exception.
+    int filter_count = 0;
+
+    __try
+    {
+        // Save the instruction pointer where we redirected last.  This does not race with the check
+        // against this variable in HandledJitCase because the GC will not attempt to redirect the
+        // thread until the instruction pointer of this thread is back in managed code.
+        pThread->m_LastRedirectIP = GetIP(pCtx);
+        pThread->m_SpinCount = 0;
+
+        RaiseException(EXCEPTION_HIJACK, 0, 0, NULL);
+    }
+    __except (++filter_count == 1
+            ? RedirectedHandledJITCaseExceptionFilter(GetExceptionInformation(), (RedirectedThreadFrame*)pFrame, pCtx)
+            : EXCEPTION_CONTINUE_SEARCH)
+    {
+        _ASSERTE(!"Reached body of __except in Thread::RedirectedHandledJITCase");
+    }
+}
+
+#endif // TARGET_X86
+
 void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
 {
     STATIC_CONTRACT_THROWS;
@@ -2665,17 +2666,6 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
 
     STRESS_LOG5(LF_SYNC, LL_INFO1000, "In RedirectedHandledJITcase reason 0x%x pFrame = %p pc = %p sp = %p fp = %p", reason, &frame, GetIP(pCtx), GetSP(pCtx), GetFP(pCtx));
 
-#ifdef TARGET_X86
-    // This will indicate to the exception filter whether or not the exception is caused
-    // by us or the client.
-    BOOL fDone = FALSE;
-    int filter_count = 0;       // A counter to avoid a nasty case where an
-                                // up-stack filter throws another exception
-                                // causing our filter to be run again for
-                                // some unrelated exception.
-
-    __try
-#endif // TARGET_X86
     {
         // Make sure this thread doesn't reuse the context memory.
         pThread->MarkRedirectContextInUse(pCtx);
@@ -2692,42 +2682,13 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
         else
 #endif // HAVE_GCCOVER && USE_REDIRECT_FOR_GCSTRESS
         {
-            // Enable PGC before calling out to the client to allow runtime suspend to finish
-            GCX_PREEMP_NO_DTOR();
-
-            // Notify the interface of the pending suspension
-            switch (reason) {
-            case RedirectReason_GCSuspension:
-                break;
-            case RedirectReason_DebugSuspension:
-                break;
-            case RedirectReason_UserSuspension:
-                // Do nothing;
-                break;
-            default:
-                _ASSERTE(!"Invalid redirect reason");
-                break;
-            }
-
-            // Disable preemptive GC so we can unlink the frame
-            GCX_PREEMP_NO_DTOR_END();
+            _ASSERTE(reason == RedirectReason_GCSuspension ||
+                        reason == RedirectReason_DebugSuspension ||
+                        reason == RedirectReason_UserSuspension);
         }
 
 #ifdef TARGET_X86
-        pThread->HandleThreadAbort();        // Might throw an exception.
-
-        // Indicate that the call to the service went without an exception, and that
-        // we're raising our own exception to resume the thread to where it was
-        // redirected from
-        fDone = TRUE;
-
-        // Save the instruction pointer where we redirected last.  This does not race with the check
-        // against this variable in HandledJitCase because the GC will not attempt to redirect the
-        // thread until the instruction pointer of this thread is back in managed code.
-        pThread->m_LastRedirectIP = GetIP(pCtx);
-        pThread->m_SpinCount = 0;
-
-        RaiseException(EXCEPTION_HIJACK, 0, 0, NULL);
+        RestoreContextSimulated(pThread, pCtx, &frame);
 
 #else // TARGET_X86
 
@@ -2790,15 +2751,6 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
         }
 #endif // TARGET_X86
     }
-#ifdef TARGET_X86
-    __except (++filter_count == 1
-        ? RedirectedHandledJITCaseExceptionFilter(GetExceptionInformation(), &frame, fDone, pCtx)
-        : EXCEPTION_CONTINUE_SEARCH)
-    {
-        _ASSERTE(!"Reached body of __except in Thread::RedirectedHandledJITCase");
-    }
-
-#endif // TARGET_X86
 }
 
 //****************************************************************************************
