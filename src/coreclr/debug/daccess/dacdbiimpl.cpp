@@ -7180,7 +7180,14 @@ HRESULT DacDbiInterfaceImpl::GetObjectFields(COR_TYPEID id, ULONG32 celt, COR_FI
         }
         else if (fieldHandle.IsByRef())
         {
-            corField->id = {};
+            TypeHandle tgtType = fieldHandle.GetTypeParam();
+            corField->id.token1 = CoreLibBinder::GetElementType(ELEMENT_TYPE_I).GetAddr();
+            if (!tgtType.IsNull())
+            {
+                PTR_MethodTable cmt = tgtType.GetMethodTable();
+                corField->id.token2 = (ULONG64)cmt.GetAddr();
+            }
+
             corField->fieldType = ELEMENT_TYPE_BYREF;
         }
         else
