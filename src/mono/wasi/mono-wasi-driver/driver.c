@@ -116,9 +116,9 @@ static int satellite_assembly_count;
 
 int32_t time(int32_t x) {
 	// libSystem.Native.a incorrectly defines this function as returning an int32, whereas it's an int64
-	// according to WASI SDK.
-	// TODO: Return a real time.
-	return 0;
+	// according to WASI SDK. Here we're providing an int32-returning version to satisfy libSystem.Native.a.
+	struct timeval time;
+	return (gettimeofday(&time, NULL) == 0) ? time.tv_sec : 0;
 }
 
 typedef struct
@@ -263,11 +263,6 @@ int64_t SystemNative_GetTimestamp2()
 	{
 		return 0;
 	}
-}
-
-void syslog(int pri, const char *fmt, int ignored) {
-	printf ("Not implemented: call to syslog\n");
-	assert (0);
 }
 
 static PinvokeImport SystemNativeImports [] = {
