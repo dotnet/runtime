@@ -8,14 +8,6 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Workaround for https://gitlab.kitware.com/cmake/cmake/-/issues/21069
-# TODO: delete this block once "cmake" in global.json:
-# https://github.com/dotnet/runtime/blob/a82d92c36624e89e831e37515a9b0c95a4cfe183/global.json#L11
-# is bumped passed 3.18.2.
-if (MSVC)
-  add_compile_options($<$<COMPILE_LANGUAGE:C>:/std:c11>)
-endif()
-
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
