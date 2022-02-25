@@ -11405,7 +11405,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             {
 #ifdef TARGET_ARM64
                 // a % b = a & (b - 1);
-                if(oper == GT_UMOD && op2->IsIntegralConstPow2())
+                if (oper == GT_UMOD && op2->IsIntegralConstPow2())
                 {
                     tree = fgMorphUModToAndSub(tree->AsOp());
                     op1  = tree->AsOp()->gtOp1;
