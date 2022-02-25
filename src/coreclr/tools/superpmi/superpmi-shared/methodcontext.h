@@ -1054,7 +1054,6 @@ enum mcPackets
     Packet_IsFieldStatic = 137,
     PacketCR_AssertLog = 138,
     Packet_GetArgClass = 139,
-    Packet_GetExactClasses = 194,
     Packet_GetArgType = 140,
     //Retired5 = 141,
     Packet_CheckMethodModifier = 142,
@@ -1109,7 +1108,8 @@ enum mcPackets
     Packet_GetAssemblyName = 191,
     Packet_IsIntrinsic = 192,
     Packet_UpdateEntryPointForTailCall = 193,
-    Packet_GetLoongArch64PassStructInRegisterFlags = 194
+    Packet_GetLoongArch64PassStructInRegisterFlags = 194,
+    Packet_GetExactClasses = 195,
 };
 
 void SetDebugDumpVariables();
