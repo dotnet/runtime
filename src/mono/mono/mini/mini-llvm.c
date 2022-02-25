@@ -10898,6 +10898,23 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = result;
 			break;
 		}
+		case OP_ARM64_SADDV:
+		case OP_ARM64_UADDV: {
+			LLVMTypeRef arg_t = LLVMTypeOf (lhs);
+			// LLVMTypeRef elem_t = LLVMGetElementType (arg_t);
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			
+			// int iid = ins->opcode == OP_ARM64_UADDV ? INTRINS_AARCH64_UADDV : INTRINS_AARCH64_SADDV;
+			// LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, &lhs, "");
+
+			const char *fn_name = ins->opcode == OP_ARM64_UADDV ? "aarch64_neon_uaddv" : "aarch64_neon_saddv";
+			LLVMTypeRef fn_type = LLVMFunctionType (ret_t, &arg_t, 1, 0);
+			LLVMValueRef fn = LLVMAddFunction (ctx->lmodule, fn_name, fn_type);
+			LLVMValueRef result = LLVMBuildCall (ctx->builder, fn, &lhs, 1, "");
+
+			values [ins->dreg] = result;
+			break;
+		}
 		case OP_ARM64_UADALP:
 		case OP_ARM64_SADALP: {
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);

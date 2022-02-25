@@ -724,11 +724,20 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	case SN_Dot: {
 #ifdef TARGET_ARM64
-		int instc0 = type_is_unsigned (fsig->params [0]) ? INTRINS_AARCH64_ADV_SIMD_UDOT : INTRINS_AARCH64_ADV_SIMD_SDOT;
-		MonoInst *zero = emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
-		MonoInst *ins = emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X_X, instc0, arg0_type, fsig, args);
-		ins->sreg3 = zero->dreg;
-		return ins;
+		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
+		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
+			return NULL;
+
+		gboolean is_float = arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8;
+		gboolean is_unsigned = arg0_type == MONO_TYPE_U1 || arg0_type == MONO_TYPE_U2 || arg0_type == MONO_TYPE_U4 || arg0_type == MONO_TYPE_U8 || arg0_type == MONO_TYPE_U;
+
+		int instc0 = is_float ? OP_FMUL : OP_IMUL;
+		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
+
+		int op = is_unsigned ? OP_ARM64_UADDV : OP_ARM64_SADDV;
+		MonoInst *sum_across_vector = emit_simd_ins (cfg, klass, op, pairwise_multiply->dreg, -1);
+
+		return sum_across_vector;
 #else
 		return NULL;
 #endif
