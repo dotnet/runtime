@@ -19,8 +19,10 @@ using static System.Console;
 
 namespace ILVerify
 {
-    class Program : ResolverBase
+    class Program : IResolver
     {
+        private readonly Dictionary<string, PEReader> _resolverCache = new Dictionary<string, PEReader>();
+
         private Options _options;
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // map of simple name to file path
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // map of simple name to file path
@@ -267,7 +269,7 @@ namespace ILVerify
 
         private int VerifyAssembly(AssemblyName name, string path)
         {
-            PEReader peReader = Resolve(name.Name);
+            PEReader peReader = Resolve(name);
             EcmaModule module = _verifier.GetModule(peReader);
 
             return VerifyAssembly(peReader, module, path);
@@ -463,12 +465,21 @@ namespace ILVerify
             return false;
         }
 
-        protected override PEReader ResolveCore(string simpleName)
+        public PEReader Resolve(AssemblyName assemblyName) => Resolve(assemblyName.Name);
+
+        public PEReader Resolve(string simpleName)
         {
+            if (_resolverCache.TryGetValue(simpleName, out PEReader peReader))
+            {
+                return peReader;
+            }
+
             string path = null;
             if (_inputFilePaths.TryGetValue(simpleName, out path) || _referenceFilePaths.TryGetValue(simpleName, out path))
             {
-                return new PEReader(File.OpenRead(path));
+                PEReader result = new PEReader(File.OpenRead(path));
+                _resolverCache.Add(simpleName, result);
+                return result;
             }
 
             return null;
