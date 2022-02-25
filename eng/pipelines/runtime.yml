@@ -367,16 +367,6 @@ jobs:
       - normal
       - WasmTestOnBrowser
 
-- template: /eng/pipelines/common/templates/wasm-library-tests.yml
-  parameters:
-    buildConfig: Debug
-    platforms:
-      - Browser_wasm
-    alwaysRun: true
-    scenarios:
-      - normal
-      - WasmTestOnBrowser
-
 # EAT Library tests - only run on linux
 #- template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
   #parameters:
