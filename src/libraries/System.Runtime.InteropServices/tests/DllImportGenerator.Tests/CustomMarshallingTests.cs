@@ -34,10 +34,10 @@ namespace DllImportGenerator.IntegrationTests
         public static partial IntWrapper DoubleIntRef(IntWrapper pInt);
 
         [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "reverse_replace_ref_ushort")]
-        public static partial void ReverseReplaceString([MarshalUsing(typeof(Utf16StringMarshaler))] ref string s);
+        public static partial void ReverseReplaceString([MarshalUsing(typeof(Utf16StringMarshaller))] ref string s);
 
         [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "return_length_ushort")]
-        public static partial int ReturnStringLength([MarshalUsing(typeof(Utf16StringMarshaler))] string s);
+        public static partial int ReturnStringLength([MarshalUsing(typeof(Utf16StringMarshaller))] string s);
     }
 
     public class CustomMarshallingTests

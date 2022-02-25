@@ -357,6 +357,7 @@ namespace Microsoft.Interop
             bool setLastError = false;
 
             StringMarshalling stringMarshalling = StringMarshalling.Custom;
+            INamedTypeSymbol? stringMarshallingCustomType = null;
 
             // All other data on attribute is defined as NamedArguments.
             foreach (KeyValuePair<string, TypedConstant> namedArg in attrData.NamedArguments)
@@ -369,16 +370,6 @@ namespace Microsoft.Interop
                         // Return null here to indicate invalid attribute data.
                         Debug.WriteLine($"An unknown member '{namedArg.Key}' was found on {attrData.AttributeClass}");
                         return null;
-                    case nameof(GeneratedDllImportData.StringMarshalling):
-                        userDefinedValues |= DllImportMember.StringMarshalling;
-                        // TypedConstant's Value property only contains primitive values.
-                        if (namedArg.Value.Value is not int)
-                        {
-                            return null;
-                        }
-                        // A boxed primitive can be unboxed to an enum with the same underlying type.
-                        stringMarshalling = (StringMarshalling)namedArg.Value.Value!;
-                        break;
                     case nameof(GeneratedDllImportData.EntryPoint):
                         userDefinedValues |= DllImportMember.EntryPoint;
                         if (namedArg.Value.Value is not string)
@@ -395,6 +386,24 @@ namespace Microsoft.Interop
                         }
                         setLastError = (bool)namedArg.Value.Value!;
                         break;
+                    case nameof(GeneratedDllImportData.StringMarshalling):
+                        userDefinedValues |= DllImportMember.StringMarshalling;
+                        // TypedConstant's Value property only contains primitive values.
+                        if (namedArg.Value.Value is not int)
+                        {
+                            return null;
+                        }
+                        // A boxed primitive can be unboxed to an enum with the same underlying type.
+                        stringMarshalling = (StringMarshalling)namedArg.Value.Value!;
+                        break;
+                    case nameof(GeneratedDllImportData.StringMarshallingCustomType):
+                        userDefinedValues |= DllImportMember.StringMarshallingCustomType;
+                        if (namedArg.Value.Value is not INamedTypeSymbol)
+                        {
+                            return null;
+                        }
+                        stringMarshallingCustomType = (INamedTypeSymbol)namedArg.Value.Value;
+                        break;
                 }
             }
 
@@ -406,9 +415,10 @@ namespace Microsoft.Interop
             return new GeneratedDllImportData(attrData.ConstructorArguments[0].Value!.ToString())
             {
                 IsUserDefined = userDefinedValues,
-                StringMarshalling = stringMarshalling,
                 EntryPoint = entryPoint,
                 SetLastError = setLastError,
+                StringMarshalling = stringMarshalling,
+                StringMarshallingCustomType = stringMarshallingCustomType,
             };
         }
 
@@ -460,6 +470,23 @@ namespace Microsoft.Interop
             {
                 generatorDiagnostics.ReportConfigurationNotSupported(generatedDllImportAttr!, "Invalid syntax");
                 stubDllImportData = new GeneratedDllImportData("INVALID_CSHARP_SYNTAX");
+            }
+
+            if (stubDllImportData.IsUserDefined.HasFlag(DllImportMember.StringMarshalling))
+            {
+                // User specified StringMarshalling.Custom without specifying StringMarshallingCustomType
+                if (stubDllImportData.StringMarshalling == StringMarshalling.Custom && stubDllImportData.StringMarshallingCustomType is null)
+                {
+                    generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
+                        generatedDllImportAttr, symbol.Name, Resources.InvalidStringMarshallingConfigurationMissingCustomType);
+                }
+
+                // User specified something other than StringMarshalling.Custom while specifying StringMarshallingCustomType
+                if (stubDllImportData.StringMarshalling != StringMarshalling.Custom && stubDllImportData.StringMarshallingCustomType is not null)
+                {
+                    generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
+                        generatedDllImportAttr, symbol.Name, Resources.InvalidStringMarshallingConfigurationNotCustom);
+                }
             }
 
             if (lcidConversionAttr is not null)
@@ -543,11 +570,20 @@ namespace Microsoft.Interop
                 && targetDllImportData.StringMarshalling != StringMarshalling.Utf16)
             {
                 diagnostics.ReportCannotForwardToDllImport(
+                    userDeclaredMethod,
                     $"{nameof(TypeNames.GeneratedDllImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}",
-                    $"{nameof(StringMarshalling)}{Type.Delimiter}{targetDllImportData.StringMarshalling}",
-                    userDeclaredMethod);
+                    $"{nameof(StringMarshalling)}{Type.Delimiter}{targetDllImportData.StringMarshalling}");
 
                 targetDllImportData = targetDllImportData with { IsUserDefined = targetDllImportData.IsUserDefined & ~DllImportMember.StringMarshalling };
+            }
+
+            if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.StringMarshallingCustomType))
+            {
+                diagnostics.ReportCannotForwardToDllImport(
+                    userDeclaredMethod,
+                    $"{nameof(TypeNames.GeneratedDllImportAttribute)}{Type.Delimiter}{nameof(DllImportMember.StringMarshallingCustomType)}");
+
+                targetDllImportData = targetDllImportData with { IsUserDefined = targetDllImportData.IsUserDefined & ~DllImportMember.StringMarshallingCustomType };
             }
 
             SyntaxTokenList modifiers = StripTriviaFromModifiers(userDeclaredMethod.Modifiers);

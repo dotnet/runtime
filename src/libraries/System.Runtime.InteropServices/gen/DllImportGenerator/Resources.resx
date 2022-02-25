@@ -136,12 +136,10 @@
     <value>Native type '{0}' has a constructor taking a caller-allocated buffer, but does not support marshalling in scenarios where using a caller-allocated buffer is impossible</value>
   </data>
   <data name="CannotForwardToDllImportDescription" xml:space="preserve">
-    <value>The generated 'DllImportAttribute' will not have a value corresponding to '{0}={1}'.</value>
-    <comment>{0} and {1} are the name and value of an attribute argument</comment>
+    <value>The generated 'DllImportAttribute' will not have a value corresponding to '{0}'.</value>
   </data>
   <data name="CannotForwardToDllImportMessage" xml:space="preserve">
-    <value>'{0}={1}' has no equivalent in 'DllImportAtttribute' and will not be forwarded</value>
-    <comment>{0} and {1} are the name and value of an attribute argument</comment>
+    <value>'{0}' has no equivalent in 'DllImportAtttribute' and will not be forwarded</value>
   </data>
   <data name="CannotForwardToDllImportTitle" xml:space="preserve">
     <value>Specified 'GeneratedDllImportAttribute' arguments cannot be forwarded to 'DllImportAttribute'</value>
@@ -239,6 +237,22 @@
   </data>
   <data name="GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage" xml:space="preserve">
     <value>Type '{0}' has a 'GetPinnableReference' method but its native type does not support marshalling in scenarios where pinning is impossible</value>
+  </data>
+  <data name="InvalidLibraryImportAttributeUsageTitle" xml:space="preserve">
+    <value>Invalid 'LibraryImportAttribute' usage</value>
+  </data>
+  <data name="InvalidStringMarshallingConfigurationDescription" xml:space="preserve">
+    <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' is invalid.</value>
+  </data>
+  <data name="InvalidStringMarshallingConfigurationMessage" xml:space="preserve">
+    <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</value>
+    <comment>{1} is a message containing additional details about what is not valid</comment>
+  </data>
+  <data name="InvalidStringMarshallingConfigurationMissingCustomType" xml:space="preserve">
+    <value>'StringMarshallingCustomType' must be specified when 'StringMarshalling' is set to 'StringMarshalling.Custom'.</value>
+  </data>
+  <data name="InvalidStringMarshallingConfigurationNotCustom" xml:space="preserve">
+    <value>'StringMarshalling' should be set to 'StringMarshalling.Custom' when 'StringMarshallingCustomType' is specified.</value>
   </data>
   <data name="MarshallerGetPinnableReferenceRequiresValuePropertyDescription" xml:space="preserve">
     <value>The use cases for 'GetPinnableReference' are not applicable in any scenarios where a 'Value' property is not also required.</value>

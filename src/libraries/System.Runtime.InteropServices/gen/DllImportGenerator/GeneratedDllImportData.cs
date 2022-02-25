@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
@@ -16,6 +17,7 @@ namespace Microsoft.Interop
         EntryPoint = 1 << 0,
         SetLastError = 1 << 1,
         StringMarshalling = 1 << 2,
+        StringMarshallingCustomType = 1 << 3,
         All = ~None
     }
 
@@ -32,8 +34,9 @@ namespace Microsoft.Interop
         /// Value set by the user on the original declaration.
         /// </summary>
         public DllImportMember IsUserDefined { get; init; }
-        public StringMarshalling StringMarshalling { get; init; }
         public string? EntryPoint { get; init; }
         public bool SetLastError { get; init; }
+        public StringMarshalling StringMarshalling { get; init; }
+        public INamedTypeSymbol? StringMarshallingCustomType { get; init; }
     }
 }

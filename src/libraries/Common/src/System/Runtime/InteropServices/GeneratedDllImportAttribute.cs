@@ -22,6 +22,7 @@ namespace System.Runtime.InteropServices
         public string? EntryPoint { get; set; }
         public bool SetLastError { get; set; }
         public StringMarshalling StringMarshalling { get; set; }
+        public Type? StringMarshallingCustomType { get; set; }
 
         public GeneratedDllImportAttribute(string dllName)
         {
