@@ -845,7 +845,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			foreach ((var attrProvider, var attr) in expectedNoWarningsAttributes) {
 				var unexpectedWarningCode = attr.ConstructorArguments.Count == 0 ? null : (string) attr.GetConstructorArgumentValue (0);
 				if (unexpectedWarningCode != null && !unexpectedWarningCode.StartsWith ("IL")) {
-					Assert.Fail ($"The warning code specified in ExpectedWarning attribute must start with the 'IL' prefix. Specified value: '{unexpectedWarningCode}'.");
+					Assert.Fail ($"The warning code specified in ExpectedNoWarnings attribute must start with the 'IL' prefix. Specified value: '{unexpectedWarningCode}'.");
 				}
 
 				int? unexpectedWarningCodeNumber = unexpectedWarningCode == null ? null : int.Parse (unexpectedWarningCode.Substring (2));
