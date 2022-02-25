@@ -21,7 +21,7 @@ pr:
       - src/libraries/System.Net.Security/*
 
 pool:
-  name: NetCore1ESPool-Public
+  name: NetCore1ESPool-Public-Int
   demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
 
 variables:
