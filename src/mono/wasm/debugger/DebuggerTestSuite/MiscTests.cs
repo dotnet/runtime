@@ -954,7 +954,7 @@ namespace DebuggerTests
         }
         //TODO add tests covering basic stepping behavior as step in/out/over
 
-        [ConditionalTheory(nameof(RunningOnChrome))]
+        [Theory]
         [InlineData(
             "DebuggerTests.CheckSpecialCharactersInPath", 
             "dotnet://debugger-test-special-char-in-path.dll/test#.cs")]

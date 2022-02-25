@@ -63,12 +63,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var readLen = await stream.ReadAsync(buffer, bytesRead, 1, token);
                         bytesRead+=readLen;
                     }
-                    var str = Encoding.ASCII.GetString(buffer, 0, bytesRead - 1);
+                    var str = Encoding.UTF8.GetString(buffer, 0, bytesRead - 1);
                     int len = int.Parse(str);
                     bytesRead = await stream.ReadAsync(buffer, 0, len, token);
                     while (bytesRead != len)
                         bytesRead += await stream.ReadAsync(buffer, bytesRead, len - bytesRead, token);
-                    str = Encoding.ASCII.GetString(buffer, 0, len);
+                    str = Encoding.UTF8.GetString(buffer, 0, len);
                     return str;
                 }
             }
@@ -159,10 +159,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal void Send(TcpClient to, JObject o, CancellationToken token)
         {
             NetworkStream toStream = to.GetStream();
-
             var msg = o.ToString(Formatting.None);
-            msg = $"{msg.Length}:{msg}";
-            toStream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
+            var bytes = Encoding.UTF8.GetBytes(msg);
+            toStream.Write(Encoding.UTF8.GetBytes($"{bytes.Length}:"));
+            toStream.Write(bytes);
             toStream.Flush();
         }
 

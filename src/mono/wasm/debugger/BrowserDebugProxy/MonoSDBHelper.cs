@@ -1736,7 +1736,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             else
                 className = "(" + await GetTypeName(typeId, token) + ")";
 
-            int pointerId = 0;
+            int pointerId = -1;
             if (valueAddress != 0 && className != "(void*)")
             {
                 pointerId = Interlocked.Increment(ref debuggerObjectId);

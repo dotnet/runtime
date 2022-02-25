@@ -62,7 +62,7 @@ namespace DebuggerTests
                 await CheckValue(res.Value["result"], TDateTime(new DateTime(2510, 1, 2, 3, 4, 5)), "this.Date");
              });
 
-         [ConditionalFact(nameof(RunningOnChrome))] // NestedContinueWith
+         [Fact] // NestedContinueWith
          public async Task AsyncLocalsInNestedContinueWithStaticBlock() => await CheckInspectLocalsAtBreakpointSite(
               "DebuggerTests.AsyncTests.ContinueWithTests", "NestedContinueWithStaticAsync", 5, "MoveNext",
               "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",

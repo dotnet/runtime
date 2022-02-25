@@ -958,7 +958,7 @@ namespace DebuggerTests
             Assert.Equal(pause_location["callFrames"][0]["callFrameId"], "dotnet:scope:1");
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DebuggerHiddenIgnoreStepInto()
         {
             var pause_location = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunDebuggerHidden", 1);

@@ -272,6 +272,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
         string valueType = "value";
         if (value?["type"] == null || value["type"].Value<string>() == "object")
         {
+            var actor = value["value"]?["actor"]?.Value<string>();
             if (value["value"]["type"].Value<string>() == "null")
             {
                 variableValue = JObject.FromObject(new
@@ -281,6 +282,8 @@ public class DebuggerTestFirefox : DebuggerTestBase
                             className = value["value"]["class"].Value<string>(),
                             description = value["value"]["class"].Value<string>()
                         });
+                if (actor != null && actor.StartsWith("dotnet:pointer:"))
+                    variableValue["type"] = "symbol";
             }
             else if (value?["value"]?["type"].Value<string>() == "function")
             {
@@ -300,12 +303,19 @@ public class DebuggerTestFirefox : DebuggerTestBase
                             value = (string)null,
                             description = value["value"]?["value"]?.Value<string>() == null ? value["value"]["class"].Value<string>() : value["value"]?["value"]?.Value<string>(),
                             className = value["value"]["class"].Value<string>(),
-                            objectId = value["value"]["actor"].Value<string>(),
+                            objectId = actor,
                         });
-                if (value["value"]["actor"].Value<string>().StartsWith("dotnet:valuetype:"))
+                if (actor.StartsWith("dotnet:valuetype:"))
                     variableValue["isValueType"] = true;
-                if (value["value"]["actor"].Value<string>().StartsWith("dotnet:array:"))
+                if (actor.StartsWith("dotnet:array:"))
                     variableValue["subtype"] = "array";
+                if (actor.StartsWith("dotnet:pointer:"))
+                    variableValue["type"] = "object";
+                if (actor.StartsWith("dotnet:pointer:-1"))
+                {
+                    variableValue["type"] = "symbol";
+                    variableValue["value"] = value["value"]?["value"]?.Value<string>();
+                }
             }
         }
         else
@@ -313,12 +323,12 @@ public class DebuggerTestFirefox : DebuggerTestBase
             var description = value["value"].ToString();
             if (value["type"].Value<string>() == "boolean")
                 description = description.ToLower();
-            variableValue = JObject.FromObject(new
-                    {
-                        type = value["type"],
-                        value = value["value"],
-                        description
-                    });
+                variableValue = JObject.FromObject(new
+                        {
+                            type = value["type"],
+                            value = value["value"],
+                            description
+                        });
         }
         var ret = JObject.FromObject(new
         {
@@ -348,7 +358,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
             }
             return ret;
         }
-        if (id.StartsWith("dotnet:valuetype:") || id.StartsWith("dotnet:object:") || id.StartsWith("dotnet:array:"))
+        if (id.StartsWith("dotnet:valuetype:") || id.StartsWith("dotnet:object:") || id.StartsWith("dotnet:array:") || id.StartsWith("dotnet:pointer:"))
         {
             JArray ret = new ();
             var o = JObject.FromObject(new
