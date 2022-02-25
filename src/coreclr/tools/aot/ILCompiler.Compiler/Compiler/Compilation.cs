@@ -34,7 +34,6 @@ namespace ILCompiler
         public CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
         public Logger Logger => _logger;
         public PInvokeILProvider PInvokeILProvider { get; }
-        public DevirtualizationManager DevirtualizationManager => _devirtualizationManager;
 
         private readonly TypeGetTypeMethodThunkCache _typeGetTypeMethodThunks;
         private readonly AssemblyGetExecutingAssemblyMethodThunkCache _assemblyGetExecutingAssemblyMethodThunks;
@@ -221,6 +220,11 @@ namespace ILCompiler
         public bool IsEffectivelySealed(TypeDesc type)
         {
             return _devirtualizationManager.IsEffectivelySealed(type);
+        }
+
+        public TypeDesc[] GetImplementingClasses(TypeDesc type)
+        {
+            return _devirtualizationManager.GetImplementingClasses(type);
         }
 
         public bool IsEffectivelySealed(MethodDesc method)

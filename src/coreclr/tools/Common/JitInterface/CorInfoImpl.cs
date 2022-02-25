@@ -2945,21 +2945,25 @@ namespace Internal.JitInterface
         {
 #if !READYTORUN
             MetadataType type = HandleToObject(baseType) as MetadataType;
-
-            if (type == null || type.IsCanonicalSubtype(CanonicalFormKind.Any) ||
-                type.HasVariance || type.IsArray || type.IsNullable)
+            if (type == null)
             {
                 return 0;
             }
 
             // type is already sealed, return it
-            if (!type.IsInterface && _compilation.IsEffectivelySealed(type))
+            if (_compilation.IsEffectivelySealed(type))
             {
                 *exactClsRet = baseType;
                 return 1;
             }
 
-            TypeDesc[] implClasses = _compilation.DevirtualizationManager?.GetImplementingClasses(type);
+            if (!type.IsInterface)
+            {
+                // TODO: handle classes
+                return 0;
+            }
+
+            TypeDesc[] implClasses = _compilation.GetImplementingClasses(type);
             if (implClasses == null || implClasses.Length > maxExactClasses)
             {
                 return 0;
@@ -2970,8 +2974,10 @@ namespace Internal.JitInterface
             {
                 Debug.Assert(!implClass.IsInterface);
 
-                if (implClass.IsCanonicalSubtype(CanonicalFormKind.Any) ||
-                    implClass.HasVariance || implClass.IsArray || implClass.IsNullable)
+                if (implClass.IsCanonicalDefinitionType(CanonicalFormKind.Any) ||
+                    implClass.IsCanonicalSubtype(CanonicalFormKind.Any) ||
+                    implClass.HasVariance || implClass.IsArray || implClass.IsNullable || implClass.IsDelegate ||
+                    implClass.IsIDynamicInterfaceCastable || implClass.HasInstantiation)
                 {
                     // Give up if we see shared types among implementations
                     return 0;
