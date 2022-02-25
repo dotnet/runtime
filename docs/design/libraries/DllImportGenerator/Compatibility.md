@@ -12,13 +12,15 @@ In the event a marshaller would generate code that has a specific target framewo
 
 ### Semantic changes compared to `DllImportAttribute`
 
-The default value of [`CharSet`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.charset) is runtime/language-defined. In the built-in system, the default value of the `CharSet` property is `CharSet.Ansi`. The P/Invoke source generator makes no assumptions about the `CharSet` if it is not explicitly set on `GeneratedDllImportAttribute`. Marshalling of `char` or `string` requires explicitly specifying marshalling information.
+[`CharSet`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.charset) has been replaced with a new `StringMarshalling` enumeration. `Ansi` and `Auto` are no longer supported as first-class options and `Utf8` has been added.
 
-The built-in system treats `CharSet.None` as `CharSet.Ansi`. The P/Invoke source generator will treat `CharSet.None` as if the `CharSet` was not set.
+With `DllImportAttribute`, the default value of [`CharSet`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.charset) is runtime/language-defined. In the built-in system, the default value of the `CharSet` property is `CharSet.Ansi`. The P/Invoke source generator makes no assumptions about `StringMarshalling` if it is not explicitly set on `GeneratedDllImportAttribute`. Marshalling of `char` or `string` requires explicitly specifying marshalling information.
 
 [`BestFitMapping`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.bestfitmapping) and [`ThrowOnUnmappableChar`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.throwonunmappablechar) will not be supported for `GeneratedDllImportAttribute`. These values only have meaning on Windows when marshalling string data (`char`, `string`, `StringBuilder`) as [ANSI](https://docs.microsoft.com/windows/win32/intl/code-pages). As the general recommendation - including from Windows - is to move away from ANSI, the P/Invoke source generator will not support these fields.
 
 [`CallingConvention`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.callingconvention) will not be supported for `GeneratedDllImportAttribute`. Users will be required to use the new `UnmanagedCallConvAttribute` attribute instead. This attribute provides support for extensible calling conventions and provides parity with the `UnmanagedCallersOnlyAttribute` attribute and C# function pointer syntax. We will enable our conversion code-fix to automatically convert explicit and known calling convention usage to use the `UnmanagedCallConvAttribute`.
+
+[`ExactSpelling`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.exactspelling) will not be supported for `GeneratedDllImportAttribute`. If `ExactSpelling` is used on an existing `DllImport`, the offered code-fix will provide users with additional options for using `A` or `W` suffixed variants depending on the provided `CharSet` so they can explicitly choose which spelling is correct for their scenario.
 
 ### Required references
 
@@ -31,31 +33,30 @@ These are all part of `NetCoreApp` and will be referenced by default unless [imp
 
 ### `char` marshalling
 
-Marshalling of `char` will not be supported when configured with any of the following:
-  - [`CharSet.Ansi`, `CharSet.Auto`, or `CharSet.None`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.charset) will not be supported.
+Marshalling of `char` will only be supported with `StringMarshalling.Utf16` or as `UnmanagedType.U2` or `UnmanagedType.I2`. It will not be supported when configured with any of the following:
   - [`UnmanagedType.U1` or `UnmanagedType.I1`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype)
-  - No explicit marshalling information - either [`DllImportAttribute.CharSet`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.charset) or [`MarshalAsAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute)
+  - `StringMarshalling.Utf8` will not be supported.
+  - No explicit marshalling information - either `GeneratedDllImportAttribute.StringMarshalling` or [`MarshalAsAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute)
 
-For `CharSet.Ansi` and `CharSet.None`, the built-in system used the [system default Windows ANSI code page](https://docs.microsoft.com/windows/win32/api/stringapiset/nf-stringapiset-widechartomultibyte) when on Windows and took the first byte of the UTF-8 encoding on non-Windows platforms. The above reasoning also applies to marshalling of a `char` as `UnmanagedType.U1` and `UnmanagedType.I1`. All approaches are fundamentally flawed and therefore not supported. If a single-byte character is expected to be marshalled it is left to the caller to convert a .NET `char` into a single `byte` prior to calling the native function.
+In the built-in system, marshalling with `CharSet.Ansi` and `CharSet.None` used the [system default Windows ANSI code page](https://docs.microsoft.com/windows/win32/api/stringapiset/nf-stringapiset-widechartomultibyte) when on Windows and took the first byte of the UTF-8 encoding on non-Windows platforms. The above reasoning also applies to marshalling of a `char` as `UnmanagedType.U1` and `UnmanagedType.I1`. All approaches are fundamentally flawed and therefore not supported. If a single-byte character is expected to be marshalled it is left to the caller to convert a .NET `char` into a single `byte` prior to calling the native function.
 
 For `CharSet.Auto`, the built-in system relied upon detection at runtime of the platform when determining the targeted encoding. Performing this check in generated code violates the "pay-for-play" principle. Given that there are no scenarios for this feature in `NetCoreApp` it will not be supported.
 
 ### `string` marshalling
 
 Marshalling of `string` will not be supported when configured with any of the following:
-  - [`CharSet.None`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.charset)
   - [`UnmanagedType.VBByRefStr`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype)
-  - No explicit marshalling information - either [`DllImportAttribute.CharSet`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.charset) or [`MarshalAsAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute)
+  - No explicit marshalling information - either `GeneratedDllImportAttribute.StringMarshalling` or [`MarshalAsAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute)
 
 When converting from native to managed, the built-in system would throw a [`MarshalDirectiveException`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshaldirectiveexception) if the string's length is over 0x7ffffff0. The generated marshalling code will no longer perform this check.
 
 In the built-in system, marshalling a `string` contains an optimization for parameters passed by value to allocate on the stack (instead of through [`AllocCoTaskMem`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshal.alloccotaskmem)) if the string is below a certain length (MAX_PATH). For UTF-16, this optimization was also applied for parameters passed by read-only reference. The generated marshalling code will include this optimization for read-only reference parameters for non-UTF-16 as well.
 
-When marshalling as [ANSI](https://docs.microsoft.com/windows/win32/intl/code-pages) on Windows (using `CharSet.Ansi` or `UnmanagedType.LPStr`):
+When marshalling as [ANSI](https://docs.microsoft.com/windows/win32/intl/code-pages) on Windows (using `UnmanagedType.LPStr`):
   - Best-fit mapping will be disabled and no exception will be thrown for unmappable characters. In the built-in system, this behaviour was configured through [`DllImportAttribute.BestFitMapping`] and [`DllImportAttribute.ThrowOnUnmappableChar`]. The generated marshalling code will have the equivalent behaviour of `BestFitMapping=false` and `ThrowOnUnmappableChar=false`.
   - No optimization for stack allocation will be performed. Marshalling will always allocate through `AllocCoTaskMem`.
 
-On Windows, marshalling using `CharSet.Auto` is treated as UTF-16. When marshalling a string as UTF-16 by value or by read-only reference, the string is pinned and the pointer passed to the P/Invoke. The generated marshalling code will always pin the input string - even on non-Windows.
+The p/invoke source generator does not provide an equivalent to using `CharSet.Auto` in the built-in system. If platform-dependent behaviour is desired, it is left to the user to define different p/invokes with different marshalling configurations.
 
 ### Custom marshaller support
 

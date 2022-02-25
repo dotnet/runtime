@@ -10,6 +10,10 @@
 const is_browser = typeof window != "undefined";
 const is_node = !is_browser && typeof process === 'object' && typeof process.versions === 'object' && typeof process.versions.node === 'string';
 
+if (is_node && process.versions.node.split(".")[0] < 14) {
+    throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}'`);
+}
+
 // if the engine doesn't provide a console
 if (typeof (console) === "undefined") {
     globalThis.console = {

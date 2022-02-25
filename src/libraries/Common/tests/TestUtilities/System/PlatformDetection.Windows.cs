@@ -154,7 +154,7 @@ namespace System
             out int pdwReturnedProductType
         );
 
-        [GeneratedDllImport("kernel32.dll", ExactSpelling = true)]
+        [GeneratedDllImport("kernel32.dll")]
         private static partial int GetCurrentApplicationUserModelId(ref uint applicationUserModelIdLength, byte[] applicationUserModelId);
 
         private static volatile Version s_windowsVersionObject;
@@ -241,6 +241,8 @@ namespace System
         }
 
         public static bool CanRunImpersonatedTests => PlatformDetection.IsNotWindowsNanoServer && PlatformDetection.IsWindowsAndElevated;
+
+        public static bool IsWindowsX86OrX64 => PlatformDetection.IsWindows && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process);
 
         private static int s_isWindowsElevated = -1;
         public static bool IsWindowsAndElevated

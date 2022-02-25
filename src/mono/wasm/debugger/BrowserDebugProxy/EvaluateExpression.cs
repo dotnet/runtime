@@ -19,6 +19,7 @@ using Microsoft.CodeAnalysis.Scripting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -231,7 +232,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         break;
                     }
                     case "number":
-                        valueRet = value?.Value<double>();
+                        //casting to double and back to string would loose precision; so casting straight to string
+                        valueRet = value?.Value<string>();
                         typeRet = "double";
                         break;
                     case "boolean":
@@ -396,7 +398,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     string.Join("\n", findVarNMethodCall.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
 
                 var state = await newScript.RunAsync(cancellationToken: token);
-                return JObject.FromObject(ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue.GetType()));
+                return JObject.FromObject(ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue?.GetType()));
             }
             catch (CompilationErrorException cee)
             {
@@ -419,11 +421,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static object ConvertCSharpToJSType(object v, Type type)
         {
             if (v == null)
-                return new { type = "object", subtype = "null", className = type.ToString(), description = type.ToString() };
+                return new { type = "object", subtype = "null", className = type?.ToString(), description = type?.ToString() };
             if (v is string s)
                 return new { type = "string", value = s, description = s };
             if (NumericTypes.Contains(v.GetType()))
-                return new { type = "number", value = v, description = v.ToString() };
+                return new { type = "number", value = v, description = Convert.ToDouble(v).ToString(CultureInfo.InvariantCulture) };
             if (v is JObject)
                 return v;
             return new { type = "object", value = v, description = v.ToString(), className = type.ToString() };
@@ -443,10 +445,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             set { }
         }
-        public ReturnAsErrorException(JObject error)
+        public ReturnAsErrorException(JObject error) : base(error.ToString())
             => Error = Result.Err(error);
 
         public ReturnAsErrorException(string message, string className)
+            : base($"[{className}] {message}")
         {
             var result = new
             {
@@ -466,5 +469,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }));
         }
+
+        public override string ToString() => $"Error object: {Error}. {base.ToString()}";
     }
 }

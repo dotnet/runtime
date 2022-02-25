@@ -63,7 +63,7 @@ internal static partial class Interop
         /// <param name="encoding">The encoding of the str variable. This should be UTF 8 for OS X</param>
         /// <returns>Returns a pointer to a CFString on success; otherwise, returns IntPtr.Zero</returns>
         /// <remarks>For *nix systems, the CLR maps ANSI to UTF-8, so be explicit about that</remarks>
-        [GeneratedDllImport(Interop.Libraries.CoreFoundationLibrary, CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Interop.Libraries.CoreFoundationLibrary, StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeCreateHandle CFStringCreateWithCString(
             IntPtr allocator,
             string str,
@@ -77,7 +77,7 @@ internal static partial class Interop
         /// <param name="encoding">The encoding of the str variable. This should be UTF 8 for OS X</param>
         /// <returns>Returns a pointer to a CFString on success; otherwise, returns IntPtr.Zero</returns>
         /// <remarks>For *nix systems, the CLR maps ANSI to UTF-8, so be explicit about that</remarks>
-        [GeneratedDllImport(Interop.Libraries.CoreFoundationLibrary, CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Interop.Libraries.CoreFoundationLibrary, StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeCreateHandle CFStringCreateWithCString(
             IntPtr allocator,
             IntPtr str,
@@ -131,10 +131,9 @@ internal static partial class Interop
         /// <param name="callbacks">Should be IntPtr.Zero</param>
         /// <returns>Returns a pointer to a CFArray on success; otherwise, returns IntPtr.Zero</returns>
         [GeneratedDllImport(Interop.Libraries.CoreFoundationLibrary)]
-        private static partial SafeCreateHandle CFArrayCreate(
+        private static unsafe partial SafeCreateHandle CFArrayCreate(
             IntPtr allocator,
-            [MarshalAs(UnmanagedType.LPArray)]
-            IntPtr[] values,
+            IntPtr* values,
             UIntPtr numValues,
             IntPtr callbacks);
 
@@ -144,9 +143,25 @@ internal static partial class Interop
         /// <param name="values">The values to put in the array</param>
         /// <param name="numValues">The number of values in the array</param>
         /// <returns>Returns a valid SafeCreateHandle to a CFArray on success; otherwise, returns an invalid SafeCreateHandle</returns>
-        internal static SafeCreateHandle CFArrayCreate(IntPtr[] values, UIntPtr numValues)
+        internal static unsafe SafeCreateHandle CFArrayCreate(IntPtr[] values, UIntPtr numValues)
         {
-            return CFArrayCreate(IntPtr.Zero, values, numValues, IntPtr.Zero);
+            fixed (IntPtr* pValues = values)
+            {
+                return CFArrayCreate(IntPtr.Zero, pValues, (UIntPtr)values.Length, IntPtr.Zero);
+            }
+        }
+
+        /// <summary>
+        /// Creates a pointer to an unmanaged CFArray containing the input values. Follows the "Create Rule" where if you create it, you delete it.
+        /// </summary>
+        /// <param name="values">The values to put in the array</param>
+        /// <returns>Returns a valid SafeCreateHandle to a CFArray on success; otherwise, returns an invalid SafeCreateHandle</returns>
+        internal static unsafe SafeCreateHandle CFArrayCreate(Span<IntPtr> values)
+        {
+            fixed (IntPtr* pValues = &MemoryMarshal.GetReference(values))
+            {
+                return CFArrayCreate(IntPtr.Zero, pValues, (UIntPtr)values.Length, IntPtr.Zero);
+            }
         }
 
         /// <summary>

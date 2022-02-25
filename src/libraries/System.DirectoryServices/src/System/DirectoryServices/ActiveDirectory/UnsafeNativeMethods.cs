@@ -574,16 +574,16 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal static partial class UnsafeNativeMethods
     {
-        [GeneratedDllImport(global::Interop.Libraries.Activeds, EntryPoint = "ADsEncodeBinaryData", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(global::Interop.Libraries.Activeds, EntryPoint = "ADsEncodeBinaryData", StringMarshalling = StringMarshalling.Utf16)]
         public static partial int ADsEncodeBinaryData(byte[] data, int length, ref IntPtr result);
 
         [GeneratedDllImport(global::Interop.Libraries.Activeds, EntryPoint = "FreeADsMem")]
         public static partial bool FreeADsMem(IntPtr pVoid);
 
-        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetSiteNameW", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetSiteNameW", StringMarshalling = StringMarshalling.Utf16)]
         public static partial int DsGetSiteName(string? dcName, ref IntPtr ptr);
 
-        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsEnumerateDomainTrustsW", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsEnumerateDomainTrustsW", StringMarshalling = StringMarshalling.Utf16)]
         public static partial int DsEnumerateDomainTrustsW(string serverName, int flags, out IntPtr domains, out int count);
 
         [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "NetApiBufferFree")]
@@ -604,7 +604,7 @@ namespace System.DirectoryServices.ActiveDirectory
         [GeneratedDllImport(global::Interop.Libraries.Advapi32, EntryPoint = "LsaDeleteTrustedDomain")]
         public static partial uint LsaDeleteTrustedDomain(SafeLsaPolicyHandle handle, IntPtr pSid);
 
-        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "I_NetLogonControl2", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "I_NetLogonControl2", StringMarshalling = StringMarshalling.Utf16)]
         public static partial int I_NetLogonControl2(string serverName, int FunctionCode, int QueryLevel, IntPtr data, out IntPtr buffer);
 
         [GeneratedDllImport(global::Interop.Libraries.Kernel32, EntryPoint = "GetSystemTimeAsFileTime")]
@@ -629,13 +629,13 @@ namespace System.DirectoryServices.ActiveDirectory
           PBYTE* Buffer
         ); */
 
-        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsRoleGetPrimaryDomainInformation", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsRoleGetPrimaryDomainInformation", StringMarshalling = StringMarshalling.Utf16)]
         public static partial int DsRoleGetPrimaryDomainInformation(
             [MarshalAs(UnmanagedType.LPTStr)] string lpServer,
             DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,
             out IntPtr Buffer);
 
-        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsRoleGetPrimaryDomainInformation", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsRoleGetPrimaryDomainInformation", StringMarshalling = StringMarshalling.Utf16)]
         public static partial int DsRoleGetPrimaryDomainInformation(
             IntPtr lpServer,
             DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,

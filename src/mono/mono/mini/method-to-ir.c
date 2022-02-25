@@ -77,7 +77,7 @@
 #include "ir-emit.h"
 
 #include "jit-icalls.h"
-#include <mono/mini/jit.h>
+#include <mono/jit/jit.h>
 #include "seq-points.h"
 #include "aot-compiler.h"
 #include "mini-llvm.h"
@@ -335,7 +335,7 @@ handle_enum:
 		return OP_LMOVE;
 #endif
 	case MONO_TYPE_R4:
-		return cfg->r4fp ? OP_RMOVE : OP_FMOVE;
+		return OP_RMOVE;
 	case MONO_TYPE_R8:
 		return OP_FMOVE;
 	case MONO_TYPE_VALUETYPE:
@@ -481,8 +481,7 @@ add_widen_op (MonoCompile *cfg, MonoInst *ins, MonoInst **arg1_ref, MonoInst **a
 	MonoInst *arg1 = *arg1_ref;
 	MonoInst *arg2 = *arg2_ref;
 
-	if (cfg->r4fp &&
-		((arg1->type == STACK_R4 && arg2->type == STACK_R8) ||
+	if (((arg1->type == STACK_R4 && arg2->type == STACK_R8) ||
 		 (arg1->type == STACK_R8 && arg2->type == STACK_R4))) {
 		MonoInst *conv;
 
@@ -1971,8 +1970,6 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 static MonoInst*
 convert_value (MonoCompile *cfg, MonoType *type, MonoInst *ins)
 {
-	if (!cfg->r4fp)
-		return ins;
 	type = mini_get_underlying_type (type);
 	switch (type->type) {
 	case MONO_TYPE_R4:
@@ -3109,8 +3106,8 @@ handle_unbox_nullable (MonoCompile* cfg, MonoInst* val, MonoClass* klass, int co
 	}
 }
 
-static MonoInst*
-handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, int context_used)
+MonoInst*
+mini_handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst *val, int context_used)
 {
 	MonoInst *add;
 	int obj_reg;
@@ -3119,7 +3116,7 @@ handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, int context_use
 	int eclass_reg = alloc_dreg (cfg ,STACK_PTR);
 	int rank_reg = alloc_dreg (cfg ,STACK_I4);
 
-	obj_reg = sp [0]->dreg;
+	obj_reg = val->dreg;
 	MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, rank_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, rank));
 
@@ -4528,13 +4525,13 @@ mini_emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 		MONO_EMIT_NEW_ICONST (cfg, dreg, 0);
 	} else if (t == MONO_TYPE_I8 || t == MONO_TYPE_U8) {
 		MONO_EMIT_NEW_I8CONST (cfg, dreg, 0);
-	} else if (cfg->r4fp && t == MONO_TYPE_R4) {
+	} else if (t == MONO_TYPE_R4) {
 		MONO_INST_NEW (cfg, ins, OP_R4CONST);
 		ins->type = STACK_R4;
 		ins->inst_p0 = (void*)&r4_0;
 		ins->dreg = dreg;
 		MONO_ADD_INS (cfg->cbb, ins);
-	} else if (t == MONO_TYPE_R4 || t == MONO_TYPE_R8) {
+	} else if (t == MONO_TYPE_R8) {
 		MONO_INST_NEW (cfg, ins, OP_R8CONST);
 		ins->type = STACK_R8;
 		ins->inst_p0 = (void*)&r8_0;
@@ -4564,9 +4561,9 @@ emit_dummy_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_ICONST);
 	} else if (t == MONO_TYPE_I8 || t == MONO_TYPE_U8) {
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_I8CONST);
-	} else if (cfg->r4fp && t == MONO_TYPE_R4) {
+	} else if (t == MONO_TYPE_R4) {
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_R4CONST);
-	} else if (t == MONO_TYPE_R4 || t == MONO_TYPE_R8) {
+	} else if (t == MONO_TYPE_R8) {
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_R8CONST);
 	} else if ((t == MONO_TYPE_VALUETYPE) || (t == MONO_TYPE_TYPEDBYREF) ||
 		   ((t == MONO_TYPE_GENERICINST) && mono_type_generic_inst_is_valuetype (rtype))) {
@@ -6156,7 +6153,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoType **param_types;
 	int i, n, start_new_bblock, dreg;
 	int num_calls = 0, inline_costs = 0;
-	int breakpoint_id = 0;
 	guint num_args;
 	GSList *class_inits = NULL;
 	gboolean dont_verify, dont_verify_stloc, readonly = FALSE;
@@ -6492,14 +6488,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		mono_emit_method_call (cfg, wrapper, args, NULL);
 	}
 
-	if (cfg->method == method) {
-		breakpoint_id = mono_debugger_method_has_breakpoint (method);
-		if (breakpoint_id) {
-			MONO_INST_NEW (cfg, ins, OP_BREAK);
-			MONO_ADD_INS (cfg->cbb, ins);
-		}
-	}
-
 	if (cfg->llvm_only && cfg->interp && cfg->method == method && !cfg->deopt) {
 		if (header->num_clauses) {
 			for (int i = 0; i < header->num_clauses; ++i) {
@@ -6626,8 +6614,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		UNVERIFIED;
 	}
 
-	if (cfg->method == method)
+	if (cfg->method == method) {
+		int breakpoint_id = mono_debugger_method_has_breakpoint (method);
+		if (breakpoint_id) {
+			MONO_INST_NEW (cfg, ins, OP_BREAK);
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
 		mono_debug_init_method (cfg, cfg->cbb, breakpoint_id);
+	}
 
 	for (n = 0; n < header->num_locals; ++n) {
 		if (header->locals [n]->type == MONO_TYPE_VOID && !m_type_is_byref (header->locals [n]))
@@ -9194,7 +9188,7 @@ calli_end:
 			} else if (mono_class_is_nullable (klass)) {
 				res = handle_unbox_nullable (cfg, *sp, klass, context_used);
 			} else {
-				addr = handle_unbox (cfg, klass, sp, context_used);
+				addr = mini_handle_unbox (cfg, klass, *sp, context_used);
 				/* LDOBJ */
 				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), addr->dreg, 0);
 				res = ins;
@@ -9548,7 +9542,7 @@ calli_end:
 
 				*sp++= ins;
 			} else {
-				ins = handle_unbox (cfg, klass, sp, context_used);
+				ins = mini_handle_unbox (cfg, klass, *sp, context_used);
 				*sp++ = ins;
 			}
 			inline_costs += 2;

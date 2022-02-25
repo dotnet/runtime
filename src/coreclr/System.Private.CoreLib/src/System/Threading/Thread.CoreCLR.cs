@@ -157,7 +157,7 @@ namespace System.Threading
             InformThreadNameChange(GetNativeHandle(), value, value?.Length ?? 0);
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_InformThreadNameChange", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_InformThreadNameChange", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void InformThreadNameChange(ThreadHandle t, string? name, int len);
 
         /// <summary>Returns true if the thread has been started and is not dead.</summary>
