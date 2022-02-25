@@ -150,8 +150,7 @@ char* gai_strerror(int code) {
 }
 
 int32_t dotnet_browser_entropy(uint8_t* buffer, int32_t bufferLength) {
-    getentropy (buffer, bufferLength);
-    return 0;
+    return getentropy (buffer, bufferLength);
 }
 
 void
