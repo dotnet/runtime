@@ -1960,7 +1960,6 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
 
 #if !defined(TARGET_UNIX) && (defined(TARGET_X86) || defined(TARGET_AMD64))
     DWORD context = CONTEXT_COMPLETE;
-    BOOL supportsAVX = FALSE;
 
     if (pfnInitializeContext2 == NULL)
     {
@@ -1974,7 +1973,6 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
     if ((FeatureMask & XSTATE_MASK_AVX) != 0)
     {
         context = context | CONTEXT_XSTATE;
-        supportsAVX = TRUE;
     }
 
     // Retrieve contextSize by passing NULL for Buffer
@@ -1996,15 +1994,6 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
         success = pfnInitializeContext2 ?
             pfnInitializeContext2(buffer, context, &pOSContext, &contextSize, xStateCompactionMask):
             InitializeContext(buffer, context, &pOSContext, &contextSize);
-
-        // if AVX is supported set the appropriate features mask in the context
-        if (success && supportsAVX)
-        {
-            // This should not normally fail.
-            // The system silently ignores any feature specified in the FeatureMask
-            // which is not enabled on the processor.
-            success = SetXStateFeaturesMask(pOSContext, XSTATE_MASK_AVX);
-        }
 
         if (!success)
         {
@@ -2912,9 +2901,23 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
 
     //////////////////////////////////////
     // Get and save the thread's context
+    BOOL bRes = true;
 
     // Always get complete context, pCtx->ContextFlags are set during Initialization
-    BOOL bRes = EEGetThreadContext(this, pCtx);
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    // Scenarios like GC stress may indirectly disable XState features in the pCtx
+    // depending on the state at the time of GC stress interrupt.
+    // 
+    // Make sure that AVX feature mask is set, if supported.
+    // 
+    // This should not normally fail.
+    // The system silently ignores any feature specified in the FeatureMask
+    // which is not enabled on the processor.
+    bRes &= SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX);
+#endif //defined(TARGET_X86) || defined(TARGET_AMD64)
+
+    bRes &= EEGetThreadContext(this, pCtx);
     _ASSERTE(bRes && "Failed to GetThreadContext in RedirectThreadAtHandledJITCase - aborting redirect.");
 
     if (!bRes)
@@ -3029,8 +3032,35 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
 
     //////////////////////////////////////
     // Get and save the thread's context
-    BOOL success = CopyContext(pCtx, pCtx->ContextFlags, pCurrentThreadCtx);
+    BOOL success = TRUE;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    // This method is called for GC stress interrupts in managed code.
+    // The current context may have various XState features, depending on what is used/dirty,
+    // but only AVX feature may contain live data. (that could change with new features in JIT)
+    // Besides pCtx may not have space to store other features.
+    // So we will mask out everything but AVX.
+    DWORD64 srcFeatures = 0;
+    success = GetXStateFeaturesMask(pCurrentThreadCtx, &srcFeatures);
     _ASSERTE(success);
+    if (!success)
+        return FALSE;
+
+    // Get may return 0 if no XState is set, which Set would not accept.
+    if (srcFeatures != 0)
+    {
+        success = SetXStateFeaturesMask(pCurrentThreadCtx, srcFeatures & XSTATE_MASK_AVX);
+        _ASSERTE(success);
+        if (!success)
+            return FALSE;
+    }
+
+#endif //defined(TARGET_X86) || defined(TARGET_AMD64)
+
+    success = CopyContext(pCtx, pCtx->ContextFlags, pCurrentThreadCtx);
+    _ASSERTE(success);
+    if (!success)
+        return FALSE;
 
     // Ensure that this flag is set for the next time through the normal path,
     // RedirectThreadAtHandledJITCase.

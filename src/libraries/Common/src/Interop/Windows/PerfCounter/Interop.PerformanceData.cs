@@ -60,7 +60,7 @@ internal static partial class Interop
             out SafePerfProviderHandle phProvider
         );
 
-        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Advapi32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial PerfCounterSetInstanceStruct* PerfCreateInstance(
             SafePerfProviderHandle hProvider,
             ref Guid CounterSetGuid,
