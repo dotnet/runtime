@@ -7115,7 +7115,7 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
         //
         const bool mustProcessParams = true;
 #else
-        // OSR must also assign offsts here.
+        // OSR must also assign offsets here.
         //
         const bool mustProcessParams = opts.IsOSR();
 #endif // defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86)
