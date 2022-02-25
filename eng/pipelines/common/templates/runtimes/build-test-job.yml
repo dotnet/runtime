@@ -74,7 +74,7 @@ jobs:
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
       - name: liveRuntimeBuildParams
-        value: 'libs.ref -c Release -ci'
+        value: 'libs.sfx+libs.oob /p:RefOnly=true -c Release -ci'
       - name: compilerArg
         value: ''
       - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc')) }}:

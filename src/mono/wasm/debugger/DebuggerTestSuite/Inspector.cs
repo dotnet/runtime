@@ -29,6 +29,7 @@ namespace DebuggerTests
         public const string READY = "ready";
         public CancellationToken Token { get; }
         public InspectorClient Client { get; }
+        public bool DetectAndFailOnAssertions { get; set; } = true;
 
         private CancellationTokenSource _cancellationTokenSource;
 
@@ -184,8 +185,17 @@ namespace DebuggerTests
                     NotifyOf(READY, args);
                     break;
                 case "Runtime.consoleAPICalled":
-                    _logger.LogInformation(FormatConsoleAPICalled(args));
+                {
+                    string line = FormatConsoleAPICalled(args);
+                    _logger.LogInformation(line);
+                    if (DetectAndFailOnAssertions && line.Contains("console.error: * Assertion at"))
+                    {
+                        args["__forMethod"] = method;
+                        Client.Fail(new ArgumentException($"Assertion detected in the messages: {line}{Environment.NewLine}{args}"));
+                        return;
+                    }
                     break;
+                }
                 case "Inspector.detached":
                 case "Inspector.targetCrashed":
                 case "Inspector.targetReloadedAfterCrash":
