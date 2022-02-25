@@ -394,34 +394,28 @@ namespace System.Text.RegularExpressions
             }
             finally
             {
+                runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache.
                 _runner = runner;
             }
         }
 
         private static Match? InternalPerformScan(bool quick, string input, int beginning, RegexRunner runner, ReadOnlySpan<char> span, bool returnNullIfQuick)
         {
-            // We need to save the original beginning of the input in case we are in the CompileToAssembly case, which relies on
-            // setting runtextbeg and runtextend correctly. We cannot calculate these values on the fly based on input and the span
-            // because it is not guaranteed that span.Length + beginning = input.
-            runner.originalRuntextbeg = beginning;
             runner.Scan(span);
 
             Match? match = runner.runmatch;
-            Debugger.Assert(match is not null);
+            Debug.Assert(match is not null);
 
             // If we got a match, set runmatch to null if quick is true.
             if (match.FoundMatch)
             {
-                runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache
-
-                if (match.Text != input)
+                if (!quick)
                 {
-                    match.Text = input;
+                    match.Text = input; // We need to save the input into the match object which will be returned.
                 }
 
                 if (quick && returnNullIfQuick)
                 {
-                    match.Text = null; // Drop reference to text
                     return null;
                 }
 
@@ -432,17 +426,14 @@ namespace System.Text.RegularExpressions
 
                 match.Tidy(runner.runtextpos);
 
-                // If there was a match and the original text was sliced, then add beginning to the index to get the real
-                // Index of the match.
-                if (match.Success && beginning != 0)
+                // If the passed in beginning was not 0 then we need to adjust the offests on the match object.
+                if (beginning != 0)
                 {
                     match.AddBeginningToIndex(beginning);
                 }
 
                 return match;
             }
-
-            runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache
 
             if (!quick)
             {
@@ -471,7 +462,7 @@ namespace System.Text.RegularExpressions
 
                 runner.Scan(input);
 
-                return runner.runmatch!.FoundMatch ? null : RegularExpressions.Match.Empty;
+                return runner.runmatch == null || runner.runmatch.FoundMatch ? null : RegularExpressions.Match.Empty;
             }
             finally
             {
@@ -487,11 +478,11 @@ namespace System.Text.RegularExpressions
             try
             {
                 runner.InitializeTimeout(internalMatchTimeout);
+                runner.runtext = input;
                 int runtextpos = startat;
                 while (true)
                 {
                     runner.InitializeForScan(this, input, startat, false);
-                    runner.runtext = input;
                     runner.runtextpos = runtextpos;
 
                     int stoppos = RightToLeft ? 0 : input.Length;
@@ -512,8 +503,6 @@ namespace System.Text.RegularExpressions
                         if (!callback(ref state, match))
                         {
                             // If the callback returns false, we're done.
-                            // Drop reference to text to avoid keeping it alive in a cache.
-                            runner.runtext = null;
 
                             if (reuseMatchObject)
                             {
@@ -539,9 +528,6 @@ namespace System.Text.RegularExpressions
                         {
                             if (runner.runtextpos == stoppos)
                             {
-                                // Drop reference to text to avoid keeping it alive in a cache.
-                                runner.runtext = null;
-
                                 if (reuseMatchObject)
                                 {
                                     // See above comment.
@@ -561,7 +547,6 @@ namespace System.Text.RegularExpressions
                         // We failed to match at this position.  If we're at the stopping point, we're done.
                         if (runner.runtextpos == stoppos)
                         {
-                            runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache
                             if (!reuseMatchObject)
                             {
                                 runner.runmatch = null;
@@ -573,6 +558,7 @@ namespace System.Text.RegularExpressions
             }
             finally
             {
+                runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache.
                 _runner = runner;
             }
         }
