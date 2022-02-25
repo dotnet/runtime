@@ -7,10 +7,6 @@
   "tools": {
     "dotnet": "5.0.401"
   },
-  "native-tools": {
-    "cmake": "3.14.5",
-    "python3": "3.7.1"
-  },
   "msbuild-sdks": {
     "Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk": "5.0.0-beta.21565.1",
     "Microsoft.DotNet.Arcade.Sdk": "5.0.0-beta.21565.1",
