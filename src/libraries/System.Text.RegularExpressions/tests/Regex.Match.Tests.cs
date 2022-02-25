@@ -2035,8 +2035,16 @@ namespace System.Text.RegularExpressions.Tests
             if (r == null)
             {
                 Assert.Equal(expected, timeout == Regex.InfiniteMatchTimeout ? Regex.IsMatch(input, pattern, options) : Regex.IsMatch(input, pattern, options, timeout));
+                if (options == RegexOptions.None)
+                {
+                    Assert.Equal(expected, Regex.IsMatch(input, pattern));
+                }
 #if NET7_0_OR_GREATER
                 Assert.Equal(expected, timeout == Regex.InfiniteMatchTimeout ? Regex.IsMatch(input.AsSpan(), pattern, options) : Regex.IsMatch(input.AsSpan(), pattern, options, timeout));
+                if (options == RegexOptions.None)
+                {
+                    Assert.Equal(expected, Regex.IsMatch(input.AsSpan(), pattern));
+                }
 #endif
             }
             else

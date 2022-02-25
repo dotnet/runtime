@@ -14,11 +14,14 @@ namespace System.Text.RegularExpressions
             RegexCache.GetOrAdd(pattern).IsMatch(input);
 
         /// <summary>
-        /// Searches the input span for one or more occurrences of the text supplied in the given pattern.
+        /// Indicates whether the specified regular expression finds a match in the specified input span.
         /// </summary>
-        /// <param name="input">The input span to be searched on.</param>
-        /// <param name="pattern">The Regex pattern to be used for matching.</param>
-        /// <returns><see langword="true"/> if the input matches the pattern, <see langword="false"/> otherwise.</returns>
+        /// <param name="input">The span to search for a match.</param>
+        /// <param name="pattern">The regular expression pattern to match.</param>
+        /// <returns><see langword="true"/> if the regular expression finds a match; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentException">A regular expression parsing error occurred.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="pattern"/> is <see langword="null"/></exception>
+        /// <exception cref="RegexMatchTimeoutException">A time-out occurred.</exception>
         public static bool IsMatch(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern) =>
             RegexCache.GetOrAdd(pattern).IsMatch(input);
 
@@ -31,12 +34,16 @@ namespace System.Text.RegularExpressions
             RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).IsMatch(input);
 
         /// <summary>
-        /// Searches the input span for one or more occurrences of the text supplied in the given pattern. It uses the passed in options.
+        /// Indicates whether the specified regular expression finds a match in the specified input span, using the specified matching options.
         /// </summary>
-        /// <param name="input">The input span to be searched on.</param>
-        /// <param name="pattern">The Regex pattern to be used for matching.</param>
-        /// <param name="options">The options to be used for matching</param>
-        /// <returns><see langword="true"/> if the input matches the pattern, <see langword="false"/> otherwise.</returns>
+        /// <param name="input">The span to search for a match.</param>
+        /// <param name="pattern">The regular expression pattern to match.</param>
+        /// <param name="options">A bitwise combination of the enumeration values that provide options for matching.</param>
+        /// <returns><see langword="true"/> if the regular expression finds a match; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentException">A regular expression parsing error occurred.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="pattern"/> is <see langword="null"/></exception>
+        /// <exception cref="RegexMatchTimeoutException">A time-out occurred.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> is not in a valid <see cref="RegexOptions"/> value.</exception>
         public static bool IsMatch(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options) =>
             RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).IsMatch(input);
 
@@ -44,13 +51,18 @@ namespace System.Text.RegularExpressions
             RegexCache.GetOrAdd(pattern, options, matchTimeout).IsMatch(input);
 
         /// <summary>
-        /// Searches the input span for one or more occurrences of the text supplied in the given pattern under the specified timeout. It uses the passed in options.
+        /// Indicates whether the specified regular expression finds a match in the specified input span, using the specified matching options and time-out interval.
         /// </summary>
-        /// <param name="input">The input span to be searched on.</param>
-        /// <param name="pattern">The Regex pattern to be used for matching.</param>
-        /// <param name="options">The options to be used for matching</param>
-        /// <param name="matchTimeout">Max time to be used for matching before returning.</param>
-        /// <returns><see langword="true"/> if the input matches the pattern, <see langword="false"/> otherwise. Also returns <see langword="false"/> for time out.</returns>
+        /// <param name="input">The span to search for a match.</param>
+        /// <param name="pattern">The regular expression pattern to match.</param>
+        /// <param name="options">A bitwise combination of the enumeration values that provide options for matching.</param>
+        /// <param name="matchTimeout">A time-out interval, or <see cref="Regex.InfiniteMatchTimeout"/> to indicate that the method should not time out.</param>
+        /// <returns><see langword="true"/> if the regular expression finds a match; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentException">A regular expression parsing error occurred.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="pattern"/> is <see langword="null"/></exception>
+        /// <exception cref="RegexMatchTimeoutException">A time-out occurred.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> is not in a valid <see cref="RegexOptions"/> value or <paramref name="matchTimeout"/> is negative,
+        /// zero, or greater than approximately 24 days.</exception>
         public static bool IsMatch(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options, TimeSpan matchTimeout) =>
             RegexCache.GetOrAdd(pattern, options, matchTimeout).IsMatch(input);
 
@@ -69,10 +81,11 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Searches the input span for one or more matches using the previous pattern,
-        /// options, and starting position.
+        /// Indicates whether the regular expression specified in the Regex constructor finds a match in a specified input span.
         /// </summary>
-        /// <returns><see langword="true"/> if the input matches the pattern, <see langword="false"/> otherwise.</returns>
+        /// <param name="input">The span to search for a match.</param>
+        /// <returns><see langword="true"/> if the regular expression finds a match; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="RegexMatchTimeoutException">A time-out ocurred.</exception>
         public bool IsMatch(ReadOnlySpan<char> input) =>
             Run(input, UseOptionR() ? input.Length : 0) is null;
 

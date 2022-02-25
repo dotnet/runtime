@@ -94,13 +94,19 @@ namespace System.Text.RegularExpressions
 
         protected internal virtual void Scan(ReadOnlySpan<char> text)
         {
+            // This base implementation is overridden by all of the built-in engines and by all source-generated
+            // implementations.  The only time this should end up being used is if someone is using a Regex-derived
+            // type created by .NET Framework's Regex.CompileToAssembly, in which case it will have overridden
+            // FindFirstChar and Go but not Scan (which didn't exist yet).  This isn't an officially supported configuration,
+            // using assemblies built for .NET Framework and targeting .NET Framework surface area against this
+            // implementation, but we make a best-effort to keep things functional.
             string? s = runtext;
 
             // We can assume that the passed in 'text' span is a slice of the original text input runtext. That said we need to calculate
             // what the original beginning was and can't do it by just using the lengths of text and runtext, since we can't guarantee that
             // the passed in beginning and length match the size of the original input. We instead use MemoryExtensions Overlaps to find the
             // offset in memory between them. We intentionally use s.Overlaps(text) since we want to get a positive value.
-            _ = s.AsSpan().Overlaps(text, out int beginning);
+            s.AsSpan().Overlaps(text, out int beginning);
 
             // The passed in span is sliced from runtextbeg to runtextend already, but in the precompiled scenario
             // we require to use the complete input and to use the full string instead. We first test to ensure that the
@@ -169,7 +175,6 @@ namespace System.Text.RegularExpressions
 
             Match match = InternalScan(regex, textbeg, textend);
             runtext = null; //drop reference
-            runmatch!.Text = null;
 
             if (match.FoundMatch)
             {
@@ -180,6 +185,10 @@ namespace System.Text.RegularExpressions
 
                 runmatch = null;
                 match.Tidy(runtextpos);
+            }
+            else
+            {
+                runmatch!.Text = null;
             }
 
             return match;

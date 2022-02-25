@@ -84,6 +84,14 @@ namespace System.Text.RegularExpressions
             _groupcoll?.Reset();
         }
 
+        /// <summary>
+        /// Returns <see langword="true"/> if this object represents a successful match, and <see langword="false"/> otherwise.
+        /// </summary>
+        /// <remarks>
+        /// The main difference between the public <see cref="Group.Success"/> property and this one, is that <see cref="Group.Success"/> requires
+        /// for a <see cref="Match"/> to call <see cref="Match.Tidy(int)"/> first, in order to report the correct value, while this API will return
+        /// the correct value right after a Match gets calculated, meaning that it will return <see langword="true"/> right after <see cref="RegexRunner.Capture(int, int, int)"/>
+        /// </remarks>
         internal bool FoundMatch => _matchcount[0] > 0;
 
         public virtual GroupCollection Groups => _groupcoll ??= new GroupCollection(this, null);

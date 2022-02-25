@@ -406,27 +406,24 @@ namespace System.Text.RegularExpressions
             Match? match = runner.runmatch;
             Debug.Assert(match is not null);
 
-            // If we got a match, set runmatch to null if quick is true.
+            // If we got a match, do some cleanup and return it, or return null if quick is true;
             if (match.FoundMatch)
             {
                 if (!quick)
                 {
-                    match.Text = input; // We need to save the input into the match object which will be returned.
-                }
-
-                if (quick && returnNullIfQuick)
-                {
-                    return null;
-                }
-
-                if (!quick)
-                {
+                    // We're about to return the Match object. Store the input into it and remove it from the runner.
+                    match.Text = input;
                     runner.runmatch = null;
+                }
+                else if (returnNullIfQuick)
+                {
+                    match.Text = null;
+                    return null;
                 }
 
                 match.Tidy(runner.runtextpos);
 
-                // If the passed in beginning was not 0 then we need to adjust the offests on the match object.
+                // If the passed in beginning was not 0 then we need to adjust the offsets on the match object.
                 if (beginning != 0)
                 {
                     match.AddBeginningToIndex(beginning);
@@ -435,24 +432,18 @@ namespace System.Text.RegularExpressions
                 return match;
             }
 
-            if (!quick)
-            {
-                runner.runmatch = null;
-            }
-            else
-            {
-                match.Text = null;
-            }
+            // We failed to match, so we will return Match.Empty which means we can reuse runmatch object.
+            // We do however need to clear its Text in case it was set, so as to not keep it alive in some cache.
+            runner.runmatch!.Text = null;
 
             return RegularExpressions.Match.Empty;
         }
 
         internal Match? Run(ReadOnlySpan<char> input, int startat)
         {
-            if ((uint)startat > (uint)input.Length)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startat, ExceptionResource.BeginIndexNotNegative);
-            }
+            // startat parameter is always either 0 or input.Length since public API for IsMatch doesn't have an overload
+            // that takes in startat.
+            Debug.Assert(startat <= input.Length);
 
             RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
             try
@@ -462,7 +453,9 @@ namespace System.Text.RegularExpressions
 
                 runner.Scan(input);
 
-                return runner.runmatch == null || runner.runmatch.FoundMatch ? null : RegularExpressions.Match.Empty;
+                // If runmatch is null it means that an override of Scan didn't implement it correctly, so we will
+                // let this null ref since there are lots of ways where you can end up in a erroneous state.
+                return runner.runmatch!.FoundMatch ? null : RegularExpressions.Match.Empty;
             }
             finally
             {
@@ -547,10 +540,6 @@ namespace System.Text.RegularExpressions
                         // We failed to match at this position.  If we're at the stopping point, we're done.
                         if (runner.runtextpos == stoppos)
                         {
-                            if (!reuseMatchObject)
-                            {
-                                runner.runmatch = null;
-                            }
                             return;
                         }
                     }

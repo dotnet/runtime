@@ -326,12 +326,17 @@ namespace System.Text.RegularExpressions
 
         protected internal override void Scan(ReadOnlySpan<char> text)
         {
+            Debug.Assert(runregex is not null);
+            Debug.Assert(runtrack is not null);
+            Debug.Assert(runstack is not null);
+            Debug.Assert(runcrawl is not null);
+
             // Configure the additional value to "bump" the position along each time we loop around
             // to call TryFindNextStartingPosition again, as well as the stopping position for the loop.  We generally
             // bump by 1 and stop at textend, but if we're examining right-to-left, we instead bump
             // by -1 and stop at textbeg.
             int bump = 1, stoppos = text.Length;
-            if (runregex!.RightToLeft)
+            if (runregex.RightToLeft)
             {
                 bump = -1;
                 stoppos = 0;
@@ -347,9 +352,9 @@ namespace System.Text.RegularExpressions
                 }
 
                 // Reset state for another iteration.
-                runtrackpos = runtrack!.Length;
-                runstackpos = runstack!.Length;
-                runcrawlpos = runcrawl!.Length;
+                runtrackpos = runtrack.Length;
+                runstackpos = runstack.Length;
+                runcrawlpos = runcrawl.Length;
                 runtextpos += bump;
             }
         }
