@@ -1535,7 +1535,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
             if (fldVarDsc->GetRegNum() == REG_STK)
             {
                 // We have loaded this into a register only temporarily
-                gcInfo.gcMarkRegSetNpt(reg);
+                gcInfo.gcMarkRegSetNpt(genRegMask(reg));
             }
             else if (isFieldDying)
             {
