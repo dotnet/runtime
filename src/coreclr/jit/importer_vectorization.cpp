@@ -124,7 +124,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
 #endif
         if (len <= 16)
     {
-        // Handle [8..16] inputs via two Vector256
+        // Handle [8..16] inputs via two Vector128
         assert(len >= 8 && len <= 16);
 
         simdSize = 16;
