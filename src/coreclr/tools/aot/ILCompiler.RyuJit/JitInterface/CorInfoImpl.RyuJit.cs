@@ -1758,7 +1758,7 @@ namespace Internal.JitInterface
 
         private unsafe HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_STRUCT_* ftnHnd, PgoInstrumentationSchema* pSchema, uint countSchemaItems, byte** pInstrumentationData)
         {
-            throw new NotImplementedException("allocPgoInstrumentationBySchema");
+            throw new NotImplementedException("allocPgoInstrumentationBySchemxa");
         }
 
         private CORINFO_CLASS_STRUCT_* getLikelyClass(CORINFO_METHOD_STRUCT_* ftnHnd, CORINFO_CLASS_STRUCT_* baseHnd, uint IlOffset, ref uint pLikelihood, ref uint pNumberOfClasses)
