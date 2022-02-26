@@ -576,8 +576,8 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
     GenTree* lenNode      = gtNewIndir(TYP_INT, gtNewOperNode(GT_ADD, TYP_BYREF, varStrLcl, lenOffset));
     varStrLcl             = (GenTreeLclVar*)gtClone(varStrLcl);
 
-    GenTree* unrolled = impExpandHalfConstEquals(varStrLcl, lenNode, needsNullcheck, startsWith, (WCHAR*)str,
-                                                 cnsLength, strLenOffset + sizeof(int));
+    GenTree* unrolled = impExpandHalfConstEquals(varStrLcl, lenNode, needsNullcheck, startsWith, (WCHAR*)str, cnsLength,
+                                                 strLenOffset + sizeof(int));
     if (unrolled != nullptr)
     {
         impAssignTempGen(varStrTmp, varStr);
@@ -704,17 +704,16 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
 
     // Create a placeholder for Span object - we're not going to Append it to statements
     // in advance to avoid redundant spills in case if we fail to vectorize
-    unsigned spanObjRef         = lvaGrabTemp(true DEBUGARG("spanObjRef"));
-    lvaTable[spanObjRef].lvType = TYP_BYREF;
+    unsigned spanObjRef          = lvaGrabTemp(true DEBUGARG("spanObj tmp"));
+    unsigned spanDataTmp         = lvaGrabTemp(true DEBUGARG("spanData tmp"));
+    lvaTable[spanObjRef].lvType  = TYP_BYREF;
+    lvaTable[spanDataTmp].lvType = TYP_BYREF;
 
-    GenTree* spanObjRefLcl = gtNewLclvNode(spanObjRef, TYP_BYREF);
-    GenTree* spanLength    = gtNewFieldRef(TYP_INT, lengthHnd, gtClone(spanObjRefLcl), lengthOffset);
-    GenTree* spanData      = gtNewFieldRef(TYP_BYREF, pointerHnd, spanObjRefLcl);
+    GenTreeLclVar* spanObjRefLcl  = gtNewLclvNode(spanObjRef, TYP_BYREF);
+    GenTreeLclVar* spanDataTmpLcl = gtNewLclvNode(spanDataTmp, TYP_BYREF);
 
-    // Additionally spill spanData to a local which we might need to clone then:
-    unsigned spanDataTmp          = lvaGrabTemp(true DEBUGARG("spanData tmp"));
-    lvaTable[spanDataTmp].lvType  = TYP_BYREF;
-    GenTreeLclVar* spanDataTmpLcl = gtNewLclvNode(spanDataTmp, spanData->TypeGet());
+    GenTreeField* spanLength = gtNewFieldRef(TYP_INT, lengthHnd, gtClone(spanObjRefLcl), lengthOffset);
+    GenTreeField* spanData   = gtNewFieldRef(TYP_BYREF, pointerHnd, spanObjRefLcl);
 
     GenTree* unrolled =
         impExpandHalfConstEquals(spanDataTmpLcl, spanLength, false, startsWith, (WCHAR*)str, cnsLength, 0);

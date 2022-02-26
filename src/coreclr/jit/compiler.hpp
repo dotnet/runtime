@@ -1093,7 +1093,7 @@ inline GenTree* Compiler::gtNewRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfo
 // Return Value:
 //    The created node.
 //
-inline GenTree* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj, DWORD offset)
+inline GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj, DWORD offset)
 {
     // GT_FIELD nodes are transformed into GT_IND nodes.
     assert(GenTree::s_gtNodeSizes[GT_IND] <= GenTree::s_gtNodeSizes[GT_FIELD]);
@@ -1105,7 +1105,7 @@ inline GenTree* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fld
         type = impNormStructType(structHnd);
     }
 
-    GenTree* fieldNode = new (this, GT_FIELD) GenTreeField(type, obj, fldHnd, offset);
+    GenTreeField* fieldNode = new (this, GT_FIELD) GenTreeField(type, obj, fldHnd, offset);
 
     // If "obj" is the address of a local, note that a field of that struct local has been accessed.
     if ((obj != nullptr) && obj->OperIs(GT_ADDR) && varTypeIsStruct(obj->AsUnOp()->gtOp1) &&
