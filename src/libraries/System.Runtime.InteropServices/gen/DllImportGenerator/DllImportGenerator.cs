@@ -75,23 +75,31 @@ namespace Microsoft.Interop
                 .CreateSyntaxProvider(
                     static (node, ct) => ShouldVisitNode(node),
                     static (context, ct) =>
-                        new
+                    {
+                        MethodDeclarationSyntax syntax = (MethodDeclarationSyntax)context.Node;
+                        if (context.SemanticModel.GetDeclaredSymbol(syntax, ct) is IMethodSymbol methodSymbol
+                            && methodSymbol.GetAttributes().Any(static attribute => attribute.AttributeClass?.ToDisplayString() == TypeNames.GeneratedDllImportAttribute))
                         {
-                            Syntax = (MethodDeclarationSyntax)context.Node,
-                            Symbol = (IMethodSymbol)context.SemanticModel.GetDeclaredSymbol(context.Node, ct)!
-                        })
+                            return new { Syntax = syntax, Symbol = methodSymbol };
+                        }
+
+                        return null;
+                    })
                 .Where(
-                    static modelData => modelData.Symbol.IsStatic && modelData.Symbol.GetAttributes().Any(
-                        static attribute => attribute.AttributeClass?.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
-                );
+                    static modelData => modelData is not null);
 
-            var methodsToGenerate = attributedMethods.Where(static data => !data.Symbol.ReturnsByRef && !data.Symbol.ReturnsByRefReadonly);
-
-            var refReturnMethods = attributedMethods.Where(static data => data.Symbol.ReturnsByRef || data.Symbol.ReturnsByRefReadonly);
-
-            context.RegisterSourceOutput(refReturnMethods, static (context, refReturnMethod) =>
+            var methodsWithDiagnostics = attributedMethods.Select(static (data, ct) =>
             {
-                context.ReportDiagnostic(Diagnostic.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, refReturnMethod.Syntax.GetLocation(), "ref return", refReturnMethod.Symbol.ToDisplayString()));
+                Diagnostic? diagnostic = GetDiagnosticIfInvalidMethodForGeneration(data.Syntax, data.Symbol);
+                return new { Syntax = data.Syntax, Symbol = data.Symbol, Diagnostic = diagnostic };
+            });
+
+            var methodsToGenerate = methodsWithDiagnostics.Where(static data => data.Diagnostic is null);
+            var invalidMethodDiagnostics = methodsWithDiagnostics.Where(static data => data.Diagnostic is not null);
+
+            context.RegisterSourceOutput(invalidMethodDiagnostics, static (context, invalidMethod) =>
+            {
+                context.ReportDiagnostic(invalidMethod.Diagnostic);
             });
 
             IncrementalValueProvider<(Compilation compilation, TargetFramework targetFramework, Version targetFrameworkVersion)> compilationAndTargetFramework = context.CompilationProvider
@@ -739,8 +747,12 @@ namespace Microsoft.Interop
                 return false;
             }
 
-            var methodSyntax = (MethodDeclarationSyntax)syntaxNode;
+            // Filter out methods with no attributes early.
+            return ((MethodDeclarationSyntax)syntaxNode).AttributeLists.Count > 0;
+        }
 
+        private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
+        {
             // Verify the method has no generic types or defined implementation
             // and is marked static and partial.
             if (methodSyntax.TypeParameterList is not null
@@ -748,7 +760,7 @@ namespace Microsoft.Interop
                 || !methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)
                 || !methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
             {
-                return false;
+                return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedMethodSignature, methodSyntax.Identifier.GetLocation(), method.Name);
             }
 
             // Verify that the types the method is declared in are marked partial.
@@ -756,17 +768,17 @@ namespace Microsoft.Interop
             {
                 if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
                 {
-                    return false;
+                    return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers, methodSyntax.Identifier.GetLocation(), method.Name, typeDecl.Identifier);
                 }
             }
 
-            // Filter out methods with no attributes early.
-            if (methodSyntax.AttributeLists.Count == 0)
+            // Verify the method does not have a ref return
+            if (method.ReturnsByRef || method.ReturnsByRefReadonly)
             {
-                return false;
+                return Diagnostic.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, methodSyntax.Identifier.GetLocation(), "ref return", method.ToDisplayString());
             }
 
-            return true;
+            return null;
         }
     }
 }
