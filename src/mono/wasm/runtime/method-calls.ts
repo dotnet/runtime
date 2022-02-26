@@ -113,12 +113,12 @@ function _release_buffer_from_method_call(
         Module._free(buffer);
 }
 
-function _convert_exception_for_method_call(result: MonoString, exception: MonoObject) {
-    if (exception === MonoObjectNull)
+function _convert_exception_for_method_call(result: WasmRoot<MonoString>, exception: WasmRoot<MonoObject>) {
+    if (exception.value === MonoObjectNull)
         return null;
 
     // FIXME: rooted
-    const msg = conv_string(result);
+    const msg = conv_string_rooted(result);
     const err = new Error(msg!); //the convention is that invoke_method ToString () any outgoing exception
     // console.warn (`error ${msg} at location ${err.stack});
     return err;
@@ -180,7 +180,7 @@ export function _handle_exception_for_call(
     buffer: VoidPtr, resultRoot: WasmRoot<MonoString>,
     exceptionRoot: WasmRoot<MonoObject>, argsRootBuffer?: WasmRootBuffer
 ): void {
-    const exc = _convert_exception_for_method_call(resultRoot.value, exceptionRoot.value);
+    const exc = _convert_exception_for_method_call(resultRoot, exceptionRoot);
     if (!exc)
         return;
 

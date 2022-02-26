@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { JSHandle, GCHandle, MonoObject } from "./types";
+import { JSHandle, GCHandle, MonoObject, MonoObjectRef } from "./types";
 import { PromiseControl } from "./cancelable-promise";
 import { runtimeHelpers } from "./imports";
 
@@ -22,8 +22,8 @@ const fn_signatures: [jsname: string, csname: string, signature: string/*ArgsMar
     ["_task_from_result", "TaskFromResult", "o!"],
     ["_setup_js_cont", "SetupJSContinuation", "mo"],
 
-    ["_object_to_string", "ObjectToString", "m"],
-    ["_get_date_value", "GetDateValue", "m"],
+    ["_object_to_string_ref", "ObjectToStringRef", "m"],
+    ["_get_date_value_ref", "GetDateValueRef", "m"],
     ["_create_date_time", "CreateDateTime", "d!"],
     ["_create_uri", "CreateUri", "s!"],
     ["_is_simple_array", "IsSimpleArray", "m"],
@@ -47,8 +47,8 @@ export interface t_CSwraps {
     _task_from_result(result: MonoObject): MonoObject
     _setup_js_cont(task: MonoObject, continuation: PromiseControl): MonoObject
 
-    _object_to_string(obj: MonoObject): string;
-    _get_date_value(obj: MonoObject): number;
+    _object_to_string_ref(obj: MonoObjectRef): string;
+    _get_date_value_ref(obj: MonoObjectRef): number;
     _create_date_time(ticks: number): MonoObject;
     _create_uri(uri: string): MonoObject;
     _is_simple_array(obj: MonoObject): boolean;

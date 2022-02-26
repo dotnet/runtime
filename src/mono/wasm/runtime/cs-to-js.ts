@@ -71,11 +71,11 @@ function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<a
         case MarshalType.ARRAY_DOUBLE:
             throw new Error("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
         case <MarshalType>20: // clr .NET DateTime
-            return new Date(corebindings._get_date_value(root.value));
+            return new Date(corebindings._get_date_value_ref(root.get_address()));
         case <MarshalType>21: // clr .NET DateTimeOffset
-            return corebindings._object_to_string(root.value);
+            return corebindings._object_to_string_ref(root.get_address());
         case MarshalType.URI:
-            return corebindings._object_to_string(root.value);
+            return corebindings._object_to_string_ref(root.get_address());
         case MarshalType.SAFEHANDLE:
             return _unbox_cs_owned_root_as_js_object(root);
         case MarshalType.VOID:

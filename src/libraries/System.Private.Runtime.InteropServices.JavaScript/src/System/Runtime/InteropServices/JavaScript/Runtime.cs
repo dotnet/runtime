@@ -296,12 +296,12 @@ namespace System.Runtime.InteropServices.JavaScript
             return null;
         }
 
-        public static string ObjectToString(object o)
+        public static string ObjectToStringRef(ref object o)
         {
             return o.ToString() ?? string.Empty;
         }
 
-        public static double GetDateValue(object dtv)
+        public static double GetDateValueRef(ref object dtv!!)
         {
             if (dtv == null)
                 throw new ArgumentNullException(nameof(dtv));
