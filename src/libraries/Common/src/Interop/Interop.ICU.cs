@@ -20,7 +20,7 @@ internal static partial class Interop
             InitICUFunctions(icuuc, icuin, version.ToString(), suffix.Length > 0 ? suffix.ToString() : null);
         }
 
-        [GeneratedDllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_InitICUFunctions", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_InitICUFunctions", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial void InitICUFunctions(IntPtr icuuc, IntPtr icuin, string version, string? suffix);
 
         [GeneratedDllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetICUVersion")]

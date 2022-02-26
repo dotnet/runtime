@@ -162,16 +162,12 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         public BV[] GetMinterms() => _minterms;
-        public IEnumerable<char> GenerateAllCharacters(BV set) => throw new NotSupportedException();
 
         /// <summary>Pretty print the bitvector bv as the character set it represents.</summary>
         public string PrettyPrint(BV bv)
         {
-            //accesses the shared BDD solver
-            ICharAlgebra<BDD> bddalgebra = SymbolicRegexRunnerFactory.s_unicode._solver;
-            Debug.Assert(_partition is not null && bddalgebra is not null);
-
-            return bddalgebra.PrettyPrint(ConvertToCharSet(bddalgebra, bv));
+            CharSetSolver solver = CharSetSolver.Instance;
+            return solver.PrettyPrint(ConvertToCharSet(solver, bv));
         }
     }
 }

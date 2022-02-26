@@ -902,7 +902,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        private async ValueTask<HttpResponseMessage?> TrySendUsingHttp3Async(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        private async ValueTask<HttpResponseMessage?> TrySendUsingHttp3Async(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             // Loop in case we get a 421 and need to send the request to a different authority.
             while (true)
@@ -925,8 +925,19 @@ namespace System.Net.Http
                     ThrowGetVersionException(request, 3);
                 }
 
-                Http3Connection connection = await GetHttp3ConnectionAsync(request, authority, cancellationToken).ConfigureAwait(false);
-                HttpResponseMessage response = await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
+                ValueStopwatch queueDuration = HttpTelemetry.Log.IsEnabled() ? ValueStopwatch.StartNew() : default;
+
+                ValueTask<Http3Connection> connectionTask = GetHttp3ConnectionAsync(request, authority, cancellationToken);
+
+                if (HttpTelemetry.Log.IsEnabled() && connectionTask.IsCompleted)
+                {
+                    // We avoid logging RequestLeftQueue if a stream was available immediately (synchronously)
+                    queueDuration = default;
+                }
+
+                Http3Connection connection = await connectionTask.ConfigureAwait(false);
+
+                HttpResponseMessage response = await connection.SendAsync(request, queueDuration, cancellationToken).ConfigureAwait(false);
 
                 // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
                 // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
@@ -966,7 +977,8 @@ namespace System.Net.Http
                         _http3Enabled &&
                         (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
                     {
-                        response = await TrySendUsingHttp3Async(request, async, cancellationToken).ConfigureAwait(false);
+                        Debug.Assert(async);
+                        response = await TrySendUsingHttp3Async(request, cancellationToken).ConfigureAwait(false);
                     }
 
                     if (response is null)
@@ -1375,7 +1387,18 @@ namespace System.Net.Http
             TransportContext? transportContext = null;
             if (IsSecure)
             {
-                SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream, cancellationToken).ConfigureAwait(false);
+                SslStream? sslStream = stream as SslStream;
+                if (sslStream == null)
+                {
+                    sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        Trace($"Connected with custom SslStream: alpn='${sslStream.NegotiatedApplicationProtocol.ToString()}'");
+                    }
+                }
                 transportContext = sslStream.TransportContext;
                 stream = sslStream;
             }

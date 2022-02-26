@@ -1051,7 +1051,6 @@ namespace System.Text.RegularExpressions
             // Skip the Capture node. We handle the implicit root capture specially.
             node = node.Child(0);
 
-
             // In some limited cases, FindFirstChar will only return true if it successfully matched the whole expression.
             // We can special case these to do essentially nothing in Go other than emit the capture.
             switch (node.Kind)
@@ -1126,8 +1125,13 @@ namespace System.Text.RegularExpressions
             int sliceStaticPos = 0;
             SliceInputSpan();
 
+            AnalysisResults analysis = RegexTreeAnalyzer.Analyze(_code);
+
+            // Check whether there are captures anywhere in the expression. If there isn't, we can skip all
+            // the boilerplate logic around uncapturing, as there won't be anything to uncapture.
+            bool expressionHasCaptures = analysis.MayContainCapture(node);
+
             // Emit the code for all nodes in the tree.
-            bool expressionHasCaptures = (node.Options & RegexNode.HasCapturesFlag) != 0;
             EmitNode(node);
 
             // Success:
@@ -1281,7 +1285,7 @@ namespace System.Text.RegularExpressions
                 // successfully prevent backtracking into this child node, we can emit better / cheaper code
                 // for an Alternate when it is atomic, so we still take it into account here.
                 Debug.Assert(node.Parent is not null);
-                bool isAtomic = node.IsAtomicByParent();
+                bool isAtomic = analysis.IsAtomicByAncestor(node);
 
                 // Label to jump to when any branch completes successfully.
                 Label matchLabel = DefineLabel();
@@ -1314,7 +1318,7 @@ namespace System.Text.RegularExpressions
                 // what they were at the start of the alternation.  Of course, if there are no captures
                 // anywhere in the regex, we don't have to do any of that.
                 LocalBuilder? startingCapturePos = null;
-                if (expressionHasCaptures && ((node.Options & RegexNode.HasCapturesFlag) != 0 || !isAtomic))
+                if (expressionHasCaptures && (analysis.MayContainCapture(node) || !isAtomic))
                 {
                     // startingCapturePos = base.Crawlpos();
                     startingCapturePos = DeclareInt32();
@@ -1541,7 +1545,7 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.Kind is RegexNodeKind.BackreferenceConditional, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 2, $"Expected 2 children, found {node.ChildCount()}");
 
-                bool isAtomic = node.IsAtomicByParent();
+                bool isAtomic = analysis.IsAtomicByAncestor(node);
 
                 // We're branching in a complicated fashion.  Make sure sliceStaticPos is 0.
                 TransferSliceStaticPosToPos();
@@ -1687,7 +1691,7 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.Kind is RegexNodeKind.ExpressionConditional, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 3, $"Expected 3 children, found {node.ChildCount()}");
 
-                bool isAtomic = node.IsAtomicByParent();
+                bool isAtomic = analysis.IsAtomicByAncestor(node);
 
                 // We're branching in a complicated fashion.  Make sure sliceStaticPos is 0.
                 TransferSliceStaticPosToPos();
@@ -1718,7 +1722,7 @@ namespace System.Text.RegularExpressions
 
                 // If the condition expression has captures, we'll need to uncapture them in the case of no match.
                 LocalBuilder? startingCapturePos = null;
-                if ((condition.Options & RegexNode.HasCapturesFlag) != 0)
+                if (analysis.MayContainCapture(condition))
                 {
                     // int startingCapturePos = base.Crawlpos();
                     startingCapturePos = DeclareInt32();
@@ -1869,7 +1873,7 @@ namespace System.Text.RegularExpressions
 
                 int capnum = RegexParser.MapCaptureNumber(node.M, _code!.Caps);
                 int uncapnum = RegexParser.MapCaptureNumber(node.N, _code.Caps);
-                bool isAtomic = node.IsAtomicByParent();
+                bool isAtomic = analysis.IsAtomicByAncestor(node);
 
                 // pos += sliceStaticPos;
                 // slice = slice.Slice(sliceStaticPos);
@@ -1920,8 +1924,21 @@ namespace System.Text.RegularExpressions
                     Call(s_transferCaptureMethod);
                 }
 
-                if (!isAtomic && (childBacktracks || node.IsInLoop()))
+                if (isAtomic || !childBacktracks)
                 {
+                    // If the capture is atomic and nothing can backtrack into it, we're done.
+                    // Similarly, even if the capture isn't atomic, if the captured expression
+                    // doesn't do any backtracking, we're done.
+                    doneLabel = originalDoneLabel;
+                }
+                else
+                {
+                    // We're not atomic and the child node backtracks.  When it does, we need
+                    // to ensure that the starting position for the capture is appropriately
+                    // reset to what it was initially (it could have changed as part of being
+                    // in a loop or similar).  So, we emit a backtracking section that
+                    // pushes/pops the starting position before falling through.
+
                     // if (stackpos + 1 >= base.runstack.Length) Array.Resize(ref base.runstack, base.runstack.Length * 2);
                     // base.runstack[stackpos++] = startingPos;
                     EmitStackResizeIfNeeded(1);
@@ -1950,10 +1967,6 @@ namespace System.Text.RegularExpressions
 
                     doneLabel = backtrack;
                     MarkLabel(backtrackingEnd);
-                }
-                else
-                {
-                    doneLabel = originalDoneLabel;
                 }
             }
 
@@ -2052,21 +2065,6 @@ namespace System.Text.RegularExpressions
 
                 doneLabel = originalDoneLabel;
             }
-
-            // TODO https://github.com/dotnet/runtime/issues/62451:
-            // Replace this with a more robust mechanism.
-            static bool PossiblyBacktracks(RegexNode node) => !(
-                // Certain nodes will never backtrack out of them
-                node.Kind is RegexNodeKind.Atomic or // atomic nodes by definition don't give up anything
-                             RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloopatomic or // same for atomic loops
-                             RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set or // individual characters don't backtrack
-                             RegexNodeKind.Multi or // multiple characters don't backtrack
-                             RegexNodeKind.Backreference or // backreferences don't backtrack
-                             RegexNodeKind.Beginning or RegexNodeKind.Bol or RegexNodeKind.Start or RegexNodeKind.End or RegexNodeKind.EndZ or RegexNodeKind.Eol or RegexNodeKind.Boundary or RegexNodeKind.NonBoundary or RegexNodeKind.ECMABoundary or RegexNodeKind.NonECMABoundary or // anchors don't backtrack
-                             RegexNodeKind.Nothing or RegexNodeKind.Empty or RegexNodeKind.UpdateBumpalong // empty/nothing don't do anything
-                // Fixed-size repeaters of single characters or atomic don't backtrack
-                || node.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop or RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy && node.M == node.N
-                );
 
             // Emits the code for the node.
             void EmitNode(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
@@ -2690,7 +2688,7 @@ namespace System.Text.RegularExpressions
 
                 // If the whole thing was actually that repeater, we're done. Similarly, if this is actually an atomic
                 // lazy loop, nothing will ever backtrack into this node, so we never need to iterate more than the minimum.
-                if (node.M == node.N || node.IsAtomicByParent())
+                if (node.M == node.N || analysis.IsAtomicByAncestor(node))
                 {
                     return;
                 }
@@ -2917,7 +2915,7 @@ namespace System.Text.RegularExpressions
 
                 if (node.IsInLoop())
                 {
-                    // Store the capture's state
+                    // Store the loop's state
                     // base.runstack[stackpos++] = startingPos;
                     // base.runstack[stackpos++] = capturepos;
                     // base.runstack[stackpos++] = iterationCount;
@@ -2936,7 +2934,7 @@ namespace System.Text.RegularExpressions
                     Label backtrackingEnd = DefineLabel();
                     BrFar(backtrackingEnd);
 
-                    // Emit a backtracking section that restores the capture's state and then jumps to the previous done label
+                    // Emit a backtracking section that restores the loop's state and then jumps to the previous done label
                     Label backtrack = DefineLabel();
                     MarkLabel(backtrack);
 
@@ -2974,7 +2972,7 @@ namespace System.Text.RegularExpressions
                 int minIterations = node.M;
                 int maxIterations = node.N;
                 Label originalDoneLabel = doneLabel;
-                bool isAtomic = node.IsAtomicByParent();
+                bool isAtomic = analysis.IsAtomicByAncestor(node);
 
                 // If this is actually an atomic lazy loop, we need to output just the minimum number of iterations,
                 // as nothing will backtrack into the lazy loop to get it progress further.
@@ -2995,7 +2993,7 @@ namespace System.Text.RegularExpressions
 
                 // If this is actually a repeater and the child doesn't have any backtracking in it that might
                 // cause us to need to unwind already taken iterations, just output it as a repeater loop.
-                if (minIterations == maxIterations && !PossiblyBacktracks(node.Child(0)))
+                if (minIterations == maxIterations && !analysis.MayBacktrack(node.Child(0)))
                 {
                     EmitNonBacktrackingRepeater(node);
                     return;
@@ -3617,7 +3615,7 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.M < int.MaxValue, $"Unexpected M={node.M}");
                 Debug.Assert(node.M == node.N, $"Unexpected M={node.M} == N={node.N}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
-                Debug.Assert(!PossiblyBacktracks(node.Child(0)), $"Expected non-backtracking node {node.Kind}");
+                Debug.Assert(!analysis.MayBacktrack(node.Child(0)), $"Expected non-backtracking node {node.Kind}");
 
                 // Ensure every iteration of the loop sees a consistent value.
                 TransferSliceStaticPosToPos();
@@ -3658,11 +3656,11 @@ namespace System.Text.RegularExpressions
 
                 int minIterations = node.M;
                 int maxIterations = node.N;
-                bool isAtomic = node.IsAtomicByParent();
+                bool isAtomic = analysis.IsAtomicByAncestor(node);
 
                 // If this is actually a repeater and the child doesn't have any backtracking in it that might
                 // cause us to need to unwind already taken iterations, just output it as a repeater loop.
-                if (minIterations == maxIterations && !PossiblyBacktracks(node.Child(0)))
+                if (minIterations == maxIterations && !analysis.MayBacktrack(node.Child(0)))
                 {
                     EmitNonBacktrackingRepeater(node);
                     return;
@@ -3865,7 +3863,7 @@ namespace System.Text.RegularExpressions
 
                     if (node.IsInLoop())
                     {
-                        // Store the capture's state
+                        // Store the loop's state
                         EmitStackResizeIfNeeded(3);
                         EmitStackPush(() => Ldloc(startingPos));
                         EmitStackPush(() => Ldloc(iterationCount));
@@ -3875,7 +3873,7 @@ namespace System.Text.RegularExpressions
                         Label backtrackingEnd = DefineLabel();
                         BrFar(backtrackingEnd);
 
-                        // Emit a backtracking section that restores the capture's state and then jumps to the previous done label
+                        // Emit a backtracking section that restores the loop's state and then jumps to the previous done label
                         Label backtrack = DefineLabel();
                         MarkLabel(backtrack);
 

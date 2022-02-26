@@ -58,7 +58,7 @@
 #include <mono/mini/debugger-agent-external.h>
 
 #include "mini.h"
-#include <mono/mini/jit.h>
+#include <mono/jit/jit.h>
 #include "aot-compiler.h"
 #include "aot-runtime.h"
 #include "mini-runtime.h"
@@ -127,8 +127,7 @@ static const gint16 opt_names [] = {
 	MONO_OPT_GSHARED |	\
 	MONO_OPT_SIMD |	\
 	MONO_OPT_ALIAS_ANALYSIS	| \
-	MONO_OPT_AOT | \
-	MONO_OPT_FLOAT32)
+	MONO_OPT_AOT)
 
 #define EXCLUDED_FROM_ALL (MONO_OPT_PRECOMP | MONO_OPT_UNSAFE | MONO_OPT_GSHAREDVT)
 

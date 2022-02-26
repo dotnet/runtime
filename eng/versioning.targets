@@ -107,7 +107,10 @@
   <Target Name="AddOSPlatformAttributes"
           BeforeTargets="GenerateAssemblyInfo"
           AfterTargets="PrepareForBuild"
-          Condition="'$(TargetPlatformIdentifier)' == '' and '$(IsTestProject)' != 'true' and '$(TargetFrameworkIdentifier)' != '.NETFramework'">
+          Condition="'$(TargetPlatformIdentifier)' == '' and
+                     '$(IsTestProject)' != 'true' and
+                     '$(TargetFrameworkIdentifier)' != '.NETFramework'
+                     and '$(AddOSPlatformAttributes)' != 'false'">
     <!-- Defensively de-dupe the values -->
     <ItemGroup>
       <_unsupportedOSPlatforms Include="$(UnsupportedOSPlatforms)" />
@@ -133,12 +136,15 @@
     </ItemGroup>
   </Target>
 
-  <!-- Removes assembly level attributes from test projects. -->
-  <Target Name="RemoveSupportedOSPlatformAttributeFromTestProjects"
+  <!-- Remove assembly level attributes from certain projects.
+       Use a target for that until https://github.com/dotnet/sdk/issues/14836 is implemented. -->
+  <Target Name="RemoveSupportedOSTargetPlatformAttributeFromProjects"
           AfterTargets="GetAssemblyAttributes"
-          Condition="'$(IsTestProject)' == 'true'">
+          BeforeTargets="CreateGeneratedAssemblyInfoInputsCacheFile">
     <ItemGroup>
-      <AssemblyAttribute Remove="System.Runtime.Versioning.SupportedOSPlatformAttribute" />
+      <AssemblyAttribute Remove="System.Runtime.Versioning.SupportedOSPlatformAttribute"
+                         Condition="'$(IsTestProject)' == 'true' or '$(AddOSPlatformAttributes)' == 'false'" />
+      <!-- Don't include target platform attributes, since we use the target platform to represent RIDs instead. -->
       <AssemblyAttribute Remove="System.Runtime.Versioning.TargetPlatformAttribute" />
     </ItemGroup>
   </Target>
