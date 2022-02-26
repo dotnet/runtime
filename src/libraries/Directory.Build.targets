@@ -44,7 +44,7 @@
     <!-- The source of truth for these IsNETCoreApp* properties is NetCoreAppLibrary.props. -->
     <IsNETCoreAppSrc Condition="('$(IsSourceProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true') and
                                 $(NetCoreAppLibrary.Contains('$(AssemblyName);'))">true</IsNETCoreAppSrc>
-    <IsNETCoreAppRef Condition="('$(IsReferenceProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true') and
+    <IsNETCoreAppRef Condition="('$(IsReferenceAssemblyProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true') and
                                 $(NetCoreAppLibrary.Contains('$(AssemblyName);')) and
                                 !$(NetCoreAppLibraryNoReference.Contains('$(AssemblyName);'))">true</IsNETCoreAppRef>
     <!-- By default, disable implicit framework references for NetCoreAppCurrent libraries. -->
@@ -55,7 +55,7 @@
     <DisableImplicitAssemblyReferences Condition="'$(DisableImplicitAssemblyReferences)' == '' and
                                                   '$(DisableImplicitFrameworkReferences)' != 'true' and
                                                   '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                                                  ('$(IsReferenceProject)' == 'true' or '$(IsSourceProject)' == 'true')">true</DisableImplicitAssemblyReferences>
+                                                  ('$(IsReferenceAssemblyProject)' == 'true' or '$(IsSourceProject)' == 'true')">true</DisableImplicitAssemblyReferences>
     <!-- Enable trimming for any source project that's part of the shared framework.
          Don't attempt to trim PNSE assemblies which are generated from the reference source. -->
     <ILLinkTrimAssembly Condition="'$(ILLinkTrimAssembly)' == '' and
@@ -69,7 +69,7 @@
 
   <!-- Libraries-specific binplacing properties -->
   <PropertyGroup>
-    <BinPlaceRef Condition="'$(BinPlaceRef)' == '' and ('$(IsReferenceProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
+    <BinPlaceRef Condition="'$(BinPlaceRef)' == '' and ('$(IsReferenceAssemblyProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
     <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' and ('$(IsSourceProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
     <BinPlaceForTargetVertical Condition="'$(BinPlaceForTargetVertical)' == ''">true</BinPlaceForTargetVertical>
     <GetBinPlaceItemsDependsOn Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">$(GetBinPlaceItemsDependsOn);AddDocumentationFileAsBinPlaceItemForExtensionsProjects</GetBinPlaceItemsDependsOn>
@@ -138,7 +138,7 @@
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="$(MicrosoftDotNetBuildTasksTargetFrameworkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
   
-  <ItemGroup Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceProject)' == 'true' or '$(IsPartialFacadeAssembly)' == 'true'">
+  <ItemGroup Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true' or '$(IsPartialFacadeAssembly)' == 'true'">
     <PackageReference Include="Microsoft.DotNet.ApiCompat" Condition="'$(DotNetBuildFromSource)' != 'true'" Version="$(MicrosoftDotNetApiCompatVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
     <PackageReference Include="Microsoft.DotNet.GenAPI" Condition="'$(DotNetBuildFromSource)' != 'true'" Version="$(MicrosoftDotNetGenApiVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
