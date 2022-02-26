@@ -4413,10 +4413,15 @@ protected:
 
     GenTree* impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags);
     GenTree* impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags);
-    GenTree* impExpandHalfConstEquals(
-        GenTree* data, GenTree* lengthFld, bool checkForNull, bool startsWith, WCHAR* cnsData, int len, int dataOffset);
-    GenTree* impExpandHalfConstEqualsSWAR(GenTree* data, WCHAR* cns, int len, int dataOffset);
-    GenTree* impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int len, int dataOffset);
+    GenTree* impExpandHalfConstEquals(GenTreeLclVar* data,
+                                      GenTree*       lengthFld,
+                                      bool           checkForNull,
+                                      bool           startsWith,
+                                      WCHAR*         cnsData,
+                                      int            len,
+                                      int            dataOffset);
+    GenTree* impExpandHalfConstEqualsSWAR(GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset);
+    GenTree* impExpandHalfConstEqualsSIMD(GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset);
     GenTreeStrCon* impGetStrConFromSpan(GenTree* span);
 
     GenTree* impIntrinsic(GenTree*                newobjThis,
