@@ -403,7 +403,7 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
         _get_buffer_for_method_call,
         _handle_exception_for_call,
         _teardown_after_call,
-        mono_wasm_try_unbox_primitive_and_get_type: cwraps.mono_wasm_try_unbox_primitive_and_get_type,
+        mono_wasm_try_unbox_primitive_and_get_type_ref: cwraps.mono_wasm_try_unbox_primitive_and_get_type_ref,
         _unbox_mono_obj_root_with_known_nonprimitive_type,
         invoke_method: cwraps.mono_wasm_invoke_method,
         method,
@@ -496,12 +496,12 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
 
         if (!converter.is_result_definitely_unmarshaled)
             body.push(
-                "if (is_result_marshaled && (resultPtr !== 0)) {",
+                "if (is_result_marshaled) {",
                 // For the common scenario where the return type is a primitive, we want to try and unbox it directly
                 //  into our existing heap allocation and then read it out of the heap. Doing this all in one operation
                 //  means that we only need to enter a gc safe region twice (instead of 3+ times with the normal,
                 //  slower check-type-and-then-unbox flow which has extra checks since unbox verifies the type).
-                "    let resultType = mono_wasm_try_unbox_primitive_and_get_type (resultPtr, unbox_buffer, unbox_buffer_size);",
+                "    let resultType = mono_wasm_try_unbox_primitive_and_get_type_ref (resultRoot.get_address(), unbox_buffer, unbox_buffer_size);",
                 "    switch (resultType) {",
                 `    case ${MarshalType.INT}:`,
                 "        result = getI32(unbox_buffer); break;",
@@ -516,6 +516,8 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
                 "        result = getI32(unbox_buffer) !== 0; break;",
                 `    case ${MarshalType.CHAR}:`,
                 "        result = String.fromCharCode(getI32(unbox_buffer)); break;",
+                `    case ${MarshalType.NULL}:`,
+                "        result = null; break;",
                 "    default:",
                 "        result = _unbox_mono_obj_root_with_known_nonprimitive_type (resultRoot, resultType, unbox_buffer); break;",
                 "    }",

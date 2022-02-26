@@ -55,6 +55,48 @@ void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
 
+// ?????????????
+
+#define gpointer void*
+
+MONO_API MONO_RT_EXTERNAL_ONLY gpointer
+mono_threads_enter_gc_unsafe_region (gpointer* stackdata);
+
+MONO_API MONO_RT_EXTERNAL_ONLY void
+mono_threads_exit_gc_unsafe_region (gpointer cookie, gpointer* stackdata);
+
+MONO_API MONO_RT_EXTERNAL_ONLY void
+mono_threads_assert_gc_unsafe_region (void);
+
+MONO_API MONO_RT_EXTERNAL_ONLY gpointer
+mono_threads_enter_gc_safe_region (gpointer *stackdata);
+
+MONO_API MONO_RT_EXTERNAL_ONLY void
+mono_threads_exit_gc_safe_region (gpointer cookie, gpointer *stackdata);
+
+MONO_API void
+mono_threads_assert_gc_safe_region (void);
+#define MONO_ENTER_GC_UNSAFE	\
+	do {	\
+		gpointer __dummy;	\
+		gpointer __gc_unsafe_cookie = mono_threads_enter_gc_unsafe_region (&__dummy)	\
+
+#define MONO_EXIT_GC_UNSAFE	\
+		mono_threads_exit_gc_unsafe_region	(__gc_unsafe_cookie, &__dummy);	\
+	} while (0)
+
+#define MONO_ENTER_GC_SAFE	\
+	do {	\
+		gpointer __dummy;	\
+		gpointer __gc_safe_cookie = mono_threads_enter_gc_safe_region (&__dummy)	\
+
+#define MONO_EXIT_GC_SAFE	\
+		mono_threads_exit_gc_safe_region (__gc_safe_cookie, &__dummy);	\
+	} while (0)
+
+// ?????????????????
+
+
 #define MARSHAL_TYPE_NULL 0
 #define MARSHAL_TYPE_INT 1
 #define MARSHAL_TYPE_FP64 2
@@ -155,13 +197,19 @@ void  mono_gc_deregister_root (char* addr);
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_register_root (char *start, size_t size, const char *name)
 {
-	return mono_gc_register_root (start, size, (MonoGCDescriptor)NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "mono_wasm_register_root");
+	int result;
+	MONO_ENTER_GC_SAFE;
+	result = mono_gc_register_root (start, size, (MonoGCDescriptor)NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "mono_wasm_register_root");
+	MONO_EXIT_GC_SAFE;
+	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE void 
 mono_wasm_deregister_root (char *addr)
 {
+	MONO_ENTER_GC_SAFE;
 	mono_gc_deregister_root (addr);
+	MONO_EXIT_GC_SAFE;
 }
 
 #ifdef DRIVER_GEN
@@ -906,28 +954,13 @@ mono_wasm_get_obj_type (MonoObject *obj)
 	return mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
 }
 
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int result_capacity)
-{
+// This code runs inside a gc unsafe region
+int _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (MonoObject *obj, void *result, int result_capacity) {
 	void **resultP = result;
 	int *resultI = result;
 	int64_t *resultL = result;
 	float *resultF = result;
 	double *resultD = result;
-
-	if (result_capacity >= sizeof (int64_t))
-		*resultL = 0;
-	else if (result_capacity >= sizeof (int))
-		*resultI = 0;
-
-	if (!result)
-		return MARSHAL_ERROR_BUFFER_TOO_SMALL;
-
-	if (result_capacity < 16)
-		return MARSHAL_ERROR_BUFFER_TOO_SMALL;
-
-	if (!obj)
-		return MARSHAL_TYPE_NULL;
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
@@ -1031,7 +1064,6 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 			// HACK: Store the class pointer into the result buffer so our caller doesn't
 			//  have to call back into the native runtime later to get it
 			*resultP = type;
-			obj = NULL;
 			int fallbackResultType = mono_wasm_marshal_type_from_mono_type (mono_type, klass, original_type);
 			assert (fallbackResultType != MARSHAL_TYPE_VT);
 			return fallbackResultType;
@@ -1039,10 +1071,36 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 
 	// We successfully performed a fast unboxing here so use the type information
 	//  matching what we unboxed (i.e. an enum's underlying type instead of its type)
-	obj = NULL;
 	int resultType = mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
 	assert (resultType != MARSHAL_TYPE_VT);
 	return resultType;
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_try_unbox_primitive_and_get_type_ref (MonoObject **objRef, void *result, int result_capacity)
+{
+	int retval;
+	int *resultI = result;
+	int64_t *resultL = result;
+
+	if (result_capacity >= sizeof (int64_t))
+		*resultL = 0;
+	else if (result_capacity >= sizeof (int))
+		*resultI = 0;
+
+	if (!result)
+		return MARSHAL_ERROR_BUFFER_TOO_SMALL;
+
+	if (result_capacity < 16)
+		return MARSHAL_ERROR_BUFFER_TOO_SMALL;
+
+	if (!objRef || !(*objRef))
+		return MARSHAL_TYPE_NULL;
+
+	MONO_ENTER_GC_UNSAFE;
+	retval = _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (*objRef, result, result_capacity);
+	MONO_EXIT_GC_UNSAFE;
+	return retval;
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -1121,6 +1179,7 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_string_get_data_ref (
 	MonoString **string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
 ) {
+	MONO_ENTER_GC_UNSAFE;
 	if (!string || !(*string)) {
 		if (outChars)
 			*outChars = 0;
@@ -1128,16 +1187,15 @@ mono_wasm_string_get_data_ref (
 			*outLengthBytes = 0;
 		if (outIsInterned)
 			*outIsInterned = 1;
-		return;
+	} else {
+		if (outChars)
+			*outChars = mono_string_chars (*string);
+		if (outLengthBytes)
+			*outLengthBytes = mono_string_length (*string) * 2;
+		if (outIsInterned)
+			*outIsInterned = mono_string_instance_is_interned (*string);
 	}
-
-	if (outChars)
-		*outChars = mono_string_chars (*string);
-	if (outLengthBytes)
-		*outLengthBytes = mono_string_length (*string) * 2;
-	if (outIsInterned)
-		*outIsInterned = mono_string_instance_is_interned (*string);
-	return;
+	MONO_EXIT_GC_UNSAFE;
 }
 
 EMSCRIPTEN_KEEPALIVE void

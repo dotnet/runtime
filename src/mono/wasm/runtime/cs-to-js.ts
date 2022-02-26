@@ -45,6 +45,8 @@ function _unbox_cs_owned_root_as_js_object(root: WasmRoot<any>) {
 function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<any>, type: MarshalType, typePtr: MonoType, unbox_buffer: VoidPtr): any {
     //See MARSHAL_TYPE_ defines in driver.c
     switch (type) {
+        case MarshalType.NULL:
+            return null;
         case MarshalType.INT64:
         case MarshalType.UINT64:
             // TODO: Fix this once emscripten offers HEAPI64/HEAPU64 or can return them
@@ -104,7 +106,7 @@ export function _unbox_mono_obj_root(root: WasmRoot<any>): any {
         return undefined;
 
     const unbox_buffer = runtimeHelpers._unbox_buffer;
-    const type = cwraps.mono_wasm_try_unbox_primitive_and_get_type(root.value, unbox_buffer, runtimeHelpers._unbox_buffer_size);
+    const type = cwraps.mono_wasm_try_unbox_primitive_and_get_type_ref(root.get_address(), unbox_buffer, runtimeHelpers._unbox_buffer_size);
     switch (type) {
         case MarshalType.INT:
             return getI32(unbox_buffer);
