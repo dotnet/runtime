@@ -1788,20 +1788,21 @@ namespace System.Text.RegularExpressions.Tests
             Assert.True(re.Match(fullinput).Success);
         }
 
-        public static IEnumerable<object[]> StressTestAntimirovMode_TestData()
+        public static IEnumerable<object[]> StressTestNfaMode_TestData()
         {
-            yield return new object[] { "a.{20}$", "a01234567890123456789", 21 };
-            yield return new object[] { "(a.{20}|a.{10})bc$", "a01234567890123456789bc", 23 };
+            yield return new object[] { "(?:a|aa|[abc]?[ab]?[abcd]).{20}$", "aaa01234567890123456789", 23 };
+            yield return new object[] { "(?:a|AA|BCD).{20}$", "a01234567890123456789", 21 };
+            yield return new object[] { "(?:a.{20}|a.{10})bc$", "a01234567890123456789bc", 23 };
         }
 
         /// <summary>
-        /// Causes NonBacktracking engine to switch to Antimirov mode internally.
-        /// Antimirov mode is otherwise never triggered by typical cases.
+        /// Causes NonBacktracking engine to switch to NFA mode internally.
+        /// NFA mode is otherwise never triggered by typical cases.
         /// </summary>
         [Theory]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
-        [MemberData(nameof(StressTestAntimirovMode_TestData))]
-        public async Task StressTestAntimirovMode(string pattern, string input_suffix, int expected_matchlength)
+        [MemberData(nameof(StressTestNfaMode_TestData))]
+        public async Task StressTestNfaMode(string pattern, string input_suffix, int expected_matchlength)
         {
             Random random = new Random(0);
             byte[] buffer = new byte[50_000];

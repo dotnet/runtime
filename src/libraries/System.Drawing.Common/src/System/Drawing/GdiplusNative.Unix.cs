@@ -118,10 +118,10 @@ namespace System.Drawing
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipGetNearestColor(IntPtr graphics, out int argb);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipAddPathString(IntPtr path, string s, int lenght, IntPtr family, int style, float emSize, ref RectangleF layoutRect, IntPtr format);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipAddPathStringI(IntPtr path, string s, int lenght, IntPtr family, int style, float emSize, ref Rectangle layoutRect, IntPtr format);
 
             [GeneratedDllImport(LibraryName)]
@@ -145,7 +145,7 @@ namespace System.Drawing
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipGetImageThumbnail(IntPtr image, uint width, uint height, out IntPtr thumbImage, IntPtr callback, IntPtr callBackData);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipSaveImageToFile(IntPtr image, string filename, ref Guid encoderClsID, IntPtr encoderParameters);
 
             [GeneratedDllImport(LibraryName)]
@@ -347,7 +347,7 @@ namespace System.Drawing
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipCreateFontFromHfont(IntPtr hdc, out IntPtr font, ref Interop.User32.LOGFONT lf);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipGetMetafileHeaderFromFile(string filename, IntPtr header);
 
             [GeneratedDllImport(LibraryName)]
@@ -398,13 +398,13 @@ namespace System.Drawing
                 StreamGetBytesDelegate getBytes, StreamPutBytesDelegate putBytes, StreamSeekDelegate doSeek,
                 StreamCloseDelegate close, StreamSizeDelegate size, IntPtr header);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipRecordMetafileFromDelegate_linux(StreamGetHeaderDelegate getHeader,
                 StreamGetBytesDelegate getBytes, StreamPutBytesDelegate putBytes, StreamSeekDelegate doSeek,
                 StreamCloseDelegate close, StreamSizeDelegate size, IntPtr hdc, EmfType type, ref RectangleF frameRect,
                 MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipRecordMetafileFromDelegateI_linux(StreamGetHeaderDelegate getHeader,
                 StreamGetBytesDelegate getBytes, StreamPutBytesDelegate putBytes, StreamSeekDelegate doSeek,
                 StreamCloseDelegate close, StreamSizeDelegate size, IntPtr hdc, EmfType type, ref Rectangle frameRect,

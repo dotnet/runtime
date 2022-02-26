@@ -164,6 +164,35 @@ bool IntegralRange::Contains(int64_t value) const
         case GT_CAST:
             return ForCastOutput(node->AsCast());
 
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+            switch (node->AsHWIntrinsic()->GetHWIntrinsicId())
+            {
+#if defined(TARGET_XARCH)
+                case NI_BMI1_TrailingZeroCount:
+                case NI_BMI1_X64_TrailingZeroCount:
+                case NI_LZCNT_LeadingZeroCount:
+                case NI_LZCNT_X64_LeadingZeroCount:
+                case NI_POPCNT_PopCount:
+                case NI_POPCNT_X64_PopCount:
+#elif defined(TARGET_ARM64)
+                case NI_AdvSimd_PopCount:
+                case NI_AdvSimd_LeadingZeroCount:
+                case NI_AdvSimd_LeadingSignCount:
+                case NI_ArmBase_LeadingZeroCount:
+                case NI_ArmBase_Arm64_LeadingZeroCount:
+                case NI_ArmBase_Arm64_LeadingSignCount:
+#else
+#error Unsupported platform
+#endif
+                    // TODO-Casts: specify more precise ranges once "IntegralRange" supports them.
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
+                default:
+                    break;
+            }
+            break;
+#endif // defined(FEATURE_HW_INTRINSICS)
+
         default:
             break;
     }
@@ -1007,6 +1036,11 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
         printf("Const_Loop_Bnd");
         vnStore->vnDump(this, curAssertion->op1.vn);
     }
+    else if (curAssertion->op1.kind == O1K_CONSTANT_LOOP_BND_UN)
+    {
+        printf("Const_Loop_Bnd_Un");
+        vnStore->vnDump(this, curAssertion->op1.vn);
+    }
     else if (curAssertion->op1.kind == O1K_VALUE_NUMBER)
     {
         printf("Value_Number");
@@ -1081,17 +1115,10 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                     printf("MT(%08X)", dspPtr(curAssertion->op2.u1.iconVal));
                     assert(curAssertion->op2.u1.iconFlags != GTF_EMPTY);
                 }
-                else if (curAssertion->op1.kind == O1K_BOUND_OPER_BND)
-                {
-                    assert(!optLocalAssertionProp);
-                    vnStore->vnDump(this, curAssertion->op2.vn);
-                }
-                else if (curAssertion->op1.kind == O1K_BOUND_LOOP_BND)
-                {
-                    assert(!optLocalAssertionProp);
-                    vnStore->vnDump(this, curAssertion->op2.vn);
-                }
-                else if (curAssertion->op1.kind == O1K_CONSTANT_LOOP_BND)
+                else if ((curAssertion->op1.kind == O1K_BOUND_OPER_BND) ||
+                         (curAssertion->op1.kind == O1K_BOUND_LOOP_BND) ||
+                         (curAssertion->op1.kind == O1K_CONSTANT_LOOP_BND) ||
+                         (curAssertion->op1.kind == O1K_CONSTANT_LOOP_BND_UN))
                 {
                     assert(!optLocalAssertionProp);
                     vnStore->vnDump(this, curAssertion->op2.vn);
@@ -1982,6 +2009,7 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
         case O1K_BOUND_OPER_BND:
         case O1K_BOUND_LOOP_BND:
         case O1K_CONSTANT_LOOP_BND:
+        case O1K_CONSTANT_LOOP_BND_UN:
         case O1K_VALUE_NUMBER:
             assert(!optLocalAssertionProp);
             break;
@@ -2079,8 +2107,9 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex,
     }
 
     AssertionDsc& candidateAssertion = *optGetAssertion(assertionIndex);
-    if (candidateAssertion.op1.kind == O1K_BOUND_OPER_BND || candidateAssertion.op1.kind == O1K_BOUND_LOOP_BND ||
-        candidateAssertion.op1.kind == O1K_CONSTANT_LOOP_BND)
+    if ((candidateAssertion.op1.kind == O1K_BOUND_OPER_BND) || (candidateAssertion.op1.kind == O1K_BOUND_LOOP_BND) ||
+        (candidateAssertion.op1.kind == O1K_CONSTANT_LOOP_BND) ||
+        (candidateAssertion.op1.kind == O1K_CONSTANT_LOOP_BND_UN))
     {
         AssertionDsc dsc  = candidateAssertion;
         dsc.assertionKind = dsc.assertionKind == OAK_EQUAL ? OAK_NOT_EQUAL : OAK_EQUAL;
@@ -2341,7 +2370,20 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
-
+    else if (vnStore->IsVNConstantBoundUnsigned(relopVN))
+    {
+        AssertionDsc dsc;
+        dsc.assertionKind    = OAK_NOT_EQUAL;
+        dsc.op1.kind         = O1K_CONSTANT_LOOP_BND_UN;
+        dsc.op1.vn           = relopVN;
+        dsc.op2.kind         = O2K_CONST_INT;
+        dsc.op2.vn           = vnStore->VNZeroForType(TYP_INT);
+        dsc.op2.u1.iconVal   = 0;
+        dsc.op2.u1.iconFlags = GTF_EMPTY;
+        AssertionIndex index = optAddAssertion(&dsc);
+        optCreateComplementaryAssertion(index, nullptr, nullptr);
+        return index;
+    }
     return NO_ASSERTION_INDEX;
 }
 
@@ -2882,8 +2924,8 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
     ValueNumPair vnPair = tree->gtVNPair;
     ValueNum     vnCns  = vnStore->VNConservativeNormalValue(vnPair);
 
-    // Check if node evaluates to a constant.
-    if (!vnStore->IsVNConstant(vnCns))
+    // Check if node evaluates to a constant or Vector.Zero.
+    if (!vnStore->IsVNConstant(vnCns) && !vnStore->IsVNVectorZero(vnCns))
     {
         return nullptr;
     }
@@ -3041,6 +3083,24 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             }
         }
         break;
+
+#if FEATURE_HW_INTRINSICS
+        case TYP_SIMD8:
+        case TYP_SIMD12:
+        case TYP_SIMD16:
+        case TYP_SIMD32:
+        {
+            assert(vnStore->IsVNVectorZero(vnCns));
+            VNSimdTypeInfo vnInfo = vnStore->GetVectorZeroSimdTypeOfVN(vnCns);
+
+            assert(vnInfo.m_simdBaseJitType != CORINFO_TYPE_UNDEF);
+            assert(vnInfo.m_simdSize != 0);
+            assert(getSIMDTypeForSize(vnInfo.m_simdSize) == vnStore->TypeOfVN(vnCns));
+
+            conValTree = gtNewSimdZeroNode(tree->TypeGet(), vnInfo.m_simdBaseJitType, vnInfo.m_simdSize, true);
+        }
+        break;
+#endif
 
         case TYP_BYREF:
             // Do not support const byref optimization.
@@ -5449,7 +5509,8 @@ struct VNAssertionPropVisitorInfo
 //
 GenTree* Compiler::optExtractSideEffListFromConst(GenTree* tree)
 {
-    assert(vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)));
+    assert(vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)) ||
+           vnStore->IsVNVectorZero(vnStore->VNConservativeNormalValue(tree->gtVNPair)));
 
     GenTree* sideEffList = nullptr;
 

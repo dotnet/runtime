@@ -202,6 +202,50 @@ struct Native
         }
 
         [ConditionalFact]
+        public async Task DefaultDllImportSearchPathsAttribute()
+        {
+            string source = @$"
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+[assembly:DisableRuntimeMarshalling]
+partial class C
+{{
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32 | DllImportSearchPath.UserDirectories)]
+    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    public static partial S Method1();
+}}
+
+[NativeMarshalling(typeof(Native))]
+struct S
+{{
+}}
+
+struct Native
+{{
+    public Native(S s) {{ }}
+    public S ToManaged() {{ return default; }}
+}}
+";
+            Compilation origComp = await TestUtils.CreateCompilation(source);
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Assert.Empty(newComp.GetDiagnostics());
+
+            ITypeSymbol attributeType = newComp.GetTypeByMetadataName("System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute")!;
+
+            Assert.NotNull(attributeType);
+
+            IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
+
+            DllImportSearchPath expected = DllImportSearchPath.System32 | DllImportSearchPath.UserDirectories;
+
+            Assert.Contains(
+                targetMethod.GetAttributes(),
+                attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType)
+                    && attr.ConstructorArguments.Length == 1
+                    && expected == (DllImportSearchPath)attr.ConstructorArguments[0].Value!);
+        }
+
+        [ConditionalFact]
         public async Task OtherAttributeType()
         {
             string source = @"

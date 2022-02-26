@@ -15,7 +15,7 @@ internal static partial class Interop
             private short attributes;
         }
 
-        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "ReadConsoleOutputW", CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "ReadConsoleOutputW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial bool ReadConsoleOutput(IntPtr hConsoleOutput, CHAR_INFO* pBuffer, COORD bufferSize, COORD bufferCoord, ref SMALL_RECT readRegion);
     }
 }
