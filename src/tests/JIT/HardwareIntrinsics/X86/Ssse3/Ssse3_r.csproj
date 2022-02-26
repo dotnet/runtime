@@ -27,6 +27,10 @@
     <Compile Include="AlignRight.Int64.8.cs" />
     <Compile Include="AlignRight.UInt64.0.cs" />
     <Compile Include="AlignRight.UInt64.8.cs" />
+    <Compile Include="AlignRight.nint.0.cs" />
+    <Compile Include="AlignRight.nint.8.cs" />
+    <Compile Include="AlignRight.nuint.0.cs" />
+    <Compile Include="AlignRight.nuint.8.cs" />
     <Compile Include="HorizontalAdd.Int16.cs" />
     <Compile Include="HorizontalAdd.Int32.cs" />
     <Compile Include="HorizontalAddSaturate.Int16.cs" />
