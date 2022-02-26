@@ -17,7 +17,6 @@ class CrawlFrame;
 struct EE_ILEXCEPTION_CLAUSE;
 struct TransitionBlock;
 struct VASigCookie;
-struct CORCOMPILE_EXTERNAL_METHOD_THUNK;
 class ComPlusCallMethodDesc;
 
 #include <cgencpu.h>

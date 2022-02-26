@@ -12056,11 +12056,11 @@ TypeHandle Debugger::TypeDataWalk::ReadTypeHandle()
             case ELEMENT_TYPE_ARRAY:
             case ELEMENT_TYPE_SZARRAY:
                 th = g_pEEInterface->LoadArrayType(data->data.elementType, typar, data->data.ArrayTypeData.arrayRank);
-          break;
-    case ELEMENT_TYPE_PTR:
-    case ELEMENT_TYPE_BYREF:
+                break;
+            case ELEMENT_TYPE_PTR:
+            case ELEMENT_TYPE_BYREF:
                 th = g_pEEInterface->LoadPointerOrByrefType(data->data.elementType, typar);
-          break;
+                break;
             default:
                 _ASSERTE(0);
         }

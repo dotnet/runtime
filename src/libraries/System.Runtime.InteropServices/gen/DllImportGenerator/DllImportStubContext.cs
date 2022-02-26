@@ -163,8 +163,12 @@ namespace Microsoft.Interop
                     _ => CharEncoding.Undefined, // [Compat] Do not assume a specific value
                 };
             }
+            else if (dllImportData.IsUserDefined.HasFlag(DllImportMember.StringMarshallingCustomType))
+            {
+                defaultEncoding = CharEncoding.Custom;
+            }
 
-            var defaultInfo = new DefaultMarshallingInfo(defaultEncoding);
+            var defaultInfo = new DefaultMarshallingInfo(defaultEncoding, dllImportData.StringMarshallingCustomType);
 
             var marshallingAttributeParser = new MarshallingAttributeInfoParser(env.Compilation, diagnostics, defaultInfo, method);
 
