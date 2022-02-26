@@ -33,6 +33,8 @@
     <Compile Include="X86\LzcntTests.LeadingZeroCount.cs" />
     <Compile Include="X86\PopcntTests.cs" />
     <Compile Include="X86\PopcntTests.PopCount.cs" />
+    <Compile Include="X86\Sse3Tests.cs" />
+    <Compile Include="X86\Sse3Tests.LoadDquVector128.cs" />
     <Compile Include="X86\Sse42Tests.CompareGreaterThan.cs" />
     <Compile Include="X86\Sse42Tests.Crc32.cs" />
     <Compile Include="X86\Sse42Tests.cs" />
