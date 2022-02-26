@@ -362,6 +362,12 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        interface ISymUnmanagedReader
+        {
+            int GetMethod(int methodToken, out ISymUnmanagedMethod method);
+            // No more members are used
+        }
+
         private sealed class SymUnmanagedReaderWrapperCache : ComWrappers
         {
             public static readonly SymUnmanagedReaderWrapperCache Instance = new SymUnmanagedReaderWrapperCache();
@@ -382,23 +388,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 private bool _disposed = false;
 
-                public int GetDocument(string url, Guid language, Guid languageVendor, Guid documentType, out ISymUnmanagedDocument document) => throw new NotImplementedException();
-                public int GetDocuments(int bufferLength, out int count, ISymUnmanagedDocument[] documents) => throw new NotImplementedException();
-                public int GetUserEntryPoint(out int methodToken) => throw new NotImplementedException();
                 public int GetMethod(int methodToken, out ISymUnmanagedMethod method) => throw new NotImplementedException();
-                public int GetMethodByVersion(int methodToken, int version, out ISymUnmanagedMethod method) => throw new NotImplementedException();
-                public int GetVariables(int methodToken, int bufferLength, out int count, ISymUnmanagedVariable[] variables) => throw new NotImplementedException();
-                public int GetGlobalVariables(int bufferLength, out int count, ISymUnmanagedVariable[] variables) => throw new NotImplementedException();
-                public int GetMethodFromDocumentPosition(ISymUnmanagedDocument document, int line, int column, out ISymUnmanagedMethod method) => throw new NotImplementedException();
-                public int GetSymAttribute(int methodToken, string name, int bufferLength, out int count, byte[] customDebugInformation) => throw new NotImplementedException();
-                public int GetNamespaces(int bufferLength, out int count, ISymUnmanagedNamespace[] namespaces) => throw new NotImplementedException();
-                public int Initialize(object metadataImporter, string fileName, string searchPath, IStream stream) => throw new NotImplementedException();
-                public int UpdateSymbolStore(string fileName, IStream stream) => throw new NotImplementedException();
-                public int ReplaceSymbolStore(string fileName, IStream stream) => throw new NotImplementedException();
-                public int GetSymbolStoreFileName(int bufferLength, out int count, char[] name) => throw new NotImplementedException();
-                public int GetMethodsFromDocumentPosition(ISymUnmanagedDocument document, int line, int column, int bufferLength, out int count, ISymUnmanagedMethod[] methods) => throw new NotImplementedException();
-                public int GetDocumentVersion(ISymUnmanagedDocument document, out int version, out bool isCurrent) => throw new NotImplementedException();
-                public int GetMethodVersion(ISymUnmanagedMethod method, out int version) => throw new NotImplementedException();
 
                 public void Dispose()
                 {
