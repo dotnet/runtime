@@ -1873,8 +1873,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     regNumber dst       = lclNode->GetRegNum();
     GenTree*  op1       = lclNode->gtGetOp1();
     GenTree*  actualOp1 = op1->gtSkipReloadOrCopy();
-    unsigned  regCount =
-        actualOp1->IsMultiRegLclVar() ? actualOp1->AsLclVar()->GetFieldCount(compiler) : actualOp1->GetMultiRegCount();
+    unsigned  regCount  = actualOp1->GetMultiRegCount(compiler);
     assert(op1->IsMultiRegNode());
     genConsumeRegs(op1);
 
@@ -4204,7 +4203,9 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
     {
         assert(offsetNode->isContained());
     }
+
     regNumber indexReg = genConsumeReg(indexNode);
+
     // Although arrReg may not be used in the constant-index case, if we have generated
     // the value into a register, we must consume it, otherwise we will fail to end the
     // live range of the gc ptr.
@@ -4212,7 +4213,7 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
     // We could avoid allocating a register for it, which would be of value if the arrObj
     // is an on-stack lclVar.
     regNumber arrReg = REG_NA;
-    if (arrObj->gtHasReg())
+    if (arrObj->gtHasReg(compiler))
     {
         arrReg = genConsumeReg(arrObj);
     }
