@@ -1003,7 +1003,25 @@ extern UINT32 STUB_COLLIDE_MONO_PCT;
 #endif // !STUB_LOGGING
 
 #define TERRIBLE_VSD_LOGGING
-#define PRIME_SIZE_VSD_BUCKET_TABLE
+//#define PRIME_SIZE_VSD_BUCKET_TABLE
+//#define PRIME_SIZE_VSD_FASTTABLE
+#define ACTUALLY_CHECK_ISFULL
+//#define ROBINHOOD_VSD_HASHING
+//#define XXHASH_HASH_FUNCTION_FASTTABLE
+//#define _32_BIT_HASH_SHIFT_ON_64BIT
+#define _32BIT_SHIFT_APPROACH
+#define LOAD_FACTOR_80
+
+#ifdef _32_BIT_HASH_SHIFT_ON_64BIT
+#ifdef TARGET_64BIT
+#define CALL_STUB_BIT_SHIFT 32
+#else
+#define CALL_STUB_BIT_SHIFT 16
+#endif
+#else
+#define CALL_STUB_BIT_SHIFT 16
+#endif
+
 
 //size and mask of the cache used by resolve stubs
 // CALL_STUB_CACHE_SIZE must be equal to 2^CALL_STUB_CACHE_NUM_BITS
@@ -1022,15 +1040,21 @@ extern UINT32 STUB_COLLIDE_MONO_PCT;
 //this is so that the very first growth will jump from 4 to 32 entries, then double from there.
 #define CALL_STUB_SECONDARY_ENTRIES 8
 #define CALL_STUB_GROWTH_FACTOR 2
+#ifdef LOAD_FACTOR_80
+#define CALL_STUB_LOAD_FACTOR 80
+#else
 #define CALL_STUB_LOAD_FACTOR 90
+#endif
 #define CALL_STUB_HASH_CONST1 1327
 #define CALL_STUB_HASH_CONST2 43627
 #define LARGE_PRIME 7199369
+#ifdef PRIME_SIZE_VSD_FASTTABLE
 //internal layout of fasttable=size,count,entries....
 #define CALL_STUB_TABLESIZE_INDEX 0
+#endif
 #ifndef PRIME_SIZE_VSD_BUCKET_TABLE
 //internal layout of buckets=size-1,count,entries....
-#define CALL_STUB_BUCKETTABLEMASK_INDEX 0
+#define CALL_STUB_MASK_INDEX 0
 #endif
 #define CALL_STUB_COUNT_INDEX 1
 #define CALL_STUB_DEAD_LINK 2
@@ -1478,16 +1502,26 @@ private:
     //return the bucket (FastTable*) that the prober is currently walking
     inline size_t* items() {LIMITED_METHOD_CONTRACT; return &base[-CALL_STUB_FIRST_INDEX];}
     //are there more probes possible, or have we probed everything in the bucket
+#ifdef ROBINHOOD_VSD_HASHING
     inline BOOL NoMore() {LIMITED_METHOD_CONTRACT; return probesReal>size;} //both probes and mask are (-1)
+#else
+    inline BOOL NoMore() {LIMITED_METHOD_CONTRACT; return probes>mask;} //both probes and mask are (-1)
+#endif
     //advance the probe to a new place in the bucket
     inline BOOL Next()
     {
         WRAPPER_NO_CONTRACT;
+#ifdef PRIME_SIZE_VSD_FASTTABLE
         index = (index + stride);
         if (index >= size)
             index -= size;
+#else
+        index = (index + stride) & mask;
+#endif
         probes++;
+#ifdef ROBINHOOD_VSD_HASHING
         probesReal++;
+#endif
         return !NoMore();
     }
     inline size_t Read()
@@ -1502,12 +1536,65 @@ private:
 
     size_t ComputeIndex(size_t key1, size_t key2)
     {
+        //these two hash functions have not been formally measured for effectiveness
+        //but they are at least orthogonal
+#ifndef XXHASH_HASH_FUNCTION_FASTTABLE
+        size_t keyAAdjusted = keyA;
+        size_t keyBAdjusted = keyB;
+#ifdef _32BIT_SHIFT_APPROACH
+        keyAAdjusted ^= keyAAdjusted >> 32;
+        keyBAdjusted ^= keyBAdjusted >> 32;
+#endif
+        size_t a = ((keyAAdjusted>>CALL_STUB_BIT_SHIFT) + keyA);
+        size_t b = ((keyBAdjusted>>CALL_STUB_BIT_SHIFT) ^ keyB);
+        size_t localIndex = (((a*CALL_STUB_HASH_CONST1)>>4)+((b*CALL_STUB_HASH_CONST2)>>4)+CALL_STUB_HASH_CONST1);
+#else
 #ifdef TARGET_64BIT
         int localIndex = CombineFourValuesIntoHash((UINT32)key1, (UINT32)(key1 >> 32), (UINT32)key2, (UINT32)(key2 >> 32));
 #else
         int localIndex = CombineTwoValuesIntoHash(key1, key2);
 #endif
+#endif
+#ifdef PRIME_SIZE_VSD_FASTTABLE
         return localIndex % size;
+#else
+        return localIndex & mask;
+#endif
+    }
+
+#ifndef ROBINHOOD_VSD_HASHING
+    size_t ComputeStride(size_t key1, size_t key2)
+    {
+        //these two hash functions have not been formally measured for effectiveness
+        //but they are at least orthogonal
+
+#ifndef XXHASH_HASH_FUNCTION_FASTTABLE
+        size_t a = ((keyA>>CALL_STUB_BIT_SHIFT) + keyA);
+        size_t b = ((keyB>>CALL_STUB_BIT_SHIFT) ^ keyB);
+        size_t localStride = ((a+(b*CALL_STUB_HASH_CONST1)+CALL_STUB_HASH_CONST2) | 1);
+#else
+#ifdef TARGET_64BIT
+        int localStride = CombineFourValuesIntoHash((UINT32)key2, (UINT32)(key2 >> 32), (UINT32)key1, (UINT32)(key1 >> 32));
+#else
+        int localStride = CombineTwoValuesIntoHash(key2, key1);
+#endif
+#endif
+#ifdef PRIME_SIZE_VSD_FASTTABLE
+        return localStride % size;
+#else
+        return localStride & mask;
+#endif
+    }
+#endif
+
+#ifdef ROBINHOOD_VSD_HASHING
+    size_t Size()
+    {
+#ifdef PRIME_SIZE_VSD_FASTTABLE
+        return size;
+#else
+        return mask+1;
+#endif
     }
 
     size_t PSL(size_t initialIndex)
@@ -1515,19 +1602,25 @@ private:
         size_t currentIndex = index;
         if (currentIndex < initialIndex)
         {
-            currentIndex += size;
+            currentIndex += Size();
         }
         return currentIndex - initialIndex;
     }
+#endif
     inline void FormHash()
     {
         LIMITED_METHOD_CONTRACT;
 
         probes = 0;
+#ifdef ROBINHOOD_VSD_HASHING
         probesReal = 0;
+#endif
         //these two hash functions have not been formally measured for effectiveness
         //but they are at least orthogonal
         index = ComputeIndex(keyA, keyB);
+#ifndef ROBINHOOD_VSD_HASHING
+        stride = ComputeStride(keyA, keyB);
+#endif
     }
 
 
@@ -1541,8 +1634,13 @@ private:
                         //  All that will happen is possibly dropping an entry
                         //  on the floor or adding a duplicate.
     size_t index;       //current probe point in the bucket
+#ifdef ROBINHOOD_VSD_HASHING
     const size_t stride = 1;      //amount to step on each successive probe, must be relatively prime wrt the bucket size
     size_t size;        //size of bucket
+#else
+    size_t stride;      //amount to step on each successive probe, must be relatively prime wrt the bucket size
+    size_t mask;        //size of bucket - 1
+#endif
     size_t probes;      //number probes - 1 (Used for PSL calculation)
     size_t probesReal;      //number probes - 1 (Actual Probe count)
     Entry* comparer;//used to compare an entry against the sought after key pair
@@ -1588,7 +1686,9 @@ private:
     size_t Add(size_t entry, Prober* probe);
     void IncrementCount();
 
+#ifdef PRIME_SIZE_VSD_FASTTABLE
     static size_t NextPrime(size_t number);
+#endif
 
     // Create a FastTable with space for numberOfEntries. Please note that this method
     // does not throw on OOM. **YOU MUST CHECK FOR NULL RETURN**
@@ -1600,9 +1700,14 @@ private:
             INJECT_FAULT(COMPlusThrowOM(););
         } CONTRACTL_END;
 
+#ifdef PRIME_SIZE_VSD_FASTTABLE
         size_t size = NextPrime(numberOfEntries);
+#else
+        size_t size = CALL_STUB_MIN_ENTRIES;
+        while (size < numberOfEntries) {size = size<<1;}
 //        if (size == CALL_STUB_MIN_ENTRIES)
 //            size += 3;
+#endif
         FastTable* table = new (NumCallStubs, size) FastTable();
         table->InitializeContents(size);
         return table;
@@ -1612,16 +1717,29 @@ private:
     {
         LIMITED_METHOD_CONTRACT;
         memset(&contents[0], CALL_STUB_EMPTY_ENTRY, (size+CALL_STUB_FIRST_INDEX)*sizeof(BYTE*));
+#ifdef PRIME_SIZE_VSD_FASTTABLE
         contents[CALL_STUB_TABLESIZE_INDEX] = size;
+#else
+        contents[CALL_STUB_MASK_INDEX] = size-1;
+#endif
     }
+#ifdef PRIME_SIZE_VSD_FASTTABLE
     inline size_t tableSize() {LIMITED_METHOD_CONTRACT; return (size_t) (contents[CALL_STUB_TABLESIZE_INDEX]);}
+#else
+    inline size_t tableMask() {LIMITED_METHOD_CONTRACT; return (size_t) (contents[CALL_STUB_MASK_INDEX]);}
+    inline size_t tableSize() {LIMITED_METHOD_CONTRACT; return tableMask()+1;}
+#endif
     inline size_t tableCount() {LIMITED_METHOD_CONTRACT; return (size_t) (contents[CALL_STUB_COUNT_INDEX]);}
     inline BOOL isFull()
     {
         LIMITED_METHOD_CONTRACT;
-        return (tableCount()) * 100 / CALL_STUB_LOAD_FACTOR >= tableSize();
+        return (tableCount()+1) * 100 / CALL_STUB_LOAD_FACTOR >= tableSize();
     }
+#ifdef PRIME_SIZE_VSD_FASTTABLE
     //we store size in bucket[CALL_STUB_TABLESIZE_INDEX==0],
+#else
+    //we store (size-1) in bucket[CALL_STUB_MASK_INDEX==0],
+#endif
     //we store the used count in bucket[CALL_STUB_COUNT_INDEX==1],
     //we have an unused cell to use as a temp at bucket[CALL_STUB_DEAD_LINK==2],
     //and the table starts at bucket[CALL_STUB_FIRST_INDEX==3],
@@ -1700,15 +1818,21 @@ private:
 #ifdef PRIME_SIZE_VSD_BUCKET_TABLE
     inline size_t bucketCount() {LIMITED_METHOD_CONTRACT; return (size_t) (buckets[CALL_STUB_TABLESIZE_INDEX]); }
 #else
-    inline size_t bucketMask() {LIMITED_METHOD_CONTRACT; return (size_t) (buckets[CALL_STUB_BUCKETTABLEMASK_INDEX]);}
+    inline size_t bucketMask() {LIMITED_METHOD_CONTRACT; return (size_t) (buckets[CALL_STUB_MASK_INDEX]);}
     inline size_t bucketCount() {LIMITED_METHOD_CONTRACT; return bucketMask()+1;}
 #endif
     inline size_t ComputeBucketIndex(size_t keyA, size_t keyB)
     {
         LIMITED_METHOD_CONTRACT;
-        // HASH2
-        size_t a = ((keyA>>16) + keyA);
-        size_t b = ((keyB>>16) ^ keyB);
+
+        size_t keyAAdjusted = keyA;
+        size_t keyBAdjusted = keyB;
+#ifdef _32BIT_SHIFT_APPROACH
+        keyAAdjusted ^= keyAAdjusted >> 32;
+        keyBAdjusted ^= keyBAdjusted >> 32;
+#endif
+        size_t a = ((keyAAdjusted>>CALL_STUB_BIT_SHIFT) + keyA);
+        size_t b = ((keyBAdjusted>>CALL_STUB_BIT_SHIFT) ^ keyB);
 #ifdef PRIME_SIZE_VSD_BUCKET_TABLE
         return CALL_STUB_FIRST_INDEX+(((((a*CALL_STUB_HASH_CONST2)>>5)^((b*CALL_STUB_HASH_CONST1)>>5))+CALL_STUB_HASH_CONST2) % bucketCount());
 #else
@@ -1728,7 +1852,7 @@ private:
 #ifdef PRIME_SIZE_VSD_BUCKET_TABLE
             buckets[CALL_STUB_TABLESIZE_INDEX] = size;
 #else
-            buckets[CALL_STUB_BUCKETTABLEMASK_INDEX] =  size - 1;
+            buckets[CALL_STUB_MASK_INDEX] =  size - 1;
 #endif
         }
         return buckets;
@@ -1749,7 +1873,7 @@ private:
 #ifdef PRIME_SIZE_VSD_BUCKET_TABLE
     // We store (#buckets) in    bucket[CALL_STUB_TABLESIZE_INDEX  ==0]
 #else
-    // We store (#buckets-1) in    bucket[CALL_STUB_BUCKETTABLEMASK_INDEX  ==0]
+    // We store (#buckets-1) in    bucket[CALL_STUB_MASK_INDEX  ==0]
 #endif
     // We have two unused cells at bucket[CALL_STUB_COUNT_INDEX ==1]
     //                         and bucket[CALL_STUB_DEAD_LINK   ==2]

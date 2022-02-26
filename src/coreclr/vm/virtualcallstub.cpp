@@ -3119,7 +3119,11 @@ void Prober::InitProber(size_t key1, size_t key2, size_t* table)
     keyA = key1;
     keyB = key2;
     base = &table[CALL_STUB_FIRST_INDEX];
+#ifdef PRIME_SIZE_VSD_FASTTABLE
     size = table[CALL_STUB_TABLESIZE_INDEX];
+#else
+    mask = table[CALL_STUB_MASK_INDEX];
+#endif
     FormHash();
 #ifdef TERRIBLE_VSD_LOGGING
     ReportBucketInUseInBucket((int)this->index, keyA, keyB);
@@ -3135,7 +3139,9 @@ size_t Prober::Find()
     } CONTRACTL_END
 
     size_t entry;
+#ifdef TERRIBLE_VSD_LOGGING
     int readCount = 0;
+#endif
     //if this prober has already visited every slot, there is nothing more to look at.
     //note, this means that if a prober is going to be reused, the FormHash() function
     //needs to be called to reset it.
@@ -3149,7 +3155,9 @@ size_t Prober::Find()
     do
     {
         entry = Read();
+#ifdef TERRIBLE_VSD_LOGGING
         readCount++;
+#endif
 
         //if we hit an empty entry, it means it cannot be in the table
         if(entry==CALL_STUB_EMPTY_ENTRY)
@@ -3185,14 +3193,18 @@ size_t Prober::Add(size_t newEntry)
     } CONTRACTL_END
 
     size_t entry;
+#ifdef ROBINHOOD_VSD_HASHING
     size_t returnEntry = newEntry;
+#endif
     //if we have visited every slot then there is no room in the table to add this new entry
     if (NoMore())
         return CALL_STUB_EMPTY_ENTRY;
 
     do
     {
+#ifdef ROBINHOOD_VSD_HASHING
 retryCurrentBucket:
+#endif
         entry = Read();
         if (entry==CALL_STUB_EMPTY_ENTRY)
         {
@@ -3210,14 +3222,23 @@ retryCurrentBucket:
             }
 
             // We didn't grab this entry, so keep trying.
+#ifdef ROBINHOOD_VSD_HASHING
             goto retryCurrentBucket;
+#else
+            continue;
+#endif
         }
         //check if this entry is already in the table, if so we are done
         comparer->SetContents(entry);
         if (comparer->Equals(keyA, keyB))
         {
+#ifdef ROBINHOOD_VSD_HASHING
             return returnEntry;
+#else
+            return entry;
+#endif
         }
+#ifdef ROBINHOOD_VSD_HASHING
         size_t keyACurrentEntry = comparer->KeyA();
         size_t keyBCurrentEntry = comparer->KeyB();
         size_t pslCurrentEntry = PSL(ComputeIndex(keyACurrentEntry, keyBCurrentEntry));
@@ -3242,6 +3263,7 @@ retryCurrentBucket:
                 goto retryCurrentBucket;
             }
         }
+#endif
     } while(Next()); //Next() returns false when we have visited every slot
 
     //if we have visited every slot then there is no room in the table to add this new entry
@@ -3249,7 +3271,11 @@ retryCurrentBucket:
         return CALL_STUB_EMPTY_ENTRY;
 
     CONSISTENCY_CHECK(Read() == newEntry);
+#ifdef ROBINHOOD_VSD_HASHING
     return returnEntry;
+#else
+    return newEntry;
+#endif
 }
 
 /*Atomically grab an entry, if it is empty, so we can write in it.
@@ -3289,9 +3315,10 @@ size_t FastTable::Add(size_t entry, Prober* probe)
         FORBID_FAULT;
     } CONTRACTL_END
 
+#ifdef ACTUALLY_CHECK_ISFULL
     if (isFull())
         return CALL_STUB_EMPTY_ENTRY;
-
+#endif
     size_t result = probe->Add(entry);
     if (result == entry) IncrementCount();
     return result;
@@ -3304,6 +3331,7 @@ size_t FastTable::Find(Prober* probe)
     return probe->Find();
 }
 
+#ifdef PRIME_SIZE_VSD_FASTTABLE
 static BOOL IsPrime(size_t number)
 {
     // This is a very low-tech check for primality, which doesn't scale very well.
@@ -3342,7 +3370,7 @@ size_t FastTable::NextPrime(size_t number)
 
     return number;
 }
-
+#endif // #ifdef PRIME_SIZE_VSD_FASTTABLE
 /*Increase the size of the bucket referenced by the prober p and copy the existing members into it.
 Since duplicates and lost entries are okay, we can build the larger table
 and then try to swap it in.  If it turns out that somebody else is racing us,
