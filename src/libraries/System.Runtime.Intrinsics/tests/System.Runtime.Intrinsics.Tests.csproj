@@ -17,7 +17,7 @@
     <Compile Include="Vectors\Vector128Tests.cs" />
     <Compile Include="Vectors\Vector256Tests.cs" />
     <Compile Include="Vectors\Vector64Tests.cs" />
-    <Compile Include="X86\Bmi1.ResetLowestSetBit.cs" />
+    <Compile Include="X86\Bmi1Tests.ResetLowestSetBit.cs" />
     <Compile Include="X86\Bmi1Tests.AndNot.cs" />
     <Compile Include="X86\Bmi1Tests.BitFieldExtract.cs" />
     <Compile Include="X86\Bmi1Tests.cs" />
