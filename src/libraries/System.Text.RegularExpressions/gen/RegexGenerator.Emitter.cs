@@ -447,6 +447,9 @@ namespace System.Text.RegularExpressions.Generator
             ReplaceAdditionalDeclarations(writer, additionalDeclarations, additionalDeclarationsPosition, additionalDeclarationsIndent);
             return requiredHelpers;
 
+            // Emit a goto for the specified label.
+            void Goto(string label) => writer.WriteLine($"goto {label};");
+
             // Emits any anchors.  Returns true if the anchor roots any match to a specific location and thus no further
             // searching is required; otherwise, false.
             bool EmitAnchors()
@@ -459,7 +462,7 @@ namespace System.Text.RegularExpressions.Generator
                         additionalDeclarations.Add("int beginning = base.runtextbeg;");
                         using (EmitBlock(writer, "if (pos > beginning)"))
                         {
-                            writer.WriteLine($"goto {NoStartingPositionFound};");
+                            Goto(NoStartingPositionFound);
                         }
                         writer.WriteLine("return true;");
                         return true;
@@ -468,7 +471,7 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine("// Start \\G anchor");
                         using (EmitBlock(writer, "if (pos > base.runtextstart)"))
                         {
-                            writer.WriteLine($"goto {NoStartingPositionFound};");
+                            Goto(NoStartingPositionFound);
                         }
                         writer.WriteLine("return true;");
                         return true;
@@ -528,7 +531,7 @@ namespace System.Text.RegularExpressions.Generator
                             writer.WriteLine("int newlinePos = global::System.MemoryExtensions.IndexOf(inputSpan.Slice(pos), '\\n');");
                             using (EmitBlock(writer, "if (newlinePos < 0 || newlinePos + pos + 1 > end)"))
                             {
-                                writer.WriteLine($"goto {NoStartingPositionFound};");
+                                Goto(NoStartingPositionFound);
                             }
                             writer.WriteLine("pos = newlinePos + pos + 1;");
                         }
@@ -621,7 +624,7 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine($"int indexOfPos = {indexOf};");
                         using (EmitBlock(writer, "if (indexOfPos < 0)"))
                         {
-                            writer.WriteLine($"goto {NoStartingPositionFound};");
+                            Goto(NoStartingPositionFound);
                         }
                         writer.WriteLine("i += indexOfPos;");
                         writer.WriteLine();
@@ -630,7 +633,7 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             using (EmitBlock(writer, $"if (i >= span.Length - {minRequiredLength - 1})"))
                             {
-                                writer.WriteLine($"goto {NoStartingPositionFound};");
+                                Goto(NoStartingPositionFound);
                             }
                             writer.WriteLine();
                         }
@@ -844,7 +847,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine("int pos = base.runtextpos, end = base.runtextend;");
             writer.WriteLine($"int original_pos = pos;");
             bool hasTimeout = EmitLoopTimeoutCounterIfNeeded(writer, rm);
-            bool hasTextInfo = EmitInitializeCultureForGoIfNecessary(writer, rm);
+            bool hasTextInfo = EmitInitializeCultureForTryMatchAtCurrentPositionIfNecessary(writer, rm);
             writer.Flush();
             int additionalDeclarationsPosition = ((StringWriter)writer.InnerWriter).GetStringBuilder().Length;
             int additionalDeclarationsIndent = writer.Indent;
@@ -866,7 +869,7 @@ namespace System.Text.RegularExpressions.Generator
             // processing the next branch N+1: that way, any failures in the branch N's processing will
             // implicitly end up jumping to the right location without needing to know in what context it's used.
             string doneLabel = ReserveName("NoMatch");
-            string originalDoneLabel = doneLabel;
+            string topLevelDoneLabel = doneLabel;
 
             // Check whether there are captures anywhere in the expression. If there isn't, we can skip all
             // the boilerplate logic around uncapturing, as there won't be anything to uncapture.
@@ -885,17 +888,6 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine("base.runtextpos = pos;");
             writer.WriteLine("base.Capture(0, original_pos, pos);");
             writer.WriteLine("return true;");
-            writer.WriteLine();
-
-            // We only get here in the code if the whole expression fails to match and jumps to
-            // the original value of doneLabel.
-            writer.WriteLine("// The input didn't match.");
-            MarkLabel(originalDoneLabel, emitSemicolon: !expressionHasCaptures);
-            if (expressionHasCaptures)
-            {
-                EmitUncaptureUntil("0");
-            }
-            writer.WriteLine("return false;");
 
             // We're done with the match.
 
@@ -931,6 +923,35 @@ namespace System.Text.RegularExpressions.Generator
             // when it's known the label will always be followed by a statement.
             void MarkLabel(string label, bool emitSemicolon = true) => writer.WriteLine($"{label}:{(emitSemicolon ? ";" : "")}");
 
+            // Emits a goto to jump to the specified label.  However, if the specified label is the top-level done label indicating
+            // that the entire match has failed, we instead emit our epilogue, uncapturing if necessary and returning out of TryMatchAtCurrentPosition.
+            void Goto(string label)
+            {
+                if (label == topLevelDoneLabel)
+                {
+                    // We only get here in the code if the whole expression fails to match and jumps to
+                    // the original value of doneLabel.
+                    if (expressionHasCaptures)
+                    {
+                        EmitUncaptureUntil("0");
+                    }
+                    writer.WriteLine("return false; // The input didn't match.");
+                }
+                else
+                {
+                    writer.WriteLine($"goto {label};");
+                }
+            }
+
+            // Emits a case or default line followed by an indented body.
+            void CaseGoto(string clause, string label)
+            {
+                writer.WriteLine(clause);
+                writer.Indent++;
+                Goto(label);
+                writer.Indent--;
+            }
+
             // Whether the node has RegexOptions.IgnoreCase set.
             static bool IsCaseInsensitive(RegexNode node) => (node.Options & RegexOptions.IgnoreCase) != 0;
 
@@ -956,7 +977,7 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(requiredLength > 0);
                 using (EmitBlock(writer, $"if ({SpanLengthCheck(requiredLength, dynamicRequiredLength)})"))
                 {
-                    writer.WriteLine($"goto {doneLabel};");
+                    Goto(doneLabel);
                 }
             }
 
@@ -1175,7 +1196,7 @@ namespace System.Text.RegularExpressions.Generator
                         }
 
                         // Default branch if the character didn't match the start of any branches.
-                        writer.WriteLine($"default: goto {doneLabel};");
+                        CaseGoto("default:", doneLabel);
                     }
                 }
 
@@ -1280,7 +1301,7 @@ namespace System.Text.RegularExpressions.Generator
                                 // matched and need to skip over that code.  If, however, this is the
                                 // last branch and this is an atomic alternation, we can just fall
                                 // through to the successfully matched location.
-                                writer.WriteLine($"goto {matchLabel};");
+                                Goto(matchLabel);
                             }
 
                             // Reset state for next branch and loop around to generate it.  This includes
@@ -1327,7 +1348,7 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             for (int i = 0; i < labelMap.Length; i++)
                             {
-                                writer.WriteLine($"case {i}: goto {labelMap[i]};");
+                                CaseGoto($"case {i}:", labelMap[i]);
                             }
                         }
                         writer.WriteLine();
@@ -1367,7 +1388,7 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine($"// If the {DescribeCapture(node.M, analysis)} hasn't matched, the backreference doesn't match.");
                     using (EmitBlock(writer, $"if (!base.IsMatched({capnum}))"))
                     {
-                        writer.WriteLine($"goto {doneLabel};");
+                        Goto(doneLabel);
                     }
                     writer.WriteLine();
                     EmitWhenHasCapture();
@@ -1387,7 +1408,7 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine($"if ({sliceSpan}.Length < matchLength || ");
                         using (EmitBlock(writer, $"    !global::System.MemoryExtensions.SequenceEqual(inputSpan.Slice(base.MatchIndex({capnum}), matchLength), {sliceSpan}.Slice(0, matchLength)))"))
                         {
-                            writer.WriteLine($"goto {doneLabel};");
+                            Goto(doneLabel);
                         }
                     }
                     else
@@ -1395,7 +1416,7 @@ namespace System.Text.RegularExpressions.Generator
                         // For case-insensitive, we have to walk each character individually.
                         using (EmitBlock(writer, $"if ({sliceSpan}.Length < matchLength)"))
                         {
-                            writer.WriteLine($"goto {doneLabel};");
+                            Goto(doneLabel);
                         }
                         writer.WriteLine();
 
@@ -1405,7 +1426,7 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"inputSpan[matchIndex + i]")} != {ToLower(hasTextInfo, options, $"{sliceSpan}[i]")})"))
                             {
-                                writer.WriteLine($"goto {doneLabel};");
+                                Goto(doneLabel);
                             }
                         }
                     }
@@ -1479,7 +1500,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Check to see if the specified capture number was captured.
                 using (EmitBlock(writer, $"if (!base.IsMatched({capnum}))"))
                 {
-                    writer.WriteLine($"goto {refNotMatched};");
+                    Goto(refNotMatched);
                 }
                 writer.WriteLine();
 
@@ -1497,7 +1518,7 @@ namespace System.Text.RegularExpressions.Generator
                 bool needsEndConditional = postYesDoneLabel != originalDoneLabel || noBranch is not null;
                 if (needsEndConditional)
                 {
-                    writer.WriteLine($"goto {endConditional};");
+                    Goto(endConditional);
                     writer.WriteLine();
                 }
 
@@ -1533,7 +1554,7 @@ namespace System.Text.RegularExpressions.Generator
                 if (hasBacktracking)
                 {
                     // Skip the backtracking section.
-                    writer.WriteLine($"goto {endConditional};");
+                    Goto(endConditional);
                     writer.WriteLine();
 
                     // Backtrack section
@@ -1547,15 +1568,15 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         if (postYesDoneLabel != originalDoneLabel)
                         {
-                            writer.WriteLine($"case 0: goto {postYesDoneLabel};");
+                            CaseGoto("case 0:", postYesDoneLabel);
                         }
 
                         if (postNoDoneLabel != originalDoneLabel)
                         {
-                            writer.WriteLine($"case 1: goto {postNoDoneLabel};");
+                            CaseGoto("case 1:", postNoDoneLabel);
                         }
 
-                        writer.WriteLine($"default: goto {originalDoneLabel};");
+                        CaseGoto("default:", originalDoneLabel);
                     }
                 }
 
@@ -1652,7 +1673,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     writer.WriteLine($"{resumeAt} = 0;");
                 }
-                writer.WriteLine($"goto {endConditional};");
+                Goto(endConditional);
                 writer.WriteLine();
 
                 // After the condition completes unsuccessfully, reset the text positions
@@ -1703,7 +1724,7 @@ namespace System.Text.RegularExpressions.Generator
                 else
                 {
                     // Skip the backtracking section.
-                    writer.WriteLine($"goto {endConditional};");
+                    Goto(endConditional);
                     writer.WriteLine();
 
                     string backtrack = ReserveName("ConditionalExpressionBacktrack");
@@ -1715,15 +1736,15 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         if (postYesDoneLabel != originalDoneLabel)
                         {
-                            writer.WriteLine($"case 0: goto {postYesDoneLabel};");
+                            CaseGoto("case 0:", postYesDoneLabel);
                         }
 
                         if (postNoDoneLabel != originalDoneLabel)
                         {
-                            writer.WriteLine($"case 1: goto {postNoDoneLabel};");
+                            CaseGoto("case 1:", postNoDoneLabel);
                         }
 
-                        writer.WriteLine($"default: goto {originalDoneLabel};");
+                        CaseGoto("default:", originalDoneLabel);
                     }
 
                     MarkLabel(endConditional, emitSemicolon: false);
@@ -1752,7 +1773,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     using (EmitBlock(writer, $"if (!base.IsMatched({uncapnum}))"))
                     {
-                        writer.WriteLine($"goto {doneLabel};");
+                        Goto(doneLabel);
                     }
                     writer.WriteLine();
                 }
@@ -1793,7 +1814,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     // Skip past the backtracking section
                     string end = ReserveName("SkipBacktrack");
-                    writer.WriteLine($"goto {end};");
+                    Goto(end);
                     writer.WriteLine();
 
                     // Emit a backtracking section that restores the capture's state and then jumps to the previous done label
@@ -1805,7 +1826,7 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine($"pos = {startingPos};");
                         SliceInputSpan(writer);
                     }
-                    writer.WriteLine($"goto {doneLabel};");
+                    Goto(doneLabel);
                     writer.WriteLine();
 
                     doneLabel = backtrack;
@@ -1864,7 +1885,7 @@ namespace System.Text.RegularExpressions.Generator
                 // If the generated code ends up here, it matched the lookahead, which actually
                 // means failure for a _negative_ lookahead, so we need to jump to the original done.
                 writer.WriteLine();
-                writer.WriteLine($"goto {originalDoneLabel};");
+                Goto(originalDoneLabel);
                 writer.WriteLine();
 
                 // Failures (success for a negative lookahead) jump here.
@@ -1896,7 +1917,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     // A match failure doesn't need a scope.
                     case RegexNodeKind.Nothing:
-                        writer.WriteLine($"goto {doneLabel};");
+                        Goto(doneLabel);
                         return;
 
                     // Atomic is invisible in the generated source, other than its impact on the targets of jumps
@@ -2102,7 +2123,7 @@ namespace System.Text.RegularExpressions.Generator
                                 writer.WriteLine(prevDescription is not null ? $") // {prevDescription}" : ")");
                                 using (EmitBlock(writer, null))
                                 {
-                                    writer.WriteLine($"goto {doneLabel};");
+                                    Goto(doneLabel);
                                 }
                                 if (i < childCount)
                                 {
@@ -2182,7 +2203,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     using (EmitBlock(writer, emitLengthCheck ? $"if ({SpanLengthCheck(1, offset)} || {expr})" : $"if ({expr})"))
                     {
-                        writer.WriteLine($"goto {doneLabel};");
+                        Goto(doneLabel);
                     }
                 }
 
@@ -2213,7 +2234,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 using (EmitBlock(writer, $"if ({call}(inputSpan, pos{(sliceStaticPos > 0 ? $" + {sliceStaticPos}" : "")}))"))
                 {
-                    writer.WriteLine($"goto {doneLabel};");
+                    Goto(doneLabel);
                 }
             }
 
@@ -2231,14 +2252,14 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             // If we statically know we've already matched part of the regex, there's no way we're at the
                             // beginning or start, as we've already progressed past it.
-                            writer.WriteLine($"goto {doneLabel};");
+                            Goto(doneLabel);
                         }
                         else
                         {
                             additionalDeclarations.Add(node.Kind == RegexNodeKind.Beginning ? "int beginning = base.runtextbeg;" : "int start = base.runtextstart;");
                             using (EmitBlock(writer, node.Kind == RegexNodeKind.Beginning ? "if (pos != beginning)" : "if (pos != start)"))
                             {
-                                writer.WriteLine($"goto {doneLabel};");
+                                Goto(doneLabel);
                             }
                         }
                         break;
@@ -2248,7 +2269,7 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             using (EmitBlock(writer, $"if ({sliceSpan}[{sliceStaticPos - 1}] != '\\n')"))
                             {
-                                writer.WriteLine($"goto {doneLabel};");
+                                Goto(doneLabel);
                             }
                         }
                         else
@@ -2257,7 +2278,7 @@ namespace System.Text.RegularExpressions.Generator
                             additionalDeclarations.Add("int beginning = base.runtextbeg;");
                             using (EmitBlock(writer, $"if (pos > beginning && inputSpan[pos - 1] != '\\n')"))
                             {
-                                writer.WriteLine($"goto {doneLabel};");
+                                Goto(doneLabel);
                             }
                         }
                         break;
@@ -2265,7 +2286,7 @@ namespace System.Text.RegularExpressions.Generator
                     case RegexNodeKind.End:
                         using (EmitBlock(writer, $"if ({IsSliceLengthGreaterThanSliceStaticPos()})"))
                         {
-                            writer.WriteLine($"goto {doneLabel};");
+                            Goto(doneLabel);
                         }
                         break;
 
@@ -2273,14 +2294,14 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine($"if ({sliceSpan}.Length > {sliceStaticPos + 1} || ({IsSliceLengthGreaterThanSliceStaticPos()} && {sliceSpan}[{sliceStaticPos}] != '\\n'))");
                         using (EmitBlock(writer, null))
                         {
-                            writer.WriteLine($"goto {doneLabel};");
+                            Goto(doneLabel);
                         }
                         break;
 
                     case RegexNodeKind.Eol:
                         using (EmitBlock(writer, $"if ({IsSliceLengthGreaterThanSliceStaticPos()} && {sliceSpan}[{sliceStaticPos}] != '\\n')"))
                         {
-                            writer.WriteLine($"goto {doneLabel};");
+                            Goto(doneLabel);
                         }
                         break;
 
@@ -2316,7 +2337,7 @@ namespace System.Text.RegularExpressions.Generator
                         string textSpanIndex = sliceStaticPos > 0 ? $"i + {sliceStaticPos}" : "i";
                         using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"{sliceSpan}[{textSpanIndex}]")} != {Literal(str)}[i])"))
                         {
-                            writer.WriteLine($"goto {doneLabel};");
+                            Goto(doneLabel);
                         }
                     }
                 }
@@ -2325,7 +2346,7 @@ namespace System.Text.RegularExpressions.Generator
                     string sourceSpan = sliceStaticPos > 0 ? $"{sliceSpan}.Slice({sliceStaticPos})" : sliceSpan;
                     using (EmitBlock(writer, $"if (!global::System.MemoryExtensions.StartsWith({sourceSpan}, {Literal(str)}))"))
                     {
-                        writer.WriteLine($"goto {doneLabel};");
+                        Goto(doneLabel);
                     }
                 }
 
@@ -2371,7 +2392,7 @@ namespace System.Text.RegularExpressions.Generator
                 TransferSliceStaticPosToPos();
                 writer.WriteLine($"{endingPos} = pos;");
                 EmitAdd(writer, startingPos, node.M);
-                writer.WriteLine($"goto {endLoop};");
+                Goto(endLoop);
                 writer.WriteLine();
 
                 // Backtracking section. Subsequent failures will jump to here, at which
@@ -2398,7 +2419,7 @@ namespace System.Text.RegularExpressions.Generator
                             _ => $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOfAny(inputSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(literal.Item3)})) < 0)",
                         }))
                     {
-                        writer.WriteLine($"goto {doneLabel};");
+                        Goto(doneLabel);
                     }
                     writer.WriteLine($"{endingPos} += {startingPos};");
                     writer.WriteLine($"pos = {endingPos};");
@@ -2407,7 +2428,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     using (EmitBlock(writer, $"if ({startingPos} >= {endingPos})"))
                     {
-                        writer.WriteLine($"goto {doneLabel};");
+                        Goto(doneLabel);
                     }
                     writer.WriteLine($"pos = --{endingPos};");
                 }
@@ -2484,7 +2505,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Skip the backtracking section for the initial subsequent matching.  We've already matched the
                 // minimum number of iterations, which means we can successfully match with zero additional iterations.
                 string endLoopLabel = ReserveName("LazyLoopEnd");
-                writer.WriteLine($"goto {endLoopLabel};");
+                Goto(endLoopLabel);
                 writer.WriteLine();
 
                 // Backtracking section. Subsequent failures will jump to here.
@@ -2504,7 +2525,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     using (EmitBlock(writer, $"if ({iterationCount} >= {maxIterations})"))
                     {
-                        writer.WriteLine($"goto {doneLabel};");
+                        Goto(doneLabel);
                     }
                     writer.WriteLine($"{iterationCount}++;");
                 }
@@ -2539,7 +2560,7 @@ namespace System.Text.RegularExpressions.Generator
                         });
                     using (EmitBlock(writer, $"if ((uint){startingPos} >= (uint){sliceSpan}.Length || {sliceSpan}[{startingPos}] == {Literal(node.Ch)})"))
                     {
-                        writer.WriteLine($"goto {doneLabel};");
+                        Goto(doneLabel);
                     }
                     writer.WriteLine($"pos += {startingPos};");
                     SliceInputSpan(writer);
@@ -2563,7 +2584,7 @@ namespace System.Text.RegularExpressions.Generator
                         });
                     using (EmitBlock(writer, $"if ({startingPos} < 0)"))
                     {
-                        writer.WriteLine($"goto {doneLabel};");
+                        Goto(doneLabel);
                     }
                     writer.WriteLine($"pos += {startingPos};");
                     SliceInputSpan(writer);
@@ -2603,7 +2624,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     // Skip past the backtracking section
                     string end = ReserveName("SkipBacktrack");
-                    writer.WriteLine($"goto {end};");
+                    Goto(end);
                     writer.WriteLine();
 
                     // Emit a backtracking section that restores the loop's state and then jumps to the previous done label
@@ -2613,7 +2634,7 @@ namespace System.Text.RegularExpressions.Generator
                     Array.Reverse(toPushPopArray);
                     EmitStackPop(toPushPopArray);
 
-                    writer.WriteLine($"goto {doneLabel};");
+                    Goto(doneLabel);
                     writer.WriteLine();
 
                     doneLabel = backtrack;
@@ -2677,7 +2698,7 @@ namespace System.Text.RegularExpressions.Generator
                 // will then bring us back in to do further iterations.
                 if (minIterations == 0)
                 {
-                    writer.WriteLine($"goto {endLoop};");
+                    Goto(endLoop);
                 }
                 writer.WriteLine();
 
@@ -2728,7 +2749,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     using (EmitBlock(writer, $"if ({CountIsLessThan(iterationCount, minIterations)})"))
                     {
-                        writer.WriteLine($"goto {body};");
+                        Goto(body);
                     }
                 }
 
@@ -2741,7 +2762,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // We matched the next iteration.  Jump to the subsequent code.
-                writer.WriteLine($"goto {endLoop};");
+                Goto(endLoop);
                 writer.WriteLine();
 
                 // Now handle what happens when an iteration fails.  We need to reset state to what it was before just that iteration
@@ -2750,7 +2771,7 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine($"{iterationCount}--;");
                 using (EmitBlock(writer, $"if ({iterationCount} < 0)"))
                 {
-                    writer.WriteLine($"goto {originalDoneLabel};");
+                    Goto(originalDoneLabel);
                 }
                 EmitStackPop(sawEmpty, "pos", startingPos);
                 if (expressionHasCaptures)
@@ -2760,15 +2781,15 @@ namespace System.Text.RegularExpressions.Generator
                 SliceInputSpan(writer);
                 if (doneLabel == originalDoneLabel)
                 {
-                    writer.WriteLine($"goto {originalDoneLabel};");
+                    Goto(originalDoneLabel);
                 }
                 else
                 {
                     using (EmitBlock(writer, $"if ({iterationCount} == 0)"))
                     {
-                        writer.WriteLine($"goto {originalDoneLabel};");
+                        Goto(originalDoneLabel);
                     }
-                    writer.WriteLine($"goto {doneLabel};");
+                    Goto(doneLabel);
                 }
                 writer.WriteLine();
 
@@ -2780,7 +2801,7 @@ namespace System.Text.RegularExpressions.Generator
                     EmitStackPush(startingPos, iterationCount, sawEmpty);
 
                     string skipBacktrack = ReserveName("SkipBacktrack");
-                    writer.WriteLine($"goto {skipBacktrack};");
+                    Goto(skipBacktrack);
                     writer.WriteLine();
 
                     // Emit a backtracking section that restores the capture's state and then jumps to the previous done label
@@ -2793,18 +2814,18 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         using (EmitBlock(writer, $"if ({sawEmpty} == 0)"))
                         {
-                            writer.WriteLine($"goto {body};");
+                            Goto(body);
                         }
                     }
                     else
                     {
                         using (EmitBlock(writer, $"if ({CountIsLessThan(iterationCount, maxIterations)} && {sawEmpty} == 0)"))
                         {
-                            writer.WriteLine($"goto {body};");
+                            Goto(body);
                         }
                     }
 
-                    writer.WriteLine($"goto {doneLabel};");
+                    Goto(doneLabel);
                     writer.WriteLine();
 
                     doneLabel = backtrack;
@@ -2863,7 +2884,7 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine(")");
                     using (EmitBlock(writer, null))
                     {
-                        writer.WriteLine($"goto {doneLabel};");
+                        Goto(doneLabel);
                     }
                 }
                 else
@@ -3023,7 +3044,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     using (EmitBlock(writer, $"if ({CountIsLessThan(iterationLocal, minIterations)})"))
                     {
-                        writer.WriteLine($"goto {doneLabel};");
+                        Goto(doneLabel);
                     }
                     writer.WriteLine();
                 }
@@ -3165,11 +3186,11 @@ namespace System.Text.RegularExpressions.Generator
                     (false, false) => $"if (pos != {startingPos} && {CountIsLessThan(iterationCount, maxIterations)})",
                 }))
                 {
-                    writer.WriteLine($"goto {body};");
+                    Goto(body);
                 }
 
                 // We've matched as many iterations as we can with this configuration.  Jump to what comes after the loop.
-                writer.WriteLine($"goto {endLoop};");
+                Goto(endLoop);
                 writer.WriteLine();
 
                 // Now handle what happens when an iteration fails, which could be an initial failure or it
@@ -3179,7 +3200,7 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine($"{iterationCount}--;");
                 using (EmitBlock(writer, $"if ({iterationCount} < 0)"))
                 {
-                    writer.WriteLine($"goto {originalDoneLabel};");
+                    Goto(originalDoneLabel);
                 }
                 EmitStackPop("pos", startingPos);
                 if (expressionHasCaptures)
@@ -3192,12 +3213,12 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     using (EmitBlock(writer, $"if ({iterationCount} == 0)"))
                     {
-                        writer.WriteLine($"goto {originalDoneLabel};");
+                        Goto(originalDoneLabel);
                     }
 
                     using (EmitBlock(writer, $"if ({CountIsLessThan(iterationCount, minIterations)})"))
                     {
-                        writer.WriteLine($"goto {(childBacktracks ? doneLabel : originalDoneLabel)};");
+                        Goto(childBacktracks ? doneLabel : originalDoneLabel);
                     }
                 }
 
@@ -3210,16 +3231,16 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     if (childBacktracks)
                     {
-                        writer.WriteLine($"goto {endLoop};");
+                        Goto(endLoop);
                         writer.WriteLine();
 
                         string backtrack = ReserveName("LoopBacktrack");
                         MarkLabel(backtrack, emitSemicolon: false);
                         using (EmitBlock(writer, $"if ({iterationCount} == 0)"))
                         {
-                            writer.WriteLine($"goto {originalDoneLabel};");
+                            Goto(originalDoneLabel);
                         }
-                        writer.WriteLine($"goto {doneLabel};");
+                        Goto(doneLabel);
                         doneLabel = backtrack;
                     }
 
@@ -3234,7 +3255,7 @@ namespace System.Text.RegularExpressions.Generator
 
                         // Skip past the backtracking section
                         string end = ReserveName("SkipBacktrack");
-                        writer.WriteLine($"goto {end};");
+                        Goto(end);
                         writer.WriteLine();
 
                         // Emit a backtracking section that restores the loop's state and then jumps to the previous done label
@@ -3242,7 +3263,7 @@ namespace System.Text.RegularExpressions.Generator
                         MarkLabel(backtrack, emitSemicolon: false);
                         EmitStackPop(iterationCount, startingPos);
 
-                        writer.WriteLine($"goto {doneLabel};");
+                        Goto(doneLabel);
                         writer.WriteLine();
 
                         doneLabel = backtrack;
@@ -3394,7 +3415,7 @@ namespace System.Text.RegularExpressions.Generator
             }
         }
 
-        private static bool EmitInitializeCultureForGoIfNecessary(IndentedTextWriter writer, RegexMethod rm)
+        private static bool EmitInitializeCultureForTryMatchAtCurrentPositionIfNecessary(IndentedTextWriter writer, RegexMethod rm)
         {
             if (((RegexOptions)rm.Options & RegexOptions.CultureInvariant) == 0)
             {
