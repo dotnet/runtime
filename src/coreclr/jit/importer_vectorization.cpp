@@ -277,7 +277,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(GenTreeLclVar* data, WCHAR* cns,
         //
         UINT32   value1     = MAKEINT32(cns[0], cns[1]);
         UINT32   value2     = MAKEINT32(cns[1], cns[2]);
-        GenTree* firstIndir = impCreateCompareInd(this, data, TYP_USHORT, dataOffset, value1);
+        GenTree* firstIndir = impCreateCompareInd(this, data, TYP_INT, dataOffset, value1);
         GenTree* secondIndir =
             impCreateCompareInd(this, (GenTreeLclVar*)gtClone(data), TYP_INT, dataOffset + sizeof(USHORT), value2);
 
@@ -348,9 +348,6 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVar* data,
                                             int            dataOffset)
 {
     assert(len >= 0);
-
-    // lengthFld must be cheap to clone
-    assert(lengthFld->OperIs(GT_FIELD, GT_LCL_VAR));
 
     if (compCurBB->isRunRarely())
     {
@@ -577,9 +574,10 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
     int      strLenOffset = OFFSETOF__CORINFO_String__stringLen;
     GenTree* lenOffset    = gtNewIconNode(strLenOffset, TYP_I_IMPL);
     GenTree* lenNode      = gtNewIndir(TYP_INT, gtNewOperNode(GT_ADD, TYP_BYREF, varStrLcl, lenOffset));
+    varStrLcl             = (GenTreeLclVar*)gtClone(varStrLcl);
 
-    GenTree* unrolled = impExpandHalfConstEquals((GenTreeLclVar*)gtClone(varStrLcl), lenNode, needsNullcheck,
-                                                 startsWith, (WCHAR*)str, cnsLength, strLenOffset + sizeof(int));
+    GenTree* unrolled = impExpandHalfConstEquals(varStrLcl, lenNode, needsNullcheck, startsWith, (WCHAR*)str,
+                                                 cnsLength, strLenOffset + sizeof(int));
     if (unrolled != nullptr)
     {
         impAssignTempGen(varStrTmp, varStr);
