@@ -89,6 +89,40 @@ namespace IntelHardwareIntrinsicTest
                     }
                 }
 
+                using (TestTable<nint> intTable = new TestTable<nint>(new nint[2] { 1, -5 }, new nint[2]))
+                {
+                    var vf = Sse3.LoadDquVector128((nint*)(intTable.inArrayPtr));
+                    Unsafe.Write(intTable.outArrayPtr, vf);
+
+                    if (!intTable.CheckResult((x, y) => x == y))
+                    {
+                        Console.WriteLine("Sse3 LoadDquVector128 failed on nint:");
+                        foreach (var item in intTable.outArray)
+                        {
+                            Console.Write(item + ", ");
+                        }
+                        Console.WriteLine();
+                        testResult = Fail;
+                    }
+                }
+
+                using (TestTable<nuint> intTable = new TestTable<nuint>(new nuint[2] { 1, 5 }, new nuint[2]))
+                {
+                    var vf = Sse3.LoadDquVector128((nuint*)(intTable.inArrayPtr));
+                    Unsafe.Write(intTable.outArrayPtr, vf);
+
+                    if (!intTable.CheckResult((x, y) => x == y))
+                    {
+                        Console.WriteLine("Sse3 LoadDquVector128 failed on nuint:");
+                        foreach (var item in intTable.outArray)
+                        {
+                            Console.Write(item + ", ");
+                        }
+                        Console.WriteLine();
+                        testResult = Fail;
+                    }
+                }
+
                 using (TestTable<short> intTable = new TestTable<short>(new short[8] { 1, -5, 100, 0, 1, 2, 3, 4 }, new short[8]))
                 {
                     var vf = Sse3.LoadDquVector128((short*)(intTable.inArrayPtr));
