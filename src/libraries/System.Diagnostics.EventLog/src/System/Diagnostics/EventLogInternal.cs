@@ -109,11 +109,8 @@ namespace System.Diagnostics
         {
         }
 
-        public EventLogInternal(string logName, string machineName, string source, EventLog parent)
+        public EventLogInternal(string logName!!, string machineName, string source, EventLog parent)
         {
-            //look out for invalid log names
-            if (logName == null)
-                throw new ArgumentNullException(nameof(logName));
             if (!ValidLogName(logName, true))
                 throw new ArgumentException(SR.BadLogName);
 
@@ -1314,10 +1311,8 @@ namespace System.Diagnostics
             InternalWriteEvent((uint)eventID, (ushort)category, type, new string[] { message }, rawData, currentMachineName);
         }
 
-        public void WriteEvent(EventInstance instance, byte[] data, params object[] values)
+        public void WriteEvent(EventInstance instance!!, byte[] data, params object[] values)
         {
-            if (instance == null)
-                throw new ArgumentNullException(nameof(instance));
             if (Source.Length == 0)
                 throw new ArgumentException(SR.NeedSourceToWrite);
 

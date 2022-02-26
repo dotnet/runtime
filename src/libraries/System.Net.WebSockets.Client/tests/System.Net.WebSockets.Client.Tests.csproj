@@ -8,7 +8,7 @@
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <!-- This doesn't run on V8 because it lacks websocket support -->
     <Scenario>WasmTestOnBrowser</Scenario>
-    <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
+    <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
@@ -18,21 +18,8 @@
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="package.json" />
     <WasmExtraFilesToDeploy Include="package-lock.json" />
-  </ItemGroup>
 
-  <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-    <!-- WebSocket tests use self-signed certificates for wss protocol that are refused by NodeJS -->
-    <SetScriptCommands Include="if [[ &quot;$SCENARIO&quot; == &quot;WasmTestOnNodeJs&quot; || &quot;$SCENARIO&quot; == &quot;wasmtestonnodejs&quot; ]]; then export NODE_TLS_REJECT_UNAUTHORIZED=0; fi" />
-    <SetScriptCommands Include="if [[ &quot;$SCENARIO&quot; == &quot;WasmTestOnNodeJs&quot; || &quot;$SCENARIO&quot; == &quot;wasmtestonnodejs&quot; ]]; then export WASM_XHARNESS_MONO_ARGS=--setenv=NPM_MODULES=ws:WebSocket; fi" />
-    <!-- Restore NPM packages -->
-    <RunScriptCommands Include="if [[ &quot;$SCENARIO&quot; == &quot;WasmTestOnNodeJs&quot; || &quot;$SCENARIO&quot; == &quot;wasmtestonnodejs&quot; ]]; then npm ci; fi" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-    <!-- WebSocket tests use self-signed certificates for wss protocol that are refused by NodeJS -->
-    <SetScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( set &quot;NODE_TLS_REJECT_UNAUTHORIZED=0&quot; )" />
-    <SetScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( set &quot;WASM_XHARNESS_MONO_ARGS=--setenv=NPM_MODULES=ws:WebSocket&quot; )" />
-    <!-- Restore NPM packages -->
-    <RunScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( call npm ci )" />
+    <NodeNpmModule Include="ws" Alias="WebSocket" />
   </ItemGroup>
 
   <!-- Browser specific files -->

@@ -31,21 +31,15 @@ namespace System.Security.Cryptography.Xml
         }
 
         // A helper function that determines if a namespace node is a committed attribute
-        internal static bool IsCommittedNamespace(XmlElement element, string prefix, string value)
+        internal static bool IsCommittedNamespace(XmlElement element!!, string prefix, string value)
         {
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
-
             string name = ((prefix.Length > 0) ? "xmlns:" + prefix : "xmlns");
             if (element.HasAttribute(name) && element.GetAttribute(name) == value) return true;
             return false;
         }
 
-        internal static bool IsRedundantNamespace(XmlElement element, string prefix, string value)
+        internal static bool IsRedundantNamespace(XmlElement element!!, string prefix, string value)
         {
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
-
             XmlNode ancestorNode = ((XmlNode)element).ParentNode;
             while (ancestorNode != null)
             {
@@ -196,11 +190,8 @@ namespace System.Security.Cryptography.Xml
             return settings;
         }
 
-        internal static XmlDocument PreProcessDocumentInput(XmlDocument document, XmlResolver xmlResolver, string baseUri)
+        internal static XmlDocument PreProcessDocumentInput(XmlDocument document!!, XmlResolver xmlResolver, string baseUri)
         {
-            if (document == null)
-                throw new ArgumentNullException(nameof(document));
-
             MyXmlDocument doc = new MyXmlDocument();
             doc.PreserveWhitespace = document.PreserveWhitespace;
 
@@ -218,11 +209,8 @@ namespace System.Security.Cryptography.Xml
             return doc;
         }
 
-        internal static XmlDocument PreProcessElementInput(XmlElement elem, XmlResolver xmlResolver, string baseUri)
+        internal static XmlDocument PreProcessElementInput(XmlElement elem!!, XmlResolver xmlResolver, string baseUri)
         {
-            if (elem == null)
-                throw new ArgumentNullException(nameof(elem));
-
             MyXmlDocument doc = new MyXmlDocument();
             doc.PreserveWhitespace = true;
             // Normalize the document

@@ -88,11 +88,21 @@ namespace System.Reflection
         {
             get
             {
-                var codeBase = GetCodeBase();
+                if (IsDynamic)
+                {
+                    throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
+                }
+
+                string? codeBase = GetCodeBase();
                 if (codeBase is null)
                 {
-                    // Not supported if the assembly was loaded from memory
+                    // Not supported if the assembly was loaded from single-file bundle.
                     throw new NotSupportedException(SR.NotSupported_CodeBase);
+                }
+                if (codeBase.Length == 0)
+                {
+                    // For backward compatibility, return CoreLib codebase for assemblies loaded from memory.
+                    codeBase = typeof(object).Assembly.CodeBase;
                 }
                 return codeBase;
             }
@@ -164,7 +174,7 @@ namespace System.Reflection
             }
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetType", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetType", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void GetType(QCallAssembly assembly,
                                             string name,
                                             bool throwOnError,
@@ -174,12 +184,10 @@ namespace System.Reflection
                                             ObjectHandleOnStack assemblyLoadContext);
 
         [RequiresUnreferencedCode("Types might be removed")]
-        public override Type? GetType(string name, bool throwOnError, bool ignoreCase)
+        public override Type? GetType(
+            string name!!, // throw on null strings regardless of the value of "throwOnError"
+            bool throwOnError, bool ignoreCase)
         {
-            // throw on null strings regardless of the value of "throwOnError"
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             RuntimeType? type = null;
             object? keepAlive = null;
             AssemblyLoadContext? assemblyLoadContextStack = AssemblyLoadContext.CurrentContextualReflectionContext;
@@ -244,7 +252,7 @@ namespace System.Reflection
         }
 
         // GetResource will return a pointer to the resources in memory.
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetResource", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetResource", StringMarshalling = StringMarshalling.Utf16)]
         private static unsafe partial byte* GetResource(QCallAssembly assembly,
                                                        string resourceName,
                                                        out uint length);
@@ -252,8 +260,8 @@ namespace System.Reflection
         // Load a resource based on the NameSpace of the type.
         public override Stream? GetManifestResourceStream(Type type, string name)
         {
-            if (type == null && name == null)
-                throw new ArgumentNullException(nameof(type));
+            if (name == null)
+                ArgumentNullException.ThrowIfNull(type);
 
             string? nameSpace = type?.Namespace;
 
@@ -294,22 +302,16 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        public override bool IsDefined(Type attributeType, bool inherit)
+        public override bool IsDefined(Type attributeType!!, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
@@ -355,7 +357,7 @@ namespace System.Reflection
 
         // Returns the module in this assembly with name 'name'
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetModule", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetModule", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void GetModule(QCallAssembly assembly, string name, ObjectHandleOnStack retModule);
 
         public override Module? GetModule(string name)
@@ -428,7 +430,7 @@ namespace System.Reflection
             return GetReferencedAssemblies(GetNativeHandle());
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetManifestResourceInfo", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetManifestResourceInfo", StringMarshalling = StringMarshalling.Utf16)]
         private static partial int GetManifestResourceInfo(QCallAssembly assembly,
                                                           string resourceName,
                                                           ObjectHandleOnStack assemblyRef,
@@ -566,11 +568,8 @@ namespace System.Reflection
         }
 
         // Useful for binding to a very specific version of a satellite assembly
-        public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version)
+        public override Assembly GetSatelliteAssembly(CultureInfo culture!!, Version? version)
         {
-            if (culture == null)
-                throw new ArgumentNullException(nameof(culture));
-
             return InternalGetSatelliteAssembly(culture, version, throwOnFileNotFound: true)!;
         }
 

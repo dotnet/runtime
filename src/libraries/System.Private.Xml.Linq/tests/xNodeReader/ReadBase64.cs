@@ -482,12 +482,15 @@ namespace CoreXml.Test.XLinq
                     string base64str = Convert.ToBase64String(bits);
 
                     string fileName = "bug105376_" + Variation.Params[0].ToString() + ".xml";
-                    FilePathUtil.addStream(fileName, new MemoryStream());
-                    StreamWriter sw = new StreamWriter(FilePathUtil.getStream(fileName));
-                    sw.Write("<root><base64>");
-                    sw.Write(base64str);
-                    sw.Write("</base64></root>");
-                    sw.Flush();
+                    var ms = new MemoryStream();
+                    {
+                        using var sw = new StreamWriter(ms, leaveOpen: true);
+                        sw.Write("<root><base64>");
+                        sw.Write(base64str);
+                        sw.Write("</base64></root>");
+                    }
+
+                    FilePathUtil.addStream(fileName, ms);
 
                     XmlReader DataReader = GetReader(fileName);
 
@@ -943,14 +946,17 @@ namespace CoreXml.Test.XLinq
                     string base64str = Convert.ToBase64String(bits);
 
                     string fileName = "bug105376_" + Variation.Params[0].ToString() + ".xml";
-                    FilePathUtil.addStream(fileName, new MemoryStream());
-                    StreamWriter sw = new StreamWriter(FilePathUtil.getStream(fileName));
-                    sw.Write("<root><base64>");
-                    sw.Write(base64str);
-                    sw.Write("</base64></root>");
-                    sw.Flush();
+                    var ms = new MemoryStream();
+                    {
+                        using var sw = new StreamWriter(ms, leaveOpen: true);
+                        sw.Write("<root><base64>");
+                        sw.Write(base64str);
+                        sw.Write("</base64></root>");
+                    }
 
-                    XmlReader DataReader = GetReader(fileName);
+                    FilePathUtil.addStream(fileName, ms);
+
+                    using XmlReader DataReader = GetReader(fileName);
 
                     int SIZE = (totalfilesize - 30);
                     int SIZE64 = SIZE * 3 / 4;
@@ -974,8 +980,6 @@ namespace CoreXml.Test.XLinq
                     readSize = 0;
                     currentSize = DataReader.ReadElementContentAsBase64(base64, startPos, readSize);
                     TestLog.Compare(currentSize, 0, "Read other than Zero Bytes");
-
-                    DataReader.Dispose();
                 }
 
                 //[Variation("SubtreeReader inserted attributes don't work with ReadContentAsBase64")]

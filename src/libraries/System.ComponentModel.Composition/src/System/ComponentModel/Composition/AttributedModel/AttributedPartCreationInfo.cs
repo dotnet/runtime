@@ -24,13 +24,8 @@ namespace System.ComponentModel.Composition.AttributedModel
         private IEnumerable<ImportDefinition>? _imports;
         private HashSet<string>? _contractNamesOnNonInterfaces;
 
-        public AttributedPartCreationInfo(Type type, PartCreationPolicyAttribute? partCreationPolicy, bool ignoreConstructorImports, ICompositionElement? origin)
+        public AttributedPartCreationInfo(Type type!!, PartCreationPolicyAttribute? partCreationPolicy, bool ignoreConstructorImports, ICompositionElement? origin)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
             _type = type;
             _ignoreConstructorImports = ignoreConstructorImports;
             _partCreationPolicy = partCreationPolicy;
@@ -187,13 +182,8 @@ namespace System.ComponentModel.Composition.AttributedModel
             }
         }
 
-        private static ConstructorInfo? SelectPartConstructor(Type type)
+        private static ConstructorInfo? SelectPartConstructor(Type type!!)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
             if (type.IsAbstract)
             {
                 return null;

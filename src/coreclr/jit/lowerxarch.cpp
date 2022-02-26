@@ -600,31 +600,41 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     // TODO-X86-CQ: The helper call either is not supported on x86 or required more work
     // (I don't know which).
 
-    if (size <= CPBLK_UNROLL_LIMIT && !layout->HasGCPtr())
+    if (!layout->HasGCPtr())
     {
 #ifdef TARGET_X86
         if (size < XMM_REGSIZE_BYTES)
         {
+            // Codegen for "Kind::Push" will always load bytes in TARGET_POINTER_SIZE
+            // chunks. As such, the correctness of this code depends on the fact that
+            // morph will copy any "mis-sized" (too small) non-local OBJs into a temp,
+            // thus preventing any possible out-of-bounds memory reads.
+            assert(((layout->GetSize() % TARGET_POINTER_SIZE) == 0) || src->OperIsLocalRead() ||
+                   (src->OperIsIndir() && src->AsIndir()->Addr()->IsLocalAddrExpr()));
             putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
         }
         else
 #endif // TARGET_X86
+            if (size <= CPBLK_UNROLL_LIMIT)
         {
             putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Unroll;
         }
+        else
+        {
+            putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::RepInstr;
+        }
     }
-#ifdef TARGET_X86
-    else if (layout->HasGCPtr())
+    else // There are GC pointers.
     {
+#ifdef TARGET_X86
         // On x86, we must use `push` to store GC references to the stack in order for the emitter to properly update
         // the function's GC info. These `putargstk` nodes will generate a sequence of `push` instructions.
         putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
+#else  // !TARGET_X86
+        putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::PartialRepInstr;
+#endif // !TARGET_X86
     }
-#endif // TARGET_X86
-    else
-    {
-        putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::RepInstr;
-    }
+
     // Always mark the OBJ and ADDR as contained trees by the putarg_stk. The codegen will deal with this tree.
     MakeSrcContained(putArgStk, src);
     if (haveLocalAddr)
@@ -2512,7 +2522,7 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
 
     assert(0 <= imm8 && imm8 < count);
 
-    if (IsContainableMemoryOp(op1))
+    if (IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1))
     {
         // We will specially handle GetElement in codegen when op1 is already in memory
         op2->AsIntCon()->SetIconValue(imm8);
@@ -4723,7 +4733,7 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 #endif
 
     // divisor can be an r/m, but the memory indirection must be of the same size as the divide
-    if (IsContainableMemoryOp(divisor) && (divisor->TypeGet() == node->TypeGet()))
+    if (IsContainableMemoryOp(divisor) && (divisor->TypeGet() == node->TypeGet()) && IsSafeToContainMem(node, divisor))
     {
         MakeSrcContained(node, divisor);
     }
@@ -4853,7 +4863,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
         // U8 -> R8 conversion requires that the operand be in a register.
         if (srcType != TYP_ULONG)
         {
-            if (IsContainableMemoryOp(castOp) || castOp->IsCnsNonZeroFltOrDbl())
+            if ((IsContainableMemoryOp(castOp) && IsSafeToContainMem(node, castOp)) || castOp->IsCnsNonZeroFltOrDbl())
             {
                 MakeSrcContained(node, castOp);
             }
@@ -4949,7 +4959,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         // we can treat the MemoryOp as contained.
         if (op1Type == op2Type)
         {
-            if (IsContainableMemoryOp(op1))
+            if (IsContainableMemoryOp(op1) && IsSafeToContainMem(cmp, op1))
             {
                 MakeSrcContained(cmp, op1);
             }
@@ -5250,7 +5260,7 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 
     if (node->GetIndex()->TypeGet() == node->GetArrayLength()->TypeGet())
     {
-        if (IsContainableMemoryOp(other))
+        if (IsContainableMemoryOp(other) && IsSafeToContainMem(node, other))
         {
             MakeSrcContained(node, other);
         }
@@ -5275,11 +5285,12 @@ void Lowering::ContainCheckIntrinsic(GenTreeOp* node)
     NamedIntrinsic intrinsicName = node->AsIntrinsic()->gtIntrinsicName;
 
     if ((intrinsicName == NI_System_Math_Ceiling) || (intrinsicName == NI_System_Math_Floor) ||
-        (intrinsicName == NI_System_Math_Round) || (intrinsicName == NI_System_Math_Sqrt))
+        (intrinsicName == NI_System_Math_Truncate) || (intrinsicName == NI_System_Math_Round) ||
+        (intrinsicName == NI_System_Math_Sqrt))
     {
         GenTree* op1 = node->gtGetOp1();
 
-        if (IsContainableMemoryOp(op1) || op1->IsCnsNonZeroFltOrDbl())
+        if ((IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1)) || op1->IsCnsNonZeroFltOrDbl())
         {
             MakeSrcContained(node, op1);
         }
@@ -5365,6 +5376,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 //     [In/Out] pNode               - The node to check and potentially replace with the containable node
 //     [Out]    supportsRegOptional - On return, this will be true if 'containingNode' supports regOptional operands
 //     otherwise, false.
+//     [In]     transparentParentNode - optional "transparent" intrinsic parent like CreateScalarUnsafe
 //
 // Return Value:
 //    true if 'node' is a containable by containingNode; otherwise, false.
@@ -5377,7 +5389,8 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 //
 bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode,
                                               GenTree**           pNode,
-                                              bool*               supportsRegOptional)
+                                              bool*               supportsRegOptional,
+                                              GenTreeHWIntrinsic* transparentParentNode)
 {
     assert(containingNode != nullptr);
     assert((pNode != nullptr) && (*pNode != nullptr));
@@ -5800,7 +5813,32 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
 
     if (!node->OperIsHWIntrinsic())
     {
-        return supportsGeneralLoads && (IsContainableMemoryOp(node) || node->IsCnsNonZeroFltOrDbl());
+        bool canBeContained = false;
+
+        if (supportsGeneralLoads)
+        {
+            if (IsContainableMemoryOp(node))
+            {
+                // Code motion safety checks
+                //
+                if (transparentParentNode != nullptr)
+                {
+                    canBeContained = IsSafeToContainMem(containingNode, transparentParentNode, node);
+                }
+                else
+                {
+                    canBeContained = IsSafeToContainMem(containingNode, node);
+                }
+            }
+            else if (node->IsCnsNonZeroFltOrDbl())
+            {
+                // Always safe.
+                //
+                canBeContained = true;
+            }
+        }
+
+        return canBeContained;
     }
 
     // TODO-XArch: Update this to be table driven, if possible.
@@ -5821,7 +5859,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
             GenTree* op1                    = hwintrinsic->Op(1);
             bool     op1SupportsRegOptional = false;
 
-            if (!TryGetContainableHWIntrinsicOp(containingNode, &op1, &op1SupportsRegOptional))
+            if (!TryGetContainableHWIntrinsicOp(containingNode, &op1, &op1SupportsRegOptional, hwintrinsic))
             {
                 return false;
             }
@@ -6287,7 +6325,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 MakeSrcContained(node, op2);
                             }
 
-                            if (IsContainableMemoryOp(op1))
+                            if (IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1))
                             {
                                 MakeSrcContained(node, op1);
 

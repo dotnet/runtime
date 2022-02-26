@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -16,9 +17,9 @@ namespace Microsoft.Extensions.Caching.Memory
         // which typically is not using expiration tokens or callbacks
         private sealed class CacheEntryTokens
         {
-            private List<IChangeToken> _expirationTokens;
-            private List<IDisposable> _expirationTokenRegistrations;
-            private List<PostEvictionCallbackRegistration> _postEvictionCallbacks; // this is not really related to tokens, but was moved here to shrink typical CacheEntry size
+            private List<IChangeToken>? _expirationTokens;
+            private List<IDisposable>? _expirationTokenRegistrations;
+            private List<PostEvictionCallbackRegistration>? _postEvictionCallbacks; // this is not really related to tokens, but was moved here to shrink typical CacheEntry size
 
             internal List<IChangeToken> ExpirationTokens => _expirationTokens ??= new List<IChangeToken>();
             internal List<PostEvictionCallbackRegistration> PostEvictionCallbacks => _postEvictionCallbacks ??= new List<PostEvictionCallbackRegistration>();
@@ -35,7 +36,7 @@ namespace Microsoft.Extensions.Caching.Memory
                             if (expirationToken.ActiveChangeCallbacks)
                             {
                                 _expirationTokenRegistrations ??= new List<IDisposable>(1);
-                                IDisposable registration = expirationToken.RegisterChangeCallback(ExpirationCallback, cacheEntry);
+                                IDisposable registration = expirationToken.RegisterChangeCallback((Action<object?>)ExpirationCallback, cacheEntry);
                                 _expirationTokenRegistrations.Add(registration);
                             }
                         }
@@ -87,7 +88,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     lock (this)
                     {
-                        List<IDisposable> registrations = _expirationTokenRegistrations;
+                        List<IDisposable>? registrations = _expirationTokenRegistrations;
                         if (registrations != null)
                         {
                             _expirationTokenRegistrations = null;
@@ -105,14 +106,15 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 if (_postEvictionCallbacks != null)
                 {
-                    Task.Factory.StartNew(state => InvokeCallbacks((CacheEntry)state), cacheEntry,
+                    Task.Factory.StartNew(state => InvokeCallbacks((CacheEntry)state!), cacheEntry,
                         CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
                 }
             }
 
             private static void InvokeCallbacks(CacheEntry entry)
             {
-                List<PostEvictionCallbackRegistration> callbackRegistrations = Interlocked.Exchange(ref entry._tokens._postEvictionCallbacks, null);
+                Debug.Assert(entry._tokens != null);
+                List<PostEvictionCallbackRegistration>? callbackRegistrations = Interlocked.Exchange(ref entry._tokens._postEvictionCallbacks, null);
 
                 if (callbackRegistrations == null)
                 {

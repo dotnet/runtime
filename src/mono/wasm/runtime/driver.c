@@ -9,11 +9,15 @@
 #include <dlfcn.h>
 #include <sys/stat.h>
 
+#include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/class.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/image.h>
+#include <mono/metadata/loader.h>
 #include <mono/metadata/mono-gc.h>
+#include <mono/metadata/object.h>
 // FIXME: unavailable in emscripten
 // #include <mono/metadata/gc-internals.h>
 
@@ -1166,3 +1170,15 @@ EMSCRIPTEN_KEEPALIVE char *
 mono_wasm_get_type_aqn (MonoType * typePtr) {
 	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
 }
+
+#ifdef ENABLE_AOT_PROFILER
+
+void mono_profiler_init_aot (const char *desc);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_load_profiler_aot (const char *desc)
+{
+	mono_profiler_init_aot (desc);
+}
+
+#endif

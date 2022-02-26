@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Tests
@@ -91,6 +92,73 @@ namespace System.Tests
         public static void GetUnderlyingType_NullType_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("nullableType", () => Nullable.GetUnderlyingType((Type)null));
+        }
+
+        [Fact]
+        public static void GetValueRefOrDefaultRef_WithValue()
+        {
+            static void Test<T>(T before, T after)
+                where T : struct
+            {
+                T? nullable = before;
+                ref readonly T reference = ref Nullable.GetValueRefOrDefaultRef(nullable);
+
+                Assert.Equal(before, nullable!.Value);
+
+                Unsafe.AsRef<T>(reference) = after;
+
+                Assert.Equal(after, nullable.Value);
+            }
+
+            Test((byte)0, (byte)42);
+            Test(0, 42);
+            Test(1.3f, 3.14f);
+            Test(0.555, 8.49);
+            Test(Guid.NewGuid(), Guid.NewGuid());
+        }
+
+        [Fact]
+        public static void GetValueRefOrDefaultRef_WithDefault()
+        {
+            static void Test<T>()
+                where T : struct
+            {
+                T? nullable = null;
+                ref readonly T reference = ref Nullable.GetValueRefOrDefaultRef(nullable);
+
+                Assert.Equal(nullable!.GetValueOrDefault(), reference);
+            }
+
+            Test<byte>();
+            Test<int>();
+            Test<float>();
+            Test<double>();
+            Test<Guid>();
+        }
+
+        [Fact]
+        public static void GetValueRefOrDefaultRef_UnsafeWriteToNullMaintainsExpectedBehavior()
+        {
+            static void Test<T>(T after)
+               where T : struct
+            {
+                T? nullable = null;
+                ref readonly T reference = ref Nullable.GetValueRefOrDefaultRef(nullable);
+
+                Unsafe.AsRef<T>(reference) = after;
+
+                Assert.Equal(after, nullable.GetValueOrDefault()); // GetValueOrDefault() unconditionally returns the field
+                Assert.False(nullable.HasValue);
+                Assert.Equal(0, nullable.GetHashCode()); // GetHashCode() returns 0 if HasValue is false, without reading the field
+                Assert.Throws<InvalidOperationException>(() => nullable.Value); // Accessing the value should still throw despite the write
+                Assert.Throws<InvalidOperationException>(() => (T)nullable);
+            }
+
+            Test((byte)42);
+            Test(42);
+            Test(3.14f);
+            Test(8.49);
+            Test(Guid.NewGuid());
         }
 
         public static IEnumerable<object[]> Compare_Equals_TestData()

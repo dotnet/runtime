@@ -24,56 +24,55 @@ namespace System.Text.RegularExpressions.Tests
                 // Stress
                 yield return new object[] { engine, ".", new string('a', 1000), "b", RegexOptions.None, 1000, 0, new string('b', 1000) };
 
-                if (!RegexHelpers.IsNonBacktracking(engine))
-                {
-                    // Undefined groups
-                    yield return new object[] { engine, @"(?<256>cat)\s*(?<512>dog)", "slkfjsdcat dogkljeah", "STARTcat$2048$1024dogEND", RegexOptions.None, 20, 0, "slkfjsdSTARTcat$2048$1024dogENDkljeah" };
-                    yield return new object[] { engine, @"(?<cat>cat)\s*(?<dog>dog)", "slkfjsdcat dogkljeah", "START${catTWO}dogcat${dogTWO}END", RegexOptions.None, 20, 0, "slkfjsdSTART${catTWO}dogcat${dogTWO}ENDkljeah" };
+                // Undefined groups
+                yield return new object[] { engine, @"(?<256>cat)\s*(?<512>dog)", "slkfjsdcat dogkljeah", "STARTcat$2048$1024dogEND", RegexOptions.None, 20, 0, "slkfjsdSTARTcat$2048$1024dogENDkljeah" };
+                yield return new object[] { engine, @"(?<cat>cat)\s*(?<dog>dog)", "slkfjsdcat dogkljeah", "START${catTWO}dogcat${dogTWO}END", RegexOptions.None, 20, 0, "slkfjsdSTART${catTWO}dogcat${dogTWO}ENDkljeah" };
 
-                    // Replace with group numbers
-                    yield return new object[] { engine, "([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z])))))))))))))))", "abcdefghiklmnop", "$15", RegexOptions.None, 15, 0, "p" };
-                    yield return new object[] { engine, "([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z])))))))))))))))", "abcdefghiklmnop", "$3", RegexOptions.None, 15, 0, "cdefghiklmnop" };
-                    yield return new object[] { engine, @"D\.(.+)", "D.Bau", "David $1", RegexOptions.None, 5, 0, "David Bau" };
+                // Replace with group numbers
+                yield return new object[] { engine, "([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z])))))))))))))))", "abcdefghiklmnop", "$15", RegexOptions.None, 15, 0, "p" };
+                yield return new object[] { engine, "([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z])))))))))))))))", "abcdefghiklmnop", "$3", RegexOptions.None, 15, 0, "cdefghiklmnop" };
+                yield return new object[] { engine, @"D\.(.+)", "D.Bau", "David $1", RegexOptions.None, 5, 0, "David Bau" };
 
-                    // Stress
-                    string pattern = string.Concat(Enumerable.Repeat("([a-z]", 1000).Concat(Enumerable.Repeat(")", 1000)));
-                    string input = string.Concat(Enumerable.Repeat("abcde", 200));
-                    yield return new object[] { engine, pattern, input, "$1000", RegexOptions.None, input.Length, 0, "e" };
-                    yield return new object[] { engine, pattern, input, "$1", RegexOptions.None, input.Length, 0, input };
+                // Stress
+                string pattern = string.Concat(Enumerable.Repeat("([a-z]", 1000).Concat(Enumerable.Repeat(")", 1000)));
+                string input = string.Concat(Enumerable.Repeat("abcde", 200));
+                yield return new object[] { engine, pattern, input, "$1000", RegexOptions.None, input.Length, 0, "e" };
+                yield return new object[] { engine, pattern, input, "$1", RegexOptions.None, input.Length, 0, input };
 
-                    // Undefined group
-                    yield return new object[] { engine, "([a_z])(.+)", "abc", "$3", RegexOptions.None, 3, 0, "$3" };
-                    yield return new object[] { engine, @"(?<256>cat)\s*(?<512>dog)", "slkfjsdcat dogkljeah", "STARTcat$2048$1024dogEND", RegexOptions.None, 20, 0, "slkfjsdSTARTcat$2048$1024dogENDkljeah" };
+                // Undefined group
+                yield return new object[] { engine, "([a_z])(.+)", "abc", "$3", RegexOptions.None, 3, 0, "$3" };
+                yield return new object[] { engine, @"(?<256>cat)\s*(?<512>dog)", "slkfjsdcat dogkljeah", "STARTcat$2048$1024dogEND", RegexOptions.None, 20, 0, "slkfjsdSTARTcat$2048$1024dogENDkljeah" };
 
-                    // Valid cases
-                    yield return new object[] { engine, @"[^ ]+\s(?<time>)", "08/10/99 16:00", "${time}", RegexOptions.None, 14, 0, "16:00" };
+                // Valid cases
+                yield return new object[] { engine, @"[^ ]+\s(?<time>)", "08/10/99 16:00", "${time}", RegexOptions.None, 14, 0, "16:00" };
 
-                    yield return new object[] { engine, @"(?<cat>cat)\s*(?<dog>dog)", "cat dog", "${cat}est ${dog}est", RegexOptions.None, 7, 0, "catest dogest" };
-                    yield return new object[] { engine, @"(?<cat>cat)\s*(?<dog>dog)", "slkfjsdcat dogkljeah", "START${cat}dogcat${dog}END", RegexOptions.None, 20, 0, "slkfjsdSTARTcatdogcatdogENDkljeah" };
-                    yield return new object[] { engine, @"(?<512>cat)\s*(?<256>dog)", "slkfjsdcat dogkljeah", "START${512}dogcat${256}END", RegexOptions.None, 20, 0, "slkfjsdSTARTcatdogcatdogENDkljeah" };
-                    yield return new object[] { engine, @"(?<256>cat)\s*(?<512>dog)", "slkfjsdcat dogkljeah", "START${256}dogcat${512}END", RegexOptions.None, 20, 0, "slkfjsdSTARTcatdogcatdogENDkljeah" };
-                    yield return new object[] { engine, @"(?<512>cat)\s*(?<256>dog)", "slkfjsdcat dogkljeah", "STARTcat$256$512dogEND", RegexOptions.None, 20, 0, "slkfjsdSTARTcatdogcatdogENDkljeah" };
-                    yield return new object[] { engine, @"(?<256>cat)\s*(?<512>dog)", "slkfjsdcat dogkljeah", "STARTcat$512$256dogEND", RegexOptions.None, 20, 0, "slkfjsdSTARTcatdogcatdogENDkljeah" };
+                yield return new object[] { engine, @"(?<cat>cat)\s*(?<dog>dog)", "cat dog", "${cat}est ${dog}est", RegexOptions.None, 7, 0, "catest dogest" };
+                yield return new object[] { engine, @"(?<cat>cat)\s*(?<dog>dog)", "slkfjsdcat dogkljeah", "START${cat}dogcat${dog}END", RegexOptions.None, 20, 0, "slkfjsdSTARTcatdogcatdogENDkljeah" };
+                yield return new object[] { engine, @"(?<512>cat)\s*(?<256>dog)", "slkfjsdcat dogkljeah", "START${512}dogcat${256}END", RegexOptions.None, 20, 0, "slkfjsdSTARTcatdogcatdogENDkljeah" };
+                yield return new object[] { engine, @"(?<256>cat)\s*(?<512>dog)", "slkfjsdcat dogkljeah", "START${256}dogcat${512}END", RegexOptions.None, 20, 0, "slkfjsdSTARTcatdogcatdogENDkljeah" };
+                yield return new object[] { engine, @"(?<512>cat)\s*(?<256>dog)", "slkfjsdcat dogkljeah", "STARTcat$256$512dogEND", RegexOptions.None, 20, 0, "slkfjsdSTARTcatdogcatdogENDkljeah" };
+                yield return new object[] { engine, @"(?<256>cat)\s*(?<512>dog)", "slkfjsdcat dogkljeah", "STARTcat$512$256dogEND", RegexOptions.None, 20, 0, "slkfjsdSTARTcatdogcatdogENDkljeah" };
 
-                    yield return new object[] { engine, @"(hello)cat\s+dog(world)", "hellocat dogworld", "$1$$$2", RegexOptions.None, 19, 0, "hello$world" };
-                    yield return new object[] { engine, @"(cat)\s+(dog)", "before textcat dogafter text", ". The following should be dog and it is $+. ", RegexOptions.None, 28, 0, "before text. The following should be dog and it is dog. after text" };
-                }
+                yield return new object[] { engine, @"(hello)cat\s+dog(world)", "hellocat dogworld", "$1$$$2", RegexOptions.None, 19, 0, "hello$world" };
+                yield return new object[] { engine, @"(cat)\s+(dog)", "before textcat dogafter text", ". The following should be dog and it is $+. ", RegexOptions.None, 28, 0, "before text. The following should be dog and it is dog. after text" };
 
-                // Valid cases that NonBackTracking supports
                 yield return new object[] { engine, @"(hello)\s+(world)", "What the hello world goodby", "$&, how are you?", RegexOptions.None, 27, 0, "What the hello world, how are you? goodby" };
                 yield return new object[] { engine, @"(hello)\s+(world)", "What the hello world goodby", "$0, how are you?", RegexOptions.None, 27, 0, "What the hello world, how are you? goodby" };
                 yield return new object[] { engine, @"(hello)\s+(world)", "What the hello world goodby", "$`cookie are you doing", RegexOptions.None, 27, 0, "What the What the cookie are you doing goodby" };
                 yield return new object[] { engine, @"(cat)\s+(dog)", "before textcat dogafter text", ". This is the $' and ", RegexOptions.None, 28, 0, "before text. This is the after text and after text" };
                 yield return new object[] { engine, @"(cat)\s+(dog)", "before textcat dogafter text", ". The following should be the entire string '$_'. ", RegexOptions.None, 28, 0, "before text. The following should be the entire string 'before textcat dogafter text'. after text" };
 
+                yield return new object[] { engine, @"(hello)\s+(world)", "START hello    world END", "$2 $1 $1 $2 $3$4", RegexOptions.None, 24, 0, "START world hello hello world $3$4 END" };
+                yield return new object[] { engine, @"(hello)\s+(world)", "START hello    world END", "$2 $1 $1 $2 $123$234", RegexOptions.None, 24, 0, "START world hello hello world $123$234 END" };
+
+                yield return new object[] { engine, @"(d)(o)(g)(\s)(c)(a)(t)(\s)(h)(a)(s)", "My dog cat has fleas.", "$01$02$03$04$05$06$07$08$09$10$11", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Multiline, 21, 0, "My dog cat has fleas." };
+                yield return new object[] { engine, @"(d)(o)(g)(\s)(c)(a)(t)(\s)(h)(a)(s)", "My dog cat has fleas.", "$05$06$07$04$01$02$03$08$09$10$11", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Multiline, 21, 0, "My cat dog has fleas." };
+
+                // Error cases
+                yield return new object[] { engine, @"(?<256>cat)\s*(?<512>dog)", "slkfjsdcat dogkljeah", "STARTcat$512$", RegexOptions.None, 20, 0, "slkfjsdSTARTcatdog$kljeah" };
+
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
-                    yield return new object[] { engine, @"(hello)\s+(world)", "START hello    world END", "$2 $1 $1 $2 $3$4", RegexOptions.None, 24, 0, "START world hello hello world $3$4 END" };
-                    yield return new object[] { engine, @"(hello)\s+(world)", "START hello    world END", "$2 $1 $1 $2 $123$234", RegexOptions.None, 24, 0, "START world hello hello world $123$234 END" };
-
-                    yield return new object[] { engine, @"(d)(o)(g)(\s)(c)(a)(t)(\s)(h)(a)(s)", "My dog cat has fleas.", "$01$02$03$04$05$06$07$08$09$10$11", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Multiline, 21, 0, "My dog cat has fleas." };
-                    yield return new object[] { engine, @"(d)(o)(g)(\s)(c)(a)(t)(\s)(h)(a)(s)", "My dog cat has fleas.", "$05$06$07$04$01$02$03$08$09$10$11", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Multiline, 21, 0, "My cat dog has fleas." };
-
                     // ECMAScript
                     yield return new object[] { engine, @"(?<512>cat)\s*(?<256>dog)", "slkfjsdcat dogkljeah", "STARTcat${256}${512}dogEND", RegexOptions.ECMAScript, 20, 0, "slkfjsdSTARTcatdogcatdogENDkljeah" };
                     yield return new object[] { engine, @"(?<256>cat)\s*(?<512>dog)", "slkfjsdcat dogkljeah", "STARTcat${512}${256}dogEND", RegexOptions.ECMAScript, 20, 0, "slkfjsdSTARTcatdogcatdogENDkljeah" };
@@ -91,9 +90,6 @@ namespace System.Text.RegularExpressions.Tests
 
                     yield return new object[] { engine, @"(d)(o)(g)(\s)(c)(a)(t)(\s)(h)(a)(s)", "My dog cat has fleas.", "$01$02$03$04$05$06$07$08$09$10$11", RegexOptions.CultureInvariant | RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline, 21, 0, "My dog cat has fleas." };
                     yield return new object[] { engine, @"(d)(o)(g)(\s)(c)(a)(t)(\s)(h)(a)(s)", "My dog cat has fleas.", "$05$06$07$04$01$02$03$08$09$10$11", RegexOptions.CultureInvariant | RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline, 21, 0, "My cat dog has fleas." };
-
-                    // Error cases
-                    yield return new object[] { engine, @"(?<256>cat)\s*(?<512>dog)", "slkfjsdcat dogkljeah", "STARTcat$512$", RegexOptions.None, 20, 0, "slkfjsdSTARTcatdog$kljeah" };
 
                     // RightToLeft
                     yield return new object[] { engine, @"a", "bbbb", "c", RegexOptions.RightToLeft, 4, 3, "bbbb" };
@@ -335,12 +331,6 @@ namespace System.Text.RegularExpressions.Tests
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startat", () => new Regex("pattern").Replace("input", "replacement", 0, 6));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startat", () => new Regex("pattern").Replace("input", new MatchEvaluator(MatchEvaluator1), 0, 6));
-
-            if (PlatformDetection.IsNetCore)
-            {
-                // Substitutions not supported in NonBacktracking mode
-                Assert.Throws<NotSupportedException>(() => new Regex("pattern", RegexHelpers.RegexOptionNonBacktracking).Replace("input", "$1", -1));
-            }
         }
 
         public static string MatchEvaluator1(Match match) => match.Value.ToLower() == "big" ? "Huge": "Tiny";
@@ -398,18 +388,10 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(TestReplaceWithSubstitution_TestData))]
         private void TestReplaceWithSubstitution(string pattern, string input, string replacement, string expectedoutput, RegexOptions opt)
         {
-            if (opt == RegexHelpers.RegexOptionNonBacktracking)
-            {
-                Assert.Throws<NotSupportedException>(() => Regex.Replace(input, pattern, replacement, opt));
-                Assert.Throws<NotSupportedException>(() => new Regex(pattern, opt).Replace(input, replacement, -1));
-            }
-            else
-            {
-                var output = new Regex(pattern, opt).Replace(input, replacement, -1);
-                Assert.Equal(expectedoutput, output);
-                var output2 = Regex.Replace(input, pattern, replacement, opt);
-                Assert.Equal(expectedoutput, output2);
-            }
+            var output = new Regex(pattern, opt).Replace(input, replacement, -1);
+            Assert.Equal(expectedoutput, output);
+            var output2 = Regex.Replace(input, pattern, replacement, opt);
+            Assert.Equal(expectedoutput, output2);
         }
 
         public static IEnumerable<object[]> TestReplaceWithToUpperMatchEvaluator_TestData()

@@ -1,18 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Globalization;
-using System.Text.RegularExpressions.Symbolic.Unicode;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary><see cref="RegexRunnerFactory"/> for symbolic regexes.</summary>
     internal sealed class SymbolicRegexRunnerFactory : RegexRunnerFactory
     {
-        /// <summary>The unicode component, including the BDD algebra.</summary>
-        internal static readonly UnicodeCategoryTheory<BDD> s_unicode = new UnicodeCategoryTheory<BDD>(new CharSetSolver());
-
-        /// <summary>The matching engine, for 64 or fewer minterms. A SymbolicRegexMatcher of ulong or VB</summary>
+        /// <summary>A SymbolicRegexMatcher of either ulong or BV depending on the number of minterms.</summary>
         internal readonly ISymbolicRegexMatcher _matcher;
 
         /// <summary>Initializes the factory.</summary>
@@ -26,9 +23,9 @@ namespace System.Text.RegularExpressions.Symbolic
                         (options & RegexOptions.RightToLeft) != 0 ? nameof(RegexOptions.RightToLeft) : nameof(RegexOptions.ECMAScript)));
             }
 
-            var converter = new RegexNodeToSymbolicConverter(s_unicode, culture);
-            var solver = (CharSetSolver)s_unicode._solver;
-            SymbolicRegexNode<BDD> root = converter.Convert(code.Tree.Root, topLevel: true);
+            var converter = new RegexNodeConverter(culture, code.Caps);
+            CharSetSolver solver = CharSetSolver.Instance;
+            SymbolicRegexNode<BDD> root = converter.ConvertToSymbolicRegexNode(code.Tree.Root, tryCreateFixedLengthMarker: true);
 
             BDD[] minterms = root.ComputeMinterms();
             if (minterms.Length > 64)
@@ -45,7 +42,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 // Convert the BDD-based AST to BV-based AST
                 SymbolicRegexNode<BV> rootBV = converter._builder.Transform(root, builderBV, bdd => builderBV._solver.ConvertFromCharSet(solver, bdd));
-                _matcher = new SymbolicRegexMatcher<BV>(rootBV, code, solver, minterms, matchTimeout, culture);
+                _matcher = new SymbolicRegexMatcher<BV>(rootBV, code, minterms, matchTimeout, culture);
             }
             else
             {
@@ -61,7 +58,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 // Convert the BDD-based AST to ulong-based AST
                 SymbolicRegexNode<ulong> root64 = converter._builder.Transform(root, builder64, bdd => builder64._solver.ConvertFromCharSet(solver, bdd));
-                _matcher = new SymbolicRegexMatcher<ulong>(root64, code, solver, minterms, matchTimeout, culture);
+                _matcher = new SymbolicRegexMatcher<ulong>(root64, code, minterms, matchTimeout, culture);
             }
         }
 
@@ -80,8 +77,14 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             /// <summary>The matching engine.</summary>
             private readonly SymbolicRegexMatcher<TSetType> _matcher;
+            /// <summary>Per thread data available to the matching engine.</summary>
+            private readonly SymbolicRegexMatcher<TSetType>.PerThreadData _perThreadData;
 
-            internal Runner(SymbolicRegexMatcher<TSetType> matcher) => _matcher = matcher;
+            internal Runner(SymbolicRegexMatcher<TSetType> matcher)
+            {
+                _matcher = matcher;
+                _perThreadData = matcher.CreatePerThreadData();
+            }
 
             protected override void InitTrackCount() { } // nop, no backtracking
 
@@ -89,16 +92,35 @@ namespace System.Text.RegularExpressions.Symbolic
 
             protected override void Go()
             {
-                ReadOnlySpan<char> inputSpan = runtext;
+                int beginning = runtextbeg;
+                ReadOnlySpan<char> inputSpan = runtext.AsSpan(beginning, runtextend - beginning);
 
                 // Perform the match.
-                SymbolicMatch pos = _matcher.FindMatch(quick, inputSpan, runtextpos, runtextend);
+                SymbolicMatch pos = _matcher.FindMatch(quick, inputSpan, runtextpos - beginning, _perThreadData);
+
+                // Transfer the result back to the RegexRunner state.
                 if (pos.Success)
                 {
                     // If we successfully matched, capture the match, and then jump the current position to the end of the match.
-                    int start = pos.Index;
+                    int start = pos.Index + beginning;
                     int end = start + pos.Length;
-                    Capture(0, start, end);
+                    if (!quick && pos.CaptureStarts != null)
+                    {
+                        Debug.Assert(pos.CaptureEnds != null);
+                        Debug.Assert(pos.CaptureStarts.Length == pos.CaptureEnds.Length);
+                        for (int cap = 0; cap < pos.CaptureStarts.Length; ++cap)
+                        {
+                            if (pos.CaptureStarts[cap] >= 0)
+                            {
+                                Debug.Assert(pos.CaptureEnds[cap] >= pos.CaptureStarts[cap]);
+                                Capture(cap, pos.CaptureStarts[cap] + beginning, pos.CaptureEnds[cap] + beginning);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Capture(0, start, end);
+                    }
                     runtextpos = end;
                 }
                 else

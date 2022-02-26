@@ -26,6 +26,10 @@
     <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(VersionSuffix)' != ''">$(ProductVersion)-$(VersionSuffix)</InformationalVersion>
   </PropertyGroup>
 
+  <ItemGroup>
+    <SupportedNETCoreAppTargetFramework Include=".NETCoreApp,Version=v$(NETCoreAppMaximumVersion)" DisplayName=".NET $(NETCoreAppMaximumVersion)" Alias="net$(NETCoreAppMaximumVersion)" />
+  </ItemGroup>
+
   <!-- The Default behavior in VS is to show files for the first target framework in TargetFrameworks property.
        This is required to show all the files corresponding to all target frameworks in VS. -->
   <ItemGroup Condition="'$(DefaultLanguageSourceExtension)' != '' and
