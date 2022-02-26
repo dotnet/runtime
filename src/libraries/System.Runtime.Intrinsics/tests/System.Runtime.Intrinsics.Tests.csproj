@@ -33,6 +33,9 @@
     <Compile Include="X86\LzcntTests.LeadingZeroCount.cs" />
     <Compile Include="X86\PopcntTests.cs" />
     <Compile Include="X86\PopcntTests.PopCount.cs" />
+    <Compile Include="X86\Sse42Tests.CompareGreaterThan.cs" />
+    <Compile Include="X86\Sse42Tests.Crc32.cs" />
+    <Compile Include="X86\Sse42Tests.cs" />
     <Compile Include="X86\SseTests.ConvertScalarToVector128Single.cs" />
     <Compile Include="X86\SseTests.ConvertToNInt.cs" />
     <Compile Include="X86\SseTests.ConvertToNIntWithTruncation.cs" />
