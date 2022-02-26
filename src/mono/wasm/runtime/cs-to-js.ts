@@ -150,14 +150,16 @@ export function _mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>): an
     if (arrayRoot.value === MonoArrayNull)
         return null;
 
+    const arrayAddress = arrayRoot.get_address();
     const elemRoot = mono_wasm_new_root<MonoObject>();
+    const elemAddress = elemRoot.get_address();
 
     try {
         const len = cwraps.mono_wasm_array_length(arrayRoot.value);
         const res = new Array(len);
         for (let i = 0; i < len; ++i) {
             // TODO: pass arrayRoot.address and elemRoot.address into new API that copies
-            elemRoot.value = cwraps.mono_wasm_array_get(arrayRoot.value, i);
+            cwraps.mono_wasm_array_get_ref(arrayAddress, i, elemAddress);
 
             if (is_nested_array(elemRoot.value))
                 res[i] = _mono_array_root_to_js_array(<any>elemRoot);

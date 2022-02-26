@@ -1115,6 +1115,14 @@ mono_wasm_array_get (MonoArray *array, int idx)
 	return mono_array_get (array, MonoObject*, idx);
 }
 
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_array_get_ref (MonoArray **array, int idx, MonoObject **result)
+{
+	MONO_ENTER_GC_UNSAFE;
+	*result = mono_array_get (*array, MonoObject*, idx);
+	MONO_EXIT_GC_UNSAFE;
+}
+
 EMSCRIPTEN_KEEPALIVE MonoArray*
 mono_wasm_obj_array_new (int size)
 {
@@ -1125,6 +1133,14 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_obj_array_set (MonoArray *array, int idx, MonoObject *obj)
 {
 	mono_array_setref (array, idx, obj);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_obj_array_set_ref (MonoArray **array, int idx, MonoObject **obj)
+{
+	MONO_ENTER_GC_UNSAFE;
+	mono_array_setref (*array, idx, *obj);
+	MONO_EXIT_GC_UNSAFE;
 }
 
 EMSCRIPTEN_KEEPALIVE MonoArray*

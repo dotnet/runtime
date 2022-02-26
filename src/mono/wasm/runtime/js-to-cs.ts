@@ -173,6 +173,8 @@ export function js_array_to_mono_array(js_array: any[], asString: boolean, shoul
     const mono_array = asString ? cwraps.mono_wasm_string_array_new(js_array.length) : cwraps.mono_wasm_obj_array_new(js_array.length);
     const arrayRoot = mono_wasm_new_root(mono_array);
     const elemRoot = mono_wasm_new_root(MonoObjectNull);
+    const arrayAddress = arrayRoot.get_address();
+    const elemAddress = elemRoot.get_address();
 
     try {
         for (let i = 0; i < js_array.length; ++i) {
@@ -182,8 +184,7 @@ export function js_array_to_mono_array(js_array: any[], asString: boolean, shoul
 
             // TODO: pass elemRoot into new API that copies
             elemRoot.value = _js_to_mono_obj(should_add_in_flight, obj);
-            // TODO: Create new API that copies and pass in elemRoot.address
-            cwraps.mono_wasm_obj_array_set(arrayRoot.value, i, elemRoot.value);
+            cwraps.mono_wasm_obj_array_set_ref(arrayAddress, i, elemAddress);
         }
 
         return mono_array;

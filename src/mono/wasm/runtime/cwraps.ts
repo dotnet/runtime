@@ -44,8 +44,10 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_get_obj_type", "number", ["number"]],
     ["mono_wasm_array_length", "number", ["number"]],
     ["mono_wasm_array_get", "number", ["number", "number"]],
+    ["mono_wasm_array_get_ref", "void", ["number", "number", "number"]],
     ["mono_wasm_obj_array_new", "number", ["number"]],
     ["mono_wasm_obj_array_set", "void", ["number", "number", "number"]],
+    ["mono_wasm_obj_array_set_ref", "void", ["number", "number", "number"]],
     ["mono_wasm_register_bundled_satellite_assemblies", "void", []],
     ["mono_wasm_try_unbox_primitive_and_get_type_ref", "number", ["number", "number", "number"]],
     ["mono_wasm_box_primitive", "number", ["number", "number", "number"]],
@@ -105,8 +107,10 @@ export interface t_Cwraps {
     mono_wasm_get_obj_type(str: MonoObject): number;
     mono_wasm_array_length(array: MonoArray): number;
     mono_wasm_array_get(array: MonoArray, idx: number): MonoObject;
+    mono_wasm_array_get_ref(array: MonoObjectRef, idx: number, result: MonoObjectRef): void;
     mono_wasm_obj_array_new(size: number): MonoArray;
     mono_wasm_obj_array_set(array: MonoArray, idx: number, obj: MonoObject): void;
+    mono_wasm_obj_array_set_ref(array: MonoObjectRef, idx: number, obj: MonoObjectRef): void;
     mono_wasm_register_bundled_satellite_assemblies(): void;
     mono_wasm_try_unbox_primitive_and_get_type_ref(obj: MonoObjectRef, buffer: VoidPtr, buffer_size: number): number;
     mono_wasm_box_primitive(klass: MonoClass, value: VoidPtr, value_size: number): MonoObject;
