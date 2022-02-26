@@ -283,27 +283,6 @@ namespace System.Tests
             Assert.Equal(1, closedGenericAttributes.Length);
             Assert.Equal(typeof(GenericAttribute<TGenericParameter>[]), closedGenericAttributes.GetType());
         }
-
-        [Fact]
-        public static void GetCustomAttributesBehaviorMemberInfoReturnsStringArray()
-        {
-            FieldInfo field = new CustomFieldInfo(new[] { "a" });
-            Assert.Throws<InvalidCastException>(() => Attribute.GetCustomAttributes(field));
-        }
-
-        [Fact]
-        public static void GetCustomAttributesBehaviorMemberInfoReturnsAttributeInObjectArray()
-        {
-            FieldInfo field = new CustomFieldInfo(new object[] { new TestAttribute(0) });
-            Assert.Throws<InvalidCastException>(() => Attribute.GetCustomAttributes(field));
-        }
-
-        [Fact]
-        public static void GetCustomAttributesBehaviorMemberInfoReturnsStringAndAttributeInObjectArray()
-        {
-            FieldInfo field = new CustomFieldInfo(new object[] { "a", new TestAttribute(0) });
-            Assert.Throws<InvalidCastException>(() => Attribute.GetCustomAttributes(field));
-        }
     }
 
     public static class GetCustomAttribute
@@ -936,34 +915,5 @@ namespace System.Tests
 
         [GenericAttribute<DateTime?>]
         public event Action Event;
-    }
-
-    public class CustomFieldInfo : FieldInfo
-    {
-        private readonly object[] _customAttributes;
-
-        public CustomFieldInfo(object[] customAttributes)
-        {
-            this._customAttributes = customAttributes;
-        }
-
-        public override FieldAttributes Attributes => default;
-        public override RuntimeFieldHandle FieldHandle => default;
-        public override Type FieldType => typeof(object);
-        public override Type DeclaringType => null;
-        public override string Name => "custom";
-        public override Type ReflectedType => null;
-
-        public override object[] GetCustomAttributes(bool inherit) => this._customAttributes;
-
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit) => this._customAttributes;
-
-        public override object GetValue(object obj) => null;
-
-        public override bool IsDefined(Type attributeType, bool inherit) => false;
-
-        public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, System.Globalization.CultureInfo culture)
-        {
-        }
     }
 }
