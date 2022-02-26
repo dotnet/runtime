@@ -16,7 +16,7 @@ public sealed partial class Sse42Tests
     [InlineData(123, 0, 0, 0, -1, 0)]
     [InlineData(0, 321, 0, 0, 0, -1)]
     [InlineData(123, 123, 123, 123, 0, 0)]
-    public void CompareGreaterThan_nuint_64Bit(long lowerLeft, long upperLeft, long lowerRight, long upperRight, long expectedLower, long expectedUpper)
+    public void CompareGreaterThan_nint_64Bit(long lowerLeft, long upperLeft, long lowerRight, long upperRight, long expectedLower, long expectedUpper)
     {
         Vector128<nint> expectedResult = Vector128.Create(expectedLower, expectedUpper).AsNInt();
 
@@ -35,7 +35,7 @@ public sealed partial class Sse42Tests
     [InlineData(123, 0, 0, 0, -1, 0)]
     [InlineData(0, 321, 0, 0, 0, -1)]
     [InlineData(123, 123, 123, 123, 0, 0)]
-    public void CompareGreaterThan_nuint_32Bit(int lowerLeft, int upperLeft, int lowerRight, int upperRight, int expectedLower, int expectedUpper)
+    public void CompareGreaterThan_nint_32Bit(int lowerLeft, int upperLeft, int lowerRight, int upperRight, int expectedLower, int expectedUpper)
     {
         Vector128<nint> expectedResult = Vector128.Create(expectedLower, expectedUpper).AsNInt();
 
