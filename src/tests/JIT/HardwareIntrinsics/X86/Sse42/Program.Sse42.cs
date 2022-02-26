@@ -12,6 +12,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestList = new Dictionary<string, Action>() {
                 ["CompareGreaterThan.Int64"] = CompareGreaterThanInt64,
+                ["CompareGreaterThan.nint"] = CompareGreaterThannint,
             };
         }
     }
