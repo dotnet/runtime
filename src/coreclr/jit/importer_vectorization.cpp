@@ -574,7 +574,7 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
     int      strLenOffset = OFFSETOF__CORINFO_String__stringLen;
     GenTree* lenOffset    = gtNewIconNode(strLenOffset, TYP_I_IMPL);
     GenTree* lenNode      = gtNewIndir(TYP_INT, gtNewOperNode(GT_ADD, TYP_BYREF, varStrLcl, lenOffset));
-    varStrLcl             = (GenTreeLclVar*)gtClone(varStrLcl);
+    varStrLcl             = gtClone(varStrLcl)->AsLclVar();
 
     GenTree* unrolled = impExpandHalfConstEquals(varStrLcl, lenNode, needsNullcheck, startsWith, (WCHAR*)str, cnsLength,
                                                  strLenOffset + sizeof(int));
