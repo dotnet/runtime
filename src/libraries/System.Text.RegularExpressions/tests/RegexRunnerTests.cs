@@ -10,10 +10,7 @@ namespace System.Text.RegularExpressions.Tests
     public class RegexRunnerTests
     {
         [Theory]
-        [InlineData(RegexEngine.Interpreter)]
-        [InlineData(RegexEngine.Compiled)]
-        [InlineData(RegexEngine.SourceGenerated)]
-        [InlineData(RegexEngine.NonBacktracking)]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task EnginesThrowNotImplementedForGoAndFFC(RegexEngine engine)
         {
             Regex re = await RegexHelpers.GetRegexAsync(engine, /*lang=regex*/@"abc");
@@ -34,10 +31,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
-        [InlineData(RegexEngine.Interpreter)]
-        [InlineData(RegexEngine.Compiled)]
-        [InlineData(RegexEngine.SourceGenerated)]
-        [InlineData(RegexEngine.NonBacktracking)]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task EnsureRunmatchValueIsNulledAfterIsMatch(RegexEngine engine)
         {
             Regex re = await RegexHelpers.GetRegexAsync(engine, /*lang=regex*/@"abc");
@@ -53,8 +47,8 @@ namespace System.Text.RegularExpressions.Tests
             Assert.NotNull(runmatch);
 
             // Ensure that the Value of runmatch was nulled out, so as to not keep a reference to it in a cache.
-            PropertyInfo textProperty = typeof(Match).GetProperty("Text", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.Null(textProperty.GetValue(runmatch));
+            MethodInfo getTextMethod = typeof(Match).GetMethod("get_Text", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.Null(getTextMethod.Invoke(runmatch, new object[] { }));
             Assert.Equal(string.Empty, runmatch.Value);
 #if NET7_0_OR_GREATER
             Assert.True(runmatch.ValueSpan == ReadOnlySpan<char>.Empty);

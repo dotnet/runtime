@@ -11,7 +11,6 @@
   <ItemGroup>
     <Compile Include="AttRegexTests.cs" />
     <Compile Include="CaptureCollectionTests.cs" />
-    <Compile Include="CustomDerivedRegexScenarioTest.cs" />
     <Compile Include="GroupCollectionTests.cs" />
     <Compile Include="MatchCollectionTests.cs" />
     <Compile Include="MonoRegexTests.cs" />
@@ -33,7 +32,6 @@
     <Compile Include="RegexMatchTimeoutExceptionTests.cs" />
     <Compile Include="RegexParserTests.cs" />
     <Compile Include="RegexReductionTests.cs" />
-    <Compile Include="RegexRunnerTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <Compile Include="..\src\System\Text\RegularExpressions\RegexParseError.cs" Link="System\Text\RegularExpressions\RegexParseError.cs" />
@@ -43,6 +41,8 @@
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="CustomDerivedRegexScenarioTest.cs" />
+    <Compile Include="RegexRunnerTests.cs" />
     <Compile Include="Regex.Count.Tests.cs" />
     <Compile Include="RegexAssert.netcoreapp.cs" />
     <Compile Include="RegexParserTests.netcoreapp.cs" />

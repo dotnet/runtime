@@ -1011,20 +1011,20 @@ namespace System.Text.RegularExpressions.Tests
                 if ((RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture) == RegexOptions.None)
                 {
                     Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).Match(input));
-                    VerifyIsMatchThrows<RegexMatchTimeoutException>(new Regex(Pattern), input, Regex.InfiniteMatchTimeout);
+                    Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).IsMatch(input));
                     Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).Matches(input).Count);
 
                     Assert.Throws<RegexMatchTimeoutException>(() => Regex.Match(input, Pattern));
-                    VerifyIsMatchThrows<RegexMatchTimeoutException>(null, input, Regex.InfiniteMatchTimeout, Pattern);
+                    Assert.Throws<RegexMatchTimeoutException>(() => Regex.IsMatch(input, Pattern));
                     Assert.Throws<RegexMatchTimeoutException>(() => Regex.Matches(input, Pattern).Count);
                 }
 
                 Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).Match(input));
-                VerifyIsMatchThrows<RegexMatchTimeoutException>(new Regex(Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)), input, Regex.InfiniteMatchTimeout);
+                Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).IsMatch(input));
                 Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).Matches(input).Count);
 
                 Assert.Throws<RegexMatchTimeoutException>(() => Regex.Match(input, Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)));
-                VerifyIsMatchThrows<RegexMatchTimeoutException>(null, input, Regex.InfiniteMatchTimeout, Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture));
+                Assert.Throws<RegexMatchTimeoutException>(() => Regex.IsMatch(input, Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)));
                 Assert.Throws<RegexMatchTimeoutException>(() => Regex.Matches(input, Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).Count);
             }, ((int)options).ToString(CultureInfo.InvariantCulture)).Dispose();
         }
