@@ -11582,6 +11582,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             }
         }
 
+        // Check if this cast helper have some profile data
         if (impIsCastHelperMayHaveProfileData(helper))
         {
             LikelyClassRecord likelyClass[1]; // multiple guesses aren't yet supported
@@ -11593,26 +11594,17 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 if ((likelyCls != NO_CLASS_HANDLE) &&
                     (likelyClass->likelihood > (UINT32)JitConfig.JitGuardedDevirtualizationChainLikelihood()))
                 {
-                    if (isCastClass && canExpandInline && likelyCls == pResolvedToken->hClass)
+                    if ((info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass) ==
+                         TypeCompareState::Must))
                     {
-                        // likelyClass is the same as declared - castclass is going to use the latter
-                        // as a fast path anyway so do nothing here.
-                    }
-                    else if ((info.compCompHnd->compareTypesForEquality(likelyCls, likelyCls) ==
-                        TypeCompareState::Must) &&
-                        (info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass) ==
-                            TypeCompareState::Must))
-                    {
-                        const UINT32 attrs = info.compCompHnd->getClassAttribs(likelyCls);
-                        assert((attrs & (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) == 0);
+                        assert((info.compCompHnd->getClassAttribs(likelyCls) &
+                                (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) == 0);
                         JITDUMP("Adding \"is %s (%X)\" check as a fast path for %s using PGO data.\n",
-                            eeGetClassName(likelyCls), likelyCls, isCastClass ? "castclass" : "isinst");
+                                eeGetClassName(likelyCls), likelyCls, isCastClass ? "castclass" : "isinst");
 
                         canExpandInline = true;
-                        partialExpand = true;
-                        exactCls = gtNewIconEmbClsHndNode(likelyCls);
-
-                        printf("!!! EGOR::::::::: %s -> %s\n", info.compMethodName, eeGetClassName(likelyCls));
+                        partialExpand   = true;
+                        exactCls        = gtNewIconEmbClsHndNode(likelyCls);
                     }
                 }
             }
