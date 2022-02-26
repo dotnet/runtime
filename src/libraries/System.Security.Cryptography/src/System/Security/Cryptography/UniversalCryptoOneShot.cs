@@ -68,6 +68,8 @@ namespace System.Security.Cryptography
             // transformed the last block, and input is within one block of being the right
             // size.
             // For sufficiently small ciphertexts, do them on the stack.
+            // This buffer needs to be at least twice as big as the largest block size
+            // we support, which is 16 bytes for AES.
             const int MaxInStackDecryptionBuffer = 128;
             Span<byte> stackBuffer = stackalloc byte[MaxInStackDecryptionBuffer];
 
@@ -78,14 +80,17 @@ namespace System.Security.Cryptography
                     stackBuffer.Slice(0, stackTransformFinal),
                     paddingMode,
                     cipher.BlockSizeInBytes);
+                Span<byte> writtenDepadded = stackBuffer.Slice(0, depaddedLength);
 
                 if (output.Length < depaddedLength)
                 {
+                    CryptographicOperations.ZeroMemory(writtenDepadded);
                     bytesWritten = 0;
                     return false;
                 }
 
-                stackBuffer.Slice(0, depaddedLength).CopyTo(output);
+                writtenDepadded.CopyTo(output);
+                CryptographicOperations.ZeroMemory(writtenDepadded);
                 bytesWritten = depaddedLength;
                 return true;
             }
@@ -103,6 +108,7 @@ namespace System.Security.Cryptography
                 Debug.Assert(input.Length > cipher.BlockSizeInBytes);
 
                 int writtenToOutput = 0;
+                int finalTransformWritten = 0;
 
                 // CFB8 means this may not be an exact multiple of the block size.
                 // If the an AES CFB8 ciphertext length is 129 with PKCS7 padding, then
@@ -118,28 +124,32 @@ namespace System.Security.Cryptography
                 try
                 {
                     writtenToOutput = cipher.Transform(unpaddedBlocks, output);
-                    int finalTransformWritten = cipher.TransformFinal(paddedBlock, stackBuffer);
+                    finalTransformWritten = cipher.TransformFinal(paddedBlock, stackBuffer);
 
                     // This will throw on invalid padding.
                     int depaddedLength = SymmetricPadding.GetPaddingLength(
                         stackBuffer.Slice(0, finalTransformWritten),
                         paddingMode,
                         cipher.BlockSizeInBytes);
+                    Span<byte> depaddedFinalTransform = stackBuffer.Slice(0, depaddedLength);
 
                     if (output.Length - writtenToOutput < depaddedLength)
                     {
+                        CryptographicOperations.ZeroMemory(depaddedFinalTransform);
                         CryptographicOperations.ZeroMemory(output.Slice(0, writtenToOutput));
                         bytesWritten = 0;
                         return false;
                     }
 
-                    stackBuffer.Slice(0, depaddedLength).CopyTo(output.Slice(writtenToOutput));
+                    depaddedFinalTransform.CopyTo(output.Slice(writtenToOutput));
+                    CryptographicOperations.ZeroMemory(depaddedFinalTransform);
                     bytesWritten = writtenToOutput + depaddedLength;
                     return true;
                 }
                 catch (CryptographicException)
                 {
                     CryptographicOperations.ZeroMemory(output.Slice(0, writtenToOutput));
+                    CryptographicOperations.ZeroMemory(stackBuffer.Slice(0, finalTransformWritten));
                     throw;
                 }
             }
@@ -180,7 +190,6 @@ namespace System.Security.Cryptography
                     CryptoPool.Return(rentedBuffer, clearSize: 0); // ZeroMemory clears the part of the buffer that was written to.
                 }
             }
-
         }
 
         public static bool OneShotEncrypt(
