@@ -833,9 +833,9 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 	}
 	case SN_Create: {
-		if (!is_element_type_primitive (fsig->ret))
-			return NULL;
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
+		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
+			return NULL;
 		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype))
 			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
 		else if (is_create_from_half_vectors_overload (fsig))
@@ -845,20 +845,21 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		break;
 	}
 	case SN_CreateScalar: {
-		if (!is_element_type_primitive (fsig->ret))
+		MonoType *etype = get_vector_t_elem_type (fsig->ret);
+		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 			return NULL;
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR, -1, arg0_type, fsig, args);
 	}
 	case SN_CreateScalarUnsafe: {
-		if (!is_element_type_primitive (fsig->ret))
+		MonoType *etype = get_vector_t_elem_type (fsig->ret);
+		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 			return NULL;
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
 	}
 	case SN_Equals:
 	case SN_EqualsAll:
 	case SN_EqualsAny: {
-		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
-		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
+		if (!is_element_type_primitive (fsig->params [0]) || !is_element_type_primitive (fsig->params [1]))
 			return NULL;
 
 		switch (id) {
@@ -899,8 +900,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_GreaterThanOrEqual:
 	case SN_LessThan:
 	case SN_LessThanOrEqual: {
-		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
-		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
+		if (!is_element_type_primitive (fsig->params [0]) || !is_element_type_primitive (fsig->params [1]))
 			return NULL;
 
 		gboolean is_unsigned = type_is_unsigned (fsig->params [0]);
