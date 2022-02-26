@@ -388,6 +388,9 @@ namespace Internal.TypeSystem.Ecma
             {
                 private bool _disposed = false;
 
+                // This is not actually called in any code path right now. Rather than implement this
+                // without testing, it's been lefted throwing an exception. If this code path is ever
+                // reached, it can be implemented and tested.
                 public int GetMethod(int methodToken, out ISymUnmanagedMethod method) => throw new NotImplementedException();
 
                 public void Dispose()
