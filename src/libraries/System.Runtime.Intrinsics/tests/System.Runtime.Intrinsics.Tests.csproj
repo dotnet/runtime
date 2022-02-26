@@ -40,6 +40,8 @@
     <Compile Include="X86\SseTests.ConvertToNInt.cs" />
     <Compile Include="X86\SseTests.ConvertToNIntWithTruncation.cs" />
     <Compile Include="X86\SseTests.cs" />
+    <Compile Include="X86\Ssse3Tests.AlignRight.cs" />
+    <Compile Include="X86\Ssse3Tests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
