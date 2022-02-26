@@ -279,7 +279,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(GenTreeLclVar* data, WCHAR* cns,
         UINT32   value2     = MAKEINT32(cns[1], cns[2]);
         GenTree* firstIndir = impCreateCompareInd(this, data, TYP_INT, dataOffset, value1);
         GenTree* secondIndir =
-            impCreateCompareInd(this, (GenTreeLclVar*)gtClone(data), TYP_INT, dataOffset + sizeof(USHORT), value2);
+            impCreateCompareInd(this, gtClone(data)->AsLclVar(), TYP_INT, dataOffset + sizeof(USHORT), value2);
 
         // TODO-Unroll-CQ: Consider merging two indirs via XOR instead of QMARK
         // e.g. gtNewOperNode(GT_XOR, TYP_INT, firstIndir, secondIndir);
@@ -309,7 +309,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(GenTreeLclVar* data, WCHAR* cns,
     GenTree* firstIndir = impCreateCompareInd(this, data, TYP_LONG, dataOffset, value1);
 
     ssize_t  offset      = dataOffset + len * sizeof(WCHAR) - sizeof(UINT64);
-    GenTree* secondIndir = impCreateCompareInd(this, (GenTreeLclVar*)gtClone(data), TYP_LONG, offset, value2);
+    GenTree* secondIndir = impCreateCompareInd(this, gtClone(data)->AsLclVar(), TYP_LONG, offset, value2);
 
     // TODO-Unroll-CQ: Consider merging two indirs via XOR instead of QMARK
     GenTreeColon* doubleIndirColon = gtNewColonNode(TYP_INT, secondIndir, gtNewFalse());
@@ -382,11 +382,11 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVar* data,
         GenTree* indirCmp = nullptr;
         if (len < 8) // SWAR impl supports len == 8 but we'd better give it to SIMD
         {
-            indirCmp = impExpandHalfConstEqualsSWAR((GenTreeLclVar*)gtClone(data), cnsData, len, dataOffset);
+            indirCmp = impExpandHalfConstEqualsSWAR(gtClone(data)->AsLclVar(), cnsData, len, dataOffset);
         }
         else if (len <= 32)
         {
-            indirCmp = impExpandHalfConstEqualsSIMD((GenTreeLclVar*)gtClone(data), cnsData, len, dataOffset);
+            indirCmp = impExpandHalfConstEqualsSIMD(gtClone(data)->AsLclVar(), cnsData, len, dataOffset);
         }
 
         if (indirCmp == nullptr)
