@@ -2502,7 +2502,9 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						jit_tls->resume_state.ji = ji;
 						jit_tls->resume_state.clause_index = i;
 						jit_tls->resume_state.il_state = frame.il_state;
-						mono_llvm_cpp_throw_exception ();
+
+						/* Instruct the intepreter to unwind back to AOTed code */
+						mini_get_interp_callbacks ()->set_resume_state (jit_tls, ex_obj, ei, NULL, NULL);
 					}
 
 					if (in_interp) {

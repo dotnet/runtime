@@ -427,13 +427,12 @@ interp_free_context (gpointer ctx)
 	g_free (context);
 }
 
+/* Continue unwinding if there is an exception that needs to be handled in an AOTed frame above us */
 static void
 check_pending_unwind (ThreadContext *context)
 {
-	if (context->pending_unwind) {
-		context->pending_unwind = FALSE;
+	if (context->has_resume_state && !context->handler_frame)
 		mono_llvm_cpp_throw_exception ();
-	}
 }
 
 void
@@ -2657,11 +2656,10 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 			/*
 			 * This c++ exception is going to be caught by an AOTed frame above us.
 			 * We can't rethrow here, since that will skip the cleanup of the
-			 * interpreter stack space etc. So set a flag and the caller
-			 * will rethrow the exception.
+			 * interpreter stack space etc. So instruct the interpreter to unwind.
 			 */
-			//mono_llvm_cpp_throw_exception ();
-			context->pending_unwind = TRUE;
+			context->has_resume_state = TRUE;
+			context->handler_frame = NULL;
 			return;
 		}
 		MonoObject *obj = mini_llvmonly_load_exception ();
@@ -3518,8 +3516,6 @@ static long total_executed_opcodes;
  * The ERROR argument is used to avoid declaring an error object for every interp frame, its not used
  * to return error information.
  * FRAME is only valid until the next call to alloc_frame ().
- * After the call, if context->pending_unwind is set, the caller should clean up then
- * call mono_llvm_cpp_throw_exception () to continue unwinding.
  */
 static MONO_NEVER_INLINE void
 interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args)
@@ -3937,8 +3933,6 @@ main_loop:
 				frame->state.ip = ip;
 				error_init_reuse (error);
 				do_jit_call (context, (stackval*)(locals + return_offset), (stackval*)(locals + call_args_offset), frame, cmethod, error);
-				if (context->pending_unwind)
-					return;
 				if (!is_ok (error)) {
 					MonoException *ex = interp_error_convert_to_exception (frame, error, ip);
 					THROW_EX (ex, ip);
@@ -4040,8 +4034,6 @@ call:
 			/* for calls, have ip pointing at the start of next instruction */
 			frame->state.ip = ip + 4;
 			do_jit_call (context, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [2]), frame, rmethod, error);
-			if (context->pending_unwind)
-				return;
 			if (!is_ok (error)) {
 				MonoException *ex = interp_error_convert_to_exception (frame, error, ip);
 				THROW_EX (ex, ip);
@@ -4060,8 +4052,6 @@ call:
 
 			frame->state.ip = ip + 6;
 			do_jit_call (context, (stackval*)(locals + ip [1]), frame, rmethod, error);
-			if (context->pending_unwind)
-				return;
 			if (!is_ok (error)) {
 				MonoException *ex = interp_error_convert_to_exception (frame, error);
 				THROW_EX (ex, ip);
@@ -7304,6 +7294,8 @@ interp_parse_options (const char *options)
  * interp_set_resume_state:
  *
  *   Set the state the interpeter will continue to execute from after execution returns to the interpreter.
+ * If INTERP_FRAME is NULL, that means the exception is caught in an AOTed frame and the interpreter needs to
+ * unwind back to AOT code.
  */
 static void
 interp_set_resume_state (MonoJitTlsData *jit_tls, MonoObject *ex, MonoJitExceptionInfo *ei, MonoInterpFrameHandle interp_frame, gpointer handler_ip)
@@ -7321,8 +7313,10 @@ interp_set_resume_state (MonoJitTlsData *jit_tls, MonoObject *ex, MonoJitExcepti
 		mono_gchandle_free_internal (context->exc_gchandle);
 	context->exc_gchandle = mono_gchandle_new_internal ((MonoObject*)ex, FALSE);
 	/* Ditto */
-	if (ei)
-		*(MonoObject**)(frame_locals (context->handler_frame) + ei->exvar_offset) = ex;
+	if (context->handler_frame) {
+		if (ei)
+			*(MonoObject**)(frame_locals (context->handler_frame) + ei->exvar_offset) = ex;
+	}
 	context->handler_ip = (const guint16*)handler_ip;
 }
 
@@ -7433,6 +7427,7 @@ interp_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, g
 	return retval.data.i ? TRUE : FALSE;
 }
 
+/* Returns TRUE if there is a pending exception */
 static gboolean
 interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, gpointer handler_ip, gpointer handler_ip_end,
 								 MonoObject *ex, gboolean *filtered, MonoExceptionEnum clause_type)
@@ -7516,6 +7511,9 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, gpoint
 		// this informs MINT_ENDFINALLY to return to EH
 		*(guint16**)(frame_locals (&frame) + imethod->clause_data_offsets [clause_index]) = NULL;
 
+	/* Set in mono_handle_exception () */
+	context->has_resume_state = FALSE;
+
 	interp_exec_method (&frame, context, &clause_args);
 
 	/* Write back args */
@@ -7557,10 +7555,7 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, gpoint
 
 	check_pending_unwind (context);
 
-	if (context->has_resume_state)
-		return TRUE;
-	else
-		return FALSE;
+	return context->has_resume_state;
 }
 
 typedef struct {
