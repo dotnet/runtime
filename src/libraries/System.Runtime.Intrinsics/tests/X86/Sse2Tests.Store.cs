@@ -1,0 +1,92 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Runtime.Intrinsics.X86;
+using Xunit;
+
+namespace System.Runtime.Intrinsics.Tests.X86;
+
+public sealed partial class Sse2Tests
+{
+    [ConditionalTheory(nameof(Run64BitTests))]
+    [InlineData(0, 0)]
+    [InlineData(12345678, 87654321)]
+    [InlineData(long.MinValue, long.MaxValue)]
+    [InlineData(long.MaxValue, long.MinValue)]
+    public void Store_nint_64Bit(long lower, long upper)
+    {
+        Vector128<nint> sourceVector = Vector128.Create(lower, upper).AsNInt();
+        Span<nint> span = stackalloc nint[2];
+
+        unsafe
+        {
+            fixed (nint* ptr = &span[0])
+            {
+                Sse2.Store(ptr, sourceVector);
+                Assert.Equal(lower, span[0]);
+                Assert.Equal(upper, span[1]);
+            }
+        }
+    }
+
+    [ConditionalTheory(nameof(Run32BitTests))]
+    [InlineData(0, 0)]
+    [InlineData(12345678, 87654321)]
+    [InlineData(int.MinValue, int.MaxValue)]
+    [InlineData(int.MaxValue, int.MinValue)]
+    public void Store_nint_32Bit(int lower, int upper)
+    {
+        Vector128<nint> sourceVector = Vector128.Create(lower, upper).AsNInt();
+        Span<nint> span = stackalloc nint[2];
+
+        unsafe
+        {
+            fixed (nint* ptr = &span[0])
+            {
+                Sse2.Store(ptr, sourceVector);
+                Assert.Equal(lower, span[0]);
+                Assert.Equal(upper, span[1]);
+            }
+        }
+    }
+
+    [ConditionalTheory(nameof(Run64BitTests))]
+    [InlineData(0, 0)]
+    [InlineData(12345678, 87654321)]
+    [InlineData(ulong.MaxValue, 0)]
+    public void Store_nuint_64Bit(ulong lower, ulong upper)
+    {
+        Vector128<nuint> sourceVector = Vector128.Create(lower, upper).AsNUInt();
+        Span<nuint> span = stackalloc nuint[2];
+
+        unsafe
+        {
+            fixed (nuint* ptr = &span[0])
+            {
+                Sse2.Store(ptr, sourceVector);
+                Assert.Equal(lower, span[0]);
+                Assert.Equal(upper, span[1]);
+            }
+        }
+    }
+
+    [ConditionalTheory(nameof(Run32BitTests))]
+    [InlineData(0, 0)]
+    [InlineData(12345678, 87654321)]
+    [InlineData(uint.MaxValue, 0)]
+    public void Store_nuint_32Bit(uint lower, uint upper)
+    {
+        Vector128<nuint> sourceVector = Vector128.Create(lower, upper).AsNUInt();
+        Span<nuint> span = stackalloc nuint[2];
+
+        unsafe
+        {
+            fixed (nuint* ptr = &span[0])
+            {
+                Sse2.Store(ptr, sourceVector);
+                Assert.Equal(lower, span[0]);
+                Assert.Equal(upper, span[1]);
+            }
+        }
+    }
+}

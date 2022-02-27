@@ -4540,6 +4540,7 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector128<int> ShiftLeftLogical(System.Runtime.Intrinsics.Vector128<int> value, System.Runtime.Intrinsics.Vector128<int> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<long> ShiftLeftLogical(System.Runtime.Intrinsics.Vector128<long> value, byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<long> ShiftLeftLogical(System.Runtime.Intrinsics.Vector128<long> value, System.Runtime.Intrinsics.Vector128<long> count) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<nint> ShiftLeftLogical(System.Runtime.Intrinsics.Vector128<nint> value, byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<nint> ShiftLeftLogical(System.Runtime.Intrinsics.Vector128<nint> value, System.Runtime.Intrinsics.Vector128<nint> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ushort> ShiftLeftLogical(System.Runtime.Intrinsics.Vector128<ushort> value, byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ushort> ShiftLeftLogical(System.Runtime.Intrinsics.Vector128<ushort> value, System.Runtime.Intrinsics.Vector128<ushort> count) { throw null; }
@@ -4547,6 +4548,7 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector128<uint> ShiftLeftLogical(System.Runtime.Intrinsics.Vector128<uint> value, System.Runtime.Intrinsics.Vector128<uint> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ulong> ShiftLeftLogical(System.Runtime.Intrinsics.Vector128<ulong> value, byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ulong> ShiftLeftLogical(System.Runtime.Intrinsics.Vector128<ulong> value, System.Runtime.Intrinsics.Vector128<ulong> count) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<nuint> ShiftLeftLogical(System.Runtime.Intrinsics.Vector128<nuint> value, byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<nuint> ShiftLeftLogical(System.Runtime.Intrinsics.Vector128<nuint> value, System.Runtime.Intrinsics.Vector128<nuint> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> ShiftLeftLogical128BitLane(System.Runtime.Intrinsics.Vector128<byte> value, byte numBytes) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> ShiftLeftLogical128BitLane(System.Runtime.Intrinsics.Vector128<short> value, byte numBytes) { throw null; }

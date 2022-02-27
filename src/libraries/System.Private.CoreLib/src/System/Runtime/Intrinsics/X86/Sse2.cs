@@ -1324,6 +1324,16 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<ulong> ShiftLeftLogical(Vector128<ulong> value, byte count) => ShiftLeftLogical(value, count);
 
         /// <summary>
+        /// __m128i _mm_sll_epi64 (__m128i a, int immediate)
+        ///   PSLLQ xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nint> ShiftLeftLogical(Vector128<nint> value, byte count) => ShiftLeftLogical(value, count);
+        /// <summary>
+        /// __m128i _mm_sll_epi64 (__m128i a, int immediate)
+        ///   PSLLQ xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nuint> ShiftLeftLogical(Vector128<nuint> value, byte count) => ShiftLeftLogical(value, count);
+        /// <summary>
         /// __m128i _mm_bslli_si128 (__m128i a, int imm8)
         ///   PSLLDQ xmm, imm8
         /// </summary>
