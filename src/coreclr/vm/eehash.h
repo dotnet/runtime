@@ -152,7 +152,9 @@ protected:
     {
         DPTR(PTR_EEHashEntry_t) m_pBuckets;       // Pointer to first entry for each bucket
         DWORD                   m_dwNumBuckets;
+#ifdef TARGET_64BIT
         UINT64                  m_dwNumBucketsMul; // "Fast Mod" multiplier for "X % m_dwNumBuckets"
+#endif
     } m_BucketTable[2];
     typedef DPTR(BucketTable) PTR_BucketTable;
 
@@ -194,10 +196,13 @@ public:
         LIMITED_METHOD_CONTRACT;
         this->m_BucketTable[0].m_pBuckets        = NULL;
         this->m_BucketTable[0].m_dwNumBuckets    = 0;
-        this->m_BucketTable[0].m_dwNumBucketsMul = 0;
         this->m_BucketTable[1].m_pBuckets        = NULL;
         this->m_BucketTable[1].m_dwNumBuckets    = 0;
+#ifdef TARGET_64BIT
+        this->m_BucketTable[0].m_dwNumBucketsMul = 0;
         this->m_BucketTable[1].m_dwNumBucketsMul = 0;
+#endif
+
 #ifndef DACCESS_COMPILE
         this->m_pVolatileBucketTable = NULL;
 #endif
