@@ -198,16 +198,10 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::Init(DWORD dwNumBucke
     m_pVolatileBucketTable->m_dwNumBuckets = dwNumBuckets;
 
 #ifdef TARGET_64BIT
-    if (dwNumBuckets <= UINT32_MAX)
-    {
-        m_pVolatileBucketTable->m_dwNumBucketsMul = GetFastModMultiplier((UINT32)dwNumBuckets);
-    }
-    else
+    m_pVolatileBucketTable->m_dwNumBucketsMul = GetFastModMultiplier(dwNumBuckets);
+#else
+    m_pVolatileBucketTable->m_dwNumBucketsMul = 0;
 #endif
-    {
-        // dwNumBuckets (unlikely) is too big to be used with "Fast mod"
-        m_pVolatileBucketTable->m_dwNumBucketsMul = 0;
-    }
 
     m_Heap = pHeap;
 
@@ -650,19 +644,13 @@ FORCEINLINE EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>:
 
     _ASSERTE(pBucketTable->m_dwNumBuckets != 0);
 
-#ifdef TARGET_64BIT
     DWORD dwBucket;
-    // Use precalculated multiplier for FastMod if both NumBuckets and dwHash fit into UINT32 
-    if ((pBucketTable->m_dwNumBuckets | dwHash) <= UINT_MAX)
-    {
-        _ASSERTE(pBucketTable->m_dwNumBucketsMul != 0);
-        dwBucket = FastMod(dwHash, pBucketTable->m_dwNumBuckets, pBucketTable->m_dwNumBucketsMul);
-    }
-    else
+#ifdef TARGET_64BIT
+    _ASSERTE(pBucketTable->m_dwNumBucketsMul != 0);
+    dwBucket = FastMod(dwHash, pBucketTable->m_dwNumBuckets, pBucketTable->m_dwNumBucketsMul);
+#else
+    dwBucket = dwHash % pBucketTable->m_dwNumBuckets;
 #endif
-    {
-        dwBucket = dwHash % pBucketTable->m_dwNumBuckets;
-    }
     EEHashEntry_t * pSearch;
 
     for (pSearch = pBucketTable->m_pBuckets[dwBucket]; pSearch; pSearch = pSearch->pNext)
@@ -801,16 +789,10 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GrowHashTable()
     pNewBucketTable->m_dwNumBuckets = dwNewNumBuckets;
 
 #ifdef TARGET_64BIT
-    if (dwNewNumBuckets <= UINT32_MAX)
-    {
-        pNewBucketTable->m_dwNumBucketsMul = GetFastModMultiplier((UINT32)dwNewNumBuckets);
-    }
-    else
+    pNewBucketTable->m_dwNumBucketsMul = GetFastModMultiplier(dwNewNumBuckets);
+#else
+    pNewBucketTable->m_dwNumBucketsMul = 0;
 #endif
-    {
-        // dwNumBuckets (unlikely) is too big to be used with "Fast mod"
-        pNewBucketTable->m_dwNumBucketsMul = 0;
-    }
 
     // Add old table to the to free list. Note that the SyncClean thing will only
     // delete the buckets at a safe point
