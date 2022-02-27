@@ -10,12 +10,43 @@ namespace System.Threading
 {
     internal sealed partial class PortableThreadPool
     {
-        private static readonly int ProcessorsPerPoller =
-            AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.ProcessorsPerIOPollerThread", 12, false);
+        // Continuations of IO completions are dispatched to the ThreadPool from IO completion poller threads. This avoids
+        // continuations blocking/stalling the IO completion poller threads. Setting UnsafeInlineIOCompletionCallbacks allows
+        // continuations to run directly on the IO completion poller thread, but is inherently unsafe due to the potential for
+        // those threads to become stalled due to blocking. Sometimes, setting this config value may yield better latency. The
+        // config value is named for consistency with SocketAsyncEngine.Unix.cs.
+        private static readonly bool UnsafeInlineIOCompletionCallbacks =
+            Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS") == "1";
+
+        private static readonly int IOCompletionPollerCount = GetIOCompletionPollerCount();
+
+        private static int GetIOCompletionPollerCount()
+        {
+            // Named for consistency with SocketAsyncEngine.Unix.cs, this environment variable is checked to override the exact
+            // number of IO completion poller threads to use. See the comment in SocketAsyncEngine.Unix.cs about its potential
+            // uses. For this implementation, the ProcessorsPerIOPollerThread config option below may be preferable as it may be
+            // less machine-specific.
+            if (uint.TryParse(Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_THREAD_COUNT"), out uint count))
+            {
+                return Math.Min((int)count, MaxPossibleThreadCount);
+            }
+
+            if (UnsafeInlineIOCompletionCallbacks)
+            {
+                // In this mode, default to ProcessorCount pollers to ensure that all processors can be utilized if more work
+                // happens on the poller threads
+                return Environment.ProcessorCount;
+            }
+
+            int processorsPerPoller =
+                AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.ProcessorsPerIOPollerThread", 12, false);
+            return (Environment.ProcessorCount - 1) / processorsPerPoller + 1;
+        }
 
         private static nint CreateIOCompletionPort()
         {
-            nint port = Interop.Kernel32.CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, UIntPtr.Zero, 0);
+            nint port =
+                Interop.Kernel32.CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, UIntPtr.Zero, IOCompletionPollerCount);
             if (port == 0)
             {
                 int hr = Marshal.GetHRForLastWin32Error();
@@ -75,9 +106,8 @@ namespace System.Threading
                     return;
                 }
 
-                int pollerCount = (Environment.ProcessorCount - 1) / ProcessorsPerPoller + 1;
-                IOCompletionPoller[] pollers = new IOCompletionPoller[pollerCount];
-                for (int i = 0; i < pollerCount; ++i)
+                IOCompletionPoller[] pollers = new IOCompletionPoller[IOCompletionPollerCount];
+                for (int i = 0; i < IOCompletionPollerCount; ++i)
                 {
                     pollers[i] = new IOCompletionPoller(_ioPort);
                 }
@@ -105,7 +135,7 @@ namespace System.Threading
 
             private readonly nint _port;
             private readonly Interop.Kernel32.OVERLAPPED_ENTRY* _nativeEvents;
-            private readonly ThreadPoolTypedWorkItemQueue<Event, Callback> _events;
+            private readonly ThreadPoolTypedWorkItemQueue<Event, Callback>? _events;
             private readonly Thread _thread;
 
             public IOCompletionPoller(nint port)
@@ -113,37 +143,48 @@ namespace System.Threading
                 Debug.Assert(port != 0);
                 _port = port;
 
-                _nativeEvents =
-                    (Interop.Kernel32.OVERLAPPED_ENTRY*)
-                    NativeMemory.Alloc(NativeEventCapacity, (nuint)sizeof(Interop.Kernel32.OVERLAPPED_ENTRY));
-                _events = new(default);
+                if (!UnsafeInlineIOCompletionCallbacks)
+                {
+                    _nativeEvents =
+                        (Interop.Kernel32.OVERLAPPED_ENTRY*)
+                        NativeMemory.Alloc(NativeEventCapacity, (nuint)sizeof(Interop.Kernel32.OVERLAPPED_ENTRY));
+                    _events = new(default);
+
+                    // These threads don't run user code, use a smaller stack size
+                    _thread = new Thread(Poll, SmallStackSizeBytes);
+
+                    // Poller threads are typically expected to be few in number and have to compete for time slices with all
+                    // other threads that are scheduled to run. They do only a small amount of work and don't run any user code.
+                    // In situations where frequently, a large number of threads are scheduled to run, a scheduled poller thread
+                    // may be delayed artificially quite a bit. The poller threads are given higher priority than normal to
+                    // mitigate that issue. It's unlikely that these threads would starve a system because in such a situation
+                    // IO completions would stop occurring. Since the number of IO pollers is configurable, avoid having too
+                    // many poller threads at higher priority.
+                    if (IOCompletionPollerCount * 4 < Environment.ProcessorCount)
+                    {
+                        _thread.Priority = ThreadPriority.AboveNormal;
+                    }
+                }
+                else
+                {
+                    // These threads may run user code, use the default stack size
+                    _thread = new Thread(PollAndInlineCallbacks);
+                }
+
+                _thread.IsThreadPoolThread = true;
+                _thread.IsBackground = true;
+                _thread.Name = ".NET ThreadPool IO";
 
                 // Thread pool threads must start in the default execution context without transferring the context, so
                 // using UnsafeStart() instead of Start()
-                _thread = new Thread(Poll, SmallStackSizeBytes)
-                {
-                    IsThreadPoolThread = true,
-                    IsBackground = true,
-                    Name = ".NET ThreadPool IO"
-                };
-
-                // Poller threads are typically expected to be few in number and have to compete for time slices with all other
-                // threads that are scheduled to run. They do only a small amount of work and don't run any user code. In
-                // situations where frequently, a large number of threads are scheduled to run, a scheduled poller thread may be
-                // delayed artificially quite a bit. The poller threads are given higher priority than normal to mitigate that
-                // issue. It's unlikely that these threads would starve a system because in such a situation IO completions
-                // would stop occurring. Since the number of IO pollers is configurable, avoid having too many poller threads at
-                // higher priority.
-                if (ProcessorsPerPoller >= 4)
-                {
-                    _thread.Priority = ThreadPriority.AboveNormal;
-                }
-
                 _thread.UnsafeStart();
             }
 
             private void Poll()
             {
+                Debug.Assert(_nativeEvents != null);
+                Debug.Assert(_events != null);
+
                 while (
                     Interop.Kernel32.GetQueuedCompletionStatusEx(
                         _port,
@@ -159,13 +200,49 @@ namespace System.Threading
                     for (int i = 0; i < nativeEventCount; ++i)
                     {
                         Interop.Kernel32.OVERLAPPED_ENTRY* nativeEvent = &_nativeEvents[i];
-                        _events.BatchEnqueue(new Event(nativeEvent->lpOverlapped, nativeEvent->dwNumberOfBytesTransferred));
+                        if (nativeEvent->lpOverlapped != null) // shouldn't be null since null is not posted
+                        {
+                            _events.BatchEnqueue(new Event(nativeEvent->lpOverlapped, nativeEvent->dwNumberOfBytesTransferred));
+                        }
                     }
 
                     _events.CompleteBatchEnqueue();
                 }
 
                 ThrowHelper.ThrowApplicationException(Marshal.GetHRForLastWin32Error());
+            }
+
+            private void PollAndInlineCallbacks()
+            {
+                Debug.Assert(_nativeEvents == null);
+                Debug.Assert(_events == null);
+
+                while (true)
+                {
+                    uint errorCode = Interop.Errors.ERROR_SUCCESS;
+                    if (!Interop.Kernel32.GetQueuedCompletionStatus(
+                            _port,
+                            out uint bytesTransferred,
+                            out _,
+                            out nint nativeOverlappedPtr,
+                            Timeout.Infinite))
+                    {
+                        errorCode = (uint)Marshal.GetLastPInvokeError();
+                    }
+
+                    var nativeOverlapped = (NativeOverlapped*)nativeOverlappedPtr;
+                    if (nativeOverlapped == null) // shouldn't be null since null is not posted
+                    {
+                        continue;
+                    }
+
+                    if (NativeRuntimeEventSource.Log.IsEnabled())
+                    {
+                        NativeRuntimeEventSource.Log.ThreadPoolIODequeue(nativeOverlapped);
+                    }
+
+                    _IOCompletionCallback.PerformSingleIOCompletionCallback(errorCode, bytesTransferred, nativeOverlapped);
+                }
             }
 
             private struct Callback : IThreadPoolTypedWorkItemQueueCallback<Event>
