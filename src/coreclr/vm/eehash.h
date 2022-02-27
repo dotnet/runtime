@@ -150,8 +150,9 @@ protected:
 
     struct BucketTable
     {
-        DPTR(PTR_EEHashEntry_t) m_pBuckets;    // Pointer to first entry for each bucket
-        DWORD            m_dwNumBuckets;
+        DPTR(PTR_EEHashEntry_t) m_pBuckets;       // Pointer to first entry for each bucket
+        DWORD                   m_dwNumBuckets;
+        UINT64                  m_dwNumBucketsMul; // "Fast Mod" multiplier for "X % m_dwNumBuckets"
     } m_BucketTable[2];
     typedef DPTR(BucketTable) PTR_BucketTable;
 
@@ -191,10 +192,12 @@ public:
     EEHashTable()
     {
         LIMITED_METHOD_CONTRACT;
-        this->m_BucketTable[0].m_pBuckets     = NULL;
-        this->m_BucketTable[0].m_dwNumBuckets = 0;
-        this->m_BucketTable[1].m_pBuckets     = NULL;
-        this->m_BucketTable[1].m_dwNumBuckets = 0;
+        this->m_BucketTable[0].m_pBuckets        = NULL;
+        this->m_BucketTable[0].m_dwNumBuckets    = 0;
+        this->m_BucketTable[0].m_dwNumBucketsMul = 0;
+        this->m_BucketTable[1].m_pBuckets        = NULL;
+        this->m_BucketTable[1].m_dwNumBuckets    = 0;
+        this->m_BucketTable[1].m_dwNumBucketsMul = 0;
 #ifndef DACCESS_COMPILE
         this->m_pVolatileBucketTable = NULL;
 #endif

@@ -1006,4 +1006,19 @@ public:
 HRESULT GetFileVersion(LPCWSTR wszFilePath, ULARGE_INTEGER* pFileVersion);
 #endif // !TARGET_UNIX
 
+#ifdef TARGET_64BIT
+// We use modified Daniel Lemire's fastmod algorithm (https://github.com/dotnet/runtime/pull/406),
+// which allows to avoid the long multiplication if the divisor is less than 2**31.
+// This is a copy of HashHelpers.cs, see that impl (or linked PR) for more details
+inline UINT64 GetFastModMultiplier(UINT32 divisor)
+{
+    return UINT64_MAX / divisor + 1;
+}
+
+inline UINT32 FastMod(UINT32 value, UINT32 divisor, UINT64 multiplier)
+{
+    return (UINT32)(((((multiplier * value) >> 32) + 1) * divisor) >> 32);
+}
+#endif
+
 #endif /* _H_UTIL */
