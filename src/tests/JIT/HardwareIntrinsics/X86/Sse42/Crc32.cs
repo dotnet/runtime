@@ -20,28 +20,6 @@ namespace IntelHardwareIntrinsicTest
 
             if (Sse42.IsSupported)
             {
-                nuint s1ni, s2ni, resni;
-                for (int i = 0; i < nintCrcTable.Length; i++)
-                {
-                    s1ni = nintCrcTable[i].s1;
-                    s2ni = nintCrcTable[i].s2;
-
-                    resni = Sse42.Crc32(s1ni, s2ni);
-                    if (resni != nintCrcTable[i].res)
-                    {
-                        Console.WriteLine("{0}: Inputs: 0x{1,8:x}, 0x{2,8:x} Expected: 0x{3,8:x} actual: 0x{4,8:x}",
-                            i, s1ni, s2ni, nintCrcTable[i].res, resni);
-                        testResult = Fail;
-                    }
-
-                    resni = Convert.ToUInt32(typeof(Sse42).GetMethod(nameof(Sse42.Crc32), new Type[] { s1ni.GetType(), s2ni.GetType() }).Invoke(null, new object[] { s1ni, s2ni }));
-                    if (resni != nintCrcTable[i].res)
-                    {
-                        Console.WriteLine("{0}: Inputs: 0x{1,8:x}, 0x{2,8:x} Expected: 0x{3,8:x} actual: 0x{4,8:x} - Reflection",
-                            i, s1ni, s2ni, nintCrcTable[i].res, resni);
-                        testResult = Fail;
-                    }
-                }
 
                 uint s1i, s2i, resi;
                 for (int i = 0; i < intCrcTable.Length; i++)
@@ -128,22 +106,6 @@ namespace IntelHardwareIntrinsicTest
                 this.res = c;
             }
         }
-
-        public static Crc<nuint, nuint>[] nintCrcTable = {
-            new Crc<nuint, nuint>(0x00000000U, 0x00000000U, 0x00000000U),
-            new Crc<nuint, nuint>(0x00000000U, 0x00000001U, 0xdd45aab8U),
-            new Crc<nuint, nuint>(0x00000001U, 0x00000000U, 0xdd45aab8U),
-            new Crc<nuint, nuint>(0x00000001U, 0x00000001U, 0x00000000U),
-            new Crc<nuint, nuint>(0x00000000U, 0xffffffffU, 0xb798b438U),
-            new Crc<nuint, nuint>(0xffffffffU, 0x00000000U, 0xb798b438U),
-            new Crc<nuint, nuint>(0xffffffffU, 0xffffffffU, 0x00000000U),
-            new Crc<nuint, nuint>(0x00000001U, 0xffffffffU, 0x6add1e80U),
-            new Crc<nuint, nuint>(0xffffffffU, 0x00000001U, 0x6add1e80U),
-            new Crc<nuint, nuint>(0xfffe1f0dU, 0xf5c1ddb3U, 0x911888ccU),
-            new Crc<nuint, nuint>(0x00000005U, 0xe1263cffU, 0xbe12f661U),
-            new Crc<nuint, nuint>(0x00000463U, 0xff840d0dU, 0xcba65e37U),
-            new Crc<nuint, nuint>(0x000f423fU, 0x0001e0f3U, 0xa5b7881dU)
-        };
 
         public static Crc<uint, uint>[] intCrcTable = {
             new Crc<uint, uint>(0x00000000U, 0x00000000U, 0x00000000U),

@@ -9,7 +9,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CompareGreaterThan.Int64.cs" />
-    <Compile Include="CompareGreaterThan.nint.cs" />
     <Compile Include="Program.Sse42.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>

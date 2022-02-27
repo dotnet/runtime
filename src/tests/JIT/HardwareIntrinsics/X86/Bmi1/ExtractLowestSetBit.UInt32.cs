@@ -211,7 +211,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             var isUnexpectedResult = false;
 
-            isUnexpectedResult = ((unchecked((nuint)(-(int)data)) & data) != result);
+            isUnexpectedResult = ((unchecked((uint)(-(int)data)) & data) != result);
 
             if (isUnexpectedResult)
             {

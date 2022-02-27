@@ -58,20 +58,6 @@ namespace TestLibrary
             m_rand.NextBytes(buffer);
             TestFramework.LogVerbose("Random Byte[] produced: " + Utilities.ByteArrayToString(buffer));
         }
-		
-		public static nint GetIntPtr(Int32 new_seed) {
-            Seed = new_seed;
-            return GetIntPtr();
-		}
-		
-		public static nint GetIntPtr() => (nint) GetInt32();
-		
-		public static nuint GetUIntPtr(Int32 new_seed) {
-            Seed = new_seed;
-            return GetUIntPtr();
-		}
-		
-		public static nuint GetUIntPtr() => (nuint) GetUInt32();
 
         // returns a non-negative Int64 between 0 and Int64.MaxValue
         public static Int64 GetInt64(Int32 new_seed)
