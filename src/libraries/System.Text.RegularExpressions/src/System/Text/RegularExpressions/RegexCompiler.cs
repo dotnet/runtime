@@ -1096,7 +1096,6 @@ namespace System.Text.RegularExpressions
             LocalBuilder pos = DeclareInt32();
             LocalBuilder slice = DeclareReadOnlySpanChar();
             LocalBuilder end = DeclareInt32();
-            Label stopSuccessLabel = DefineLabel();
             Label doneLabel = DefineLabel();
             Label originalDoneLabel = doneLabel;
             if (_hasTimeout)
@@ -1105,7 +1104,7 @@ namespace System.Text.RegularExpressions
             }
 
             // CultureInfo culture = CultureInfo.CurrentCulture; // only if the whole expression or any subportion is ignoring case, and we're not using invariant
-            InitializeCultureForGoIfNecessary();
+            InitializeCultureForTryMatchAtCurrentPositionIfNecessary();
 
             // ReadOnlySpan<char> inputSpan = input;
             // int end = base.runtextend;
@@ -1143,11 +1142,10 @@ namespace System.Text.RegularExpressions
             // Emit the code for all nodes in the tree.
             EmitNode(node);
 
-            // Success:
             // pos += sliceStaticPos;
             // base.runtextpos = pos;
             // Capture(0, originalpos, pos);
-            MarkLabel(stopSuccessLabel);
+            // return true;
             Ldthis();
             Ldloc(pos);
             if (sliceStaticPos > 0)
@@ -1163,9 +1161,16 @@ namespace System.Text.RegularExpressions
             Ldloc(originalPos);
             Ldloc(pos);
             Call(s_captureMethod);
-            // return true;
             Ldc(1);
             Ret();
+
+            // NOTE: The following is a difference from the source generator.  The source generator emits:
+            //     UncaptureUntil(0);
+            //     return false;
+            // at every location where the all-up match is known to fail. In contrast, the compiler currently
+            // emits this uncapture/return code in one place and jumps to it upon match failure.  The difference
+            // stems primarily from the return-at-each-location pattern resulting in cleaner / easier to read
+            // source code, which is not an issue for RegexCompiler emitting IL instead of C#.
 
             // If the graph contained captures, undo any remaining to handle failed matches.
             if (expressionHasCaptures)
@@ -4011,7 +4016,7 @@ namespace System.Text.RegularExpressions
             Ret();
         }
 
-        private void InitializeCultureForGoIfNecessary()
+        private void InitializeCultureForTryMatchAtCurrentPositionIfNecessary()
         {
             _textInfo = null;
             if ((_options & RegexOptions.CultureInvariant) == 0)
