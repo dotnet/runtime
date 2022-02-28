@@ -1481,6 +1481,8 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
         type = typeOfValue;
     }
 
+    assert(type == genActualType(type));
+
     genTreeOps oper = GT_NONE;
     if (varTypeIsFloating(type))
     {
@@ -1492,7 +1494,6 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
     }
 
     SetOperResetFlags(oper);
-
     gtType = type;
 
     switch (oper)

@@ -103,10 +103,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (tcs.Task.IsCompleted)
                         return;
 
-                    var match = parseConnection.Match(str);
-                    if (match.Success)
+                    if (!string.IsNullOrEmpty(str))
                     {
-                        tcs.TrySetResult(match.Groups[1].Captures[0].Value);
+                        var match = parseConnection.Match(str);
+                        if (match.Success)
+                        {
+                            tcs.TrySetResult(match.Groups[1].Captures[0].Value);
+                        }
                     }
                 };
 
@@ -197,6 +200,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var psi = new ProcessStartInfo();
 
                         psi.Arguments = $"--headless --disable-gpu --lang=en-US --incognito --remote-debugging-port={devToolsUrl.Port} http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}";
+                        if (File.Exists("/.dockerenv"))
+                        {
+                            Logger.LogInformation("Detected a container, disabling sandboxing for debugger tests.");
+                            psi.Arguments = "--no-sandbox " + psi.Arguments;
+                        }
                         psi.UseShellExecute = false;
                         psi.FileName = options.ChromePath;
                         psi.RedirectStandardError = true;
