@@ -1793,6 +1793,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     }
     else
     {
+        LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: No known target, IL Stub is a leaf\n"));
         // There's no "target" so we have nowhere to tell the debugger to move the breakpoint.
         return FALSE;
     }

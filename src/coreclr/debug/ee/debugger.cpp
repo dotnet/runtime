@@ -2488,7 +2488,7 @@ void Debugger::JITComplete(NativeCodeVersion nativeCodeVersion, TADDR newAddress
 
     MethodDesc* fd = nativeCodeVersion.GetMethodDesc();
 
-    LOG((LF_CORDB, LL_INFO100000, "D::JITComplete: md:0x%x (%s::%s), address:0x%x.\n",
+    LOG((LF_CORDB, LL_INFO100000, "D::JITComplete: md:0x%p (%s::%s), address:0x%p.\n",
         fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
         newAddress));
 
@@ -2521,13 +2521,13 @@ void Debugger::JITComplete(NativeCodeVersion nativeCodeVersion, TADDR newAddress
             // method on two threads. When this occurs both threads will
             // return the same code pointer and this callback is invoked
             // multiple times.
-            LOG((LF_CORDB, LL_INFO1000000, "D::JITComplete: md:0x%x (%s::%s), address:0x%x. Already created\n",
+            LOG((LF_CORDB, LL_INFO1000000, "D::JITComplete: md:0x%p (%s::%s), address:0x%p. Already created\n",
                 fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
                 newAddress));
             goto Exit;
         }
 
-        LOG((LF_CORDB, LL_INFO1000000, "D::JITComplete: md:0x%x (%s::%s), address:0x%x. Created ji:0x%x\n",
+        LOG((LF_CORDB, LL_INFO1000000, "D::JITComplete: md:0x%p (%s::%s), address:0x%p. Created ji:0x%p\n",
             fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
             newAddress, ji));
 
@@ -4808,7 +4808,7 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
     mdMethodDef md =                fd->GetMemberDef();
 
     LOG((LF_CORDB,LL_INFO10000,"D::MABFP: All BPs will be mapped to "
-        "Ver:0x%04x (DJI:0x%08x)\n", djiNew?djiNew->m_methodInfo->GetCurrentEnCVersion():0, djiNew));
+        "Ver:0x%04x (DJI:0x%p)\n", djiNew?djiNew->m_methodInfo->GetCurrentEnCVersion():0, djiNew));
 
     // We need to traverse the patch list while under the controller lock (small lock).
     // But we can only send BreakpointSetErros while under the debugger lock (big lock).
@@ -4847,7 +4847,7 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
             // elsewhere.
             if(dcp->pMethodDescFilter != NULL && dcp->pMethodDescFilter != djiNew->m_nativeCodeVersion.GetMethodDesc())
             {
-                LOG((LF_CORDB, LL_INFO10000, "Patch not in this generic instance\n"));
+                LOG((LF_CORDB, LL_INFO10000, "Patch not in this generic instance, filter 0x%p\n", dcp->pMethodDescFilter));
                 continue;
             }
 
