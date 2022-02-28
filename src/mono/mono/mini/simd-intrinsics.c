@@ -267,15 +267,15 @@ emit_xcompare_for_intrinsic (MonoCompile *cfg, MonoClass *klass, int intrinsic_i
 
 	gboolean is_unsigned;
 	switch (etype) {
-		case MONO_TYPE_U1:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_U8:
-			is_unsigned = TRUE;
-			break;
-		default:
-			is_unsigned = FALSE;
-			break;
+	case MONO_TYPE_U1:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_U8:
+		is_unsigned = TRUE;
+		break;
+	default:
+		is_unsigned = FALSE;
+		break;
 	}
 
 	switch (intrinsic_id) {
