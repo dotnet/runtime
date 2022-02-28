@@ -33,7 +33,7 @@ namespace System.Xml
     /// </devdoc>
     public class XmlConvert
     {
-        private const int MaxStackAllocatedChars = 128;
+        private const int StackallocIntBufferSizeLimit = 128;
         internal static char[] crt = new char[] { '\n', '\r', '\t' };
 
         /// <devdoc>
@@ -108,7 +108,7 @@ namespace System.Xml
             ValueStringBuilder bufBld =
                 matchPos == -1
                     ? default
-                    : length < MaxStackAllocatedChars
+                    : length < StackallocIntBufferSizeLimit
                         ? new ValueStringBuilder(stackalloc char[length])
                         : new ValueStringBuilder(length);
 
@@ -221,7 +221,7 @@ namespace System.Xml
             ValueStringBuilder bufBld =
                 matchPos == -1
                     ? default
-                    : length < MaxStackAllocatedChars
+                    : length < StackallocIntBufferSizeLimit
                         ? new ValueStringBuilder(stackalloc char[length])
                         : new ValueStringBuilder(length);
 
