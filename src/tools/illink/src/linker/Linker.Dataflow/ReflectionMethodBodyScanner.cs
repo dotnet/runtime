@@ -1015,7 +1015,7 @@ namespace Mono.Linker.Dataflow
 
 				bool allIndicesKnown = true;
 				for (int i = 0; i < size.Value; i++) {
-					if (!array.TryGetValueByIndex (i, out MultiValue value) || value.IsEmpty () || value.AsSingleValue () is UnknownValue) {
+					if (!array.TryGetValueByIndex (i, out MultiValue value) || value.AsSingleValue () is UnknownValue) {
 						allIndicesKnown = false;
 						break;
 					}
@@ -1058,7 +1058,15 @@ namespace Mono.Linker.Dataflow
 
 			foreach (var assemblyNameValue in methodParams[methodParamsOffset]) {
 				if (assemblyNameValue is KnownStringValue assemblyNameStringValue) {
+					if (assemblyNameStringValue.Contents is string assemblyName && assemblyName.Length == 0) {
+						// Throws exception for zero-length assembly name.
+						continue;
+					}
 					foreach (var typeNameValue in methodParams[methodParamsOffset + 1]) {
+						if (typeNameValue is NullValue) {
+							// Throws exception for null type name.
+							continue;
+						}
 						if (typeNameValue is KnownStringValue typeNameStringValue) {
 							var resolvedAssembly = _context.TryResolve (assemblyNameStringValue.Contents);
 							if (resolvedAssembly == null) {

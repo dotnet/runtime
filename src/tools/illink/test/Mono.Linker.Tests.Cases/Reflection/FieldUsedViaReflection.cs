@@ -18,9 +18,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestNameUnknownBindingFlags (BindingFlags.Public);
 			TestNameUnknownBindingFlagsAndName (BindingFlags.Public, "DoesntMatter");
 			TestNullName ();
+			TestNoValueName ();
 			TestEmptyName ();
 			TestNonExistingName ();
 			TestNullType ();
+			TestNoValue ();
 			TestDataFlowType ();
 			TestIfElse (1);
 			TestFieldInBaseType ();
@@ -76,6 +78,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		static void TestNoValueName ()
+		{
+			Type t = null;
+			string noValue = t.AssemblyQualifiedName;
+			var method = typeof (FieldUsedViaReflection).GetField (noValue);
+		}
+
+		[Kept]
 		static void TestEmptyName ()
 		{
 			var field = typeof (FieldUsedViaReflection).GetField (string.Empty);
@@ -92,6 +102,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			Type type = null;
 			var field = type.GetField ("publicField");
+		}
+
+		[Kept]
+		static void TestNoValue ()
+		{
+			Type t = null;
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			var method = noValue.GetField ("publicField");
 		}
 
 		[Kept]

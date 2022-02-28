@@ -36,8 +36,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 #endif
 			TestNullName ();
 			TestEmptyName ();
+			TestNoValueName ();
 			TestNonExistingName ();
 			TestNullType ();
+			TestNoValue ();
 			TestDataFlowType ();
 			IfElse.TestIfElse (1);
 			DerivedAndBase.TestMethodInBaseType ();
@@ -594,6 +596,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		static void TestNoValueName ()
+		{
+			Type t = null;
+			string noValue = t.AssemblyQualifiedName;
+			var method = typeof (MethodUsedViaReflection).GetMethod (noValue);
+		}
+
+		[Kept]
 		static void TestNonExistingName ()
 		{
 			var method = typeof (MethodUsedViaReflection).GetMethod ("NonExisting");
@@ -604,6 +614,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			Type type = null;
 			var method = type.GetMethod ("OnlyCalledViaReflection", BindingFlags.Static | BindingFlags.Public);
+		}
+
+		[Kept]
+		static void TestNoValue ()
+		{
+			Type t = null;
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			var method = noValue.GetMethod ("OnlyCalledViaReflection", BindingFlags.Static | BindingFlags.Public);
 		}
 
 		[Kept]

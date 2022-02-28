@@ -20,6 +20,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			GetConstructor_BindingAttr_Types.Test ();
 #endif
 			TestNullType ();
+			TestNoValue ();
+			TestNullArguments ();
 			TestDataFlowType ();
 			IfElse.TestIfElse (true);
 		}
@@ -262,6 +264,20 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			Type type = null;
 			var constructor = type.GetConstructor (new Type[] { });
+		}
+
+		[Kept]
+		static void TestNoValue ()
+		{
+			Type t = null;
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			var constructor = noValue.GetConstructor (new Type[] { });
+		}
+
+		[Kept]
+		static void TestNullArguments ()
+		{
+			var constrctor = typeof (TestType).GetConstructor (null);
 		}
 
 		[Kept]

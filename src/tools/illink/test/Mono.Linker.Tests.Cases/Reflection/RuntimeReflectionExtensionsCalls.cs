@@ -15,7 +15,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestGetRuntimeField ();
 			TestGetRuntimeMethod ();
 			TestGetRuntimeProperty ();
-
 		}
 
 		#region GetRuntimeEvent
@@ -29,6 +28,16 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			GetClassWithEvent ().GetRuntimeEvent ("This string will not be reached");
 			typeof (Derived).GetRuntimeEvent ("Event");
 			GetUnknownType ().GetRuntimeEvent (GetUnknownString ()); // IL2072
+
+			Type t = null;
+			t.GetRuntimeEvent ("This string will not be reached");
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			noValue.GetRuntimeEvent ("This string  will not be reached");
+
+			typeof (ClassWithKeptMembers).GetRuntimeEvent (null);
+			typeof (ClassWithKeptMembers).GetRuntimeEvent (string.Empty);
+			string noValueString = t.AssemblyQualifiedName;
+			typeof (ClassWithKeptMembers).GetRuntimeEvent (noValueString);
 		}
 		#endregion
 
@@ -43,6 +52,16 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			GetClassWithField ().GetRuntimeField ("This string will not be reached");
 			typeof (Derived).GetRuntimeField ("Field");
 			GetUnknownType ().GetRuntimeField (GetUnknownString ()); // IL2072
+
+			Type t = null;
+			t.GetRuntimeField ("This string will not be reached");
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			noValue.GetRuntimeField ("This string  will not be reached");
+
+			typeof (ClassWithKeptMembers).GetRuntimeField (null);
+			typeof (ClassWithKeptMembers).GetRuntimeField (string.Empty);
+			string noValueString = t.AssemblyQualifiedName;
+			typeof (ClassWithKeptMembers).GetRuntimeField (noValueString);
 		}
 		#endregion
 
@@ -57,6 +76,16 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			GetClassWithMethod ().GetRuntimeMethod ("This string will not be reached", Type.EmptyTypes);
 			typeof (Derived).GetRuntimeMethod ("Method", Type.EmptyTypes);
 			GetUnknownType ().GetRuntimeMethod (GetUnknownString (), Type.EmptyTypes); // IL2072
+
+			Type t = null;
+			t.GetRuntimeMethod ("This string will not be reached", Type.EmptyTypes);
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			noValue.GetRuntimeMethod ("This string  will not be reached", Type.EmptyTypes);
+
+			typeof (ClassWithKeptMembers).GetRuntimeMethod (null, Type.EmptyTypes);
+			typeof (ClassWithKeptMembers).GetRuntimeMethod (string.Empty, Type.EmptyTypes);
+			string noValueString = t.AssemblyQualifiedName;
+			typeof (ClassWithKeptMembers).GetRuntimeMethod (noValueString, Type.EmptyTypes);
 		}
 		#endregion
 
@@ -71,6 +100,16 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			GetClassWithProperty ().GetRuntimeProperty ("This string will not be reached");
 			typeof (Derived).GetRuntimeProperty ("Property");
 			GetUnknownType ().GetRuntimeProperty (GetUnknownString ()); // IL2072
+
+			Type t = null;
+			t.GetRuntimeProperty ("This string will not be reached");
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			noValue.GetRuntimeProperty ("This string  will not be reached");
+
+			typeof (ClassWithKeptMembers).GetRuntimeProperty (null);
+			typeof (ClassWithKeptMembers).GetRuntimeProperty (string.Empty);
+			string noValueString = t.AssemblyQualifiedName;
+			typeof (ClassWithKeptMembers).GetRuntimeProperty (noValueString);
 		}
 		#endregion
 

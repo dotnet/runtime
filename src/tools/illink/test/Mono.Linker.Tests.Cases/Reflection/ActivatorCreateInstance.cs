@@ -58,6 +58,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestNullArgsNonPublicOnly (typeof (TestType));
 			TestNullArgsNonPublicWithNonPublicAnnotation (typeof (TestType));
 
+			TestNullType ();
+			TestNoValue ();
+
 			CreateInstanceWithGetTypeFromHierarchy.Test ();
 		}
 
@@ -314,6 +317,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNamePrivateOnly", false, BindingFlags.NonPublic, null, new object[] { }, null, new object[] { });
 
 			WithNullAssemblyName ();
+			WithEmptyAssemblyName ();
+			WithNoValueAssemblyName ();
+			WithAssemblyAndNullTypeName ();
+			WithAssemblyAndEmptyTypeName ();
+			WithAssemblyAndNoValueTypeName ();
 			WithNonExistingAssemblyName ();
 			WithAssemblyAndUnknownTypeName ();
 			WithAssemblyAndNonExistingTypeName ();
@@ -324,6 +332,40 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		private static void WithNullAssemblyName ()
 		{
 			Activator.CreateInstance (null, "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNameParameterless1");
+		}
+
+		[Kept]
+		private static void WithEmptyAssemblyName ()
+		{
+			Activator.CreateInstance (string.Empty, "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNameParameterless1");
+		}
+
+		[Kept]
+		private static void WithNoValueAssemblyName ()
+		{
+			Type t = null;
+			string noValue = t.AssemblyQualifiedName;
+			Activator.CreateInstance (noValue, "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNameParameterless1");
+		}
+
+		[Kept]
+		private static void WithAssemblyAndNullTypeName ()
+		{
+			Activator.CreateInstance ("test", null);
+		}
+
+		[Kept]
+		private static void WithAssemblyAndEmptyTypeName ()
+		{
+			Activator.CreateInstance ("test", string.Empty);
+		}
+
+		[Kept]
+		private static void WithAssemblyAndNoValueTypeName ()
+		{
+			Type t = null;
+			string noValue = t.AssemblyQualifiedName;
+			Activator.CreateInstance ("test", noValue);
 		}
 
 		[Kept]
@@ -366,6 +408,56 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		private static void WithAssemblyPath ()
 		{
 			Activator.CreateInstanceFrom ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyPathParameterless");
+
+			WithNullAssemblyPath ();
+			WithEmptyAssemblyPath ();
+			WithNoValueAssemblyPath ();
+			WithAssemblyPathAndNullTypeName ();
+			WithAssemblyPathAndEmptyTypeName ();
+			WithAssemblyPathAndNoValueTypeName ();
+		}
+
+		[Kept]
+		// Technically this shouldn't warn because CreateInstanceFrom throws if the assembly file path is null.
+		// However, our implementation is the same for CreateInstance and CreateInstanceFrom.
+		[ExpectedWarning ("IL2032", nameof (Activator) + "." + nameof (Activator.CreateInstance), "assemblyFile")]
+		private static void WithNullAssemblyPath ()
+		{
+			Activator.CreateInstanceFrom (null, "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyPathParameterless");
+		}
+
+		[Kept]
+		private static void WithEmptyAssemblyPath ()
+		{
+			Activator.CreateInstanceFrom (string.Empty, "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyPathParameterless");
+		}
+
+		[Kept]
+		private static void WithNoValueAssemblyPath ()
+		{
+			Type t = null;
+			string noValue = t.AssemblyQualifiedName;
+			Activator.CreateInstanceFrom (noValue, "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyPathParameterless");
+		}
+
+		[Kept]
+		private static void WithAssemblyPathAndNullTypeName ()
+		{
+			Activator.CreateInstanceFrom ("test", null);
+		}
+
+		[Kept]
+		private static void WithAssemblyPathAndEmptyTypeName ()
+		{
+			Activator.CreateInstanceFrom ("test", string.Empty);
+		}
+
+		[Kept]
+		private static void WithAssemblyPathAndNoValueTypeName ()
+		{
+			Type t = null;
+			string noValue = t.AssemblyQualifiedName;
+			Activator.CreateInstanceFrom ("test", noValue);
 		}
 
 		[Kept]
@@ -530,6 +622,21 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))] Type type)
 		{
 			Activator.CreateInstance (type, nonPublic: true);
+		}
+
+		[Kept]
+		private static void TestNullType ()
+		{
+			Type t = null;
+			Activator.CreateInstance (t);
+		}
+
+		[Kept]
+		private static void TestNoValue ()
+		{
+			Type t = null;
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			Activator.CreateInstance (noValue);
 		}
 
 		[Kept]

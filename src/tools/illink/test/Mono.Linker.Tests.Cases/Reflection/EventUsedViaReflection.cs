@@ -21,8 +21,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestNameUnknownBindingFlagsAndName (BindingFlags.Public, "DoesntMatter");
 			TestNullName ();
 			TestEmptyName ();
+			TestNoValueName ();
 			TestNonExistingName ();
 			TestNullType ();
+			TestNoValue ();
 			TestDataFlowType ();
 			TestIfElse (1);
 			TestEventInBaseType ();
@@ -90,6 +92,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		static void TestNoValueName ()
+		{
+			Type t = null;
+			string noValue = t.AssemblyQualifiedName;
+			var method = typeof (EventUsedViaReflection).GetEvent (noValue);
+		}
+
+		[Kept]
 		static void TestNonExistingName ()
 		{
 			var eventInfo = typeof (EventUsedViaReflection).GetEvent ("NonExisting");
@@ -100,6 +110,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			Type type = null;
 			var eventInfo = type.GetEvent ("Event");
+		}
+
+		[Kept]
+		static void TestNoValue ()
+		{
+			Type t = null;
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			var method = noValue.GetEvent ("Event");
 		}
 
 		[Kept]

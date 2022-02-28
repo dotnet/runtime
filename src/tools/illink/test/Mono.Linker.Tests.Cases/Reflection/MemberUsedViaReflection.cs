@@ -15,11 +15,15 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			// Normally calls to GetMember use prefix lookup to match multiple values, we took a conservative approach
 			// and preserve not based on the string passed but on the binding flags requirements
 			TestWithName ();
+			TestWithNullName ();
+			TestWithEmptyName ();
+			TestWithNoValueName ();
 			TestWithPrefixLookup ();
 			TestWithBindingFlags ();
 			TestWithUnknownBindingFlags (BindingFlags.Public);
 			TestWithMemberTypes ();
 			TestNullType ();
+			TestNoValue ();
 			TestDataFlowType ();
 			TestDataFlowWithAnnotation (typeof (MyType));
 			TestIfElse (true);
@@ -31,6 +35,25 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			var members = typeof (SimpleType).GetMember ("memberKept");
 		}
 
+		[Kept]
+		public static void TestWithNullName ()
+		{
+			var members = typeof (SimpleType).GetMember (null);
+		}
+
+		[Kept]
+		static void TestWithEmptyName ()
+		{
+			var members = typeof (SimpleType).GetMember (string.Empty);
+		}
+
+		[Kept]
+		static void TestWithNoValueName ()
+		{
+			Type t = null;
+			string noValue = t.AssemblyQualifiedName;
+			var members = typeof (SimpleType).GetMember (noValue);
+		}
 
 		[Kept]
 		static void TestWithPrefixLookup ()
@@ -64,6 +87,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			Type type = null;
 			var constructor = type.GetMember ("PrefixLookup*");
+		}
+
+		[Kept]
+		static void TestNoValue ()
+		{
+			Type t = null;
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			var members = noValue.GetMember ("PrefixLookup*");
 		}
 
 		[Kept]

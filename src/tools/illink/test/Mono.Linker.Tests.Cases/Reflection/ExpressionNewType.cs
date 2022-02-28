@@ -18,6 +18,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Branch_NullValueNode ();
 			Branch_MethodParameterValueNode (typeof (C));
 			Branch_UnrecognizedPatterns ();
+			TestNullType ();
+			TestNoValue ();
 		}
 
 		[Kept]
@@ -58,6 +60,21 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			Expression.New (Type.GetType ("RemovedType"));
 			Expression.New (GetType ());
+		}
+
+		[Kept]
+		static void TestNullType ()
+		{
+			Type t = null;
+			Expression.New (t);
+		}
+
+		[Kept]
+		static void TestNoValue ()
+		{
+			Type t = null;
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			Expression.New (noValue);
 		}
 
 		#region Helpers

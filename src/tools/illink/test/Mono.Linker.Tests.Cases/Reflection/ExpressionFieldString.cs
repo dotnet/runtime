@@ -21,6 +21,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			UnknownTypeNoAnnotation.Test ();
 			UnknownString.Test ();
 			Expression.Field (null, GetType (), "This string will not be reached"); // IL2072
+			TestNullType ();
+			TestNoValue ();
+			TestNullString ();
+			TestEmptyString ();
+			TestNoValueString ();
 		}
 
 		[Kept]
@@ -102,6 +107,41 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				return "UnknownString";
 			}
 		}
+
+		[Kept]
+		static void TestNullType ()
+		{
+			Expression.Field (null, null, "This string will not be reached");
+		}
+
+		[Kept]
+		static void TestNoValue ()
+		{
+			Type t = null;
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			Expression.Field (null, noValue, "This string will not be reached");
+		}
+
+		[Kept]
+		static void TestNullString ()
+		{
+			Expression.Field (null, typeof (Base), null);
+		}
+
+		[Kept]
+		static void TestEmptyString ()
+		{
+			Expression.Field (null, typeof (Base), string.Empty);
+		}
+
+		[Kept]
+		static void TestNoValueString ()
+		{
+			Type t = null;
+			string noValue = t.AssemblyQualifiedName;
+			Expression.Field (null, typeof (Base), noValue);
+		}
+
 
 		[Kept]
 		class Base

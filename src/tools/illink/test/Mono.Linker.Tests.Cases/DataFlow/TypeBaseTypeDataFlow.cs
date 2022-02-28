@@ -44,6 +44,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestNoAnnotation (typeof (TestType));
 			TestAnnotatedAndUnannotated (typeof (TestType), typeof (TestType), 0);
 			TestNull ();
+			TestNoValue ();
 
 			Mixed_Derived.Test (typeof (TestType), 0);
 		}
@@ -209,6 +210,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			Type type = null;
 			type.BaseType.RequiresPublicMethods ();
+		}
+
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+		static void TestNoValue ()
+		{
+			Type t = null;
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			// Warns about the base type even though the above throws an exception at runtime.
+			noValue.BaseType.RequiresPublicMethods ();
 		}
 
 		class Mixed_Base

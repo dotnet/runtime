@@ -21,6 +21,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestPublicParameterlessConstructor ();
 			TestPublicConstructors ();
 			TestConstructors ();
+			TestNull ();
+			TestNoValue ();
 			TestUnknownType ();
 
 			TestTypeNameFromParameter (null);
@@ -67,6 +69,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.RequiresPublicConstructors ();
 			type.RequiresNonPublicConstructors ();
 			type.RequiresNone ();
+		}
+
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Type.GetType) + "(String)")]
+		static void TestNull ()
+		{
+			// Warns about the return value of GetType, even though this throws at runtime.
+			Type.GetType (null).RequiresAll ();
+		}
+
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Type.GetType) + "(String)")]
+		static void TestNoValue ()
+		{
+			Type t = null;
+			string noValue = t.AssemblyQualifiedName;
+			// Warns about the return value of GetType, even though AssemblyQualifiedName throws at runtime.
+			Type.GetType (noValue).RequiresAll ();
 		}
 
 		[ExpectedWarning ("IL2057", nameof (GetType))]

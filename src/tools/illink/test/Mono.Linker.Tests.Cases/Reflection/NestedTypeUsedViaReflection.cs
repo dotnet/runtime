@@ -15,11 +15,15 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			TestByName ();
 			TestPrivateByName ();
+			TestNullName ();
+			TestEmptyName ();
+			TestNoValueName ();
 			TestByBindingFlags ();
 			TestByUnknownBindingFlags (BindingFlags.Public);
 			TestByUnknownBindingFlagsAndName (BindingFlags.Public, "DoesntMatter");
 			TestNonExistingName ();
 			TestNullType ();
+			TestNoValue ();
 			TestIgnoreCaseBindingFlags ();
 			TestFailIgnoreCaseBindingFlags ();
 			TestUnsupportedBindingFlags ();
@@ -41,6 +45,26 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			_ = typeof (NestedTypeUsedViaReflection).GetNestedType (nameof (PrivateUnreferencedNestedType)); // This will not mark the nested type as GetNestedType(string) only returns public
 			_ = typeof (NestedTypeUsedViaReflection).GetNestedType (nameof (PrivateUnreferencedNestedType), BindingFlags.Public);
+		}
+
+		[Kept]
+		static void TestNullName ()
+		{
+			_ = typeof (NestedTypeUsedViaReflection).GetNestedType (null);
+		}
+
+		[Kept]
+		static void TestEmptyName ()
+		{
+			_ = typeof (NestedTypeUsedViaReflection).GetNestedType (string.Empty);
+		}
+
+		[Kept]
+		static void TestNoValueName ()
+		{
+			Type t = null;
+			string noValue = t.AssemblyQualifiedName;
+			var method = typeof (NestedTypeUsedViaReflection).GetNestedType (noValue);
 		}
 
 		[Kept]
@@ -85,6 +109,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			Type type = null;
 			_ = type.GetNestedType ("NestedType");
+		}
+
+		[Kept]
+		static void TestNoValue ()
+		{
+			Type t = null;
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			var method = noValue.GetNestedType ("NestedType");
 		}
 
 		[Kept]

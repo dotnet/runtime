@@ -73,6 +73,11 @@ namespace ILLink.Shared.TrimAnalysis
 				break;
 
 			case IntrinsicId.Type_get_TypeHandle:
+				if (instanceValue.IsEmpty ()) {
+					returnValue = MultiValueLattice.Top;
+					break;
+				}
+
 				foreach (var value in instanceValue) {
 					if (value is SystemTypeValue typeValue)
 						AddReturnValue (new RuntimeTypeHandleValue (typeValue.RepresentedType));
@@ -91,23 +96,37 @@ namespace ILLink.Shared.TrimAnalysis
 			// GetInterface (String, bool)
 			//
 			case IntrinsicId.Type_GetInterface: {
+					if (instanceValue.IsEmpty () || argumentValues[0].IsEmpty ()) {
+						returnValue = MultiValueLattice.Top;
+						break;
+					}
+
 					var targetValue = GetMethodThisParameterValue (calledMethod, DynamicallyAccessedMemberTypesOverlay.Interfaces);
 					foreach (var value in instanceValue) {
-						// For now no support for marking a single interface by name. We would have to correctly support
-						// mangled names for generics to do that correctly. Simply mark all interfaces on the type for now.
+						foreach (var interfaceName in argumentValues[0]) {
+							if (interfaceName == NullValue.Instance) {
+								// Throws on null string, so no return value.
+								returnValue ??= MultiValueLattice.Top;
+							} else if (interfaceName is KnownStringValue stringValue && stringValue.Contents.Length == 0) {
+								AddReturnValue (NullValue.Instance);
+							} else {
+								// For now no support for marking a single interface by name. We would have to correctly support
+								// mangled names for generics to do that correctly. Simply mark all interfaces on the type for now.
 
-						// Require Interfaces annotation
-						_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+								// Require Interfaces annotation
+								_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
 
-						// Interfaces is transitive, so the return values will always have at least Interfaces annotation
-						DynamicallyAccessedMemberTypes returnMemberTypes = DynamicallyAccessedMemberTypesOverlay.Interfaces;
+								// Interfaces is transitive, so the return values will always have at least Interfaces annotation
+								DynamicallyAccessedMemberTypes returnMemberTypes = DynamicallyAccessedMemberTypesOverlay.Interfaces;
 
-						// Propagate All annotation across the call - All is a superset of Interfaces
-						if (value is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers
-							&& valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.All)
-							returnMemberTypes = DynamicallyAccessedMemberTypes.All;
+								// Propagate All annotation across the call - All is a superset of Interfaces
+								if (value is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers
+									&& valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.All)
+									returnMemberTypes = DynamicallyAccessedMemberTypes.All;
 
-						AddReturnValue (GetMethodReturnValue (calledMethod, returnMemberTypes));
+								AddReturnValue (GetMethodReturnValue (calledMethod, returnMemberTypes));
+							}
+						}
 					}
 				}
 				break;
@@ -116,6 +135,11 @@ namespace ILLink.Shared.TrimAnalysis
 			// AssemblyQualifiedName
 			//
 			case IntrinsicId.Type_get_AssemblyQualifiedName: {
+					if (instanceValue.IsEmpty ()) {
+						returnValue = MultiValueLattice.Top;
+						break;
+					}
+
 					foreach (var value in instanceValue) {
 						if (value is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers) {
 							// Currently we don't need to track the difference between Type and String annotated values
@@ -467,9 +491,9 @@ namespace ILLink.Shared.TrimAnalysis
 				return true;
 			}
 
-			// For some intrinsics we just use the return value from the annotations.
-			if (returnValue == null)
-				returnValue = calledMethod.ReturnsVoid () ? MultiValueLattice.Top : GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes);
+			// For now, if the intrinsic doesn't set a return value, fall back on the annotations.
+			// Note that this will be DynamicallyAccessedMembers.None for the intrinsics which don't return types.
+			returnValue ??= calledMethod.ReturnsVoid () ? MultiValueLattice.Top : GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes);
 
 			// Validate that the return value has the correct annotations as per the method return value annotations
 			if (returnValueDynamicallyAccessedMemberTypes != 0) {
@@ -480,6 +504,8 @@ namespace ILLink.Shared.TrimAnalysis
 					} else if (uniqueValue is SystemTypeValue) {
 						// SystemTypeValue can fullfill any requirement, so it's always valid
 						// The requirements will be applied at the point where it's consumed (passed as a method parameter, set as field value, returned from the method)
+					} else if (uniqueValue == NullValue.Instance) {
+						// NullValue can fulfill any requirements because reflection access to it will typically throw.
 					} else {
 						throw new InvalidOperationException ($"Internal linker error: in {GetContainingSymbolDisplayName ()} processing call to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
 					}

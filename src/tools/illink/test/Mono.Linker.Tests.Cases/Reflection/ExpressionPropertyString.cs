@@ -20,6 +20,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Expression.Property (null, typeof (Derived), "ProtectedPropertyOnBase");
 			Expression.Property (null, typeof (Derived), "PublicPropertyOnBase");
 			UnknownType.Test ();
+			TestNull ();
+			TestNoValue ();
+			TestNullString ();
+			TestEmptyString ();
+			TestNoValueString ();
 			UnknownString.Test ();
 			Expression.Property (null, GetType (), "This string will not be reached"); // IL2072
 		}
@@ -85,6 +90,21 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		static void TestNull ()
+		{
+			Type t = null;
+			Expression.Property (null, t, "This string will not be reached");
+		}
+
+		[Kept]
+		static void TestNoValue ()
+		{
+			Type t = null;
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			Expression.Property (null, noValue, "This string will not be reached");
+		}
+
+		[Kept]
 		class UnknownString
 		{
 			[Kept]
@@ -112,6 +132,26 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			{
 				return "UnknownString";
 			}
+		}
+
+		[Kept]
+		static void TestNullString ()
+		{
+			Expression.Property (null, typeof (Base), null);
+		}
+
+		[Kept]
+		static void TestEmptyString ()
+		{
+			Expression.Property (null, typeof (Base), string.Empty);
+		}
+
+		[Kept]
+		static void TestNoValueString ()
+		{
+			Type t = null;
+			string noValue = t.AssemblyQualifiedName;
+			Expression.Property (null, typeof (Base), noValue);
 		}
 
 		[Kept]
