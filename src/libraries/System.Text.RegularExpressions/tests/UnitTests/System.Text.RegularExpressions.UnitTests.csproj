@@ -9,6 +9,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="RegexFindOptimizationsTests.cs" />
     <Compile Include="RegexTreeAnalyzerTests.cs" />
 
     <!-- Code included from System.Text.RegularExpressions -->
