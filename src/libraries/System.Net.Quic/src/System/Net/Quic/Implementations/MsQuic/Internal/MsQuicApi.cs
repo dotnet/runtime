@@ -106,11 +106,22 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         static MsQuicApi()
         {
-            if (OperatingSystem.IsWindows() && !IsWindowsVersionSupported())
+            bool isWindows = OperatingSystem.IsWindows();
+            if (isWindows && !IsWindowsVersionSupported())
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(null, $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {MinWindowsVersion}");
+                }
+
+                return;
+            }
+
+            if (isWindows && IsTls1_3Disabled())
+            {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(null, $"TLS 1.3 has been disabled via registry. TLS 1.3 is required for QUIC.");
                 }
 
                 return;
@@ -146,6 +157,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         private static bool IsWindowsVersionSupported() => OperatingSystem.IsWindowsVersionAtLeast(MinWindowsVersion.Major,
             MinWindowsVersion.Minor, MinWindowsVersion.Build, MinWindowsVersion.Revision);
+
+        private static bool IsTls1_3Disabled() => MsQuicTlsSupportHelper.IsTls1_3Disabled();
 
         // TODO: Consider updating all of these delegates to instead use function pointers.
         internal RegistrationOpenDelegate RegistrationOpenDelegate { get; }
