@@ -11545,6 +11545,12 @@ void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
 {
     if (use_large_pages_p)
         return;
+#ifdef USE_REGIONS
+    if (!dt_high_memory_load_p())
+    {
+        return;
+    }
+#endif
     uint8_t*  page_start = align_on_page (heap_segment_allocated(seg));
     assert (heap_segment_committed (seg) >= page_start);
 
@@ -11560,12 +11566,6 @@ void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
 size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
                                                     uint8_t* new_committed)
 {
-#ifdef USE_REGIONS
-    if (!dt_high_memory_load_p())
-    {
-        return 0;
-    }
-#endif
     assert (!use_large_pages_p);
     uint8_t* page_start = align_on_page (new_committed);
     ptrdiff_t size = heap_segment_committed (seg) - page_start;
@@ -12498,7 +12498,6 @@ void gc_heap::distribute_free_regions()
     }
 
 #ifdef MULTIPLE_HEAPS
-    gradual_decommit_in_progress_p = FALSE;
     for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
     {
         if (global_regions_to_decommit[kind].get_num_free_regions() != 0)
@@ -22141,7 +22140,7 @@ void gc_heap::garbage_collect (int n)
     }
 
     descr_generations ("BEGIN");
-#ifdef TRACE_GC
+#if defined(TRACE_GC) && defined(USE_REGIONS)
     if (heap_number == 0)
     {
 #ifdef MULTIPLE_HEAPS
@@ -22165,7 +22164,7 @@ void gc_heap::garbage_collect (int n)
             }
         }
     }
-#endif // TRACE_GC
+#endif // TRACE_GC && USE_REGIONS
 
 #ifdef VERIFY_HEAP
     if ((GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC) &&
@@ -39572,9 +39571,73 @@ void gc_heap::decommit_ephemeral_segment_pages()
     }
 
 #if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
-    // for regions, this is done at the regions level
-    return;
-#else //MULTIPLE_HEAPS && USE_REGIONS
+    for (int gen_number = soh_gen0; gen_number <= soh_gen1; gen_number++)
+    {
+        dynamic_data* dd = dynamic_data_of (gen_number);
+
+        dynamic_data* dd_gen = dynamic_data_of (gen_number);
+        generation *gen = generation_of (gen_number);
+        ptrdiff_t new_allocation_gen = dd_new_allocation (dd_gen) + loh_size_threshold;
+        ptrdiff_t free_list_space_gen = generation_free_list_space (gen);
+
+        ptrdiff_t committed_gen = 0;
+        ptrdiff_t allocated_gen = 0;
+
+        for (heap_segment* region = generation_start_segment_rw (gen); region != nullptr; region = heap_segment_next (region))
+        {
+            allocated_gen += heap_segment_allocated (region) - heap_segment_mem (region);
+            committed_gen += heap_segment_committed (region) - heap_segment_mem (region);
+        }
+
+        // compute how much of the allocated space is on the free list
+        double free_list_fraction_gen = (allocated_gen == 0) ? 0.0 : (double)(free_list_space_gen) / (double)allocated_gen;
+
+        // estimate amount of usable free space
+        // e.g. if 90% of the allocated space is free, assume 90% of these 90% can get used
+        // e.g. if 10% of the allocated space is free, assume 10% of these 10% can get used
+        ptrdiff_t usable_free_space = (ptrdiff_t)(free_list_fraction_gen * free_list_space_gen);
+
+        ptrdiff_t budget_gen = new_allocation_gen + allocated_gen - usable_free_space - committed_gen;
+
+        dprintf(1, ("h%2d gen %d budget %8Id allocated: %8Id, FL: %8Id, committed %8Id budget_gen %8Id",
+            heap_number, gen_number, new_allocation_gen, allocated_gen, free_list_space_gen, committed_gen, budget_gen));
+
+        if (budget_gen >= 0)
+        {
+            // we need more than we have committed - reset the commit targets
+            for (heap_segment* region = generation_start_segment_rw (gen); region != nullptr; region = heap_segment_next (region))
+            {
+                heap_segment_decommit_target (region) = heap_segment_reserved (region);
+            }
+            continue;
+        }
+
+        // we have too much committed - let's if we can decommit in the tail region
+        heap_segment* tail_region = generation_tail_region (gen);
+
+        ptrdiff_t extra_commit = heap_segment_committed (tail_region) - heap_segment_allocated (tail_region);
+        ptrdiff_t reduce_commit = min (extra_commit, -budget_gen);
+
+        uint8_t *decommit_target = heap_segment_committed (tail_region) - reduce_commit;
+        if (decommit_target < heap_segment_decommit_target (tail_region))
+        {
+            // we used to have a higher target - do exponential smoothing by computing
+            // essentially decommit_target = 1/3*decommit_target + 2/3*previous_decommit_target
+            // computation below is slightly different to avoid overflow
+            ptrdiff_t target_decrease = heap_segment_decommit_target (tail_region) - decommit_target;
+            decommit_target += target_decrease * 2 / 3;
+        }
+
+        heap_segment_decommit_target (tail_region) = decommit_target;
+
+#ifdef MULTIPLE_HEAPS
+        if (decommit_target < heap_segment_committed (ephemeral_heap_segment))
+        {
+            gradual_decommit_in_progress_p = TRUE;
+        }
+        dprintf(1, ("h%2d gen %d reduce_commit by %Ix", heap_segment_committed (tail_region) - decommit_target));
+    }
+#endif //MULTIPLE_HEAPS && USE_REGIONS
 
     dynamic_data* dd0 = dynamic_data_of (0);
 
@@ -39686,7 +39749,7 @@ bool gc_heap::decommit_step ()
             }
         }
     }
-#else //USE_REGIONS
+#endif //USE_REGIONS
 #ifdef MULTIPLE_HEAPS
     // should never get here for large pages because decommit_ephemeral_segment_pages
     // will not do anything if use_large_pages_p is true
@@ -39698,46 +39761,68 @@ bool gc_heap::decommit_step ()
         decommit_size += hp->decommit_ephemeral_segment_pages_step ();
     }
 #endif //MULTIPLE_HEAPS
-#endif //USE_REGIONS
     return (decommit_size != 0);
 }
 
 #ifdef MULTIPLE_HEAPS
 // return the decommitted size
-#ifndef USE_REGIONS
 size_t gc_heap::decommit_ephemeral_segment_pages_step ()
 {
-    // we rely on desired allocation not being changed outside of GC
-    assert (ephemeral_heap_segment->saved_desired_allocation == dd_desired_allocation (dynamic_data_of (0)));
-
-    uint8_t* decommit_target = heap_segment_decommit_target (ephemeral_heap_segment);
-    size_t EXTRA_SPACE = 2 * OS_PAGE_SIZE;
-    decommit_target += EXTRA_SPACE;
-    uint8_t* committed = heap_segment_committed (ephemeral_heap_segment);
-    if (decommit_target < committed)
+    size_t size = 0;
+#ifdef USE_REGIONS
+    for (int gen_number = soh_gen0; gen_number <= soh_gen1; gen_number++)
     {
-        // we rely on other threads not messing with committed if we are about to trim it down
-        assert (ephemeral_heap_segment->saved_committed == heap_segment_committed (ephemeral_heap_segment));
+        generation* gen = generation_of (gen_number);
+        heap_segment* seg = generation_tail_region (gen);
+#else // USE_REGIONS
+    {
+        heap_segment* seg = ephemeral_heap_segment;
+        // we rely on desired allocation not being changed outside of GC
+        assert (seg->saved_desired_allocation == dd_desired_allocation (dynamic_data_of (0)));
+#endif // USE_REGIONS
 
-        // how much would we need to decommit to get to decommit_target in one step?
-        size_t full_decommit_size = (committed - decommit_target);
+        uint8_t* decommit_target = heap_segment_decommit_target (seg);
+        size_t EXTRA_SPACE = 2 * OS_PAGE_SIZE;
+        decommit_target += EXTRA_SPACE;
+        uint8_t* committed = heap_segment_committed (seg);
+        uint8_t* allocated = heap_segment_allocated (seg);
+        if ((allocated <= decommit_target) && (decommit_target < committed))
+        {
+#ifdef USE_REGIONS
+            enter_spin_lock (&more_space_lock_soh);
+            add_saved_spinlock_info (false, me_acquire, mt_decommit_step);
+            uint8_t* decommit_target = heap_segment_decommit_target (seg);
+            decommit_target += EXTRA_SPACE;
+            uint8_t* committed = heap_segment_committed (seg);
+            uint8_t* allocated = heap_segment_allocated (seg);
+            if ((allocated <= decommit_target) && (decommit_target < committed))
+#else // USE_REGIONS
+            // we rely on other threads not messing with committed if we are about to trim it down
+            assert (seg->saved_committed == heap_segment_committed (seg));
+#endif // USE_REGIONS
+            {
+                // how much would we need to decommit to get to decommit_target in one step?
+                size_t full_decommit_size = (committed - decommit_target);
 
-        // don't do more than max_decommit_step_size per step
-        size_t decommit_size = min (max_decommit_step_size, full_decommit_size);
+                // don't do more than max_decommit_step_size per step
+                size_t decommit_size = min (max_decommit_step_size, full_decommit_size);
 
-        // figure out where the new committed should be
-        uint8_t* new_committed = (committed - decommit_size);
-        size_t size = decommit_heap_segment_pages_worker (ephemeral_heap_segment, new_committed);
+                // figure out where the new committed should be
+                uint8_t* new_committed = (committed - decommit_size);
+                size += decommit_heap_segment_pages_worker (seg, new_committed);
 
 #ifdef _DEBUG
-        ephemeral_heap_segment->saved_committed = committed - size;
+                seg->saved_committed = committed - size;
 #endif // _DEBUG
-
-        return size;
+            }
+#ifdef USE_REGIONS
+            add_saved_spinlock_info (false, me_release, mt_decommit_step);
+            leave_spin_lock (&more_space_lock_soh);
+#endif // USE_REGIONS
+        }
     }
-    return 0;
+    return size;
 }
-#endif //!USE_REGIONS
 #endif //MULTIPLE_HEAPS
 
 //This is meant to be called by decide_on_compacting.
