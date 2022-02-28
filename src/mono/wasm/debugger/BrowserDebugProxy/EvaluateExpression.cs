@@ -224,7 +224,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 switch (type)
                 {
                     case "string":
-                        {
+                    {
                         var str = value?.Value<string>();
                         str = str.Replace("\"", "\\\"");
                         valueRet = $"\"{str}\"";
