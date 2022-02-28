@@ -1176,8 +1176,7 @@ delta_info_compute_table_records (MonoImage *image_dmeta, MonoImage *image_base,
 		g_assert (table != MONO_TABLE_ENCLOG);
 		g_assert (table != MONO_TABLE_ENCMAP);
 		g_assert (table >= prev_table);
-		/* FIXME: check bounds - is it < or <=. */
-		if (rid < delta_info->count[table].prev_gen_rows) {
+		if (rid <= delta_info->count[table].prev_gen_rows) {
 			base_info->any_modified_rows[table] = TRUE;
 			delta_info->count[table].modified_rows++;
 		} else
