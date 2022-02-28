@@ -15,7 +15,7 @@ namespace System
             return GetConfigBoolValue(switchName, out exist);
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ClrConfig_GetConfigBoolValue", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ClrConfig_GetConfigBoolValue", StringMarshalling = StringMarshalling.Utf16)]
         private static partial bool GetConfigBoolValue(string configSwitchName, out bool exist);
     }
 }

@@ -23,6 +23,7 @@
   <ItemGroup>
     <!-- Common generator support -->
     <Compile Include="$(CommonPath)Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
 
     <!-- Code included from System.Text.RegularExpressions -->
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Production\HexConverter.cs" />
@@ -43,6 +44,7 @@
     <Compile Include="..\src\System\Text\RegularExpressions\RegexParser.cs" Link="Production\RegexParser.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexPrefixAnalyzer.cs" Link="Production\RegexPrefixAnalyzer.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexTree.cs" Link="Production\RegexTree.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexTreeAnalyzer.cs" Link="Production\RegexTreeAnalyzer.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexWriter.cs" Link="Production\RegexWriter.cs" />
     <Compile Include="..\src\System\Collections\HashtableExtensions.cs" Link="Production\HashtableExtensions.cs" />
   </ItemGroup>

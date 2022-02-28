@@ -2045,7 +2045,7 @@ public:
 
     void SetUnsigned()
     {
-        assert(OperIs(GT_ADD, GT_SUB, GT_CAST) || OperIsMul());
+        assert(OperIs(GT_ADD, GT_SUB, GT_CAST, GT_LE, GT_LT, GT_GT, GT_GE) || OperIsMul());
         gtFlags |= GTF_UNSIGNED;
     }
 
@@ -6114,10 +6114,13 @@ struct GenTreeIndir : public GenTreeOp
     }
 
 #if DEBUGGABLE_GENTREE
-protected:
-    friend GenTree;
     // Used only for GenTree::GetVtableForOper()
     GenTreeIndir() : GenTreeOp()
+    {
+    }
+#else
+    // Used by XARCH codegen to construct temporary trees to pass to the emitter.
+    GenTreeIndir() : GenTreeOp(GT_NOP, TYP_UNDEF)
     {
     }
 #endif

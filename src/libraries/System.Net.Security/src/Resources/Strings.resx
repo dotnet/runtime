@@ -386,4 +386,7 @@
   <data name="net_ssl_trust_collection" xml:space="preserve">
     <value>Sending trust from collection is not supported on Windows.</value>
   </data>
+  <data name="net_ssl_trust_handshake" xml:space="preserve">
+    <value>Sending trust in handshake is not supported on this platform.</value>
+  </data>
 </root>

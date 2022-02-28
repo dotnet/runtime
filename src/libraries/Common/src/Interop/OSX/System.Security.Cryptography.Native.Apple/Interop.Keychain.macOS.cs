@@ -20,14 +20,14 @@ internal static partial class Interop
             IntPtr item,
             out SafeKeychainHandle keychain);
 
-        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SecKeychainCreate", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SecKeychainCreate", StringMarshalling = StringMarshalling.Utf8)]
         private static unsafe partial int AppleCryptoNative_SecKeychainCreateTemporary(
             string path,
             int utf8PassphraseLength,
             byte* utf8Passphrase,
             out SafeTemporaryKeychainHandle keychain);
 
-        [GeneratedDllImport(Libraries.AppleCryptoNative, CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.AppleCryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial int AppleCryptoNative_SecKeychainCreate(
             string path,
             int utf8PassphraseLength,
@@ -40,7 +40,7 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_SecKeychainCopyDefault(out SafeKeychainHandle keychain);
 
-        [GeneratedDllImport(Libraries.AppleCryptoNative, CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.AppleCryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial int AppleCryptoNative_SecKeychainOpen(
             string keychainPath,
             out SafeKeychainHandle keychain);

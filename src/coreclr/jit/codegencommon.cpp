@@ -7688,13 +7688,12 @@ const char* CodeGen::siStackVarName(size_t offs, size_t size, unsigned reg, unsi
 /*****************************************************************************/
 #endif // !defined(DEBUG)
 #endif // defined(LATE_DISASM)
-/*****************************************************************************/
 
 //------------------------------------------------------------------------
 // indirForm: Make a temporary indir we can feed to pattern matching routines
 //    in cases where we don't want to instantiate all the indirs that happen.
 //
-GenTreeIndir CodeGen::indirForm(var_types type, GenTree* base)
+/* static */ GenTreeIndir CodeGen::indirForm(var_types type, GenTree* base)
 {
     GenTreeIndir i(GT_IND, type, base, nullptr);
     i.SetRegNum(REG_NA);
@@ -7706,7 +7705,7 @@ GenTreeIndir CodeGen::indirForm(var_types type, GenTree* base)
 // indirForm: Make a temporary indir we can feed to pattern matching routines
 //    in cases where we don't want to instantiate all the indirs that happen.
 //
-GenTreeStoreInd CodeGen::storeIndirForm(var_types type, GenTree* base, GenTree* data)
+/* static */ GenTreeStoreInd CodeGen::storeIndirForm(var_types type, GenTree* base, GenTree* data)
 {
     GenTreeStoreInd i(type, base, data);
     i.SetRegNum(REG_NA);

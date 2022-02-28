@@ -6,10 +6,13 @@ In order to work in the dotnet/runtime repo you must first run build.cmd/sh from
 - Restore tools
 - Restore external dependencies
  - CoreCLR - Copy to `bin\runtime\$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)`
-- Build targeting pack
- - Build src\libraries\ref.proj which builds all references assembly projects. For reference assembly project information see [ref](#ref)
-- Build product
- - Build src\libraries\src.proj which builds all the source library projects. For source library project information see [src](#src).
+- Build shared framework projects
+ - Build src\libraries\sfx.proj which builds all shared framework projects.
+- Build out of band projects
+ - Build src\libraries\oob.proj which builds all the out-of-band (OOB) projects.
+
+For reference assembly project information see [ref](#ref)
+For source library project information see [src](#src)
 
 # Build Pivots
 Below is a list of all the various options we pivot the project builds on:
