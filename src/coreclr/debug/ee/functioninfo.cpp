@@ -2407,7 +2407,7 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetMethodInfo(Module *pModule, mdMe
     }
     else
     {
-        LOG((LF_CORDB, LL_INFO1000, "DMI::GMI: for methodDef 0x%x, got 0x%x prev:0x%x\n",
+        LOG((LF_CORDB, LL_INFO1000, "DMI::GMI: for methodDef 0x%x, got 0x%p prev:0x%p\n",
             token, entry->mi, (entry->mi?entry->mi->m_prevMethodInfo:0)));
         return entry->mi;
     }

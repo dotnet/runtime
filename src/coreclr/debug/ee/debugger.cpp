@@ -2730,16 +2730,8 @@ DebuggerJitInfo *Debugger::GetJitInfoWorker(MethodDesc *fd, const BYTE *pbAddr, 
             break;
         }
     }
-    LOG((LF_CORDB, LL_INFO1000, "D::GJI: for md:0x%x (%s::%s), got dmi:0x%x.\n",
-         fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
-         dmi));
 
-
-
-
-    // Log stuff - fd may be null; so we don't want to AV in the log.
-
-    LOG((LF_CORDB, LL_INFO1000, "D::GJI: for md:0x%x (%s::%s), got dmi:0x%x, dji:0x%x, latest dji:0x%x, latest fd:0x%x, prev dji:0x%x\n",
+    LOG((LF_CORDB, LL_INFO1000, "D::GJI: for md:0x%p (%s::%s), got dmi:0x%p, dji:0x%p, latest dji:0x%p, latest fd:0x%p, prev dji:0x%p\n",
         fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
         dmi, dji, (dmi ? dmi->GetLatestJitInfo_NoCreate() : 0),
         ((dmi && dmi->GetLatestJitInfo_NoCreate()) ? dmi->GetLatestJitInfo_NoCreate()->m_nativeCodeVersion.GetMethodDesc():0),
@@ -5467,7 +5459,7 @@ void Debugger::ReleaseAllRuntimeThreads(AppDomain *pAppDomain)
     //<TODO>@todo APPD if we want true isolation, remove this & finish the work</TODO>
     pAppDomain = NULL;
 
-    STRESS_LOG1(LF_CORDB, LL_INFO10000, "D::RART: Releasing all Runtime threads"
+    STRESS_LOG1(LF_CORDB, LL_INFO10000, "D::RART: Releasing all Runtime threads "
         "for AppD 0x%x.\n", pAppDomain);
 
     // Mark that we're on our way now...
@@ -5679,8 +5671,6 @@ void Debugger::TraceCall(const BYTE *code)
  * Invoked from a probe in managed code when we enter a user method and
  * the flag (set by GetJMCFlagAddr) for that method is != 0.
  * pIP - the ip within the method, right after the prolog.
- * sp  - stack pointer (frame pointer on x86) for the managed method we're entering.
- * bsp - backing store pointer for the managed method we're entering
   ******************************************************************************/
 void Debugger::OnMethodEnter(void * pIP)
 {
@@ -5695,7 +5685,7 @@ void Debugger::OnMethodEnter(void * pIP)
 
     if (!CORDebuggerAttached())
     {
-        LOG((LF_CORDB, LL_INFO1000000, "D::OnMethodEnter returning since debugger attached.\n"));
+        LOG((LF_CORDB, LL_INFO1000000, "D::OnMethodEnter returning since debugger not attached.\n"));
         return;
     }
     FramePointer fp = LEAF_MOST_FRAME;
