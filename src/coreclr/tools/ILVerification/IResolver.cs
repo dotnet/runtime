@@ -12,11 +12,11 @@ namespace ILVerify
         /// <summary>
         /// Resolve assembly to PEReader. This method should return the same instance when queried multiple times.
         /// </summary>
-        PEReader Resolve(AssemblyName assemblyName);
+        PEReader ResolveAssembly(AssemblyName assemblyName);
 
         /// <summary>
         /// Resolve module to PEReader. This method should return the same instance when queried multiple times.
         /// </summary>
-        PEReader Resolve(string simpleName);
+        PEReader ResolveModule(AssemblyName referencingAssembly, string fileName);
     }
 }

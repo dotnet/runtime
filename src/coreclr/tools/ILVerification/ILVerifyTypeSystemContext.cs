@@ -30,17 +30,14 @@ namespace ILVerify
 
         public override ModuleDesc ResolveAssembly(AssemblyName name, bool throwIfNotFound = true)
         {
-            return CacheResolvedAssemblyOrNetmodule(_resolver.Resolve(name), name.Name, null, throwIfNotFound);
+            return CacheResolvedAssemblyOrNetmodule(_resolver.ResolveAssembly(name), name.Name, null, throwIfNotFound);
         }
 
         internal override ModuleDesc ResolveModule(IAssemblyDesc referencingModule, string fileName, bool throwIfNotFound = true)
         {
-            // Referenced modules are stored without their extension (see CommandLineHelpers.cs), so we have to drop
-            // the extension here as well to find a match.
-            string simpleName = Path.GetFileNameWithoutExtension(fileName);
             // The referencing module is not getting verified currently.
             // However, netmodules are resolved in the context of assembly, not in the global context.
-            EcmaModule module = CacheResolvedAssemblyOrNetmodule(_resolver.Resolve(simpleName), fileName, referencingModule as IAssemblyDesc, throwIfNotFound);
+            EcmaModule module = CacheResolvedAssemblyOrNetmodule(_resolver.ResolveModule(referencingModule.GetName(), fileName), fileName, referencingModule, throwIfNotFound);
             if (module.MetadataReader.IsAssembly)
             {
                 throw new VerifierException($"The module '{fileName}' is not expected to be an assembly");

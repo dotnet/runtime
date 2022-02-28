@@ -269,7 +269,7 @@ namespace ILVerify
 
         private int VerifyAssembly(AssemblyName name, string path)
         {
-            PEReader peReader = Resolve(name);
+            PEReader peReader = Resolve(name.Name);
             EcmaModule module = _verifier.GetModule(peReader);
 
             return VerifyAssembly(peReader, module, path);
@@ -465,7 +465,11 @@ namespace ILVerify
             return false;
         }
 
-        public PEReader Resolve(AssemblyName assemblyName) => Resolve(assemblyName.Name);
+        PEReader IResolver.ResolveAssembly(AssemblyName assemblyName)
+            => Resolve(assemblyName.Name);
+
+        PEReader IResolver.ResolveModule(AssemblyName referencingModule, string fileName)
+            => Resolve(Path.GetFileNameWithoutExtension(fileName));
 
         public PEReader Resolve(string simpleName)
         {
