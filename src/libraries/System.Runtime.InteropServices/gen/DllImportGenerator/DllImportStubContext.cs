@@ -42,6 +42,8 @@ namespace Microsoft.Interop
 
     internal sealed class DllImportStubContext : IEquatable<DllImportStubContext>
     {
+        private static readonly string GeneratorName = typeof(DllImportGenerator).Assembly.GetName().Name;
+
         private static readonly string GeneratorVersion = typeof(DllImportGenerator).Assembly.GetName().Version.ToString();
 
         // We don't need the warnings around not setting the various
@@ -136,7 +138,7 @@ namespace Microsoft.Interop
                                     SeparatedList(
                                         new[]
                                         {
-                                            AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal("Microsoft.Interop.DllImportGenerator"))),
+                                            AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(GeneratorName))),
                                             AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(GeneratorVersion)))
                                         }))))));
             }
