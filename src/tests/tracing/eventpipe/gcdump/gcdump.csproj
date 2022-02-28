@@ -10,6 +10,6 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
     <ProjectReference Include="../common/common.csproj" />
-    <ProjectReference Condition="'$(UseUpdatedNETCoreClient)' == 'true'" Include="../common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
+    <ProjectReference Include="../common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
   </ItemGroup>
 </Project>

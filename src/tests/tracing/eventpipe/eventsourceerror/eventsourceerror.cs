@@ -11,11 +11,7 @@ using System.Collections.Generic;
 using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-#if (UPDATED_NETCORE_CLIENT == true)
 using Microsoft.Diagnostics.NETCore.Client;
-#else
-using Microsoft.Diagnostics.Tools.RuntimeClient;
-#endif
 
 namespace Tracing.Tests.EventSourceError
 {
@@ -52,22 +48,13 @@ namespace Tracing.Tests.EventSourceError
         {
             // This test validates that if an EventSource generates an error
             // during construction it gets emitted over EventPipe
-#if (UPDATED_NETCORE_CLIENT == true)
+
             var providers = new List<EventPipeProvider>
             {
                 new EventPipeProvider("IllegalTypesEventSource", EventLevel.Verbose)
             };
 
             return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _DoesRundownContainMethodEvents);
-#else
-            List<Provider> providers = new List<Provider>
-            {
-                new Provider("IllegalTypesEventSource")
-            };
-
-            var configuration = new SessionConfiguration(circularBufferSizeMB: 1024, format: EventPipeSerializationFormat.NetTrace,  providers: providers);
-            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, configuration, _DoesRundownContainMethodEvents);
-#endif
         }
 
         private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()

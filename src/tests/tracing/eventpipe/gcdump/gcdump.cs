@@ -8,11 +8,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-#if (UPDATED_NETCORE_CLIENT == true)
 using Microsoft.Diagnostics.NETCore.Client;
-#else
 using Microsoft.Diagnostics.Tools.RuntimeClient;
-#endif
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Tracing.Tests.Common;
@@ -20,7 +17,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 
 namespace Tracing.Tests.EventSourceError
 {
-    // Regression test for https://github.com/dotnet/runtime/issues/38639
+    // Regression test for https://github.com/dotnet/runtime/issues/38639 
     public class GCDumpTest
     {
         private static int _bulkTypeCount = 0;
@@ -35,22 +32,13 @@ namespace Tracing.Tests.EventSourceError
         {
             // This test validates that if an EventSource generates an error
             // during construction it gets emitted over EventPipe
-#if (UPDATED_NETCORE_CLIENT == true)
+
             List<EventPipeProvider> providers = new List<EventPipeProvider>
             {
                 new EventPipeProvider("Microsoft-Windows-DotNETRuntime", eventLevel: EventLevel.Verbose, keywords: (long)ClrTraceEventParser.Keywords.GCHeapSnapshot)
             };
 
             return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _DoesRundownContainMethodEvents);
-#else
-            List<Provider> providers = new List<Provider>
-            {
-                new Provider("Microsoft-Windows-DotNETRuntime", eventLevel: EventLevel.Verbose, keywords: (ulong)ClrTraceEventParser.Keywords.GCHeapSnapshot)
-            };
-
-            var configuration = new SessionConfiguration(circularBufferSizeMB: 1024, format: EventPipeSerializationFormat.NetTrace,  providers: providers);
-            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, configuration, _DoesRundownContainMethodEvents);
-#endif
         }
 
         private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()
@@ -90,7 +78,7 @@ namespace Tracing.Tests.EventSourceError
                 _bulkRootStaticVarCount += data.Count;
             };
 
-            return () =>
+            return () => 
             {
                 // Hopefully it is low enough to be resilient to changes in the runtime
                 // and high enough to catch issues. There should be between hundreds and thousands

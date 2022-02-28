@@ -10,11 +10,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Tracing.Tests.Common;
-#if (UPDATED_NETCORE_CLIENT == true)
 using Microsoft.Diagnostics.NETCore.Client;
-#else
-using Microsoft.Diagnostics.Tools.RuntimeClient;
-#endif
 
 namespace Tracing.Tests.BufferValidation
 {
@@ -31,7 +27,7 @@ namespace Tracing.Tests.BufferValidation
         {
             // This tests the resilience of message sending with
             // smaller buffers, specifically 1MB and 4MB
-#if (UPDATED_NETCORE_CLIENT == true)
+
             var providers = new List<EventPipeProvider>()
             {
                 new EventPipeProvider("MyEventSource", EventLevel.Verbose)
@@ -48,26 +44,6 @@ namespace Tracing.Tests.BufferValidation
             }
 
             return 100;
-#else
-            var providers = new List<Provider>()
-            {
-                new Provider("MyEventSource")
-            };
-
-            var tests = new int[] { 0, 2 }
-                .Select(x => (uint)Math.Pow(2, x))
-                .Select(bufferSize => new SessionConfiguration(circularBufferSizeMB: bufferSize, format: EventPipeSerializationFormat.NetTrace, providers: providers))
-                .Select<SessionConfiguration, Func<int>>(configuration => () => IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, configuration));
-
-            foreach (var test in tests)
-            {
-                var ret = test();
-                if (ret < 0)
-                    return ret;
-            }
-
-            return 100;
-#endif
         }
 
         private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()

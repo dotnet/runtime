@@ -13,11 +13,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Condition="'$(UseUpdatedNETCoreClient)' == 'true'" Include="IpcTraceTest.cs" />
-    <Compile Condition="'$(UseUpdatedNETCoreClient)' != 'true'" Include="IpcTraceTest.legacy.cs" />
+    <Compile Include="IpcTraceTest.cs" />
     <Compile Include="IpcUtils.cs" />
     <Compile Include="Reverse.cs" />
     <Compile Include="StreamProxy.cs" />
-    <ProjectReference Condition="'$(UseUpdatedNETCoreClient)' == 'true'" Include="Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
+    <ProjectReference Include="Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
   </ItemGroup>
 </Project>
