@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
@@ -17,7 +18,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			foreach (var member in typeSymbol.GetDynamicallyAccessedMembers (requiredMemberTypes, declaredOnly)) {
 				switch (member) {
 				case IMethodSymbol method:
-					GetDiagnosticsForMethod (diagnosticContext, method);
+					GetReflectionAccessDiagnosticsForMethod (diagnosticContext, method);
 					break;
 				case IFieldSymbol field:
 					GetDiagnosticsForField (diagnosticContext, field);
@@ -40,6 +41,24 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			}
 		}
 
+		internal void GetReflectionAccessDiagnosticsForEventsOnTypeHierarchy (in DiagnosticContext diagnosticContext, ITypeSymbol typeSymbol, string name, BindingFlags? bindingFlags)
+		{
+			foreach (var @event in typeSymbol.GetEventsOnTypeHierarchy (e => e.Name == name, bindingFlags))
+				GetDiagnosticsForEvent (diagnosticContext, @event);
+		}
+
+		internal void GetReflectionAccessDiagnosticsForFieldsOnTypeHierarchy (in DiagnosticContext diagnosticContext, ITypeSymbol typeSymbol, string name, BindingFlags? bindingFlags)
+		{
+			foreach (var field in typeSymbol.GetFieldsOnTypeHierarchy (f => f.Name == name, bindingFlags))
+				GetDiagnosticsForField (diagnosticContext, field);
+		}
+
+		internal void GetReflectionAccessDiagnosticsForPropertiesOnTypeHierarchy (in DiagnosticContext diagnosticContext, ITypeSymbol typeSymbol, string name, BindingFlags? bindingFlags)
+		{
+			foreach (var prop in typeSymbol.GetPropertiesOnTypeHierarchy (p => p.Name == name, bindingFlags))
+				GetDiagnosticsForProperty (diagnosticContext, prop);
+		}
+
 		static void ReportRequiresUnreferencedCodeDiagnostic (in DiagnosticContext diagnosticContext, AttributeData requiresAttributeData, ISymbol member)
 		{
 			var message = RequiresUnreferencedCodeUtils.GetMessageFromAttribute (requiresAttributeData);
@@ -47,7 +66,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			diagnosticContext.AddDiagnostic (DiagnosticId.RequiresUnreferencedCode, member.GetDisplayName (), message, url);
 		}
 
-		static void GetDiagnosticsForMethod (in DiagnosticContext diagnosticContext, IMethodSymbol methodSymbol)
+		internal static void GetReflectionAccessDiagnosticsForMethod (in DiagnosticContext diagnosticContext, IMethodSymbol methodSymbol)
 		{
 			if (methodSymbol.TryGetRequiresUnreferencedCodeAttribute (out var requiresAttributeData))
 				ReportRequiresUnreferencedCodeDiagnostic (diagnosticContext, requiresAttributeData, methodSymbol);
@@ -69,19 +88,19 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		static void GetDiagnosticsForProperty (in DiagnosticContext diagnosticContext, IPropertySymbol propertySymbol)
 		{
 			if (propertySymbol.SetMethod is not null)
-				GetDiagnosticsForMethod (diagnosticContext, propertySymbol.SetMethod);
+				GetReflectionAccessDiagnosticsForMethod (diagnosticContext, propertySymbol.SetMethod);
 			if (propertySymbol.GetMethod is not null)
-				GetDiagnosticsForMethod (diagnosticContext, propertySymbol.GetMethod);
+				GetReflectionAccessDiagnosticsForMethod (diagnosticContext, propertySymbol.GetMethod);
 		}
 
 		static void GetDiagnosticsForEvent (in DiagnosticContext diagnosticContext, IEventSymbol eventSymbol)
 		{
 			if (eventSymbol.AddMethod is not null)
-				GetDiagnosticsForMethod (diagnosticContext, eventSymbol.AddMethod);
+				GetReflectionAccessDiagnosticsForMethod (diagnosticContext, eventSymbol.AddMethod);
 			if (eventSymbol.RemoveMethod is not null)
-				GetDiagnosticsForMethod (diagnosticContext, eventSymbol.RemoveMethod);
+				GetReflectionAccessDiagnosticsForMethod (diagnosticContext, eventSymbol.RemoveMethod);
 			if (eventSymbol.RaiseMethod is not null)
-				GetDiagnosticsForMethod (diagnosticContext, eventSymbol.RaiseMethod);
+				GetReflectionAccessDiagnosticsForMethod (diagnosticContext, eventSymbol.RaiseMethod);
 		}
 
 		static void GetDiagnosticsForField (in DiagnosticContext diagnosticContext, IFieldSymbol fieldSymbol)

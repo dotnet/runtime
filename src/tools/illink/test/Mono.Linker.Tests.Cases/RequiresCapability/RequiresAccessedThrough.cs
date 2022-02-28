@@ -39,7 +39,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 		}
 
-		[ExpectedWarning ("IL2026", "--RequiresOnlyThroughReflection--", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2026", "--RequiresOnlyThroughReflection--")]
 		static void TestRequiresOnlyThroughReflection ()
 		{
 			typeof (RequiresAccessedThrough)
@@ -54,7 +54,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 			}
 
-			[ExpectedWarning ("IL2026", "--GenericType.RequiresOnlyThroughReflection--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--GenericType.RequiresOnlyThroughReflection--")]
 			public static void Test ()
 			{
 				typeof (AccessedThroughReflectionOnGenericType<T>)
