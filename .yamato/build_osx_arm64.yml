@@ -22,7 +22,7 @@ commands:
     cmake --build .
   - LD_LIBRARY_PATH=/usr/local/opt/openssl/lib ./build.sh -subset clr+libs -a arm64 -c release -cross -ci -ninja /p:CrossBuild=true
   - cp unity/unitygc/release/libunitygc.dylib artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Release/runtimes/osx-arm64/native
-  - artifacts/7za-mac-x64/7za a artifacts/unity/$ARTIFACT_FILENAME ./artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Release/runtimes/osx-arm64
+  - artifacts/7za-mac-x64/7za a artifacts/unity/$ARTIFACT_FILENAME ./artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Release/runtimes/osx-arm64/*
 
 artifacts:
   osx-arm64-7z:

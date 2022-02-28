@@ -18,7 +18,7 @@ commands:
   - build.cmd -subset clr+libs -a x86 -c release -ci
   - copy unity\unitygc\Release\unitygc.dll artifacts\bin\microsoft.netcore.app.runtime.win-x86\Release\runtimes\win-x86\native 
   - powershell .yamato\scripts\download_7z.ps1
-  - artifacts\7za-win-x64\7za.exe a artifacts\unity\%ARTIFACT_FILENAME% .\artifacts\bin\microsoft.netcore.app.runtime.win-x86\Release\runtimes\win-x86
+  - artifacts\7za-win-x64\7za.exe a artifacts\unity\%ARTIFACT_FILENAME% .\artifacts\bin\microsoft.netcore.app.runtime.win-x86\Release\runtimes\win-x86\*
 
 artifacts:
   win-x86-7z:
