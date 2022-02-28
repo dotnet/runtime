@@ -265,19 +265,19 @@ namespace Microsoft.Extensions.Hosting
                     // and done other things based on environment name, application name or content root.
                     if (!string.Equals(previousApplicationName, config[HostDefaults.ApplicationKey], StringComparison.OrdinalIgnoreCase))
                     {
-                        throw new NotSupportedException($"The application name changed from \"{previousApplicationName}\" to \"{config[HostDefaults.ApplicationKey]}\". Changing host configuration is not supported.");
+                        throw new NotSupportedException(SR.Format(SR.ApplicationNameChangeNotSupported, previousApplicationName, config[HostDefaults.ApplicationKey]));
                     }
                     if (!string.Equals(previousEnvironment, config[HostDefaults.EnvironmentKey], StringComparison.OrdinalIgnoreCase))
                     {
-                        throw new NotSupportedException($"The environment changed from \"{previousEnvironment}\" to \"{config[HostDefaults.EnvironmentKey]}\". Changing host configuration is not supported.");
+                        throw new NotSupportedException(SR.Format(SR.EnvironmentNameChangeNotSupoprted, previousEnvironment, config[HostDefaults.EnvironmentKey]));
                     }
                     // It's okay if the ConfigureHostConfiguration callbacks either left the config unchanged or set it back to the real ContentRootPath.
                     // Setting it to anything else indicates code intends to change the content root via HostFactoryResolver which is unsupported.
                     string? currentContentRootConfig = config[HostDefaults.ContentRootKey];
                     if (!string.Equals(previousContentRootConfig, currentContentRootConfig, StringComparison.OrdinalIgnoreCase) &&
-                        !string.Equals(previousContentRootPath, HostBuilder.ResolveContentRootPath(currentContentRootConfig, AppContext.BaseDirectory)))
+                        !string.Equals(previousContentRootPath, HostBuilder.ResolveContentRootPath(currentContentRootConfig, AppContext.BaseDirectory), StringComparison.OrdinalIgnoreCase))
                     {
-                        throw new NotSupportedException($"The content root changed from \"{previousContentRootConfig}\" to \"{config[HostDefaults.ContentRootKey]}\". Changing host configuration is not supported.");
+                        throw new NotSupportedException(SR.Format(SR.ContentRootChangeNotSupported, previousContentRootConfig, currentContentRootConfig));
                     }
                 }
 
@@ -417,7 +417,7 @@ namespace Microsoft.Extensions.Hosting
             {
                 if (IsReadOnly)
                 {
-                    throw new InvalidOperationException("The service collection cannot be modified after the application is built.");
+                    throw new InvalidOperationException(SR.ServiceCollectionModificationInvalidAfterBuild);
                 }
             }
         }
