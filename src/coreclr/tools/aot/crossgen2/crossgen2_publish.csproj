@@ -8,7 +8,6 @@
     <RunningPublish>true</RunningPublish>
     <!-- Trimming is not currently working, but set the appropriate feature flags for NativeAOT -->
     <PublishTrimmed Condition="'$(NativeAotSupported)' == 'true'">true</PublishTrimmed>
-    <NativeAotSupported>false</NativeAotSupported>
   </PropertyGroup>
 
   <Import Project="crossgen2.props" />
@@ -31,6 +30,7 @@
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
     <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>
+    <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkPath>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
 
     <!-- Forced by ILLink targets; we should fix the SDK -->
