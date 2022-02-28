@@ -4480,9 +4480,10 @@ inline static bool StructHasOverlappingFields(DWORD attribs)
     return ((attribs & CORINFO_FLG_OVERLAPPING_FIELDS) != 0);
 }
 
-inline static bool StructHasCustomLayout(DWORD attribs)
+inline static bool TreatStructAsOpaqueBlobOfBytes(DWORD attribs)
+
 {
-    return ((attribs & CORINFO_FLG_CUSTOMLAYOUT) != 0);
+    return ((attribs & CORINFO_FLG_OPAQUE_BLOB) != 0);
 }
 
 inline static bool StructHasDontDigFieldsFlagSet(DWORD attribs)

@@ -842,7 +842,7 @@ enum CorInfoFlag
     CORINFO_FLG_OVERLAPPING_FIELDS    = 0x00100000, // struct or class has fields that overlap (aka union)
     CORINFO_FLG_INTERFACE             = 0x00200000, // it is an interface
     CORINFO_FLG_DONT_DIG_FIELDS       = 0x00400000, // don't ask field info, AOT can't rely on it (used for types outside of AOT compilation version bubble)
-    CORINFO_FLG_CUSTOMLAYOUT          = 0x00800000, // does this struct have custom layout?
+    CORINFO_FLG_OPAQUE_BLOB           = 0x00800000, // should this struct be treated as opaque blob of bytes?
     CORINFO_FLG_CONTAINS_GC_PTR       = 0x01000000, // does the class contain a gc ptr ?
     CORINFO_FLG_DELEGATE              = 0x02000000, // is this a subclass of delegate or multicast delegate ?
     // CORINFO_FLG_UNUSED             = 0x04000000,
