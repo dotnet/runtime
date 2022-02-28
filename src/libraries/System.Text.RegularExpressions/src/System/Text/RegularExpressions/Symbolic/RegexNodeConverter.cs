@@ -138,7 +138,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         captureNum = node.M;
                     }
-                    return _builder.CreateCapture(ConvertToSymbolicRegexNode(node.Child(0), tryCreateFixedLengthMarker: false), captureNum);
+                    return _builder.CreateCapture(ConvertToSymbolicRegexNode(node.Child(0), tryCreateFixedLengthMarker), captureNum);
 
                 case RegexNodeKind.Empty:
                 case RegexNodeKind.UpdateBumpalong: // UpdateBumpalong is a directive relevant only to backtracking and can be ignored just like Empty

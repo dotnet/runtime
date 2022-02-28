@@ -15,14 +15,27 @@ namespace Microsoft.Interop
     /// <summary>
     /// Type used to pass on default marshalling details.
     /// </summary>
+    /// <remarks>
+    /// This type used to pass default marshalling details to <see cref="MarshallingAttributeInfoParser"/>.
+    /// Since it contains a <see cref="INamedTypeSymbol"/>, it should not be used as a field on any types
+    /// derived from <see cref="MarshallingInfo"/>. See remarks on <see cref="MarshallingInfo"/>.
+    /// </remarks>
     public sealed record DefaultMarshallingInfo(
-        CharEncoding CharEncoding
+        CharEncoding CharEncoding,
+        INamedTypeSymbol? StringMarshallingCustomType
     );
 
     // The following types are modeled to fit with the current prospective spec
     // for C# vNext discriminated unions. Once discriminated unions are released,
     // these should be updated to be implemented as a discriminated union.
 
+    /// <summary>
+    /// Base type for marshalling information
+    /// </summary>
+    /// <remarks>
+    /// Types derived from this are used to represent the stub information calculated from the semantic model.
+    /// To support incremental generation, they must not include any types derived from <see cref="ISymbol"/>.
+    /// </remarks>
     public abstract record MarshallingInfo
     {
         // Add a constructor that can only be called by derived types in the same assembly
@@ -47,7 +60,7 @@ namespace Microsoft.Interop
     /// </summary>
     /// <remarks>
     /// An indication of "missing support" will trigger the fallback logic, which is
-    /// the forwarder marshaler.
+    /// the forwarder marshaller.
     /// </remarks>
     public record MissingSupportMarshallingInfo : MarshallingInfo;
 
@@ -60,7 +73,7 @@ namespace Microsoft.Interop
         Utf8,
         Utf16,
         Ansi,
-        PlatformDefined
+        Custom
     }
 
     /// <summary>
@@ -171,7 +184,7 @@ namespace Microsoft.Interop
     /// </summary>
     /// <remarks>
     /// An indication of "missing support" will trigger the fallback logic, which is
-    /// the forwarder marshaler.
+    /// the forwarder marshaller.
     /// </remarks>
     public sealed record MissingSupportCollectionMarshallingInfo(CountInfo CountInfo, MarshallingInfo ElementMarshallingInfo) : MissingSupportMarshallingInfo;
 
@@ -276,6 +289,7 @@ namespace Microsoft.Interop
                     {
                         return CreateNativeMarshallingInfo(
                             type,
+                            (INamedTypeSymbol)useSiteAttribute.ConstructorArguments[0].Value!,
                             useSiteAttribute,
                             isMarshalUsingAttribute: true,
                             indirectionLevel,
@@ -297,6 +311,7 @@ namespace Microsoft.Interop
                 {
                     return CreateNativeMarshallingInfo(
                         type,
+                        (INamedTypeSymbol)typeAttribute.ConstructorArguments[0].Value!,
                         typeAttribute,
                         isMarshalUsingAttribute: false,
                         indirectionLevel,
@@ -567,6 +582,7 @@ namespace Microsoft.Interop
 
         private MarshallingInfo CreateNativeMarshallingInfo(
             ITypeSymbol type,
+            INamedTypeSymbol nativeType,
             AttributeData attrData,
             bool isMarshalUsingAttribute,
             int indirectionLevel,
@@ -583,8 +599,6 @@ namespace Microsoft.Interop
             }
 
             ITypeSymbol spanOfByte = _compilation.GetTypeByMetadataName(TypeNames.System_Span_Metadata)!.Construct(_compilation.GetSpecialType(SpecialType.System_Byte));
-
-            INamedTypeSymbol nativeType = (INamedTypeSymbol)attrData.ConstructorArguments[0].Value!;
 
             if (nativeType.IsUnboundGenericType)
             {
@@ -772,12 +786,22 @@ namespace Microsoft.Interop
 
             // No marshalling info was computed, but a character encoding was provided.
             // If the type is a character or string then pass on these details.
-            if (_defaultInfo.CharEncoding != CharEncoding.Undefined
-                && (type.SpecialType == SpecialType.System_Char
-                    || type.SpecialType == SpecialType.System_String))
+            if (type.SpecialType == SpecialType.System_Char || type.SpecialType == SpecialType.System_String)
             {
-                marshallingInfo = new MarshallingInfoStringSupport(_defaultInfo.CharEncoding);
-                return true;
+                if (_defaultInfo.CharEncoding == CharEncoding.Custom && _defaultInfo.StringMarshallingCustomType is not null)
+                {
+                    AttributeData attrData = _contextSymbol is IMethodSymbol
+                        ? _contextSymbol.GetAttributes().First(a => a.AttributeClass.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
+                        : default;
+                    marshallingInfo = CreateNativeMarshallingInfo(type, _defaultInfo.StringMarshallingCustomType, attrData, true, indirectionLevel, parsedCountInfo, useSiteAttributes, inspectedElements, ref maxIndirectionLevelUsed);
+                    return true;
+                }
+
+                if (_defaultInfo.CharEncoding != CharEncoding.Undefined)
+                {
+                    marshallingInfo = new MarshallingInfoStringSupport(_defaultInfo.CharEncoding);
+                    return true;
+                }
             }
 
             if (type is INamedTypeSymbol { IsUnmanagedType: true } unmanagedType

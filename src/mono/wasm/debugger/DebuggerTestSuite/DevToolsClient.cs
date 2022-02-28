@@ -18,6 +18,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         ClientWebSocket socket;
         TaskCompletionSource _clientInitiatedClose = new TaskCompletionSource();
         TaskCompletionSource _shutdownRequested = new TaskCompletionSource();
+        readonly TaskCompletionSource<Exception> _failRequested = new();
         TaskCompletionSource _newSendTaskAvailable = new ();
         protected readonly ILogger logger;
 
@@ -63,6 +64,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 logger.LogDebug($"DevToolsClient.Shutdown: Close failed, but ignoring: {ex}");
             }
+        }
+
+        public void Fail(Exception exception)
+        {
+            if (_failRequested.Task.IsCompleted)
+                logger.LogError($"Fail requested again with {exception}");
+            else
+                _failRequested.TrySetResult(exception);
         }
 
         async Task<string> ReadOne(CancellationToken token)
@@ -172,7 +181,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 ReadOne(linkedCts.Token),
                 _newSendTaskAvailable.Task,
                 _clientInitiatedClose.Task,
-                _shutdownRequested.Task
+                _shutdownRequested.Task,
+                _failRequested.Task
             };
 
             // In case we had a Send called already
@@ -191,6 +201,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 if (_clientInitiatedClose.Task.IsCompleted)
                     return (RunLoopStopReason.ClientInitiatedClose, new TaskCanceledException("Proxy or the browser closed the connection"));
+
+                if (_failRequested.Task.IsCompleted)
+                    return (RunLoopStopReason.Exception, _failRequested.Task.Result);
 
                 if (_newSendTaskAvailable.Task.IsCompleted)
                 {

@@ -25,9 +25,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal bool IsInitialState { get; set; }
 
-        /// <summary>State is lazy</summary>
-        internal bool IsLazy => Node._info.IsLazy;
-
         /// <summary>This is a deadend state</summary>
         internal bool IsDeadend => Node.IsNothing;
 
@@ -84,7 +81,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // If the previous state was the start state, mark this as the very FIRST \n.
                 // Essentially, this looks the same as the very last \n and is used to nullify
                 // rev(\Z) in the conext of a reversed automaton.
-                nextCharKind = PrevCharKind == CharKind.StartStop ?
+                nextCharKind = PrevCharKind == CharKind.BeginningEnd ?
                     CharKind.NewLineS :
                     CharKind.Newline;
             }
@@ -121,7 +118,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
         /// <returns>an enumeration of the transitions as pairs of the target state and a list of effects to be applied</returns>
-        internal List<(DfaMatchingState<T> derivative, List<DerivativeEffect> effects)> AntimirovEagerNextWithEffects(T minterm)
+        internal List<(DfaMatchingState<T> derivative, List<DerivativeEffect> effects)> NfaEagerNextWithEffects(T minterm)
         {
             uint nextCharKind = GetNextCharKind(ref minterm);
 
@@ -146,7 +143,7 @@ namespace System.Text.RegularExpressions.Symbolic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsNullable(uint nextCharKind)
         {
-            Debug.Assert(nextCharKind is 0 or CharKind.StartStop or CharKind.Newline or CharKind.WordLetter or CharKind.NewLineS);
+            Debug.Assert(nextCharKind is 0 or CharKind.BeginningEnd or CharKind.Newline or CharKind.WordLetter or CharKind.NewLineS);
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
             return Node.IsNullableFor(context);
         }

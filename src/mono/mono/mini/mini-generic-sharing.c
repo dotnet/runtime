@@ -4031,15 +4031,16 @@ get_shared_gparam_name (MonoTypeEnum constraint, const char *name)
 		return g_strdup_printf ("%s_INST", name);
 	} else {
 		MonoType t;
-		char *tname, *tname2, *res;
+		char *tname, *res;
 
 		memset (&t, 0, sizeof (t));
 		t.type = constraint;
 		tname = mono_type_full_name (&t);
-		tname2 = g_utf8_strup (tname, strlen (tname));
-		res = g_strdup_printf ("%s_%s", name, tname2);
+		int len = strlen (tname);
+		for (int i = 0; i < len; ++i)
+			tname [i] = toupper (tname [i]);
+		res = g_strdup_printf ("%s_%s", name, tname);
 		g_free (tname);
-		g_free (tname2);
 		return res;
 	}
 }

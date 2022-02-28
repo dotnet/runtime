@@ -69,7 +69,7 @@
 #include "aot-runtime.h"
 #include "jit-icalls.h"
 #include "mini-runtime.h"
-#include <mono/mini/mono-private-unstable.h>
+#include <mono/jit/mono-private-unstable.h>
 #include "llvmonly-runtime.h"
 
 #include <mono/metadata/components.h>

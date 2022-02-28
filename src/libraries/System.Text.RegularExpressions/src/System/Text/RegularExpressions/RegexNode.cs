@@ -347,19 +347,23 @@ namespace System.Text.RegularExpressions
                 // we've already outlined is problematic.
                 {
                     RegexNode node = rootNode.Child(0); // skip implicit root capture node
+                    bool atomicByAncestry = true; // the root is implicitly atomic because nothing comes after it (same for the implicit root capture)
                     while (true)
                     {
                         switch (node.Kind)
                         {
                             case RegexNodeKind.Atomic:
+                                node = node.Child(0);
+                                continue;
+
                             case RegexNodeKind.Concatenate:
+                                atomicByAncestry = false;
                                 node = node.Child(0);
                                 continue;
 
                             case RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when node.N == int.MaxValue:
-                            case RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy when node.N == int.MaxValue && !node.IsAtomicByParent():
-                                RegexNode? parent = node.Parent;
-                                if (parent != null && parent.Kind == RegexNodeKind.Concatenate)
+                            case RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy when node.N == int.MaxValue && !atomicByAncestry:
+                                if (node.Parent is { Kind: RegexNodeKind.Concatenate } parent)
                                 {
                                     parent.InsertChild(1, new RegexNode(RegexNodeKind.UpdateBumpalong, node.Options));
                                 }
@@ -488,55 +492,6 @@ namespace System.Text.RegularExpressions
 
                 break;
             }
-        }
-
-        /// <summary>Whether this node may be considered to be atomic based on its parent.</summary>
-        /// <remarks>
-        /// This may have false negatives, meaning the node may actually be atomic even if this returns false.
-        /// But any true result may be relied on to mean the node will actually be considered to be atomic.
-        /// </remarks>
-        public bool IsAtomicByParent()
-        {
-            // Walk up the parent hierarchy.
-            RegexNode child = this;
-            for (RegexNode? parent = child.Parent; parent is not null; child = parent, parent = child.Parent)
-            {
-                switch (parent.Kind)
-                {
-                    case RegexNodeKind.Atomic:
-                    case RegexNodeKind.NegativeLookaround:
-                    case RegexNodeKind.PositiveLookaround:
-                        // If the parent is atomic, so is the child.  That's the whole purpose
-                        // of the Atomic node, and lookarounds are also implicitly atomic.
-                        return true;
-
-                    case RegexNodeKind.Alternate:
-                    case RegexNodeKind.BackreferenceConditional:
-                        // Skip alternations.  Each branch is considered independently,
-                        // so any atomicity applied to the alternation also applies to
-                        // each individual branch.  This is true as well for conditional
-                        // backreferences, where each of the yes/no branches are independent.
-                    case RegexNodeKind.ExpressionConditional when parent.Child(0) != child:
-                        // As with alternations, each yes/no branch of an expression conditional
-                        // are independent from each other, but the conditional expression itself
-                        // can be backtracked into from each of the branches, so we can't make
-                        // it atomic just because the whole conditional is.
-                    case RegexNodeKind.Capture:
-                        // Skip captures. They don't affect atomicity.
-                    case RegexNodeKind.Concatenate when parent.Child(parent.ChildCount() - 1) == child:
-                        // If the parent is a concatenation and this is the last node,
-                        // any atomicity applying to the concatenation applies to this
-                        // node, too.
-                        continue;
-
-                    default:
-                        // For any other parent type, give up on trying to prove atomicity.
-                        return false;
-                }
-            }
-
-            // The parent was null, so nothing can backtrack in.
-            return true;
         }
 
         /// <summary>
@@ -747,7 +702,7 @@ namespace System.Text.RegularExpressions
                             start = endExclusive;
                         }
 
-                        // If anything we reordered, there may be new optimization opportunities inside
+                        // If anything was reordered, there may be new optimization opportunities inside
                         // of the alternation, so reduce it again.
                         if (reordered)
                         {
@@ -2611,18 +2566,6 @@ namespace System.Text.RegularExpressions
                 if (!Child(i).SupportsCompilation())
                 {
                     return false;
-                }
-            }
-
-            // TODO: This should be moved somewhere else, to a pass somewhere where we explicitly
-            // annotate the tree, potentially as part of the final optimization pass.  It doesn't
-            // belong in this check.
-            if (Kind == RegexNodeKind.Capture)
-            {
-                // If we've found a supported capture, mark all of the nodes in its parent hierarchy as containing a capture.
-                for (RegexNode? parent = this; parent != null && (parent.Options & HasCapturesFlag) == 0; parent = parent.Parent)
-                {
-                    parent.Options |= HasCapturesFlag;
                 }
             }
 
