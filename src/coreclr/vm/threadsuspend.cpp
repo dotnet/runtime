@@ -1989,6 +1989,14 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
 
     // So now allocate a buffer of that size and call InitializeContext again
     BYTE* buffer = new (nothrow)BYTE[contextSize];
+
+    if (!buffer)
+    {
+        printf("COULD NOT ALLOCATE. size: %d \n", contextSize);
+        throw "COULD NOT GET PREALLOCATED \n";
+    }
+
+
     if (buffer != NULL)
     {
         success = pfnInitializeContext2 ?
@@ -2896,6 +2904,13 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     if (!pCtx)
     {
         pCtx = m_pSavedRedirectContext = ThreadStore::GrabOSContext(&m_pOSContextBuffer);
+
+        if (!pCtx)
+        {
+            printf("COULD NOT GET PREALLOCATED \n");
+            throw "COULD NOT GET PREALLOCATED \n";
+        }
+
         _ASSERTE(GetSavedRedirectContext() != NULL);
     }
 
