@@ -5,6 +5,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal static partial class MsQuicTlsSupportHelper
     {
-        public static bool IsTls1_3Enabled() => true;
+        public static bool IsTls1_3Disabled() => false;
     }
 }
