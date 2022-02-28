@@ -3855,47 +3855,4 @@
             <Issue>missing assembly</Issue>
         </ExcludeList>
     </ItemGroup>
-
-    <ItemGroup Condition="'$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'arm' And '$(RuntimeFlavor)' == 'coreclr'" >
-        <!-- $(XunitTestBinBase)/JIT/Directed/debugging/debuginfo/tester.csproj is skipped using CLRTestTargetUnsupported -->
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/buffersize/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/gcdump/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/providervalidation/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
-    <ItemGroup Condition="!('$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'arm' And '$(RuntimeFlavor)' == 'coreclr')" >
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/debugging/debuginfo/tester_legacy*">
-            <Issue>Legacy to remove when main tests pass on Linux arm coreclr</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/buffersize_legacy/**">
-            <Issue>Legacy to remove when main tests pass on Linux arm coreclr</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/bigevent_legacy/**">
-            <Issue>Legacy to remove when main tests pass on Linux arm coreclr</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror_legacy/**">
-            <Issue>Legacy to remove when main tests pass on Linux arm coreclr</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/gcdump_legacy/**">
-            <Issue>Legacy to remove when main tests pass on Linux arm coreclr</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/providervalidation_legacy/**">
-            <Issue>Legacy to remove when main tests pass on Linux arm coreclr</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation_legacy/**">
-            <Issue>Legacy to remove when main tests pass on Linux arm coreclr</Issue>
-        </ExcludeList>
-    </ItemGroup>
 </Project>
