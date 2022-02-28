@@ -148,14 +148,14 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Internal Static FCalls
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethod", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethod", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DefineMethod(QCallModule module, int tkParent, string name, byte[] signature, int sigLength,
             MethodAttributes attributes);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethodSpec")]
         internal static partial int DefineMethodSpec(QCallModule module, int tkParent, byte[] signature, int sigLength);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineField", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineField", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DefineField(QCallModule module, int tkParent, string name, byte[] signature, int sigLength,
             FieldAttributes attributes);
 
@@ -186,11 +186,11 @@ namespace System.Reflection.Emit
                 localAttr, (localAttr != null) ? localAttr.Length : 0);
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineProperty", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineProperty", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DefineProperty(QCallModule module, int tkParent, string name, PropertyAttributes attributes,
             byte[] signature, int sigLength);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineEvent", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineEvent", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DefineEvent(QCallModule module, int tkParent, string name, EventAttributes attributes, int tkEventType);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethodSemantics")]
@@ -203,7 +203,7 @@ namespace System.Reflection.Emit
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetMethodImpl")]
         internal static partial void SetMethodImpl(QCallModule module, int tkMethod, MethodImplAttributes MethodImplAttributes);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetParamInfo", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetParamInfo", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int SetParamInfo(QCallModule module, int tkMethod, int iSequence,
             ParameterAttributes iParamAttributes, string? strParamName);
 
@@ -219,7 +219,7 @@ namespace System.Reflection.Emit
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetConstantValue")]
         private static unsafe partial void SetConstantValue(QCallModule module, int tk, int corType, void* pValue);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetPInvokeData", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetPInvokeData", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void SetPInvokeData(QCallModule module, string DllName, string name, int token, int linkFlags);
 
         #endregion
@@ -635,11 +635,11 @@ namespace System.Reflection.Emit
         #endregion
 
         #region FCalls
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineType", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineType", StringMarshalling = StringMarshalling.Utf16)]
         private static partial int DefineType(QCallModule module,
             string fullname, int tkParent, TypeAttributes attributes, int tkEnclosingType, int[] interfaceTokens);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineGenericParam", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineGenericParam", StringMarshalling = StringMarshalling.Utf16)]
         private static partial int DefineGenericParam(QCallModule module,
             string name, int tkParent, GenericParameterAttributes attributes, int position, int[] constraints);
 

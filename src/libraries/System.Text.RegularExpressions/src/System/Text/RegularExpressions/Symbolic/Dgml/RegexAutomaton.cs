@@ -17,14 +17,14 @@ namespace System.Text.RegularExpressions.Symbolic.DGML
         private readonly HashSet<int> _stateSet = new();
         private readonly List<Move<(SymbolicRegexNode<T>?, T)>> _moves = new();
         private readonly SymbolicRegexBuilder<T> _builder;
-        private SymbolicNFA<T>? _nfa;
+        private readonly SymbolicNFA<T>? _nfa;
 
         internal RegexAutomaton(SymbolicRegexMatcher<T> srm, int bound, bool addDotStar, bool inReverse, bool asNFA)
         {
             _builder = srm._builder;
             uint startId = inReverse ?
-                (srm._reversePattern._info.StartsWithLineAnchor ? CharKind.StartStop : 0) :
-                (srm._pattern._info.StartsWithLineAnchor ? CharKind.StartStop : 0);
+                (srm._reversePattern._info.StartsWithLineAnchor ? CharKind.BeginningEnd : 0) :
+                (srm._pattern._info.StartsWithLineAnchor ? CharKind.BeginningEnd : 0);
 
             //inReverse only matters if Ar contains some line anchor
             _q0 = _builder.CreateState(inReverse ? srm._reversePattern : (addDotStar ? srm._dotStarredPattern : srm._pattern), startId);

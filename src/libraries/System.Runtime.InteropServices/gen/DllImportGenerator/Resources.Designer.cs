@@ -97,6 +97,51 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The generated &apos;DllImportAttribute&apos; will not have a value corresponding to &apos;{0}&apos;..
+        /// </summary>
+        internal static string CannotForwardToDllImportDescription {
+            get {
+                return ResourceManager.GetString("CannotForwardToDllImportDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &apos;{0}&apos; has no equivalent in &apos;DllImportAtttribute&apos; and will not be forwarded.
+        /// </summary>
+        internal static string CannotForwardToDllImportMessage {
+            get {
+                return ResourceManager.GetString("CannotForwardToDllImportMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Specified &apos;GeneratedDllImportAttribute&apos; arguments cannot be forwarded to &apos;DllImportAttribute&apos;.
+        /// </summary>
+        internal static string CannotForwardToDllImportTitle {
+            get {
+                return ResourceManager.GetString("CannotForwardToDllImportTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The &apos;BlittableTypeAttribute&apos; and &apos;NativeMarshallingAttribute&apos; attributes are mutually exclusive..
+        /// </summary>
+        internal static string CannotHaveMultipleMarshallingAttributesDescription {
+            get {
+                return ResourceManager.GetString("CannotHaveMultipleMarshallingAttributesDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Type &apos;{0}&apos; is marked with &apos;BlittableTypeAttribute&apos; and &apos;NativeMarshallingAttribute&apos;. A type can only have one of these two attributes..
+        /// </summary>
+        internal static string CannotHaveMultipleMarshallingAttributesMessage {
+            get {
+                return ResourceManager.GetString("CannotHaveMultipleMarshallingAttributesMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to A &apos;SpanCollection&apos;-kind native type must have at least one of the two marshalling methods as well as a &apos;ManagedValues&apos; property of type &apos;Span&lt;T&gt;&apos; for some &apos;T&apos; and a &apos;NativeValueStorage&apos; property of type &apos;Span&lt;byte&gt;&apos; to enable marshalling the managed type..
         /// </summary>
         internal static string CollectionNativeTypeMustHaveRequiredShapeDescription {
@@ -354,6 +399,51 @@ namespace Microsoft.Interop {
         internal static string GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage {
             get {
                 return ResourceManager.GetString("GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid &apos;LibraryImportAttribute&apos; usage.
+        /// </summary>
+        internal static string InvalidLibraryImportAttributeUsageTitle {
+            get {
+                return ResourceManager.GetString("InvalidLibraryImportAttributeUsageTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The configuration of &apos;StringMarshalling&apos; and &apos;StringMarshallingCustomType&apos; is invalid..
+        /// </summary>
+        internal static string InvalidStringMarshallingConfigurationDescription {
+            get {
+                return ResourceManager.GetString("InvalidStringMarshallingConfigurationDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The configuration of &apos;StringMarshalling&apos; and &apos;StringMarshallingCustomType&apos; on method &apos;{0}&apos; is invalid. {1}.
+        /// </summary>
+        internal static string InvalidStringMarshallingConfigurationMessage {
+            get {
+                return ResourceManager.GetString("InvalidStringMarshallingConfigurationMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &apos;StringMarshallingCustomType&apos; must be specified when &apos;StringMarshalling&apos; is set to &apos;StringMarshalling.Custom&apos;..
+        /// </summary>
+        internal static string InvalidStringMarshallingConfigurationMissingCustomType {
+            get {
+                return ResourceManager.GetString("InvalidStringMarshallingConfigurationMissingCustomType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &apos;StringMarshalling&apos; should be set to &apos;StringMarshalling.Custom&apos; when &apos;StringMarshallingCustomType&apos; is specified..
+        /// </summary>
+        internal static string InvalidStringMarshallingConfigurationNotCustom {
+            get {
+                return ResourceManager.GetString("InvalidStringMarshallingConfigurationNotCustom", resourceCulture);
             }
         }
         

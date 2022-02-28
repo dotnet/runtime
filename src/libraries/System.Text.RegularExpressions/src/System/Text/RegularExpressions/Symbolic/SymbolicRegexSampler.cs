@@ -47,7 +47,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Initially there is no previous character
                 // Here one could also consider previous characters for example for \b, \B, and ^ anchors
                 // and initialize input_so_far accordingly
-                uint prevCharKind = CharKind.StartStop;
+                uint prevCharKind = CharKind.BeginningEnd;
 
                 // This flag is set to false in the unlikely situation that generation ends up in a dead-end
                 bool generationSucceeded = true;
@@ -68,7 +68,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     if (CanBeFinal(states))
                     {
                         // Unconditionally final state or end of the input due to \Z anchor for example
-                        if (IsFinal(states) || IsFinal(states, CharKind.Context(prevCharKind, CharKind.StartStop)))
+                        if (IsFinal(states) || IsFinal(states, CharKind.Context(prevCharKind, CharKind.BeginningEnd)))
                         {
                             possible_endings.Add("");
                         }

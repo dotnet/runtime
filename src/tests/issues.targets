@@ -1449,6 +1449,10 @@
             <Issue>Crashes during LLVM AOT compilation.</Issue>
         </ExcludeList>
 
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/HwiOp/CompareVectorWithZero/**">
+            <Issue>https://github.com/dotnet/runtime/pull/65632#issuecomment-1046294324</Issue>
+        </ExcludeList>
+
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/InstructionCombining/DivToMul/**">
             <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
         </ExcludeList>

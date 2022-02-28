@@ -30,7 +30,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/mini/jit.h>
+#include <mono/jit/jit.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/lock-free-alloc.h>

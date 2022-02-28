@@ -34,7 +34,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [GeneratedDllImport("libc", SetLastError = true)]
         private static partial int sysconf(int name);
 
-        [GeneratedDllImport("libc", CharSet = CharSet.Ansi, SetLastError = true)]
+        [GeneratedDllImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         protected static partial int mkfifo(string path, int mode);
 
         /// <summary>Asserts that the handle's inheritability matches the specified value.</summary>

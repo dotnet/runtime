@@ -70,7 +70,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(RepoRoot)\src\tests\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
+    <ProjectReference Include="$(RepoRoot)\src\tests\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 
   <!--
