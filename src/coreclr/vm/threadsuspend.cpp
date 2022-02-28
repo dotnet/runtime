@@ -1987,6 +1987,13 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
     // commenting this out to reduce noise, as long as Win7 is supported.
     // _ASSERTE(!success && GetLastError() == ERROR_INSUFFICIENT_BUFFER);
 
+    DWORD err = GetLastError();
+    if (err != ERROR_INSUFFICIENT_BUFFER)
+    {
+        printf("WRONG ERROR. err: %d \n", err);
+        ThrowLastError();
+    }
+
     // So now allocate a buffer of that size and call InitializeContext again
     BYTE* buffer = new (nothrow)BYTE[contextSize];
 
