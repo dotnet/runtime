@@ -533,7 +533,7 @@ namespace DebuggerTests
                     ("this.CallMethodReturningChar()", TChar('A')),
                     ("this.ParmToTestObj.MyMethod()", TString("methodOK")),
                     ("this.ParmToTestObj.ToString()", TString("DebuggerTests.EvaluateMethodTestsClass+ParmToTest")),
-                   ("this.objToTest.MyMethod()", TString("methodOK")));
+                    ("this.objToTest.MyMethod()", TString("methodOK")));
            });
 
 
