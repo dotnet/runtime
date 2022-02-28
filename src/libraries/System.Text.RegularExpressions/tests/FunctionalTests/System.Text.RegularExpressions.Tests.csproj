@@ -7,7 +7,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
+    <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest> <!-- to avoid OOMs with source generation in wasm: https://github.com/dotnet/runtime/pull/60701 -->
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AttRegexTests.cs" />
