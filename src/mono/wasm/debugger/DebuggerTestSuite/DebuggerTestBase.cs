@@ -90,14 +90,17 @@ namespace DebuggerTests
             {
                 chrome_path = FindChromePath();
                 if (!string.IsNullOrEmpty(chrome_path))
+                {
+                    chrome_path = Path.GetFullPath(chrome_path);
                     Console.WriteLine ($"** Using chrome from {chrome_path}");
+                }
                 else
                     throw new Exception("Could not find an installed Chrome to use");
             }
 
             return chrome_path;
 
-            string FindChromePath()
+            static string FindChromePath()
             {
                 string chrome_path_env_var = Environment.GetEnvironmentVariable("CHROME_PATH_FOR_DEBUGGER_TESTS");
                 if (!string.IsNullOrEmpty(chrome_path_env_var))
@@ -107,6 +110,15 @@ namespace DebuggerTests
 
                     Console.WriteLine ($"warning: Could not find CHROME_PATH_FOR_DEBUGGER_TESTS={chrome_path_env_var}");
                 }
+
+                // Look for a chrome installed in artifacts, for local runs
+                string baseDir = Path.Combine(Path.GetDirectoryName(typeof(DebuggerTestBase).Assembly.Location), "..", "..");
+                string path = Path.Combine(baseDir, "chrome", "chrome-linux", "chrome");
+                if (File.Exists(path))
+                    return path;
+                path = Path.Combine(baseDir, "chrome", "chrome-win", "chrome.exe");
+                if (File.Exists(path))
+                    return path;
 
                 return PROBE_LIST.FirstOrDefault(p => File.Exists(p));
             }

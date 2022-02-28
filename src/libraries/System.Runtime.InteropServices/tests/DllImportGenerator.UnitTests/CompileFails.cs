@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -25,11 +26,10 @@ namespace DllImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<char[]>(), 5, 0 };
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<string[]>(), 5, 0 };
 
-            // Unsupported CharSet
-            yield return new object[] { CodeSnippets.BasicParametersAndModifiersWithCharSet<char>(CharSet.Auto), 5, 0 };
-            yield return new object[] { CodeSnippets.BasicParametersAndModifiersWithCharSet<char>(CharSet.Ansi), 5, 0 };
-            yield return new object[] { CodeSnippets.BasicParametersAndModifiersWithCharSet<char>(CharSet.None), 5, 0 };
-            yield return new object[] { CodeSnippets.BasicParametersAndModifiersWithCharSet<string>(CharSet.None), 5, 0 };
+            // Unsupported StringMarshalling configuration
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<char>(StringMarshalling.Utf8), 6, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<char>(StringMarshalling.Custom), 7, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Custom), 7, 0 };
 
             // Unsupported UnmanagedType
             yield return new object[] { CodeSnippets.MarshalAsParametersAndModifiers<char>(UnmanagedType.I1), 5, 0 };
@@ -125,11 +125,17 @@ namespace DllImportGenerator.UnitTests
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
 
             // Verify the compilation failed with errors.
-            int generatorErrors = generatorDiags.Count(d => d.Severity == DiagnosticSeverity.Error);
-            Assert.Equal(expectedGeneratorErrors, generatorErrors);
+            IEnumerable<Diagnostic> generatorErrors = generatorDiags.Where(d => d.Severity == DiagnosticSeverity.Error);
+            int generatorErrorCount = generatorErrors.Count();
+            Assert.True(
+                expectedGeneratorErrors == generatorErrorCount,
+                $"Expected {expectedGeneratorErrors} errors, but encountered {generatorErrorCount}. Errors: {string.Join(Environment.NewLine, generatorErrors.Select(d => d.ToString()))}");
 
-            int compilerErrors = newComp.GetDiagnostics().Count(d => d.Severity == DiagnosticSeverity.Error);
-            Assert.Equal(expectedCompilerErrors, compilerErrors);
+            IEnumerable<Diagnostic> compilerErrors = newComp.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error);
+            int compilerErrorCount = compilerErrors.Count();
+            Assert.True(
+                expectedCompilerErrors == compilerErrorCount,
+                $"Expected {expectedCompilerErrors} errors, but encountered {compilerErrorCount}. Errors: {string.Join(Environment.NewLine, compilerErrors.Select(d => d.ToString()))}");
         }
 
         public static IEnumerable<object[]> CodeSnippetsToCompile_InvalidCode()

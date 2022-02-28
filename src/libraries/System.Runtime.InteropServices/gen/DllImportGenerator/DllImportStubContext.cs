@@ -153,18 +153,22 @@ namespace Microsoft.Interop
         {
             // Compute the current default string encoding value.
             CharEncoding defaultEncoding = CharEncoding.Undefined;
-            if (dllImportData.IsUserDefined.HasFlag(DllImportMember.CharSet))
+            if (dllImportData.IsUserDefined.HasFlag(DllImportMember.StringMarshalling))
             {
-                defaultEncoding = dllImportData.CharSet switch
+                defaultEncoding = dllImportData.StringMarshalling switch
                 {
-                    CharSet.Unicode => CharEncoding.Utf16,
-                    CharSet.Auto => CharEncoding.PlatformDefined,
-                    CharSet.Ansi => CharEncoding.Ansi,
-                    _ => CharEncoding.Undefined, // [Compat] Do not assume a specific value for None
+                    StringMarshalling.Utf16 => CharEncoding.Utf16,
+                    StringMarshalling.Utf8 => CharEncoding.Utf8,
+                    StringMarshalling.Custom => CharEncoding.Custom,
+                    _ => CharEncoding.Undefined, // [Compat] Do not assume a specific value
                 };
             }
+            else if (dllImportData.IsUserDefined.HasFlag(DllImportMember.StringMarshallingCustomType))
+            {
+                defaultEncoding = CharEncoding.Custom;
+            }
 
-            var defaultInfo = new DefaultMarshallingInfo(defaultEncoding);
+            var defaultInfo = new DefaultMarshallingInfo(defaultEncoding, dllImportData.StringMarshallingCustomType);
 
             var marshallingAttributeParser = new MarshallingAttributeInfoParser(env.Compilation, diagnostics, defaultInfo, method);
 
@@ -190,7 +194,7 @@ namespace Microsoft.Interop
                 NativeIndex = TypePositionInfo.ReturnIndex
             };
 
-            InteropGenerationOptions options = new(env.Options.UseMarshalType, env.Options.UseInternalUnsafeType);
+            InteropGenerationOptions options = new(env.Options.UseMarshalType);
             IMarshallingGeneratorFactory generatorFactory;
 
             if (env.Options.GenerateForwarders)
@@ -213,13 +217,14 @@ namespace Microsoft.Interop
                 generatorFactory = new MarshalAsMarshallingGeneratorFactory(options, generatorFactory);
 
                 IAssemblySymbol coreLibraryAssembly = env.Compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
-                ITypeSymbol disabledRuntimeMarshallingAttributeType = coreLibraryAssembly.GetTypeByMetadataName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute);
-                bool runtimeMarshallingDisabled = env.Compilation.Assembly.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, disabledRuntimeMarshallingAttributeType));
+                ITypeSymbol? disabledRuntimeMarshallingAttributeType = coreLibraryAssembly.GetTypeByMetadataName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute);
+                bool runtimeMarshallingDisabled = disabledRuntimeMarshallingAttributeType is not null
+                    && env.Compilation.Assembly.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, disabledRuntimeMarshallingAttributeType));
 
-                IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, new AttributedMarshallingModelOptions(options, runtimeMarshallingDisabled));
+                IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, new AttributedMarshallingModelOptions(runtimeMarshallingDisabled));
                 // We don't need to include the later generator factories for collection elements
                 // as the later generator factories only apply to parameters.
-                generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, new AttributedMarshallingModelOptions(options, runtimeMarshallingDisabled));
+                generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, new AttributedMarshallingModelOptions(runtimeMarshallingDisabled));
 
                 generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
             }
