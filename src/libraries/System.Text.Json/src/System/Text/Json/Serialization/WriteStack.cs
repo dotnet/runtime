@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace System.Text.Json
 {
-    [DebuggerDisplay("Path:{PropertyPath()} Current: ConverterStrategy.{ConverterStrategy.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy}, {Current.JsonTypeInfo.Type.Name}")]
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct WriteStack
     {
         /// <summary>
@@ -375,5 +375,8 @@ namespace System.Text.Json
                 }
             }
         }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private string DebuggerDisplay => $"Path:{PropertyPath()} Current: ConverterStrategy.{Current.JsonPropertyInfo?.ConverterBase.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
     }
 }

@@ -8,7 +8,7 @@ using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
-    [DebuggerDisplay("ConverterStrategy.{JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy}, {JsonTypeInfo.Type.Name}")]
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct WriteStackFrame
     {
         /// <summary>
@@ -120,5 +120,8 @@ namespace System.Text.Json
 
             return PolymorphicJsonPropertyInfo.ConverterBase;
         }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private string DebuggerDisplay => $"ConverterStrategy.{JsonTypeInfo?.PropertyInfoForTypeInfo.ConverterStrategy}, {JsonTypeInfo?.Type.Name}";
     }
 }

@@ -8,7 +8,7 @@ using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
-    [DebuggerDisplay("ConverterStrategy.{JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy}, {JsonTypeInfo.Type.Name}")]
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct ReadStackFrame
     {
         // Current property values.
@@ -89,5 +89,8 @@ namespace System.Text.Json
         {
             return (JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy & ConverterStrategy.Enumerable) != 0;
         }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private string DebuggerDisplay => $"ConverterStrategy.{JsonTypeInfo?.PropertyInfoForTypeInfo.ConverterStrategy}, {JsonTypeInfo?.Type.Name}";
     }
 }
