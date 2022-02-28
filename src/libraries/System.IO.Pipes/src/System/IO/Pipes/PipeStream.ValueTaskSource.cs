@@ -75,7 +75,7 @@ namespace System.IO.Pipes
                         _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, token) =>
                         {
                             PipeValueTaskSource vts = (PipeValueTaskSource)s!;
-                            if (vts._pipeStream.InternalHandle is { IsInvalid: false } handle)
+                            if (vts._pipeStream.InternalHandle is { IsClosed: false } handle)
                             {
                                 try
                                 {
