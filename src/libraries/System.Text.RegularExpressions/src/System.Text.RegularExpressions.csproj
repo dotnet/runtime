@@ -44,6 +44,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexRunner.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexRunnerFactory.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexTree.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexTreeAnalyzer.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexWriter.cs" />
     <Compile Include="System\Text\RegularExpressions\ThrowHelper.cs" />
     <!-- RegexOptions.Compiled -->

@@ -390,7 +390,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, null, @"(cat)(\cZ*)(dog)", "asdlkcat\u001adogiwod", RegexOptions.None, new string[] { "cat\u001adog", "cat", "\u001a", "dog" } };
                 yield return new object[] { engine, null, @"(cat)(\cz*)(dog)", "asdlkcat\u001adogiwod", RegexOptions.None, new string[] { "cat\u001adog", "cat", "\u001a", "dog" } };
 
-                if (!PlatformDetection.IsNetFramework) // missing fix for https://github.com/dotnet/runtime/issues/24759
+                if (!PlatformDetection.IsNetFramework) // `\c[` was not handled in .NET Framework. See https://github.com/dotnet/runtime/issues/24759.
                 {
                     yield return new object[] { engine, null, @"(cat)(\c[*)(dog)", "asdlkcat\u001bdogiwod", RegexOptions.None, new string[] { "cat\u001bdog", "cat", "\u001b", "dog" } };
                 }

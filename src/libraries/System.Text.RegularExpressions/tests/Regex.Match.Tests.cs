@@ -840,7 +840,7 @@ namespace System.Text.RegularExpressions.Tests
             if (isDefaultStart && isDefaultCount)
             {
                 VerifyMatch(r.Match(input));
-                Assert.Equal(expectedSuccess, r.IsMatch(input));
+                VerifyIsMatch(r, input, expectedSuccess, Regex.InfiniteMatchTimeout);
             }
             if (beginning + length == input.Length && (options & RegexOptions.RightToLeft) == 0)
             {
@@ -857,7 +857,7 @@ namespace System.Text.RegularExpressions.Tests
                     case RegexEngine.Compiled:
                     case RegexEngine.NonBacktracking:
                         VerifyMatch(Regex.Match(input, pattern, options | RegexHelpers.OptionsFromEngine(engine)));
-                        Assert.Equal(expectedSuccess, Regex.IsMatch(input, pattern, options | RegexHelpers.OptionsFromEngine(engine)));
+                        VerifyIsMatch(null, input, expectedSuccess, Regex.InfiniteMatchTimeout, pattern, options | RegexHelpers.OptionsFromEngine(engine));
                         break;
                 }
             }
@@ -1036,9 +1036,9 @@ namespace System.Text.RegularExpressions.Tests
         public void Match_CachedPattern_NewTimeoutApplies(RegexOptions options)
         {
             const string PatternLeadingToLotsOfBacktracking = @"^(\w+\s?)*$";
-            Assert.True(Regex.IsMatch("", PatternLeadingToLotsOfBacktracking, options, TimeSpan.FromDays(1)));
+            VerifyIsMatch(null, "", true, TimeSpan.FromDays(1), PatternLeadingToLotsOfBacktracking, options);
             var sw = Stopwatch.StartNew();
-            Assert.Throws<RegexMatchTimeoutException>(() => Regex.IsMatch("An input string that takes a very very very very very very very very very very very long time!", PatternLeadingToLotsOfBacktracking, options, TimeSpan.FromMilliseconds(1)));
+            VerifyIsMatchThrows<RegexMatchTimeoutException>(null, "An input string that takes a very very very very very very very very very very very long time!", TimeSpan.FromMilliseconds(1), PatternLeadingToLotsOfBacktracking, options);
             Assert.InRange(sw.Elapsed.TotalSeconds, 0, 10); // arbitrary upper bound that should be well above what's needed with a 1ms timeout
         }
 
@@ -1408,7 +1408,7 @@ namespace System.Text.RegularExpressions.Tests
                 VerifyMatch(r.Match(input));
                 VerifyMatch(Regex.Match(input, pattern, options));
 
-                Assert.True(Regex.IsMatch(input, pattern, options));
+                VerifyIsMatch(null, input, true, Regex.InfiniteMatchTimeout, pattern, options);
             }
 
             if (beginning + length == input.Length)
@@ -1561,9 +1561,9 @@ namespace System.Text.RegularExpressions.Tests
                 // Should not throw out of memory
 
                 // Repeaters
-                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{2147483647,}")).IsMatch("a"));
-                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{50,}")).IsMatch("a"));
-                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{50_000,}")).IsMatch("a")); // cutoff for Boyer-Moore prefix in release
+                VerifyIsMatch((await RegexHelpers.GetRegexAsync(engine, @"a{2147483647,}")), "a", false, Regex.InfiniteMatchTimeout);
+                VerifyIsMatch((await RegexHelpers.GetRegexAsync(engine, @"a{50,}")), "a", false, Regex.InfiniteMatchTimeout);
+                VerifyIsMatch((await RegexHelpers.GetRegexAsync(engine, @"a{50_000,}")), "a", false, Regex.InfiniteMatchTimeout); // cutoff for Boyer-Moore prefix in release
 
                 // Multis
                 foreach (int length in new[] { 50, 50_000, char.MaxValue + 1 })
@@ -1575,7 +1575,7 @@ namespace System.Text.RegularExpressions.Tests
                     if (!RegexHelpers.IsNonBacktracking(engine) || length < 50_000)
                     {
                         string s = "bcd" + new string('a', length) + "efg";
-                        Assert.True((await RegexHelpers.GetRegexAsync(engine, @$"a{{{length}}}")).IsMatch(s));
+                        VerifyIsMatch((await RegexHelpers.GetRegexAsync(engine, @$"a{{{length}}}")), s, true, Regex.InfiniteMatchTimeout);
                     }
                 }
             }, engine.ToString()).Dispose();
@@ -1625,9 +1625,9 @@ namespace System.Text.RegularExpressions.Tests
             AssertExtensions.Throws<ArgumentNullException>("input", () => r.IsMatch(null, 0));
 
             // Pattern is null
-            AssertExtensions.Throws<ArgumentNullException>("pattern", () => Regex.IsMatch("input", null));
-            AssertExtensions.Throws<ArgumentNullException>("pattern", () => Regex.IsMatch("input", null, RegexOptions.None));
-            AssertExtensions.Throws<ArgumentNullException>("pattern", () => Regex.IsMatch("input", null, RegexOptions.None, TimeSpan.FromSeconds(1)));
+            VerifyIsMatchThrows<ArgumentNullException>(null, "input", Regex.InfiniteMatchTimeout, pattern: null);
+            VerifyIsMatchThrows<ArgumentNullException>(null, "input", Regex.InfiniteMatchTimeout, pattern: null, RegexOptions.None);
+            VerifyIsMatchThrows<ArgumentNullException>(null, "input", TimeSpan.FromSeconds(1), pattern: null, RegexOptions.None);
 
             // Start is invalid
             Assert.Throws<ArgumentOutOfRangeException>(() => r.IsMatch("input", -1));
@@ -1650,7 +1650,7 @@ namespace System.Text.RegularExpressions.Tests
         public async Task IsMatch_SucceedQuicklyDueToLoopReduction(RegexEngine engine, string pattern, string input, bool expected)
         {
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
-            Assert.Equal(expected, r.IsMatch(input));
+            VerifyIsMatch(r, input, expected, Regex.InfiniteMatchTimeout);
         }
 
         [Theory]
@@ -1660,6 +1660,10 @@ namespace System.Text.RegularExpressions.Tests
             Regex r1 = await RegexHelpers.GetRegexAsync(engine, "[\u012F-\u0130]", RegexOptions.IgnoreCase);
             Regex r2 = await RegexHelpers.GetRegexAsync(engine, "[\u012F\u0130]", RegexOptions.IgnoreCase);
             Assert.Equal(r1.IsMatch("\u0130"), r2.IsMatch("\u0130"));
+#if NET7_0_OR_GREATER
+            Assert.Equal(r1.IsMatch("\u0130".AsSpan()), r2.IsMatch("\u0130".AsSpan()));
+#endif
+
         }
 
         [Fact]
@@ -1688,8 +1692,8 @@ namespace System.Text.RegularExpressions.Tests
         public async Task Match_Boundary(RegexEngine engine)
         {
             Regex r = await RegexHelpers.GetRegexAsync(engine, @"\b\w+\b");
-            Assert.False(r.IsMatch(" AB\u200cCD "));
-            Assert.False(r.IsMatch(" AB\u200dCD "));
+            VerifyIsMatch(r, " AB\u200cCD ", false, Regex.InfiniteMatchTimeout);
+            VerifyIsMatch(r, " AB\u200dCD ", false, Regex.InfiniteMatchTimeout);
         }
 
         public static IEnumerable<object[]> Match_Count_TestData()
@@ -1788,20 +1792,21 @@ namespace System.Text.RegularExpressions.Tests
             Assert.True(re.Match(fullinput).Success);
         }
 
-        public static IEnumerable<object[]> StressTestAntimirovMode_TestData()
+        public static IEnumerable<object[]> StressTestNfaMode_TestData()
         {
-            yield return new object[] { "a.{20}$", "a01234567890123456789", 21 };
-            yield return new object[] { "(a.{20}|a.{10})bc$", "a01234567890123456789bc", 23 };
+            yield return new object[] { "(?:a|aa|[abc]?[ab]?[abcd]).{20}$", "aaa01234567890123456789", 23 };
+            yield return new object[] { "(?:a|AA|BCD).{20}$", "a01234567890123456789", 21 };
+            yield return new object[] { "(?:a.{20}|a.{10})bc$", "a01234567890123456789bc", 23 };
         }
 
         /// <summary>
-        /// Causes NonBacktracking engine to switch to Antimirov mode internally.
-        /// Antimirov mode is otherwise never triggered by typical cases.
+        /// Causes NonBacktracking engine to switch to NFA mode internally.
+        /// NFA mode is otherwise never triggered by typical cases.
         /// </summary>
         [Theory]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
-        [MemberData(nameof(StressTestAntimirovMode_TestData))]
-        public async Task StressTestAntimirovMode(string pattern, string input_suffix, int expected_matchlength)
+        [MemberData(nameof(StressTestNfaMode_TestData))]
+        public async Task StressTestNfaMode(string pattern, string input_suffix, int expected_matchlength)
         {
             Random random = new Random(0);
             byte[] buffer = new byte[50_000];
@@ -2002,8 +2007,53 @@ namespace System.Text.RegularExpressions.Tests
                 bool baseline = regexes[0].IsMatch(s);
                 for (int i = 1; i < regexes.Count; i++)
                 {
-                    Assert.Equal(baseline, regexes[i].IsMatch(s));
+                    VerifyIsMatch(regexes[i], s, baseline, Regex.InfiniteMatchTimeout);
                 }
+            }
+        }
+
+        private static void VerifyIsMatchThrows<T>(Regex? r, string input, TimeSpan timeout, string? pattern = null, RegexOptions options = RegexOptions.None)
+            where T : Exception
+        {
+            if (r == null)
+            {
+                Assert.Throws<T>(() => timeout == Regex.InfiniteMatchTimeout ? Regex.IsMatch(input, pattern, options) : Regex.IsMatch(input, pattern, options, timeout));
+#if NET7_0_OR_GREATER
+                Assert.Throws<T>(() => timeout == Regex.InfiniteMatchTimeout ? Regex.IsMatch(input.AsSpan(), pattern, options) : Regex.IsMatch(input.AsSpan(), pattern, options, timeout));
+#endif
+            }
+            else
+            {
+                Assert.Throws<T>(() => r.IsMatch(input));
+#if NET7_0_OR_GREATER
+                Assert.Throws<T>(() => r.IsMatch(input.AsSpan()));
+#endif
+            }
+        }
+
+        private static void VerifyIsMatch(Regex? r, string input, bool expected, TimeSpan timeout, string? pattern = null, RegexOptions options = RegexOptions.None)
+        {
+            if (r == null)
+            {
+                Assert.Equal(expected, timeout == Regex.InfiniteMatchTimeout ? Regex.IsMatch(input, pattern, options) : Regex.IsMatch(input, pattern, options, timeout));
+                if (options == RegexOptions.None)
+                {
+                    Assert.Equal(expected, Regex.IsMatch(input, pattern));
+                }
+#if NET7_0_OR_GREATER
+                Assert.Equal(expected, timeout == Regex.InfiniteMatchTimeout ? Regex.IsMatch(input.AsSpan(), pattern, options) : Regex.IsMatch(input.AsSpan(), pattern, options, timeout));
+                if (options == RegexOptions.None)
+                {
+                    Assert.Equal(expected, Regex.IsMatch(input.AsSpan(), pattern));
+                }
+#endif
+            }
+            else
+            {
+                Assert.Equal(expected, r.IsMatch(input));
+#if NET7_0_OR_GREATER
+                Assert.Equal(expected, r.IsMatch(input.AsSpan()));
+#endif
             }
         }
 
