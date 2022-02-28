@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices.JavaScript
             Interop.Runtime.DumpAotProfileData(ref buf, len, extraArg);
         }
 
-        public static bool IsSimpleArray(object a)
+        public static bool IsSimpleArrayRef(ref object a)
         {
             return a is System.Array arr && arr.Rank == 1 && arr.GetLowerBound(0) == 0;
         }

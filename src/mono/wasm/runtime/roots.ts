@@ -269,6 +269,7 @@ export class WasmRootBuffer {
 export interface WasmRoot<T extends ManagedPointer | NativePointer> {
     get_address(): MonoObjectRef;
     get_address_32(): number;
+    get address(): MonoObjectRef;
     get(): T;
     set(value: T): T;
     get value(): T;
@@ -300,6 +301,10 @@ class WasmJsOwnedRoot<T extends ManagedPointer | NativePointer> implements WasmR
         return this.__buffer.get_address_32(this.__index);
     }
 
+    get address(): MonoObjectRef {
+        return this.__buffer.get_address(this.__index);
+    }
+
     get(): T {
         const result = this.__buffer._unsafe_get(this.__index);
         return <any>result;
@@ -312,24 +317,24 @@ class WasmJsOwnedRoot<T extends ManagedPointer | NativePointer> implements WasmR
     }
 
     copy_from(source: WasmRoot<T>): void {
-        const sourceAddress = source.get_address();
-        const destinationAddress = this.get_address();
+        const sourceAddress = source.address;
+        const destinationAddress = this.address;
         cwraps.mono_wasm_copy_managed_pointer(destinationAddress, sourceAddress);
     }
 
     copy_to(destination: WasmRoot<T>): void {
-        const sourceAddress = this.get_address();
-        const destinationAddress = destination.get_address();
+        const sourceAddress = this.address;
+        const destinationAddress = destination.address;
         cwraps.mono_wasm_copy_managed_pointer(destinationAddress, sourceAddress);
     }
 
     copy_from_address(source: MonoObjectRef): void {
-        const destinationAddress = this.get_address();
+        const destinationAddress = this.address;
         cwraps.mono_wasm_copy_managed_pointer(destinationAddress, source);
     }
 
     copy_to_address(destination: MonoObjectRef): void {
-        const sourceAddress = this.get_address();
+        const sourceAddress = this.address;
         cwraps.mono_wasm_copy_managed_pointer(destination, sourceAddress);
     }
 
@@ -365,7 +370,7 @@ class WasmJsOwnedRoot<T extends ManagedPointer | NativePointer> implements WasmR
     }
 
     toString(): string {
-        return `[root @${this.get_address()}]`;
+        return `[root @${this.address}]`;
     }
 }
 
@@ -380,6 +385,10 @@ class WasmExternalRoot<T extends ManagedPointer | NativePointer> implements Wasm
     _set_address(address: NativePointer): void {
         this.__external_address = <MonoObjectRef><any>address;
         this.__external_address_32 = <number><any>address >>> 2;
+    }
+
+    get address(): MonoObjectRef {
+        return <MonoObjectRef><any>this.__external_address;
     }
 
     get_address(): MonoObjectRef {
@@ -401,14 +410,14 @@ class WasmExternalRoot<T extends ManagedPointer | NativePointer> implements Wasm
     }
 
     copy_from(source: WasmRoot<T>): void {
-        const sourceAddress = source.get_address();
+        const sourceAddress = source.address;
         const destinationAddress = this.__external_address;
         cwraps.mono_wasm_copy_managed_pointer(destinationAddress, sourceAddress);
     }
 
     copy_to(destination: WasmRoot<T>): void {
         const sourceAddress = this.__external_address;
-        const destinationAddress = destination.get_address();
+        const destinationAddress = destination.address;
         cwraps.mono_wasm_copy_managed_pointer(destinationAddress, sourceAddress);
     }
 
@@ -445,6 +454,6 @@ class WasmExternalRoot<T extends ManagedPointer | NativePointer> implements Wasm
     }
 
     toString(): string {
-        return `[external root @${this.get_address()}]`;
+        return `[external root @${this.address}]`;
     }
 }

@@ -5,7 +5,7 @@ import { mono_wasm_new_root, mono_wasm_new_root_buffer, WasmRoot, WasmRootBuffer
 import {
     JSHandle, MonoArray, MonoMethod, MonoObject,
     MonoObjectNull, MonoString, coerceNull as coerceNull,
-    VoidPtrNull, MonoStringNull
+    VoidPtrNull, MonoStringNull, MonoObjectRef, MonoObjectRefNull
 } from "./types";
 import { BINDING, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
 import { _mono_array_root_to_js_array, _unbox_mono_obj_root } from "./cs-to-js";
@@ -144,34 +144,40 @@ to suppress marshaling of the return value, place '!' at the end of args_marshal
 export function call_method(method: MonoMethod, this_arg: MonoObject | undefined, args_marshal: string/*ArgsMarshalString*/, args: ArrayLike<any>): any {
     // HACK: Sometimes callers pass null or undefined, coerce it to 0 since that's what wasm expects
     this_arg = coerceNull(this_arg);
+    const this_arg_root = this_arg ? mono_wasm_new_root(this_arg) : null;
+    const this_arg_ref = this_arg ? (<any>this_arg_root).address : MonoObjectRefNull;
+    try {
+        // Detect someone accidentally passing the wrong type of value to method
+        if (typeof method !== "number")
+            throw new Error(`method must be an address in the native heap, but was '${method}'`);
+        if (!method)
+            throw new Error("no method specified");
 
-    // Detect someone accidentally passing the wrong type of value to method
-    if (typeof method !== "number")
-        throw new Error(`method must be an address in the native heap, but was '${method}'`);
-    if (!method)
-        throw new Error("no method specified");
+        const needs_converter = _verify_args_for_method_call(args_marshal, args);
 
-    const needs_converter = _verify_args_for_method_call(args_marshal, args);
+        let buffer = VoidPtrNull, converter = undefined, argsRootBuffer = undefined;
+        let is_result_marshaled = true;
 
-    let buffer = VoidPtrNull, converter = undefined, argsRootBuffer = undefined;
-    let is_result_marshaled = true;
+        // TODO: Only do this if the signature needs marshalling
+        _create_temp_frame();
 
-    // TODO: Only do this if the signature needs marshalling
-    _create_temp_frame();
+        // check if the method signature needs argument mashalling
+        if (needs_converter) {
+            converter = _compile_converter_for_marshal_string(args_marshal);
 
-    // check if the method signature needs argument mashalling
-    if (needs_converter) {
-        converter = _compile_converter_for_marshal_string(args_marshal);
+            is_result_marshaled = _decide_if_result_is_marshaled(converter, args.length);
 
-        is_result_marshaled = _decide_if_result_is_marshaled(converter, args.length);
+            argsRootBuffer = _get_args_root_buffer_for_method_call(converter, null);
 
-        argsRootBuffer = _get_args_root_buffer_for_method_call(converter, null);
+            const scratchBuffer = _get_buffer_for_method_call(converter, null);
 
-        const scratchBuffer = _get_buffer_for_method_call(converter, null);
-
-        buffer = converter.compiled_variadic_function!(scratchBuffer, argsRootBuffer, method, args);
+            buffer = converter.compiled_variadic_function!(scratchBuffer, argsRootBuffer, method, args);
+        }
+        return _call_method_with_converted_args(method, this_arg_ref, converter, null, buffer, is_result_marshaled, argsRootBuffer);
+    } finally {
+        if (this_arg_root)
+            this_arg_root.release();
     }
-    return _call_method_with_converted_args(method, this_arg!, converter, null, buffer, is_result_marshaled, argsRootBuffer);
 }
 
 
@@ -231,13 +237,13 @@ export function _teardown_after_call(
 }
 
 function _call_method_with_converted_args(
-    method: MonoMethod, this_arg: MonoObject, converter: Converter | undefined,
+    method: MonoMethod, this_arg_ref: MonoObjectRef, converter: Converter | undefined,
     token: BoundMethodToken | null, buffer: VoidPtr,
     is_result_marshaled: boolean, argsRootBuffer?: WasmRootBuffer
 ): any {
     const resultRoot = mono_wasm_new_root<MonoString>(), exceptionRoot = mono_wasm_new_root<MonoObject>();
     // TODO: Create new invoke_method variant that writes the result into resultRoot directly
-    resultRoot.value = <any>cwraps.mono_wasm_invoke_method(method, this_arg, buffer, <any>exceptionRoot.get_address());
+    cwraps.mono_wasm_invoke_method_ref(method, this_arg_ref, buffer, exceptionRoot.address, resultRoot.address);
     return _handle_exception_and_produce_result_for_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled);
 }
 

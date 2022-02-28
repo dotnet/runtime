@@ -104,6 +104,7 @@ declare class WasmRootBuffer {
 interface WasmRoot<T extends ManagedPointer | NativePointer> {
     get_address(): MonoObjectRef;
     get_address_32(): number;
+    get address(): MonoObjectRef;
     get(): T;
     set(value: T): T;
     get value(): T;

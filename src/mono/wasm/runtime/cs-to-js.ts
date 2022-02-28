@@ -73,29 +73,29 @@ function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<a
         case MarshalType.ARRAY_DOUBLE:
             throw new Error("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
         case <MarshalType>20: // clr .NET DateTime
-            return new Date(corebindings._get_date_value_ref(root.get_address()));
+            return new Date(corebindings._get_date_value_ref(root.address));
         case <MarshalType>21: // clr .NET DateTimeOffset
-            return corebindings._object_to_string_ref(root.get_address());
+            return corebindings._object_to_string_ref(root.address);
         case MarshalType.URI:
-            return corebindings._object_to_string_ref(root.get_address());
+            return corebindings._object_to_string_ref(root.address);
         case MarshalType.SAFEHANDLE:
             return _unbox_cs_owned_root_as_js_object(root);
         case MarshalType.VOID:
             return undefined;
         default:
-            throw new Error(`no idea on how to unbox object of MarshalType ${type} at offset ${root.value} (root address is ${root.get_address()})`);
+            throw new Error(`no idea on how to unbox object of MarshalType ${type} at offset ${root.value} (root address is ${root.address})`);
     }
 }
 
 export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot<any>, type: MarshalType, unbox_buffer: VoidPtr): any {
     if (type >= MarshalError.FIRST)
-        throw new Error(`Got marshaling error ${type} when attempting to unbox object at address ${root.value} (root located at ${root.get_address()})`);
+        throw new Error(`Got marshaling error ${type} when attempting to unbox object at address ${root.value} (root located at ${root.address})`);
 
     let typePtr = MonoTypeNull;
     if ((type === MarshalType.VT) || (type == MarshalType.OBJECT)) {
         typePtr = <MonoType><any>getU32(unbox_buffer);
         if (<number><any>typePtr < 1024)
-            throw new Error(`Got invalid MonoType ${typePtr} for object at address ${root.value} (root located at ${root.get_address()})`);
+            throw new Error(`Got invalid MonoType ${typePtr} for object at address ${root.value} (root located at ${root.address})`);
     }
 
     return _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root, type, typePtr, unbox_buffer);
@@ -106,7 +106,7 @@ export function _unbox_mono_obj_root(root: WasmRoot<any>): any {
         return undefined;
 
     const unbox_buffer = runtimeHelpers._unbox_buffer;
-    const type = cwraps.mono_wasm_try_unbox_primitive_and_get_type_ref(root.get_address(), unbox_buffer, runtimeHelpers._unbox_buffer_size);
+    const type = cwraps.mono_wasm_try_unbox_primitive_and_get_type_ref(root.address, unbox_buffer, runtimeHelpers._unbox_buffer_size);
     switch (type) {
         case MarshalType.INT:
             return getI32(unbox_buffer);
@@ -142,17 +142,17 @@ export function mono_array_to_js_array(mono_array: MonoArray): any[] | null {
     }
 }
 
-function is_nested_array(ele: MonoObject) {
-    return corebindings._is_simple_array(ele);
+function is_nested_array_ref(ele: WasmRoot<MonoObject>) {
+    return corebindings._is_simple_array_ref(ele.address);
 }
 
 export function _mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>): any[] | null {
     if (arrayRoot.value === MonoArrayNull)
         return null;
 
-    const arrayAddress = arrayRoot.get_address();
+    const arrayAddress = arrayRoot.address;
     const elemRoot = mono_wasm_new_root<MonoObject>();
-    const elemAddress = elemRoot.get_address();
+    const elemAddress = elemRoot.address;
 
     try {
         const len = cwraps.mono_wasm_array_length(arrayRoot.value);
@@ -161,7 +161,7 @@ export function _mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>): an
             // TODO: pass arrayRoot.address and elemRoot.address into new API that copies
             cwraps.mono_wasm_array_get_ref(arrayAddress, i, elemAddress);
 
-            if (is_nested_array(elemRoot.value))
+            if (is_nested_array_ref(elemRoot))
                 res[i] = _mono_array_root_to_js_array(<any>elemRoot);
             else
                 res[i] = _unbox_mono_obj_root(elemRoot);

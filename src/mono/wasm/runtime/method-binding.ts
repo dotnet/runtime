@@ -376,6 +376,7 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
     if (typeof (args_marshal) !== "string")
         throw new Error("args_marshal argument invalid, expected string");
     this_arg = coerceNull(this_arg);
+    const this_arg_root = this_arg ? mono_wasm_new_root(this_arg) : null;
 
     let converter: Converter | null = null;
     if (typeof (args_marshal) === "string") {
@@ -405,9 +406,9 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
         _teardown_after_call,
         mono_wasm_try_unbox_primitive_and_get_type_ref: cwraps.mono_wasm_try_unbox_primitive_and_get_type_ref,
         _unbox_mono_obj_root_with_known_nonprimitive_type,
-        invoke_method: cwraps.mono_wasm_invoke_method,
+        invoke_method_ref: cwraps.mono_wasm_invoke_method_ref,
         method,
-        this_arg,
+        this_arg_root,
         token,
         unbox_buffer,
         unbox_buffer_size,
@@ -481,7 +482,7 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
     body.push(
         "",
         // TODO: Create new invoke_method variant that writes the result into resultRoot directly
-        "resultRoot.value = invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());",
+        "invoke_method_ref (method, this_arg_root ? this_arg_root.address : 0, buffer, exceptionRoot.address, resultRoot.address);",
         `_handle_exception_for_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
         "",
         "let resultPtr = resultRoot.value, result = undefined;"
@@ -501,7 +502,7 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
                 //  into our existing heap allocation and then read it out of the heap. Doing this all in one operation
                 //  means that we only need to enter a gc safe region twice (instead of 3+ times with the normal,
                 //  slower check-type-and-then-unbox flow which has extra checks since unbox verifies the type).
-                "    let resultType = mono_wasm_try_unbox_primitive_and_get_type_ref (resultRoot.get_address(), unbox_buffer, unbox_buffer_size);",
+                "    let resultType = mono_wasm_try_unbox_primitive_and_get_type_ref (resultRoot.address, unbox_buffer, unbox_buffer_size);",
                 "    switch (resultType) {",
                 `    case ${MarshalType.INT}:`,
                 "        result = getI32(unbox_buffer); break;",

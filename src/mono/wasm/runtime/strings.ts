@@ -43,7 +43,7 @@ export class StringDecoder {
             pLengthBytes = <any>this.mono_wasm_string_decoder_buffer + 4,
             pIsInterned = <any>this.mono_wasm_string_decoder_buffer + 8;
 
-        cwraps.mono_wasm_string_get_data_ref(root.get_address(), <any>ppChars, <any>pLengthBytes, <any>pIsInterned);
+        cwraps.mono_wasm_string_get_data_ref(root.address, <any>ppChars, <any>pLengthBytes, <any>pIsInterned);
 
         let result = mono_wasm_empty_string;
         const lengthBytes = getI32(pLengthBytes),
@@ -143,7 +143,7 @@ function _store_string_in_intern_table(string: string, root: WasmRoot<MonoString
     //  provide a different managed object than the one we passed in, so update our
     //  pointer (stored in the root) with the result.
     if (internIt) {
-        cwraps.mono_wasm_intern_string_ref(root.get_address());
+        cwraps.mono_wasm_intern_string_ref(root.address);
         if (!root.value)
             throw new Error("mono_wasm_intern_string_ref produced a null pointer");
     }
@@ -156,7 +156,7 @@ function _store_string_in_intern_table(string: string, root: WasmRoot<MonoString
 
     // Copy the final pointer into our interned string root buffer to ensure the string
     //  remains rooted. TODO: Is this actually necessary?
-    rootBuffer.copy_value_from_address(index, root.get_address());
+    rootBuffer.copy_value_from_address(index, root.address);
 }
 
 export function js_string_to_mono_string_interned(string: string | symbol): MonoString {

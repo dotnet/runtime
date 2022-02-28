@@ -26,7 +26,7 @@ const fn_signatures: [jsname: string, csname: string, signature: string/*ArgsMar
     ["_get_date_value_ref", "GetDateValueRef", "m"],
     ["_create_date_time", "CreateDateTime", "d!"],
     ["_create_uri", "CreateUri", "s!"],
-    ["_is_simple_array", "IsSimpleArray", "m"],
+    ["_is_simple_array_ref", "IsSimpleArrayRef", "m"],
 ];
 
 export interface t_CSwraps {
@@ -51,7 +51,7 @@ export interface t_CSwraps {
     _get_date_value_ref(obj: MonoObjectRef): number;
     _create_date_time(ticks: number): MonoObject;
     _create_uri(uri: string): MonoObject;
-    _is_simple_array(obj: MonoObject): boolean;
+    _is_simple_array_ref(obj: MonoObjectRef): boolean;
 }
 
 const wrapped_cs_functions: t_CSwraps = <any>{};

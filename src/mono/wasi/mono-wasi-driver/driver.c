@@ -405,25 +405,37 @@ mono_wasm_box_primitive (MonoClass *klass, void *value, int value_size)
 	return mono_value_box (root_domain, klass, value);
 }
 
+void
+mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void *params[], MonoObject **out_exc, MonoObject **out_result)
+{
+	MonoObject* temp_exc = NULL;
+	if (out_exc)
+		*out_exc = NULL;
+	else
+		out_exc = &temp_exc;
+
+	if (out_result) {
+		*out_result = NULL;
+		*out_result = mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, out_exc);
+	} else {
+		mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, out_exc);
+	}
+
+	if (*out_exc && out_result) {
+		MonoObject *exc2 = NULL;
+		*out_result = (MonoObject*)mono_object_to_string (*out_exc, &exc2);
+		if (exc2)
+			*out_result = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
+		return;
+	}
+}
+
+// deprecated
 MonoObject*
 mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[], MonoObject **out_exc)
 {
-	MonoObject *exc = NULL;
-	MonoObject *res;
-
-	if (out_exc)
-		*out_exc = NULL;
-	res = mono_runtime_invoke (method, this_arg, params, &exc);
-	if (exc) {
-		if (out_exc)
-			*out_exc = exc;
-
-		MonoObject *exc2 = NULL;
-		res = (MonoObject*)mono_object_to_string (exc, &exc2);
-		if (exc2)
-			res = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
-		return res;
-	}
+	MonoObject* result = NULL;
+	mono_wasm_invoke_method_ref (method, &this_arg, params, out_exc, &result);
 
 	MonoMethodSignature *sig = mono_method_signature (method);
 	MonoType *type = mono_signature_get_return_type (sig);
@@ -433,7 +445,7 @@ mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[
 	if (mono_type_get_type (type) == MONO_TYPE_VOID)
 		return NULL;
 
-	return res;
+	return result;
 }
 
 MonoMethod*
