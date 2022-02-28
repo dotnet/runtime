@@ -87,6 +87,7 @@ namespace System.Net.Http.Headers
             // it to the store if we added at least one value.
             if (addToStore && (info.ParsedAndInvalidValues != null))
             {
+                info.AssertContainsNoInvalidValues();
                 Debug.Assert(!ContainsKey(descriptor));
                 AddEntryToStore(new HeaderEntry(descriptor, info));
             }
@@ -116,6 +117,7 @@ namespace System.Net.Http.Headers
                 // However, if all values for a _new_ header were invalid, then don't add the header.
                 if (addToStore && (info.ParsedAndInvalidValues != null))
                 {
+                    info.AssertContainsNoInvalidValues();
                     Debug.Assert(!ContainsKey(descriptor));
                     AddEntryToStore(new HeaderEntry(descriptor, info));
                 }
@@ -446,10 +448,10 @@ namespace System.Net.Http.Headers
                 {
                     foreach (object item in parsedValues)
                     {
-                        if (parsedValue is not InvalidValue)
+                        if (item is not InvalidValue)
                         {
                             Debug.Assert(item.GetType() == value.GetType(),
-                            "One of the stored values does not have the same type as 'value'.");
+                                "One of the stored values does not have the same type as 'value'.");
 
                             if (AreEqual(value, item, comparer))
                             {
@@ -465,6 +467,7 @@ namespace System.Net.Http.Headers
                     // If we removed the last item in a list, remove the list.
                     if (parsedValues.Count == 0)
                     {
+                        info.AssertContainsNoInvalidValues();
                         info.ParsedAndInvalidValues = null;
                     }
                 }
@@ -519,10 +522,10 @@ namespace System.Net.Http.Headers
                 {
                     foreach (object item in parsedValues)
                     {
-                        if (parsedValue is not InvalidValue)
+                        if (item is not InvalidValue)
                         {
                             Debug.Assert(item.GetType() == value.GetType(),
-                            "One of the stored values does not have the same type as 'value'.");
+                                "One of the stored values does not have the same type as 'value'.");
 
                             if (AreEqual(value, item, comparer))
                             {
@@ -819,6 +822,7 @@ namespace System.Net.Http.Headers
 
             if (result && addToStore && (info.ParsedAndInvalidValues != null))
             {
+                info.AssertContainsNoInvalidValues();
                 // If we get here, then the value could be parsed correctly. If we created a new HeaderStoreItemInfo, add
                 // it to the store if we added at least one value.
                 Debug.Assert(!ContainsKey(descriptor));
@@ -949,59 +953,24 @@ namespace System.Net.Http.Headers
             }
         }
 
-        // Since most of the time we just have 1 value, we don't create a List<object> for one value, but we change
-        // the return type to 'object'. The caller has to deal with the return type (object vs. List<object>). This
-        // is to optimize the most common scenario where a header has only one value.
-        internal object? GetParsedValues(HeaderDescriptor descriptor)
+        internal object? GetSingleParsedValue(HeaderDescriptor descriptor)
         {
             if (!TryGetAndParseHeaderInfo(descriptor, out HeaderStoreItemInfo? info))
             {
                 return null;
             }
 
-            var parsedAndInvalidValues = info.ParsedAndInvalidValues;
-            if (parsedAndInvalidValues is null)
+            return info.GetSingleParsedValue();
+        }
+
+        internal object? GetParsedAndInvalidValues(HeaderDescriptor descriptor)
+        {
+            if (!TryGetAndParseHeaderInfo(descriptor, out HeaderStoreItemInfo? info))
             {
                 return null;
             }
 
-            if (parsedAndInvalidValues is List<object> list)
-            {
-                object? parsedValue = null;
-                foreach (object value in list)
-                {
-                    if (value is not InvalidValue)
-                    {
-                        if (parsedValue == null)
-                        {
-                            parsedValue = value;
-                        }
-                        else
-                        {
-                            List<object>? storeValues = parsedValue as List<object>;
-
-                            if (storeValues == null)
-                            {
-                                storeValues = new List<object>(2);
-                                storeValues.Add(parsedValue);
-                                parsedValue = storeValues;
-                            }
-                            storeValues.Add(value);
-                        }
-                    }
-                }
-
-                return parsedValue;
-            }
-            else
-            {
-                if (parsedAndInvalidValues is not InvalidValue)
-                {
-                    return parsedAndInvalidValues;
-                }
-
-                return null;
-            }
+            return info.ParsedAndInvalidValues;
         }
 
         internal virtual bool IsAllowedHeaderName(HeaderDescriptor descriptor) => true;
@@ -1308,9 +1277,95 @@ namespace System.Net.Http.Headers
                 // supporting 1 value. When the first value gets parsed, CanAddValue returns true and we add the
                 // parsed value to ParsedValue. When the second value is parsed, CanAddValue returns false, because
                 // we have already a parsed value.
-                return parser.SupportsMultipleValues || ParsedAndInvalidValues == null;
+                return parser.SupportsMultipleValues || !ContainsParsedValue();
             }
 
+            private bool ContainsParsedValue()
+            {
+                if (ParsedAndInvalidValues is not null)
+                {
+                    if (ParsedAndInvalidValues is List<object> list)
+                    {
+                        foreach (object item in list)
+                        {
+                            if (item is not InvalidValue)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (ParsedAndInvalidValues is not InvalidValue)
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            [Conditional("DEBUG")]
+            public void AssertContainsNoInvalidValues()
+            {
+                if (ParsedAndInvalidValues is not null)
+                {
+                    if (ParsedAndInvalidValues is List<object> list)
+                    {
+                        foreach (object item in list)
+                        {
+                            Debug.Assert(item is not InvalidValue);
+                        }
+                    }
+                    else
+                    {
+                        Debug.Assert(ParsedAndInvalidValues is not InvalidValue);
+                    }
+                }
+            }
+
+            internal object? GetSingleParsedValue()
+            {
+                if (ParsedAndInvalidValues is not null)
+                {
+                    if (ParsedAndInvalidValues is List<object> list)
+                    {
+                        AssertContainsSingleParsedValue(list);
+                        foreach (object item in list)
+                        {
+                            if (item is not InvalidValue)
+                            {
+                                return item;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (ParsedAndInvalidValues is not InvalidValue)
+                        {
+                            return ParsedAndInvalidValues;
+                        }
+                    }
+                }
+
+                return null;
+            }
+
+            [Conditional("DEBUG")]
+            public void AssertContainsSingleParsedValue(List<object> list)
+            {
+                int count = 0;
+                foreach (object item in list)
+                {
+                    if (item is not InvalidValue)
+                    {
+                        count++;
+                    }
+                }
+
+                Debug.Assert(count <= 1, "only allow single parsed value");
+            }
             internal bool IsEmpty => (RawValue == null) && ParsedAndInvalidValues == null;
         }
 

@@ -45,13 +45,13 @@ namespace System.Net.Http.Headers
 
         public EntityTagHeaderValue? ETag
         {
-            get { return (EntityTagHeaderValue?)GetParsedValues(KnownHeaders.ETag.Descriptor); }
+            get { return (EntityTagHeaderValue?)GetSingleParsedValue(KnownHeaders.ETag.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ETag.Descriptor, value); }
         }
 
         public Uri? Location
         {
-            get { return (Uri?)GetParsedValues(KnownHeaders.Location.Descriptor); }
+            get { return (Uri?)GetSingleParsedValue(KnownHeaders.Location.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.Location.Descriptor, value); }
         }
 
@@ -60,7 +60,7 @@ namespace System.Net.Http.Headers
 
         public RetryConditionHeaderValue? RetryAfter
         {
-            get { return (RetryConditionHeaderValue?)GetParsedValues(KnownHeaders.RetryAfter.Descriptor); }
+            get { return (RetryConditionHeaderValue?)GetSingleParsedValue(KnownHeaders.RetryAfter.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.RetryAfter.Descriptor, value); }
         }
 

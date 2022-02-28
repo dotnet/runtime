@@ -287,7 +287,7 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(store != null);
 
-            object? storedValue = store.GetParsedValues(descriptor);
+            object? storedValue = store.GetSingleParsedValue(descriptor);
             if (storedValue != null)
             {
                 return (DateTimeOffset)storedValue;
@@ -304,7 +304,7 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(store != null);
 
-            object? storedValue = store.GetParsedValues(descriptor);
+            object? storedValue = store.GetSingleParsedValue(descriptor);
             if (storedValue != null)
             {
                 return (TimeSpan)storedValue;
