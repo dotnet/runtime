@@ -20,7 +20,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65835")]
         public async Task DisposeAsyncFlushes()
         {
             string path = GetTestFilePath();
