@@ -1993,7 +1993,7 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
     if (!buffer)
     {
         printf("COULD NOT ALLOCATE. size: %d \n", contextSize);
-        throw "COULD NOT GET PREALLOCATED \n";
+        throw "COULD NOT ALLOCATE \n";
     }
 
 
@@ -2005,6 +2005,9 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
 
         if (!success)
         {
+            printf("COULD NOT INITIALIZE. size: %d \n", contextSize);
+            throw "COULD NOT INITIALIZE \n";
+
             delete[] buffer;
             buffer = NULL;
         }
