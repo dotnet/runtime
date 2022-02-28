@@ -1482,7 +1482,13 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				 * still resolves to the same MonoMethod* (but we can't check it in
 				 * pass1 because we haven't added the new AssemblyRefs yet.
 				 */
-				if (ca_base_cols [MONO_CUSTOM_ATTR_PARENT] != ca_upd_cols [MONO_CUSTOM_ATTR_PARENT]) {
+				/* NOTE: Apparently Roslyn sometimes sends NullableContextAttribute
+				 * deletions even if the ChangeCustomAttribute capability is unset.
+				 * So tacitly accept updates where a custom attribute is deleted
+				 * (its parent is set to 0).  Once we support custom attribute
+				 * changes, we will support this kind of deletion for real.
+				 */
+				if (ca_base_cols [MONO_CUSTOM_ATTR_PARENT] != ca_upd_cols [MONO_CUSTOM_ATTR_PARENT] && ca_upd_cols [MONO_CUSTOM_ATTR_PARENT] != 0) {
 					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing CA table cols with a different Parent. token=0x%08x", log_token);
 					unsupported_edits = TRUE;
 					continue;
