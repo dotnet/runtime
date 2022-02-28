@@ -109,7 +109,7 @@ namespace System.Xml
                 matchPos == -1
                     ? default
                     : length < StackallocIntBufferSizeLimit
-                        ? new ValueStringBuilder(stackalloc char[length])
+                        ? new ValueStringBuilder(stackalloc char[StackallocIntBufferSizeLimit])
                         : new ValueStringBuilder(length);
 
             for (int position = 0; position < length - EncodedCharLength + 1; position++)
@@ -222,7 +222,7 @@ namespace System.Xml
                 matchPos == -1
                     ? default
                     : length < StackallocIntBufferSizeLimit
-                        ? new ValueStringBuilder(stackalloc char[length])
+                        ? new ValueStringBuilder(stackalloc char[StackallocIntBufferSizeLimit])
                         : new ValueStringBuilder(length);
 
             if (first)
