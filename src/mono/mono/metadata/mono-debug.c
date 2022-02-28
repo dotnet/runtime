@@ -846,6 +846,10 @@ mono_debug_method_lookup_location (MonoDebugMethodInfo *minfo, int il_offset)
 			MonoDebugSourceLocation * ret = mono_ppdb_lookup_location_enc (mdie->ppdb_file, mdie->idx, il_offset);
 			if (ret)
 				return ret;
+		} else {
+			gboolean added_method = idx >= table_info_get_rows (&img->tables[MONO_TABLE_METHOD]);
+			if (added_method)
+				return NULL;
 		}
 	}
 
@@ -1143,6 +1147,25 @@ mono_debug_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrA
 		if (mdie != NULL) {
 			if (mono_ppdb_get_seq_points_enc (minfo, mdie->ppdb_file, mdie->idx, source_file, source_file_list, source_files, seq_points, n_seq_points))
 				return;
+		}
+		/*
+		 * dotnet watch sometimes sends us updated with PPDB deltas, but the baseline
+		 * project has debug info (and we use it for seq points?).  In tht case, just say
+		 * the added method has no sequence points.  N.B. intentionally, comparing idx to
+		 * the baseline tables.  For methods that already existed, use their old seq points.
+		 */
+		if (idx >= table_info_get_rows (&img->tables[MONO_TABLE_METHOD])) {
+			if (source_file)
+				*source_file = NULL;
+			if (source_file_list)
+				*source_file_list = NULL;
+			if (source_files)
+				*source_files = NULL;
+			if (seq_points)
+				*seq_points = NULL;
+			if (n_seq_points)
+				*n_seq_points = 0;
+			return;
 		}
 	}
 	if (minfo->handle->ppdb)
