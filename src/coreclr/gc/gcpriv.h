@@ -493,6 +493,7 @@ public:
     BOOL demotion;
     BOOL card_bundles;
     int  gen0_reduction_count;
+    int  non_promotion_count;
     BOOL should_lock_elevation;
     int elevation_locked_count;
     BOOL elevation_reduced;
