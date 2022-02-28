@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)</TargetFrameworks>
@@ -23,6 +23,7 @@
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusHelper.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicTraceHelper.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicTlsSupportHelper.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\SafeMsQuicConfigurationHandle.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\SafeMsQuicConnectionHandle.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\SafeMsQuicListenerHandle.cs" />
@@ -53,6 +54,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.MsgEncodingType.cs" Link="Common\Interop\Windows\Crypt32\Interop.Interop.MsgEncodingType.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Windows.cs" Link="Common\System\Net\Security\CertificateValidation.Windows.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.Windows.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicTlsSupportHelper.Windows.cs" />
   </ItemGroup>
   <!-- Unix (OSX + Linux) specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Linux' or '$(TargetPlatformIdentifier)' == 'OSX' or '$(TargetPlatformIdentifier)' == 'FreeBSD'">
@@ -79,6 +81,7 @@
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs" Link="Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicTlsSupportHelper.Unix.cs" />
   </ItemGroup>
   <!-- Linux specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Linux'">
@@ -103,11 +106,7 @@
   <!-- Project references -->
 
   <ItemGroup>
-    <PackageReference Include="System.Net.MsQuic.Transport"
-                      Version="$(SystemNetMsQuicTransportVersion)"
-                      PrivateAssets="all"
-                      GeneratePathProperty="true"
-                      Condition="'$(DotNetBuildFromSource)' != 'true'" />
+    <PackageReference Include="System.Net.MsQuic.Transport" Version="$(SystemNetMsQuicTransportVersion)" PrivateAssets="all" GeneratePathProperty="true" Condition="'$(DotNetBuildFromSource)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup>
@@ -135,8 +134,7 @@
   </ItemGroup>
 
   <!-- Support for deploying msquic -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' and
-                        ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86') and '$(DotNetBuildFromSource)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' and&#xD;&#xA;                        ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86') and '$(DotNetBuildFromSource)' != 'true'">
     <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(LibrariesAllBinArtifactsPath)" ItemName="NativeBinPlaceItem" />
@@ -158,4 +156,5 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
   </ItemGroup>
+
 </Project>
