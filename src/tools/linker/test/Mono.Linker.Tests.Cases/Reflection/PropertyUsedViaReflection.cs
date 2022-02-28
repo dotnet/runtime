@@ -21,9 +21,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestUnknownBindingFlagsAndName (BindingFlags.Public, "IrrelevantName");
 			TestNullName ();
 			TestEmptyName ();
+			TestNoValueName ();
 			TestNonExistingName ();
 			TestPropertyOfArray ();
 			TestNullType ();
+			TestNoValue ();
 			TestDataFlowType ();
 			TestIfElse (1);
 			TestPropertyInBaseType ();
@@ -98,6 +100,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		static void TestNoValueName ()
+		{
+			Type t = null;
+			string noValue = t.AssemblyQualifiedName;
+			var method = typeof (PropertyUsedViaReflection).GetProperty (noValue);
+		}
+
+		[Kept]
 		static void TestNonExistingName ()
 		{
 			var property = typeof (PropertyUsedViaReflection).GetProperty ("NonExisting");
@@ -115,6 +125,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			Type type = null;
 			var property = type.GetProperty ("GetterOnly");
+		}
+
+		[Kept]
+		static void TestNoValue ()
+		{
+			Type t = null;
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			var method = noValue.GetProperty ("GetterOnly");
 		}
 
 		[Kept]

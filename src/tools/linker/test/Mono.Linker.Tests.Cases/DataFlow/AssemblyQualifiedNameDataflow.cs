@@ -21,6 +21,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestNull ();
 			TestMultipleValues ();
 			TestUnknownValue ();
+			TestNoValue ();
+			TestObjectGetTypeValue ();
 		}
 
 		[ExpectedWarning ("IL2072", nameof (RequirePublicConstructors))]
@@ -90,6 +92,28 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			string unknown = ((Type) o[0]).AssemblyQualifiedName;
 			RequirePublicConstructors (unknown);
 			RequireNothing (unknown); // shouldn't warn
+		}
+
+		static void TestNoValue ()
+		{
+			Type t = null;
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			// t.TypeHandle throws at runtime so don't warn here.
+			RequirePublicConstructors (noValue.AssemblyQualifiedName);
+		}
+
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
+		class AnnotatedType
+		{
+		}
+
+		static void TestObjectGetTypeValue (AnnotatedType instance = null)
+		{
+			string type = instance.GetType ().AssemblyQualifiedName;
+			// Currently Object.GetType is unimplemented in the analyzer, but
+			// this still shouldn't warn.
+			RequirePublicConstructors (type);
+			RequireNothing (type);
 		}
 
 		private static void RequirePublicParameterlessConstructor (

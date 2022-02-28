@@ -15,6 +15,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestRunClassConstructor ();
 			TestNonKeptStaticConstructor ();
 			TestNull ();
+			TestNoValue ();
 			TestDataFlowType ();
 			TestIfElseUsingRuntimeTypeHandle (1);
 			TestIfElseUsingType (1);
@@ -37,6 +38,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			Type type = null;
 			RuntimeHelpers.RunClassConstructor (type.TypeHandle);
+		}
+
+		[Kept]
+		static void TestNoValue ()
+		{
+			Type t = null;
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			RuntimeHelpers.RunClassConstructor (noValue.TypeHandle);
 		}
 
 		[Kept]

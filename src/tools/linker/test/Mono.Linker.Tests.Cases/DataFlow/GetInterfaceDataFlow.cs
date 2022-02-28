@@ -24,6 +24,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class GetInterface_Name
 		{
+			static void TestNullName (Type type)
+			{
+				type.GetInterface (null);
+			}
+
+			static void TestEmptyName (Type type)
+			{
+				type.GetInterface (string.Empty);
+			}
+
+			static void TestNoValueName (Type type)
+			{
+				Type t = null;
+				string noValue = t.AssemblyQualifiedName;
+				type.GetInterface (noValue);
+			}
+
 			[ExpectedWarning ("IL2070", nameof (Type.GetInterface), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.Interfaces))]
 			static void TestNoAnnotation (Type type)
 			{
@@ -76,6 +93,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				type.GetInterface ("ITestInterface").RequiresInterfaces ();
 			}
 
+			static void TestNullValue ()
+			{
+				Type t = null;
+				t.GetInterface ("ITestInterface").RequiresInterfaces ();
+			}
+
+			static void TestNoValue ()
+			{
+				Type t = null;
+				Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+				// t.TypeHandle throws at runtime so don't warn here.
+				noValue.GetInterface ("ITestInterface").RequiresInterfaces ();
+			}
+
 			class GetInterfaceInCtor
 			{
 				public GetInterfaceInCtor ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)] Type type)
@@ -86,6 +117,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			public static void Test ()
 			{
+				TestNullName (typeof (TestType));
+				TestEmptyName (typeof (TestType));
+				TestNoValueName (typeof (TestType));
 				TestNoAnnotation (typeof (TestType));
 				TestWithAnnotation (typeof (TestType));
 				TestWithAnnotation (typeof (ITestInterface));
@@ -93,6 +127,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestKnownType ();
 				TestMultipleValues (0, typeof (TestType));
 				TestMergedValues (0, typeof (TestType));
+				TestNullValue ();
+				TestNoValue ();
 				var _ = new GetInterfaceInCtor (typeof (TestType));
 			}
 		}

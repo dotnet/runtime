@@ -20,6 +20,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestBindingFlags ();
 			TestUnknownBindingFlags (BindingFlags.Public);
 			TestNullType ();
+			TestNoValue ();
 			TestDataFlowType ();
 			TestDataFlowWithAnnotation (typeof (MyType));
 			TestIfElse (1);
@@ -62,6 +63,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			Type type = null;
 			var events = type.GetEvents ();
+		}
+
+		[Kept]
+		static void TestNoValue ()
+		{
+			Type t = null;
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			var methods = noValue.GetEvents ();
 		}
 
 		[Kept]

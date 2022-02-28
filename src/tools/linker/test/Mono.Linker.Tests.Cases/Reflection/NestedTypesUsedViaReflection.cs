@@ -18,6 +18,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestByBindingFlags ();
 			TestByUnknownBindingFlags (BindingFlags.Public);
 			TestNullType ();
+			TestNoValue ();
 			TestDataFlowType ();
 			TestDataFlowWithAnnotation (typeof (MyType));
 			TestIgnoreCaseBindingFlags ();
@@ -60,6 +61,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			Type type = null;
 			_ = type.GetNestedTypes (BindingFlags.Public);
+		}
+
+		[Kept]
+		static void TestNoValue ()
+		{
+			Type t = null;
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+			_ = noValue.GetNestedTypes (BindingFlags.Public);
 		}
 
 		[Kept]

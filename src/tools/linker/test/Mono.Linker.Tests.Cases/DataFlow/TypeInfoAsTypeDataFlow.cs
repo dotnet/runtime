@@ -17,6 +17,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			TestNoAnnotations (typeof (TestType).GetTypeInfo ());
 			TestWithAnnotations (typeof (TestType).GetTypeInfo ());
+			TestWithNull ();
+			TestWithNoValue ();
 		}
 
 		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
@@ -32,6 +34,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			t.AsType ().RequiresPublicMethods ();
 			t.AsType ().RequiresPublicFields ();
 			t.AsType ().RequiresNone ();
+		}
+
+		static void TestWithNull ()
+		{
+			TypeInfo t = null;
+			t.AsType ().RequiresPublicMethods ();
+		}
+
+		static void TestWithNoValue ()
+		{
+			Type t = null;
+			Type noValueType = Type.GetTypeFromHandle (t.TypeHandle);
+			TypeInfo noValue = noValueType.GetTypeInfo ();
+			noValue.AsType ().RequiresPublicMethods ();
 		}
 
 		class TestType { }
