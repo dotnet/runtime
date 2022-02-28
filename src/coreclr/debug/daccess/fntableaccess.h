@@ -110,7 +110,7 @@ struct FakeStubUnwindInfoHeapSegment
 struct FakeStub
 {
     ULONG   m_refcount;
-    ULONG   m_patchOffset;
+    ULONG   m_Offset;
 
     UINT    m_numCodeBytes;
 #ifdef _DEBUG
@@ -168,7 +168,7 @@ class CheckDuplicatedStructLayouts
 
 
     CHECK_OFFSET(Stub, m_refcount);
-    CHECK_OFFSET(Stub, m_patchOffset);
+    CHECK_OFFSET(Stub, m_Offset);
     CHECK_OFFSET(Stub, m_numCodeBytes);
 #ifdef _DEBUG
     CHECK_OFFSET(Stub, m_signature);

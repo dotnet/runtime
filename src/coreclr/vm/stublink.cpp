@@ -1087,10 +1087,10 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap
     {
         UINT32 uLabelOffset = GetLabelOffset(m_pPatchLabel);
         _ASSERTE(FitsIn<USHORT>(uLabelOffset));
-        pStubRW->SetPatchOffset(static_cast<USHORT>(uLabelOffset));
+        pStubRW->SetOffset(static_cast<USHORT>(uLabelOffset));
 
         LOG((LF_CORDB, LL_INFO100, "SL::ES: patch offset:0x%x\n",
-            pStub->GetPatchOffset()));
+            pStub->GetOffset()));
     }
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
@@ -2004,7 +2004,7 @@ VOID Stub::DeleteStub()
     // a size of 0 is a signal to Nirvana to flush the entire cache
     //FlushInstructionCache(GetCurrentProcess(),0,0);
 
-    if ((m_patchOffset & LOADER_HEAP_BIT) == 0)
+    if ((m_Offset & LOADER_HEAP_BIT) == 0)
     {
 #ifdef _DEBUG
         m_signature = kFreedStub;
@@ -2110,6 +2110,10 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
         size += numCodeBytes;
     }
 
+    // Add pointer to store the target MethodDesc.
+    if (flags & NEWSTUB_FL_INSTANTIATING_METHOD)
+        size += sizeof(PTR_MethodDesc);
+
     if (size.IsOverflow())
         COMPlusThrowArithmetic();
 
@@ -2128,7 +2132,9 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
     }
 
     size_t stubPayloadOffset = totalSize -
-        (sizeof(Stub) + ((flags & NEWSTUB_FL_EXTERNAL) ? sizeof(PTR_PCODE) : numCodeBytes));
+        (sizeof(Stub)
+            + ((flags & NEWSTUB_FL_EXTERNAL) ? sizeof(PTR_PCODE) : numCodeBytes)
+            + ((flags & NEWSTUB_FL_INSTANTIATING_METHOD) ? sizeof(PTR_MethodDesc) : 0));
 
     // Make sure that the payload of the stub is aligned
     Stub* pStubRX = (Stub*)(pBlock + stubPayloadOffset);
@@ -2181,19 +2187,27 @@ void Stub::SetupStub(int numCodeBytes, DWORD flags
     m_numCodeBytes = numCodeBytes;
 
     m_refcount = 1;
-    m_patchOffset = 0;
+    m_Offset = 0;
 
-    if((flags & NEWSTUB_FL_LOADERHEAP) != 0)
-        m_patchOffset |= LOADER_HEAP_BIT;
-    if((flags & NEWSTUB_FL_MULTICAST) != 0)
-        m_patchOffset |= MULTICAST_DELEGATE_BIT;
-    if ((flags & NEWSTUB_FL_EXTERNAL) != 0)
-        m_patchOffset |= EXTERNAL_ENTRY_BIT;
+    if (flags != NEWSTUB_FL_NONE)
+    {
+        if((flags & NEWSTUB_FL_LOADERHEAP) != 0)
+            m_Offset |= LOADER_HEAP_BIT;
+        if((flags & NEWSTUB_FL_MULTICAST) != 0)
+            m_Offset |= MULTICAST_DELEGATE_BIT;
+        if ((flags & NEWSTUB_FL_EXTERNAL) != 0)
+            m_Offset |= EXTERNAL_ENTRY_BIT;
+        if ((flags & NEWSTUB_FL_INSTANTIATING_METHOD) != 0)
+        {
+            m_Offset |= INSTANTIATING_METHOD_BIT;
+            SetOffset(m_numCodeBytes);
+        }
+    }
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
     if (nUnwindInfoSize)
     {
-        m_patchOffset |= UNWIND_INFO_BIT;
+        m_Offset |= UNWIND_INFO_BIT;
 
         StubUnwindInfoHeaderSuffix * pSuffix = GetUnwindInfoHeaderSuffix();
         pSuffix->nUnwindInfoSize = (BYTE)nUnwindInfoSize;

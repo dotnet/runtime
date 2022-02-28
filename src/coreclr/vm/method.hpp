@@ -2495,7 +2495,7 @@ protected:
         nomdDelegateStub             = 0x0040,
         nomdStructMarshalStub        = 0x0080,
         nomdUnbreakable              = 0x0100,
-        //unused                     = 0x0200,
+        nomdStepThroughStub          = 0x0200,  // Stub has no user steppable code and should be stepped through.
         //unused                     = 0x0400,
         nomdStubNeedsCOMStarted      = 0x0800,  // EnsureComStarted must be called before executing the method
         nomdMulticastStub            = 0x1000,
@@ -2573,12 +2573,39 @@ public:
     bool IsUnmanagedCallersOnlyStub() { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdUnmanagedCallersOnlyStub)); }
     bool IsCALLIStub()       { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdCALLIStub));    }
     bool IsDelegateStub()    { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdDelegateStub)); }
-    bool IsCLRToCOMStub()    { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 == (m_dwExtendedFlags & mdStatic)) && !IsReverseStub() && !IsDelegateStub() && !IsStructMarshalStub()); }
-    bool IsCOMToCLRStub()    { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 == (m_dwExtendedFlags & mdStatic)) &&  IsReverseStub()); }
-    bool IsPInvokeStub()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 != (m_dwExtendedFlags & mdStatic)) && !IsReverseStub() && !IsCALLIStub() && !IsStructMarshalStub()); }
     bool IsUnbreakable()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdUnbreakable));  }
     bool IsStubNeedsCOMStarted()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStubNeedsCOMStarted)); }
     bool IsStructMarshalStub()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStructMarshalStub)); }
+    bool IsStepThroughStub()      { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStepThroughStub)); }
+
+    // The following checks don't have explicit indicates of type, but rather use a heuristic.
+    // Therefore, we break them out so they are clearer.
+    bool IsCLRToCOMStub()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsILStub());
+        return ((0 == (m_dwExtendedFlags & mdStatic))
+            && !IsReverseStub()
+            && !IsDelegateStub()
+            && !IsStructMarshalStub());
+    }
+    bool IsCOMToCLRStub()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsILStub());
+        return ((0 == (m_dwExtendedFlags & mdStatic))
+            && IsReverseStub());
+    }
+    bool IsPInvokeStub()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsILStub());
+        return ((0 != (m_dwExtendedFlags & mdStatic))
+            && !IsReverseStub()
+            && !IsCALLIStub()
+            && !IsStructMarshalStub());
+    }
+
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
     bool IsMulticastStub() {
         LIMITED_METHOD_DAC_CONTRACT;

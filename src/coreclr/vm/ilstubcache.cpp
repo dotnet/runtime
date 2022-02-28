@@ -202,6 +202,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
 #ifdef FEATURE_ARRAYSTUB_AS_IL
     if (SF_IsArrayOpStub(dwStubFlags))
     {
+        pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdStepThroughStub;
         pMD->GetILStubResolver()->SetStubType(ILStubResolver::ArrayOpStub);
     }
     else
@@ -223,12 +224,13 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
     if (SF_IsUnboxingILStub(dwStubFlags))
     {
-        pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdUnboxingILStub;
+        pMD->m_dwExtendedFlags |= (DynamicMethodDesc::nomdUnboxingILStub | DynamicMethodDesc::nomdStepThroughStub);
         pMD->GetILStubResolver()->SetStubType(ILStubResolver::UnboxingILStub);
     }
     else
     if (SF_IsInstantiatingStub(dwStubFlags))
     {
+        pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdStepThroughStub;
         pMD->GetILStubResolver()->SetStubType(ILStubResolver::InstantiatingStub);
     }
     else

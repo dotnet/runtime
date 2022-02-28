@@ -443,9 +443,11 @@ struct CodeLabel
 
 enum NewStubFlags
 {
-    NEWSTUB_FL_MULTICAST        = 0x00000002,
-    NEWSTUB_FL_EXTERNAL         = 0x00000004,
-    NEWSTUB_FL_LOADERHEAP       = 0x00000008
+    NEWSTUB_FL_NONE                 = 0x00000000,
+    NEWSTUB_FL_INSTANTIATING_METHOD = 0x00000001,
+    NEWSTUB_FL_MULTICAST            = 0x00000002,
+    NEWSTUB_FL_EXTERNAL             = 0x00000004,
+    NEWSTUB_FL_LOADERHEAP           = 0x00000008
 };
 
 
@@ -463,18 +465,21 @@ class Stub
     friend class CheckAsmOffsets;
 
     protected:
+
+    // These values are shared with the debugger - see FakeStub.
     enum
     {
-        MULTICAST_DELEGATE_BIT = 0x80000000,
-        EXTERNAL_ENTRY_BIT     = 0x40000000,
-        LOADER_HEAP_BIT        = 0x20000000,
-        UNWIND_INFO_BIT        = 0x08000000,
+        MULTICAST_DELEGATE_BIT  = 0x80000000,
+        EXTERNAL_ENTRY_BIT      = 0x40000000,
+        LOADER_HEAP_BIT         = 0x20000000,
+        INSTANTIATING_METHOD_BIT= 0x10000000,
+        UNWIND_INFO_BIT         = 0x08000000,
 
-        PATCH_OFFSET_MASK      = UNWIND_INFO_BIT - 1,
-        MAX_PATCH_OFFSET       = PATCH_OFFSET_MASK + 1,
+        OFFSET_MASK             = UNWIND_INFO_BIT - 1,
+        MAX_OFFSET              = OFFSET_MASK + 1,
     };
 
-    static_assert_no_msg(PATCH_OFFSET_MASK < UNWIND_INFO_BIT);
+    static_assert_no_msg(OFFSET_MASK < UNWIND_INFO_BIT);
 
     public:
         //-------------------------------------------------------------------
@@ -482,14 +487,11 @@ class Stub
         //-------------------------------------------------------------------
         VOID IncRef();
 
-
         //-------------------------------------------------------------------
         // Dec the refcount.
         // Returns true if the count went to zero and the stub was deleted
         //-------------------------------------------------------------------
         BOOL DecRef();
-
-
 
         //-------------------------------------------------------------------
         // Used for throwing out unused stubs from stub caches. This
@@ -510,7 +512,37 @@ class Stub
         BOOL IsMulticastDelegate()
         {
             LIMITED_METHOD_CONTRACT;
-            return (m_patchOffset & MULTICAST_DELEGATE_BIT) != 0;
+            return (m_Offset & MULTICAST_DELEGATE_BIT) != 0;
+        }
+
+        //-------------------------------------------------------------------
+        // Used by the debugger to help step through stubs
+        //-------------------------------------------------------------------
+        BOOL IsInstantiatingMethodStub()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (m_Offset & INSTANTIATING_METHOD_BIT) != 0;
+        }
+
+        USHORT GetOffset()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (USHORT)(m_Offset & OFFSET_MASK);
+        }
+
+        void SetOffset(USHORT offset)
+        {
+            LIMITED_METHOD_CONTRACT;
+            _ASSERTE(GetOffset() == 0);
+            m_Offset |= offset;
+            _ASSERTE(GetOffset() == offset);
+        }
+
+        void SetMethodDesc(PTR_MethodDesc pMD)
+        {
+            LIMITED_METHOD_CONTRACT;
+            _ASSERTE(IsInstantiatingMethodStub());
+            *GetMethodDescLocation() = pMD;
         }
 
         //-------------------------------------------------------------------
@@ -518,26 +550,23 @@ class Stub
         // to tell the debugger how far into the stub code the debugger has
         // to step until the frame is set up.
         //-------------------------------------------------------------------
-        USHORT GetPatchOffset()
-        {
-            LIMITED_METHOD_CONTRACT;
-
-            return (USHORT)(m_patchOffset & PATCH_OFFSET_MASK);
-        }
-
-        void SetPatchOffset(USHORT offset)
-        {
-            LIMITED_METHOD_CONTRACT;
-            _ASSERTE(GetPatchOffset() == 0);
-            m_patchOffset |= offset;
-            _ASSERTE(GetPatchOffset() == offset);
-        }
-
         TADDR GetPatchAddress()
         {
             WRAPPER_NO_CONTRACT;
+            _ASSERTE(!IsInstantiatingMethodStub());
+            return dac_cast<TADDR>(GetEntryPointInternal()) + GetOffset();
+        }
 
-            return dac_cast<TADDR>(GetEntryPointInternal()) + GetPatchOffset();
+        //-------------------------------------------------------------------
+        // For instantiating methods, the target MethodDesc needs to be set
+        // to tell the debugger where to step through the instantiating method
+        // stub.
+        //-------------------------------------------------------------------
+        PTR_PTR_MethodDesc GetMethodDescLocation()
+        {
+            LIMITED_METHOD_CONTRACT;
+            _ASSERTE(IsInstantiatingMethodStub());
+            return dac_cast<PTR_PTR_MethodDesc>(GetEntryPointInternal() + GetOffset());
         }
 
         //-------------------------------------------------------------------
@@ -549,7 +578,7 @@ class Stub
         BOOL HasUnwindInfo()
         {
             LIMITED_METHOD_CONTRACT;
-            return (m_patchOffset & UNWIND_INFO_BIT) != 0;
+            return (m_Offset & UNWIND_INFO_BIT) != 0;
         }
 
         StubUnwindInfoHeaderSuffix *GetUnwindInfoHeaderSuffix()
@@ -717,21 +746,21 @@ class Stub
         {
             LIMITED_METHOD_CONTRACT;
 
-            return (m_patchOffset & EXTERNAL_ENTRY_BIT) != 0;
+            return (m_Offset & EXTERNAL_ENTRY_BIT) != 0;
         }
 
         //-------------------------------------------------------------------
         // This creates stubs.
         //-------------------------------------------------------------------
         static Stub* NewStub(LoaderHeap *pLoaderHeap, UINT numCodeBytes,
-                             DWORD flags = 0
+                             DWORD flags = NEWSTUB_FL_NONE
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
                              , UINT nUnwindInfoSize = 0
 #endif
                              );
 
-        static Stub* NewStub(PTR_VOID pCode, DWORD flags = 0);
-        static Stub* NewStub(PCODE pCode, DWORD flags = 0)
+        static Stub* NewStub(PTR_VOID pCode, DWORD flags = NEWSTUB_FL_NONE);
+        static Stub* NewStub(PCODE pCode, DWORD flags = NEWSTUB_FL_NONE)
         {
             return NewStub((PTR_VOID)pCode, flags);
         }
@@ -773,7 +802,7 @@ class Stub
         }
 
         ULONG   m_refcount;
-        ULONG   m_patchOffset;
+        ULONG   m_Offset;
 
         UINT    m_numCodeBytes;
 
@@ -792,11 +821,7 @@ class Stub
 #endif // HOST_64BIT
 #endif // _DEBUG
 
-#ifdef _DEBUG
-        Stub()      // Stubs are created by NewStub(), not "new". Hide the
-        { LIMITED_METHOD_CONTRACT; }          //  constructor to enforce this.
-#endif
-
+        Stub() = delete; // Stubs are created by NewStub(), not "new".
 };
 
 
