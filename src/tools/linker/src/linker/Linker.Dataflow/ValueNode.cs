@@ -120,18 +120,6 @@ namespace ILLink.Shared.TrimAnalysis
 	}
 
 	/// <summary>
-	/// This is a known System.Reflection.MethodBase value.  MethodRepresented is the 'value' of the MethodBase.
-	/// </summary>
-	partial record SystemReflectionMethodBaseValue
-	{
-		public SystemReflectionMethodBaseValue (MethodDefinition methodRepresented) => MethodRepresented = methodRepresented;
-
-		public readonly MethodDefinition MethodRepresented;
-
-		public override string ToString () => this.ValueToString (MethodRepresented);
-	}
-
-	/// <summary>
 	/// A value that came from a method parameter - such as the result of a ldarg.
 	/// </summary>
 	partial record MethodParameterValue : IValueWithStaticType

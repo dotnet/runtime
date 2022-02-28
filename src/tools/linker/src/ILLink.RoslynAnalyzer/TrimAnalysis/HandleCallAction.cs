@@ -1,8 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using ILLink.RoslynAnalyzer;
+using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.RoslynAnalyzer.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
 using Microsoft.CodeAnalysis;
@@ -16,13 +19,15 @@ namespace ILLink.Shared.TrimAnalysis
 
 		readonly ISymbol _owningSymbol;
 		readonly IOperation _operation;
+		readonly ReflectionAccessAnalyzer _reflectionAccessAnalyzer;
 
 		public HandleCallAction (in DiagnosticContext diagnosticContext, ISymbol owningSymbol, IOperation operation)
 		{
 			_owningSymbol = owningSymbol;
 			_operation = operation;
 			_diagnosticContext = diagnosticContext;
-			_requireDynamicallyAccessedMembersAction = new (diagnosticContext, new ReflectionAccessAnalyzer ());
+			_reflectionAccessAnalyzer = new ReflectionAccessAnalyzer ();
+			_requireDynamicallyAccessedMembersAction = new (diagnosticContext, _reflectionAccessAnalyzer);
 		}
 
 		// TODO: This is relatively expensive on the analyzer since it doesn't cache the annotation information
@@ -41,8 +46,38 @@ namespace ILLink.Shared.TrimAnalysis
 		private partial MethodThisParameterValue GetMethodThisParameterValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 			=> new (method.Method, dynamicallyAccessedMemberTypes);
 
+		private partial MethodParameterValue GetMethodParameterValue (MethodProxy method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+			=> new (method.Method.Parameters[parameterIndex], dynamicallyAccessedMemberTypes);
+
+		private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
+		{
+			foreach (var method in type.Type.GetMethodsOnTypeHierarchy (m => m.Name == name, bindingFlags))
+				yield return new SystemReflectionMethodBaseValue (new MethodProxy (method));
+		}
+
+		private partial IEnumerable<SystemTypeValue> GetNestedTypesOnType (TypeProxy type, string name, BindingFlags? bindingFlags)
+		{
+			foreach (var nestedType in type.Type.GetNestedTypesOnType (t => t.Name == name, bindingFlags))
+				yield return new SystemTypeValue (new TypeProxy (nestedType));
+		}
+
 		// TODO: Does the analyzer need to do something here?
 		private partial void MarkStaticConstructor (TypeProxy type) { }
+
+		private partial void MarkEventsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
+			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForEventsOnTypeHierarchy (_diagnosticContext, type.Type, name, bindingFlags);
+
+		private partial void MarkFieldsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
+			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForFieldsOnTypeHierarchy (_diagnosticContext, type.Type, name, bindingFlags);
+
+		private partial void MarkPropertiesOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
+			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForPropertiesOnTypeHierarchy (_diagnosticContext, type.Type, name, bindingFlags);
+
+		private partial void MarkMethod (MethodProxy method)
+			=> ReflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForMethod (_diagnosticContext, method.Method);
+
+		// TODO: Does the analyzer need to do something here?
+		private partial void MarkType (TypeProxy type) { }
 
 		private partial string GetContainingSymbolDisplayName () => _operation.FindContainingSymbol (_owningSymbol).GetDisplayName ();
 	}
