@@ -8,8 +8,8 @@ internal static partial class Interop
         internal const string CoreFoundationLibrary = "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation";
         internal const string CoreServicesLibrary = "/System/Library/Frameworks/CoreServices.framework/CoreServices";
         internal const string CFNetworkLibrary = "/System/Library/Frameworks/CFNetwork.framework/CFNetwork";
-        internal const string @libobjc = "/usr/lib/libobjc.dylib";
-        internal const string @libproc = "/usr/lib/libproc.dylib";
+        internal const string libobjc = "/usr/lib/libobjc.dylib";
+        internal const string libproc = "/usr/lib/libproc.dylib";
         internal const string Odbc32 = "libodbc.2.dylib";
         internal const string OpenLdap = "libldap.dylib";
         internal const string SystemConfigurationLibrary = "/System/Library/Frameworks/SystemConfiguration.framework/SystemConfiguration";

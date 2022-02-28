@@ -5,7 +5,7 @@ internal static partial class Interop
 {
     internal static partial class Libraries
     {
-        internal const string @libc = "libc";
+        internal const string libc = "libc";
 
         // Shims
         internal const string SystemNative = "libSystem.Native";
