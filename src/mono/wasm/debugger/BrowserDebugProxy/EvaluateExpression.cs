@@ -231,7 +231,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         typeRet = "string";
                         break;
                     }
-                    case "char":
+                    case "symbol":
                      {
                          valueRet = $"\'{value?.Value<char>()}\'";
                          typeRet = "char";
@@ -431,7 +431,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (v is string s)
                 return new { type = "string", value = s, description = s };
             if (v is char c)
-                return new { type = "char", value = c, description = $"{(int)c} '{c}'" };
+                return new { type = "symbol", value = c, description = $"{(int)c} '{c}'" };
             if (NumericTypes.Contains(v.GetType()))
                 return new { type = "number", value = v, description = Convert.ToDouble(v).ToString(CultureInfo.InvariantCulture) };
             if (v is JObject)

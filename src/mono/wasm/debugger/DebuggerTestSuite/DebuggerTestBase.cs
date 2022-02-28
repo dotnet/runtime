@@ -1172,7 +1172,7 @@ namespace DebuggerTests
 
         internal static JObject TSymbol(string value) => JObject.FromObject(new { type = "symbol", value = @value, description = @value });
         
-        internal static JObject TChar(char value) => JObject.FromObject(new { type = "char", value = @value, description = $"{(int)value} '{@value}'" });
+        internal static JObject TChar(char value) => JObject.FromObject(new { type = "symbol", value = @value, description = $"{(int)value} '{@value}'" });
 
         /*
         	For target names with generated method names like

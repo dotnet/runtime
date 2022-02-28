@@ -1767,7 +1767,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             char charValue = Convert.ToChar(value);
             var description = $"{value} '{charValue}'";
-            return CreateJObject<char>(charValue, "char", description, true);
+            return CreateJObject<char>(charValue, "symbol", description, true);
         }
 
         public async Task<JObject> CreateJObjectForPtr(ElementType etype, MonoBinaryReader retDebuggerCmdReader, string name, CancellationToken token)
