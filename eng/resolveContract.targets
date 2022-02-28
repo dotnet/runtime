@@ -61,7 +61,7 @@
     </ItemGroup>
   </Target>
   
-    <Target Name="SetGenAPIProperties"
+  <Target Name="SetGenAPIProperties"
           BeforeTargets="GenerateReferenceAssemblySource">
     <PropertyGroup>
       <GenAPIFollowTypeForwards Condition="'%(ProjectReference.Identity)' == '$(CoreLibProject)'">true</GenAPIFollowTypeForwards>
