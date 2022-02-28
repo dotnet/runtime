@@ -202,7 +202,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
 #ifdef FEATURE_ARRAYSTUB_AS_IL
     if (SF_IsArrayOpStub(dwStubFlags))
     {
-        pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdStepThroughStub;
         pMD->GetILStubResolver()->SetStubType(ILStubResolver::ArrayOpStub);
     }
     else

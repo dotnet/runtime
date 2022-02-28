@@ -2627,11 +2627,7 @@ public:
 #endif
 
     // Whether the stub takes a context argument that is an interop MethodDesc.
-    bool HasMDContextArg()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return IsCLRToCOMStub() || (IsPInvokeStub() && !IsDelegateStub());
-    }
+    bool HasMDContextArg();
 
     //
     // following implementations defined in DynamicMethod.cpp

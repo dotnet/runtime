@@ -530,7 +530,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
                 {
                     // create a new TrackAllocation after the memory we just allocated and insert it into the free list
                     TrackAllocation *pNewCurrent = (TrackAllocation*)((BYTE*)pCurrent + realSize);
-                    
+
                     ExecutableWriterHolder<TrackAllocation> newCurrentWriterHolder(pNewCurrent, sizeof(TrackAllocation));
                     newCurrentWriterHolder.GetRW()->pNext = pCurrent->pNext;
                     newCurrentWriterHolder.GetRW()->size = pCurrent->size - realSize;
@@ -1475,6 +1475,44 @@ void LCGMethodResolver::GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause)
 
 #endif // !DACCESS_COMPILE
 
+bool DynamicMethodDesc::HasMDContextArg()
+{
+    CONTRACTL
+    {
+        MODE_ANY;
+        GC_NOTRIGGER;
+        NOTHROW;
+        PRECONDITION(IsILStub());
+    }
+    CONTRACTL_END;
+
+    // Perform a minimal check. This is historically sufficient, but has not been updated
+    // with flag usage.
+    // If the check indicates false, it is for sure false. However, if it is true
+    // we need to check additional cases.
+    bool minCheck = IsCLRToCOMStub() || (IsPInvokeStub() && !IsDelegateStub());
+    if (!minCheck)
+        return false;
+
+#ifdef DACCESS_COMPILE
+    // The DAC's usage of this API is narrow enough that the precise nature needed by
+    // the runtime is not needed. Therefore, we can return the historically sufficient answer.
+    return true;
+#else
+    ILStubResolver::ILStubType type = GetILStubResolver()->GetStubType();
+    switch (type)
+    {
+#ifdef FEATURE_ARRAYSTUB_AS_IL
+        case ILStubResolver::ArrayOpStub:
+#endif
+        case ILStubResolver::TailCallCallTargetStub:
+        case ILStubResolver::TailCallStoreArgsStub:
+            return false;
+        default:
+            return true;
+    }
+#endif // !DACCESS_COMPILE
+}
 
 // Get the associated managed resolver. This method will be called during a GC so it should not throw, trigger a GC or cause the
 // object in question to be validated.
