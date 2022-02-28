@@ -30,7 +30,7 @@ namespace System.Reflection.Emit
     }
     public sealed partial class DynamicMethod : System.Reflection.MethodInfo
     {
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Reflection.Module m, bool skipVisibility) { }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         public DynamicMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Type owner, bool skipVisibility) { }
