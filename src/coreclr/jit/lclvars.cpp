@@ -1716,8 +1716,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
         return false;
     }
 
-    // Don't struct promote if we have an CUSTOMLAYOUT flag on an HFA type
-    if (StructHasCustomLayout(typeFlags) && compiler->IsHfa(typeHnd))
+    if (TreatStructAsOpaqueBlobOfBytes(typeFlags))
     {
         return false;
     }
