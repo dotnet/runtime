@@ -1285,6 +1285,9 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
         case NI_SSE2_ConvertToInt32:
         case NI_SSE2_ConvertToInt32WithTruncation:
         case NI_SSE2_ConvertToUInt32:
+        case NI_SSE2_ConvertToNInt:
+        case NI_SSE2_ConvertToNIntWithTruncation:
+        case NI_SSE2_ConvertToNUInt:
         case NI_SSE2_X64_ConvertToInt64:
         case NI_SSE2_X64_ConvertToInt64WithTruncation:
         case NI_SSE2_X64_ConvertToUInt64:
@@ -1360,6 +1363,7 @@ void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node)
         case NI_SSE41_ConvertToVector128Int16:
         case NI_SSE41_ConvertToVector128Int32:
         case NI_SSE41_ConvertToVector128Int64:
+        case NI_SSE41_ConvertToVector128NInt:
         {
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
 

@@ -21634,6 +21634,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
                 case NI_SSE41_ConvertToVector128Int16:
                 case NI_SSE41_ConvertToVector128Int32:
                 case NI_SSE41_ConvertToVector128Int64:
+                case NI_SSE41_ConvertToVector128NInt:
                 case NI_AVX2_BroadcastScalarToVector128:
                 case NI_AVX2_BroadcastScalarToVector256:
                 case NI_AVX2_ConvertToVector256Int16:

@@ -13,10 +13,8 @@ public sealed partial class Sse2Tests
     // -> PlatformNotSupportedException
     // ¯\_(ツ)_/¯
     //
-    /*
     [ConditionalTheory(nameof(Run64BitTests))]
     [InlineData(0, 0, 0)]
-    [InlineData(-123, 4294967173, 0)]
     [InlineData(123, 123, 0)]
     public void ConvertToNUInt_nuint_64Bit(ulong lower, ulong upper, ulong expected)
     {
@@ -28,14 +26,12 @@ public sealed partial class Sse2Tests
 
     [ConditionalTheory(nameof(Run32BitTests))]
     [InlineData(0, 0, 0)]
-    [InlineData(-123, 4294967173, 0)]
     [InlineData(123, 123, 0)]
-    public void ConvertToNUInt_nuint_32Bit(ulong lower, ulong upper, ulong expected)
+    public void ConvertToNUInt_nuint_32Bit(uint lower, uint upper, uint expected)
     {
         Vector128<nuint> value = Vector128.Create(lower, upper).AsNUInt();
 
         nuint actual = Sse2.ConvertToNUInt(value);
-        Assert.Equal((nuint)expected, actual);
+        Assert.Equal(expected, actual);
     }
-    */
 }

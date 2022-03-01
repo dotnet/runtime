@@ -14,7 +14,6 @@ public sealed partial class Sse41Tests
     // -> InvalidProgramException
     // ¯\_(ツ)_/¯
     //
-    /*
     [ConditionalTheory(nameof(Run64BitTests))]
     [InlineData(0, 0, 0, 0)]
     public void ConvertToVector128NInt_64Bit(long lower, long upper, long expectedLower, long expectedUpper)
@@ -132,5 +131,4 @@ public sealed partial class Sse41Tests
             Assert.Equal(expectedVector, actualVector);
         }
     }
-    */
 }

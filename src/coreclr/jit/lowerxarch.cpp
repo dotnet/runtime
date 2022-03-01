@@ -5451,6 +5451,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                 case NI_SSE41_ConvertToVector128Int16:
                 case NI_SSE41_ConvertToVector128Int32:
                 case NI_SSE41_ConvertToVector128Int64:
+                case NI_SSE41_ConvertToVector128NInt:
                 case NI_AVX2_ConvertToVector256Int16:
                 case NI_AVX2_ConvertToVector256Int32:
                 case NI_AVX2_ConvertToVector256Int64:
@@ -6036,6 +6037,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     case NI_SSE2_X64_ConvertToInt64:
                     case NI_SSE2_ConvertToUInt32:
                     case NI_SSE2_X64_ConvertToUInt64:
+                    case NI_SSE2_ConvertToNInt:
+                    case NI_SSE2_ConvertToNUInt:
                     case NI_AVX2_ConvertToInt32:
                     case NI_AVX2_ConvertToUInt32:
                     {
@@ -6052,6 +6055,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     case NI_SSE41_ConvertToVector128Int16:
                     case NI_SSE41_ConvertToVector128Int32:
                     case NI_SSE41_ConvertToVector128Int64:
+                    case NI_SSE41_ConvertToVector128NInt:
                     case NI_AVX2_ConvertToVector256Int16:
                     case NI_AVX2_ConvertToVector256Int32:
                     case NI_AVX2_ConvertToVector256Int64:
@@ -6077,6 +6081,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert((intrinsicId == NI_SSE41_ConvertToVector128Int16) ||
                            (intrinsicId == NI_SSE41_ConvertToVector128Int32) ||
                            (intrinsicId == NI_SSE41_ConvertToVector128Int64) ||
+                           (intrinsicId == NI_SSE41_ConvertToVector128NInt) ||
                            (intrinsicId == NI_AVX2_BroadcastScalarToVector128) ||
                            (intrinsicId == NI_AVX2_BroadcastScalarToVector256) ||
                            (intrinsicId == NI_AVX2_ConvertToVector256Int16) ||
