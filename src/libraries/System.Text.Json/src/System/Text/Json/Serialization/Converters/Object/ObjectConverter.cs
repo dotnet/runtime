@@ -7,6 +7,15 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class ObjectConverter : JsonConverter<object?>
     {
+        internal override ConverterStrategy ConverterStrategy => ConverterStrategy.Object;
+
+        public ObjectConverter()
+        {
+            CanBePolymorphic = true;
+            // JsonElement/JsonNode parsing does not support async; force read ahead for now.
+            RequiresReadAhead = true;
+        }
+
         public override object? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonElement)
@@ -14,15 +23,41 @@ namespace System.Text.Json.Serialization.Converters
                 return JsonElement.ParseValue(ref reader);
             }
 
+            Debug.Assert(options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonNode);
             return JsonNodeConverter.Instance.Read(ref reader, typeToConvert, options);
         }
 
         public override void Write(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
         {
             Debug.Assert(value?.GetType() == typeof(object));
-
             writer.WriteStartObject();
             writer.WriteEndObject();
+        }
+
+        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out object? value)
+        {
+            if (options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonElement)
+            {
+                JsonElement element = JsonElement.ParseValue(ref reader);
+
+                // Edge case where we want to lookup for a reference when parsing into typeof(object)
+                if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve &&
+                    JsonSerializer.TryGetReferenceFromJsonElement(ref state, element, out object? referenceValue))
+                {
+                    value = referenceValue;
+                }
+                else
+                {
+                    value = element;
+                }
+
+                return true;
+            }
+
+            Debug.Assert(options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonNode);
+            value = JsonNodeConverter.Instance.Read(ref reader, typeToConvert, options)!;
+            // TODO reference lookup for JsonNode deserialization.
+            return true;
         }
 
         internal override object ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
