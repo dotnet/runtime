@@ -29,12 +29,14 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void SetLastPInvokeError(int error);
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available. Use the DestroyStructure<T> overload instead.")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void DestroyStructure(IntPtr ptr, Type structuretype);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern IntPtr OffsetOf(Type t, string fieldName);
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available. Use the StructureToPtr<T> overload instead.")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld);
 
@@ -193,48 +195,56 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException();
         }
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static byte ReadByte(object ptr, int ofs)
         {
             // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static short ReadInt16(object ptr, int ofs)
         {
             // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static int ReadInt32(object ptr, int ofs)
         {
             // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static long ReadInt64(object ptr, int ofs)
         {
             // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteByte(object ptr, int ofs, byte val)
         {
             // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt16(object ptr, int ofs, short val)
         {
             // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt32(object ptr, int ofs, int val)
         {
             // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt64(object ptr, int ofs, long val)
         {
             // Obsolete
