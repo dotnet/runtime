@@ -890,7 +890,6 @@ namespace System.Text.Json.Serialization
         public string? TypeInfoPropertyName { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonSourceGenerationMode GenerationMode { get { throw null; } set { } }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public abstract partial class JsonSerializerContext
     {
         protected JsonSerializerContext(System.Text.Json.JsonSerializerOptions? options) { }
