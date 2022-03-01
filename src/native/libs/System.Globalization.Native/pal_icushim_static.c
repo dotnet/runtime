@@ -22,6 +22,7 @@
 #if defined(TARGET_IOS) || defined(TARGET_OSX) || defined(TARGET_WATCHOS) || defined(TARGET_TVOS)
     #define USE_APPLE_DECOMPRESSION
     #include <compression.h> // compression_stream_init, compression_stream_process, compression_stream_destroy
+    #include <dirent.h> // fdopendir, readdir, closedir
     #include <fcntl.h> // open
     #include <inttypes.h> // PRIu64
     #include <limits.h> // PATH_MAX
@@ -221,14 +222,35 @@ error:
     return 0;
 }
 
+static int
+apple_clean_stale_cache_files(DIR *d, const char *current_cache_filename)
+{
+    int dir_fd = dirfd(d);
+    struct dirent *de = NULL;
+    rewinddir(d);
+    while ((de = readdir(d)) != NULL)
+    {
+        const char *fn = de->d_name;
+        if (strcmp(fn, current_cache_filename) != 0)
+        {
+            if (strstr(fn, "-icudt.dat.decompressed") != NULL)
+            {
+                unlinkat(dir_fd, fn, 0);
+            }
+        }
+    }
+    return 0;
+}
+
 #define APPLE_TMPFILE_NAME_SIZE 128
 
 static const char *
 apple_mmap_icu_data(const char *path)
 {
+    const char *ret = NULL;
+    DIR *dirp = NULL;
     int cache_fd = -1;
-    int dir_fd = -1;
-    int src_fd = open(path, O_RDONLY);
+    int src_fd = open(path, O_RDONLY | O_CLOEXEC);
     if (src_fd == -1)
     {
         log_shim_error("apple_mmap_icu_data: failed to open %s", path);
@@ -260,7 +282,7 @@ apple_mmap_icu_data(const char *path)
             goto error;
         }
         cache_file += written;
-        written = snprintf(cache_file, APPLE_TMPFILE_NAME_SIZE - written, "icudt-%" PRIu64 "-%" PRIu64 "-%" PRIu64 ".dat.decompressed",
+        written = snprintf(cache_file, APPLE_TMPFILE_NAME_SIZE - written, "%" PRIu64 "-%" PRIu64 "-%" PRIu64 "-icudt.dat.decompressed",
             (uint64_t) src_st.st_ino,
             (uint64_t) src_st.st_size,
             (uint64_t) src_st.st_mtimespec.tv_sec);
@@ -276,14 +298,16 @@ apple_mmap_icu_data(const char *path)
         {
             goto error;
         }
-        dir_fd = open(cache_dir, O_DIRECTORY);
+        int dir_fd = open(cache_dir, O_DIRECTORY | O_RDONLY | O_CLOEXEC);
         if (dir_fd == -1)
         {
             log_shim_error("apple_mmap_icu_data: failed to open directory %s", cache_dir);
             goto error;
         }
+        dirp = fdopendir(dir_fd);
+        apple_clean_stale_cache_files(dirp, cache_file);
 
-        cache_fd = openat(dir_fd, cache_file, O_RDONLY);
+        cache_fd = openat(dir_fd, cache_file, O_RDONLY | O_CLOEXEC);
         if (cache_fd == -1)
         {
             cache_fd = openat(dir_fd, tmp_file, O_RDWR | O_CREAT, 0640);
@@ -339,13 +363,11 @@ apple_mmap_icu_data(const char *path)
         log_shim_error("apple_mmap_icu_data: failed to map %s with size %zu", icu_data_name, icu_data_size);
         goto error;
     }
-    close(cache_fd);
-    close(dir_fd);
-    return cache_mem;
+    ret = cache_mem;
 error:
-    if (dir_fd >= 0)
+    if (dirp != 0)
     {
-        close(dir_fd);
+        closedir(dirp);
     }
     if (src_fd >= 0)
     {
@@ -355,7 +377,7 @@ error:
     {
         close(cache_fd);
     }
-    return NULL;
+    return ret;
 }
 #else
 static const char *
