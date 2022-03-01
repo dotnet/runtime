@@ -1805,33 +1805,25 @@ namespace System.Numerics
 
             float det;
 
-            Matrix4x4 matTemp = Matrix4x4.Identity;
-            Vector3 canonicalBasis_Row0 = new Vector3(1.0f, 0.0f, 0.0f);
-            Vector3 canonicalBasis_Row1 = new Vector3(0.0f, 1.0f, 0.0f);
-            Vector3 canonicalBasis_Row2 = new Vector3(0.0f, 0.0f, 1.0f);
+            Matrix4x4 matTemp = Identity;
+            Vector3 canonicalBasis_Row0 = Unsafe.As<float, Vector3>(ref matTemp.M11);
+            Vector3 canonicalBasis_Row1 = Unsafe.As<float, Vector3>(ref matTemp.M21);
+            Vector3 canonicalBasis_Row2 = Unsafe.As<float, Vector3>(ref matTemp.M31);
+            Vector3 pVectorBasis_0 = Unsafe.As<float, Vector3>(ref matrix.M11);
+            Vector3 pVectorBasis_1 = Unsafe.As<float, Vector3>(ref matrix.M21);
+            Vector3 pVectorBasis_2 = Unsafe.As<float, Vector3>(ref matrix.M31);
 
-            translation = new Vector3(
-                matrix.M41,
-                matrix.M42,
-                matrix.M43);
+            translation = Unsafe.As<float, Vector3>(ref matrix.M41);
 
-            Vector3 pVectorBasis_0 = new Vector3(matrix.M11, matrix.M12, matrix.M13);
-            Vector3 pVectorBasis_1 = new Vector3(matrix.M21, matrix.M22, matrix.M23);
-            Vector3 pVectorBasis_2 = new Vector3(matrix.M31, matrix.M32, matrix.M33);
-
-            scale.X = pVectorBasis_0.Length();
-            scale.Y = pVectorBasis_1.Length();
-            scale.Z = pVectorBasis_2.Length();
-            float pfScales_0 = scale.X;
-            float pfScales_1 = scale.Y;
-            float pfScales_2 = scale.Z;
+            scale = new Vector3(pVectorBasis_0.Length(), pVectorBasis_1.Length(), pVectorBasis_2.Length());
+            float pfScales_0 = scale.X, pfScales_1 = scale.Y, pfScales_2 = scale.Z;
 
             uint a, b;
-            #region Ranking
             float x = pfScales_0, y = pfScales_1, z = pfScales_2;
             float pfScales_A, pfScales_B, pfScales_C;
             Vector3 pVectorBasis_A, pVectorBasis_B, pVectorBasis_C;
             Vector3 canonicalBasis_A;
+            #region Ranking
             if (x < y)
             {
                 if (y < z)
@@ -1865,7 +1857,6 @@ namespace System.Numerics
 
                         pVectorBasis_B = pVectorBasis_2;
                         pVectorBasis_C = pVectorBasis_0;
-
                     }
                     else
                     {
@@ -1876,7 +1867,6 @@ namespace System.Numerics
 
                         pVectorBasis_B = pVectorBasis_0;
                         pVectorBasis_C = pVectorBasis_2;
-
                     }
                 }
             }
@@ -1923,7 +1913,6 @@ namespace System.Numerics
 
                         pVectorBasis_B = pVectorBasis_1;
                         pVectorBasis_C = pVectorBasis_2;
-
                     }
                 }
             }
@@ -1997,85 +1986,44 @@ namespace System.Numerics
             pVectorBasis_C = Vector3.Normalize(pVectorBasis_C);
             if (a == 0)
             {
+                Unsafe.As<float, Vector3>(ref matTemp.M11) = pVectorBasis_A;
                 if (b == 1)
                 {
-                    matTemp.M11 = pVectorBasis_A.X;
-                    matTemp.M12 = pVectorBasis_A.Y;
-                    matTemp.M13 = pVectorBasis_A.Z;
-                    matTemp.M21 = pVectorBasis_B.X;
-                    matTemp.M22 = pVectorBasis_B.Y;
-                    matTemp.M23 = pVectorBasis_B.Z;
-                    matTemp.M31 = pVectorBasis_C.X;
-                    matTemp.M32 = pVectorBasis_C.Y;
-                    matTemp.M33 = pVectorBasis_C.Z;
+                    Unsafe.As<float, Vector3>(ref matTemp.M21) = pVectorBasis_B;
+                    Unsafe.As<float, Vector3>(ref matTemp.M31) = pVectorBasis_C;
                 }
                 else
                 {
-                    matTemp.M11 = pVectorBasis_A.X;
-                    matTemp.M12 = pVectorBasis_A.Y;
-                    matTemp.M13 = pVectorBasis_A.Z;
-                    matTemp.M21 = pVectorBasis_C.X;
-                    matTemp.M22 = pVectorBasis_C.Y;
-                    matTemp.M23 = pVectorBasis_C.Z;
-                    matTemp.M31 = pVectorBasis_B.X;
-                    matTemp.M32 = pVectorBasis_B.Y;
-                    matTemp.M33 = pVectorBasis_B.Z;
-
+                    Unsafe.As<float, Vector3>(ref matTemp.M21) = pVectorBasis_C;
+                    Unsafe.As<float, Vector3>(ref matTemp.M31) = pVectorBasis_B;
                 }
             }
             else if (a == 1)
             {
+                Unsafe.As<float, Vector3>(ref matTemp.M21) = pVectorBasis_A;
                 if (b == 0)
                 {
-                    matTemp.M11 = pVectorBasis_B.X;
-                    matTemp.M12 = pVectorBasis_B.Y;
-                    matTemp.M13 = pVectorBasis_B.Z;
-                    matTemp.M21 = pVectorBasis_A.X;
-                    matTemp.M22 = pVectorBasis_A.Y;
-                    matTemp.M23 = pVectorBasis_A.Z;
-                    matTemp.M31 = pVectorBasis_C.X;
-                    matTemp.M32 = pVectorBasis_C.Y;
-                    matTemp.M33 = pVectorBasis_C.Z;
+                    Unsafe.As<float, Vector3>(ref matTemp.M11) = pVectorBasis_B;
+                    Unsafe.As<float, Vector3>(ref matTemp.M31) = pVectorBasis_C;
                 }
                 else
                 {
-                    matTemp.M11 = pVectorBasis_C.X;
-                    matTemp.M12 = pVectorBasis_C.Y;
-                    matTemp.M13 = pVectorBasis_C.Z;
-                    matTemp.M21 = pVectorBasis_A.X;
-                    matTemp.M22 = pVectorBasis_A.Y;
-                    matTemp.M23 = pVectorBasis_A.Z;
-                    matTemp.M31 = pVectorBasis_B.X;
-                    matTemp.M32 = pVectorBasis_B.Y;
-                    matTemp.M33 = pVectorBasis_B.Z;
-
+                    Unsafe.As<float, Vector3>(ref matTemp.M11) = pVectorBasis_C;
+                    Unsafe.As<float, Vector3>(ref matTemp.M31) = pVectorBasis_B;
                 }
             }
             else
             {
+                Unsafe.As<float, Vector3>(ref matTemp.M31) = pVectorBasis_A;
                 if (b == 0)
                 {
-                    matTemp.M11 = pVectorBasis_B.X;
-                    matTemp.M12 = pVectorBasis_B.Y;
-                    matTemp.M13 = pVectorBasis_B.Z;
-                    matTemp.M21 = pVectorBasis_C.X;
-                    matTemp.M22 = pVectorBasis_C.Y;
-                    matTemp.M23 = pVectorBasis_C.Z;
-                    matTemp.M31 = pVectorBasis_A.X;
-                    matTemp.M32 = pVectorBasis_A.Y;
-                    matTemp.M33 = pVectorBasis_A.Z;
+                    Unsafe.As<float, Vector3>(ref matTemp.M11) = pVectorBasis_B;
+                    Unsafe.As<float, Vector3>(ref matTemp.M21) = pVectorBasis_C;
                 }
                 else
                 {
-                    matTemp.M11 = pVectorBasis_C.X;
-                    matTemp.M12 = pVectorBasis_C.Y;
-                    matTemp.M13 = pVectorBasis_C.Z;
-                    matTemp.M21 = pVectorBasis_B.X;
-                    matTemp.M22 = pVectorBasis_B.Y;
-                    matTemp.M23 = pVectorBasis_B.Z;
-                    matTemp.M31 = pVectorBasis_A.X;
-                    matTemp.M32 = pVectorBasis_A.Y;
-                    matTemp.M33 = pVectorBasis_A.Z;
+                    Unsafe.As<float, Vector3>(ref matTemp.M11) = pVectorBasis_C;
+                    Unsafe.As<float, Vector3>(ref matTemp.M21) = pVectorBasis_B;
                 }
             }
 
@@ -2087,32 +2035,30 @@ namespace System.Numerics
                 // switch coordinate system by negating the scale and inverting the basis vector on the x-axis
                 pVectorBasis_A = -pVectorBasis_A;
 
+                if (a == 0)
+                {
+                    Unsafe.As<float, Vector3>(ref matTemp.M11) = pVectorBasis_A;
+                    scale *= new Vector3(-1, 1, 1);
+                }
+                else if (a == 1)
+                {
+                    Unsafe.As<float, Vector3>(ref matTemp.M21) = pVectorBasis_A;
+                    scale *= new Vector3(1, -1, 1);
+                }
+                else
+                {
+                    Unsafe.As<float, Vector3>(ref matTemp.M31) = pVectorBasis_A;
+                    scale *= new Vector3(1, 1, -1);
+                }
+
                 det = -det;
             }
 
             det -= 1.0f;
             det *= det;
 
-            if ((DecomposeEpsilon < det))
+            if (DecomposeEpsilon < det)
             {
-                if (a == 0)
-                {
-                    matTemp.M11 = pVectorBasis_A.X;
-                    matTemp.M12 = pVectorBasis_A.Y;
-                    matTemp.M13 = pVectorBasis_A.Z;
-                }
-                else if (a == 1)
-                {
-                    matTemp.M21 = pVectorBasis_A.X;
-                    matTemp.M22 = pVectorBasis_A.Y;
-                    matTemp.M23 = pVectorBasis_A.Z;
-                }
-                else
-                {
-                    matTemp.M31 = pVectorBasis_A.X;
-                    matTemp.M32 = pVectorBasis_A.Y;
-                    matTemp.M33 = pVectorBasis_A.Z;
-                }
                 // Non-SRT matrix encountered
                 rotation = Quaternion.Identity;
                 result = false;
