@@ -8,17 +8,6 @@ using System.Diagnostics;
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>
-    /// Boolean operations over BDDs.
-    /// </summary>
-    internal enum BoolOp
-    {
-        Or,
-        And,
-        Xor,
-        Not
-    }
-
-    /// <summary>
     /// Boolean algebra for Binary Decision Diagrams. Boolean operations on BDDs are cached for efficiency. The
     /// IBooleanAlgebra interface implemented by this class is thread safe.
     /// TBD: policy for clearing/reducing the caches when they grow too large.
@@ -26,6 +15,15 @@ namespace System.Text.RegularExpressions.Symbolic
     /// </summary>
     internal abstract class BDDAlgebra : IBooleanAlgebra<BDD>
     {
+        /// <summary>Boolean operations over BDDs.</summary>
+        private enum BoolOp
+        {
+            Or,
+            And,
+            Xor,
+            Not
+        }
+
         /// <summary>
         /// Operation cache for Boolean operations over BDDs.
         /// </summary>
@@ -74,10 +72,11 @@ namespace System.Text.RegularExpressions.Symbolic
         public BDD Not(BDD a) =>
             a == False ? True :
             a == True ? False :
-            _opCache.GetOrAdd((BoolOp.Not, a, null), static (key, algebra) => key.a.IsLeaf ?
-                algebra.GetOrCreateBDD(algebra.CombineTerminals(BoolOp.Not, key.a.Ordinal, 0), null, null) : // multi-terminal case
-                algebra.GetOrCreateBDD(key.a.Ordinal, algebra.Not(key.a.One), algebra.Not(key.a.Zero)),
-                this);
+            _opCache.GetOrAdd((BoolOp.Not, a, null), static (key, algebra) =>
+            {
+                Debug.Assert(!key.a.IsLeaf, "Did not expect multi-terminal");
+                return algebra.GetOrCreateBDD(key.a.Ordinal, algebra.Not(key.a.One), algebra.Not(key.a.Zero));
+            }, this);
 
         /// <summary>
         /// Applies the binary Boolean operation op and constructs the BDD recursively from a and b.
@@ -145,12 +144,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 Debug.Assert(key.b is not null, "Validated it was non-null prior to calling GetOrAdd");
 
-                if (key.a.IsLeaf && key.b.IsLeaf)
-                {
-                    // Multi-terminal case, we know here that a is neither True nor False
-                    int ord = algebra.CombineTerminals(key.op, key.a.Ordinal, key.b.Ordinal);
-                    return algebra.GetOrCreateBDD(ord, null, null);
-                }
+                Debug.Assert(!key.a.IsLeaf || !key.b.IsLeaf, "Did not expect multi-terminal case");
 
                 if (key.a.IsLeaf || key.b!.Ordinal > key.a.Ordinal)
                 {
@@ -436,13 +430,6 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         #endregion
-
-        /// <summary>
-        /// The returned integer must be nonegative
-        /// and will act as the combined terminal in a multi-terminal BDD.
-        /// May throw NotSupportedException.
-        /// </summary>
-        public abstract int CombineTerminals(BoolOp op, int terminal1, int terminal2);
 
         /// <summary>
         /// Replace the True node in the BDD by a non-Boolean terminal.

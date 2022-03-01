@@ -357,7 +357,5 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         private static bool IsSingletonRange((uint, uint)[] ranges) => ranges.Length == 1 && ranges[0].Item1 == ranges[0].Item2;
-
-        public override int CombineTerminals(BoolOp op, int terminal1, int terminal2) => throw new NotSupportedException();
     }
 }
