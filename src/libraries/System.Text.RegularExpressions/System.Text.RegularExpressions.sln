@@ -13,7 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.RegularExpressi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.RegularExpressions.Tests", "tests\FunctionalTests\System.Text.RegularExpressions.Tests.csproj", "{8EE1A7C4-3630-4900-8976-9B3ADAFF10DC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.RegularExpressions.UnitTests", "tests\UnitTests\System.Text.RegularExpressions.UnitTests.csproj", "{A86931EC-34DC-40A8-BD8C-F5E13BDBA903}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.RegularExpressions.Unit.Tests", "tests\UnitTests\System.Text.RegularExpressions.Unit.Tests.csproj", "{A86931EC-34DC-40A8-BD8C-F5E13BDBA903}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{2ACCCAAB-F0CE-4839-82BD-F174861DEA78}"
 EndProject
