@@ -105,7 +105,11 @@
   <!-- Project references -->
 
   <ItemGroup>
-    <PackageReference Include="System.Net.MsQuic.Transport" Version="$(SystemNetMsQuicTransportVersion)" PrivateAssets="all" GeneratePathProperty="true" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+    <PackageReference Include="System.Net.MsQuic.Transport"
+                      Version="$(SystemNetMsQuicTransportVersion)" 
+                      PrivateAssets="all" 
+                      GeneratePathProperty="true" 
+                      Condition="'$(DotNetBuildFromSource)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup>
@@ -137,7 +141,8 @@
   </ItemGroup>
 
   <!-- Support for deploying msquic -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' and&#xD;&#xA;                        ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86') and '$(DotNetBuildFromSource)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' and
+                          ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86') and '$(DotNetBuildFromSource)' != 'true'">
     <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(LibrariesAllBinArtifactsPath)" ItemName="NativeBinPlaceItem" />
@@ -159,5 +164,4 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
   </ItemGroup>
-
 </Project>
