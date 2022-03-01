@@ -1,6 +1,7 @@
 
 # Disable pipeline for ordinary pushes to the branches
 trigger: none
+timeoutInMinutes: 180
 
 # To reduce load on the pipeline, enable it only for PRs that affect critical networking code
 pr:
@@ -55,6 +56,7 @@ steps:
 - bash: |
     docker exec linuxclient bash -c '/repo/build.sh -subset clr+libs -runtimeconfiguration release -ci /p:NativeOptimizationDataSupported=false'
   displayName: Build product sources
+  timeoutInMinutes: 180
 
 - bash: |
     docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Http/tests/EnterpriseTests/System.Net.Http.Enterprise.Tests.csproj
