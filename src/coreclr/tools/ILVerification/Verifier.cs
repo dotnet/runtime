@@ -36,7 +36,7 @@ namespace ILVerify
 
         public void SetSystemModuleName(AssemblyName name)
         {
-            PEReader peReader = _typeSystemContext._resolver.Resolve(name.Name);
+            PEReader peReader = _typeSystemContext._resolver.ResolveAssembly(name);
             if (peReader is null)
             {
                 throw new VerifierException("Assembly or module not found: " + name.FullName);

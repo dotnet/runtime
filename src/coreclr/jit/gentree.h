@@ -985,7 +985,7 @@ public:
 
     // Copy the _gtRegNum/gtRegTag fields
     void CopyReg(GenTree* from);
-    bool gtHasReg() const;
+    bool gtHasReg(Compiler* comp) const;
 
     int GetRegisterDstCount(Compiler* compiler) const;
 
@@ -1766,24 +1766,24 @@ public:
     bool IsMultiRegNode() const;
 
     // Returns the number of registers defined by a multireg node.
-    unsigned GetMultiRegCount() const;
+    unsigned GetMultiRegCount(Compiler* comp) const;
 
     // Returns the regIndex'th register defined by a possibly-multireg node.
-    regNumber GetRegByIndex(int regIndex);
+    regNumber GetRegByIndex(int regIndex) const;
 
     // Returns the type of the regIndex'th register defined by a multi-reg node.
-    var_types GetRegTypeByIndex(int regIndex);
+    var_types GetRegTypeByIndex(int regIndex) const;
 
     // Returns the GTF flag equivalent for the regIndex'th register of a multi-reg node.
     GenTreeFlags GetRegSpillFlagByIdx(int regIndex) const;
 
     // Last-use information for either GenTreeLclVar or GenTreeCopyOrReload nodes.
 private:
-    GenTreeFlags GetLastUseBit(int regIndex);
+    GenTreeFlags GetLastUseBit(int regIndex) const;
 
 public:
-    bool IsLastUse(int regIndex);
-    bool HasLastUse();
+    bool IsLastUse(int regIndex) const;
+    bool HasLastUse() const;
     void SetLastUse(int regIndex);
     void ClearLastUse(int regIndex);
 
@@ -3440,7 +3440,7 @@ public:
         ClearOtherRegFlags();
     }
 
-    regNumber GetRegNumByIdx(int regIndex)
+    regNumber GetRegNumByIdx(int regIndex) const
     {
         assert(regIndex < MAX_MULTIREG_COUNT);
         return (regIndex == 0) ? GetRegNum() : (regNumber)gtOtherReg[regIndex - 1];
@@ -3919,7 +3919,7 @@ public:
         return m_isEnclosingType;
     }
 
-    // Get ith ABI return register
+    // Get i'th ABI return register
     regNumber GetABIReturnReg(unsigned idx) const;
 
     // Get reg mask of ABI return registers
@@ -4206,13 +4206,13 @@ struct GenTreeCall final : public GenTree
     }
 
     //---------------------------------------------------------------------------
-    // GetRegNumByIdx: get ith return register allocated to this call node.
+    // GetRegNumByIdx: get i'th return register allocated to this call node.
     //
     // Arguments:
     //     idx   -   index of the return register
     //
     // Return Value:
-    //     Return regNumber of ith return register of call node.
+    //     Return regNumber of i'th return register of call node.
     //     Returns REG_NA if there is no valid return register for the given index.
     //
     regNumber GetRegNumByIdx(unsigned idx) const
@@ -4232,7 +4232,7 @@ struct GenTreeCall final : public GenTree
     }
 
     //----------------------------------------------------------------------
-    // SetRegNumByIdx: set ith return register of this call node
+    // SetRegNumByIdx: set i'th return register of this call node
     //
     // Arguments:
     //    reg    -   reg number
@@ -4883,13 +4883,13 @@ struct GenTreeMultiRegOp : public GenTreeOp
     }
 
     //---------------------------------------------------------------------------
-    // GetRegNumByIdx: get ith register allocated to this struct argument.
+    // GetRegNumByIdx: get i'th register allocated to this struct argument.
     //
     // Arguments:
     //     idx   -   index of the register
     //
     // Return Value:
-    //     Return regNumber of ith register of this register argument
+    //     Return regNumber of i'th register of this register argument
     //
     regNumber GetRegNumByIdx(unsigned idx) const
     {
@@ -4924,8 +4924,8 @@ struct GenTreeMultiRegOp : public GenTreeOp
     //
     // Return Value:
     //    var_type of the register specified by its index.
-
-    var_types GetRegType(unsigned index)
+    //
+    var_types GetRegType(unsigned index) const
     {
         assert(index < 2);
         // The type of register is usually the same as GenTree type, since GenTreeMultiRegOp usually defines a single
@@ -6974,13 +6974,13 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
     MultiRegSpillFlags gtSpillFlags;
 
     //---------------------------------------------------------------------------
-    // GetRegNumByIdx: get ith register allocated to this struct argument.
+    // GetRegNumByIdx: get i'th register allocated to this struct argument.
     //
     // Arguments:
     //     idx   -   index of the struct
     //
     // Return Value:
-    //     Return regNumber of ith register of this struct argument
+    //     Return regNumber of i'th register of this struct argument
     //
     regNumber GetRegNumByIdx(unsigned idx) const
     {
@@ -6995,7 +6995,7 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
     }
 
     //----------------------------------------------------------------------
-    // SetRegNumByIdx: set ith register of this struct argument
+    // SetRegNumByIdx: set i'th register of this struct argument
     //
     // Arguments:
     //    reg    -   reg number
@@ -7121,13 +7121,13 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
     }
 
     //-----------------------------------------------------------
-    // GetRegNumByIdx: Get regNumber of ith position.
+    // GetRegNumByIdx: Get regNumber of i'th position.
     //
     // Arguments:
     //    idx   -   register position.
     //
     // Return Value:
-    //    Returns regNumber assigned to ith position.
+    //    Returns regNumber assigned to i'th position.
     //
     regNumber GetRegNumByIdx(unsigned idx) const
     {
@@ -7146,7 +7146,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
     }
 
     //-----------------------------------------------------------
-    // SetRegNumByIdx: Set the regNumber for ith position.
+    // SetRegNumByIdx: Set the regNumber for i'th position.
     //
     // Arguments:
     //    reg   -   reg number
@@ -7987,13 +7987,14 @@ inline GenTree* GenTree::gtSkipReloadOrCopy()
 }
 
 //-----------------------------------------------------------------------------------
-// IsMultiRegCall: whether a call node returning its value in more than one register
+// IsMultiRegCall: whether a call node returns its value in more than one register
 //
 // Arguments:
 //     None
 //
 // Return Value:
 //     Returns true if this GenTree is a multi register returning call
+//
 inline bool GenTree::IsMultiRegCall() const
 {
     if (this->IsCall())
@@ -8004,9 +8005,18 @@ inline bool GenTree::IsMultiRegCall() const
     return false;
 }
 
+//-----------------------------------------------------------------------------------
+// IsMultiRegLclVar: whether a local var node defines multiple registers
+//
+// Arguments:
+//     None
+//
+// Return Value:
+//     Returns true if this GenTree is a multi register defining local var
+//
 inline bool GenTree::IsMultiRegLclVar() const
 {
-    if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
+    if (OperIsScalarLocal())
     {
         return AsLclVar()->IsMultiReg();
     }
@@ -8014,8 +8024,7 @@ inline bool GenTree::IsMultiRegLclVar() const
 }
 
 //-----------------------------------------------------------------------------------
-// GetRegByIndex: Get a specific register, based on regIndex, that is produced
-//                by this node.
+// GetRegByIndex: Get a specific register, based on regIndex, that is produced by this node.
 //
 // Arguments:
 //     regIndex - which register to return (must be 0 for non-multireg nodes)
@@ -8028,7 +8037,7 @@ inline bool GenTree::IsMultiRegLclVar() const
 //     values for calls. Should that change with a future target, this method will need
 //     to change accordingly.
 //
-inline regNumber GenTree::GetRegByIndex(int regIndex)
+inline regNumber GenTree::GetRegByIndex(int regIndex) const
 {
     if (regIndex == 0)
     {
@@ -8048,6 +8057,7 @@ inline regNumber GenTree::GetRegByIndex(int regIndex)
         return AsPutArgSplit()->GetRegNumByIdx(regIndex);
     }
 #endif
+
 #if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
     {
@@ -8060,6 +8070,7 @@ inline regNumber GenTree::GetRegByIndex(int regIndex)
         return AsCopyOrReload()->GetRegNumByIdx(regIndex);
     }
 #endif // FEATURE_MULTIREG_RET
+
 #ifdef FEATURE_HW_INTRINSICS
     if (OperIs(GT_HWINTRINSIC))
     {
@@ -8068,7 +8079,8 @@ inline regNumber GenTree::GetRegByIndex(int regIndex)
         return AsHWIntrinsic()->GetOtherReg();
     }
 #endif // FEATURE_HW_INTRINSICS
-    if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
+
+    if (OperIsScalarLocal())
     {
         return AsLclVar()->GetRegNumByIdx(regIndex);
     }
@@ -8082,7 +8094,7 @@ inline regNumber GenTree::GetRegByIndex(int regIndex)
 //                    by this multi-reg node.
 //
 // Arguments:
-//     regIndex - which register type to return
+//     regIndex - index of register whose type will be returned
 //
 // Return Value:
 //     The register type assigned to this index for this node.
@@ -8095,7 +8107,7 @@ inline regNumber GenTree::GetRegByIndex(int regIndex)
 //     values for calls. Should that change with a future target, this method will need
 //     to change accordingly.
 //
-inline var_types GenTree::GetRegTypeByIndex(int regIndex)
+inline var_types GenTree::GetRegTypeByIndex(int regIndex) const
 {
 #if FEATURE_MULTIREG_RET
     if (IsMultiRegCall())
@@ -8108,14 +8120,14 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex)
     {
         return AsPutArgSplit()->GetRegType(regIndex);
     }
-#endif
+#endif // FEATURE_ARG_SPLIT
+
 #if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
     {
         return AsMultiRegOp()->GetRegType(regIndex);
     }
-#endif
-
+#endif // !defined(TARGET_64BIT)
 #endif // FEATURE_MULTIREG_RET
 
     if (OperIsHWIntrinsic())
@@ -8138,7 +8150,7 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex)
 #endif
     }
 
-    if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
+    if (OperIsScalarLocal())
     {
         if (TypeGet() == TYP_LONG)
         {
@@ -8183,18 +8195,17 @@ inline GenTreeFlags GenTree::GetRegSpillFlagByIdx(int regIndex) const
     {
         return AsPutArgSplit()->GetRegSpillFlagByIdx(regIndex);
     }
-#endif
+#endif // FEATURE_ARG_SPLIT
 
 #if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
     {
         return AsMultiRegOp()->GetRegSpillFlagByIdx(regIndex);
     }
-#endif
-
+#endif // !defined(TARGET_64BIT)
 #endif // FEATURE_MULTIREG_RET
 
-    if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
+    if (OperIsScalarLocal())
     {
         return AsLclVar()->GetRegSpillFlagByIdx(regIndex);
     }
@@ -8215,7 +8226,7 @@ inline GenTreeFlags GenTree::GetRegSpillFlagByIdx(int regIndex) const
 // Notes:
 //     This must be a GenTreeLclVar or GenTreeCopyOrReload node.
 //
-inline GenTreeFlags GenTree::GetLastUseBit(int regIndex)
+inline GenTreeFlags GenTree::GetLastUseBit(int regIndex) const
 {
     assert(regIndex < 4);
     assert(OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_COPY, GT_RELOAD));
@@ -8235,7 +8246,7 @@ inline GenTreeFlags GenTree::GetLastUseBit(int regIndex)
 // Notes:
 //     This must be a GenTreeLclVar or GenTreeCopyOrReload node.
 //
-inline bool GenTree::IsLastUse(int regIndex)
+inline bool GenTree::IsLastUse(int regIndex) const
 {
     assert(OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_COPY, GT_RELOAD));
     return (gtFlags & GetLastUseBit(regIndex)) != 0;
@@ -8250,7 +8261,7 @@ inline bool GenTree::IsLastUse(int regIndex)
 // Notes:
 //     This must be a GenTreeLclVar or GenTreeCopyOrReload node.
 //
-inline bool GenTree::HasLastUse()
+inline bool GenTree::HasLastUse() const
 {
     return (gtFlags & (GTF_VAR_DEATH_MASK)) != 0;
 }
@@ -8291,6 +8302,7 @@ inline void GenTree::ClearLastUse(int regIndex)
 //
 // Return Value:
 //     Returns true if this GenTree is a copy or reload node.
+//
 inline bool GenTree::IsCopyOrReload() const
 {
     return (gtOper == GT_COPY || gtOper == GT_RELOAD);
@@ -8305,6 +8317,7 @@ inline bool GenTree::IsCopyOrReload() const
 //
 // Return Value:
 //     Returns true if this GenTree is a copy or reload of multi-reg call node.
+//
 inline bool GenTree::IsCopyOrReloadOfMultiRegCall() const
 {
     if (IsCopyOrReload())
