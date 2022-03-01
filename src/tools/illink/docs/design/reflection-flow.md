@@ -175,7 +175,7 @@ More details discussed in https://github.com/dotnet/runtime/issues/35339.
 
 ## Escape hatch: DynamicDependencyAttribute annotation
 
-This is an existing custom attribute (known as `PreserveDependencyAttribute`) understood by the linker. This attribute allows the user to declare the type name, method/field name, and signature (all as a string) of a method or field that the method dynamically depends on.
+This is an existing custom attribute (known as `DynamicDependencyAttribute`) understood by the linker. This attribute allows the user to declare the type name, method/field name, and signature (all as a string) of a method or field that the method dynamically depends on.
 
 When the linker sees a method/constructor/field annotated with this attribute as necessary, it also marks the referenced member as necessary. It also suppresses all analysis within the method. 
 See issue https://github.com/dotnet/runtime/issues/30902 for details.
