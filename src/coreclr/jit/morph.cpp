@@ -14730,7 +14730,7 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
 //    The morphed tree
 //
 // Notes:
-//    For ARM64 this is an optimization versus calling fgMorphModToSubMulDiv.
+//    This is more optimized than calling fgMorphModToSubMulDiv.
 //
 GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
 {
