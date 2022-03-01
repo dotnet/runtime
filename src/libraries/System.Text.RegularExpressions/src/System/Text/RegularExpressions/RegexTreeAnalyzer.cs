@@ -9,11 +9,11 @@ namespace System.Text.RegularExpressions
     /// <summary>Analyzes a <see cref="RegexTree"/> of <see cref="RegexNode"/>s to produce data on the tree structure, in particular in support of code generation.</summary>
     internal static class RegexTreeAnalyzer
     {
-        /// <summary>Analyzes a <see cref="RegexCode"/> to learn about the structure of the tree.</summary>
-        public static AnalysisResults Analyze(RegexCode code)
+        /// <summary>Analyzes a <see cref="RegexInterpreterCode"/> to learn about the structure of the tree.</summary>
+        public static AnalysisResults Analyze(RegexTree regexTree)
         {
-            var results = new AnalysisResults(code);
-            results._complete = TryAnalyze(code.Tree.Root, results, isAtomicByAncestor: true);
+            var results = new AnalysisResults(regexTree);
+            results._complete = TryAnalyze(regexTree.Root, results, isAtomicByAncestor: true);
             return results;
 
             static bool TryAnalyze(RegexNode node, AnalysisResults results, bool isAtomicByAncestor)
@@ -22,6 +22,9 @@ namespace System.Text.RegularExpressions
                 {
                     return false;
                 }
+
+                // Track whether we've seen any node with IgnoreCase set.
+                results._hasIgnoreCase |= (node.Options & RegexOptions.IgnoreCase) != 0;
 
                 if (isAtomicByAncestor)
                 {
@@ -144,13 +147,15 @@ namespace System.Text.RegularExpressions
         internal readonly HashSet<RegexNode> _containsCapture = new(); // the root is a capture, so this will always contain at least the root node
         /// <summary>Set of nodes that directly or indirectly contain backtracking constructs that aren't hidden internaly by atomic constructs.</summary>
         internal HashSet<RegexNode>? _mayBacktrack;
+        /// <summary>Whether any node has <see cref="RegexOptions.IgnoreCase"/> set.</summary>
+        internal bool _hasIgnoreCase;
 
         /// <summary>Initializes the instance.</summary>
-        /// <param name="code">The code being analyzed.</param>
-        internal AnalysisResults(RegexCode code) => Code = code;
+        /// <param name="regexTree">The code being analyzed.</param>
+        internal AnalysisResults(RegexTree regexTree) => RegexTree = regexTree;
 
         /// <summary>Gets the code that was analyzed.</summary>
-        public RegexCode Code { get; }
+        public RegexTree RegexTree { get; }
 
         /// <summary>Gets whether a node is considered atomic based on its ancestry.</summary>
         public bool IsAtomicByAncestor(RegexNode node) => _isAtomicByAncestor.Contains(node);
@@ -168,5 +173,8 @@ namespace System.Text.RegularExpressions
         /// true for any node that requires backtracking.
         /// </remarks>
         public bool MayBacktrack(RegexNode node) => !_complete || (_mayBacktrack?.Contains(node) ?? false);
+
+        /// <summary>Gets whether a node might have <see cref="RegexOptions.IgnoreCase"/> set.</summary>
+        public bool HasIgnoreCase => _complete && _hasIgnoreCase;
     }
 }

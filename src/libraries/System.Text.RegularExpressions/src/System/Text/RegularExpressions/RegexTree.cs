@@ -2,31 +2,34 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Globalization;
 
 namespace System.Text.RegularExpressions
 {
-    /// <summary>Wrapper for a node tree with additional information attached.</summary>
+    /// <summary>
+    /// Provides the core data describing a parsed <see cref="RegexNode"/> tree, along with necessary
+    /// information about captures in the tree and computed optimizations about its structure.
+    /// </summary>
     internal sealed class RegexTree
     {
+        /// <summary>The root node of the parsed <see cref="RegexNode"/> tree.</summary>
         public readonly RegexNode Root;
-        public readonly Hashtable Caps;
-        public readonly int[] CapNumList;
-        public readonly int CapTop;
-        public readonly Hashtable CapNames;
-        public readonly string[] CapsList;
+        public readonly Hashtable? Caps;
+        public readonly int CapSize;
+        public readonly Hashtable? CapNames;
+        public readonly string[]? CapsList;
         public readonly RegexOptions Options;
-        public readonly int MinRequiredLength;
+        public readonly RegexFindOptimizations FindOptimizations;
 
-        internal RegexTree(RegexNode root, Hashtable caps, int[] capNumList, int capTop, Hashtable capNames, string[] capsList, RegexOptions options, int minRequiredLength)
+        internal RegexTree(RegexNode root, Hashtable? capNames, string[]? capsList, Hashtable? caps, int capSize, RegexOptions options, CultureInfo culture)
         {
             Root = root;
             Caps = caps;
-            CapNumList = capNumList;
-            CapTop = capTop;
+            CapSize = capSize;
             CapNames = capNames;
             CapsList = capsList;
             Options = options;
-            MinRequiredLength = minRequiredLength;
+            FindOptimizations = new RegexFindOptimizations(root, options, culture);
         }
     }
 }

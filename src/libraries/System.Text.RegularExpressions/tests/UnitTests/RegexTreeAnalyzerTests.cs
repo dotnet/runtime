@@ -12,18 +12,18 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public void SimpleString()
         {
-            (RegexCode code, AnalysisResults analysis) = Analyze("abc");
+            (RegexTree tree, AnalysisResults analysis) = Analyze("abc");
 
-            RegexNode rootCapture = AssertNode(analysis, code.Tree.Root, RegexNodeKind.Capture, atomicByAncestor: true, backtracks: false, captures: true);
+            RegexNode rootCapture = AssertNode(analysis, tree.Root, RegexNodeKind.Capture, atomicByAncestor: true, backtracks: false, captures: true);
             RegexNode abc = AssertNode(analysis, rootCapture.Child(0), RegexNodeKind.Multi, atomicByAncestor: true, backtracks: false, captures: false);
         }
 
         [Fact]
         public void AlternationWithCaptures()
         {
-            (RegexCode code, AnalysisResults analysis) = Analyze("abc|d(e)f|(ghi)");
+            (RegexTree tree, AnalysisResults analysis) = Analyze("abc|d(e)f|(ghi)");
 
-            RegexNode rootCapture = AssertNode(analysis, code.Tree.Root, RegexNodeKind.Capture, atomicByAncestor: true, backtracks: false, captures: true);
+            RegexNode rootCapture = AssertNode(analysis, tree.Root, RegexNodeKind.Capture, atomicByAncestor: true, backtracks: false, captures: true);
             RegexNode implicitAtomic = AssertNode(analysis, rootCapture.Child(0), RegexNodeKind.Atomic, atomicByAncestor: true, backtracks: false, captures: true);
             RegexNode alternation = AssertNode(analysis, implicitAtomic.Child(0), RegexNodeKind.Alternate, atomicByAncestor: true, backtracks: false, captures: true);
 
@@ -43,9 +43,9 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public void LoopsReducedWithAutoAtomic()
         {
-            (RegexCode code, AnalysisResults analysis) = Analyze("a*(b*)c*");
+            (RegexTree tree, AnalysisResults analysis) = Analyze("a*(b*)c*");
 
-            RegexNode rootCapture = AssertNode(analysis, code.Tree.Root, RegexNodeKind.Capture, atomicByAncestor: true, backtracks: false, captures: true);
+            RegexNode rootCapture = AssertNode(analysis, tree.Root, RegexNodeKind.Capture, atomicByAncestor: true, backtracks: false, captures: true);
             RegexNode concat = AssertNode(analysis, rootCapture.Child(0), RegexNodeKind.Concatenate, atomicByAncestor: true, backtracks: false, captures: true);
 
             RegexNode aStar = AssertNode(analysis, concat.Child(0), RegexNodeKind.Oneloopatomic, atomicByAncestor: false, backtracks: false, captures: false);
@@ -59,9 +59,9 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public void AtomicGroupAroundBacktracking()
         {
-            (RegexCode code, AnalysisResults analysis) = Analyze("[ab]*(?>[bc]*[cd])[ef]");
+            (RegexTree tree, AnalysisResults analysis) = Analyze("[ab]*(?>[bc]*[cd])[ef]");
 
-            RegexNode rootCapture = AssertNode(analysis, code.Tree.Root, RegexNodeKind.Capture, atomicByAncestor: true, backtracks: true, captures: true);
+            RegexNode rootCapture = AssertNode(analysis, tree.Root, RegexNodeKind.Capture, atomicByAncestor: true, backtracks: true, captures: true);
             RegexNode rootConcat = AssertNode(analysis, rootCapture.Child(0), RegexNodeKind.Concatenate, atomicByAncestor: true, backtracks: true, captures: false);
 
             RegexNode abStar = AssertNode(analysis, rootConcat.Child(0), RegexNodeKind.Setloop, atomicByAncestor: false, backtracks: true, captures: false);
@@ -76,10 +76,10 @@ namespace System.Text.RegularExpressions.Tests
             RegexNode cd = AssertNode(analysis, atomicConcat.Child(1), RegexNodeKind.Set, atomicByAncestor: true, backtracks: false, captures: false);
         }
 
-        private static (RegexCode Code, AnalysisResults Analysis) Analyze(string pattern)
+        private static (RegexTree Tree, AnalysisResults Analysis) Analyze(string pattern)
         {
-            RegexCode code = RegexWriter.Write(RegexParser.Parse(pattern, RegexOptions.None, CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
-            return (code, RegexTreeAnalyzer.Analyze(code));
+            RegexTree tree = RegexParser.Parse(pattern, RegexOptions.None, CultureInfo.InvariantCulture);
+            return (tree, RegexTreeAnalyzer.Analyze(tree));
         }
 
         private static RegexNode AssertNode(AnalysisResults analysis, RegexNode node, RegexNodeKind kind, bool atomicByAncestor, bool backtracks, bool captures)

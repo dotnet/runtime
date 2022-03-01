@@ -497,8 +497,29 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Removes redundant nodes from the subtree, and returns an optimized subtree.
         /// </summary>
-        internal RegexNode Reduce() =>
-            Kind switch
+        internal RegexNode Reduce()
+        {
+            // TODO: https://github.com/dotnet/runtime/issues/61048
+            // As part of overhauling IgnoreCase handling, the parser shouldn't produce any nodes other than Backreference
+            // that ever have IgnoreCase set on them.  For now, though, remove IgnoreCase from any nodes for which it
+            // has no behavioral effect.
+            switch (Kind)
+            {
+                default:
+                    // No effect
+                    Options &= ~RegexOptions.IgnoreCase;
+                    break;
+
+                case RegexNodeKind.One or RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic:
+                case RegexNodeKind.Notone or RegexNodeKind.Notonelazy or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic:
+                case RegexNodeKind.Set or RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic:
+                case RegexNodeKind.Multi:
+                case RegexNodeKind.Backreference:
+                    // Still meaningful
+                    break;
+            }
+
+            return Kind switch
             {
                 RegexNodeKind.Alternate => ReduceAlternation(),
                 RegexNodeKind.Atomic => ReduceAtomic(),
@@ -512,6 +533,7 @@ namespace System.Text.RegularExpressions
                 RegexNodeKind.BackreferenceConditional => ReduceTestref(),
                 _ => this,
             };
+        }
 
         /// <summary>Remove an unnecessary Concatenation or Alternation node</summary>
         /// <remarks>

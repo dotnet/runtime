@@ -76,28 +76,38 @@ namespace System.Text.RegularExpressions
             _ignoreNextParen = false;
         }
 
-        private RegexParser(string pattern, RegexOptions options, CultureInfo culture, Span<int> optionSpan)
-            : this(pattern, options, culture, new Hashtable(), default, null, optionSpan)
-        {
-        }
-
         /// <summary>Gets the culture to use based on the specified options.</summary>
         internal static CultureInfo GetTargetCulture(RegexOptions options) =>
             (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
 
         public static RegexTree Parse(string pattern, RegexOptions options, CultureInfo culture)
         {
-            var parser = new RegexParser(pattern, options, culture, stackalloc int[OptionStackDefaultSize]);
+            using var parser = new RegexParser(pattern, options, culture, new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize]);
 
             parser.CountCaptures();
             parser.Reset(options);
             RegexNode root = parser.ScanRegex();
-            int minRequiredLength = root.ComputeMinLength();
-            string[]? capnamelist = parser._capnamelist?.ToArray();
-            var tree = new RegexTree(root, parser._caps, parser._capnumlist!, parser._captop, parser._capnames!, capnamelist!, options, minRequiredLength);
-            parser.Dispose();
 
-            return tree;
+            // Construct sparse capnum mapping if some numbers are unused.
+            int[]? capnumlist = parser._capnumlist;
+            Hashtable? caps = parser._caps;
+            int captop = parser._captop;
+            int capsize;
+            if (capnumlist == null || captop == capnumlist.Length)
+            {
+                capsize = captop;
+                caps = null;
+            }
+            else
+            {
+                capsize = capnumlist.Length;
+                for (int i = 0; i < capnumlist.Length; i++)
+                {
+                    caps[capnumlist[i]] = i;
+                }
+            }
+
+            return new RegexTree(root, parser._capnames!, parser._capnamelist?.ToArray(), caps, capsize, options, culture);
         }
 
         /// <summary>
@@ -198,7 +208,7 @@ namespace System.Text.RegularExpressions
 
         private static string UnescapeImpl(string input, int i)
         {
-            var parser = new RegexParser(input, RegexOptions.None, CultureInfo.InvariantCulture, stackalloc int[OptionStackDefaultSize]);
+            var parser = new RegexParser(input, RegexOptions.None, CultureInfo.InvariantCulture, new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize]);
 
             // In the worst case the escaped string has the same length.
             // For small inputs we use stack allocation.

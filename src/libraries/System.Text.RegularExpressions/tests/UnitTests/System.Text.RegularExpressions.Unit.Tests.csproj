@@ -8,11 +8,14 @@
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);DEBUG</DefineConstants> <!-- always define debug, even in release builds -->
   </PropertyGroup>
   <ItemGroup>
     <DefaultReferenceExclusion Include="System.Text.RegularExpressions" />
 
     <Compile Include="RegexFindOptimizationsTests.cs" />
+
+    <Compile Include="RegexReductionTests.cs" />
     <Compile Include="RegexTreeAnalyzerTests.cs" />
 
     <!-- Code included from System.Text.RegularExpressions -->
