@@ -3068,32 +3068,6 @@ mini_get_rgctx_access_for_method (MonoMethod *method)
 	return MONO_RGCTX_ACCESS_THIS;
 }
 
-static gboolean
-can_deopt (MonoCompile *cfg)
-{
-	MonoMethodHeader *header = cfg->header;
-
-	if (!header->num_clauses)
-		return FALSE;
-
-	/*
-	 * Currently, only finally/fault clauses are supported.
-	 * Catch clauses are hard to support, since even if the
-	 * rest of the method is executed by the interpreter, execution needs to
-	 * return to the caller which is an AOTed method.
-	 * Filter clauses could be supported, but every filter clause has an
-	 * associated catch clause.
-	 */
-	for (int i = 0; i < header->num_clauses; ++i) {
-		MonoExceptionClause *clause = &header->clauses [i];
-
-		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT)
-			return FALSE;
-	}
-
-	return TRUE;
-}
-
 /*
  * mini_method_compile:
  * @method: the method to compile
@@ -3316,7 +3290,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		return cfg;
 	}
 
-	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && header->num_clauses && can_deopt (cfg)) {
+	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && header->num_clauses) {
 		cfg->deopt = TRUE;
 		/* Can't reconstruct inlined state */
 		cfg->disable_inline = TRUE;

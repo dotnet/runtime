@@ -13,7 +13,7 @@
          - references System.Runtime.InteropServices -->
     <EnabledGenerators Include="DllImportGenerator"
                        Condition="'$(EnableDllImportGenerator)' == ''
-                        and '$(IsRuntimeAssembly)' == 'true'
+                        and '$(IsSourceProject)' == 'true'
                         and '$(MSBuildProjectExtension)' == '.csproj'
                         and (
                           ('@(Reference)' != ''
@@ -24,7 +24,7 @@
                             and '$(DisableImplicitAssemblyReferences)' == 'false'))" />
     <EnabledGenerators Include="DllImportGenerator"
                        Condition="'$(EnableDllImportGenerator)' == ''
-                        and '$(IsRuntimeAssembly)' == 'true'
+                        and '$(IsSourceProject)' == 'true'
                         and '$(MSBuildProjectExtension)' == '.csproj'
                         and ('$(TargetFrameworkIdentifier)' == '.NETStandard' or '$(TargetFrameworkIdentifier)' == '.NETFramework' or ('$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '$(NetCoreAppCurrentVersion)'))))" />
   </ItemGroup>

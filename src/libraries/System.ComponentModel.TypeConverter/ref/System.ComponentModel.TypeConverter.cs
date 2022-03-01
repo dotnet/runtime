@@ -10,7 +10,7 @@ namespace System
     {
         public UriTypeConverter() { }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
         public override bool IsValid(System.ComponentModel.ITypeDescriptorContext? context, object? value) { throw null; }
@@ -91,7 +91,7 @@ namespace System.ComponentModel
     {
         internal BaseNumberConverter() { }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
     }
@@ -273,7 +273,7 @@ namespace System.ComponentModel
     {
         public CultureInfoConverter() { }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
         protected virtual string GetCultureName(System.Globalization.CultureInfo culture) { throw null; }
@@ -355,7 +355,7 @@ namespace System.ComponentModel
     {
         public DateTimeConverter() { }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
     }
@@ -363,14 +363,14 @@ namespace System.ComponentModel
     {
         public DateTimeOffsetConverter() { }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
     }
     public partial class DecimalConverter : System.ComponentModel.BaseNumberConverter
     {
         public DecimalConverter() { }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class)]
@@ -426,7 +426,7 @@ namespace System.ComponentModel
         protected System.Type EnumType { get { throw null; } }
         protected System.ComponentModel.TypeConverter.StandardValuesCollection? Values { get { throw null; } set { } }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
         public override System.ComponentModel.TypeConverter.StandardValuesCollection GetStandardValues(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
@@ -506,7 +506,7 @@ namespace System.ComponentModel
     {
         public GuidConverter() { }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
     }
@@ -1016,7 +1016,7 @@ namespace System.ComponentModel
         public System.Type UnderlyingType { get { throw null; } }
         public System.ComponentModel.TypeConverter UnderlyingTypeConverter { get { throw null; } }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
         public override object? CreateInstance(System.ComponentModel.ITypeDescriptorContext? context, System.Collections.IDictionary propertyValues) { throw null; }
@@ -1245,7 +1245,7 @@ namespace System.ComponentModel
     {
         public TimeSpanConverter() { }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
     }
@@ -1290,8 +1290,8 @@ namespace System.ComponentModel
         public TypeConverter() { }
         public virtual bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
         public bool CanConvertFrom(System.Type sourceType) { throw null; }
-        public virtual bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
-        public bool CanConvertTo(System.Type destinationType) { throw null; }
+        public virtual bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
+        public bool CanConvertTo([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         public virtual object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public object? ConvertFrom(object value) { throw null; }
         public object? ConvertFromInvariantString(System.ComponentModel.ITypeDescriptorContext? context, string text) { throw null; }
@@ -1488,7 +1488,7 @@ namespace System.ComponentModel
     {
         protected TypeListConverter(System.Type[] types) { }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
         public override System.ComponentModel.TypeConverter.StandardValuesCollection GetStandardValues(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
@@ -1511,7 +1511,7 @@ namespace System.ComponentModel
     {
         public VersionConverter() { }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
         public override bool IsValid(System.ComponentModel.ITypeDescriptorContext? context, object? value) { throw null; }
@@ -2223,7 +2223,7 @@ namespace System.Drawing
     {
         public ColorConverter() { }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
         public override System.ComponentModel.TypeConverter.StandardValuesCollection GetStandardValues(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
@@ -2233,7 +2233,7 @@ namespace System.Drawing
     {
         public PointConverter() { }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
         public override object CreateInstance(System.ComponentModel.ITypeDescriptorContext? context, System.Collections.IDictionary propertyValues) { throw null; }
@@ -2246,7 +2246,7 @@ namespace System.Drawing
     {
         public RectangleConverter() { }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
         public override object CreateInstance(System.ComponentModel.ITypeDescriptorContext? context, System.Collections.IDictionary propertyValues) { throw null; }
@@ -2259,7 +2259,7 @@ namespace System.Drawing
     {
         public SizeConverter() { }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
         public override object CreateInstance(System.ComponentModel.ITypeDescriptorContext? context, System.Collections.IDictionary propertyValues) { throw null; }
@@ -2272,7 +2272,7 @@ namespace System.Drawing
     {
         public SizeFConverter() { }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
         public override object CreateInstance(System.ComponentModel.ITypeDescriptorContext? context, System.Collections.IDictionary propertyValues) { throw null; }
@@ -2287,7 +2287,7 @@ namespace System.Security.Authentication.ExtendedProtection
     public partial class ExtendedProtectionPolicyTypeConverter : System.ComponentModel.TypeConverter
     {
         public ExtendedProtectionPolicyTypeConverter() { }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
     }

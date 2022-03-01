@@ -127,25 +127,17 @@ namespace System.Text.RegularExpressions
                         // The set contains one and only one character, meaning every match starts
                         // with the same literal value (potentially case-insensitive). Search for that.
                         FixedDistanceLiteral = (chars[0], 0);
-                        FindMode = (_rightToLeft, set.CaseInsensitive) switch
-                        {
-                            (false, false) => FindNextStartingPositionMode.FixedLiteral_LeftToRight_CaseSensitive,
-                            (false, true) => FindNextStartingPositionMode.FixedLiteral_LeftToRight_CaseInsensitive,
-                            (true, false) => FindNextStartingPositionMode.LeadingLiteral_RightToLeft_CaseSensitive,
-                            (true, true) => FindNextStartingPositionMode.LeadingLiteral_RightToLeft_CaseInsensitive,
-                        };
+                        FindMode = set.CaseInsensitive ?
+                            FindNextStartingPositionMode.LeadingLiteral_RightToLeft_CaseInsensitive :
+                            FindNextStartingPositionMode.LeadingLiteral_RightToLeft_CaseSensitive;
                     }
                     else
                     {
                         // The set may match multiple characters.  Search for that.
                         FixedDistanceSets = new() { (chars, set.CharClass, 0, set.CaseInsensitive) };
-                        FindMode = (_rightToLeft, set.CaseInsensitive) switch
-                        {
-                            (false, false) => FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseSensitive,
-                            (false, true) => FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseInsensitive,
-                            (true, false) => FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseSensitive,
-                            (true, true) => FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseInsensitive,
-                        };
+                        FindMode = set.CaseInsensitive ?
+                            FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseInsensitive :
+                            FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseSensitive;
                         _asciiLookups = new uint[1][];
                     }
                 }

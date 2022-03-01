@@ -6493,6 +6493,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			for (int i = 0; i < header->num_clauses; ++i) {
 				MonoExceptionClause *clause = &header->clauses [i];
 				/* Finally clauses are checked after the remove_finally pass */
+
 				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
 					cfg->interp_entry_only = TRUE;
 			}
@@ -6674,6 +6675,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	ins_flag = 0;
 	start_new_bblock = 0;
 	MonoOpcodeEnum il_op; il_op = MonoOpcodeEnum_Invalid;
+
+	emit_set_deopt_il_offset (cfg, ip - cfg->cil_start);
 
 	for (guchar *next_ip = ip; ip < end; ip = next_ip) {
 		MonoOpcodeEnum previous_il_op = il_op;
