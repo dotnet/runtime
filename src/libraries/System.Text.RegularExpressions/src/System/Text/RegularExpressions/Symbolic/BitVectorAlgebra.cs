@@ -74,7 +74,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public bool AreEquivalent(BitVector predicate1, BitVector predicate2) => predicate1.Equals(predicate2);
 
-        public List<BitVector> GenerateMinterms(IEnumerable<BitVector> constraints) => _mintermGenerator.GenerateMinterms(constraints);
+        public List<BitVector> GenerateMinterms(HashSet<BitVector> constraints) => _mintermGenerator.GenerateMinterms(constraints);
 
         public bool IsSatisfiable(BitVector predicate) => !predicate.Equals(False);
 

@@ -63,6 +63,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         /// <param name="constraints">constraints</param>
         /// <returns>constraints that are satisfiable</returns>
-        List<T> GenerateMinterms(IEnumerable<T> constraints);
+        List<T> GenerateMinterms(HashSet<T> constraints);
     }
 }

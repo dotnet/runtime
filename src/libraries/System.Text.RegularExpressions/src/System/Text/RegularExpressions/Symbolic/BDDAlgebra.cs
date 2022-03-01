@@ -282,7 +282,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         /// <param name="sets">the BDDs to create the minterms for</param>
         /// <returns>BDDs for the minterm</returns>
-        public List<BDD> GenerateMinterms(IEnumerable<BDD> sets) => _mintermGen.GenerateMinterms(sets);
+        public List<BDD> GenerateMinterms(HashSet<BDD> sets) => _mintermGen.GenerateMinterms(sets);
 
         /// <summary>
         /// Make the set containing all values greater than or equal to m and less than or equal to n when considering bits between 0 and maxBit.
