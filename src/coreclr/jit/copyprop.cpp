@@ -309,11 +309,16 @@ void Compiler::optCopyPropPushDef(GenTreeOp*           asg,
     else
     {
         assert((lclNode->gtFlags & GTF_VAR_DEF) != 0);
-        ssaDefNum = GetSsaNumForLocalVarDef(lclNode);
 
-        // This will be "RESERVED_SSA_NUM" for promoted struct fields assigned using the parent struct.
-        // TODO-CQ: fix this.
-        assert((ssaDefNum != SsaConfig::RESERVED_SSA_NUM) || lvaGetDesc(lclNode)->CanBeReplacedWithItsField(this));
+        // Quirk: do not collect defs from PHIs. Preserves previous behavior.
+        if (!asg->IsPhiDefn())
+        {
+            ssaDefNum = GetSsaNumForLocalVarDef(lclNode);
+
+            // This will be "RESERVED_SSA_NUM" for promoted struct fields assigned using the parent struct.
+            // TODO-CQ: fix this.
+            assert((ssaDefNum != SsaConfig::RESERVED_SSA_NUM) || lvaGetDesc(lclNode)->CanBeReplacedWithItsField(this));
+        }
     }
 
     // The default is "not available".
