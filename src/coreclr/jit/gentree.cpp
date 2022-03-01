@@ -662,6 +662,8 @@ bool GenTree::gtHasReg(Compiler* comp) const
         assert(comp != nullptr);
         const GenTreeLclVar* lclNode  = AsLclVar();
         const unsigned       regCount = GetMultiRegCount(comp);
+        // A Multi-reg local vars is said to have regs,
+        // if it has valid regs in any of the positions.
         for (unsigned i = 0; i < regCount; i++)
         {
             hasReg = (lclNode->GetRegNumByIdx(i) != REG_NA);
