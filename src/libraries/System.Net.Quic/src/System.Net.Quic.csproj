@@ -106,9 +106,9 @@
 
   <ItemGroup>
     <PackageReference Include="System.Net.MsQuic.Transport"
-                      Version="$(SystemNetMsQuicTransportVersion)" 
-                      PrivateAssets="all" 
-                      GeneratePathProperty="true" 
+                      Version="$(SystemNetMsQuicTransportVersion)"
+                      PrivateAssets="all"
+                      GeneratePathProperty="true"
                       Condition="'$(DotNetBuildFromSource)' != 'true'" />
   </ItemGroup>
 
@@ -142,7 +142,7 @@
 
   <!-- Support for deploying msquic -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' and
-                          ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86') and '$(DotNetBuildFromSource)' != 'true'">
+                        ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86') and '$(DotNetBuildFromSource)' != 'true'">
     <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(LibrariesAllBinArtifactsPath)" ItemName="NativeBinPlaceItem" />
