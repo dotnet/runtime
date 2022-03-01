@@ -180,8 +180,9 @@ void DynamicMethodTable::AddMethodsToList()
         pNewMD->SetMemberDef(0);
         pNewMD->SetSlot(MethodTable::NO_SLOT);       // we can't ever use the slot for dynamic methods
         pNewMD->SetStatic();
-
-        pNewMD->m_dwExtendedFlags = mdPublic | mdStatic | DynamicMethodDesc::nomdLCGMethod;
+        pNewMD->InitializeFlags(DynamicMethodDesc::FlagPublic
+                        | DynamicMethodDesc::FlagStatic
+                        | DynamicMethodDesc::FlagIsLCGMethod);
 
         LCGMethodResolver* pResolver = new (pResolvers) LCGMethodResolver();
         pResolver->m_pDynamicMethod = pNewMD;
@@ -272,8 +273,9 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
     pNewMD->SetStoredMethodSig((PCCOR_SIGNATURE)psig, sigSize);
     // the dynamic part of the method desc
     pNewMD->m_pszMethodName = name;
-
-    pNewMD->m_dwExtendedFlags = mdPublic | mdStatic | DynamicMethodDesc::nomdLCGMethod;
+    pNewMD->InitializeFlags(DynamicMethodDesc::FlagPublic
+                    | DynamicMethodDesc::FlagStatic
+                    | DynamicMethodDesc::FlagIsLCGMethod);
 
 #ifdef _DEBUG
     pNewMD->m_pszDebugMethodName = name;
@@ -1475,44 +1477,6 @@ void LCGMethodResolver::GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause)
 
 #endif // !DACCESS_COMPILE
 
-bool DynamicMethodDesc::HasMDContextArg()
-{
-    CONTRACTL
-    {
-        MODE_ANY;
-        GC_NOTRIGGER;
-        NOTHROW;
-        PRECONDITION(IsILStub());
-    }
-    CONTRACTL_END;
-
-    // Perform a minimal check. This is historically sufficient, but has not been updated
-    // with flag usage.
-    // If the check indicates false, it is for sure false. However, if it is true
-    // we need to check additional cases.
-    bool minCheck = IsCLRToCOMStub() || (IsPInvokeStub() && !IsDelegateStub());
-    if (!minCheck)
-        return false;
-
-#ifdef DACCESS_COMPILE
-    // The DAC's usage of this API is narrow enough that the precise nature needed by
-    // the runtime is not needed. Therefore, we can return the historically sufficient answer.
-    return true;
-#else
-    ILStubResolver::ILStubType type = GetILStubResolver()->GetStubType();
-    switch (type)
-    {
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-        case ILStubResolver::ArrayOpStub:
-#endif
-        case ILStubResolver::TailCallCallTargetStub:
-        case ILStubResolver::TailCallStoreArgsStub:
-            return false;
-        default:
-            return true;
-    }
-#endif // !DACCESS_COMPILE
-}
 
 // Get the associated managed resolver. This method will be called during a GC so it should not throw, trigger a GC or cause the
 // object in question to be validated.

@@ -1733,7 +1733,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Forward delegate P/Invoke case 0x%p\n", target));
         trace->InitForUnmanaged(target);
     }
-    else if (pStubMD->IsCALLIStub())
+    else if (pStubMD->AreFlagSets(DynamicMethodDesc::FlagIsCALLI))
     {
         // This is unmanaged CALLI stub, the argument is the target
         target = (PCODE)arg;

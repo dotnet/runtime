@@ -2378,19 +2378,20 @@ MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT);
 typedef DPTR(class StoredSigMethodDesc) PTR_StoredSigMethodDesc;
 class StoredSigMethodDesc : public MethodDesc
 {
-  public:
+public:
     // Put the sig RVA in here - this allows us to avoid
     // touching the method desc table when CoreLib is prejitted.
 
     TADDR           m_pSig;
     DWORD           m_cSig;
-#ifdef TARGET_64BIT
+
+protected:
     // m_dwExtendedFlags is not used by StoredSigMethodDesc itself.
     // It is used by child classes. We allocate the space here to get
     // optimal layout.
     DWORD           m_dwExtendedFlags;
-#endif
 
+public:
     TADDR GetSigRVA()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2477,40 +2478,88 @@ protected:
     PTR_CUTF8           m_pszMethodName;
     PTR_DynamicResolver m_pResolver;
 
-#ifndef TARGET_64BIT
-    // We use m_dwExtendedFlags from StoredSigMethodDesc on WIN64
-    DWORD               m_dwExtendedFlags;   // see DynamicMethodDesc::ExtendedFlags enum
-#endif
-
-    typedef enum ExtendedFlags
+public:
+    enum ILStubType : DWORD
     {
-        nomdAttrs           = 0x0000FFFF, // method attributes (LCG)
-        nomdILStubAttrs     = mdMemberAccessMask | mdStatic, //  method attributes (IL stubs)
+        StubNotSet = 0,
+        StubCLRToNativeInterop,
+        StubCLRToCOMInterop,
+        StubNativeToCLRInterop,
+        StubCOMToCLRInterop,
+        StubStructMarshalInterop,
+#ifdef FEATURE_ARRAYSTUB_AS_IL
+        StubArrayOp,
+#endif
+#ifdef FEATURE_MULTICASTSTUB_AS_IL
+        StubMulticastDelegate,
+#endif
+        StubWrapperDelegate,
+#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
+        StubUnboxingIL,
+        StubInstantiating,
+#endif
+        StubTailCallStoreArgs,
+        StubTailCallCallTarget,
 
-        // attributes (except mdStatic and mdMemberAccessMask) have different meaning for IL stubs
-        // mdMemberAccessMask        = 0x0007,
-        nomdReverseStub              = 0x0008,
-        // mdStatic                  = 0x0010,
-        nomdCALLIStub                = 0x0020,
-        nomdDelegateStub             = 0x0040,
-        nomdStructMarshalStub        = 0x0080,
-        nomdUnbreakable              = 0x0100,
-        nomdStepThroughStub          = 0x0200,  // Stub has no user steppable code and should be stepped through.
-        //unused                     = 0x0400,
-        nomdStubNeedsCOMStarted      = 0x0800,  // EnsureComStarted must be called before executing the method
-        nomdMulticastStub            = 0x1000,
-        nomdUnboxingILStub           = 0x2000,
-        nomdWrapperDelegateStub      = 0x4000,
-        nomdUnmanagedCallersOnlyStub = 0x8000,
+        StubLast
+    };
 
-        nomdILStub          = 0x00010000,
-        nomdLCGMethod       = 0x00020000,
-        nomdStackArgSize    = 0xFFFC0000, // native stack arg size for IL stubs
-    } ExtendedFlags;
+    enum Flag : DWORD
+    {
+        // Flags for DynamicMethodDesc
+        // Define new flags in descending order. This allows the IL type enumeration to increase naturally.
+        FlagNone                = 0x00000000,
+        FlagPublic              = 0x00000400,
+        FlagStatic              = 0x00000800,
+        FlagUnbreakable         = 0x00001000,
+        FlagRequiresCOM         = 0x00002000,
+        FlagIsLCGMethod         = 0x00004000,
+        FlagIsILStub            = 0x00008000,
+        FlagIsDelegate          = 0x00010000,
+        FlagIsCALLI             = 0x00020000,
+        FlagMask                = 0x0003fc00,
+        StackArgSizeMask        = 0xfffc0000, // native stack arg size for IL stubs
+        ILStubTypeMask          = ~(FlagMask | StackArgSizeMask)
+    };
+    static_assert_no_msg((FlagMask & StubLast) == 0);
+    static_assert_no_msg((StackArgSizeMask & FlagMask) == 0);
+
+    // MethodDesc memory is acquired in an uninitialized state.
+    // The first step should be to explicitly set the entire
+    // flag state and then modify it.
+    void InitializeFlags(DWORD flags)
+    {
+        m_dwExtendedFlags = flags;
+    }
+    bool AreFlagSets(DWORD flags) const
+    {
+        return !!(m_dwExtendedFlags & flags);
+    }
+    void SetFlags(DWORD flags)
+    {
+        m_dwExtendedFlags |= flags;
+    }
+    void ClearFlags(DWORD flags)
+    {
+        m_dwExtendedFlags = (m_dwExtendedFlags & ~flags);
+    }
+
+    ILStubType GetILStubType() const
+    {
+        ILStubType type = (ILStubType)(m_dwExtendedFlags & ILStubTypeMask);
+        _ASSERTE(type == StubNotSet || AreFlagSets(FlagIsILStub));
+        return type;
+    }
+
+    void SetILStubType(ILStubType type)
+    {
+        _ASSERTE(AreFlagSets(FlagIsILStub));
+        m_dwExtendedFlags |= type;
+    }
 
 public:
-    bool IsILStub() { LIMITED_METHOD_DAC_CONTRACT; return !!(m_dwExtendedFlags & nomdILStub); }
-    bool IsLCGMethod() { LIMITED_METHOD_DAC_CONTRACT; return !!(m_dwExtendedFlags & nomdLCGMethod); }
+    bool IsILStub() const { LIMITED_METHOD_DAC_CONTRACT; return AreFlagSets(FlagIsILStub); }
+    bool IsLCGMethod() const { LIMITED_METHOD_DAC_CONTRACT; return AreFlagSets(FlagIsLCGMethod); }
 
 	inline PTR_DynamicResolver    GetResolver();
     inline PTR_LCGMethodResolver  GetLCGMethodResolver();
@@ -2522,23 +2571,21 @@ public:
         return m_pszMethodName;
     }
 
-    WORD GetAttrs()
+    // Baseed on the current flags, compute the equivalent as COR metaadata.
+    WORD GetFlagsAsMetadata() const
     {
         LIMITED_METHOD_CONTRACT;
-        return (IsILStub() ? (m_dwExtendedFlags & nomdILStubAttrs) : (m_dwExtendedFlags & nomdAttrs));
-    }
-
-    DWORD GetExtendedFlags()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwExtendedFlags;
+        WORD asMetadata = 0;
+        asMetadata |= AreFlagSets(FlagPublic) ? mdPublic : 0;
+        asMetadata |= AreFlagSets(FlagStatic) ? mdStatic : 0;
+        return asMetadata;
     }
 
     WORD GetNativeStackArgSize()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
-        return (WORD)((m_dwExtendedFlags & nomdStackArgSize) >> 16);
+        return (WORD)((m_dwExtendedFlags & StackArgSizeMask) >> 16);
     }
 
     void SetNativeStackArgSize(WORD cbArgSize)
@@ -2548,86 +2595,80 @@ public:
 #if !defined(OSX_ARM64_ABI)
         _ASSERTE((cbArgSize % TARGET_POINTER_SIZE) == 0);
 #endif
-        m_dwExtendedFlags = (m_dwExtendedFlags & ~nomdStackArgSize) | ((DWORD)cbArgSize << 16);
+        m_dwExtendedFlags = (m_dwExtendedFlags & ~StackArgSizeMask) | ((DWORD)cbArgSize << 16);
     }
 
-    void SetUnbreakable(bool value)
+    bool IsReverseStub() const
     {
-        LIMITED_METHOD_CONTRACT;
-        if (value)
-        {
-            m_dwExtendedFlags |= nomdUnbreakable;
-        }
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        ILStubType type = GetILStubType();
+        return type == StubCOMToCLRInterop || type == StubNativeToCLRInterop;
     }
 
-    void SetStubNeedsCOMStarted(bool value)
+    bool IsDelegateStub() const
     {
-        LIMITED_METHOD_CONTRACT;
-        if (value)
-        {
-            m_dwExtendedFlags |= nomdStubNeedsCOMStarted;
-        }
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        return AreFlagSets(FlagIsDelegate);
     }
 
-    bool IsReverseStub()     { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdReverseStub));  }
-    bool IsUnmanagedCallersOnlyStub() { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdUnmanagedCallersOnlyStub)); }
-    bool IsCALLIStub()       { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdCALLIStub));    }
-    bool IsDelegateStub()    { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdDelegateStub)); }
-    bool IsUnbreakable()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdUnbreakable));  }
-    bool IsStubNeedsCOMStarted()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStubNeedsCOMStarted)); }
-    bool IsStructMarshalStub()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStructMarshalStub)); }
-    bool IsStepThroughStub()      { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStepThroughStub)); }
-
-    // The following checks don't have explicit indicates of type, but rather use a heuristic.
-    // Therefore, we break them out so they are clearer.
-    bool IsCLRToCOMStub()
+    bool IsStepThroughStub() const
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsILStub());
-        return ((0 == (m_dwExtendedFlags & mdStatic))
-            && !IsReverseStub()
-            && !IsDelegateStub()
-            && !IsStructMarshalStub());
+        ILStubType type = GetILStubType();
+        return type == StubUnboxingIL || type == StubInstantiating;
     }
-    bool IsCOMToCLRStub()
+
+    bool IsCLRToCOMStub() const
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsILStub());
-        return ((0 == (m_dwExtendedFlags & mdStatic))
-            && IsReverseStub());
+        return !AreFlagSets(FlagStatic) && GetILStubType() == StubCLRToCOMInterop;
     }
-    bool IsPInvokeStub()
+    bool IsCOMToCLRStub() const
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsILStub());
-        return ((0 != (m_dwExtendedFlags & mdStatic))
-            && !IsReverseStub()
-            && !IsCALLIStub()
-            && !IsStructMarshalStub());
+        return !AreFlagSets(FlagStatic) && GetILStubType() == StubCOMToCLRInterop;
+    }
+    bool IsPInvokeStub() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsILStub());
+        return AreFlagSets(FlagStatic) && GetILStubType() == StubCLRToNativeInterop;
     }
 
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
-    bool IsMulticastStub() {
+    bool IsMulticastStub() const
+    {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
-        return !!(m_dwExtendedFlags & nomdMulticastStub);
+        return GetILStubType() == DynamicMethodDesc::StubMulticastDelegate;
     }
 #endif
-    bool IsWrapperDelegateStub() {
+    bool IsWrapperDelegateStub() const
+    {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
-        return !!(m_dwExtendedFlags & nomdWrapperDelegateStub);
+        return GetILStubType() == DynamicMethodDesc::StubWrapperDelegate;
     }
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
-    bool IsUnboxingILStub() {
+    bool IsUnboxingILStub() const
+    {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
-        return !!(m_dwExtendedFlags & nomdUnboxingILStub);
+        return GetILStubType() == DynamicMethodDesc::StubUnboxingIL;
     }
 #endif
 
     // Whether the stub takes a context argument that is an interop MethodDesc.
-    bool HasMDContextArg();
+    bool HasMDContextArg() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return IsCLRToCOMStub() || (IsPInvokeStub() && !IsDelegateStub());
+    }
 
     //
     // following implementations defined in DynamicMethod.cpp

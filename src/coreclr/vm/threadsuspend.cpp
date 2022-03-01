@@ -773,7 +773,7 @@ StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data)
         // Does the current and latched frame represent the same call?
         if (pCf->pFrame == pData->LatchedCF.pFrame)
         {
-            if (pData->LatchedCF.GetFunction()->AsDynamicMethodDesc()->IsUnbreakable())
+            if (pData->LatchedCF.GetFunction()->AsDynamicMethodDesc()->AreFlagSets(DynamicMethodDesc::FlagUnbreakable))
             {
                 // Report only the latched IL stub frame which is a CER root.
                 frameAction = DiscardCurrentFrame;
@@ -808,7 +808,7 @@ StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data)
         MethodDesc *pMD = pCf->GetFunction();
         if (pMD != NULL && pMD->IsILStub() &&
             pData->LatchedCF.GetFrame()->GetReturnAddress() == GetControlPC(pCf->GetRegisterSet()) &&
-            pMD->AsDynamicMethodDesc()->IsUnbreakable())
+            pMD->AsDynamicMethodDesc()->AreFlagSets(DynamicMethodDesc::FlagUnbreakable))
         {
             // The current and latched frame represent the same call and the IL stub is marked as unbreakable.
             // We will discard the interop method and report only the IL stub which is a CER root.
@@ -2908,9 +2908,9 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     // Scenarios like GC stress may indirectly disable XState features in the pCtx
     // depending on the state at the time of GC stress interrupt.
-    // 
+    //
     // Make sure that AVX feature mask is set, if supported.
-    // 
+    //
     // This should not normally fail.
     // The system silently ignores any feature specified in the FeatureMask
     // which is not enabled on the processor.
