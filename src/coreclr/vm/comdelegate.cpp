@@ -339,62 +339,6 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
     {
         // We should have slots to shuffle in the destination at the same time as the source.
         _ASSERTE(iteratorDst.HasNextOfs());
-#if defined(TARGET_LOONGARCH64)
-        if (!sArgDst.m_byteStackSize && (sArgSrc.m_structFloatFlag > 0))
-        {
-            if (sArgSrc.m_byteStackSize > 0)
-            {
-                if (sArgSrc.m_cGenReg > 0)
-                {
-                    assert(!"---------No this case--------------");
-                }
-
-                assert(sArgDst.m_cFloatReg > 0);
-
-                if ((sArgSrc.m_structFloatFlag == 1) || (sArgSrc.m_structFloatFlag == 4))
-                { // first float. || second float;
-                    assert(sArgDst.m_cGenReg == 1);
-                    assert(sArgDst.m_cFloatReg == 1);
-                    assert(sArgSrc.m_byteStackSize == 8);
-
-                    entry.srcofs = iteratorSrc.GetNextOfs();
-                    entry.dstofs = iteratorDst.GetNextOfs();
-                    assert(entry.srcofs != entry.dstofs);
-                    entry.stackofs = sArgSrc.m_structFloatFlag;
-                    pShuffleEntryArray->Append(entry);
-
-                    entry.dstofs = iteratorDst.GetNextOfs();
-                    assert(entry.srcofs != entry.dstofs);
-                    pShuffleEntryArray->Append(entry);
-
-                    assert(!iteratorSrc.HasNextOfs());
-                    break;
-                }
-                else if ((sArgSrc.m_structFloatFlag == 8) || (sArgSrc.m_structFloatFlag == 7))
-                { // second double. || first double.
-                    assert(sArgDst.m_cGenReg == 1);
-                    assert(sArgDst.m_cFloatReg == 1);
-                    assert(sArgSrc.m_byteStackSize == 16);
-
-                    entry.srcofs = iteratorSrc.GetNextOfs();
-                    entry.dstofs = iteratorDst.GetNextOfs();
-                    assert(entry.srcofs != entry.dstofs);
-                    entry.stackofs = sArgSrc.m_structFloatFlag;
-                    pShuffleEntryArray->Append(entry);
-
-                    entry.srcofs = iteratorSrc.GetNextOfs();
-                    entry.dstofs = iteratorDst.GetNextOfs();
-                    assert(entry.srcofs != entry.dstofs);
-                    pShuffleEntryArray->Append(entry);
-
-                    assert(!iteratorSrc.HasNextOfs());
-                    break;
-                }
-
-                assert(!"---------LoongArch64: No this stack case.--------------");
-            }
-        }
-#endif
 
         // Locate the next slot to shuffle in the source and destination and encode the transfer into a
         // shuffle entry.

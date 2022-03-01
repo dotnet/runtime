@@ -1712,7 +1712,7 @@ void EEJitManager::SetCpuInfo()
 #endif
 
 #if defined(TARGET_LOONGARCH64)
-    // TODO : set LoongArch64's InstructionSet features !
+    // TODO-LoongArch64: set LoongArch64's InstructionSet features !
 #endif // TARGET_LOONGARCH64
 
     // These calls are very important as it ensures the flags are consistent with any
@@ -4193,17 +4193,11 @@ PTR_RUNTIME_FUNCTION EEJitManager::LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
         if (RUNTIME_FUNCTION__BeginAddress(pFunctionEntry) <= address && address < RUNTIME_FUNCTION__EndAddress(pFunctionEntry, baseAddress))
         {
 
-#if defined(EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS) && defined(TARGET_ARM64)
-            // If we might have fragmented unwind, and we're on ARM64, make sure
-            // to returning the root record, as the trailing records don't have
-            // prolog unwind codes.
+#if defined(EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS) && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+            // If we might have fragmented unwind, and we're on ARM64/LoongArch64,
+            // make sure to returning the root record,
+            // as the trailing records don't have prolog unwind codes.
             pFunctionEntry = FindRootEntry(pFunctionEntry, baseAddress);
-#endif
-
-#if defined(EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS) && defined(TARGET_LOONGARCH64)
-            // If we might have fragmented unwind, and we're on LOONGARCH64, make sure
-            // to returning the root record, as the trailing records don't have
-            // prolog unwind codes.
             pFunctionEntry = FindRootEntry(pFunctionEntry, baseAddress);
 #endif
 

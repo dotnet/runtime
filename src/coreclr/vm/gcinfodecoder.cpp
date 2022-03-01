@@ -257,9 +257,6 @@ GcInfoDecoder::GcInfoDecoder(
         {
             m_StackBaseRegister = (UINT32) DENORMALIZE_STACK_BASE_REGISTER(m_Reader.DecodeVarLengthUnsigned(STACK_BASE_REGISTER_ENCBASE));
         }
-#if defined(TARGET_LOONGARCH64)
-        assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister);
-#endif
     }
     else
     {

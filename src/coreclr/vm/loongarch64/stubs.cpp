@@ -1530,7 +1530,6 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
             if (pEntry->srcofs & ShuffleEntry::FPREGMASK)
             {
                 // FirstFloatReg is 0;
-                //assert(pEntry->dstofs & ShuffleEntry::FPREGMASK);
                 int j = 1;
                 while (pEntry[j].srcofs & ShuffleEntry::FPREGMASK)
                 {
@@ -1572,8 +1571,6 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
                     tmp_entry++;
                 }
 
-                    //// fst.d(Ft, Rn, offset);
-                    //Emit32(emitIns_O_R_R_I(0xaf, (int)Ft & 0x1f, Rn, offset));
                 j -= 1;
                 tmp_entry = pEntry + j;
                 i += j;
@@ -1616,9 +1613,6 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
                     continue;
                 }
                 EmitLoadFloatRegImm(FloatReg((pEntry->dstofs & ShuffleEntry::OFSREGMASK)), RegSp, pEntry->srcofs * sizeof(void*));
-                //int offs = pEntry->srcofs * sizeof(void*);
-                //EmitLoadStoreRegImm(eLOAD, IntReg(16)/*t4*/, RegSp, offs + sizeof(void*));
-                //EmitLoadStoreRegImm(eSTORE, IntReg(16)/*t4*/, RegSp, offs);
             }
             else
             {
@@ -1657,14 +1651,6 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 
             // dest must be on the stack
             _ASSERTE(!(pEntry->dstofs & ShuffleEntry::REGMASK));
-
-            ///while (index)
-            ///{
-            ///    assert(pShuffleEntryArray[delay_index[index]].dstofs & ShuffleEntry::FPREGMASK);
-            ///    //EmitFloatLoadStoreRegImm(eSTORE, FloatReg(pEntry->srcofs & ShuffleEntry::OFSREGMASK), RegSp, pEntry->dstofs * sizeof(void*));
-            ///    Emit32(emitIns_O_R_R_I(0xaf, (int)Ft & 0x1f, Rn, offset));
-            ///    index--;
-            ///}
 
             EmitLoadStoreRegImm(eLOAD, IntReg(16)/*t4*/, RegSp, pEntry->srcofs * sizeof(void*));
             EmitLoadStoreRegImm(eSTORE, IntReg(16)/*t4*/, RegSp, pEntry->dstofs * sizeof(void*));
@@ -1783,21 +1769,6 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
     ClrFlushInstructionCache(pStart, cbAligned); \
     return (PCODE)pStart
 
-//// Uses $r21 as scratch register to store address of data label
-//// After load $r21 is increment to point to next data
-//// only accepts positive offsets
-//static void LoadRegPair(BYTE* p, int reg1, int reg2, UINT32 offset)
-//{
-//    _ASSERTE(!"LOONGARCH64: not implementation on loongarch64!!!");
-//    LIMITED_METHOD_CONTRACT;
-//
-//    // pcaddi  $r21, <label>
-//    *(DWORD*)(p + 0) = 0x0 | (offset<< 10);
-//    // ld.d reg1, $r21, 16 ; postindex & wback
-//    // ld.d reg2, $r21, 24 ; postindex & wback
-//    *(DWORD*)(p + 4) = 0x0 | (reg2 << 5) | reg1;
-//}
-
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
     STANDARD_VM_CONTRACT;
@@ -1839,15 +1810,6 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocato
     p += 4;
 
     _ASSERTE(!((uintptr_t)p & 0x7));
-    //// if p is not aligned at 8-byte then padding is required for data alignment
-    //if ((uintptr_t)p & 0x7)
-    //{
-    //    *(short*)(p-16) = 0x20;
-    //    *(short*)(p-12) = 0x28;
-    //    // padding to make 8 byte aligned
-    //    *(DWORD*)p = 0xffffffff;
-    //    p += 4;
-    //}
 
     // label:
     // arg
