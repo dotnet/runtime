@@ -31,10 +31,6 @@ namespace Microsoft.Interop.Analyzers
             public const string NativeGenericTypeMustBeClosedOrMatchArity = Prefix + "016";
             public const string MarshallerGetPinnableReferenceRequiresValueProperty = Prefix + "018";
 
-            // GeneratedDllImport
-            public const string GeneratedDllImportMissingRequiredModifiers = Prefix + "013";
-            public const string GeneratedDllImportContaiingTypeMissingRequiredModifiers = Prefix + "017";
-
             // Migration from DllImport to GeneratedDllImport
             public const string ConvertToGeneratedDllImport = Prefix + "015";
         }
