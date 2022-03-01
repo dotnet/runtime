@@ -11403,15 +11403,14 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
             if (!optValnumCSE_phase)
             {
-                // Transformation: a % b = a & (b - 1);
                 if (oper == GT_UMOD && op2->IsIntegralConstPow2())
                 {
+                    // Transformation: a % b = a & (b - 1);
                     tree = fgMorphUModToAndSub(tree->AsOp());
                     op1  = tree->AsOp()->gtOp1;
                     op2  = tree->AsOp()->gtOp2;
                 }
 #ifdef TARGET_ARM64
-                // Transformation: a % b = a - (a / b) * b;
                 // ARM64 architecture manual suggests this transformation
                 // for the mod operator.
 
@@ -11425,6 +11424,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 if (oper == GT_MOD && !op2->IsIntegralConstAbsPow2())
 #endif
                 {
+                    // Transformation: a % b = a - (a / b) * b;
                     tree = fgMorphModToSubMulDiv(tree->AsOp());
                     op1  = tree->AsOp()->gtOp1;
                     op2  = tree->AsOp()->gtOp2;
