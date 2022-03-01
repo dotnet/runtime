@@ -3,8 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
@@ -17,18 +15,18 @@ namespace System.Text.RegularExpressions.Symbolic
     /// count the characters rather than the minterms. For example, the cardinality of a bitvector "110" where the bits
     /// correspond to minterms [a-c], [0-9] and [^a-c0-9] is 13 rather than 2.
     /// </summary>
-    internal abstract class BVAlgebraBase
+    internal abstract class BitVectorAlgebraBase
     {
         internal readonly MintermClassifier _classifier;
         protected readonly ulong[] _cardinalities;
-        protected readonly int _bits;
+        protected readonly int _bitCount;
         protected readonly BDD[]? _partition;
 
-        internal BVAlgebraBase(MintermClassifier classifier, ulong[] cardinalities, BDD[]? partition)
+        internal BitVectorAlgebraBase(MintermClassifier classifier, ulong[] cardinalities, BDD[]? partition)
         {
             _classifier = classifier;
             _cardinalities = cardinalities;
-            _bits = cardinalities.Length;
+            _bitCount = cardinalities.Length;
             _partition = partition;
         }
     }
@@ -36,15 +34,15 @@ namespace System.Text.RegularExpressions.Symbolic
     /// <summary>
     /// Bit vector algebra
     /// </summary>
-    internal sealed class BVAlgebra : BVAlgebraBase, ICharAlgebra<BV>
+    internal sealed class BitVectorAlgebra : BitVectorAlgebraBase, ICharAlgebra<BitVector>
     {
-        private readonly MintermGenerator<BV> _mintermGenerator;
-        internal BV[] _minterms;
+        private readonly MintermGenerator<BitVector> _mintermGenerator;
+        internal BitVector[] _minterms;
 
-        public ulong ComputeDomainSize(BV set)
+        public ulong ComputeDomainSize(BitVector set)
         {
             ulong size = 0;
-            for (int i = 0; i < _bits; i++)
+            for (int i = 0; i < _bitCount; i++)
             {
                 // if the bit is set then add the minterm's size
                 if (set[i])
@@ -56,51 +54,39 @@ namespace System.Text.RegularExpressions.Symbolic
             return size;
         }
 
-        public BVAlgebra(CharSetSolver solver, BDD[] minterms) :
+        public BitVectorAlgebra(CharSetSolver solver, BDD[] minterms) :
             base(new MintermClassifier(solver, minterms), solver.ComputeDomainSizes(minterms), minterms)
         {
-            _mintermGenerator = new MintermGenerator<BV>(this);
-            False = BV.CreateFalse(_bits);
-            True = BV.CreateTrue(_bits);
+            _mintermGenerator = new MintermGenerator<BitVector>(this);
+            False = BitVector.CreateFalse(_bitCount);
+            True = BitVector.CreateTrue(_bitCount);
 
-            var singleBitVectors = new BV[_bits];
+            var singleBitVectors = new BitVector[_bitCount];
             for (int i = 0; i < singleBitVectors.Length; i++)
             {
-                singleBitVectors[i] = BV.CreateSingleBit(_bits, i);
+                singleBitVectors[i] = BitVector.CreateSingleBit(_bitCount, i);
             }
             _minterms = singleBitVectors;
         }
 
-        public BV False { get; }
-        public BV True { get; }
+        public BitVector False { get; }
+        public BitVector True { get; }
 
-        public bool AreEquivalent(BV predicate1, BV predicate2) => predicate1.Equals(predicate2);
-        public List<BV> GenerateMinterms(IEnumerable<BV> constraints) => _mintermGenerator.GenerateMinterms(constraints);
+        public bool AreEquivalent(BitVector predicate1, BitVector predicate2) => predicate1.Equals(predicate2);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsSatisfiable(BV predicate) => !predicate.Equals(False);
+        public List<BitVector> GenerateMinterms(IEnumerable<BitVector> constraints) => _mintermGenerator.GenerateMinterms(constraints);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public BV And(BV predicate1, BV predicate2) => predicate1 & predicate2;
+        public bool IsSatisfiable(BitVector predicate) => !predicate.Equals(False);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public BV Not(BV predicate) => ~predicate;
+        public BitVector And(BitVector predicate1, BitVector predicate2) => BitVector.And(predicate1, predicate2);
 
-        public BV Or(IEnumerable<BV> predicates)
-        {
-            BV res = False;
-            foreach (BV p in predicates)
-            {
-                res |= p;
-            }
+        public BitVector Not(BitVector predicate) => BitVector.Not(predicate);
 
-            return res;
-        }
+        public BitVector Or(ReadOnlySpan<BitVector> predicates) => BitVector.Or(predicates);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public BV Or(BV predicate1, BV predicate2) => predicate1 | predicate2;
+        public BitVector Or(BitVector predicate1, BitVector predicate2) => BitVector.Or(predicate1, predicate2);
 
-        public BV CharConstraint(char c, bool caseInsensitive = false, string? culture = null)
+        public BitVector CharConstraint(char c, bool caseInsensitive = false, string? culture = null)
         {
             Debug.Assert(!caseInsensitive);
             int i = _classifier.GetMintermID(c);
@@ -111,29 +97,25 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Assumes that set is a union of some minterms (or empty).
         /// If null then null is returned.
         /// </summary>
-        [return: NotNullIfNotNull("set")]
-        public BV? ConvertFromCharSet(BDDAlgebra alg, BDD set)
+        public BitVector ConvertFromCharSet(BDDAlgebra alg, BDD set)
         {
-            if (set == null)
-                return null;
-
             Debug.Assert(_partition is not null);
 
-            BV res = False;
-            for (int i = 0; i < _bits; i++)
+            BitVector res = False;
+            for (int i = 0; i < _bitCount; i++)
             {
                 BDD bdd_i = _partition[i];
                 BDD conj = alg.And(bdd_i, set);
                 if (alg.IsSatisfiable(conj))
                 {
-                    res |= _minterms[i];
+                    res = BitVector.Or(res, _minterms[i]);
                 }
             }
 
             return res;
         }
 
-        public BDD ConvertToCharSet(ICharAlgebra<BDD> solver, BV pred)
+        public BDD ConvertToCharSet(ICharAlgebra<BDD> solver, BitVector pred)
         {
             Debug.Assert(_partition is not null);
 
@@ -141,7 +123,7 @@ namespace System.Text.RegularExpressions.Symbolic
             BDD res = solver.False;
             if (!pred.Equals(False))
             {
-                for (int i = 0; i < _bits; i++)
+                for (int i = 0; i < _bitCount; i++)
                 {
                     // include the i'th minterm in the union if the i'th bit is set
                     if (pred[i])
@@ -154,10 +136,10 @@ namespace System.Text.RegularExpressions.Symbolic
             return res;
         }
 
-        public BV[] GetMinterms() => _minterms;
+        public BitVector[] GetMinterms() => _minterms;
 
         /// <summary>Pretty print the bitvector bv as the character set it represents.</summary>
-        public string PrettyPrint(BV bv)
+        public string PrettyPrint(BitVector bv)
         {
             CharSetSolver solver = CharSetSolver.Instance;
             return solver.PrettyPrint(ConvertToCharSet(solver, bv));

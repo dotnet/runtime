@@ -57,9 +57,9 @@
     <Compile Include="System\Text\RegularExpressions\Symbolic\BDDAlgebra.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\BDDRangeConverter.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\BooleanClassifier.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\BV.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\BV64Algebra.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\BVAlgebra.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\BitVector.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\BitVector64Algebra.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\BitVectorAlgebra.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\CharKind.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\CharSetSolver.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\DerivativeEffect.cs" />

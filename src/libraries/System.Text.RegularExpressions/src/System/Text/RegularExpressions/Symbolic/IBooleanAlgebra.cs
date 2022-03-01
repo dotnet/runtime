@@ -37,7 +37,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Make a disjunction of all the predicates in the enumeration.
         /// Must return False if the enumeration is empty.
         /// </summary>
-        T Or(IEnumerable<T> predicates);
+        T Or(ReadOnlySpan<T> predicates);
 
         /// <summary>
         /// Negate the predicate.

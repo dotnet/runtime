@@ -31,8 +31,8 @@ namespace System.Text.RegularExpressions.Symbolic
             if (minterms.Length > 64)
             {
                 // Use BV to represent a predicate
-                var algBV = new BVAlgebra(solver, minterms);
-                var builderBV = new SymbolicRegexBuilder<BV>(algBV)
+                var algBV = new BitVectorAlgebra(solver, minterms);
+                var builderBV = new SymbolicRegexBuilder<BitVector>(algBV)
                 {
                     // The default constructor sets the following predicates to False; this update happens after the fact.
                     // It depends on whether anchors where used in the regex whether the predicates are actually different from False.
@@ -41,13 +41,13 @@ namespace System.Text.RegularExpressions.Symbolic
                 };
 
                 // Convert the BDD-based AST to BV-based AST
-                SymbolicRegexNode<BV> rootBV = converter._builder.Transform(root, builderBV, bdd => builderBV._solver.ConvertFromCharSet(solver, bdd));
-                _matcher = new SymbolicRegexMatcher<BV>(rootBV, regexTree, minterms, matchTimeout);
+                SymbolicRegexNode<BitVector> rootBV = converter._builder.Transform(root, builderBV, bdd => builderBV._solver.ConvertFromCharSet(solver, bdd));
+                _matcher = new SymbolicRegexMatcher<BitVector>(rootBV, regexTree, minterms, matchTimeout);
             }
             else
             {
                 // Use ulong to represent a predicate
-                var alg64 = new BV64Algebra(solver, minterms);
+                var alg64 = new BitVector64Algebra(solver, minterms);
                 var builder64 = new SymbolicRegexBuilder<ulong>(alg64)
                 {
                     // The default constructor sets the following predicates to False, this update happens after the fact
@@ -65,7 +65,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Creates a <see cref="RegexRunner"/> object.</summary>
         protected internal override RegexRunner CreateInstance() => _matcher is SymbolicRegexMatcher<ulong> srmUInt64 ?
             new Runner<ulong>(srmUInt64) :
-            new Runner<BV>((SymbolicRegexMatcher<BV>)_matcher);
+            new Runner<BitVector>((SymbolicRegexMatcher<BitVector>)_matcher);
 
         /// <summary>Runner type produced by this factory.</summary>
         /// <remarks>

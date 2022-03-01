@@ -188,7 +188,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Take the union of all sets in the enumeration
         /// </summary>
-        public BDD Or(IEnumerable<BDD> sets)
+        public BDD Or(ReadOnlySpan<BDD> sets)
         {
             BDD res = False;
             foreach (BDD bdd in sets)
