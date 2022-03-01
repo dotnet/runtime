@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -32,10 +33,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			[Kept]
 			[KeptBackingField]
-			public static int StaticProperty {
+			public static int StaticPropertyExpressionAccess {
 				[Kept]
 				get;
 				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode (nameof (StaticPropertyExpressionAccess))]
 				set;
 			}
 
@@ -45,6 +48,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				get;
 				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode (nameof (StaticPropertyViaReflection))]
 				set;
 			}
 
@@ -54,15 +59,19 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				get;
 				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode (nameof (StaticPropertyViaRuntimeMethod))]
 				set;
 			}
 
 			[Kept]
 			[KeptBackingField]
-			public int InstanceProperty {
+			public int InstancePropertyExpressionAccess {
 				[Kept]
 				get;
 				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode (nameof (InstancePropertyExpressionAccess))]
 				set;
 			}
 
@@ -72,18 +81,27 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				get;
 				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode (nameof (InstancePropertyViaReflection))]
 				set;
 			}
 
 			[Kept]
+			// https://github.com/dotnet/linker/issues/2669
+			[ExpectedWarning ("IL2026", nameof (StaticPropertyExpressionAccess), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", nameof (StaticPropertyViaReflection))]
+			[ExpectedWarning ("IL2026", nameof (StaticPropertyViaRuntimeMethod))]
+			// https://github.com/dotnet/linker/issues/2669
+			[ExpectedWarning ("IL2026", nameof (InstancePropertyExpressionAccess), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", nameof (InstancePropertyViaReflection))]
 			public static void Test ()
 			{
-				Expression<Func<int>> staticGetter = () => StaticProperty;
+				Expression<Func<int>> staticGetter = () => StaticPropertyExpressionAccess;
 
 				Expression.Property (null, typeof (PropertyGetter).GetMethod ("get_StaticPropertyViaReflection"));
 
 				PropertyGetter instance = new PropertyGetter ();
-				Expression<Func<PropertyGetter, int>> instanceGetter = i => i.InstanceProperty;
+				Expression<Func<PropertyGetter, int>> instanceGetter = i => i.InstancePropertyExpressionAccess;
 
 				Expression.Property (Expression.New (typeof (PropertyGetter)), typeof (PropertyGetter).GetMethod ("get_InstancePropertyViaReflection"));
 
@@ -97,8 +115,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			[Kept]
 			[KeptBackingField]
-			public static int StaticProperty {
+			public static int StaticPropertyReflectionAccess {
 				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode (nameof (StaticPropertyReflectionAccess))]
 				get;
 				[Kept]
 				set;
@@ -108,6 +128,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[KeptBackingField]
 			public static int StaticPropertyViaRuntimeMethod {
 				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode (nameof (StaticPropertyViaRuntimeMethod))]
 				get;
 				[Kept]
 				set;
@@ -115,21 +137,26 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			[KeptBackingField]
-			public int InstanceProperty {
+			public int InstancePropertyReflectionAccess {
 				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode (nameof (InstancePropertyReflectionAccess))]
 				get;
 				[Kept]
 				set;
 			}
 
 			[Kept]
+			[ExpectedWarning ("IL2026", nameof (StaticPropertyReflectionAccess))]
+			[ExpectedWarning ("IL2026", nameof (StaticPropertyViaRuntimeMethod))]
+			[ExpectedWarning ("IL2026", nameof (InstancePropertyReflectionAccess))]
 			public static void Test ()
 			{
-				Expression.Property (null, typeof (PropertySetter).GetMethod ("set_StaticProperty"));
+				Expression.Property (null, typeof (PropertySetter).GetMethod ("set_StaticPropertyReflectionAccess"));
 
 				Expression.Property (null, typeof (PropertySetter).GetRuntimeMethod ("set_StaticPropertyViaRuntimeMethod", Type.EmptyTypes));
 
-				Expression.Property (Expression.New (typeof (PropertySetter)), typeof (PropertySetter).GetMethod ("set_InstanceProperty"));
+				Expression.Property (Expression.New (typeof (PropertySetter)), typeof (PropertySetter).GetMethod ("set_InstancePropertyReflectionAccess"));
 			}
 		}
 
@@ -158,10 +185,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			[Kept]
 			[KeptBackingField]
-			public static int StaticProperty {
+			public static int FirstStaticProperty {
 				[Kept]
 				get;
 				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode (nameof (FirstStaticProperty))]
 				set;
 			}
 
@@ -171,16 +200,20 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				get;
 				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode (nameof (SecondStaticProperty))]
 				set;
 			}
 
 			[Kept]
+			[ExpectedWarning ("IL2026", nameof (FirstStaticProperty))]
+			[ExpectedWarning ("IL2026", nameof (SecondStaticProperty))]
 			public static void Test (int p)
 			{
 				MethodInfo mi;
 				switch (p) {
 				case 0:
-					mi = typeof (MultipleMethods).GetMethod ("get_StaticProperty");
+					mi = typeof (MultipleMethods).GetMethod ("get_FirstStaticProperty");
 					break;
 				case 1:
 					mi = typeof (MultipleMethods).GetMethod ("get_SecondStaticProperty");
@@ -195,7 +228,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[ExpectedWarning ("IL2103", nameof (Expression) + "." + nameof (Expression.Property))]
+		// https://github.com/dotnet/linker/issues/2670
+		[ExpectedWarning ("IL2103", nameof (Expression) + "." + nameof (Expression.Property), ProducedBy = ProducedBy.Trimmer)]
 		static void TestUnknownMethod (MethodInfo mi)
 		{
 			Expression.Property (null, mi);

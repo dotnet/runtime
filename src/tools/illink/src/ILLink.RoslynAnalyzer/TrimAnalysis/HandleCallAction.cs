@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using ILLink.RoslynAnalyzer;
@@ -78,6 +79,18 @@ namespace ILLink.Shared.TrimAnalysis
 
 		// TODO: Does the analyzer need to do something here?
 		private partial void MarkType (TypeProxy type) { }
+
+		private partial bool MarkAssociatedProperty (MethodProxy method)
+		{
+			if (method.Method.MethodKind == MethodKind.PropertyGet || method.Method.MethodKind == MethodKind.PropertySet) {
+				var property = (IPropertySymbol) method.Method.AssociatedSymbol!;
+				Debug.Assert (property != null);
+				ReflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForProperty (_diagnosticContext, property!);
+				return true;
+			}
+
+			return false;
+		}
 
 		private partial string GetContainingSymbolDisplayName () => _operation.FindContainingSymbol (_owningSymbol).GetDisplayName ();
 	}

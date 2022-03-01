@@ -12,11 +12,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	[ExpectedNoWarnings]
 	public class ExpressionPropertyString
 	{
+		[ExpectedWarning ("IL2026", nameof (BasicProperty))]
+		[ExpectedWarning ("IL2111", "ProtectedPropertyOnBase")]
+		[ExpectedWarning ("IL2026", "PublicPropertyOnBase")]
 		[ExpectedWarning ("IL2072", nameof (Expression) + "." + nameof (Expression.Property))]
 		public static void Main ()
 		{
-			Expression.Property (Expression.Parameter (typeof (int), ""), typeof (ExpressionPropertyString), "Property");
-			Expression.Property (null, typeof (ExpressionPropertyString), "StaticProperty");
+			Expression.Property (Expression.Parameter (typeof (int), ""), typeof (ExpressionPropertyString), nameof (BasicProperty));
+			Expression.Property (null, typeof (ExpressionPropertyString), nameof (StaticProperty));
 			Expression.Property (null, typeof (Derived), "ProtectedPropertyOnBase");
 			Expression.Property (null, typeof (Derived), "PublicPropertyOnBase");
 			UnknownType.Test ();
@@ -30,13 +33,15 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		private int Property {
+		private int BasicProperty {
 			[Kept]
 			[ExpectBodyModified]
 			get;
 
 			[Kept]
 			[ExpectBodyModified]
+			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+			[RequiresUnreferencedCode (nameof (BasicProperty))]
 			set;
 		}
 
@@ -159,11 +164,27 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			[Kept]
 			[KeptBackingField]
-			protected static bool ProtectedPropertyOnBase { [Kept] get; }
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			protected static Type ProtectedPropertyOnBase {
+				[Kept]
+				get;
+
+				[Kept]
+				set;
+			}
 
 			[Kept]
 			[KeptBackingField]
-			public static bool PublicPropertyOnBase { [Kept] get; }
+			public static bool PublicPropertyOnBase {
+				[Kept]
+				get;
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode (nameof (PublicPropertyOnBase))]
+				set;
+			}
 		}
 
 		[Kept]

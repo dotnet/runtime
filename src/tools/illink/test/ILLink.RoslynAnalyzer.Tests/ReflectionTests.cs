@@ -55,6 +55,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task ExpressionFieldString ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task ExpressionNewType ()
 		{
 			return RunTest (allowMissingWarnings: true);
@@ -63,7 +69,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 		[Fact]
 		public Task ExpressionPropertyMethodInfo ()
 		{
-			return RunTest (allowMissingWarnings: true);
+			return RunTest ();
+		}
+
+		[Fact]
+		public Task ExpressionPropertyString ()
+		{
+			return RunTest ();
 		}
 
 		[Fact]

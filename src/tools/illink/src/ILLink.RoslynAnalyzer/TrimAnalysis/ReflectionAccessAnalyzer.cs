@@ -24,7 +24,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 					GetDiagnosticsForField (diagnosticContext, field);
 					break;
 				case IPropertySymbol property:
-					GetDiagnosticsForProperty (diagnosticContext, property);
+					GetReflectionAccessDiagnosticsForProperty (diagnosticContext, property);
 					break;
 				/* Skip Type and InterfaceImplementation marking since doesnt seem relevant for diagnostic generation
 				case ITypeSymbol nestedType:
@@ -56,7 +56,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		internal void GetReflectionAccessDiagnosticsForPropertiesOnTypeHierarchy (in DiagnosticContext diagnosticContext, ITypeSymbol typeSymbol, string name, BindingFlags? bindingFlags)
 		{
 			foreach (var prop in typeSymbol.GetPropertiesOnTypeHierarchy (p => p.Name == name, bindingFlags))
-				GetDiagnosticsForProperty (diagnosticContext, prop);
+				GetReflectionAccessDiagnosticsForProperty (diagnosticContext, prop);
 		}
 
 		static void ReportRequiresUnreferencedCodeDiagnostic (in DiagnosticContext diagnosticContext, AttributeData requiresAttributeData, ISymbol member)
@@ -85,7 +85,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			}
 		}
 
-		static void GetDiagnosticsForProperty (in DiagnosticContext diagnosticContext, IPropertySymbol propertySymbol)
+		internal static void GetReflectionAccessDiagnosticsForProperty (in DiagnosticContext diagnosticContext, IPropertySymbol propertySymbol)
 		{
 			if (propertySymbol.SetMethod is not null)
 				GetReflectionAccessDiagnosticsForMethod (diagnosticContext, propertySymbol.SetMethod);
