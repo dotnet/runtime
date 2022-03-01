@@ -25983,16 +25983,6 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
             }
 
             settings.promotion = decide_on_promotion_surv (m);
-
-            if ((!settings.promotion) && (settings.non_promotion_count++ >= 5))
-            {
-                dprintf (3, ("We haven't promoted in a while, let's clean up"));
-                settings.promotion = TRUE;
-            }
-            if (settings.promotion)
-            {
-                settings.non_promotion_count = 0;
-            }
         }
 
 #ifdef MULTIPLE_HEAPS
