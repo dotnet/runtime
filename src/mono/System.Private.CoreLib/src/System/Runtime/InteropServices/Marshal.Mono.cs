@@ -30,6 +30,7 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void SetLastPInvokeError(int error);
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available. Use the DestroyStructure<T> overload instead.")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern void DestroyStructure(IntPtr ptr, Type structuretype);
@@ -38,6 +39,7 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern IntPtr OffsetOf(Type t, string fieldName);
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available. Use the StructureToPtr<T> overload instead.")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld);
@@ -200,6 +202,7 @@ namespace System.Runtime.InteropServices
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadByte(Object, Int32) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static byte ReadByte(object ptr, int ofs)
         {
             throw new PlatformNotSupportedException();
@@ -207,6 +210,7 @@ namespace System.Runtime.InteropServices
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadInt16(Object, Int32) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static short ReadInt16(object ptr, int ofs)
         {
             throw new PlatformNotSupportedException();
@@ -214,6 +218,7 @@ namespace System.Runtime.InteropServices
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadInt32(Object, Int32) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static int ReadInt32(object ptr, int ofs)
         {
             throw new PlatformNotSupportedException();
@@ -221,6 +226,7 @@ namespace System.Runtime.InteropServices
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadInt64(Object, Int32) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static long ReadInt64(object ptr, int ofs)
         {
             throw new PlatformNotSupportedException();
@@ -228,6 +234,7 @@ namespace System.Runtime.InteropServices
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("WriteByte(Object, Int32, Byte) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteByte(object ptr, int ofs, byte val)
         {
             throw new PlatformNotSupportedException();
@@ -235,6 +242,7 @@ namespace System.Runtime.InteropServices
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("WriteInt16(Object, Int32, Int16) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt16(object ptr, int ofs, short val)
         {
             throw new PlatformNotSupportedException();
@@ -242,6 +250,7 @@ namespace System.Runtime.InteropServices
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("WriteInt32(Object, Int32, Int32) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt32(object ptr, int ofs, int val)
         {
             throw new PlatformNotSupportedException();
@@ -249,6 +258,7 @@ namespace System.Runtime.InteropServices
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("WriteInt64(Object, Int32, Int64) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt64(object ptr, int ofs, long val)
         {
             throw new PlatformNotSupportedException();

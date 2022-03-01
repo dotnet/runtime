@@ -52,6 +52,7 @@ namespace System.Runtime.InteropServices
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadByte(Object, Int32) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static byte ReadByte(object ptr, int ofs)
         {
             return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadByte(nativeHome, offset));
@@ -59,6 +60,7 @@ namespace System.Runtime.InteropServices
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadInt16(Object, Int32) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static short ReadInt16(object ptr, int ofs)
         {
             return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadInt16(nativeHome, offset));
@@ -66,6 +68,7 @@ namespace System.Runtime.InteropServices
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadInt32(Object, Int32) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static int ReadInt32(object ptr, int ofs)
         {
             return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadInt32(nativeHome, offset));
@@ -73,6 +76,7 @@ namespace System.Runtime.InteropServices
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadInt64(Object, Int32) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static long ReadInt64([MarshalAs(UnmanagedType.AsAny), In] object ptr, int ofs)
         {
             return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadInt64(nativeHome, offset));
@@ -114,6 +118,7 @@ namespace System.Runtime.InteropServices
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("WriteByte(Object, Int32, Byte) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteByte(object ptr, int ofs, byte val)
         {
             WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, byte value) => WriteByte(nativeHome, offset, value));
@@ -121,6 +126,7 @@ namespace System.Runtime.InteropServices
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("WriteInt16(Object, Int32, Int16) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt16(object ptr, int ofs, short val)
         {
             WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, short value) => Marshal.WriteInt16(nativeHome, offset, value));
@@ -128,6 +134,7 @@ namespace System.Runtime.InteropServices
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("WriteInt32(Object, Int32, Int32) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt32(object ptr, int ofs, int val)
         {
             WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, int value) => Marshal.WriteInt32(nativeHome, offset, value));
@@ -135,6 +142,7 @@ namespace System.Runtime.InteropServices
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("WriteInt64(Object, Int32, Int64) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt64(object ptr, int ofs, long val)
         {
             WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, long value) => Marshal.WriteInt64(nativeHome, offset, value));
@@ -221,6 +229,7 @@ namespace System.Runtime.InteropServices
         /// structure contains pointers to allocated blocks and "fDeleteOld" is
         /// true, this routine will call DestroyStructure() first.
         /// </summary>
+        [RequiresDynamicCode("Marshalling code for the object might not be available. Use the StructureToPtr<T> overload instead.")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld);
@@ -235,6 +244,7 @@ namespace System.Runtime.InteropServices
         /// Frees all substructures pointed to by the native memory block.
         /// "structuretype" is used to provide layout information.
         /// </summary>
+        [RequiresDynamicCode("Marshalling code for the object might not be available. Use the DestroyStructure<T> overload instead.")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern void DestroyStructure(IntPtr ptr, Type structuretype);
