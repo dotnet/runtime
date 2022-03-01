@@ -87,10 +87,11 @@ namespace System.Text.RegularExpressions.Symbolic
             return res;
         }
 
+#if DEBUG
         /// <summary>
         /// Make a BDD encoding of k least significant bits of all the integers in the ranges
         /// </summary>
-        internal BDD CreateBddForIntRanges(IEnumerable<int[]> ranges)
+        internal BDD CreateBddForIntRanges(List<int[]> ranges)
         {
             BDD bdd = False;
             foreach (int[] range in ranges)
@@ -100,6 +101,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             return bdd;
         }
+#endif
 
         /// <summary>
         /// Identity function, returns s.

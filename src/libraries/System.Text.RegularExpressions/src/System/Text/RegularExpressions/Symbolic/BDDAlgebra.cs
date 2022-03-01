@@ -175,7 +175,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Intersect all sets in the enumeration
         /// </summary>
-        public BDD And(IEnumerable<BDD> sets)
+        public BDD And(ReadOnlySpan<BDD> sets)
         {
             BDD res = True;
             foreach (BDD bdd in sets)
