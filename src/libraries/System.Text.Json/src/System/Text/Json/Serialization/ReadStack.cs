@@ -113,7 +113,9 @@ namespace System.Text.Json
             {
                 if (_count == 0)
                 {
-                    // The first stack frame is held in Current.
+                    // Performance optimization: reuse the first stackframe on the first push operation.
+                    // NB need to be careful when making writes to Current _before_ the first `Push`
+                    // operation is performed.
                     _count = 1;
                 }
                 else

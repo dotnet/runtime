@@ -13,17 +13,17 @@ namespace System.Text.RegularExpressions
         public static AnalysisResults Analyze(RegexCode code)
         {
             var results = new AnalysisResults(code);
-            results._complete = TryAnalyze(code.Tree.Root, results, isAtomicBySelfOrParent: true);
+            results._complete = TryAnalyze(code.Tree.Root, results, isAtomicByAncestor: true);
             return results;
 
-            static bool TryAnalyze(RegexNode node, AnalysisResults results, bool isAtomicBySelfOrParent)
+            static bool TryAnalyze(RegexNode node, AnalysisResults results, bool isAtomicByAncestor)
             {
                 if (!StackHelper.TryEnsureSufficientExecutionStack())
                 {
                     return false;
                 }
 
-                if (isAtomicBySelfOrParent)
+                if (isAtomicByAncestor)
                 {
                     // We've been told by our parent that we should be considered atomic, so add ourselves
                     // to the atomic collection.
@@ -45,6 +45,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 // Update state for certain node types.
+                bool isAtomicBySelf = false;
                 switch (node.Kind)
                 {
                     // Some node types add atomicity around what they wrap.  Set isAtomicBySelfOrParent to true for such nodes
@@ -52,7 +53,7 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Atomic:
                     case RegexNodeKind.NegativeLookaround:
                     case RegexNodeKind.PositiveLookaround:
-                        isAtomicBySelfOrParent = true;
+                        isAtomicBySelf = true;
                         break;
 
                     // Track any nodes that are themselves captures.
@@ -70,7 +71,7 @@ namespace System.Text.RegularExpressions
                     // Determine whether the child should be treated as atomic (whether anything
                     // can backtrack into it), which is influenced by whether this node (the child's
                     // parent) is considered atomic by itself or by its parent.
-                    bool treatChildAsAtomic = isAtomicBySelfOrParent && node.Kind switch
+                    bool treatChildAsAtomic = (isAtomicByAncestor | isAtomicBySelf) && node.Kind switch
                     {
                         // If the parent is atomic, so is the child.  That's the whole purpose
                         // of the Atomic node, and lookarounds are also implicitly atomic.
@@ -104,14 +105,16 @@ namespace System.Text.RegularExpressions
                     }
 
                     // If the child contains captures, so too does this parent.
-                    if (results.MayContainCapture(child))
+                    if (results._containsCapture.Contains(child))
                     {
                         results._containsCapture.Add(node);
                     }
 
                     // If the child might require backtracking into it, so too might the parent,
-                    // unless the parent is itself considered atomic.
-                    if (!isAtomicBySelfOrParent && results.MayBacktrack(child))
+                    // unless the parent is itself considered atomic.  Here we don't consider parental
+                    // atomicity, as we need to surface upwards to the parent whether any backtracking
+                    // will be visible from this node to it.
+                    if (!isAtomicBySelf && (results._mayBacktrack?.Contains(child) == true))
                     {
                         (results._mayBacktrack ??= new()).Add(node);
                     }
@@ -149,7 +152,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Gets the code that was analyzed.</summary>
         public RegexCode Code { get; }
 
-        /// <summary>Gets whether a node is considered atomic based on itself or its ancestry.</summary>
+        /// <summary>Gets whether a node is considered atomic based on its ancestry.</summary>
         public bool IsAtomicByAncestor(RegexNode node) => _isAtomicByAncestor.Contains(node);
 
         /// <summary>Gets whether a node directly or indirectly contains captures.</summary>

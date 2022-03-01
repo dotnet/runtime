@@ -88,23 +88,16 @@ namespace System.Text.RegularExpressions.Symbolic
                 _perThreadData = matcher.CreatePerThreadData();
             }
 
-            protected override void InitTrackCount() { } // nop, no backtracking
-
-            protected override bool FindFirstChar() => true; // The logic is all in Go.
-
-            protected override void Go()
+            protected internal override void Scan(ReadOnlySpan<char> text)
             {
-                int beginning = runtextbeg;
-                ReadOnlySpan<char> inputSpan = runtext.AsSpan(beginning, runtextend - beginning);
-
                 // Perform the match.
-                SymbolicMatch pos = _matcher.FindMatch(quick, inputSpan, runtextpos - beginning, _perThreadData);
+                SymbolicMatch pos = _matcher.FindMatch(quick, text, runtextpos, _perThreadData);
 
                 // Transfer the result back to the RegexRunner state.
                 if (pos.Success)
                 {
                     // If we successfully matched, capture the match, and then jump the current position to the end of the match.
-                    int start = pos.Index + beginning;
+                    int start = pos.Index;
                     int end = start + pos.Length;
                     if (!quick && pos.CaptureStarts != null)
                     {
@@ -115,7 +108,7 @@ namespace System.Text.RegularExpressions.Symbolic
                             if (pos.CaptureStarts[cap] >= 0)
                             {
                                 Debug.Assert(pos.CaptureEnds[cap] >= pos.CaptureStarts[cap]);
-                                Capture(cap, pos.CaptureStarts[cap] + beginning, pos.CaptureEnds[cap] + beginning);
+                                Capture(cap, pos.CaptureStarts[cap], pos.CaptureEnds[cap]);
                             }
                         }
                     }

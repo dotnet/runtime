@@ -858,7 +858,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     regNumber baseReg;
                     regNumber indexReg = op2Reg;
 
-                    // Optimize the case of op1 is in memory and trying to access ith element.
+                    // Optimize the case of op1 is in memory and trying to access i'th element.
                     if (!intrin.op1->isUsedFromReg())
                     {
                         assert(intrin.op1->isContained());
