@@ -143,6 +143,8 @@ To run a test with `FooBar` in the name:
 
 Additional arguments for `dotnet test` can be passed via `MSBUILD_ARGS` or `TEST_ARGS`. For example `MSBUILD_ARGS="/p:WasmDebugLevel=5"`. Though only one of `TEST_ARGS`, or `TEST_FILTER` can be used at a time.
 
+- Chrome can be installed for testing by setting `InstallChromeForDebuggerTests=true` when building the tests.
+
 ## Run samples
 
 The samples in `src/mono/sample/wasm` can be build and run like this:

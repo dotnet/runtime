@@ -4936,49 +4936,86 @@ bool ValueNumStore::IsVNRelop(ValueNum vn)
 
 bool ValueNumStore::IsVNConstantBound(ValueNum vn)
 {
-    // Do we have "var < 100"?
-    if (vn == NoVN)
+    VNFuncApp funcApp;
+    if ((vn != NoVN) && GetVNFunc(vn, &funcApp))
     {
-        return false;
+        if ((funcApp.m_func == (VNFunc)GT_LE) || (funcApp.m_func == (VNFunc)GT_GE) ||
+            (funcApp.m_func == (VNFunc)GT_LT) || (funcApp.m_func == (VNFunc)GT_GT))
+        {
+            const bool op1IsConst = IsVNInt32Constant(funcApp.m_args[0]);
+            const bool op2IsConst = IsVNInt32Constant(funcApp.m_args[1]);
+            return op1IsConst != op2IsConst;
+        }
     }
+    return false;
+}
 
-    VNFuncApp funcAttr;
-    if (!GetVNFunc(vn, &funcAttr))
+bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
+{
+    VNFuncApp funcApp;
+    if ((vn != NoVN) && GetVNFunc(vn, &funcApp))
     {
-        return false;
+        const bool op1IsPositiveConst = IsVNPositiveInt32Constant(funcApp.m_args[0]);
+        const bool op2IsPositiveConst = IsVNPositiveInt32Constant(funcApp.m_args[1]);
+        if (!op1IsPositiveConst && op2IsPositiveConst)
+        {
+            // (uint)index < CNS
+            // (uint)index >= CNS
+            return (funcApp.m_func == VNF_LT_UN) || (funcApp.m_func == VNF_GE_UN);
+        }
+        else if (op1IsPositiveConst && !op2IsPositiveConst)
+        {
+            // CNS > (uint)index
+            // CNS <= (uint)index
+            return (funcApp.m_func == VNF_GT_UN) || (funcApp.m_func == VNF_LE_UN);
+        }
     }
-    if (funcAttr.m_func != (VNFunc)GT_LE && funcAttr.m_func != (VNFunc)GT_GE && funcAttr.m_func != (VNFunc)GT_LT &&
-        funcAttr.m_func != (VNFunc)GT_GT)
-    {
-        return false;
-    }
-
-    return IsVNInt32Constant(funcAttr.m_args[0]) != IsVNInt32Constant(funcAttr.m_args[1]);
+    return false;
 }
 
 void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
 {
-    assert(IsVNConstantBound(vn));
+    assert(IsVNConstantBound(vn) || IsVNConstantBoundUnsigned(vn));
     assert(info);
 
-    // Do we have var < 100?
     VNFuncApp funcAttr;
     GetVNFunc(vn, &funcAttr);
 
-    bool isOp1Const = IsVNInt32Constant(funcAttr.m_args[1]);
-
-    if (isOp1Const)
+    bool       isUnsigned = true;
+    genTreeOps op;
+    switch (funcAttr.m_func)
     {
-        info->cmpOper  = funcAttr.m_func;
+        case VNF_GT_UN:
+            op = GT_GT;
+            break;
+        case VNF_GE_UN:
+            op = GT_GE;
+            break;
+        case VNF_LT_UN:
+            op = GT_LT;
+            break;
+        case VNF_LE_UN:
+            op = GT_LE;
+            break;
+        default:
+            op         = (genTreeOps)funcAttr.m_func;
+            isUnsigned = false;
+            break;
+    }
+
+    if (IsVNInt32Constant(funcAttr.m_args[1]))
+    {
+        info->cmpOper  = op;
         info->cmpOpVN  = funcAttr.m_args[0];
         info->constVal = GetConstantInt32(funcAttr.m_args[1]);
     }
     else
     {
-        info->cmpOper  = GenTree::SwapRelop((genTreeOps)funcAttr.m_func);
+        info->cmpOper  = GenTree::SwapRelop(op);
         info->cmpOpVN  = funcAttr.m_args[1];
         info->constVal = GetConstantInt32(funcAttr.m_args[0]);
     }
+    info->isUnsigned = isUnsigned;
 }
 
 //------------------------------------------------------------------------

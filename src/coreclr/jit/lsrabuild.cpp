@@ -2855,7 +2855,7 @@ void LinearScan::BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates)
         regMaskTP thisDstCandidates;
         if (fixedReg)
         {
-            // In case of multi-reg call node, we have to query the ith position return register.
+            // In case of multi-reg call node, we have to query the i'th position return register.
             // For all other cases of multi-reg definitions, the registers must be in sequential order.
             if (retTypeDesc != nullptr)
             {
@@ -3372,7 +3372,7 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
     //
     if (isMultiRegSrc)
     {
-        assert(op1->GetMultiRegCount() == srcCount);
+        assert(op1->GetMultiRegCount(compiler) == srcCount);
     }
     else if (varTypeIsEnregisterable(op1))
     {
@@ -3457,12 +3457,12 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 
     // Second, use source registers.
 
-    if (op1->IsMultiRegNode() && (op1->GetMultiRegCount() > 1))
+    if (op1->IsMultiRegNode() && (op1->GetMultiRegCount(compiler) > 1))
     {
         // This is the case where the source produces multiple registers.
         // This must be a store lclvar.
         assert(storeLoc->OperGet() == GT_STORE_LCL_VAR);
-        srcCount = op1->GetMultiRegCount();
+        srcCount = op1->GetMultiRegCount(compiler);
 
         for (int i = 0; i < srcCount; ++i)
         {

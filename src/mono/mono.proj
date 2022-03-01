@@ -491,6 +491,7 @@
       <_MonoCMakeBuildCommand Condition="'$(_MonoUseNinja)' != 'true'">$(_MonoCMakeBuildCommand) --parallel $([System.Environment]::ProcessorCount)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(HostOS)' != 'windows'">@(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
+      <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
     </PropertyGroup>
 
     <MakeDir Directories="$(MonoObjDir)" />

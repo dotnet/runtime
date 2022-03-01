@@ -1,6 +1,6 @@
 #include <eventpipe/ep.h>
 #include <eglib/test/test.h>
-#include <mono/mini/jit.h>
+#include <mono/jit/jit.h>
 #include <mono/metadata/assembly.h>
 
 MonoDomain *eventpipe_test_domain;
