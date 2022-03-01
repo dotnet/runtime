@@ -115,6 +115,11 @@ namespace System.Net.Http.Headers
                 {
                     if (item is not HttpHeaders.InvalidValue)
                     {
+                        Debug.Assert(item is T);
+                        if (arrayIndex == array.Length)
+                        {
+                            throw new ArgumentException(SR.net_http_copyto_array_too_small);
+                        }
                         array[arrayIndex++] = (T)item;
                     }
                 }
