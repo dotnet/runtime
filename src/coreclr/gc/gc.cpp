@@ -12350,8 +12350,7 @@ void gc_heap::distribute_free_regions()
         heap_budget_in_region_units[i][large_free_region] = 0;
         for (int gen = soh_gen0; gen < total_generation_count; gen++)
         {
-            ptrdiff_t budget_gen = hp->estimate_gen_growth (gen);
-            assert (budget_gen >= 0);
+            ptrdiff_t budget_gen = max (hp->estimate_gen_growth (gen), 0);
             int kind = gen >= loh_generation;
             size_t budget_gen_in_region_units = (budget_gen + (region_size[kind] - 1)) / region_size[kind];
             dprintf (REGIONS_LOG, ("h%2d gen %d has an estimated growth of %Id bytes (%Id regions)", i, gen, budget_gen, budget_gen_in_region_units));
@@ -39560,7 +39559,7 @@ ptrdiff_t gc_heap::estimate_gen_growth (int gen_number)
         gen_number, heap_number, budget_gen, new_allocation_gen, free_list_space_gen));
 #endif //USE_REGIONS
 
-    return max(0, budget_gen);
+    return budget_gen;
 }
 
 void gc_heap::decommit_ephemeral_segment_pages()
@@ -39573,76 +39572,53 @@ void gc_heap::decommit_ephemeral_segment_pages()
 #if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
     for (int gen_number = soh_gen0; gen_number <= soh_gen1; gen_number++)
     {
-        dynamic_data* dd = dynamic_data_of (gen_number);
-
-        dynamic_data* dd_gen = dynamic_data_of (gen_number);
         generation *gen = generation_of (gen_number);
-        ptrdiff_t new_allocation_gen = dd_new_allocation (dd_gen) + loh_size_threshold;
-        ptrdiff_t free_list_space_gen = generation_free_list_space (gen);
+        heap_segment* tail_region = generation_tail_region (gen);
+        uint8_t* previous_decommit_target = heap_segment_decommit_target (tail_region);
 
-        ptrdiff_t committed_gen = 0;
-        ptrdiff_t allocated_gen = 0;
-
+        // reset the decommit targets to make sure we don't decommit inadvertently
         for (heap_segment* region = generation_start_segment_rw (gen); region != nullptr; region = heap_segment_next (region))
         {
-            allocated_gen += heap_segment_allocated (region) - heap_segment_mem (region);
-            committed_gen += heap_segment_committed (region) - heap_segment_mem (region);
+            heap_segment_decommit_target (region) = heap_segment_reserved (region);
         }
 
-        // compute how much of the allocated space is on the free list
-        double free_list_fraction_gen = (allocated_gen == 0) ? 0.0 : (double)(free_list_space_gen) / (double)allocated_gen;
-
-        // estimate amount of usable free space
-        // e.g. if 90% of the allocated space is free, assume 90% of these 90% can get used
-        // e.g. if 10% of the allocated space is free, assume 10% of these 10% can get used
-        ptrdiff_t usable_free_space = (ptrdiff_t)(free_list_fraction_gen * free_list_space_gen);
-
-        ptrdiff_t budget_gen = new_allocation_gen + allocated_gen - usable_free_space - committed_gen;
-
-        dprintf(1, ("h%2d gen %d budget %8Id allocated: %8Id, FL: %8Id, committed %8Id budget_gen %8Id",
-            heap_number, gen_number, new_allocation_gen, allocated_gen, free_list_space_gen, committed_gen, budget_gen));
+        ptrdiff_t budget_gen = estimate_gen_growth (gen_number) + loh_size_threshold;
 
         if (budget_gen >= 0)
         {
-            // we need more than we have committed - reset the commit targets
-            for (heap_segment* region = generation_start_segment_rw (gen); region != nullptr; region = heap_segment_next (region))
-            {
-                heap_segment_decommit_target (region) = heap_segment_reserved (region);
-            }
+            // we need more than the regions we have - nothing to decommit
             continue;
         }
 
-        // we have too much committed - let's if we can decommit in the tail region
-        heap_segment* tail_region = generation_tail_region (gen);
+        // we may have too much committed - let's see if we can decommit in the tail region
+        ptrdiff_t tail_region_size = heap_segment_reserved (tail_region) - heap_segment_mem (tail_region);
+        ptrdiff_t unneeded_tail_size = min (-budget_gen, tail_region_size);
+        uint8_t *decommit_target = heap_segment_reserved (tail_region) - unneeded_tail_size;
+        decommit_target = max (decommit_target, heap_segment_allocated (tail_region));
 
-        ptrdiff_t extra_commit = heap_segment_committed (tail_region) - heap_segment_allocated (tail_region);
-        ptrdiff_t reduce_commit = min (extra_commit, -budget_gen);
-
-        uint8_t *decommit_target = heap_segment_committed (tail_region) - reduce_commit;
-        if (decommit_target < heap_segment_decommit_target (tail_region))
+        if (decommit_target < previous_decommit_target)
         {
             // we used to have a higher target - do exponential smoothing by computing
             // essentially decommit_target = 1/3*decommit_target + 2/3*previous_decommit_target
             // computation below is slightly different to avoid overflow
-            ptrdiff_t target_decrease = heap_segment_decommit_target (tail_region) - decommit_target;
+            ptrdiff_t target_decrease = previous_decommit_target - decommit_target;
             decommit_target += target_decrease * 2 / 3;
         }
 
         heap_segment_decommit_target (tail_region) = decommit_target;
 
-#ifdef MULTIPLE_HEAPS
-        if (decommit_target < heap_segment_committed (ephemeral_heap_segment))
+        if (decommit_target < heap_segment_committed (tail_region))
         {
             gradual_decommit_in_progress_p = TRUE;
         }
-        dprintf(1, ("h%2d gen %d reduce_commit by %Ix", heap_segment_committed (tail_region) - decommit_target));
+        dprintf(1, ("h%2d gen %d reduce_commit by %Ix", heap_number, gen_number, heap_segment_committed (tail_region) - decommit_target));
     }
-#endif //MULTIPLE_HEAPS && USE_REGIONS
+#else //MULTIPLE_HEAPS && USE_REGIONS
 
     dynamic_data* dd0 = dynamic_data_of (0);
 
     ptrdiff_t desired_allocation = dd_new_allocation (dd0) +
-                                   estimate_gen_growth (soh_gen1) +
+                                   max (estimate_gen_growth (soh_gen1), 0) +
                                    loh_size_threshold;
 
     size_t slack_space =
