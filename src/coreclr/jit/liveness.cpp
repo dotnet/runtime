@@ -1718,9 +1718,8 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
                 VARSET_TP keepAliveFields(VarSetOps::Intersection(this, fieldSet, keepAliveVars));
                 noway_assert(VarSetOps::IsEmpty(this, keepAliveFields));
 
-                // Do not consider this store dead if the parent local variable is an address exposed local or
-                // if the struct has a custom layout and holes.
-                return !(varDsc.IsAddressExposed() || (varDsc.lvCustomLayout && varDsc.lvContainsHoles));
+                // Do not consider this store dead if the parent local variable is an address exposed.
+                return !varDsc.IsAddressExposed();
             }
         }
         return false;
