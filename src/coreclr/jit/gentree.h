@@ -4836,7 +4836,6 @@ struct GenTreeCall final : public GenTree
 #if DEBUGGABLE_GENTREE
     GenTreeCall() : GenTree()
     {
-        _retBufArg = nullptr;
     }
 #endif
 

@@ -4152,8 +4152,10 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                 }
                 else if (!varDsc->lvDoNotEnregister)
                 {
-// Variables can be marked as DoNotEngister in earlier stages like LocalAddressVisitor.
-// No need to track them for single-def.
+                    // Variables can be marked as DoNotEngister in earlier stages like LocalAddressVisitor.
+                    // No need to track them for single-def.
+                    CLANG_FORMAT_COMMENT_ANCHOR;
+
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                     // TODO-CQ: If the varType needs partial callee save, conservatively do not enregister
                     // such variable. In future, need to enable enregisteration for such variables.
@@ -8257,7 +8259,7 @@ void Compiler::lvaDispVarSet(VARSET_VALARG_TP set, VARSET_VALARG_TP allVars)
                 needSpace = true;
             }
 
-            printf("[V%02u, T%d]", lclNum, index);
+            printf("V%02u", lclNum);
         }
         else if (VarSetOps::IsMember(this, allVars, index))
         {

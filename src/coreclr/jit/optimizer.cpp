@@ -9407,7 +9407,7 @@ void Compiler::optRemoveRedundantZeroInits()
                         break;
                     }
                     // case GT_CALL:
-                    // TODO: Need to remove redundant zero-inits for "return buffer".
+                    // TODO-CQ: Need to remove redundant zero-inits for "return buffer".
                     // assert(!"Need to handle zero inits.\n");
                     // break;
                     case GT_ASG:
