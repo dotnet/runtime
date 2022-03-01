@@ -103,11 +103,10 @@ enum LogFacilitiesEnum: unsigned int {
 //   getting passed in and using va_args would require parsing the format string during the GC
 //
 
-#define STRESS_LOG_VA(msg,lvl)
-//#define STRESS_LOG_VA(msg) do {                                                     \
-//            if (StressLog::StressLogOn(LF_GC, LL_ALWAYS))                           \
-//                StressLog::LogMsgOL msg;                                            \
-//            } WHILE_0
+#define STRESS_LOG_VA(msg) do {                                                     \
+            if (StressLog::StressLogOn(LF_GC, LL_ALWAYS))                           \
+                StressLog::LogMsgOL msg;                                            \
+            } WHILE_0
 
 #define STRESS_LOG0(facility, level, msg) do {                                      \
             if (StressLog::StressLogOn(facility, level))                            \
