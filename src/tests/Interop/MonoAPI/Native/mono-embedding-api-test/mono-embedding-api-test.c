@@ -262,6 +262,31 @@ mono_test_marshal_lookup_symbol (const char *symbol_name)
 }
 
 
+static void
+mono_test_init_symbols (void);
+
+
+typedef void (*VoidVoidCallback) (void);
+typedef void (*MonoFtnPtrEHCallback) (guint32 gchandle);
+
+static int sym_inited = 0;
+
+/* MONO_API functions that aren't in public headers */
+static void (*sym_mono_install_ftnptr_eh_callback) (MonoFtnPtrEHCallback);
+static void (*sym_mono_threads_exit_gc_safe_region_unbalanced) (gpointer, gpointer *);
+
+static void (*null_function_ptr) (void);
+
+static void (*sym_mono_threads_exit_gc_unsafe_region) (void*, void*);
+
+static void* (*sym_mono_threads_enter_gc_unsafe_region) (void** stackdata);
+
+#include "api-types.h"
+
+#define MONO_API_FUNCTION(ret,name,args) static ret (*sym_ ## name) args;
+#include "api-functions.h"
+#undef MONO_API_FUNCTION
+
 // FIXME use runtime headers
 #define MONO_BEGIN_EFRAME { void *__dummy; void *__region_cookie = mono_threads_enter_gc_unsafe_region ? mono_threads_enter_gc_unsafe_region (&__dummy) : NULL;
 #define MONO_END_EFRAME if (mono_threads_exit_gc_unsafe_region) mono_threads_exit_gc_unsafe_region (__region_cookie, &__dummy); }
@@ -278,29 +303,28 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 {
 	int ret = 0;
 
-	// FIXME use runtime headers
+	mono_test_init_symbols ();
+
 	gpointer (*mono_method_get_unmanaged_thunk)(gpointer)
-		= (gpointer (*)(gpointer))lookup_mono_symbol ("mono_method_get_unmanaged_thunk");
+		= (gpointer (*)(gpointer))sym_mono_method_get_unmanaged_thunk;
 
-	// FIXME use runtime headers
 	gpointer (*mono_string_new_wrapper)(const char *)
-		= (gpointer (*)(const char *))lookup_mono_symbol ("mono_string_new_wrapper");
+		= (gpointer (*)(const char *))sym_mono_string_new_wrapper;
 
-	// FIXME use runtime headers
 	char *(*mono_string_to_utf8)(gpointer)
-		= (char *(*)(gpointer))lookup_mono_symbol ("mono_string_to_utf8");
+		= (char *(*)(gpointer))sym_mono_string_to_utf8;
 
 	// FIXME use runtime headers
 	gpointer (*mono_object_unbox)(gpointer)
-		= (gpointer (*)(gpointer))lookup_mono_symbol ("mono_object_unbox");
+		= (gpointer (*)(gpointer))sym_mono_object_unbox;
 
 	// FIXME use runtime headers
 	gpointer (*mono_threads_enter_gc_unsafe_region) (gpointer)
-		= (gpointer (*)(gpointer))lookup_mono_symbol ("mono_threads_enter_gc_unsafe_region");
+		= (gpointer (*)(gpointer))sym_mono_threads_enter_gc_unsafe_region;
 
 	// FIXME use runtime headers
 	void (*mono_threads_exit_gc_unsafe_region) (gpointer, gpointer)
-		= (void (*)(gpointer, gpointer))lookup_mono_symbol ("mono_threads_exit_gc_unsafe_region");
+		= (void (*)(gpointer, gpointer))sym_mono_threads_exit_gc_unsafe_region;
 
 
 
@@ -803,63 +827,6 @@ mono_test_native_to_managed_exception_rethrow (NativeToManagedExceptionRethrowFu
 }
 #endif
 
-typedef void (*VoidVoidCallback) (void);
-typedef void (*MonoFtnPtrEHCallback) (guint32 gchandle);
-
-static int sym_inited = 0;
-
-/* MONO_API functions that aren't in public headers */
-static void (*sym_mono_install_ftnptr_eh_callback) (MonoFtnPtrEHCallback);
-static void (*sym_mono_threads_exit_gc_safe_region_unbalanced) (gpointer, gpointer *);
-
-static void (*null_function_ptr) (void);
-
-
-#if 1
-#include "api-types.h"
-
-#define MONO_API_FUNCTION(ret,name,args) static ret (*sym_ ## name) args;
-#include "api-functions.h"
-#undef MONO_API_FUNCTION
-#else
-typedef void *MonoDomain;
-typedef void *MonoAssembly;
-typedef void *MonoImage;
-typedef void *MonoClass;
-typedef void *MonoMethod;
-typedef void *MonoThread;
-
-typedef long long MonoObject;
-typedef MonoObject MonoException;
-typedef int32_t mono_bool;
-
-static MonoObject* (*sym_mono_gchandle_get_target) (guint32 gchandle);
-static guint32 (*sym_mono_gchandle_new) (MonoObject *, mono_bool pinned);
-static void (*sym_mono_gchandle_free) (guint32 gchandle);
-static void (*sym_mono_raise_exception) (MonoException *ex);
-static void (*sym_mono_domain_unload) (gpointer);
-
-static MonoDomain *(*sym_mono_get_root_domain) (void);
-
-static MonoDomain *(*sym_mono_domain_get)(void);
-
-static mono_bool (*sym_mono_domain_set)(MonoDomain *, mono_bool /*force */);
-
-static MonoAssembly *(*sym_mono_domain_assembly_open) (MonoDomain *, const char*);
-
-static MonoImage *(*sym_mono_assembly_get_image) (MonoAssembly *);
-
-static MonoClass *(*sym_mono_class_from_name)(MonoImage *, const char *, const char *);
-
-static MonoMethod *(*sym_mono_class_get_method_from_name)(MonoClass *, const char *, int /* arg_count */);
-
-static MonoThread *(*sym_mono_thread_attach)(MonoDomain *);
-
-static void (*sym_mono_thread_detach)(MonoThread *);
-
-static MonoObject *(*sym_mono_runtime_invoke) (MonoMethod *, void*, void**, MonoObject**);
-#endif
-
 // SYM_LOOKUP(mono_runtime_invoke)
 // expands to
 //  sym_mono_runtime_invoke = g_cast (lookup_mono_symbol ("mono_runtime_invoke"));
@@ -892,6 +859,14 @@ mono_test_init_symbols (void)
 	SYM_LOOKUP (mono_thread_attach);
 	SYM_LOOKUP (mono_thread_detach);
 	SYM_LOOKUP (mono_runtime_invoke);
+
+	SYM_LOOKUP (mono_method_get_unmanaged_thunk);
+	SYM_LOOKUP (mono_string_new_wrapper);
+	SYM_LOOKUP (mono_string_to_utf8);
+	SYM_LOOKUP (mono_object_unbox);
+
+	SYM_LOOKUP (mono_threads_enter_gc_unsafe_region);
+	SYM_LOOKUP (mono_threads_exit_gc_unsafe_region);
 
 	sym_inited = 1;
 }
