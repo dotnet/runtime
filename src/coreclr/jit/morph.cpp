@@ -11403,7 +11403,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
             if (!optValnumCSE_phase)
             {
-#ifdef TARGET_ARM64
                 // Transformation: a % b = a & (b - 1);
                 if (oper == GT_UMOD && op2->IsIntegralConstPow2())
                 {
@@ -11411,9 +11410,11 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     op1  = tree->AsOp()->gtOp1;
                     op2  = tree->AsOp()->gtOp2;
                 }
+#ifdef TARGET_ARM64
                 // Transformation: a % b = a - (a / b) * b;
                 // ARM64 architecture manual suggests this transformation
                 // for the mod operator.
+
                 else
 #else
                 // XARCH only applies this transformation if we know
@@ -14744,14 +14745,14 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
 
     var_types type = tree->gtType;
 
-    GenTree* const copyOfNumeratorValue   = fgMakeMultiUse(&tree->gtOp1);
-    GenTree* const copyOfDenominatorValue = fgMakeMultiUse(&tree->gtOp2);
-    GenTree* const sub                    = gtNewOperNode(GT_SUB, type, copyOfDenominatorValue, gtNewOneConNode(type));
-    GenTree* const andSub                 = gtNewOperNode(GT_AND, type, copyOfNumeratorValue, sub);
+    GenTree* const sub    = gtNewOperNode(GT_SUB, type, tree->gtOp2, gtNewOneConNode(type));
+    GenTree* const andSub = gtNewOperNode(GT_AND, type, tree->gtOp1, sub);
 
 #ifdef DEBUG
     andSub->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
+
+    DEBUG_DESTROY_NODE(tree);
 
     return andSub;
 }
