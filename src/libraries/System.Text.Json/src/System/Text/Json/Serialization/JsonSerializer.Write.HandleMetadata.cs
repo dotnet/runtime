@@ -15,7 +15,6 @@ namespace System.Text.Json
 
         internal static MetadataPropertyName WriteReferenceForObject(
             JsonConverter jsonConverter,
-            object currentValue,
             ref WriteStack state,
             Utf8JsonWriter writer)
         {
@@ -32,7 +31,6 @@ namespace System.Text.Json
 
         internal static MetadataPropertyName WriteReferenceForCollection(
             JsonConverter jsonConverter,
-            object currentValue,
             ref WriteStack state,
             Utf8JsonWriter writer)
         {

@@ -269,7 +269,7 @@ namespace System.Text.Json.Serialization
                     state.Current.ProcessedStartToken = true;
                     if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
                     {
-                        MetadataPropertyName metadata = JsonSerializer.WriteReferenceForCollection(this, value, ref state, writer);
+                        MetadataPropertyName metadata = JsonSerializer.WriteReferenceForCollection(this, ref state, writer);
                         Debug.Assert(metadata != MetadataPropertyName.Ref);
                         state.Current.MetadataPropertyName = metadata;
                     }

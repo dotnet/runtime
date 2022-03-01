@@ -396,13 +396,10 @@ namespace System.Text.Json.Serialization
 #endif
             state.Pop(success);
 
-            if (success)
+            if (success && state.Current.IsPushedReferenceForCycleDetection)
             {
-                if (state.Current.IsPushedReferenceForCycleDetection)
-                {
-                    state.ReferenceResolver.PopReferenceForCycleDetection();
-                    state.Current.IsPushedReferenceForCycleDetection = false;
-                }
+                state.ReferenceResolver.PopReferenceForCycleDetection();
+                state.Current.IsPushedReferenceForCycleDetection = false;
             }
 #if DEBUG
             Debug.Assert(ReferenceEquals(originalJsonTypeInfo, state.Current.JsonTypeInfo));

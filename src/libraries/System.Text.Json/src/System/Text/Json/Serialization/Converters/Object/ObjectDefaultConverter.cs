@@ -261,7 +261,7 @@ namespace System.Text.Json.Serialization.Converters
                 writer.WriteStartObject();
                 if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
                 {
-                    MetadataPropertyName propertyName = JsonSerializer.WriteReferenceForObject(this, obj, ref state, writer);
+                    MetadataPropertyName propertyName = JsonSerializer.WriteReferenceForObject(this, ref state, writer);
                     Debug.Assert(propertyName != MetadataPropertyName.Ref);
                 }
 
@@ -311,7 +311,7 @@ namespace System.Text.Json.Serialization.Converters
                     writer.WriteStartObject();
                     if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
                     {
-                        MetadataPropertyName propertyName = JsonSerializer.WriteReferenceForObject(this, obj, ref state, writer);
+                        MetadataPropertyName propertyName = JsonSerializer.WriteReferenceForObject(this, ref state, writer);
                         Debug.Assert(propertyName != MetadataPropertyName.Ref);
                     }
 
