@@ -392,7 +392,7 @@ namespace System.Text.RegularExpressions
                     runner.runtextpos += RightToLeft ? -1 : 1;
                 }
 
-                return InternalPerformScan(quick, input, beginning, runner, span, returnNullIfQuick: true);
+                return RunInternal(quick, input, beginning, runner, span, returnNullIfQuick: true);
             }
             finally
             {
@@ -401,7 +401,157 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        private static Match? InternalPerformScan(bool quick, string input, int beginning, RegexRunner runner, ReadOnlySpan<char> span, bool returnNullIfQuick)
+        internal Match? Run(ReadOnlySpan<char> input, int startat)
+        {
+            // startat parameter is always either 0 or input.Length since public API for IsMatch doesn't have an overload
+            // that takes in startat.
+            Debug.Assert(startat <= input.Length);
+
+            RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
+            try
+            {
+                runner.InitializeTimeout(internalMatchTimeout);
+                runner.InitializeForScan(this, input, startat, quick: true);
+
+                runner.Scan(input);
+
+                // If runmatch is null it means that an override of Scan didn't implement it correctly, so we will
+                // let this null ref since there are lots of ways where you can end up in a erroneous state.
+                return runner.runmatch!.FoundMatch ? null : RegularExpressions.Match.Empty;
+            }
+            finally
+            {
+                _runner = runner;
+            }
+        }
+
+        /// <summary>
+        /// Performs the matching against a given string input, which will call the passed in <paramref name="callback"/> for every
+        /// match that is found, along with the relevant <paramref name="state"/>.
+        /// </summary>
+        internal void Run<TState>(string input, int startat, ref TState state, MatchCallback<TState> callback, bool reuseMatchObject)
+        {
+            Debug.Assert((uint)startat <= (uint)input.Length);
+
+            RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
+            try
+            {
+                // For the string overload, we need to set runtext before starting the match attempts.
+                runner.runtext = input;
+                RunInternal(input, startat, ref state, callback, runner, usingStringOverload: true, reuseMatchObject);
+            }
+            finally
+            {
+                runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache.
+                _runner = runner;
+            }
+        }
+
+        /// <summary>
+        /// Performs the matching against a given span input, which will call the passed in <paramref name="callback"/> for every
+        /// match that is found, along with the relevant <paramref name="state"/>.
+        /// </summary>
+        internal void Run<TState>(ReadOnlySpan<char> input, int startat, ref TState state, MatchCallback<TState> callback, bool reuseMatchObject)
+        {
+            Debug.Assert((uint)startat <= (uint)input.Length);
+
+            RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
+            try
+            {
+                RunInternal(input, startat, ref state, callback, runner, usingStringOverload: false, reuseMatchObject);
+            }
+            finally
+            {
+                _runner = runner;
+            }
+        }
+
+        /// <summary>
+        /// Performs the internal loop which will search for matches on the given <paramref name="input"/>, and will call the <paramref name="callback"/> for
+        /// each match. If <paramref name="usingStringOverload"/> is set to <see langword="true"/>, then we may need to do additional cleanup which ensures that
+        /// we are not keeping a reference to the input text alive in a cache.
+        /// </summary>
+        private void RunInternal<TState>(ReadOnlySpan<char> input, int startat, ref TState state, MatchCallback<TState> callback, RegexRunner runner, bool usingStringOverload, bool reuseMatchObject)
+        {
+            runner.InitializeTimeout(internalMatchTimeout);
+            int runtextpos = startat;
+            while (true)
+            {
+                runner.InitializeForScan(this, input, startat, false);
+                runner.runtextpos = runtextpos;
+
+                int stoppos = RightToLeft ? 0 : input.Length;
+
+                // We get the Match by calling Scan. 'input' parameter is used to set the Match text which is only relevante if we are using the Run<TState> string
+                // overload, as APIs that call the span overload (like Count) don't require match.Text to be set, so we pass null in that case.
+                Match? match = RunInternal(reuseMatchObject, input: usingStringOverload ? runner.runtext : null, 0, runner, input, returnNullIfQuick: false);
+                Debug.Assert(match is not null);
+
+                // if we got a match, then call the callback function with the match and prepare for next iteration.
+                if (match.Success)
+                {
+                    if (!reuseMatchObject)
+                    {
+                        // We're not reusing match objects, so null out our field reference to the instance.
+                        // It'll be recreated the next time one is needed.
+                        runner.runmatch = null;
+                    }
+
+                    if (!callback(ref state, match))
+                    {
+                        // If the callback returns false, we're done.
+
+                        if (usingStringOverload && reuseMatchObject)
+                        {
+                            // We're reusing the single match instance and we were called via the string overload
+                            // which would have set the match's text, so clear it out as well.
+                            // We don't do this if we're not reusing instances, as in that case we're
+                            // dropping the whole reference to the match, and we no longer own the instance
+                            // having handed it out to the callback.
+                            match.Text = null;
+                        }
+                        return;
+                    }
+
+                    // Now that we've matched successfully, update the starting position to reflect
+                    // the current position, just as Match.NextMatch() would pass in _textpos as textstart.
+                    runtextpos = startat = runner.runtextpos;
+
+                    // Reset state for another iteration.
+                    runner.runtrackpos = runner.runtrack!.Length;
+                    runner.runstackpos = runner.runstack!.Length;
+                    runner.runcrawlpos = runner.runcrawl!.Length;
+
+                    if (match.Length == 0)
+                    {
+                        if (runner.runtextpos == stoppos)
+                        {
+                            if (usingStringOverload && reuseMatchObject)
+                            {
+                                // See above comment.
+                                match.Text = null;
+                            }
+                            return;
+                        }
+
+                        runtextpos += RightToLeft ? -1 : 1;
+                    }
+
+                    // Loop around to perform next match from where we left off.
+                    continue;
+                }
+                else
+                {
+                    // We failed to match at this position.  If we're at the stopping point, we're done.
+                    if (runner.runtextpos == stoppos)
+                    {
+                        return;
+                    }
+                }
+            }
+        }
+
+        private static Match? RunInternal(bool quick, string? input, int beginning, RegexRunner runner, ReadOnlySpan<char> span, bool returnNullIfQuick)
         {
             runner.Scan(span);
 
@@ -439,119 +589,6 @@ namespace System.Text.RegularExpressions
             runner.runmatch!.Text = null;
 
             return RegularExpressions.Match.Empty;
-        }
-
-        internal Match? Run(ReadOnlySpan<char> input, int startat)
-        {
-            // startat parameter is always either 0 or input.Length since public API for IsMatch doesn't have an overload
-            // that takes in startat.
-            Debug.Assert(startat <= input.Length);
-
-            RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
-            try
-            {
-                runner.InitializeTimeout(internalMatchTimeout);
-                runner.InitializeForScan(this, input, startat, quick: true);
-
-                runner.Scan(input);
-
-                // If runmatch is null it means that an override of Scan didn't implement it correctly, so we will
-                // let this null ref since there are lots of ways where you can end up in a erroneous state.
-                return runner.runmatch!.FoundMatch ? null : RegularExpressions.Match.Empty;
-            }
-            finally
-            {
-                _runner = runner;
-            }
-        }
-
-        internal void Run<TState>(string input, int startat, ref TState state, MatchCallback<TState> callback, bool reuseMatchObject)
-        {
-            Debug.Assert((uint)startat <= (uint)input.Length);
-
-            RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
-            try
-            {
-                runner.InitializeTimeout(internalMatchTimeout);
-                runner.runtext = input;
-                int runtextpos = startat;
-                while (true)
-                {
-                    runner.InitializeForScan(this, input, startat, false);
-                    runner.runtextpos = runtextpos;
-
-                    int stoppos = RightToLeft ? 0 : input.Length;
-
-                    Match? match = InternalPerformScan(reuseMatchObject, input, 0, runner, input, returnNullIfQuick: false);
-                    Debug.Assert(match is not null);
-
-                    // if we got a match, then call the callback function with the match and prepare for next iteration.
-                    if (match.Success)
-                    {
-                        if (!reuseMatchObject)
-                        {
-                            // We're not reusing match objects, so null out our field reference to the instance.
-                            // It'll be recreated the next time one is needed.
-                            runner.runmatch = null;
-                        }
-
-                        if (!callback(ref state, match))
-                        {
-                            // If the callback returns false, we're done.
-
-                            if (reuseMatchObject)
-                            {
-                                // We're reusing the single match instance, so clear out its text as well.
-                                // We don't do this if we're not reusing instances, as in that case we're
-                                // dropping the whole reference to the match, and we no longer own the instance
-                                // having handed it out to the callback.
-                                match.Text = null;
-                            }
-                            return;
-                        }
-
-                        // Now that we've matched successfully, update the starting position to reflect
-                        // the current position, just as Match.NextMatch() would pass in _textpos as textstart.
-                        runtextpos = startat = runner.runtextpos;
-
-                        // Reset state for another iteration.
-                        runner.runtrackpos = runner.runtrack!.Length;
-                        runner.runstackpos = runner.runstack!.Length;
-                        runner.runcrawlpos = runner.runcrawl!.Length;
-
-                        if (match.Length == 0)
-                        {
-                            if (runner.runtextpos == stoppos)
-                            {
-                                if (reuseMatchObject)
-                                {
-                                    // See above comment.
-                                    match.Text = null;
-                                }
-                                return;
-                            }
-
-                            runtextpos += RightToLeft ? -1 : 1;
-                        }
-
-                        // Loop around to perform next match from where we left off.
-                        continue;
-                    }
-                    else
-                    {
-                        // We failed to match at this position.  If we're at the stopping point, we're done.
-                        if (runner.runtextpos == stoppos)
-                        {
-                            return;
-                        }
-                    }
-                }
-            }
-            finally
-            {
-                runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache.
-                _runner = runner;
-            }
         }
 
         /// <summary>Creates a new runner instance.</summary>
