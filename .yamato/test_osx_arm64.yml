@@ -24,8 +24,9 @@ commands:
   - ./build.sh clr.paltests
   - ./artifacts/bin/coreclr/OSX.arm64.Debug/paltests/runpaltests.sh $(pwd)/artifacts/bin/coreclr/OSX.arm64.Debug/paltests
 
-triggers:
-  pull_requests:
-    - targets:
-        only:
-          - "unity-main"
+## Don't run OSX ARM64 tests for PRs until we have hardware to actually run it
+# triggers:
+#   pull_requests:
+#     - targets:
+#         only:
+#           - "unity-main"
