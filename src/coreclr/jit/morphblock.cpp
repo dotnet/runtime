@@ -467,7 +467,7 @@ GenTree* MorphInitBlockHelper::MorphCommaBlock(Compiler* comp, GenTreeOp* firstC
 {
     assert(firstComma->OperIs(GT_COMMA));
 
-    Compiler::GenTreePtrStack commas(comp->getAllocator(CMK_ArrayStack));
+    ArrayStack<GenTree*> commas(comp->getAllocator(CMK_ArrayStack));
     for (GenTree* currComma = firstComma; currComma != nullptr && currComma->OperIs(GT_COMMA);
          currComma          = currComma->gtGetOp2())
     {

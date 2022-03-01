@@ -24,10 +24,11 @@ namespace System.Text.RegularExpressions.Tests
     public static class RegexGeneratorHelper
     {
         private static readonly CSharpParseOptions s_previewParseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
-        private static readonly MetadataReference[] s_refs = CreateReferences();
         private static readonly EmitOptions s_emitOptions = new EmitOptions(debugInformationFormat: DebugInformationFormat.Embedded);
         private static readonly CSharpGeneratorDriver s_generatorDriver = CSharpGeneratorDriver.Create(new[] { new RegexGenerator().AsSourceGenerator() }, parseOptions: s_previewParseOptions);
         private static Compilation? s_compilation;
+
+        internal static MetadataReference[] References { get; } = CreateReferences();
 
         private static MetadataReference[] CreateReferences()
         {
@@ -47,6 +48,61 @@ namespace System.Text.RegularExpressions.Tests
                 MetadataReference.CreateFromFile(typeof(Unsafe).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Regex).Assembly.Location),
             };
+        }
+
+        internal static byte[] CreateAssemblyImage(string source, string assemblyName)
+        {
+            CSharpCompilation compilation = CSharpCompilation.Create(
+                assemblyName,
+                new[] { CSharpSyntaxTree.ParseText(source, CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview)) },
+                References,
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+            var ms = new MemoryStream();
+            if (compilation.Emit(ms).Success)
+            {
+                return ms.ToArray();
+            }
+
+            throw new InvalidOperationException();
+        }
+
+        internal static async Task<IReadOnlyList<Diagnostic>> RunGenerator(
+            string code, bool compile = false, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, bool allowUnsafe = false, CancellationToken cancellationToken = default)
+        {
+            var proj = new AdhocWorkspace()
+                .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
+                .AddProject("RegexGeneratorTest", "RegexGeneratorTest.dll", "C#")
+                .WithMetadataReferences(additionalRefs is not null ? References.Concat(additionalRefs) : References)
+                .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: allowUnsafe)
+                .WithNullableContextOptions(NullableContextOptions.Enable))
+                .WithParseOptions(new CSharpParseOptions(langVersion))
+                .AddDocument("RegexGenerator.g.cs", SourceText.From(code, Encoding.UTF8)).Project;
+
+            Assert.True(proj.Solution.Workspace.TryApplyChanges(proj.Solution));
+
+            Compilation? comp = await proj!.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false);
+            Debug.Assert(comp is not null);
+
+            var generator = new RegexGenerator();
+            CSharpGeneratorDriver cgd = CSharpGeneratorDriver.Create(new[] { generator.AsSourceGenerator() }, parseOptions: CSharpParseOptions.Default.WithLanguageVersion(langVersion));
+            GeneratorDriver gd = cgd.RunGenerators(comp!, cancellationToken);
+            GeneratorDriverRunResult generatorResults = gd.GetRunResult();
+            if (!compile)
+            {
+                return generatorResults.Diagnostics;
+            }
+
+            comp = comp.AddSyntaxTrees(generatorResults.GeneratedTrees.ToArray());
+            EmitResult results = comp.Emit(Stream.Null, cancellationToken: cancellationToken);
+            if (!results.Success || results.Diagnostics.Length != 0 || generatorResults.Diagnostics.Length != 0)
+            {
+                throw new ArgumentException(
+                    string.Join(Environment.NewLine, results.Diagnostics.Concat(generatorResults.Diagnostics)) + Environment.NewLine +
+                    string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => t.ToString())));
+            }
+
+            return generatorResults.Diagnostics.Concat(results.Diagnostics).Where(d => d.Severity != DiagnosticSeverity.Hidden).ToArray();
         }
 
         internal static async Task<Regex> SourceGenRegexAsync(
@@ -109,7 +165,7 @@ namespace System.Text.RegularExpressions.Tests
                 var proj = new AdhocWorkspace()
                     .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
                     .AddProject("Test", "test.dll", "C#")
-                    .WithMetadataReferences(s_refs)
+                    .WithMetadataReferences(References)
                     .WithCompilationOptions(
                         new CSharpCompilationOptions(
                             OutputKind.DynamicallyLinkedLibrary,

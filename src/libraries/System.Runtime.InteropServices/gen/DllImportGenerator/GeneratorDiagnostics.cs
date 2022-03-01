@@ -28,6 +28,26 @@ namespace Microsoft.Interop
 
         private const string Category = "SourceGeneration";
 
+        public static readonly DiagnosticDescriptor InvalidAttributedMethodSignature =
+            new DiagnosticDescriptor(
+            Ids.InvalidGeneratedDllImportAttributeUsage,
+            GetResourceString(nameof(Resources.InvalidLibraryImportAttributeUsageTitle)),
+            GetResourceString(nameof(Resources.InvalidAttributedMethodSignatureMessage)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            description: GetResourceString(nameof(Resources.InvalidAttributedMethodDescription)));
+
+        public static readonly DiagnosticDescriptor InvalidAttributedMethodContainingTypeMissingModifiers =
+            new DiagnosticDescriptor(
+            Ids.InvalidGeneratedDllImportAttributeUsage,
+            GetResourceString(nameof(Resources.InvalidLibraryImportAttributeUsageTitle)),
+            GetResourceString(nameof(Resources.InvalidAttributedMethodContainingTypeMissingModifiersMessage)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            description: GetResourceString(nameof(Resources.InvalidAttributedMethodDescription)));
+
         public static readonly DiagnosticDescriptor InvalidStringMarshallingConfiguration =
             new DiagnosticDescriptor(
             Ids.InvalidGeneratedDllImportAttributeUsage,
