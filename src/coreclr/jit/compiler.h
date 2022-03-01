@@ -4103,18 +4103,12 @@ public:
         CORINFO_CLASS_HANDLE typeHnd;
         bool                 canPromote;
         bool                 containsHoles;
-        bool                 customLayout;
         bool                 fieldsSorted;
         unsigned char        fieldCnt;
         lvaStructFieldInfo   fields[MAX_NumOfFieldsInPromotableStruct];
 
         lvaStructPromotionInfo(CORINFO_CLASS_HANDLE typeHnd = nullptr)
-            : typeHnd(typeHnd)
-            , canPromote(false)
-            , containsHoles(false)
-            , customLayout(false)
-            , fieldsSorted(false)
-            , fieldCnt(0)
+            : typeHnd(typeHnd), canPromote(false), containsHoles(false), fieldsSorted(false), fieldCnt(0)
         {
         }
     };
