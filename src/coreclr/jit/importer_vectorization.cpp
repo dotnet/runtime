@@ -215,10 +215,6 @@ static GenTree* impCreateCompareInd(Compiler* comp, GenTreeLclVar* obj, var_type
     GenTree* addOffsetTree = comp->gtNewOperNode(GT_ADD, TYP_BYREF, obj, offsetTree);
     GenTree* indirTree     = comp->gtNewIndir(type, addOffsetTree);
     GenTree* valueTree     = comp->gtNewIconNode(value, genActualType(type));
-    if (varTypeIsSmall(type))
-    {
-        indirTree = comp->gtNewCastNode(TYP_INT, indirTree, true, type);
-    }
     return comp->gtNewOperNode(GT_EQ, TYP_INT, indirTree, valueTree);
 }
 
