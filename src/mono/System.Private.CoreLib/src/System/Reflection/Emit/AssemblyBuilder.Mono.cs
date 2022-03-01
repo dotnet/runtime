@@ -236,7 +236,7 @@ namespace System.Reflection.Emit
             get { return base.ReflectionOnly; }
         }
 
-        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
             if (name == null)
@@ -245,7 +245,7 @@ namespace System.Reflection.Emit
             return new AssemblyBuilder(name, access);
         }
 
-        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             AssemblyBuilder ab = DefineDynamicAssembly(name, access);

@@ -139,7 +139,7 @@ namespace System.Reflection.Emit
 
         #region DefineDynamicAssembly
 
-        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
@@ -150,7 +150,7 @@ namespace System.Reflection.Emit
                                                  null);
         }
 
-        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
         public static AssemblyBuilder DefineDynamicAssembly(
             AssemblyName name,
