@@ -1470,7 +1470,7 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Backreference, $"Unexpected type: {node.Kind}");
 
-                int capnum = RegexParser.MapCaptureNumber(node.M, _regexTree!.Caps);
+                int capnum = RegexParser.MapCaptureNumber(node.M, _regexTree!.CaptureNumberSparseMapping);
 
                 TransferSliceStaticPosToPos();
 
@@ -1569,7 +1569,7 @@ namespace System.Text.RegularExpressions
                 TransferSliceStaticPosToPos();
 
                 // Get the capture number to test.
-                int capnum = RegexParser.MapCaptureNumber(node.M, _regexTree!.Caps);
+                int capnum = RegexParser.MapCaptureNumber(node.M, _regexTree!.CaptureNumberSparseMapping);
 
                 // Get the "yes" branch and the "no" branch.  The "no" branch is optional in syntax and is thus
                 // somewhat likely to be Empty.
@@ -1889,8 +1889,8 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.Kind is RegexNodeKind.Capture, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
-                int capnum = RegexParser.MapCaptureNumber(node.M, _regexTree!.Caps);
-                int uncapnum = RegexParser.MapCaptureNumber(node.N, _regexTree.Caps);
+                int capnum = RegexParser.MapCaptureNumber(node.M, _regexTree!.CaptureNumberSparseMapping);
+                int uncapnum = RegexParser.MapCaptureNumber(node.N, _regexTree.CaptureNumberSparseMapping);
                 bool isAtomic = analysis.IsAtomicByAncestor(node);
 
                 // pos += sliceStaticPos;

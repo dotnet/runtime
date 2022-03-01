@@ -60,20 +60,13 @@ namespace System.Text.RegularExpressions
 
         internal Regex(string pattern, CultureInfo? culture)
         {
-            // Validate and store the arguments.
+            // Validate arguments.
             ValidatePattern(pattern);
-            this.pattern = pattern;
-            culture ??= CultureInfo.CurrentCulture;
-            internalMatchTimeout = s_defaultMatchTimeout;
 
-            // Parse the pattern.
-            RegexTree tree = RegexParser.Parse(pattern, roptions, culture);
+            // Parse and store the argument information.
+            RegexTree tree = Init(pattern, RegexOptions.None, s_defaultMatchTimeout, ref culture);
 
-            // Store the relevant information, including a factory for using the interpreter.
-            capnames = tree.CapNames;
-            capslist = tree.CapsList;
-            caps = tree.Caps;
-            capsize = tree.CapSize;
+            // Create the interpreter factory.
             factory = new RegexInterpreterFactory(tree, culture);
 
             // NOTE: This overload _does not_ delegate to the one that takes options, in order
@@ -83,23 +76,15 @@ namespace System.Text.RegularExpressions
 
         internal Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, CultureInfo? culture)
         {
-            // Validate and store the arguments.
+            // Validate arguments.
             ValidatePattern(pattern);
             ValidateOptions(options);
             ValidateMatchTimeout(matchTimeout);
-            this.pattern = pattern;
-            roptions = options;
-            internalMatchTimeout = matchTimeout;
-            culture ??= RegexParser.GetTargetCulture(options);
 
-            // Parse the pattern.
-            RegexTree tree = RegexParser.Parse(pattern, roptions, culture);
+            // Parse and store the argument information.
+            RegexTree tree = Init(pattern, options, matchTimeout, ref culture);
 
-            // Store the relevant information, constructing the appropriate factory.
-            capnames = tree.CapNames;
-            capslist = tree.CapsList;
-            caps = tree.Caps;
-            capsize = tree.CapSize;
+            // Create the appropriate factory.
             if ((options & RegexOptions.NonBacktracking) != 0)
             {
                 // If we're in non-backtracking mode, create the appropriate factory.
@@ -118,6 +103,26 @@ namespace System.Text.RegularExpressions
                 // If no factory was created, fall back to creating one for the interpreter.
                 factory ??= new RegexInterpreterFactory(tree, culture);
             }
+        }
+
+        /// <summary>Stores the supplied arguments and capture information, returning the parsed expression.</summary>
+        private RegexTree Init(string pattern, RegexOptions options, TimeSpan matchTimeout, [NotNull] ref CultureInfo? culture)
+        {
+            this.pattern = pattern;
+            roptions = options;
+            internalMatchTimeout = matchTimeout;
+            culture ??= RegexParser.GetTargetCulture(options);
+
+            // Parse the pattern.
+            RegexTree tree = RegexParser.Parse(pattern, options, culture);
+
+            // Store the relevant information, constructing the appropriate factory.
+            capnames = tree.CaptureNameToNumberMapping;
+            capslist = tree.CaptureNames;
+            caps = tree.CaptureNumberSparseMapping;
+            capsize = tree.CaptureCount;
+
+            return tree;
         }
 
         internal static void ValidatePattern(string pattern)

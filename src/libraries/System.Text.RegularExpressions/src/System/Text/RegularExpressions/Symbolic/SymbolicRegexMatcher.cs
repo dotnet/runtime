@@ -161,7 +161,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 BVAlgebra bv => bv._classifier,
                 _ => new MintermClassifier((CharSetSolver)(object)_builder._solver, minterms),
             };
-            _capsize = regexTree.CapSize;
+            _capsize = regexTree.CaptureCount;
 
             if (regexTree.FindOptimizations.MinRequiredLength == regexTree.FindOptimizations.MaxPossibleLength)
             {

@@ -23,7 +23,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         (options & RegexOptions.RightToLeft) != 0 ? nameof(RegexOptions.RightToLeft) : nameof(RegexOptions.ECMAScript)));
             }
 
-            var converter = new RegexNodeConverter(culture, regexTree.Caps);
+            var converter = new RegexNodeConverter(culture, regexTree.CaptureNumberSparseMapping);
             CharSetSolver solver = CharSetSolver.Instance;
             SymbolicRegexNode<BDD> root = converter.ConvertToSymbolicRegexNode(regexTree.Root, tryCreateFixedLengthMarker: true);
 

@@ -19,7 +19,7 @@ namespace System.Text.RegularExpressions
 
         protected internal override RegexRunner CreateInstance() =>
             // Create a new interpreter instance.
-            new RegexInterpreter(_code, RegexParser.GetTargetCulture(_code.Tree.Options));
+            new RegexInterpreter(_code, RegexParser.GetTargetCulture(_code.Options));
     }
 
     /// <summary>Executes a block of regular expression codes while consuming input.</summary>
@@ -356,7 +356,7 @@ namespace System.Text.RegularExpressions
                 stoppos = 0;
             }
 
-            while (_code.Tree.FindOptimizations.TryFindNextStartingPosition(text, ref runtextpos, runtextbeg, runtextstart, runtextend))
+            while (_code.FindOptimizations.TryFindNextStartingPosition(text, ref runtextpos, runtextbeg, runtextstart, runtextend))
             {
                 CheckTimeout();
 

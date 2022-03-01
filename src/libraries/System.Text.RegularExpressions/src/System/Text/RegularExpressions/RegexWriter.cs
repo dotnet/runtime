@@ -122,7 +122,7 @@ namespace System.Text.RegularExpressions
             }
 
             // Return all that in a RegexCode object.
-            return new RegexInterpreterCode(_tree, emitted, strings, _trackCount);
+            return new RegexInterpreterCode(_tree.FindOptimizations, _tree.Options, emitted, strings, _trackCount);
         }
 
         /// <summary>
@@ -254,7 +254,7 @@ namespace System.Text.RegularExpressions
                             Emit(RegexOpcode.Setjump);
                             _intStack.Append(_emitted.Length);
                             Emit(RegexOpcode.Lazybranch, 0);
-                            Emit(RegexOpcode.TestBackreference, RegexParser.MapCaptureNumber(node.M, _tree.Caps));
+                            Emit(RegexOpcode.TestBackreference, RegexParser.MapCaptureNumber(node.M, _tree.CaptureNumberSparseMapping));
                             Emit(RegexOpcode.Forejump);
                             break;
                     }
@@ -352,7 +352,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNodeKind.Capture | AfterChild:
-                    Emit(RegexOpcode.Capturemark, RegexParser.MapCaptureNumber(node.M, _tree.Caps), RegexParser.MapCaptureNumber(node.N, _tree.Caps));
+                    Emit(RegexOpcode.Capturemark, RegexParser.MapCaptureNumber(node.M, _tree.CaptureNumberSparseMapping), RegexParser.MapCaptureNumber(node.N, _tree.CaptureNumberSparseMapping));
                     break;
 
                 case RegexNodeKind.PositiveLookaround | BeforeChild:
@@ -432,7 +432,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNodeKind.Backreference:
-                    Emit((RegexOpcode)node.Kind | bits, RegexParser.MapCaptureNumber(node.M, _tree.Caps));
+                    Emit((RegexOpcode)node.Kind | bits, RegexParser.MapCaptureNumber(node.M, _tree.CaptureNumberSparseMapping));
                     break;
 
                 case RegexNodeKind.Nothing:

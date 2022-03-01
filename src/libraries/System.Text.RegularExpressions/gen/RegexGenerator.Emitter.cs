@@ -180,23 +180,23 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"        base.roptions = {optionsExpression};");
             writer.WriteLine($"        base.internalMatchTimeout = {timeoutExpression};");
             writer.WriteLine($"        base.factory = new RunnerFactory();");
-            if (rm.Tree.Caps is not null)
+            if (rm.Tree.CaptureNumberSparseMapping is not null)
             {
                 writer.Write("        base.Caps = new global::System.Collections.Hashtable {");
-                AppendHashtableContents(writer, rm.Tree.Caps);
+                AppendHashtableContents(writer, rm.Tree.CaptureNumberSparseMapping);
                 writer.WriteLine(" };");
             }
-            if (rm.Tree.CapNames is not null)
+            if (rm.Tree.CaptureNameToNumberMapping is not null)
             {
                 writer.Write("        base.CapNames = new global::System.Collections.Hashtable {");
-                AppendHashtableContents(writer, rm.Tree.CapNames);
+                AppendHashtableContents(writer, rm.Tree.CaptureNameToNumberMapping);
                 writer.WriteLine(" };");
             }
-            if (rm.Tree.CapsList is not null)
+            if (rm.Tree.CaptureNames is not null)
             {
                 writer.Write("        base.capslist = new string[] {");
                 string separator = "";
-                foreach (string s in rm.Tree.CapsList)
+                foreach (string s in rm.Tree.CaptureNames)
                 {
                     writer.Write(separator);
                     writer.Write(Literal(s));
@@ -204,7 +204,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 writer.WriteLine(" };");
             }
-            writer.WriteLine($"        base.capsize = {rm.Tree.CapSize};");
+            writer.WriteLine($"        base.capsize = {rm.Tree.CaptureCount};");
             writer.WriteLine($"    }}");
             writer.WriteLine("    ");
             writer.WriteLine($"    private sealed class RunnerFactory : global::System.Text.RegularExpressions.RegexRunnerFactory");
@@ -1365,7 +1365,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Backreference, $"Unexpected type: {node.Kind}");
 
-                int capnum = RegexParser.MapCaptureNumber(node.M, rm.Tree.Caps);
+                int capnum = RegexParser.MapCaptureNumber(node.M, rm.Tree.CaptureNumberSparseMapping);
 
                 if (sliceStaticPos > 0)
                 {
@@ -1447,7 +1447,7 @@ namespace System.Text.RegularExpressions.Generator
                 TransferSliceStaticPosToPos();
 
                 // Get the capture number to test.
-                int capnum = RegexParser.MapCaptureNumber(node.M, rm.Tree.Caps);
+                int capnum = RegexParser.MapCaptureNumber(node.M, rm.Tree.CaptureNumberSparseMapping);
 
                 // Get the "yes" branch and the "no" branch.  The "no" branch is optional in syntax and is thus
                 // somewhat likely to be Empty.
@@ -1758,8 +1758,8 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(node.Kind is RegexNodeKind.Capture, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
-                int capnum = RegexParser.MapCaptureNumber(node.M, rm.Tree.Caps);
-                int uncapnum = RegexParser.MapCaptureNumber(node.N, rm.Tree.Caps);
+                int capnum = RegexParser.MapCaptureNumber(node.M, rm.Tree.CaptureNumberSparseMapping);
+                int uncapnum = RegexParser.MapCaptureNumber(node.N, rm.Tree.CaptureNumberSparseMapping);
                 bool isAtomic = analysis.IsAtomicByAncestor(node);
 
                 TransferSliceStaticPosToPos();
@@ -3723,7 +3723,7 @@ namespace System.Text.RegularExpressions.Generator
         private static string DescribeCapture(int capNum, AnalysisResults analysis)
         {
             // If we can get a capture name from the captures collection and it's not just a numerical representation of the group, use it.
-            string name = RegexParser.GroupNameFromNumber(analysis.RegexTree.Caps, analysis.RegexTree.CapsList, analysis.RegexTree.CapSize, capNum);
+            string name = RegexParser.GroupNameFromNumber(analysis.RegexTree.CaptureNumberSparseMapping, analysis.RegexTree.CaptureNames, analysis.RegexTree.CaptureCount, capNum);
             if (!string.IsNullOrEmpty(name) &&
                 (!int.TryParse(name, out int id) || id != capNum))
             {

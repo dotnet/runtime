@@ -303,7 +303,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("abcd|abef", "ab(?>cd|ef)")]
         [InlineData("abcd|aefg", "a(?>bcd|efg)")]
         [InlineData("abcd|abc|ab|a", "a(?>bcd|bc|b|)")]
-        // [InlineData("abcde|abcdef", "abcde(?>|f)")] // TODO: Need to reorganize optimizations to avoid an extra Empty being left at the end of the tree
+        // [InlineData("abcde|abcdef", "abcde(?>|f)")] // TODO https://github.com/dotnet/runtime/issues/66031: Need to reorganize optimizations to avoid an extra Empty being left at the end of the tree
         [InlineData("abcdef|abcde", "abcde(?>f|)")]
         [InlineData("abcdef|abcdeg|abcdeh|abcdei|abcdej|abcdek|abcdel", "abcde[f-l]")]
         [InlineData("(ab|ab*)bc", "(a(?:b|b*))bc")]
@@ -354,7 +354,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("[ab]*[^a]*", "[ab]*(?>[^a]*)")]
         [InlineData("[aa]*[^a]*", "(?>a*)(?>[^a]*)")]
         [InlineData("a??", "")]
-        //[InlineData("(abc*?)", "(ab)")] // TODO: Need to reorganize optimizations to avoid an extra Empty being left at the end of the tree
+        //[InlineData("(abc*?)", "(ab)")] // TODO https://github.com/dotnet/runtime/issues/66031: Need to reorganize optimizations to avoid an extra Empty being left at the end of the tree
         [InlineData("a{1,3}?", "a{1,4}?")]
         [InlineData("a{2,3}?", "a{2}")]
         [InlineData("bc(a){1,3}?", "bc(a){1,2}?")]
@@ -389,6 +389,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?i)\\$", "\\$")]
         public void PatternsReduceIdentically(string actual, string expected)
         {
+            // NOTE: RegexNode.ToString is only compiled into debug builds, so DEBUG is currently set on the unit tests project.
+
             string actualStr = RegexParser.Parse(actual, RegexOptions.None, CultureInfo.InvariantCulture).Root.ToString();
             string expectedStr = RegexParser.Parse(expected, RegexOptions.None, CultureInfo.InvariantCulture).Root.ToString();
             if (actualStr != expectedStr)
@@ -469,6 +471,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("a*(?(xyz)bcd)", "(?>a*)(?(xyz)bcd)")]
         public void PatternsReduceDifferently(string actual, string expected)
         {
+            // NOTE: RegexNode.ToString is only compiled into debug builds, so DEBUG is currently set on the unit tests project.
+
             string actualStr = RegexParser.Parse(actual, RegexOptions.None, CultureInfo.InvariantCulture).Root.ToString();
             string expectedStr = RegexParser.Parse(expected, RegexOptions.None, CultureInfo.InvariantCulture).Root.ToString();
             if (actualStr == expectedStr)
