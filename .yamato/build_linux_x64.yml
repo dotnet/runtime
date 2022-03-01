@@ -22,7 +22,7 @@ commands:
     cmake --build .
   - ./build.sh -subset clr+libs+libs -a x64 -c release -ci -ninja
   - cp unity/unitygc/release/libunitygc.so artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64/native
-  - artifacts/7za-linux-x64/7za a artifacts/unity/$ARTIFACT_FILENAME ./artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64
+  - artifacts/7za-linux-x64/7za a artifacts/unity/$ARTIFACT_FILENAME ./artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64/*
 
 artifacts:
   linux-x64-7z:

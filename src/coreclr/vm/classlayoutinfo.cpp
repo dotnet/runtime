@@ -55,9 +55,17 @@ namespace
                 pfwalk->m_placement.m_offset = ulOffset;
                 pfwalk->m_sequence = (ULONG)-1;
 
+#ifdef FEATURE_UNITY_EXPLICIT_LAYOUT_INHERITANCE
+            // Unity: This code seems to cause double-compensation for the parent offset, as we already adjust
+            // for this in dwInstanceSliceOffset in MethodTableBuilder::HandleExplicitLayout. So commenting it out.
+            // This does not seem to be fixed by the following:
+            // https://github.com/dotnet/runtime/issues/53542
+            // https://github.com/dotnet/runtime/pull/54235
+#else
                 // Treat base class as an initial member.
                 if (!SafeAddUINT32(&(pfwalk->m_placement.m_offset), cbAdjustedParentLayoutNativeSize))
                     COMPlusThrowOM();
+#endif
             }
         }
         IfFailThrow(hr);
