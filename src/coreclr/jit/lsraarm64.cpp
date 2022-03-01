@@ -919,7 +919,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     if (HWIntrinsicInfo::IsMultiReg(intrin.id))
     {
-        dstCount = intrinsicTree->GetMultiRegCount();
+        dstCount = intrinsicTree->GetMultiRegCount(compiler);
     }
     else if (intrinsicTree->IsValue())
     {
