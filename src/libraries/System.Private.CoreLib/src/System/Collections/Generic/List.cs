@@ -1059,7 +1059,7 @@ namespace System.Collections.Generic
                 return s_emptyArray;
             }
 
-            T[] array = new T[_size];
+            T[] array = GC.AllocateUninitializedArray<T>(_size);
             Array.Copy(_items, array, _size);
             return array;
         }
