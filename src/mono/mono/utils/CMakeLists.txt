@@ -232,7 +232,6 @@ set(utils_arch_sources "${utils_arch_sources};mono-hwcap-arm.c")
 elseif(TARGET_S390X)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-s390x.c")
 elseif(TARGET_POWERPC)
-#TO DO: verify
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-ppc.c")
 elseif(TARGET_WASM)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c")
