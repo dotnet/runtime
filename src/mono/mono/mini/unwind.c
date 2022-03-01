@@ -157,7 +157,7 @@ static int map_dwarf_reg_to_hw_reg [NUM_DWARF_REGS];
 static void
 init_hw_reg_map (void)
 {
-#if defined(TARGET_POWERPC) 
+#ifdef TARGET_POWERPC
 	map_hw_reg_to_dwarf_reg [ppc_lr] = DWARF_PC_REG;
 #endif
 	mono_memory_barrier ();

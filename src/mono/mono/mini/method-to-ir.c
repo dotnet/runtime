@@ -6824,7 +6824,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			float *f;
 			gboolean use_aotconst = FALSE;
 
-#if defined(TARGET_POWERPC)
+#ifdef TARGET_POWERPC
 			/* FIXME: Clean this up */
 			if (cfg->compile_aot)
 				use_aotconst = TRUE;
@@ -6856,7 +6856,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			double *d;
 			gboolean use_aotconst = FALSE;
 
-#if defined(TARGET_POWERPC)
+#ifdef TARGET_POWERPC
 			/* FIXME: Clean this up */
 			if (cfg->compile_aot)
 				use_aotconst = TRUE;

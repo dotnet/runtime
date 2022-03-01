@@ -12,12 +12,6 @@ cmake_policy(SET CMP0042 NEW)
 
 project(CoreFX C)
 
-message(STATUS "Sapana Debug Navtive build")
-message(STATUS "CLR_CMAKE_TARGET_ARCH=${CLR_CMAKE_TARGET_ARCH}")
-message(STATUS "TARGET_ARCH_NAME=${TARGET_ARCH_NAME}")
-message(STATUS "CMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}")
-include(../../../../eng/native/configurepaths.cmake)
-include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 set(CMAKE_MACOSX_RPATH ON)
 if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
