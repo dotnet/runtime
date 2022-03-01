@@ -2276,6 +2276,9 @@ mono_metadata_method_has_param_attrs (MonoImage *m, int def)
 	MonoTableInfo *methodt = &m->tables [MONO_TABLE_METHOD];
 	guint lastp, i, param_index = mono_metadata_decode_row_col (methodt, def - 1, MONO_METHOD_PARAMLIST);
 
+	if (param_index == 0)
+		return FALSE;
+
 	/* FIXME: metadata-update */
 	if (def < table_info_get_rows (methodt))
 		lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
