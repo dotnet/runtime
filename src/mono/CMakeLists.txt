@@ -66,7 +66,6 @@ if(ENABLE_MINIMAL)
   process_enable_minimal()
 endif()
 
-set(DISABLE_MDB 1)
 set(DISABLE_COM 1)
 set(DISABLE_PERFCOUNTERS 1)
 
@@ -508,6 +507,12 @@ if(GCC)
   check_c_compiler_flag("-Werror=incompatible-pointer-types" WERROR_INCOMPATIBLE_POINTER_TYPES)
   if(WERROR_INCOMPATIBLE_POINTER_TYPES)
     set(WERROR_C "${WERROR_C} -Werror=incompatible-pointer-types")
+  endif()
+
+  if(HOST_WASI)
+    # When building under WASI SDK, it's stricter about discarding 'const' qualifiers, causing some existing
+    # code (e.g., mono-rand.c:315) to be rejected
+    set(WERROR_C "${WERROR_C} -Wno-incompatible-pointer-types-discards-qualifiers")
   endif()
 
   append("${WARNINGS} ${WARNINGS_C} ${WERROR} ${WERROR_C}" CMAKE_C_FLAGS)

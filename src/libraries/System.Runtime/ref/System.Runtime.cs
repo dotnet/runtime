@@ -2709,10 +2709,10 @@ namespace System
         public string ToString(string? format) { throw null; }
         [System.ObsoleteAttribute("The provider argument is not used. Use ToString(String) instead.")]
         public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
-        public static bool TryParse(System.Type enumType, System.ReadOnlySpan<char> value, bool ignoreCase, out object? result) { throw null; }
-        public static bool TryParse(System.Type enumType, System.ReadOnlySpan<char> value, out object? result) { throw null; }
-        public static bool TryParse(System.Type enumType, string? value, bool ignoreCase, out object? result) { throw null; }
-        public static bool TryParse(System.Type enumType, string? value, out object? result) { throw null; }
+        public static bool TryParse(System.Type enumType, System.ReadOnlySpan<char> value, bool ignoreCase, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
+        public static bool TryParse(System.Type enumType, System.ReadOnlySpan<char> value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
+        public static bool TryParse(System.Type enumType, string? value, bool ignoreCase, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
+        public static bool TryParse(System.Type enumType, string? value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
         public static bool TryParse<TEnum>(System.ReadOnlySpan<char> value, bool ignoreCase, out TEnum result) where TEnum : struct { throw null; }
         public static bool TryParse<TEnum>(System.ReadOnlySpan<char> value, out TEnum result) where TEnum : struct { throw null; }
         public static bool TryParse<TEnum>([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value, bool ignoreCase, out TEnum result) where TEnum : struct { throw null; }

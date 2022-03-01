@@ -250,9 +250,9 @@ namespace System.Text.Json.Serialization.Metadata
 #endif
                 Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
                 value is not null &&
+                !state.IsContinuation &&
                 // .NET types that are serialized as JSON primitive values don't need to be tracked for cycle detection e.g: string.
-                // However JsonConverter<object> that uses ConverterStrategy == Value is an exception.
-                (Converter.CanBePolymorphic || ConverterStrategy != ConverterStrategy.Value) &&
+                ConverterStrategy != ConverterStrategy.Value &&
                 state.ReferenceResolver.ContainsReferenceForCycleDetection(value))
             {
                 // If a reference cycle is detected, treat value as null.

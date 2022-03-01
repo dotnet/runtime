@@ -252,4 +252,25 @@
                              RelativePath="%(_PdbFilesToCheck.FileName)%(_PdbFilesToCheck.Extension)" />
     </ItemGroup>
   </Target>
+
+  <Target Name="ProvideNodeNpmRestoreScripts" BeforeTargets="GenerateRunScript">
+    <!-- Combine optional alias on all NodeNpmModule and trim separator where alias is empty -->
+    <ItemGroup>
+      <_NodeNpmModuleString Include="%(NodeNpmModule.Identity):%(NodeNpmModule.Alias)" />
+      <_NodeNpmModuleStringTrimmed Include="@(_NodeNpmModuleString->Trim(':'))" />
+    </ItemGroup>
+    <PropertyGroup>
+      <NodeNpmModuleString>@(_NodeNpmModuleStringTrimmed, ',')</NodeNpmModuleString>
+    </PropertyGroup>
+
+    <!-- Restore NPM packages -->
+    <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
+      <SetScriptCommands Include="if [[ &quot;$SCENARIO&quot; == &quot;WasmTestOnNodeJs&quot; || &quot;$SCENARIO&quot; == &quot;wasmtestonnodejs&quot; ]]; then export WasmXHarnessMonoArgs=&quot;$WasmXHarnessMonoArgs --setenv=NPM_MODULES=$(NodeNpmModuleString)&quot;; fi" />
+      <RunScriptCommands Include="if [[ &quot;$SCENARIO&quot; == &quot;WasmTestOnNodeJs&quot; || &quot;$SCENARIO&quot; == &quot;wasmtestonnodejs&quot; ]]; then npm ci; fi" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+      <SetScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( set &quot;WasmXHarnessMonoArgs=%WasmXHarnessMonoArgs% --setenv=NPM_MODULES^=$(NodeNpmModuleString)&quot; )" />
+      <RunScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( call npm ci )" />
+    </ItemGroup>
+  </Target>
 </Project>

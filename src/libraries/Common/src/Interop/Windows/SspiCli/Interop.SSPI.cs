@@ -68,7 +68,8 @@ internal static partial class Interop
             SECPKG_ATTR_CLIENT_CERT_POLICY = 0x60,     // sets    SecPkgCred_ClientCertCtlPolicy
             SECPKG_ATTR_CONNECTION_INFO = 0x5A,        // returns SecPkgContext_ConnectionInfo
             SECPKG_ATTR_CIPHER_INFO = 0x64,            // returns SecPkgContext_CipherInfo
-            SECPKG_ATTR_UI_INFO = 0x68, // sets SEcPkgContext_UiInfo
+            SECPKG_ATTR_REMOTE_CERT_CHAIN = 0x67,      // returns PCCERT_CONTEXT
+            SECPKG_ATTR_UI_INFO = 0x68,                // sets    SEcPkgContext_UiInfo
         }
 
         // These values are defined within sspi.h as ISC_REQ_*, ISC_RET_*, ASC_REQ_* and ASC_RET_*.

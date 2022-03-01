@@ -24,6 +24,7 @@ namespace System.Runtime.InteropServices
     {
         public GeneratedDllImportAttribute(string a) { }
         public StringMarshalling StringMarshalling { get; set; }
+        public Type StringMarshallingCustomType { get; set; }
     }
 }
 ";
@@ -355,6 +356,38 @@ partial class Test
 
         public static string BasicParametersAndModifiersWithStringMarshalling<T>(StringMarshalling value, string preDeclaration = "") =>
             BasicParametersAndModifiersWithStringMarshalling(typeof(T).ToString(), value, preDeclaration);
+
+        /// <summary>
+        /// Declaration with parameters with <see cref="StringMarshallingCustomType"/> set.
+        /// </summary>
+        public static string BasicParametersAndModifiersWithStringMarshallingCustomType(string typeName, string stringMarshallingCustomTypeName, string preDeclaration = "") => @$"
+using System.Runtime.InteropServices;
+{preDeclaration}
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"", StringMarshallingCustomType = typeof({stringMarshallingCustomTypeName}))]
+    public static partial {typeName} Method(
+        {typeName} p,
+        in {typeName} pIn,
+        ref {typeName} pRef,
+        out {typeName} pOut);
+}}
+";
+
+        public static string BasicParametersAndModifiersWithStringMarshallingCustomType<T>(string stringMarshallingCustomTypeName, string preDeclaration = "") =>
+            BasicParametersAndModifiersWithStringMarshallingCustomType(typeof(T).ToString(), stringMarshallingCustomTypeName, preDeclaration);
+
+        public static string CustomStringMarshallingParametersAndModifiers<T>()
+        {
+            string typeName = typeof(T).ToString();
+            return BasicParametersAndModifiersWithStringMarshallingCustomType(typeName, "Native", DisableRuntimeMarshalling) + @$"
+struct Native
+{{
+    public Native({typeName} s) {{ }}
+
+    public {typeName} ToManaged() => default;
+}}";
+        }
 
         /// <summary>
         /// Declaration with parameters.

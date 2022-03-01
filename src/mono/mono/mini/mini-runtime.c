@@ -4691,13 +4691,15 @@ register_icalls (void)
 	g_assert (mono_get_lmf_addr == mono_tls_get_lmf_addr);
 	register_icall (mono_domain_get, mono_icall_sig_ptr, TRUE);
 
-	register_icall (mono_llvm_throw_exception, mono_icall_sig_void_object, TRUE);
-	register_icall (mono_llvm_rethrow_exception, mono_icall_sig_void_object, TRUE);
-	register_icall (mono_llvm_resume_exception, mono_icall_sig_void, TRUE);
-	register_icall (mono_llvm_match_exception, mono_icall_sig_int_ptr_int_int_ptr_object, TRUE);
-	register_icall (mono_llvm_clear_exception, NULL, TRUE);
-	register_icall (mono_llvm_load_exception, mono_icall_sig_object, TRUE);
-	register_icall (mono_llvm_throw_corlib_exception, mono_icall_sig_void_int, TRUE);
+	register_icall (mini_llvmonly_throw_exception, mono_icall_sig_void_object, TRUE);
+	register_icall (mini_llvmonly_rethrow_exception, mono_icall_sig_void_object, TRUE);
+	register_icall (mini_llvmonly_throw_corlib_exception, mono_icall_sig_void_int, TRUE);
+	register_icall (mini_llvmonly_resume_exception, mono_icall_sig_void, TRUE);
+	register_icall (mini_llvmonly_resume_exception_il_state, mono_icall_sig_void_ptr_ptr, TRUE);
+	register_icall (mini_llvmonly_load_exception, mono_icall_sig_object, TRUE);
+	register_icall (mini_llvmonly_clear_exception, NULL, TRUE);
+	register_icall (mini_llvmonly_match_exception, mono_icall_sig_int_ptr_int_int_ptr_object, TRUE);
+
 #if defined(ENABLE_LLVM) && defined(HAVE_UNWIND_H)
 	register_icall (mono_llvm_set_unhandled_exception_handler, NULL, TRUE);
 

@@ -27,7 +27,7 @@ namespace DllImportGenerator.IntegrationTests
         [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_refuint", StringMarshalling = StringMarshalling.Utf16)]
         public static partial void ReturnUIntAsUnicode_In(uint input, in char res);
 
-        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_uint", StringMarshalling = StringMarshalling.Custom)]
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_uint", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.U2)]
         public static partial char ReturnU2AsU2IgnoreCharSet([MarshalAs(UnmanagedType.U2)] char input);
 
