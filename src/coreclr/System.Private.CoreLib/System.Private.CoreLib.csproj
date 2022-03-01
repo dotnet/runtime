@@ -64,19 +64,19 @@
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
     <PlatformTarget>x64</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
-    <DefineConstants>$(DefineConstants);TARGET_AMD64</DefineConstants>
+    <DefineConstants>FEATURE_GENERIC_MATH;_LOGGING;DEBUG;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
     <PlatformTarget>x86</PlatformTarget>
-    <DefineConstants>$(DefineConstants);TARGET_X86</DefineConstants>
+    <DefineConstants>FEATURE_GENERIC_MATH;_LOGGING;DEBUG;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
     <PlatformTarget>arm</PlatformTarget>
-    <DefineConstants>$(DefineConstants);TARGET_ARM</DefineConstants>
+    <DefineConstants>FEATURE_GENERIC_MATH;_LOGGING;DEBUG;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DefineConstants>$(DefineConstants);TARGET_ARM64</DefineConstants>
+    <DefineConstants>FEATURE_GENERIC_MATH;_LOGGING;DEBUG;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'loongarch64'">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -87,7 +87,7 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Debug'">false</Optimize>
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Checked'">true</Optimize>
-    <DefineConstants>_LOGGING;DEBUG;$(DefineConstants)</DefineConstants>
+    <DefineConstants>FEATURE_GENERIC_MATH;_LOGGING;DEBUG;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
@@ -319,7 +319,7 @@
 
   <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
 
-  <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile"/>
+  <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile" />
 
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
 
@@ -333,11 +333,7 @@
     <Compile Include="@(EventingSourceFile)" />
   </ItemGroup>
 
-  <Target Name="GenerateEventingFiles"
-          Inputs="@(EventingGenerationScript);@(EventManifestFile)"
-          Outputs="@(EventingSourceFile)"
-          DependsOnTargets="FindPython"
-          BeforeTargets="BeforeCompile">
+  <Target Name="GenerateEventingFiles" Inputs="@(EventingGenerationScript);@(EventManifestFile)" Outputs="@(EventingSourceFile)" DependsOnTargets="FindPython" BeforeTargets="BeforeCompile">
 
     <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.CoreCLR.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
     <PropertyGroup>

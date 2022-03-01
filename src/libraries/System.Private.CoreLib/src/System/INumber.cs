@@ -15,7 +15,7 @@ namespace System
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
     [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface INumber<TSelf>
-        : IAdditionOperators<TSelf, TSelf, TSelf>,
+        : INumber<TSelf, TSelf>, IAdditionOperators<TSelf, TSelf, TSelf>,
           IAdditiveIdentity<TSelf, TSelf>,
           IComparisonOperators<TSelf, TSelf>,   // implies IEquatableOperators<TSelf, TSelf>
           IDecrementOperators<TSelf>,
@@ -31,12 +31,6 @@ namespace System
           IUnaryPlusOperators<TSelf, TSelf>
         where TSelf : INumber<TSelf>
     {
-        /// <summary>Gets the value <c>1</c> for the type.</summary>
-        static abstract TSelf One { get; }
-
-        /// <summary>Gets the value <c>0</c> for the type.</summary>
-        static abstract TSelf Zero { get; }
-
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>
         /// <returns>The absolute of <paramref name="value" />.</returns>
@@ -50,15 +44,6 @@ namespace System
         /// <returns>The result of clamping <paramref name="value" /> to the inclusive range of <paramref name="min" /> and <paramref name="max" />.</returns>
         /// <exception cref="ArgumentException"><paramref name="min" /> is greater than <paramref name="max" />.</exception>
         static abstract TSelf Clamp(TSelf value, TSelf min, TSelf max);
-
-        /// <summary>Creates an instance of the current type from a value.</summary>
-        /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
-        /// <param name="value">The value which is used to create the instance of <typeparamref name="TSelf" />.</param>
-        /// <returns>An instance of <typeparamref name="TSelf" /> created from <paramref name="value" />.</returns>
-        /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
-        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <typeparamref name="TSelf" />.</exception>
-        static abstract TSelf Create<TOther>(TOther value)
-            where TOther : INumber<TOther>;
 
         /// <summary>Creates an instance of the current type from a value, saturating any values that fall outside the representable range of the current type.</summary>
         /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
@@ -75,12 +60,6 @@ namespace System
         /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
         static abstract TSelf CreateTruncating<TOther>(TOther value)
             where TOther : INumber<TOther>;
-
-        /// <summary>Computes the quotient and remainder of two values.</summary>
-        /// <param name="left">The value which <paramref name="right" /> divides.</param>
-        /// <param name="right">The value which divides <paramref name="left" />.</param>
-        /// <returns>The quotient and remainder of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
-        static abstract (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right);
 
         /// <summary>Compares two values to compute which is greater.</summary>
         /// <param name="x">The value to compare with <paramref name="y" />.</param>
@@ -119,18 +98,11 @@ namespace System
 
         /// <summary>Computes the sign of a value.</summary>
         /// <param name="value">The value whose sign is to be computed.</param>
-        /// <returns>A positive value if <paramref name="value" /> is positive, <see cref="Zero" /> if <paramref name="value" /> is zero, and a negative value if <paramref name="value" /> is negative.</returns>
+        /// <returns>A positive value if <paramref name="value" /> is positive,
+        /// <see cref="ISemiAddGroup{TSelf, That}.Zero" /> if <paramref name="value" /> is zero,
+        /// and a negative value if <paramref name="value" /> is negative.</returns>
         /// <remarks>It is recommended that a function return <c>1</c>, <c>0</c>, and <c>-1</c>, respectively.</remarks>
         static abstract TSelf Sign(TSelf value);
-
-        /// <summary>Tries to create an instance of the current type from a value.</summary>
-        /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
-        /// <param name="value">The value which is used to create the instance of <typeparamref name="TSelf" />.</param>
-        /// <param name="result">On return, contains the result of succesfully creating an instance of <typeparamref name="TSelf" /> from <paramref name="value" /> or an undefined value on failure.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> an instance of the current type was succesfully created from <paramref name="value" />; otherwise, <c>false</c>.</returns>
-        /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
-        static abstract bool TryCreate<TOther>(TOther value, out TSelf result)
-            where TOther : INumber<TOther>;
 
         /// <summary>Tries to parses a string into a value.</summary>
         /// <param name="s">The string to parse.</param>
@@ -155,7 +127,7 @@ namespace System
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
     [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface IBinaryNumber<TSelf>
-        : IBitwiseOperators<TSelf, TSelf, TSelf>,
+        : INumber<TSelf, TSelf>, IBitwiseOperators<TSelf, TSelf, TSelf>,
           INumber<TSelf>
         where TSelf : IBinaryNumber<TSelf>
     {
@@ -174,11 +146,9 @@ namespace System
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
     [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface ISignedNumber<TSelf>
-        : INumber<TSelf>
+        : INumber<TSelf>, ISignedNumber<TSelf, TSelf>
         where TSelf : ISignedNumber<TSelf>
     {
-        /// <summary>Gets the value <c>-1</c> for the type.</summary>
-        static abstract TSelf NegativeOne { get; }
     }
 
     /// <summary>Defines a number type which can only represent positive values, that is it cannot represent negative values.</summary>

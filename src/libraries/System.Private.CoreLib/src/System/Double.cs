@@ -583,262 +583,262 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.E => Math.E;
+        static double IFloatingPoint<double, double>.E => Math.E;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Epsilon => Epsilon;
+        static double IFloatingPoint<double, double>.Epsilon => Epsilon;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.NaN => NaN;
+        static double IFloatingPoint<double, double>.NaN => NaN;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.NegativeInfinity => NegativeInfinity;
+        static double IFloatingPoint<double, double>.NegativeInfinity => NegativeInfinity;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.NegativeZero => -0.0;
+        static double IFloatingPoint<double, double>.NegativeZero => -0.0;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Pi => Math.PI;
+        static double IFloatingPoint<double, double>.Pi => Math.PI;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.PositiveInfinity => PositiveInfinity;
+        static double IFloatingPoint<double, double>.PositiveInfinity => PositiveInfinity;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Tau => Math.Tau;
+        static double IFloatingPoint<double, double>.Tau => Math.Tau;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Acos(double x)
+        static double IFloatingPoint<double, double>.Acos(double x)
             => Math.Acos(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Acosh(double x)
+        static double IFloatingPoint<double, double>.Acosh(double x)
             => Math.Acosh(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Asin(double x)
+        static double IFloatingPoint<double, double>.Asin(double x)
             => Math.Asin(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Asinh(double x)
+        static double IFloatingPoint<double, double>.Asinh(double x)
             => Math.Asinh(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Atan(double x)
+        static double IFloatingPoint<double, double>.Atan(double x)
             => Math.Atan(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Atan2(double y, double x)
+        static double IFloatingPoint<double, double>.Atan2(double y, double x)
             => Math.Atan2(y, x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Atanh(double x)
+        static double IFloatingPoint<double, double>.Atanh(double x)
             => Math.Atanh(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.BitIncrement(double x)
+        static double IFloatingPoint<double, double>.BitIncrement(double x)
             => Math.BitIncrement(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.BitDecrement(double x)
+        static double IFloatingPoint<double, double>.BitDecrement(double x)
             => Math.BitDecrement(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Cbrt(double x)
+        static double IFloatingPoint<double, double>.Cbrt(double x)
             => Math.Cbrt(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Ceiling(double x)
+        static double IFloatingPoint<double, double>.Ceiling(double x)
             => Math.Ceiling(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.CopySign(double x, double y)
+        static double IFloatingPoint<double, double>.CopySign(double x, double y)
             => Math.CopySign(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Cos(double x)
+        static double IFloatingPoint<double, double>.Cos(double x)
             => Math.Cos(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Cosh(double x)
+        static double IFloatingPoint<double, double>.Cosh(double x)
             => Math.Cosh(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Exp(double x)
+        static double IFloatingPoint<double, double>.Exp(double x)
             => Math.Exp(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Floor(double x)
+        static double IFloatingPoint<double, double>.Floor(double x)
             => Math.Floor(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.FusedMultiplyAdd(double left, double right, double addend)
+        static double IFloatingPoint<double, double>.FusedMultiplyAdd(double left, double right, double addend)
             => Math.FusedMultiplyAdd(left, right, addend);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.IEEERemainder(double left, double right)
+        static double IFloatingPoint<double, double>.IEEERemainder(double left, double right)
             => Math.IEEERemainder(left, right);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static TInteger IFloatingPoint<double>.ILogB<TInteger>(double x)
+        static TInteger IFloatingPoint<double, double>.ILogB<TInteger>(double x)
             => TInteger.Create(Math.ILogB(x));
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Log(double x)
+        static double IFloatingPoint<double, double>.Log(double x)
             => Math.Log(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Log(double x, double newBase)
+        static double IFloatingPoint<double, double>.Log(double x, double newBase)
             => Math.Log(x, newBase);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Log2(double x)
+        static double IFloatingPoint<double, double>.Log2(double x)
             => Math.Log2(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Log10(double x)
+        static double IFloatingPoint<double, double>.Log10(double x)
             => Math.Log10(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.MaxMagnitude(double x, double y)
+        static double IFloatingPoint<double, double>.MaxMagnitude(double x, double y)
             => Math.MaxMagnitude(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.MinMagnitude(double x, double y)
+        static double IFloatingPoint<double, double>.MinMagnitude(double x, double y)
             => Math.MinMagnitude(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Pow(double x, double y)
+        static double IFloatingPoint<double, double>.Pow(double x, double y)
             => Math.Pow(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Round(double x)
+        static double IFloatingPoint<double, double>.Round(double x)
             => Math.Round(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Round<TInteger>(double x, TInteger digits)
+        static double IFloatingPoint<double, double>.Round<TInteger>(double x, TInteger digits)
             => Math.Round(x, int.Create(digits));
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Round(double x, MidpointRounding mode)
+        static double IFloatingPoint<double, double>.Round(double x, MidpointRounding mode)
             => Math.Round(x, mode);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Round<TInteger>(double x, TInteger digits, MidpointRounding mode)
+        static double IFloatingPoint<double, double>.Round<TInteger>(double x, TInteger digits, MidpointRounding mode)
             => Math.Round(x, int.Create(digits), mode);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.ScaleB<TInteger>(double x, TInteger n)
+        static double IFloatingPoint<double, double>.ScaleB<TInteger>(double x, TInteger n)
             => Math.ScaleB(x, int.Create(n));
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Sin(double x)
+        static double IFloatingPoint<double, double>.Sin(double x)
             => Math.Sin(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Sinh(double x)
+        static double IFloatingPoint<double, double>.Sinh(double x)
             => Math.Sinh(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Sqrt(double x)
+        static double IFloatingPoint<double, double>.Sqrt(double x)
             => Math.Sqrt(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Tan(double x)
+        static double IFloatingPoint<double, double>.Tan(double x)
             => Math.Tan(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Tanh(double x)
+        static double IFloatingPoint<double, double>.Tanh(double x)
             => Math.Tanh(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Truncate(double x)
+        static double IFloatingPoint<double, double>.Truncate(double x)
             => Math.Truncate(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<double>.IsFinite(double d) => IsFinite(d);
+        static bool IFloatingPoint<double, double>.IsFinite(double d) => IsFinite(d);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<double>.IsInfinity(double d) => IsInfinity(d);
+        static bool IFloatingPoint<double, double>.IsInfinity(double d) => IsInfinity(d);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<double>.IsNaN(double d) => IsNaN(d);
+        static bool IFloatingPoint<double, double>.IsNaN(double d) => IsNaN(d);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<double>.IsNegative(double d) => IsNegative(d);
+        static bool IScalarNumber<double, double>.IsNegative(double d) => IsNegative(d);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<double>.IsNegativeInfinity(double d) => IsNegativeInfinity(d);
+        static bool IFloatingPoint<double, double>.IsNegativeInfinity(double d) => IsNegativeInfinity(d);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<double>.IsNormal(double d) => IsNormal(d);
+        static bool IFloatingPoint<double, double>.IsNormal(double d) => IsNormal(d);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<double>.IsPositiveInfinity(double d) => IsPositiveInfinity(d);
+        static bool IFloatingPoint<double, double>.IsPositiveInfinity(double d) => IsPositiveInfinity(d);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<double>.IsSubnormal(double d) => IsSubnormal(d);
+        static bool IFloatingPoint<double, double>.IsSubnormal(double d) => IsSubnormal(d);
 
-        // static double IFloatingPoint<double>.AcosPi(double x)
+        // static double IFloatingPoint<double, double>.AcosPi(double x)
         //     => Math.AcosPi(x);
         //
-        // static double IFloatingPoint<double>.AsinPi(double x)
+        // static double IFloatingPoint<double, double>.AsinPi(double x)
         //     => Math.AsinPi(x);
         //
-        // static double IFloatingPoint<double>.AtanPi(double x)
+        // static double IFloatingPoint<double, double>.AtanPi(double x)
         //     => Math.AtanPi(x);
         //
-        // static double IFloatingPoint<double>.Atan2Pi(double y, double x)
+        // static double IFloatingPoint<double, double>.Atan2Pi(double y, double x)
         //     => Math.Atan2Pi(y, x);
         //
-        // static double IFloatingPoint<double>.Compound(double x, double n)
+        // static double IFloatingPoint<double, double>.Compound(double x, double n)
         //     => Math.Compound(x, n);
         //
-        // static double IFloatingPoint<double>.CosPi(double x)
+        // static double IFloatingPoint<double, double>.CosPi(double x)
         //     => Math.CosPi(x);
         //
-        // static double IFloatingPoint<double>.ExpM1(double x)
+        // static double IFloatingPoint<double, double>.ExpM1(double x)
         //     => Math.ExpM1(x);
         //
-        // static double IFloatingPoint<double>.Exp2(double x)
+        // static double IFloatingPoint<double, double>.Exp2(double x)
         //     => Math.Exp2(x);
         //
-        // static double IFloatingPoint<double>.Exp2M1(double x)
+        // static double IFloatingPoint<double, double>.Exp2M1(double x)
         //     => Math.Exp2M1(x);
         //
-        // static double IFloatingPoint<double>.Exp10(double x)
+        // static double IFloatingPoint<double, double>.Exp10(double x)
         //     => Math.Exp10(x);
         //
-        // static double IFloatingPoint<double>.Exp10M1(double x)
+        // static double IFloatingPoint<double, double>.Exp10M1(double x)
         //     => Math.Exp10M1(x);
         //
-        // static double IFloatingPoint<double>.Hypot(double x, double y)
+        // static double IFloatingPoint<double, double>.Hypot(double x, double y)
         //     => Math.Hypot(x, y);
         //
-        // static double IFloatingPoint<double>.LogP1(double x)
+        // static double IFloatingPoint<double, double>.LogP1(double x)
         //     => Math.LogP1(x);
         //
-        // static double IFloatingPoint<double>.Log2P1(double x)
+        // static double IFloatingPoint<double, double>.Log2P1(double x)
         //     => Math.Log2P1(x);
         //
-        // static double IFloatingPoint<double>.Log10P1(double x)
+        // static double IFloatingPoint<double, double>.Log10P1(double x)
         //     => Math.Log10P1(x);
         //
-        // static double IFloatingPoint<double>.MaxMagnitudeNumber(double x, double y)
+        // static double IFloatingPoint<double, double>.MaxMagnitudeNumber(double x, double y)
         //     => Math.MaxMagnitudeNumber(x, y);
         //
-        // static double IFloatingPoint<double>.MaxNumber(double x, double y)
+        // static double IFloatingPoint<double, double>.MaxNumber(double x, double y)
         //     => Math.MaxNumber(x, y);
         //
-        // static double IFloatingPoint<double>.MinMagnitudeNumber(double x, double y)
+        // static double IFloatingPoint<double, double>.MinMagnitudeNumber(double x, double y)
         //     => Math.MinMagnitudeNumber(x, y);
         //
-        // static double IFloatingPoint<double>.MinNumber(double x, double y)
+        // static double IFloatingPoint<double, double>.MinNumber(double x, double y)
         //     => Math.MinNumber(x, y);
         //
-        // static double IFloatingPoint<double>.Root(double x, double n)
+        // static double IFloatingPoint<double, double>.Root(double x, double n)
         //     => Math.Root(x, n);
         //
-        // static double IFloatingPoint<double>.SinPi(double x)
+        // static double IFloatingPoint<double, double>.SinPi(double x)
         //     => Math.SinPi(x, y);
         //
         // static double TanPi(double x)
@@ -902,10 +902,10 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double INumber<double>.One => 1.0;
+        static double ISemiGroup<double, double>.One => 1.0;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double INumber<double>.Zero => 0.0;
+        static double ISemiAddGroup<double, double>.Zero => 0.0;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static double INumber<double>.Abs(double value)
@@ -917,63 +917,63 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static double INumber<double>.Create<TOther>(TOther value)
+        static double ICreate<double>.Create<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
-                return (byte)(object)value;
+                return (byte)(object)value!;
             }
             else if (typeof(TOther) == typeof(char))
             {
-                return (char)(object)value;
+                return (char)(object)value!;
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                return (double)(decimal)(object)value;
+                return (double)(decimal)(object)value!;
             }
             else if (typeof(TOther) == typeof(double))
             {
-                return (double)(object)value;
+                return (double)(object)value!;
             }
             else if (typeof(TOther) == typeof(short))
             {
-                return (short)(object)value;
+                return (short)(object)value!;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                return (int)(object)value;
+                return (int)(object)value!;
             }
             else if (typeof(TOther) == typeof(long))
             {
-                return (long)(object)value;
+                return (long)(object)value!;
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                return (nint)(object)value;
+                return (nint)(object)value!;
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                return (sbyte)(object)value;
+                return (sbyte)(object)value!;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                return (float)(object)value;
+                return (float)(object)value!;
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                return (ushort)(object)value;
+                return (ushort)(object)value!;
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                return (uint)(object)value;
+                return (uint)(object)value!;
             }
             else if (typeof(TOther) == typeof(ulong))
             {
-                return (ulong)(object)value;
+                return (ulong)(object)value!;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-                return (nuint)(object)value;
+                return (nuint)(object)value!;
             }
             else
             {
@@ -1117,7 +1117,7 @@ namespace System
         }
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static (double Quotient, double Remainder) INumber<double>.DivRem(double left, double right)
+        static (double Quotient, double Remainder) IField<double, double>.DivRem(double left, double right)
             => (left / right, left % right);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -1142,7 +1142,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<double>.TryCreate<TOther>(TOther value, out double result)
+        static bool ICreate<double>.TryCreate<TOther>(TOther value, out double result)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1247,7 +1247,7 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double ISignedNumber<double>.NegativeOne => -1;
+        static double ISignedNumber<double, double>.NegativeOne => -1;
 
         //
         // ISpanParseable

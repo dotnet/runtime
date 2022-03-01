@@ -27,6 +27,8 @@ namespace System
         public const long MaxValue = 0x7fffffffffffffffL;
         public const long MinValue = unchecked((long)0x8000000000000000L);
 
+        public double Norm() => Math.Abs(m_value);
+
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
         // Returns a value less than zero if this  object
@@ -458,10 +460,10 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static long INumber<long>.One => 1;
+        static long ISemiGroup<long, long>.One => 1;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static long INumber<long>.Zero => 0;
+        static long ISemiAddGroup<long, long>.Zero => 0;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static long INumber<long>.Abs(long value)
@@ -473,7 +475,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static long INumber<long>.Create<TOther>(TOther value)
+        static long ICreate<long>.Create<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -681,7 +683,7 @@ namespace System
         }
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static (long Quotient, long Remainder) INumber<long>.DivRem(long left, long right)
+        static (long Quotient, long Remainder) IField<long, long>.DivRem(long left, long right)
             => Math.DivRem(left, right);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -706,7 +708,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<long>.TryCreate<TOther>(TOther value, out long result)
+        static bool ICreate<long>.TryCreate<TOther>(TOther value, out long result)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -867,7 +869,7 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static long ISignedNumber<long>.NegativeOne => -1;
+        static long ISignedNumber<long, long>.NegativeOne => -1;
 
         //
         // ISpanParseable

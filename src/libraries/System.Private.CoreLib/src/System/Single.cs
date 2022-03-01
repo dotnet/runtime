@@ -66,6 +66,8 @@ namespace System
         internal const uint MinSignificand = 0x0000_0000;
         internal const uint MaxSignificand = 0x007F_FFFF;
 
+        public double Norm() => Math.Abs(m_value);
+
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -27,6 +27,8 @@ namespace System
         public const short MaxValue = (short)0x7FFF;
         public const short MinValue = unchecked((short)0x8000);
 
+        public double Norm() => Math.Abs(m_value);
+
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
         // Returns a value less than zero if this  object
@@ -479,10 +481,10 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static short INumber<short>.One => 1;
+        static short ISemiGroup<short, short>.One => 1;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static short INumber<short>.Zero => 0;
+        static short ISemiAddGroup<short, short>.Zero => 0;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static short INumber<short>.Abs(short value)
@@ -494,63 +496,63 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static short INumber<short>.Create<TOther>(TOther value)
+        static short ICreate<short>.Create<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
-                return (byte)(object)value;
+                return (byte)(object)value!;
             }
             else if (typeof(TOther) == typeof(char))
             {
-                return checked((short)(char)(object)value);
+                return checked((short)(char)(object)value!);
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                return checked((short)(decimal)(object)value);
+                return checked((short)(decimal)(object)value!);
             }
             else if (typeof(TOther) == typeof(double))
             {
-                return checked((short)(double)(object)value);
+                return checked((short)(double)(object)value!);
             }
             else if (typeof(TOther) == typeof(short))
             {
-                return (short)(object)value;
+                return (short)(object)value!;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                return checked((short)(int)(object)value);
+                return checked((short)(int)(object)value!);
             }
             else if (typeof(TOther) == typeof(long))
             {
-                return checked((short)(long)(object)value);
+                return checked((short)(long)(object)value!);
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                return checked((short)(nint)(object)value);
+                return checked((short)(nint)(object)value!);
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                return (sbyte)(object)value;
+                return (sbyte)(object)value!;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                return checked((short)(float)(object)value);
+                return checked((short)(float)(object)value!);
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                return checked((short)(ushort)(object)value);
+                return checked((short)(ushort)(object)value!);
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                return checked((short)(uint)(object)value);
+                return checked((short)(uint)(object)value!);
             }
             else if (typeof(TOther) == typeof(ulong))
             {
-                return checked((short)(ulong)(object)value);
+                return checked((short)(ulong)(object)value!);
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-                return checked((short)(nuint)(object)value);
+                return checked((short)(nuint)(object)value!);
             }
             else
             {
@@ -711,7 +713,7 @@ namespace System
         }
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static (short Quotient, short Remainder) INumber<short>.DivRem(short left, short right)
+        static (short Quotient, short Remainder) IField<short, short>.DivRem(short left, short right)
             => Math.DivRem(left, right);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -736,16 +738,16 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<short>.TryCreate<TOther>(TOther value, out short result)
+        static bool ICreate<short>.TryCreate<TOther>(TOther value, out short result)
         {
             if (typeof(TOther) == typeof(byte))
             {
-                result = (byte)(object)value;
+                result = (byte)(object)value!;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
-                var actualValue = (char)(object)value;
+                var actualValue = (char)(object)value!;
 
                 if (actualValue > MaxValue)
                 {
@@ -758,7 +760,7 @@ namespace System
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                var actualValue = (decimal)(object)value;
+                var actualValue = (decimal)(object)value!;
 
                 if ((actualValue < MinValue) || (actualValue > MaxValue))
                 {
@@ -771,7 +773,7 @@ namespace System
             }
             else if (typeof(TOther) == typeof(double))
             {
-                var actualValue = (double)(object)value;
+                var actualValue = (double)(object)value!;
 
                 if ((actualValue < MinValue) || (actualValue > MaxValue))
                 {
@@ -784,12 +786,12 @@ namespace System
             }
             else if (typeof(TOther) == typeof(short))
             {
-                result = (short)(object)value;
+                result = (short)(object)value!;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                var actualValue = (int)(object)value;
+                var actualValue = (int)(object)value!;
 
                 if ((actualValue < MinValue) || (actualValue > MaxValue))
                 {
@@ -802,7 +804,7 @@ namespace System
             }
             else if (typeof(TOther) == typeof(long))
             {
-                var actualValue = (long)(object)value;
+                var actualValue = (long)(object)value!;
 
                 if ((actualValue < MinValue) || (actualValue > MaxValue))
                 {
@@ -815,7 +817,7 @@ namespace System
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                var actualValue = (nint)(object)value;
+                var actualValue = (nint)(object)value!;
 
                 if ((actualValue < MinValue) || (actualValue > MaxValue))
                 {
@@ -828,12 +830,12 @@ namespace System
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                result = (sbyte)(object)value;
+                result = (sbyte)(object)value!;
                 return true;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                var actualValue = (float)(object)value;
+                var actualValue = (float)(object)value!;
 
                 if ((actualValue < MinValue) || (actualValue > MaxValue))
                 {
@@ -846,7 +848,7 @@ namespace System
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                var actualValue = (ushort)(object)value;
+                var actualValue = (ushort)(object)value!;
 
                 if (actualValue > MaxValue)
                 {
@@ -859,7 +861,7 @@ namespace System
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                var actualValue = (uint)(object)value;
+                var actualValue = (uint)(object)value!;
 
                 if (actualValue > MaxValue)
                 {
@@ -872,7 +874,7 @@ namespace System
             }
             else if (typeof(TOther) == typeof(ulong))
             {
-                var actualValue = (ulong)(object)value;
+                var actualValue = (ulong)(object)value!;
 
                 if (actualValue > (uint)MaxValue)
                 {
@@ -885,7 +887,7 @@ namespace System
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-                var actualValue = (nuint)(object)value;
+                var actualValue = (nuint)(object)value!;
 
                 if (actualValue > (uint)MaxValue)
                 {
@@ -945,7 +947,7 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static short ISignedNumber<short>.NegativeOne => -1;
+        static short ISignedNumber<short, short>.NegativeOne => -1;
 
         //
         // ISpanParseable

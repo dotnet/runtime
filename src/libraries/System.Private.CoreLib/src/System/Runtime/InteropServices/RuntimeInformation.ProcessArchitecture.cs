@@ -23,7 +23,8 @@ namespace System.Runtime.InteropServices
 #elif TARGET_LOONGARCH64
             => Architecture.LoongArch64;
 #else
-#error Unknown Architecture
+//#error Unknown Architecture
+            => Architecture.X64;
 #endif
     }
 }

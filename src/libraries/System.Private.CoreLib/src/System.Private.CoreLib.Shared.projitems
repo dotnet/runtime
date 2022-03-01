@@ -390,6 +390,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\HashCode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IAsyncDisposable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IAsyncResult.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IBinaryNumber.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ICloneable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IComparable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IConvertible.cs" />
@@ -2360,6 +2361,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IDecrementOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IDivisionOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IEqualityOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\ISignedNumber.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IScalarNumber.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IField.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IFloatingPoint.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IFloatingPoint.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IIncrementOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IInteger.cs" />

@@ -27,6 +27,8 @@ namespace System
         public const int MaxValue = 0x7fffffff;
         public const int MinValue = unchecked((int)0x80000000);
 
+        public double Norm() => Math.Abs(m_value);
+
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
         // Returns :
@@ -471,10 +473,10 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static int INumber<int>.One => 1;
+        static int ISemiGroup<int, int>.One => 1;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static int INumber<int>.Zero => 0;
+        static int ISemiAddGroup<int, int>.Zero => 0;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static int INumber<int>.Abs(int value)
@@ -553,8 +555,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static int INumber<int>.Create<TOther>(TOther value)
-            => Create(value);
+        static int ICreate<int>.Create<TOther>(TOther value) where TOther : ICreate<TOther> => Create(value);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -704,7 +705,7 @@ namespace System
         }
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static (int Quotient, int Remainder) INumber<int>.DivRem(int left, int right)
+        static (int Quotient, int Remainder) IField<int, int>.DivRem(int left, int right)
             => Math.DivRem(left, right);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -729,7 +730,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<int>.TryCreate<TOther>(TOther value, out int result)
+        static bool ICreate<int>.TryCreate<TOther>(TOther value, out int result)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -914,7 +915,7 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static int ISignedNumber<int>.NegativeOne => -1;
+        static int ISignedNumber<int, int>.NegativeOne => -1;
 
         //
         // ISpanParseable

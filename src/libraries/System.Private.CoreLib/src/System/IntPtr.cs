@@ -41,6 +41,8 @@ namespace System
         [Intrinsic]
         public static readonly IntPtr Zero;
 
+        public double Norm() => Math.Abs((int)_value);
+
         [NonVersionable]
         public unsafe IntPtr(int value)
         {

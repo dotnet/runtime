@@ -6,6 +6,12 @@
     <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
     <NoWarn>$(NoWarn);CS3001</NoWarn>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>$(DefineConstants)TRACE;FEATURE_GENERIC_MATH</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DefineConstants>$(DefineConstants)TRACE;FEATURE_GENERIC_MATH</DefineConstants>
+  </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="EventSourceGenerator.cs" />
