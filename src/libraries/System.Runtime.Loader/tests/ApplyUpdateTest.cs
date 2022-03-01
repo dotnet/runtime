@@ -396,7 +396,7 @@ namespace System.Reflection.Metadata
             Assert.False(result);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
         public static void TestStaticLambdaRegression()
         {
             ApplyUpdateUtil.TestCase(static () =>
