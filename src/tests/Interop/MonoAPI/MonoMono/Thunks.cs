@@ -33,6 +33,7 @@ public class Thunks
 
 	public static int Main ()
 	{
+		MonoAPI.Tests.MonoAPISupport.Setup();
 		RunTests (0, typeof (Thunks));
 		RunTests (100, typeof (TestStruct));
 		return 100;

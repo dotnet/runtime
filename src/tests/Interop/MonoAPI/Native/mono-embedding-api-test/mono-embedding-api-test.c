@@ -157,6 +157,18 @@ static char* marshal_strdup (const char *str)
 #endif
 }
 
+static char *libtest_api_coreclr_name;
+
+static uint8_t
+mono_test_init_symbols (void);
+
+LIBTEST_API uint8_t
+libtest_initialize_runtime_symbols (const char *libcoreclr_name)
+{
+	libtest_api_coreclr_name = marshal_strdup (libcoreclr_name);
+	return mono_test_init_symbols();
+}
+
 /*
  * mono_method_get_unmanaged_thunk tests
  */
@@ -166,7 +178,6 @@ static char* marshal_strdup (const char *str)
 #else
 #define ALIGN(size)
 #endif
-
 
 /* thunks.cs:TestStruct */
 typedef struct _TestStruct {
@@ -233,22 +244,25 @@ w32_find_symbol (const char *symbol_name)
 #endif
 #endif/*WIN32*/
 
+#ifdef WIN32
+static HMODULE libcoreclr_module;
+#else
+static void* libcoreclr_module;
+#endif
+
 /* Searches for mono symbols in all loaded modules */
 static gpointer
 lookup_mono_symbol (const char *symbol_name)
 {
 #ifndef HOST_WIN32
-#ifdef HOST_DARWIN	
-	void *module = dlopen ("libcoreclr.dylib", RTLD_LAZY);
+	if (!libcoreclr_module)
+		libcoreclr_module = dlopen (libtest_api_coreclr_name, RTLD_LAZY);
+	return dlsym (/*RTLD_DEFAULT*/ libcoreclr_module, symbol_name);
 #else
-	void *module = dlopen ("libcoreclr.so", RTLD_LAZY);
-#endif
-	g_assert (module);
-	return dlsym (/*RTLD_DEFAULT*/ module, symbol_name);
-#else
-	HMODULE main_module = GetModuleHandle (NULL);
+	if (!libcoreclr_module)
+		libcoreclr_module = GetModuleHandle (NULL);
 	gpointer symbol = NULL;
-	symbol = (gpointer)(intptr_t)GetProcAddress(main_module, symbol_name);
+	symbol = (gpointer)(intptr_t)GetProcAddress(libcoreclr_module, symbol_name);
 	if (symbol)
 		return symbol;
 	return w32_find_symbol (symbol_name);
@@ -260,10 +274,6 @@ mono_test_marshal_lookup_symbol (const char *symbol_name)
 {
 	return lookup_mono_symbol (symbol_name);
 }
-
-
-static void
-mono_test_init_symbols (void);
 
 
 typedef void (*VoidVoidCallback) (void);
@@ -302,8 +312,6 @@ LIBTEST_API int STDCALL
 test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_object_method_handle)
 {
 	int ret = 0;
-
-	mono_test_init_symbols ();
 
 	gpointer (*mono_method_get_unmanaged_thunk)(gpointer)
 		= (gpointer (*)(gpointer))sym_mono_method_get_unmanaged_thunk;
@@ -834,11 +842,11 @@ mono_test_native_to_managed_exception_rethrow (NativeToManagedExceptionRethrowFu
 	sym_##name = g_cast (lookup_mono_symbol (#name));	\
 	} while (0)
 
-static void
+static uint8_t
 mono_test_init_symbols (void)
 {
 	if (sym_inited)
-		return;
+		return 1;
 
 	SYM_LOOKUP (mono_install_ftnptr_eh_callback);
 	g_assert (sym_mono_install_ftnptr_eh_callback);
@@ -869,6 +877,9 @@ mono_test_init_symbols (void)
 	SYM_LOOKUP (mono_threads_exit_gc_unsafe_region);
 
 	sym_inited = 1;
+
+	return ((void*)sym_mono_gchandle_new != NULL);
+
 }
 
 #ifndef TARGET_WASM
@@ -886,7 +897,6 @@ mono_test_longjmp_callback (guint32 gchandle)
 LIBTEST_API void STDCALL
 mono_test_setjmp_and_call (VoidVoidCallback managedCallback, intptr_t *out_handle)
 {
-	mono_test_init_symbols ();
 	if (setjmp (test_jmp_buf) == 0) {
 		*out_handle = 0;
 		sym_mono_install_ftnptr_eh_callback (mono_test_longjmp_callback);
@@ -931,7 +941,6 @@ mono_test_ftnptr_eh_callback (guint32 gchandle)
 LIBTEST_API void STDCALL
 mono_test_setup_ftnptr_eh_callback (VoidVoidCallback managed_entry, void (*capture_throw_callback) (guint32, guint32 *))
 {
-	mono_test_init_symbols ();
 	mono_test_capture_throw_callback = capture_throw_callback;
 	sym_mono_install_ftnptr_eh_callback (mono_test_ftnptr_eh_callback);
 	managed_entry ();
@@ -940,7 +949,6 @@ mono_test_setup_ftnptr_eh_callback (VoidVoidCallback managed_entry, void (*captu
 LIBTEST_API void STDCALL
 mono_test_cleanup_ftptr_eh_callback (void)
 {
-	mono_test_init_symbols ();
 	sym_mono_install_ftnptr_eh_callback (NULL);
 }
 
@@ -975,8 +983,6 @@ destroy_invoke_names (struct invoke_names *n)
 static void
 test_invoke_by_name (struct invoke_names *names)
 {
-	mono_test_init_symbols ();
-
 	MonoDomain *domain = sym_mono_domain_get ();
 	MonoThread *thread = NULL;
 	if (!domain) {

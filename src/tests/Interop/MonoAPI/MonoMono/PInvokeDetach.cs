@@ -19,6 +19,7 @@ public class PInvokeDetach {
 
 	public static int Main ()
 	{
+		MonoAPI.Tests.MonoAPISupport.Setup();
 		int result;
 		result = test_0_attach_invoke_foreign_thread ();
 		if (result != 0)

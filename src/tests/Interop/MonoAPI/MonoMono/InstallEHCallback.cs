@@ -170,6 +170,7 @@ public class InstallEHCallback {
 
 	static int Main ()
 	{
+		MonoAPI.Tests.MonoAPISupport.Setup();
 		int result;
 		result = test_0_setjmp_exn_handler ();
 		if (result != 0)
@@ -180,3 +181,4 @@ public class InstallEHCallback {
 		return 100;
 	}
 }
+
