@@ -507,7 +507,12 @@ namespace System.IO
         // _strategy can be null only when ctor has thrown
         protected override void Dispose(bool disposing) => _strategy?.DisposeInternal(disposing);
 
-        public override ValueTask DisposeAsync() => _strategy.DisposeAsync();
+        public async override ValueTask DisposeAsync()
+        {
+            await _strategy.DisposeAsync().ConfigureAwait(false);
+            Dispose(false);
+            GC.SuppressFinalize(this);
+        }
 
         public override void CopyTo(Stream destination, int bufferSize)
         {
@@ -595,8 +600,6 @@ namespace System.IO
 
         internal ValueTask BaseWriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             => base.WriteAsync(buffer, cancellationToken);
-
-        internal ValueTask BaseDisposeAsync() => base.DisposeAsync();
 
         internal Task BaseCopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             => base.CopyToAsync(destination, bufferSize, cancellationToken);
