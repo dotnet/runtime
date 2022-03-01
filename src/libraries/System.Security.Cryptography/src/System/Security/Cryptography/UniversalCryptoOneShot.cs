@@ -41,9 +41,7 @@ namespace System.Security.Cryptography
                     bytesWritten = SymmetricPadding.GetPaddingLength(transformBuffer, paddingMode, cipher.BlockSizeInBytes);
 
                     // Zero out the padding so that the buffer does not contain the padding data "after" the bytesWritten.
-                    Span<byte> paddingBuffer = transformBuffer.Slice(bytesWritten);
                     CryptographicOperations.ZeroMemory(transformBuffer.Slice(bytesWritten));
-                    CryptographicOperations.ZeroMemory(paddingBuffer);
                     return true;
                 }
                 catch (CryptographicException)
