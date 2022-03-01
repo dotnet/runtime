@@ -21,7 +21,6 @@
 
 #ifdef WIN32
 #include <windows.h>
-#include "initguid.h"
 #else
 #include <pthread.h>
 #endif
@@ -59,6 +58,16 @@ typedef int (STDCALL *SimpleDelegate) (int a);
 #define TRUE                 1
 
 typedef void *         gpointer;
+
+static void
+g_usleep (unsigned long micros)
+{
+#ifdef WIN32
+	Sleep (micros/1000);
+#else
+	usleep (micros);
+#endif
+}
 
 static gpointer
 g_malloc (size_t x)
@@ -962,7 +971,7 @@ invoke_foreign_thread (void* user_data)
          */
         for (int i = 0; i < 5; ++i) {
                 test_invoke_by_name (names);
-                sleep (2);
+                g_usleep (1000);
         }
 	destroy_invoke_names (names);
 	return NULL;
@@ -974,7 +983,7 @@ invoke_foreign_delegate (void *user_data)
 	VoidVoidCallback del = (VoidVoidCallback)user_data;
 	for (int i = 0; i < 5; ++i) {
 		del ();
-		sleep (2);
+		g_usleep (1000);
 	}
 	return NULL;
 }
