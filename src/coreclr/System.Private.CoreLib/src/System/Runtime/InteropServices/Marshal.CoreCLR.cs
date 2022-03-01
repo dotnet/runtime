@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -28,6 +29,7 @@ namespace System.Runtime.InteropServices
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr OffsetOf(Type t!!, string fieldName)
         {
             FieldInfo? f = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -48,24 +50,32 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr OffsetOfHelper(IRuntimeFieldInfo f);
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("ReadByte(Object, Int32) may be unavailable in future releases.")]
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static byte ReadByte(object ptr, int ofs)
         {
             return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadByte(nativeHome, offset));
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("ReadInt16(Object, Int32) may be unavailable in future releases.")]
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static short ReadInt16(object ptr, int ofs)
         {
             return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadInt16(nativeHome, offset));
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("ReadInt32(Object, Int32) may be unavailable in future releases.")]
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static int ReadInt32(object ptr, int ofs)
         {
             return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadInt32(nativeHome, offset));
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("ReadInt64(Object, Int32) may be unavailable in future releases.")]
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static long ReadInt64([MarshalAs(UnmanagedType.AsAny), In] object ptr, int ofs)
         {
@@ -106,24 +116,32 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("WriteByte(Object, Int32, Byte) may be unavailable in future releases.")]
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteByte(object ptr, int ofs, byte val)
         {
             WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, byte value) => WriteByte(nativeHome, offset, value));
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("WriteInt16(Object, Int32, Int16) may be unavailable in future releases.")]
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt16(object ptr, int ofs, short val)
         {
             WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, short value) => Marshal.WriteInt16(nativeHome, offset, value));
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("WriteInt32(Object, Int32, Int32) may be unavailable in future releases.")]
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt32(object ptr, int ofs, int val)
         {
             WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, int value) => Marshal.WriteInt32(nativeHome, offset, value));
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("WriteInt64(Object, Int32, Int64) may be unavailable in future releases.")]
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt64(object ptr, int ofs, long val)
         {
@@ -201,6 +219,8 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern /* struct _EXCEPTION_POINTERS* */ IntPtr GetExceptionPointers();
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("GetExceptionCode() may be unavailable in future releases.")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetExceptionCode();
 
@@ -211,6 +231,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the StructureToPtr<T> overload instead.")]
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld);
 
         /// <summary>
@@ -225,6 +246,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the DestroyStructure<T> overload instead.")]
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern void DestroyStructure(IntPtr ptr, Type structuretype);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -327,6 +349,7 @@ namespace System.Runtime.InteropServices
         /// Object o should support Type T
         /// </summary>
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o!!, Type T!!)
         {
             return GetComInterfaceForObjectNative(o, T, true);
@@ -341,6 +364,7 @@ namespace System.Runtime.InteropServices
         /// invoke customized QueryInterface or not.
         /// </summary>
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o!!, Type T!!, CustomQueryInterfaceMode mode)
         {
             bool bEnableCustomizedQueryInterface = ((mode == CustomQueryInterfaceMode.Allow) ? true : false);
@@ -390,6 +414,7 @@ namespace System.Runtime.InteropServices
         public static extern object GetTypedObjectForIUnknown(IntPtr /* IUnknown* */ pUnk, Type t);
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr CreateAggregatedObject(IntPtr pOuter, object o)
         {
             if (!IsBuiltInComSupported)
@@ -530,6 +555,7 @@ namespace System.Runtime.InteropServices
         /// of the specified type. The type must be derived from __ComObject.
         /// </summary>
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [return: NotNullIfNotNull("o")]
         public static object? CreateWrapperOfType(object? o, Type t)
         {
@@ -603,6 +629,7 @@ namespace System.Runtime.InteropServices
         public static extern bool IsTypeVisibleFromCom(Type t);
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void GetNativeVariantForObject(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant)
         {
             if (!IsBuiltInComSupported)
@@ -617,6 +644,7 @@ namespace System.Runtime.InteropServices
         private static extern void GetNativeVariantForObjectNative(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant);
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void GetNativeVariantForObject<T>(T? obj, IntPtr pDstNativeVariant)
         {
             if (!IsBuiltInComSupported)
@@ -628,6 +656,7 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static object? GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant)
         {
             if (!IsBuiltInComSupported)
@@ -642,6 +671,7 @@ namespace System.Runtime.InteropServices
         private static extern object? GetObjectForNativeVariantNative(/* VARIANT * */ IntPtr pSrcNativeVariant);
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static T? GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
             if (!IsBuiltInComSupported)
@@ -653,6 +683,7 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static object?[] GetObjectsForNativeVariants(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars)
         {
             if (!IsBuiltInComSupported)
@@ -667,6 +698,7 @@ namespace System.Runtime.InteropServices
         private static extern object?[] GetObjectsForNativeVariantsNative(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars);
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static T[] GetObjectsForNativeVariants<T>(IntPtr aSrcNativeVariant, int cVars)
         {
             if (!IsBuiltInComSupported)

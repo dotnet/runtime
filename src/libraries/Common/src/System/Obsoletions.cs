@@ -28,6 +28,7 @@ namespace System
         internal const string GlobalAssemblyCacheDiagId = "SYSLIB0005";
 
         internal const string ThreadAbortMessage = "Thread.Abort is not supported and throws PlatformNotSupportedException.";
+        internal const string ThreadResetAbortMessage = "Thread.ResetAbort is not supported and throws PlatformNotSupportedException.";
         internal const string ThreadAbortDiagId = "SYSLIB0006";
 
         internal const string DefaultCryptoAlgorithmsMessage = "The default implementation of this cryptography algorithm is not supported.";
@@ -117,7 +118,7 @@ namespace System
         internal const string SignerInfoCounterSigMessage = "ComputeCounterSignature without specifying a CmsSigner is obsolete and is not supported. Use the overload that accepts a CmsSigner.";
         internal const string SignerInfoCounterSigDiagId = "SYSLIB0035";
 
-        internal const string RegexCompileToAssemblyMessage = "Regex.CompileToAssembly is obsolete and not supported. Use RegexGeneratorAttribute with the regular expression source generator instead.";
+        internal const string RegexCompileToAssemblyMessage = "Regex.CompileToAssembly is obsolete and not supported. Use the RegexGeneratorAttribute with the regular expression source generator instead.";
         internal const string RegexCompileToAssemblyDiagId = "SYSLIB0036";
 
         internal const string AssemblyNameMembersMessage = "AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported.";

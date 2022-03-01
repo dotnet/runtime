@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -364,6 +365,8 @@ namespace System
             return this;
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("This API should not be used to create mutable strings. See https://go.microsoft.com/fwlink/?linkid=2084035 for alternatives.")]
         public static unsafe string Copy(string str!!)
         {
             string result = FastAllocateString(str.Length);
