@@ -23,9 +23,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="algebra">given Boolean Algebra</param>
         public MintermGenerator(IBooleanAlgebra<TPredicate> algebra)
         {
-            // check that we can rely on equivalent predicates having the same hashcode, which EquivClass assumes
-            Debug.Assert(algebra.HashCodesRespectEquivalence);
-
             _algebra = algebra;
         }
 

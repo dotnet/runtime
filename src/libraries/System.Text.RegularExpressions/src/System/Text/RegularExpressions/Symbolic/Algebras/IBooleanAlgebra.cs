@@ -29,12 +29,6 @@ namespace System.Text.RegularExpressions.Symbolic
         T And(T predicate1, T predicate2);
 
         /// <summary>
-        /// Make a conjunction of all the predicates in the enumeration.
-        /// Returns True if the enumeration is empty.
-        /// </summary>
-        T And(IEnumerable<T> predicates);
-
-        /// <summary>
         /// Make a disjunction of predicate1 and predicate2.
         /// </summary>
         T Or(T predicate1, T predicate2);
@@ -59,17 +53,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Returns true iff predicate1 is equivalent to predicate2.
         /// </summary>
         bool AreEquivalent(T predicate1, T predicate2);
-
-        /// <summary>
-        /// True means then if two predicates are equivalent then their hashcodes are equal.
-        /// This is a weak form of extensionality.
-        /// </summary>
-        bool HashCodesRespectEquivalence { get; }
-
-        /// <summary>
-        /// True means that if two predicates are equivalent then they are identical.
-        /// </summary>
-        bool IsExtensional { get; }
 
         /// <summary>
         /// Given an array of constraints {c_1, c_2, ..., c_n} where n&gt;=0.

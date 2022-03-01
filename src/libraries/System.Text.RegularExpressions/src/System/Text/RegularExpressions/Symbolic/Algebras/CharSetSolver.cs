@@ -30,8 +30,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Singleton instance of <see cref="CharSetSolver"/>.</summary>
         public static CharSetSolver Instance { get; } = new CharSetSolver();
 
-        public BDD ApplyIgnoreCase(BDD set, string? culture = null) => _ignoreCase.Apply(set, culture);
-
         /// <summary>
         /// Make a character predicate for the given character c.
         /// </summary>
@@ -68,20 +66,6 @@ namespace System.Text.RegularExpressions.Symbolic
         public BDD CreateCharSetFromRange(char m, char n) =>
             m == n ? CharConstraint(m) :
             CreateSetFromRange(m, n, 15);
-
-        /// <summary>
-        /// Make a character set that is the union of the character sets of the given ranges.
-        /// </summary>
-        public BDD CreateCharSetFromRanges(IEnumerable<(uint, uint)> ranges)
-        {
-            BDD res = False;
-            foreach ((uint, uint) range in ranges)
-            {
-                res = Or(res, CreateSetFromRange(range.Item1, range.Item2, 15));
-            }
-
-            return res;
-        }
 
         /// <summary>
         /// Make a character set of all the characters in the interval from c to d.
@@ -122,11 +106,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         public BDD ConvertFromCharSet(BDDAlgebra _, BDD s) => s;
 
-        /// <summary>
-        /// Returns this character set solver.
-        /// </summary>
-        public CharSetSolver CharSetProvider => this;
-
         /// <summary>Calculate the number of elements in the set.</summary>
         /// <param name="set">the given set</param>
         /// <returns>the cardinality of the set</returns>
@@ -146,16 +125,9 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// Returns true iff the set contains exactly one element.
-        /// </summary>
-        /// <param name="set">the given set</param>
-        /// <returns>true iff the set is a singleton</returns>
-        public bool IsSingleton(BDD set) => ComputeDomainSize(set, 15) == 1;
-
-        /// <summary>
         /// Convert the set into an equivalent array of ranges. The ranges are nonoverlapping and ordered.
         /// </summary>
-        public (uint, uint)[] ToRanges(BDD set) => ToRanges(set, 15);
+        public (uint, uint)[] ToRanges(BDD set) => BDDRangeConverter.ToRanges(set, 15);
 
         public BDD ConvertToCharSet(ICharAlgebra<BDD> _, BDD pred) => pred;
 

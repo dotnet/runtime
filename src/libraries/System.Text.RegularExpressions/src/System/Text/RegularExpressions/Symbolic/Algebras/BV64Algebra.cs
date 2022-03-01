@@ -44,11 +44,6 @@ namespace System.Text.RegularExpressions.Symbolic
             _true = _bits == 64 ? ulong.MaxValue : ulong.MaxValue >> (64 - _bits);
         }
 
-        public bool IsExtensional => true;
-        public bool HashCodesRespectEquivalence => true;
-
-        public CharSetSolver CharSetProvider => throw new NotSupportedException();
-
         ulong IBooleanAlgebra<ulong>.False => _false;
 
         ulong IBooleanAlgebra<ulong>.True => _true;
@@ -59,8 +54,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsSatisfiable(ulong predicate) => predicate != _false;
-
-        public ulong And(IEnumerable<ulong> predicates) => throw new NotSupportedException();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ulong And(ulong predicate1, ulong predicate2) => predicate1 & predicate2;
@@ -87,8 +80,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ulong Or(ulong predicate1, ulong predicate2) => predicate1 | predicate2;
-
-        public ulong RangeConstraint(char lower, char upper, bool caseInsensitive = false, string? culture = null) => throw new NotSupportedException();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ulong CharConstraint(char c, bool caseInsensitive = false, string? culture = null)

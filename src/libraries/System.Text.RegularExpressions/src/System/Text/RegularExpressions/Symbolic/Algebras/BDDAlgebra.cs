@@ -291,14 +291,6 @@ namespace System.Text.RegularExpressions.Symbolic
         public List<BDD> GenerateMinterms(IEnumerable<BDD> sets) => _mintermGen.GenerateMinterms(sets);
 
         /// <summary>
-        /// Make a set containing all integers whose bits up to maxBit equal n.
-        /// </summary>
-        /// <param name="n">the given integer</param>
-        /// <param name="maxBit">bits above maxBit are unspecified</param>
-        /// <returns></returns>
-        public BDD CreateSetFrom(uint n, int maxBit) => CreateSetFromRange(n, n, maxBit);
-
-        /// <summary>
         /// Make the set containing all values greater than or equal to m and less than or equal to n when considering bits between 0 and maxBit.
         /// </summary>
         /// <param name="lower">lower bound</param>
@@ -366,13 +358,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 return GetOrCreateBDD(maxBit, one, zero);
             }
         }
-
-        /// <summary>
-        /// Convert the set into an equivalent array of uint ranges.
-        /// Bits above maxBit are ignored.
-        /// The ranges are nonoverlapping and ordered.
-        /// </summary>
-        public static (uint, uint)[] ToRanges(BDD set, int maxBit) => BDDRangeConverter.ToRanges(set, maxBit);
 
         #region domain size and min computation
 
@@ -450,25 +435,7 @@ namespace System.Text.RegularExpressions.Symbolic
             return size;
         }
 
-        /// <summary>
-        /// Get the lexicographically minimum bitvector in the set as a ulong.
-        /// Assumes that the set is nonempty and that the ordinal of the BDD is at most 63.
-        /// </summary>
-        /// <param name="set">the given nonempty set</param>
-        /// <returns>the lexicographically smallest bitvector in the set</returns>
-        public ulong GetMin(BDD set) => set.GetMin();
-
         #endregion
-
-        /// <summary>
-        /// Any two BDDs that are equivalent are isomorphic and have the same hashcode.
-        /// </summary>
-        public bool HashCodesRespectEquivalence => true;
-
-        /// <summary>
-        /// Two equivalent BDDs need not be identical
-        /// </summary>
-        public bool IsExtensional => false;
 
         /// <summary>
         /// The returned integer must be nonegative

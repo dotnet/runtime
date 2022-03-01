@@ -74,16 +74,11 @@ namespace System.Text.RegularExpressions.Symbolic
         public BV False { get; }
         public BV True { get; }
 
-        public bool IsExtensional => true;
-        public bool HashCodesRespectEquivalence => true;
-        public CharSetSolver CharSetProvider => throw new NotSupportedException();
         public bool AreEquivalent(BV predicate1, BV predicate2) => predicate1.Equals(predicate2);
         public List<BV> GenerateMinterms(IEnumerable<BV> constraints) => _mintermGenerator.GenerateMinterms(constraints);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsSatisfiable(BV predicate) => !predicate.Equals(False);
-
-        public BV And(IEnumerable<BV> predicates) => throw new NotSupportedException();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BV And(BV predicate1, BV predicate2) => predicate1 & predicate2;
@@ -104,8 +99,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BV Or(BV predicate1, BV predicate2) => predicate1 | predicate2;
-
-        public BV RangeConstraint(char lower, char upper, bool caseInsensitive = false, string? culture = null) => throw new NotSupportedException();
 
         public BV CharConstraint(char c, bool caseInsensitive = false, string? culture = null)
         {
