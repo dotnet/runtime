@@ -10249,13 +10249,6 @@ GenTree* Compiler::fgMorphPromoteLocalInitBlock(GenTreeLclVar* destLclNode, GenT
         return nullptr;
     }
 
-    if (destLclVar->lvCustomLayout && destLclVar->lvContainsHoles)
-    {
-        // TODO-1stClassStructs: there are no reasons for this pessimization, delete it.
-        JITDUMP(" dest has custom layout and contains holes.\n");
-        return nullptr;
-    }
-
     if (destLclVar->lvExactSize != blockSize)
     {
         JITDUMP(" dest size mismatch.\n");
@@ -17683,7 +17676,6 @@ void Compiler::fgRetypeImplicitByRefArgs()
                 newVarDsc->lvFieldLclStart = varDsc->lvFieldLclStart;
                 newVarDsc->lvFieldCnt      = varDsc->lvFieldCnt;
                 newVarDsc->lvContainsHoles = varDsc->lvContainsHoles;
-                newVarDsc->lvCustomLayout  = varDsc->lvCustomLayout;
 #ifdef DEBUG
                 newVarDsc->lvKeepType = true;
 #endif // DEBUG

@@ -1727,21 +1727,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     unsigned structAlignment = roundUp(compHandle->getClassAlignmentRequirement(typeHnd), TARGET_POINTER_SIZE);
 #endif // TARGET_ARM
 
-    // If we have "Custom Layout" then we might have an explicit Size attribute
-    // Managed C++ uses this for its structs, such C++ types will not contain GC pointers.
-    //
-    // The current VM implementation also incorrectly sets the CORINFO_FLG_CUSTOMLAYOUT
-    // whenever a managed value class contains any GC pointers.
-    // (See the comment for VMFLAG_NOT_TIGHTLY_PACKED in class.h)
-    //
-    // It is important to struct promote managed value classes that have GC pointers
-    // So we compute the correct value for "CustomLayout" here
-    //
-    if (StructHasCustomLayout(typeFlags) && ((typeFlags & CORINFO_FLG_CONTAINS_GC_PTR) == 0))
-    {
-        structPromotionInfo.customLayout = true;
-    }
-
     if (StructHasDontDigFieldsFlagSet(typeFlags))
     {
         return CanConstructAndPromoteField(&structPromotionInfo);
@@ -1852,7 +1837,6 @@ bool Compiler::StructPromotionHelper::CanConstructAndPromoteField(lvaStructPromo
     }
 
     assert(!structPromotionInfo->containsHoles);
-    assert(!structPromotionInfo->customLayout);
     lvaStructFieldInfo& fldInfo = structPromotionInfo->fields[0];
 
     fldInfo.fldHnd = compHandle->getFieldInClass(typeHnd, 0);
@@ -2030,11 +2014,6 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
                 structPromotionInfo.fieldCnt, varDsc->lvFieldAccessed);
         shouldPromote = false;
     }
-    else if (varDsc->lvIsMultiRegRet && structPromotionInfo.containsHoles && structPromotionInfo.customLayout)
-    {
-        JITDUMP("Not promoting multi-reg returned struct local V%02u with holes.\n", lclNum);
-        shouldPromote = false;
-    }
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
     // TODO-PERF - Only do this when the LclVar is used in an argument context
     // TODO-ARM64 - HFA support should also eliminate the need for this.
@@ -2060,13 +2039,8 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
         // multiple registers?
         if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
         {
-            if (structPromotionInfo.containsHoles && structPromotionInfo.customLayout)
-            {
-                JITDUMP("Not promoting multi-reg struct local V%02u with holes.\n", lclNum);
-                shouldPromote = false;
-            }
-            else if ((structPromotionInfo.fieldCnt != 2) &&
-                     !((structPromotionInfo.fieldCnt == 1) && varTypeIsSIMD(structPromotionInfo.fields[0].fldType)))
+            if ((structPromotionInfo.fieldCnt != 2) &&
+                !((structPromotionInfo.fieldCnt == 1) && varTypeIsSIMD(structPromotionInfo.fields[0].fldType)))
             {
                 JITDUMP("Not promoting multireg struct local V%02u, because lvIsParam is true, #fields != 2 and it's "
                         "not a single SIMD.\n",
@@ -2297,7 +2271,6 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
     varDsc->lvFieldLclStart = compiler->lvaCount;
     varDsc->lvPromoted      = true;
     varDsc->lvContainsHoles = structPromotionInfo.containsHoles;
-    varDsc->lvCustomLayout  = structPromotionInfo.customLayout;
 
 #ifdef DEBUG
     // Don't change the source to a TYP_BLK either.

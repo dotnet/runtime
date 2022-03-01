@@ -764,22 +764,6 @@ void MorphCopyBlockHelper::MorphStructCases()
         requiresCopyBlock = true;
     }
 
-    // Can we use field by field assignment for the dest?
-    if (m_dstDoFldAsg && m_dstVarDsc->lvCustomLayout && m_dstVarDsc->lvContainsHoles)
-    {
-        JITDUMP(" dest contains custom layout and contains holes");
-        // C++ style CopyBlock with holes
-        requiresCopyBlock = true;
-    }
-
-    // Can we use field by field assignment for the src?
-    if (m_srcDoFldAsg && m_srcVarDsc->lvCustomLayout && m_srcVarDsc->lvContainsHoles)
-    {
-        JITDUMP(" src contains custom layout and contains holes");
-        // C++ style CopyBlock with holes
-        requiresCopyBlock = true;
-    }
-
 #if defined(TARGET_ARM)
     if ((m_src->OperIsIndir()) && (m_src->gtFlags & GTF_IND_UNALIGNED))
     {
