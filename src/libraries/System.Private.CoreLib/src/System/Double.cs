@@ -1260,6 +1260,18 @@ namespace System
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool ISpanParseable<double>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out double result)
             => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
+        static double IScalarNumber<double, double>.AsDouble(double value) => value;
+        static double IScalarNumber<double, double>.Max(double x, double y) => Math.Max(x, y);
+        static double IScalarNumber<double, double>.Min(double x, double y) => Math.Max(x, y);
+        static double IScalarNumber<double, double>.Abs(double value) => Math.Abs(value);
+        static double IScalarNumber<double, double>.Sign(double value) => Math.Abs(value);
+        static double IScalarNumber<double, double>.Clamp(double value, double min, double max)
+            => value < min ? min
+            : value > max ? max
+            : value;
+        static double IScalarNumber<double, double>.CreateSaturating<TOther>(TOther value) => Create(value);
+        static double IScalarNumber<double, double>.CreateTruncating<TOther>(TOther value) => Create(value);
+        double INumber<double, double>.Norm() => throw new NotImplementedException();
 
         //
         // ISubtractionOperators
