@@ -10066,7 +10066,7 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     if (call->DefinesLocal(this, &lclVarTree, &isEntire))
     {
         assert(lclVarTree->gtFlags & GTF_VAR_DEF);
-        assert(!isEntire);
+        assert(isEntire);
 
         unsigned   hiddenArgLclNum = lclVarTree->GetLclNum();
         LclVarDsc* hiddenArgVarDsc = lvaGetDesc(hiddenArgLclNum);

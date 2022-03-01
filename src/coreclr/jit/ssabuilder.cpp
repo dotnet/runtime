@@ -868,24 +868,24 @@ void SsaBuilder::RenameCall(GenTreeCall* callNode, BasicBlock* block)
 
     if (isLocal)
     {
-        assert(!isFullDef);
+        assert(isFullDef);
         unsigned   lclNum = retBufArg->GetLclNum();
         LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lclNum);
 
         if (m_pCompiler->lvaInSsa(lclNum))
         {
             assert((retBufArg->gtFlags & GTF_VAR_DEF) != 0);
-            assert((retBufArg->gtFlags & GTF_VAR_USEASG) != 0);
+            assert((retBufArg->gtFlags & GTF_VAR_USEASG) == 0);
 
             unsigned ssaNum = varDsc->lvPerSsaData.AllocSsaNum(m_allocator, block);
 
-            // This is a definition that comes from "return buffer" argument of a call. The node records only
-            // the SSA number of the use that is implied by the argument. The SSA number of the new definition
-            // will be recorded in the m_opAsgnVarDefSsaNums map.
-            retBufArg->SetSsaNum(m_renameStack.Top(lclNum));
+            // This is a definition that comes from "return buffer" argument of a call.
+            retBufArg->SetSsaNum(ssaNum);
 
-            m_pCompiler->GetOpAsgnVarDefSsaNums()->Set(retBufArg, ssaNum);
+
             m_renameStack.Push(block, lclNum, ssaNum);
+            AddDefToHandlerPhis(block, lclNum, ssaNum);
+
             return;
         }
 

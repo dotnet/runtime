@@ -15518,7 +15518,7 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
 
             if (pIsEntire != nullptr)
             {
-                *pIsEntire = false;
+                *pIsEntire = true;
             }
             return true;
         }
