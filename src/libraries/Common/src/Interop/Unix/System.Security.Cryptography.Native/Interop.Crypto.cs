@@ -99,10 +99,10 @@ internal static partial class Interop
             int second,
             [MarshalAs(UnmanagedType.Bool)] bool isDst);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_CheckX509IpAddress", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_CheckX509IpAddress", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial int CheckX509IpAddress(SafeX509Handle x509, byte[] addressBytes, int addressLen, string hostname, int cchHostname);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_CheckX509Hostname", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_CheckX509Hostname", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial int CheckX509Hostname(SafeX509Handle x509, string hostname, int cchHostname);
 
         internal static byte[] GetAsn1StringBytes(IntPtr asn1)

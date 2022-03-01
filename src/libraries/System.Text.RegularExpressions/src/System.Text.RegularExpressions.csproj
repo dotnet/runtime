@@ -44,6 +44,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexRunner.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexRunnerFactory.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexTree.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexTreeAnalyzer.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexWriter.cs" />
     <Compile Include="System\Text\RegularExpressions\ThrowHelper.cs" />
     <!-- RegexOptions.Compiled -->
@@ -57,7 +58,7 @@
     <Compile Include="System\Text\RegularExpressions\Symbolic\DerivativeEffect.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\DfaMatchingState.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\MintermClassifier.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\RegexNodeToSymbolicConverter.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\RegexNodeConverter.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SparseIntMap.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicMatch.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicNFA.cs" />

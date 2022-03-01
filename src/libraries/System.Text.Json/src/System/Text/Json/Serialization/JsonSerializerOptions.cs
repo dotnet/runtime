@@ -46,6 +46,7 @@ namespace System.Text.Json
         private JsonCommentHandling _readCommentHandling;
         private ReferenceHandler? _referenceHandler;
         private JavaScriptEncoder? _encoder;
+        private ConverterList _converters;
         private JsonIgnoreCondition _defaultIgnoreCondition;
         private JsonNumberHandling _numberHandling;
         private JsonUnknownTypeHandling _unknownTypeHandling;
@@ -65,7 +66,7 @@ namespace System.Text.Json
         /// </summary>
         public JsonSerializerOptions()
         {
-            Converters = new ConverterList(this);
+            _converters = new ConverterList(this);
             TrackOptionsInstance(this);
         }
 
@@ -98,7 +99,7 @@ namespace System.Text.Json
             _propertyNameCaseInsensitive = options._propertyNameCaseInsensitive;
             _writeIndented = options._writeIndented;
 
-            Converters = new ConverterList(this, (ConverterList)options.Converters);
+            _converters = new ConverterList(this, options._converters);
             EffectiveMaxDepth = options.EffectiveMaxDepth;
             ReferenceHandlingStrategy = options.ReferenceHandlingStrategy;
 

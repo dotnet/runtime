@@ -509,7 +509,8 @@ clock_sleep_ns_abs (guint64 ns_abs)
 	then.tv_nsec = ns_abs % 1000000000;
 
 	do {
-		ret = clock_nanosleep (sampling_clock, TIMER_ABSTIME, &then, NULL);
+		ret = g_clock_nanosleep (sampling_clock, TIMER_ABSTIME, &then, NULL);
+
 		if (ret != 0 && ret != EINTR)
 			g_error ("%s: clock_nanosleep () returned %d", __func__, ret);
 	} while (ret == EINTR && mono_atomic_load_i32 (&sampling_thread_running));

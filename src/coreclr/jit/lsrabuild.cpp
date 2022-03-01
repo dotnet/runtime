@@ -2855,7 +2855,7 @@ void LinearScan::BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates)
         regMaskTP thisDstCandidates;
         if (fixedReg)
         {
-            // In case of multi-reg call node, we have to query the ith position return register.
+            // In case of multi-reg call node, we have to query the i'th position return register.
             // For all other cases of multi-reg definitions, the registers must be in sequential order.
             if (retTypeDesc != nullptr)
             {
@@ -3291,7 +3291,7 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
     assert(varDsc->lvTracked);
     unsigned  varIndex       = varDsc->lvVarIndex;
     Interval* varDefInterval = getIntervalForLocalVar(varIndex);
-    if ((storeLoc->gtFlags & GTF_VAR_DEATH) == 0)
+    if (!storeLoc->IsLastUse(index))
     {
         VarSetOps::AddElemD(compiler, currentLiveVars, varIndex);
     }
@@ -3372,7 +3372,7 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
     //
     if (isMultiRegSrc)
     {
-        assert(op1->GetMultiRegCount() == srcCount);
+        assert(op1->GetMultiRegCount(compiler) == srcCount);
     }
     else if (varTypeIsEnregisterable(op1))
     {
@@ -3396,7 +3396,8 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
     //
     for (unsigned int i = 0; i < dstCount; ++i)
     {
-        LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
+        LclVarDsc*   fieldVarDsc  = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
+        RefPosition* singleUseRef = nullptr;
 
         if (isMultiRegSrc)
         {
@@ -3408,10 +3409,10 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
                 srcCandidates = allByteRegs();
             }
 #endif // TARGET_X86
-            BuildUse(op1, srcCandidates, i);
+            singleUseRef = BuildUse(op1, srcCandidates, i);
         }
         assert(isCandidateVar(fieldVarDsc));
-        BuildStoreLocDef(storeLoc, fieldVarDsc, nullptr, i);
+        BuildStoreLocDef(storeLoc, fieldVarDsc, singleUseRef, i);
         if (isMultiRegSrc && (i < (dstCount - 1)))
         {
             currentLoc += 2;
@@ -3456,12 +3457,12 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 
     // Second, use source registers.
 
-    if (op1->IsMultiRegNode() && (op1->GetMultiRegCount() > 1))
+    if (op1->IsMultiRegNode() && (op1->GetMultiRegCount(compiler) > 1))
     {
         // This is the case where the source produces multiple registers.
         // This must be a store lclvar.
         assert(storeLoc->OperGet() == GT_STORE_LCL_VAR);
-        srcCount = op1->GetMultiRegCount();
+        srcCount = op1->GetMultiRegCount(compiler);
 
         for (int i = 0; i < srcCount; ++i)
         {

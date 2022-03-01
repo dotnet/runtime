@@ -54,19 +54,31 @@ namespace System.Text.RegularExpressions
             // for the whole expression, we can use that to quickly jump to the right location in the input.
             if (!_rightToLeft) // haven't added FindNextStartingPositionMode support for RTL
             {
+                bool triedToComputeMaxLength = false;
+
                 TrailingAnchor = RegexPrefixAnalyzer.FindTrailingAnchor(tree.Root);
-                if (TrailingAnchor is RegexNodeKind.End or RegexNodeKind.EndZ &&
-                    tree.Root.ComputeMaxLength() is int maxLength)
+                if (TrailingAnchor is RegexNodeKind.End or RegexNodeKind.EndZ)
                 {
-                    Debug.Assert(maxLength >= _minRequiredLength, $"{maxLength} should have been greater than {_minRequiredLength} minimum");
-                    MaxPossibleLength = maxLength;
-                    if (_minRequiredLength == maxLength)
+                    triedToComputeMaxLength = true;
+                    if (tree.Root.ComputeMaxLength() is int maxLength)
                     {
-                        FindMode = TrailingAnchor == RegexNodeKind.End ?
-                            FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End :
-                            FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ;
-                        return;
+                        Debug.Assert(maxLength >= _minRequiredLength, $"{maxLength} should have been greater than {_minRequiredLength} minimum");
+                        MaxPossibleLength = maxLength;
+                        if (_minRequiredLength == maxLength)
+                        {
+                            FindMode = TrailingAnchor == RegexNodeKind.End ?
+                                FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End :
+                                FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ;
+                            return;
+                        }
                     }
+                }
+
+                if ((tree.Options & RegexOptions.NonBacktracking) != 0 && !triedToComputeMaxLength)
+                {
+                    // NonBacktracking also benefits from knowing whether the pattern is a fixed length, as it can use that
+                    // knowledge to avoid multiple match phases in some situations.
+                    MaxPossibleLength = tree.Root.ComputeMaxLength();
                 }
             }
 
@@ -115,25 +127,17 @@ namespace System.Text.RegularExpressions
                         // The set contains one and only one character, meaning every match starts
                         // with the same literal value (potentially case-insensitive). Search for that.
                         FixedDistanceLiteral = (chars[0], 0);
-                        FindMode = (_rightToLeft, set.CaseInsensitive) switch
-                        {
-                            (false, false) => FindNextStartingPositionMode.FixedLiteral_LeftToRight_CaseSensitive,
-                            (false, true) => FindNextStartingPositionMode.FixedLiteral_LeftToRight_CaseInsensitive,
-                            (true, false) => FindNextStartingPositionMode.LeadingLiteral_RightToLeft_CaseSensitive,
-                            (true, true) => FindNextStartingPositionMode.LeadingLiteral_RightToLeft_CaseInsensitive,
-                        };
+                        FindMode = set.CaseInsensitive ?
+                            FindNextStartingPositionMode.LeadingLiteral_RightToLeft_CaseInsensitive :
+                            FindNextStartingPositionMode.LeadingLiteral_RightToLeft_CaseSensitive;
                     }
                     else
                     {
                         // The set may match multiple characters.  Search for that.
                         FixedDistanceSets = new() { (chars, set.CharClass, 0, set.CaseInsensitive) };
-                        FindMode = (_rightToLeft, set.CaseInsensitive) switch
-                        {
-                            (false, false) => FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseSensitive,
-                            (false, true) => FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseInsensitive,
-                            (true, false) => FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseSensitive,
-                            (true, true) => FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseInsensitive,
-                        };
+                        FindMode = set.CaseInsensitive ?
+                            FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseInsensitive :
+                            FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseSensitive;
                         _asciiLookups = new uint[1][];
                     }
                 }

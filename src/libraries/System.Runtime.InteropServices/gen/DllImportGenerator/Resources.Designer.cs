@@ -115,6 +115,33 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The generated &apos;DllImportAttribute&apos; will not have a value corresponding to &apos;{0}&apos;..
+        /// </summary>
+        internal static string CannotForwardToDllImportDescription {
+            get {
+                return ResourceManager.GetString("CannotForwardToDllImportDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &apos;{0}&apos; has no equivalent in &apos;DllImportAtttribute&apos; and will not be forwarded.
+        /// </summary>
+        internal static string CannotForwardToDllImportMessage {
+            get {
+                return ResourceManager.GetString("CannotForwardToDllImportMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Specified &apos;GeneratedDllImportAttribute&apos; arguments cannot be forwarded to &apos;DllImportAttribute&apos;.
+        /// </summary>
+        internal static string CannotForwardToDllImportTitle {
+            get {
+                return ResourceManager.GetString("CannotForwardToDllImportTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The &apos;BlittableTypeAttribute&apos; and &apos;NativeMarshallingAttribute&apos; attributes are mutually exclusive..
         /// </summary>
         internal static string CannotHaveMultipleMarshallingAttributesDescription {
@@ -223,6 +250,15 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Automatically converting a P/Invoke with &apos;PreserveSig&apos; set to &apos;false&apos; to a source-generated P/Invoke may produce invalid code.
+        /// </summary>
+        internal static string ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode {
+            get {
+                return ResourceManager.GetString("ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Convert to &apos;GeneratedDllImport&apos;.
         /// </summary>
         internal static string ConvertToGeneratedDllImport {
@@ -268,6 +304,15 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Convert to &apos;GeneratedDllImport&apos; with &apos;{0}&apos; suffix.
+        /// </summary>
+        internal static string ConvertToGeneratedDllImportWithSuffix {
+            get {
+                return ResourceManager.GetString("ConvertToGeneratedDllImportWithSuffix", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The specified parameter needs to be marshalled from managed to native, but the native type &apos;{0}&apos; does not support it..
         /// </summary>
         internal static string CustomTypeMarshallingManagedToNativeUnsupported {
@@ -282,60 +327,6 @@ namespace Microsoft.Interop {
         internal static string CustomTypeMarshallingNativeToManagedUnsupported {
             get {
                 return ResourceManager.GetString("CustomTypeMarshallingNativeToManagedUnsupported", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Types that contain methods marked with &apos;GeneratedDllImportAttribute&apos; must be &apos;partial&apos;. P/Invoke source generation will ignore methods contained within non-partial types..
-        /// </summary>
-        internal static string GeneratedDllImportContainingTypeMissingModifiersDescription {
-            get {
-                return ResourceManager.GetString("GeneratedDllImportContainingTypeMissingModifiersDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Type &apos;{0}&apos; contains methods marked with &apos;GeneratedDllImportAttribute&apos; and should be &apos;partial&apos;. P/Invoke source generation will ignore methods contained within non-partial types..
-        /// </summary>
-        internal static string GeneratedDllImportContainingTypeMissingModifiersMessage {
-            get {
-                return ResourceManager.GetString("GeneratedDllImportContainingTypeMissingModifiersMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Types that contain methods marked with &apos;GeneratedDllImportAttribute&apos; must be &apos;partial&apos;..
-        /// </summary>
-        internal static string GeneratedDllImportContainingTypeMissingModifiersTitle {
-            get {
-                return ResourceManager.GetString("GeneratedDllImportContainingTypeMissingModifiersTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Methods marked with &apos;GeneratedDllImportAttribute&apos; should be &apos;static&apos; and &apos;partial&apos;. P/Invoke source generation will ignore methods that are not &apos;static&apos; and &apos;partial&apos;..
-        /// </summary>
-        internal static string GeneratedDllImportMissingModifiersDescription {
-            get {
-                return ResourceManager.GetString("GeneratedDllImportMissingModifiersDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Method &apos;{0}&apos; should be &apos;static&apos; and &apos;partial&apos; when marked with &apos;GeneratedDllImportAttribute&apos;. P/Invoke source generation will ignore methods that are not &apos;static&apos; and &apos;partial&apos;..
-        /// </summary>
-        internal static string GeneratedDllImportMissingModifiersMessage {
-            get {
-                return ResourceManager.GetString("GeneratedDllImportMissingModifiersMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Method marked with &apos;GeneratedDllImportAttribute&apos; should be &apos;static&apos; and &apos;partial&apos;.
-        /// </summary>
-        internal static string GeneratedDllImportMissingModifiersTitle {
-            get {
-                return ResourceManager.GetString("GeneratedDllImportMissingModifiersTitle", resourceCulture);
             }
         }
         
@@ -372,6 +363,78 @@ namespace Microsoft.Interop {
         internal static string GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage {
             get {
                 return ResourceManager.GetString("GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Method &apos;{0}&apos; is contained in a type &apos;{1}&apos; that is not marked &apos;partial&apos;. P/Invoke source generation will ignore method &apos;{0}&apos;..
+        /// </summary>
+        internal static string InvalidAttributedMethodContainingTypeMissingModifiersMessage {
+            get {
+                return ResourceManager.GetString("InvalidAttributedMethodContainingTypeMissingModifiersMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Methods marked with &apos;GeneratedDllImportAttribute&apos; should be &apos;static&apos;, &apos;partial&apos;, and non-generic. P/Invoke source generation will ignore methods that are non-&apos;static&apos;, non-&apos;partial&apos;, or generic..
+        /// </summary>
+        internal static string InvalidAttributedMethodDescription {
+            get {
+                return ResourceManager.GetString("InvalidAttributedMethodDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Method &apos;{0}&apos; should be &apos;static&apos;, &apos;partial&apos;, and non-generic when marked with &apos;GeneratedDllImportAttribute&apos;. P/Invoke source generation will ignore method &apos;{0}&apos;..
+        /// </summary>
+        internal static string InvalidAttributedMethodSignatureMessage {
+            get {
+                return ResourceManager.GetString("InvalidAttributedMethodSignatureMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid &apos;LibraryImportAttribute&apos; usage.
+        /// </summary>
+        internal static string InvalidLibraryImportAttributeUsageTitle {
+            get {
+                return ResourceManager.GetString("InvalidLibraryImportAttributeUsageTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The configuration of &apos;StringMarshalling&apos; and &apos;StringMarshallingCustomType&apos; is invalid..
+        /// </summary>
+        internal static string InvalidStringMarshallingConfigurationDescription {
+            get {
+                return ResourceManager.GetString("InvalidStringMarshallingConfigurationDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The configuration of &apos;StringMarshalling&apos; and &apos;StringMarshallingCustomType&apos; on method &apos;{0}&apos; is invalid. {1}.
+        /// </summary>
+        internal static string InvalidStringMarshallingConfigurationMessage {
+            get {
+                return ResourceManager.GetString("InvalidStringMarshallingConfigurationMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &apos;StringMarshallingCustomType&apos; must be specified when &apos;StringMarshalling&apos; is set to &apos;StringMarshalling.Custom&apos;..
+        /// </summary>
+        internal static string InvalidStringMarshallingConfigurationMissingCustomType {
+            get {
+                return ResourceManager.GetString("InvalidStringMarshallingConfigurationMissingCustomType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &apos;StringMarshalling&apos; should be set to &apos;StringMarshalling.Custom&apos; when &apos;StringMarshallingCustomType&apos; is specified..
+        /// </summary>
+        internal static string InvalidStringMarshallingConfigurationNotCustom {
+            get {
+                return ResourceManager.GetString("InvalidStringMarshallingConfigurationNotCustom", resourceCulture);
             }
         }
         

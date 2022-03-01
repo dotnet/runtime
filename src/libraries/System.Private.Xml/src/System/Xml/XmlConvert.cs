@@ -33,11 +33,6 @@ namespace System.Xml
     /// </devdoc>
     public class XmlConvert
     {
-        //
-        // Static fields with implicit initialization
-        //
-        private static readonly CultureInfo s_invariantCultureInfo = CultureInfo.InvariantCulture;
-
         internal static char[] crt = new char[] { '\n', '\r', '\t' };
 
         /// <devdoc>
@@ -642,45 +637,45 @@ namespace System.Xml
         [CLSCompliant(false)]
         public static string ToString(sbyte value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         public static string ToString(short value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         public static string ToString(int value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         public static string ToString(long value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         public static string ToString(byte value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         [CLSCompliant(false)]
         public static string ToString(ushort value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         [CLSCompliant(false)]
         public static string ToString(uint value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         [CLSCompliant(false)]
         public static string ToString(ulong value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         public static string ToString(float value)

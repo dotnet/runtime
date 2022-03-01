@@ -9,9 +9,13 @@
     <RootNamespace>Microsoft.Interop</RootNamespace>
     <IsRoslynComponent>true</IsRoslynComponent>
     <RunAnalyzers>true</RunAnalyzers>
+    <!-- Disable RS2008: Enable analyzer release tracking
+         Diagnostics in runtime use a different mechanism (docs/project/list-of-diagnostics.md) -->
+    <NoWarn>RS2008;$(NoWarn)</NoWarn>
 
     <!-- Packaging properties -->
-    <IsPackable>true</IsPackable>
+    <!-- In the future DllImportGenerator might ship as part of a package, but meanwhile disable packaging. -->
+    <IsPackable>false</IsPackable>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <PackageProjectUrl>https://github.com/dotnet/runtime/tree/main/src/libraries/System.Runtime.InteropServices/gen/DllImportGenerator</PackageProjectUrl>
@@ -20,6 +24,11 @@
     <!-- TODO: Enable when this package shipped. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Code included from System.Runtime.InteropServices -->
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\StringMarshalling.cs" Link="Production\StringMarshalling.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Update="Resources.Designer.cs"
