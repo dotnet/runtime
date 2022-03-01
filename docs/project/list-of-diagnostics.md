@@ -150,3 +150,13 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1047`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
 |  __`SYSLIB1048`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
 |  __`SYSLIB1049`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
+|  __`SYSLIB1050`__ | Invalid LibraryImportAttribute usage |
+|  __`SYSLIB1051`__ | Specified type is not supported by source-generated P/Invokes |
+|  __`SYSLIB1052`__ | Specified configuration is not supported by source-generated P/Invokes |
+|  __`SYSLIB1053`__ | Current target framework is not supported by source-generated P/Invokes |
+|  __`SYSLIB1054`__ | Specified LibraryImportAttribute arguments cannot be forwarded to DllImportAttribute |
+|  __`SYSLIB1055`__ | *_`SYSLIB1055`-`SYSLIB1059` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1056`__ | *_`SYSLIB1055`-`SYSLIB1059` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1057`__ | *_`SYSLIB1055`-`SYSLIB1059` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1058`__ | *_`SYSLIB1055`-`SYSLIB1059` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1059`__ | *_`SYSLIB1055`-`SYSLIB1059` reserved for Microsoft.Interop.LibraryImportGenerator._* |
