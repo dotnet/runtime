@@ -1442,7 +1442,7 @@ namespace System.Collections.Immutable
 
             public MultiSet(IEqualityComparer<T>? equalityComparer)
             {
-                _dictionary = new Dictionary<NullableKeyWrapper, int>(new NullableKeyWrapperEqualityComparer(equalityComparer ?? EqualityComparer<T>.Default));
+                _dictionary = new Dictionary<NullableKeyWrapper, int>(new NullableKeyWrapperEqualityComparer(equalityComparer));
             }
 
             public void Add(T? item)
@@ -1492,21 +1492,21 @@ namespace System.Collections.Immutable
 
             private class NullableKeyWrapperEqualityComparer : IEqualityComparer<NullableKeyWrapper>
             {
-                private readonly IEqualityComparer<T> _keyComparer;
+                private readonly IEqualityComparer<T>? _keyComparer;
 
-                public NullableKeyWrapperEqualityComparer(IEqualityComparer<T> keyComparer)
+                public NullableKeyWrapperEqualityComparer(IEqualityComparer<T>? keyComparer)
                 {
                     _keyComparer = keyComparer;
                 }
 
                 public int GetHashCode(NullableKeyWrapper obj)
                 {
-                    return obj.Key == null ? 0 : _keyComparer.GetHashCode(obj.Key);
+                    return _keyComparer is null ? EqualityComparer<T>.Default.GetHashCode(obj.Key!) : _keyComparer.GetHashCode(obj.Key!);
                 }
 
                 public bool Equals(NullableKeyWrapper x, NullableKeyWrapper y)
                 {
-                    return _keyComparer.Equals(x.Key, y.Key);
+                    return _keyComparer is null ? EqualityComparer<T>.Default.Equals(x.Key, y.Key) : _keyComparer.Equals(x.Key, y.Key);
                 }
             }
         }
