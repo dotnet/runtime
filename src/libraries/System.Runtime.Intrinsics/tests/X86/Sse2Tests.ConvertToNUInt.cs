@@ -13,6 +13,7 @@ public sealed partial class Sse2Tests
     // -> PlatformNotSupportedException
     // ¯\_(ツ)_/¯
     //
+    /*
     [ConditionalTheory(nameof(Run64BitTests))]
     [InlineData(0, 0, 0)]
     [InlineData(123, 123, 0)]
@@ -34,4 +35,5 @@ public sealed partial class Sse2Tests
         nuint actual = Sse2.ConvertToNUInt(value);
         Assert.Equal(expected, actual);
     }
+    */
 }
