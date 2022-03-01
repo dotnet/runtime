@@ -2187,7 +2187,7 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
         pfnInitializeContext2 = (PINITIALIZECONTEXT2)GetProcAddress(hm, "InitializeContext2");
     }
 
-    // Determine if the processor supports AVX so we could 
+    // Determine if the processor supports AVX so we could
     // retrieve extended registers
     DWORD64 FeatureMask = GetEnabledXStateFeatures();
     if ((FeatureMask & XSTATE_MASK_AVX) != 0)
@@ -2203,7 +2203,14 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
         pfnInitializeContext2(NULL, context, NULL, &contextSize, xStateCompactionMask) :
         InitializeContext(NULL, context, NULL, &contextSize);
 
-    _ASSERTE(!success && GetLastError() == ERROR_INSUFFICIENT_BUFFER);
+    // Spec mentions that we may get a different error (it was observed on Windows7).
+    // In such case the contextSize is undefined.
+    if (success || GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+    {
+        STRESS_LOG2(LF_SYNC, LL_INFO1000, "AllocateOSContextHelper: Unexpected result from InitializeContext (success: %d, error: %d).\n",
+            success, GetLastError());
+        return NULL;
+    }
 
     // So now allocate a buffer of that size and call InitializeContext again
     BYTE* buffer = new (nothrow)BYTE[contextSize];
@@ -2227,7 +2234,7 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
 
     *contextBuffer = buffer;
 
-#else 
+#else
     pOSContext = new (nothrow) CONTEXT;
     pOSContext->ContextFlags = CONTEXT_COMPLETE;
     *contextBuffer = NULL;
@@ -3170,8 +3177,14 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     if (!pCtx)
     {
         pCtx = m_pSavedRedirectContext = ThreadStore::GrabOSContext(&m_pOSContextBuffer);
-        _ASSERTE(GetSavedRedirectContext() != NULL);
     }
+
+    // We may not have a preallocated context. Could be short on memory when we tried to preallocate.
+    // We cannot allocate here since we have a thread stopped in a random place, possibly holding locks
+    // that we would need while allocating.
+    // Other ways and attempts at suspending may yet succeed, but this redirection cannot continue.
+    if (!pCtx)
+        return (FALSE);
 
     //////////////////////////////////////
     // Get and save the thread's context
@@ -3182,9 +3195,9 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     // Scenarios like GC stress may indirectly disable XState features in the pCtx
     // depending on the state at the time of GC stress interrupt.
-    // 
+    //
     // Make sure that AVX feature mask is set, if supported.
-    // 
+    //
     // This should not normally fail.
     // The system silently ignores any feature specified in the FeatureMask
     // which is not enabled on the processor.
