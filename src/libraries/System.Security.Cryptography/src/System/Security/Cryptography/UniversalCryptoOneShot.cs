@@ -41,7 +41,9 @@ namespace System.Security.Cryptography
                     bytesWritten = SymmetricPadding.GetPaddingLength(transformBuffer, paddingMode, cipher.BlockSizeInBytes);
 
                     // Zero out the padding so that the buffer does not contain the padding data "after" the bytesWritten.
+                    Span<byte> paddingBuffer = transformBuffer.Slice(bytesWritten);
                     CryptographicOperations.ZeroMemory(transformBuffer.Slice(bytesWritten));
+                    CryptographicOperations.ZeroMemory(paddingBuffer);
                     return true;
                 }
                 catch (CryptographicException)
@@ -96,7 +98,7 @@ namespace System.Security.Cryptography
             }
 
             // If the source and destination do not overlap, we can decrypt directly in to the user buffer.
-            if (!input.Overlaps(output))
+            if (!input.Overlaps(output, out int overlap) || overlap == 0)
             {
                 // At this point we know that we have multiple blocks that need to be decrypted.
                 // So we decrypt all but the last block directly in to the buffer. The final
