@@ -2,8 +2,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <!-- This library has unaddressed trim warnings in ILLink.Suppressions.xml -->
-    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
