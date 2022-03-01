@@ -3853,7 +3853,7 @@
 
     <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' or ('$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator')">
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/**">
-	    <Issue>FIXME: TODO: not sure if mobile and wasm support tests with native libraries.  wasm also needs static linking</Issue>
+	    <Issue>mobile and wasm don't support tests with native libraries.  wasm also needs static linking</Issue>
 	</ExcludeList>
     </ItemGroup>
 </Project>
