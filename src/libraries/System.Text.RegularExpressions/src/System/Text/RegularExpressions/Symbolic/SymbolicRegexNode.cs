@@ -917,7 +917,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="elem">given element wrt which the derivative is taken</param>
         /// <param name="context">immediately surrounding character context that affects nullability of anchors</param>
         /// <returns>the derivative</returns>
-        internal SymbolicRegexNode<S> MkEagerDerivative(S elem, uint context)
+        internal SymbolicRegexNode<S> CreateEagerDerivative(S elem, uint context)
         {
             List<(SymbolicRegexNode<S>, DerivativeEffect[]?)> transitions = new();
             AddTransitions(elem, context, transitions, new List<SymbolicRegexNode<S>>(), null);
@@ -938,14 +938,14 @@ namespace System.Text.RegularExpressions.Symbolic
         /// would explore paths. For example the derivative of a*ab places a*ab before b, while for a*?ab the order is reversed.
         /// </summary>
         /// <remarks>
-        /// The differences of this to <see cref="MkEagerDerivative"/> are that (1) effects (e.g. capture starts and ends)
+        /// The differences of this to <see cref="CreateEagerDerivative"/> are that (1) effects (e.g. capture starts and ends)
         /// are considered and (2) the different elements that would form a top level union are instead returned as separate
         /// nodes (paired with their associated effects).
         /// </remarks>
         /// <param name="elem">given element wrt which the derivative is taken</param>
         /// <param name="context">immediately surrounding character context that affects nullability of anchors</param>
         /// <returns>the derivative</returns>
-        internal List<(SymbolicRegexNode<S>, DerivativeEffect[]?)> MkEagerDerivativeWithEffects(S elem, uint context)
+        internal List<(SymbolicRegexNode<S>, DerivativeEffect[]?)> CreateEagerDerivativeWithEffects(S elem, uint context)
         {
             List<(SymbolicRegexNode<S>, DerivativeEffect[]?)> transitions = new();
             AddTransitions(elem, context, transitions, new List<SymbolicRegexNode<S>>(), new Stack<DerivativeEffect>());

@@ -105,7 +105,7 @@ namespace System.Text.RegularExpressions.Symbolic
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the derivative of the node for the given context
-            SymbolicRegexNode<T> derivative = Node.MkEagerDerivative(minterm, context);
+            SymbolicRegexNode<T> derivative = Node.CreateEagerDerivative(minterm, context);
 
             // nextCharKind will be the PrevCharKind of the target state
             // use an existing state instead if one exists already
@@ -126,7 +126,7 @@ namespace System.Text.RegularExpressions.Symbolic
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the transitions for the given context
-            List<(SymbolicRegexNode<T>, DerivativeEffect[]?)> derivativesAndEffects = Node.MkEagerDerivativeWithEffects(minterm, context);
+            List<(SymbolicRegexNode<T>, DerivativeEffect[]?)> derivativesAndEffects = Node.CreateEagerDerivativeWithEffects(minterm, context);
 
             var list = new List<(DfaMatchingState<T> derivative, DerivativeEffect[] effects)>();
             foreach ((SymbolicRegexNode<T> derivative, DerivativeEffect[]? effects) in derivativesAndEffects)
