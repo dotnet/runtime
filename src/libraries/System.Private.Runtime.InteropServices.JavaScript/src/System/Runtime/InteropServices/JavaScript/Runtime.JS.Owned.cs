@@ -13,10 +13,10 @@ namespace System.Runtime.InteropServices.JavaScript
         private static Dictionary<object, int> GCHandleFromJSOwnedObject = new Dictionary<object, int>();
 
 
-        public static object GetJSOwnedObjectByGCHandle(int gcHandle)
+        public static void GetJSOwnedObjectByGCHandleRef(int gcHandle, out object result)
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
-            return h.Target!;
+            result = h.Target!;
         }
 
         // A JSOwnedObject is a managed object with its lifetime controlled by javascript.
@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.JavaScript
         //  strong references, allowing the managed object to be collected.
         // This ensures that things like delegates and promises will never 'go away' while JS
         //  is expecting to be able to invoke or await them.
-        public static int GetJSOwnedObjectGCHandle(object obj)
+        public static int GetJSOwnedObjectGCHandleRef(in object obj)
         {
             if (obj == null)
                 return 0;
@@ -58,10 +58,10 @@ namespace System.Runtime.InteropServices.JavaScript
         public static int CreateTaskSource()
         {
             var tcs = new TaskCompletionSource<object>();
-            return GetJSOwnedObjectGCHandle(tcs);
+            return GetJSOwnedObjectGCHandleRef(tcs);
         }
 
-        public static void SetTaskSourceResult(int tcsGCHandle, object result)
+        public static void SetTaskSourceResultRef(int tcsGCHandle, ref object result)
         {
             GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
             // this is JS owned Normal handle. We always have a Target

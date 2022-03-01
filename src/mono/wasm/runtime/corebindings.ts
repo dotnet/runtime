@@ -6,13 +6,13 @@ import { PromiseControl } from "./cancelable-promise";
 import { runtimeHelpers } from "./imports";
 
 const fn_signatures: [jsname: string, csname: string, signature: string/*ArgsMarshalString*/][] = [
-    ["_get_cs_owned_object_by_js_handle", "GetCSOwnedObjectByJSHandle", "ii!"],
-    ["_get_cs_owned_object_js_handle", "GetCSOwnedObjectJSHandle", "mi"],
-    ["_try_get_cs_owned_object_js_handle", "TryGetCSOwnedObjectJSHandle", "mi"],
-    ["_create_cs_owned_proxy", "CreateCSOwnedProxy", "iii!"],
+    ["_get_cs_owned_object_by_js_handle_ref", "GetCSOwnedObjectByJSHandleRef", "iim"],
+    ["_get_cs_owned_object_js_handle_ref", "GetCSOwnedObjectJSHandleRef", "mi"],
+    ["_try_get_cs_owned_object_js_handle_ref", "TryGetCSOwnedObjectJSHandleRef", "mi"],
+    ["_create_cs_owned_proxy_ref", "CreateCSOwnedProxyRef", "iiim"],
 
-    ["_get_js_owned_object_by_gc_handle", "GetJSOwnedObjectByGCHandle", "i!"],
-    ["_get_js_owned_object_gc_handle", "GetJSOwnedObjectGCHandle", "m"],
+    ["_get_js_owned_object_by_gc_handle_ref", "GetJSOwnedObjectByGCHandleRef", "im"],
+    ["_get_js_owned_object_gc_handle_ref", "GetJSOwnedObjectGCHandleRef", "m"],
     ["_release_js_owned_object_by_gc_handle", "ReleaseJSOwnedObjectByGCHandle", "i"],
 
     ["_create_tcs", "CreateTaskSource", ""],
@@ -31,17 +31,18 @@ const fn_signatures: [jsname: string, csname: string, signature: string/*ArgsMar
 
 export interface t_CSwraps {
     // BINDING
-    _get_cs_owned_object_by_js_handle(jsHandle: JSHandle, shouldAddInflight: 0 | 1): MonoObject;
-    _get_cs_owned_object_js_handle(jsHandle: JSHandle, shouldAddInflight: 0 | 1): JSHandle;
-    _try_get_cs_owned_object_js_handle(obj: MonoObject, shouldAddInflight: 0 | 1): JSHandle;
-    _create_cs_owned_proxy(jsHandle: JSHandle, mappedType: number, shouldAddInflight: 0 | 1): MonoObject;
+    _get_cs_owned_object_by_js_handle_ref(jsHandle: JSHandle, shouldAddInflight: 0 | 1, result: MonoObjectRef): void;
+    _get_cs_owned_object_js_handle_ref(obj: MonoObjectRef, shouldAddInflight: 0 | 1): JSHandle;
+    _try_get_cs_owned_object_js_handle_ref(obj: MonoObjectRef, shouldAddInflight: 0 | 1): JSHandle;
+    _create_cs_owned_proxy_ref(jsHandle: JSHandle, mappedType: number, shouldAddInflight: 0 | 1, result: MonoObjectRef): void;
 
-    _get_js_owned_object_by_gc_handle(gcHandle: GCHandle): MonoObject;
-    _get_js_owned_object_gc_handle(obj: MonoObject): GCHandle
+    _get_js_owned_object_by_gc_handle_ref(gcHandle: GCHandle, result: MonoObjectRef): void;
+    _get_js_owned_object_gc_handle_ref(obj: MonoObjectRef): GCHandle
     _release_js_owned_object_by_gc_handle(gcHandle: GCHandle): void;
 
     _create_tcs(): GCHandle;
-    _set_tcs_result(gcHandle: GCHandle, result: MonoObject): void
+    // FIXME: We currently rely on marshaling to convert result types
+    _set_tcs_result(gcHandle: GCHandle, result: any): void
     _set_tcs_failure(gcHandle: GCHandle, result: string): void
     _get_tcs_task(gcHandle: GCHandle): MonoObject;
     _task_from_result(result: MonoObject): MonoObject

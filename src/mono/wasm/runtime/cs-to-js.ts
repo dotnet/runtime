@@ -11,7 +11,7 @@ import { runtimeHelpers } from "./imports";
 import { conv_string_rooted } from "./strings";
 import corebindings from "./corebindings";
 import cwraps from "./cwraps";
-import { get_js_owned_object_by_gc_handle, js_owned_gc_handle_symbol, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, _js_owned_object_finalized, _js_owned_object_registry, _lookup_js_owned_object, _register_js_owned_object, _use_finalization_registry } from "./gc-handles";
+import { get_js_owned_object_by_gc_handle_ref, js_owned_gc_handle_symbol, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, _js_owned_object_finalized, _js_owned_object_registry, _lookup_js_owned_object, _register_js_owned_object, _use_finalization_registry } from "./gc-handles";
 import { mono_method_get_call_signature, call_method, wrap_error } from "./method-calls";
 import { _js_to_mono_obj } from "./js-to-cs";
 import { _are_promises_supported, _create_cancelable_promise } from "./cancelable-promise";
@@ -36,7 +36,7 @@ export function unbox_mono_obj(mono_obj: MonoObject): any {
 
 function _unbox_cs_owned_root_as_js_object(root: WasmRoot<any>) {
     // we don't need in-flight reference as we already have it rooted here
-    const js_handle = corebindings._get_cs_owned_object_js_handle(root.value, 0);
+    const js_handle = corebindings._get_cs_owned_object_js_handle_ref(root.address, 0);
     const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
     return js_obj;
 }
@@ -177,7 +177,7 @@ export function _wrap_delegate_root_as_function(root: WasmRoot<MonoObject>): Fun
         return null;
 
     // get strong reference to the Delegate
-    const gc_handle = corebindings._get_js_owned_object_gc_handle(root.value);
+    const gc_handle = corebindings._get_js_owned_object_gc_handle_ref(root.address);
     return _wrap_delegate_gc_handle_as_function(gc_handle);
 }
 
@@ -189,8 +189,10 @@ export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle, after_
     if (!result) {
         // note that we do not implement function/delegate roundtrip
         result = function (...args: any[]) {
-            const delegateRoot = mono_wasm_new_root(get_js_owned_object_by_gc_handle(gc_handle));
+            const delegateRoot = mono_wasm_new_root<MonoObject>();
+            get_js_owned_object_by_gc_handle_ref(gc_handle, delegateRoot.address);
             try {
+                // FIXME: Pass delegateRoot by-ref
                 const res = call_method(result[delegate_invoke_symbol], delegateRoot.value, result[delegate_invoke_signature_symbol], args);
                 if (after_listener_callback) {
                     after_listener_callback();
@@ -202,7 +204,8 @@ export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle, after_
         };
 
         // bind the method
-        const delegateRoot = mono_wasm_new_root(get_js_owned_object_by_gc_handle(gc_handle));
+        const delegateRoot = mono_wasm_new_root<MonoObject>();
+        get_js_owned_object_by_gc_handle_ref(gc_handle, delegateRoot.address);
         try {
             if (typeof result[delegate_invoke_symbol] === "undefined") {
                 result[delegate_invoke_symbol] = cwraps.mono_wasm_get_delegate_invoke(delegateRoot.value);
@@ -283,7 +286,7 @@ function _unbox_task_root_as_promise(root: WasmRoot<MonoObject>) {
         throw new Error("Promises are not supported thus 'System.Threading.Tasks.Task' can not work in this context.");
 
     // get strong reference to Task
-    const gc_handle = corebindings._get_js_owned_object_gc_handle(root.value);
+    const gc_handle = corebindings._get_js_owned_object_gc_handle_ref(root.address);
 
     // see if we have js owned instance for this gc_handle already
     let result = _lookup_js_owned_object(gc_handle);
@@ -322,7 +325,7 @@ export function _unbox_ref_type_root_as_js_object(root: WasmRoot<MonoObject>): a
 
     // this could be JSObject proxy of a js native object
     // we don't need in-flight reference as we already have it rooted here
-    const js_handle = corebindings._try_get_cs_owned_object_js_handle(root.value, 0);
+    const js_handle = corebindings._try_get_cs_owned_object_js_handle_ref(root.address, 0);
     if (js_handle) {
         if (js_handle === JSHandleDisposed) {
             throw new Error("Cannot access a disposed JSObject at " + root.value);
@@ -332,7 +335,7 @@ export function _unbox_ref_type_root_as_js_object(root: WasmRoot<MonoObject>): a
     // otherwise this is C# only object
 
     // get strong reference to Object
-    const gc_handle = corebindings._get_js_owned_object_gc_handle(root.value);
+    const gc_handle = corebindings._get_js_owned_object_gc_handle_ref(root.address);
 
     // see if we have js owned instance for this gc_handle already
     let result = _lookup_js_owned_object(gc_handle);

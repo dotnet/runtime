@@ -3,7 +3,8 @@
 
 import { Module, runtimeHelpers } from "./imports";
 import {
-    cs_owned_js_handle_symbol, get_cs_owned_object_by_js_handle, get_js_owned_object_by_gc_handle, js_owned_gc_handle_symbol,
+    cs_owned_js_handle_symbol, get_cs_owned_object_by_js_handle_ref,
+    get_js_owned_object_by_gc_handle_ref, js_owned_gc_handle_symbol,
     mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle,
     mono_wasm_release_cs_owned_object, _js_owned_object_registry, _use_finalization_registry
 } from "./gc-handles";
@@ -80,34 +81,38 @@ function _extract_mono_obj(should_add_in_flight: boolean, js_obj: any): MonoObje
     if (js_obj === null || typeof js_obj === "undefined")
         return MonoObjectNull;
 
-    let result = null;
-    if (js_obj[js_owned_gc_handle_symbol]) {
-        // for js_owned_gc_handle we don't want to create new proxy
-        // since this is strong gc_handle we don't need to in-flight reference
-        result = get_js_owned_object_by_gc_handle(js_obj[js_owned_gc_handle_symbol]);
-        return result;
-    }
-    if (js_obj[cs_owned_js_handle_symbol]) {
-        result = get_cs_owned_object_by_js_handle(js_obj[cs_owned_js_handle_symbol], should_add_in_flight);
-
-        // It's possible the managed object corresponding to this JS object was collected,
-        //  in which case we need to make a new one.
-        if (!result) {
-            delete js_obj[cs_owned_js_handle_symbol];
+    const resultRoot = mono_wasm_new_root<MonoObject>();
+    try {
+        if (js_obj[js_owned_gc_handle_symbol]) {
+            // for js_owned_gc_handle we don't want to create new proxy
+            // since this is strong gc_handle we don't need to in-flight reference
+            get_js_owned_object_by_gc_handle_ref(js_obj[js_owned_gc_handle_symbol], resultRoot.address);
+            return resultRoot.value;
         }
+        if (js_obj[cs_owned_js_handle_symbol]) {
+            get_cs_owned_object_by_js_handle_ref(js_obj[cs_owned_js_handle_symbol], should_add_in_flight, resultRoot.address);
+
+            // It's possible the managed object corresponding to this JS object was collected,
+            //  in which case we need to make a new one.
+            if (!resultRoot.value) {
+                delete js_obj[cs_owned_js_handle_symbol];
+            }
+        }
+
+        if (!resultRoot.value) {
+            // Obtain the JS -> C# type mapping.
+            const wasm_type = js_obj[wasm_type_symbol];
+            const wasm_type_id = typeof wasm_type === "undefined" ? 0 : wasm_type;
+
+            const js_handle = mono_wasm_get_js_handle(js_obj);
+
+            corebindings._create_cs_owned_proxy_ref(js_handle, wasm_type_id, should_add_in_flight ? 1 : 0, resultRoot.address);
+        }
+
+        return resultRoot.value;
+    } finally {
+        resultRoot.release();
     }
-
-    if (!result) {
-        // Obtain the JS -> C# type mapping.
-        const wasm_type = js_obj[wasm_type_symbol];
-        const wasm_type_id = typeof wasm_type === "undefined" ? 0 : wasm_type;
-
-        const js_handle = mono_wasm_get_js_handle(js_obj);
-
-        result = corebindings._create_cs_owned_proxy(js_handle, wasm_type_id, should_add_in_flight ? 1 : 0);
-    }
-
-    return result;
 }
 
 function _box_js_int(js_obj: number) {

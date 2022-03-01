@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         private static readonly Dictionary<int, WeakReference<JSObject>> _csOwnedObjects = new Dictionary<int, WeakReference<JSObject>>();
 
-        public static JSObject? GetCSOwnedObjectByJSHandle(int jsHandle, int shouldAddInflight)
+        public static void GetCSOwnedObjectByJSHandleRef(int jsHandle, int shouldAddInflight, out JSObject? result)
         {
             lock (_csOwnedObjects)
             {
@@ -20,14 +20,14 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         jsObject.AddInFlight();
                     }
-                    return jsObject;
+                    result = jsObject;
+                    return;
                 }
             }
-            return null;
-
+            result = null;
         }
 
-        public static int TryGetCSOwnedObjectJSHandle(object rawObj, int shouldAddInflight)
+        public static int TryGetCSOwnedObjectJSHandleRef(ref object rawObj, int shouldAddInflight)
         {
             JSObject? jsObject = rawObj as JSObject;
             if (jsObject != null && shouldAddInflight != 0)
@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject?.JSHandle ?? 0;
         }
 
-        public static int GetCSOwnedObjectJSHandle(JSObject jsObject, int shouldAddInflight)
+        public static int GetCSOwnedObjectJSHandleRef(ref JSObject jsObject, int shouldAddInflight)
         {
             jsObject.AssertNotDisposed();
 
@@ -48,9 +48,9 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject.JSHandle;
         }
 
-        public static JSObject CreateCSOwnedProxy(IntPtr jsHandle, MappedType mappedType, int shouldAddInflight)
+        public static void CreateCSOwnedProxyRef(IntPtr jsHandle, MappedType mappedType, int shouldAddInflight, out JSObject? jsObject)
         {
-            JSObject? jsObject = null;
+            jsObject = null;
 
             lock (_csOwnedObjects)
             {
@@ -85,12 +85,11 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 jsObject.AddInFlight();
             }
-
-            return jsObject;
         }
 
         #region used from C# side
 
+        // TODO: Ref
         internal static bool ReleaseCSOwnedObject(JSObject objToRelease)
         {
             objToRelease.AssertNotDisposed();
@@ -103,6 +102,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return true;
         }
 
+        // TODO: Ref
         internal static IntPtr CreateCSOwnedObject(JSObject proxy, string typeName, params object[] parms)
         {
             object res = Interop.Runtime.CreateCSOwnedObject(typeName, parms, out int exception);
