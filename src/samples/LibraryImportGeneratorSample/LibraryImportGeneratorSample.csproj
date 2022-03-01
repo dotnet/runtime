@@ -8,10 +8,10 @@
     <Nullable>enable</Nullable>
 
     <!-- Indicate to the compiler to output generated files to disk. Source addded
-         by the DllImportGenerator can be found in the intermediate directory. -->
+         by the LibraryImportGenerator can be found in the intermediate directory. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
-    <IncludeDllImportGeneratorSources>false</IncludeDllImportGeneratorSources>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <IncludeLibraryImportGeneratorSources>false</IncludeLibraryImportGeneratorSources>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 

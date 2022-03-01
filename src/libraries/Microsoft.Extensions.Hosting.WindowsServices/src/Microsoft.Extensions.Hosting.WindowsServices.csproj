@@ -8,7 +8,7 @@
     <IsPackable>true</IsPackable>
     <PackageDescription>.NET hosting infrastructure for Windows Services.</PackageDescription>
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
 
   <ItemGroup>

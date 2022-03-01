@@ -4,6 +4,6 @@
     <Win32Resource>EventLogMessages.res</Win32Resource>
     <!-- Override the parent Directory.Build.props -->
     <SupportedOSPlatforms />
-    <EnableDllImportGenerator>false</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
   </PropertyGroup>
 </Project>
