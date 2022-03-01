@@ -35,6 +35,24 @@ namespace System.Net.Http.Tests
         private const string parsedPrefix = "parsed";
         private const string invalidHeaderValue = "invalid";
 
+        [Fact]
+        public void TryAddWithoutValidation_ValidAndInvalidValues_InsertionOrderIsPreserved()
+        {
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://microsoft.com");
+            request.Headers.TryAddWithoutValidation("Accept", "text/bar");
+            request.Headers.TryAddWithoutValidation("Accept", "invalid");
+            request.Headers.TryAddWithoutValidation("Accept", "text/baz");
+
+            // Force parsing
+            _ = request.Headers.Accept.Count;
+
+            Assert.Equal(1, request.Headers.NonValidated.Count);
+            Assert.Equal(3, request.Headers.NonValidated.ElementAt(0).Value.Count);
+            Assert.Equal("text/bar", request.Headers.NonValidated.ElementAt(0).Value.ElementAt(0));
+            Assert.Equal("invalid", request.Headers.NonValidated.ElementAt(0).Value.ElementAt(1));
+            Assert.Equal("text/baz", request.Headers.NonValidated.ElementAt(0).Value.ElementAt(2));
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("")]

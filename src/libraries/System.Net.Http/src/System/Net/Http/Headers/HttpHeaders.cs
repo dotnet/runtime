@@ -601,6 +601,7 @@ namespace System.Net.Http.Headers
 
             if (descriptor.Parser == null)
             {
+                sourceInfo.AssertContainsNoInvalidValues();
                 destinationInfo.ParsedAndInvalidValues = CloneStringHeaderInfoValues(sourceInfo.ParsedAndInvalidValues);
             }
             else
@@ -1366,7 +1367,7 @@ namespace System.Net.Http.Headers
 
                 Debug.Assert(count <= 1, "only allow single parsed value");
             }
-            internal bool IsEmpty => (RawValue == null) && ParsedAndInvalidValues == null;
+            internal bool IsEmpty => RawValue == null && ParsedAndInvalidValues == null;
         }
 
 

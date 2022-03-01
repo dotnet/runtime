@@ -97,18 +97,27 @@ namespace System.Net.Http.Headers
 
             if (storeValues == null)
             {
-                // We only have 1 value: If it is the "special value" just return, otherwise add the value to the
-                // array and return.
-                Debug.Assert(storeValue is T);
-                if (arrayIndex == array.Length)
+                if (storeValue is not HttpHeaders.InvalidValue)
                 {
-                    throw new ArgumentException(SR.net_http_copyto_array_too_small);
+                    // We only have 1 value: If it is the "special value" just return, otherwise add the value to the
+                    // array and return.
+                    Debug.Assert(storeValue is T);
+                    if (arrayIndex == array.Length)
+                    {
+                        throw new ArgumentException(SR.net_http_copyto_array_too_small);
+                    }
+                    array[arrayIndex] = (T)storeValue;
                 }
-                array[arrayIndex] = (T)storeValue;
             }
             else
             {
-                storeValues.CopyTo(array, arrayIndex);
+                foreach (var item in storeValues)
+                {
+                    if (item is not HttpHeaders.InvalidValue)
+                    {
+                        array[arrayIndex++] = (T)item;
+                    }
+                }
             }
         }
 
