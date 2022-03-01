@@ -152,10 +152,12 @@ steps:
       displayName: Setup MAUI Project
       workingDirectory: $(Build.SourcesDirectory)
 
+    # Restore is split out because of https://github.com/dotnet/sdk/issues/21877, can be removed with --no-restore once fixed
     - script: |
         chmod -R a+r .
-        ../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
-        mv ./bin/Release/net6.0-android/com.companyname.MauiTesting-Signed.apk ./MauiAndroidDefault.apk
+        ../dotnet restore
+        ../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release -r android-arm64 --no-restore --self-contained
+        mv ./bin/Release/net6.0-android/android-arm64/com.companyname.mauitesting-Signed.apk ./MauiAndroidDefault.apk
       displayName: Build MAUI Android
       workingDirectory: $(Build.SourcesDirectory)/MauiTesting 
   # -- end newmaui --
@@ -181,6 +183,7 @@ steps:
         mv ./bin/Release/net6.0-android/android-arm64/com.Microsoft.NetConf2021.Maui-Signed.apk ./MauiAndroidDefault.apk
       displayName: Build podcast app for MAUI
       workingDirectory:  $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile
+
    #--- end podcast ---
 
     # This step pulls the product version from the used Microsoft.Maui.dll file properties and saves it for upload with the maui test counter.
