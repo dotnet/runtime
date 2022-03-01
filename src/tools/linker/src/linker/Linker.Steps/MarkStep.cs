@@ -824,7 +824,6 @@ namespace Mono.Linker.Steps
 						continue;
 
 					MarkCustomAttribute (ca, reason);
-					MarkSpecialCustomAttributeDependencies (ca, provider);
 				}
 			}
 
@@ -1563,7 +1562,6 @@ namespace Mono.Linker.Steps
 				markOccurred = true;
 				using (ScopeStack.PushScope (scope)) {
 					MarkCustomAttribute (customAttribute, reason);
-					MarkSpecialCustomAttributeDependencies (customAttribute, provider);
 				}
 			}
 
@@ -2044,28 +2042,8 @@ namespace Mono.Linker.Steps
 					if (MarkMethodsIf (type.Methods, MethodDefinitionExtensions.IsPublicInstancePropertyMethod, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, type)))
 						Tracer.AddDirectDependency (attribute, new DependencyInfo (DependencyKind.CustomAttribute, type), marked: false);
 					break;
-				case "TypeDescriptionProviderAttribute" when attrType.Namespace == "System.ComponentModel":
-					MarkTypeConverterLikeDependency (attribute, l => l.IsDefaultConstructor (), type);
-					break;
 				}
 			}
-		}
-
-		//
-		// Used for known framework attributes which can be applied to any element
-		//
-		bool MarkSpecialCustomAttributeDependencies (CustomAttribute ca, ICustomAttributeProvider provider)
-		{
-			var dt = ca.Constructor.DeclaringType;
-			if (dt.Name == "TypeConverterAttribute" && dt.Namespace == "System.ComponentModel") {
-				MarkTypeConverterLikeDependency (ca, l =>
-					l.IsDefaultConstructor () ||
-					l.Parameters.Count == 1 && l.Parameters[0].ParameterType.IsTypeOf ("System", "Type"),
-					provider);
-				return true;
-			}
-
-			return false;
 		}
 
 		void MarkMethodSpecialCustomAttributes (MethodDefinition method)
@@ -2088,34 +2066,6 @@ namespace Mono.Linker.Steps
 				Tracer.AddDirectDependency (attribute, new DependencyInfo (DependencyKind.CustomAttribute, type), marked: false);
 				MarkNamedMethod (type, name, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute));
 			}
-		}
-
-		protected virtual void MarkTypeConverterLikeDependency (CustomAttribute attribute, Func<MethodDefinition, bool> predicate, ICustomAttributeProvider provider)
-		{
-			var args = attribute.ConstructorArguments;
-			if (args.Count < 1)
-				return;
-
-			TypeDefinition? typeDefinition = null;
-			switch (attribute.ConstructorArguments[0].Value) {
-			case string s:
-				if (!Context.TypeNameResolver.TryResolveTypeName (s, ScopeStack.CurrentScope.Origin.Provider, out TypeReference? typeRef, out AssemblyDefinition? assemblyDefinition))
-					break;
-				typeDefinition = Context.TryResolve (typeRef);
-				if (typeDefinition != null)
-					MarkingHelpers.MarkMatchingExportedType (typeDefinition, assemblyDefinition, new DependencyInfo (DependencyKind.CustomAttribute, provider), ScopeStack.CurrentScope.Origin);
-
-				break;
-			case TypeReference type:
-				typeDefinition = Context.Resolve (type);
-				break;
-			}
-
-			if (typeDefinition == null)
-				return;
-
-			Tracer.AddDirectDependency (attribute, new DependencyInfo (DependencyKind.CustomAttribute, provider), marked: false);
-			MarkMethodsIf (typeDefinition.Methods, predicate, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute));
 		}
 
 		static readonly Regex DebuggerDisplayAttributeValueRegex = new Regex ("{[^{}]+}", RegexOptions.Compiled);
