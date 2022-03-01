@@ -31,39 +31,6 @@
 #endif
 
 #ifdef __cplusplus
-
-namespace {
-// g_cast converts void* to T*.
-// e.g. #define malloc(x) (g_cast (malloc (x)))
-struct g_cast
-{
-private:
-	void * const x;
-public:
-	explicit g_cast (void volatile *y) : x((void*)y) { }
-	// Lack of rvalue constructor inhibits ternary operator.
-	// Either don't use ternary, or cast each side.
-	// sa = (salen <= 128) ? g_alloca (salen) : g_malloc (salen);
-	//g_cast (g_cast&& y) : x(y.x) { }
-	g_cast (g_cast&&) = delete;
-	g_cast () = delete;
-	g_cast (const g_cast&) = delete;
-
-	template <typename TTo>
-	operator TTo* () const
-	{
-		return (TTo*)x;
-	}
-};
-} // end anonymous namespace
-
-#else
-
-#define g_cast(x) x
-
-#endif
-
-#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -91,26 +58,16 @@ typedef int (STDCALL *SimpleDelegate) (int a);
 #define FALSE                0
 #define TRUE                 1
 
-typedef size_t gsize;
-typedef ptrdiff_t gssize;
-
 typedef void *         gpointer;
 
-/* Types defined in terms of the stdint.h */
-typedef uint8_t        guint8;
-typedef int16_t        gint16;
-typedef int32_t        gint32;
-typedef uint32_t       guint32;
-typedef int64_t        gint64;
-
 static gpointer
-g_malloc (gsize x)
+g_malloc (size_t x)
 {
 	return malloc (x);
 }
 
 static gpointer
-g_malloc0 (gsize x)
+g_malloc0 (size_t x)
 {
 	return calloc (1, x);
 }
@@ -121,8 +78,6 @@ g_free (void *ptr)
 	free (ptr);
 }
 
-#define g_assert(x) assert((x))
-	
 static void marshal_free (void *ptr)
 {
 #ifdef WIN32
@@ -132,7 +87,7 @@ static void marshal_free (void *ptr)
 #endif
 }
 
-static void* marshal_alloc (gsize size)
+static void* marshal_alloc (size_t size)
 {
 #ifdef WIN32
 	return CoTaskMemAlloc (size);
@@ -168,23 +123,6 @@ libtest_initialize_runtime_symbols (const char *libcoreclr_name)
 	libtest_api_coreclr_name = marshal_strdup (libcoreclr_name);
 	return mono_test_init_symbols();
 }
-
-/*
- * mono_method_get_unmanaged_thunk tests
- */
-
-#if defined(__GNUC__) && ((defined(__i386__) && (defined(__linux__) || defined (__APPLE__)) || defined (__FreeBSD__) || defined(__OpenBSD__)) || (defined(__ppc__) && defined(__APPLE__)))
-#define ALIGN(size) __attribute__ ((__aligned__(size)))
-#else
-#define ALIGN(size)
-#endif
-
-/* thunks.cs:TestStruct */
-typedef struct _TestStruct {
-	int A;
-	double B;
-} TestStruct;
-
 #ifdef WIN32
 // Copied from eglib gmodule-win32.c
 #if HAVE_API_SUPPORT_WIN32_ENUM_PROCESS_MODULES
@@ -269,15 +207,7 @@ lookup_mono_symbol (const char *symbol_name)
 #endif
 }
 
-LIBTEST_API gpointer STDCALL
-mono_test_marshal_lookup_symbol (const char *symbol_name)
-{
-	return lookup_mono_symbol (symbol_name);
-}
-
-
-typedef void (*VoidVoidCallback) (void);
-typedef void (*MonoFtnPtrEHCallback) (guint32 gchandle);
+typedef void (*MonoFtnPtrEHCallback) (uint32_t gchandle);
 
 static int sym_inited = 0;
 
@@ -300,6 +230,17 @@ static void* (*sym_mono_threads_enter_gc_unsafe_region) (void** stackdata);
 // FIXME use runtime headers
 #define MONO_BEGIN_EFRAME { void *__dummy; void *__region_cookie = mono_threads_enter_gc_unsafe_region ? mono_threads_enter_gc_unsafe_region (&__dummy) : NULL;
 #define MONO_END_EFRAME if (mono_threads_exit_gc_unsafe_region) mono_threads_exit_gc_unsafe_region (__region_cookie, &__dummy); }
+
+
+/*
+ * mono_method_get_unmanaged_thunk tests
+ */
+
+/* thunks.cs:TestStruct */
+typedef struct _TestStruct {
+	int A;
+	double B;
+} TestStruct;
 
 /**
  * test_method_thunk:
@@ -445,13 +386,13 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 
 	case 6: {
 		/* thunks.cs:Test.Test6 */
-		int (STDCALL *F)(gpointer, guint8, gint16, gint32, gint64, float, double,
+		int (STDCALL *F)(gpointer, uint8_t, int16_t, int32_t, int64_t, float, double,
 				 gpointer, gpointer*);
 		gpointer obj;
 		gpointer str = mono_string_new_wrapper ("Test6");
 		int res;
 
-		F = (int (STDCALL *)(gpointer, guint8, gint16, gint32, gint64, float, double, gpointer, gpointer *))test_method;
+		F = (int (STDCALL *)(gpointer, uint8_t, int16_t, int32_t, int64_t, float, double, gpointer, gpointer *))test_method;
 		obj = CreateObject (&ex);
 
 		res = F (obj, 254, 32700, -245378, 6789600, 3.1415f, 3.1415, str, &ex);
@@ -470,7 +411,7 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 
 	case 7: {
 		/* thunks.cs:Test.Test7 */
-		gint64 (STDCALL *F)(gpointer*) = (gint64 (STDCALL *)(gpointer *))test_method;
+		int64_t (STDCALL *F)(gpointer*) = (int64_t (STDCALL *)(gpointer *))test_method;
 		if (F (&ex) != INT64_MAX) {
 			ret = 4;
 			goto done;
@@ -480,18 +421,18 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 
 	case 8: {
 		/* thunks.cs:Test.Test8 */
-		void (STDCALL *F)(guint8*, gint16*, gint32*, gint64*, float*, double*,
+		void (STDCALL *F)(uint8_t*, int16_t*, int32_t*, int64_t*, float*, double*,
 				 gpointer*, gpointer*);
 
-		guint8 a1;
-		gint16 a2;
-		gint32 a3;
-		gint64 a4;
+		uint8_t a1;
+		int16_t a2;
+		int32_t a3;
+		int64_t a4;
 		float a5;
 		double a6;
 		gpointer a7;
 
-		F = (void (STDCALL *)(guint8 *, gint16 *, gint32 *, gint64 *, float *, double *,
+		F = (void (STDCALL *)(uint8_t *, int16_t *, int32_t *, int64_t *, float *, double *,
 			gpointer *, gpointer *))test_method;
 
 		F (&a1, &a2, &a3, &a4, &a5, &a6, &a7, &ex);
@@ -516,18 +457,18 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 
 	case 9: {
 		/* thunks.cs:Test.Test9 */
-		void (STDCALL *F)(guint8*, gint16*, gint32*, gint64*, float*, double*,
+		void (STDCALL *F)(uint8_t*, int16_t*, int32_t*, int64_t*, float*, double*,
 			gpointer*, gpointer*);
 
-		guint8 a1;
-		gint16 a2;
-		gint32 a3;
-		gint64 a4;
+		uint8_t a1;
+		int16_t a2;
+		int32_t a3;
+		int64_t a4;
 		float a5;
 		double a6;
 		gpointer a7;
 
-		F = (void (STDCALL *)(guint8 *, gint16 *, gint32 *, gint64 *, float *, double *,
+		F = (void (STDCALL *)(uint8_t *, int16_t *, int32_t *, int64_t *, float *, double *,
 			gpointer *, gpointer *))test_method;
 
 		F (&a1, &a2, &a3, &a4, &a5, &a6, &a7, &ex);
@@ -776,7 +717,7 @@ mono_test_marshal_thread_attach (SimpleDelegate del)
 	pthread_t t;
 
 	res = pthread_create (&t, NULL, (gpointer (*)(gpointer))call_managed, (gpointer)del);
-	g_assert (res == 0);
+	assert (res == 0);
 	pthread_join (t, NULL);
 
 	return call_managed_res;
@@ -808,7 +749,7 @@ mono_test_marshal_thread_attach_large_vt (SimpleDelegate del)
 	pthread_t t;
 
 	res = pthread_create (&t, NULL, (gpointer (*)(gpointer))call_managed_large_vt, (gpointer)del);
-	g_assert (res == 0);
+	assert (res == 0);
 	pthread_join (t, NULL);
 
 	return call_managed_res;
@@ -837,9 +778,9 @@ mono_test_native_to_managed_exception_rethrow (NativeToManagedExceptionRethrowFu
 
 // SYM_LOOKUP(mono_runtime_invoke)
 // expands to
-//  sym_mono_runtime_invoke = g_cast (lookup_mono_symbol ("mono_runtime_invoke"));
+//  sym_mono_runtime_invoke = lookup_mono_symbol ("mono_runtime_invoke");
 #define SYM_LOOKUP(name) do {			\
-	sym_##name = g_cast (lookup_mono_symbol (#name));	\
+	sym_##name = lookup_mono_symbol (#name);	\
 	} while (0)
 
 static uint8_t
@@ -849,7 +790,7 @@ mono_test_init_symbols (void)
 		return 1;
 
 	SYM_LOOKUP (mono_install_ftnptr_eh_callback);
-	g_assert (sym_mono_install_ftnptr_eh_callback);
+	assert (sym_mono_install_ftnptr_eh_callback);
 	SYM_LOOKUP (mono_gchandle_get_target);
 	SYM_LOOKUP (mono_gchandle_new);
 	SYM_LOOKUP (mono_gchandle_free);
@@ -885,14 +826,16 @@ mono_test_init_symbols (void)
 #ifndef TARGET_WASM
 
 static jmp_buf test_jmp_buf;
-static guint32 test_gchandle;
+static uint32_t test_gchandle;
 
 static void
-mono_test_longjmp_callback (guint32 gchandle)
+mono_test_longjmp_callback (uint32_t gchandle)
 {
 	test_gchandle = gchandle;
 	longjmp (test_jmp_buf, 1);
 }
+
+typedef void (*VoidVoidCallback) (void);
 
 LIBTEST_API void STDCALL
 mono_test_setjmp_and_call (VoidVoidCallback managedCallback, intptr_t *out_handle)
@@ -915,31 +858,31 @@ mono_test_marshal_bstr (void *ptr)
 {
 }
 
-static void (*mono_test_capture_throw_callback) (guint32 gchandle, guint32 *exception_out);
+static void (*mono_test_capture_throw_callback) (uint32_t gchandle, uint32_t *exception_out);
 
 static void
-mono_test_ftnptr_eh_callback (guint32 gchandle)
+mono_test_ftnptr_eh_callback (uint32_t gchandle)
 {
-	guint32 exception_handle = 0;
+	uint32_t exception_handle = 0;
 
-	g_assert (gchandle != 0);
+	assert (gchandle != 0);
 	MonoObject *exc = sym_mono_gchandle_get_target (gchandle);
 	sym_mono_gchandle_free (gchandle);
 
-	guint32 handle = sym_mono_gchandle_new (exc, FALSE);
+	uint32_t handle = sym_mono_gchandle_new (exc, FALSE);
 	mono_test_capture_throw_callback (handle, &exception_handle);
 	sym_mono_gchandle_free (handle);
 
-	g_assert (exception_handle != 0);
+	assert (exception_handle != 0);
 	exc = sym_mono_gchandle_get_target (exception_handle);
 	sym_mono_gchandle_free (exception_handle);
 
 	sym_mono_raise_exception ((MonoException*)exc);
-	g_assert (((void)"mono_raise_exception should not return", 0));
+	assert (((void)"mono_raise_exception should not return", 0));
 }
 
 LIBTEST_API void STDCALL
-mono_test_setup_ftnptr_eh_callback (VoidVoidCallback managed_entry, void (*capture_throw_callback) (guint32, guint32 *))
+mono_test_setup_ftnptr_eh_callback (VoidVoidCallback managed_entry, void (*capture_throw_callback) (uint32_t, uint32_t *))
 {
 	mono_test_capture_throw_callback = capture_throw_callback;
 	sym_mono_install_ftnptr_eh_callback (mono_test_ftnptr_eh_callback);
@@ -989,15 +932,15 @@ test_invoke_by_name (struct invoke_names *names)
 		thread = sym_mono_thread_attach (sym_mono_get_root_domain ());
 	}
 	domain = sym_mono_domain_get ();
-	g_assert (domain);
+	assert (domain);
 	MonoAssembly *assm = sym_mono_domain_assembly_open (domain, names->assm_name);
-	g_assert (assm);
+	assert (assm);
 	MonoImage *image = sym_mono_assembly_get_image (assm);
 	MonoClass *klass = sym_mono_class_from_name (image, names->name_space, names->name);
-	g_assert (klass);
+	assert (klass);
 	/* meth_name should be a static method that takes no arguments */
 	MonoMethod *method = sym_mono_class_get_method_from_name (klass, names->meth_name, -1);
-	g_assert (method);
+	assert (method);
 
 	MonoObject *args[] = {NULL, };
 
@@ -1047,13 +990,13 @@ mono_test_attach_invoke_foreign_thread (const char *assm_name, const char *name_
 		struct invoke_names *names = make_invoke_names (assm_name, name_space, name, meth_name);
 		pthread_t t;
 		int res = pthread_create (&t, NULL, invoke_foreign_thread, (void*)names);
-		g_assert (res == 0);
+		assert (res == 0);
 		pthread_join (t, NULL);
 		return 0;
 	} else {
 		pthread_t t;
 		int res = pthread_create (&t, NULL, invoke_foreign_delegate, (void*)del);
-		g_assert (res == 0);
+		assert (res == 0);
 		pthread_join (t, NULL);
 		return 0;
 	}
@@ -1116,7 +1059,7 @@ mono_test_attach_invoke_block_foreign_thread (const char *assm_name, const char 
 	pthread_mutex_lock (&nm->deadlock_mutex); // lock the mutex and never unlock it.
 	pthread_t t;
 	int res = pthread_create (&t, NULL, invoke_block_foreign_thread, (void*)nm);
-	g_assert (res == 0);
+	assert (res == 0);
 	/* wait for the foreign thread to finish calling the runtime before
 	 * detaching it and returning
 	 */
