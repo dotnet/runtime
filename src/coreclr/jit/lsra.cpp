@@ -2663,10 +2663,18 @@ RegisterType LinearScan::getRegisterType(Interval* currentInterval, RefPosition*
     RegisterType regType    = currentInterval->registerType;
     regMaskTP    candidates = refPosition->registerAssignment;
 #ifdef TARGET_LOONGARCH64
+    // The LoongArch64's ABI which the float args maybe passed by integer register
+    // when no float register left but free integer register.
     if ((candidates & allRegs(regType)) != RBM_NONE)
+    {
         return regType;
+    }
     else
+    {
+        assert((regType == TYP_DOUBLE) || (regType == TYP_FLOAT));
+        assert((candidates & allRegs(TYP_I_IMPL)) != RBM_NONE);
         return TYP_I_IMPL;
+    }
 #else
     assert((candidates & allRegs(regType)) != RBM_NONE);
     return regType;

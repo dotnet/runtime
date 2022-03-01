@@ -45,7 +45,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 int LinearScan::BuildNode(GenTree* tree)
 {
     assert(!tree->isContained());
-    int       srcCount;
+    int       srcCount      = 0;
     int       dstCount      = 0;
     regMaskTP dstCandidates = RBM_NONE;
     regMaskTP killMask      = RBM_NONE;
@@ -264,7 +264,6 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RSZ:
         case GT_ROR:
             srcCount = BuildBinaryUses(tree->AsOp());
-            buildInternalRegisterUses();
             assert(dstCount == 1);
             BuildDef(tree);
             break;
@@ -368,43 +367,6 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CMPXCHG:
         {
             NYI_LOONGARCH64("-----unimplemented on LOONGARCH64 yet----");
-
-            GenTreeCmpXchg* cmpXchgNode = tree->AsCmpXchg();
-            srcCount                    = cmpXchgNode->gtOpComparand->isContained() ? 2 : 3;
-            assert(dstCount == 1);
-
-            // if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
-            {
-                // For LOONGARCH exclusives requires a single internal register
-                buildInternalIntRegisterDefForNode(tree);
-            }
-
-            // For LOONGARCH exclusives the lifetime of the addr and data must be extended because
-            // it may be used multiple during retries
-
-            // For LOONGARCH atomic cas the lifetime of the addr and data must be extended to prevent
-            // them being reused as the target register which must be destroyed early
-
-            RefPosition* locationUse = BuildUse(tree->AsCmpXchg()->gtOpLocation);
-            setDelayFree(locationUse);
-            RefPosition* valueUse = BuildUse(tree->AsCmpXchg()->gtOpValue);
-            setDelayFree(valueUse);
-            if (!cmpXchgNode->gtOpComparand->isContained())
-            {
-                RefPosition* comparandUse = BuildUse(tree->AsCmpXchg()->gtOpComparand);
-
-                // For LOONGARCH exclusives the lifetime of the comparand must be extended because
-                // it may be used used multiple during retries
-                // if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
-                {
-                    setDelayFree(comparandUse);
-                }
-            }
-
-            // Internals may not collide with target
-            setInternalRegsDelayFree = true;
-            buildInternalRegisterUses();
-            BuildDef(tree);
         }
         break;
 
@@ -415,7 +377,6 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_XCHG:
         {
             NYI_LOONGARCH64("-----unimplemented on LOONGARCH64 yet----");
-            srcCount = 1;
         }
         break;
 
@@ -502,8 +463,7 @@ int LinearScan::BuildNode(GenTree* tree)
                     // Note: The Gentree node is not updated here as it is cheap to recompute stack aligned size.
                     // This should also help in debugging as we can examine the original size specified with
                     // localloc.
-                    sizeVal         = AlignUp(sizeVal, STACK_ALIGN);
-                    size_t insCount = sizeVal / (REGSIZE_BYTES * 2);
+                    sizeVal = AlignUp(sizeVal, STACK_ALIGN);
 
                     // For small allocations up to 4 'st' instructions (i.e. 16 to 64 bytes of localloc)
                     // TODO-LoongArch64: maybe use paird-load/store or SIMD in future.
@@ -1067,6 +1027,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
         {
             // We can use a ld/st sequence so we need two internal registers for LOONGARCH64.
             buildInternalIntRegisterDefForNode(argNode);
+            buildInternalIntRegisterDefForNode(argNode);
 
             if (putArgChild->OperGet() == GT_OBJ)
             {
@@ -1155,16 +1116,13 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
 
             // Consume all the registers, setting the appropriate register mask for the ones that
             // go into registers.
-            for (unsigned regIndex = 0; regIndex < 1; regIndex++)
+            regMaskTP sourceMask = RBM_NONE;
+            if (sourceRegCount < argNode->gtNumRegs)
             {
-                regMaskTP sourceMask = RBM_NONE;
-                if (sourceRegCount < argNode->gtNumRegs)
-                {
-                    sourceMask = genRegMask((regNumber)((unsigned)argReg + sourceRegCount));
-                }
-                sourceRegCount++;
-                BuildUse(node, sourceMask, regIndex);
+                sourceMask = genRegMask((regNumber)((unsigned)argReg + sourceRegCount));
             }
+            sourceRegCount++;
+            BuildUse(node, sourceMask, 0);
         }
         srcCount += sourceRegCount;
         assert(putArgChild->isContained());

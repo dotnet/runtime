@@ -607,9 +607,7 @@ protected:
         static_assert_no_msg(IF_COUNT <= 128);
         insFormat _idInsFmt : 7;
 #elif defined(TARGET_LOONGARCH64)
-        unsigned _idCodeSize : 5; // the instruction(s) size of this instrDesc described. If not enough, please use the
-                                  // _idInsCount.
-                                  // unsigned _idInsCount : 5; // the instruction(s) count of this instrDesc described.
+        unsigned    _idCodeSize : 5; // the instruction(s) size of this instrDesc described.
 #else
         static_assert_no_msg(IF_COUNT <= 256);
         insFormat _idInsFmt : 8;
@@ -644,7 +642,7 @@ protected:
         {
         }
 #else
-        insFormat idInsFmt() const
+        insFormat   idInsFmt() const
         {
             return _idInsFmt;
         }
@@ -1044,17 +1042,19 @@ protected:
 #elif defined(TARGET_LOONGARCH64)
         unsigned    idCodeSize() const
         {
-            return _idCodeSize; //_idInsCount;
+            return _idCodeSize;
         }
         void idCodeSize(unsigned sz)
         {
-            assert(sz < 32);
+            // LoongArch64's instrDesc is not always meaning only one instruction.
+            // e.g. the `emitter::emitIns_I_la` for emitting the immediates.
+            assert(sz <= 16);
             _idCodeSize = sz;
         }
 #endif // TARGET_LOONGARCH64
 
         emitAttr idOpSize()
-        { // NOTE: not used for LOONGARCH64.
+        {
             return emitDecodeSize(_idOpSize);
         }
         void idOpSize(emitAttr opsz)
@@ -1889,8 +1889,8 @@ public:
 #endif // !defined(HOST_64BIT)
 
 #ifdef TARGET_LOONGARCH64
-    unsigned int emitCounts_INS_OPTS_J; // INS_OPTS_J
-#endif                                  // defined(TARGET_LOONGARCH64)
+    unsigned int emitCounts_INS_OPTS_J;
+#endif // TARGET_LOONGARCH64
 
     size_t emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp);
     size_t emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp);

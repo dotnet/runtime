@@ -593,9 +593,12 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
         regNumber    physicalReg = genRegNumFromMask(mask);
         RefPosition* pos         = newRefPosition(physicalReg, theLocation, RefTypeFixedReg, nullptr, mask);
         assert(theInterval != nullptr);
-#ifndef TARGET_LOONGARCH64
+#ifdef TARGET_LOONGARCH64
         // The LoongArch64's ABI which the float args maybe passed by integer register
         // when no float register left but free integer register.
+        assert((regType(theInterval->registerType) == FloatRegisterType) ||
+               (allRegs(theInterval->registerType) & mask) != 0);
+#else
         assert((allRegs(theInterval->registerType) & mask) != 0);
 #endif
     }
