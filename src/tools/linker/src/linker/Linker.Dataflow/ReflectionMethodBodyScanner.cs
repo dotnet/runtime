@@ -287,7 +287,9 @@ namespace Mono.Linker.Dataflow
 				|| getRuntimeMember == IntrinsicId.RuntimeReflectionExtensions_GetRuntimeProperty:
 			case IntrinsicId.Type_GetMember:
 			case IntrinsicId.Type_GetMethod:
-			case IntrinsicId.Type_GetNestedType: {
+			case IntrinsicId.Type_GetNestedType:
+			case IntrinsicId.Expression_Property when calledMethod.HasParameterOfType (1, "System.Reflection.MethodInfo"):
+			case var fieldOrPropertyInstrinsic when fieldOrPropertyInstrinsic == IntrinsicId.Expression_Field || fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property: {
 					var instanceValue = MultiValueLattice.Top;
 					IReadOnlyList<MultiValue> parameterValues = methodParams;
 					if (calledMethodDefinition.HasImplicitThis ()) {
@@ -407,67 +409,6 @@ namespace Mono.Linker.Dataflow
 								analysisContext,
 								value,
 								targetValue);
-						}
-					}
-				}
-				break;
-
-			//
-			// System.Linq.Expressions.Expression
-			//
-			// static Property (Expression, MethodInfo)
-			//
-			case IntrinsicId.Expression_Property when calledMethod.HasParameterOfType (1, "System.Reflection.MethodInfo"): {
-					foreach (var value in methodParams[1]) {
-						if (value is SystemReflectionMethodBaseValue methodBaseValue) {
-							// We have one of the accessors for the property. The Expression.Property will in this case search
-							// for the matching PropertyInfo and store that. So to be perfectly correct we need to mark the
-							// respective PropertyInfo as "accessed via reflection".
-							if (methodBaseValue.MethodRepresented.Method.TryGetProperty (out PropertyDefinition? propertyDefinition)) {
-								MarkProperty (analysisContext, propertyDefinition);
-								continue;
-							}
-						} else if (value == NullValue.Instance) {
-							continue;
-						}
-
-						// In all other cases we may not even know which type this is about, so there's nothing we can do
-						// report it as a warning.
-						analysisContext.ReportWarning (DiagnosticId.PropertyAccessorParameterInLinqExpressionsCannotBeStaticallyDetermined,
-								DiagnosticUtilities.GetParameterNameForErrorMessage (calledMethodDefinition.Parameters[1]),
-								DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethodDefinition));
-					}
-				}
-				break;
-
-			//
-			// System.Linq.Expressions.Expression
-			//
-			// static Field (Expression, Type, String)
-			// static Property (Expression, Type, String)
-			//
-			case var fieldOrPropertyInstrinsic when fieldOrPropertyInstrinsic == IntrinsicId.Expression_Field || fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property: {
-					DynamicallyAccessedMemberTypes memberTypes = fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property
-						? DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties
-						: DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields;
-
-					var targetValue = GetMethodParameterValue (calledMethodDefinition, 1, memberTypes);
-					foreach (var value in methodParams[1]) {
-						if (value is SystemTypeValue systemTypeValue) {
-							foreach (var stringParam in methodParams[2]) {
-								if (stringParam is KnownStringValue stringValue) {
-									BindingFlags bindingFlags = methodParams[0].AsSingleValue () is NullValue ? BindingFlags.Static : BindingFlags.Default;
-									if (fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property) {
-										MarkPropertiesOnTypeHierarchy (analysisContext, systemTypeValue.RepresentedType.Type, filter: p => p.Name == stringValue.Contents, bindingFlags);
-									} else {
-										MarkFieldsOnTypeHierarchy (analysisContext, systemTypeValue.RepresentedType.Type, filter: f => f.Name == stringValue.Contents, bindingFlags);
-									}
-								} else {
-									RequireDynamicallyAccessedMembers (analysisContext, value, targetValue);
-								}
-							}
-						} else {
-							RequireDynamicallyAccessedMembers (analysisContext, value, targetValue);
 						}
 					}
 				}
@@ -1151,7 +1092,7 @@ namespace Mono.Linker.Dataflow
 			_markStep.MarkFieldVisibleToReflection (field, new DependencyInfo (dependencyKind, analysisContext.Origin.Provider));
 		}
 
-		void MarkProperty (in AnalysisContext analysisContext, PropertyDefinition property, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
+		internal void MarkProperty (in AnalysisContext analysisContext, PropertyDefinition property, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
 			_markStep.MarkPropertyVisibleToReflection (property, new DependencyInfo (dependencyKind, analysisContext.Origin.Provider));
 		}

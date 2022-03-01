@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using ILLink.Shared.DataFlow;
@@ -479,6 +480,66 @@ namespace ILLink.Shared.TrimAnalysis
 				}
 				break;
 
+			//
+			// System.Linq.Expressions.Expression
+			//
+			// static Property (Expression, MethodInfo)
+			//
+			case IntrinsicId.Expression_Property when calledMethod.HasParameterOfType (1, "System.Reflection.MethodInfo"): {
+					foreach (var value in argumentValues[1]) {
+						if (value is SystemReflectionMethodBaseValue methodBaseValue) {
+							// We have one of the accessors for the property. The Expression.Property will in this case search
+							// for the matching PropertyInfo and store that. So to be perfectly correct we need to mark the
+							// respective PropertyInfo as "accessed via reflection".
+							if (MarkAssociatedProperty (methodBaseValue.MethodRepresented))
+								continue;
+						} else if (value == NullValue.Instance) {
+							continue;
+						}
+
+						// In all other cases we may not even know which type this is about, so there's nothing we can do
+						// report it as a warning.
+						_diagnosticContext.AddDiagnostic (DiagnosticId.PropertyAccessorParameterInLinqExpressionsCannotBeStaticallyDetermined,
+							GetMethodParameterValue (calledMethod, 1, DynamicallyAccessedMemberTypes.None).GetDiagnosticArgumentsForAnnotationMismatch ().ToArray ());
+					}
+				}
+				break;
+
+			//
+			// System.Linq.Expressions.Expression
+			//
+			// static Field (Expression, Type, String)
+			// static Property (Expression, Type, String)
+			//
+			case var fieldOrPropertyInstrinsic when fieldOrPropertyInstrinsic == IntrinsicId.Expression_Field || fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property: {
+					DynamicallyAccessedMemberTypes memberTypes = fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property
+						? DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties
+						: DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields;
+
+					var targetValue = GetMethodParameterValue (calledMethod, 1, memberTypes);
+					foreach (var value in argumentValues[1]) {
+						if (value is SystemTypeValue systemTypeValue) {
+							foreach (var stringParam in argumentValues[2]) {
+								if (stringParam is KnownStringValue stringValue) {
+									BindingFlags bindingFlags = argumentValues[0].AsSingleValue () is NullValue ? BindingFlags.Static : BindingFlags.Default;
+									if (fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property) {
+										MarkPropertiesOnTypeHierarchy (systemTypeValue.RepresentedType, stringValue.Contents, bindingFlags);
+									} else {
+										MarkFieldsOnTypeHierarchy (systemTypeValue.RepresentedType, stringValue.Contents, bindingFlags);
+									}
+								} else if (stringParam is NullValue) {
+									// Null name will always throw, so there's nothing to do
+								} else {
+									_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+								}
+							}
+						} else {
+							_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+						}
+					}
+				}
+				break;
+
 			case IntrinsicId.None:
 				methodReturnValue = MultiValueLattice.Top;
 				return false;
@@ -636,6 +697,8 @@ namespace ILLink.Shared.TrimAnalysis
 		private partial void MarkMethod (MethodProxy method);
 
 		private partial void MarkType (TypeProxy type);
+
+		private partial bool MarkAssociatedProperty (MethodProxy method);
 
 		// Only used for internal diagnostic purposes (not even for warning messages)
 		private partial string GetContainingSymbolDisplayName ();

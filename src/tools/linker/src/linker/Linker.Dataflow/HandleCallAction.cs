@@ -86,6 +86,16 @@ namespace ILLink.Shared.TrimAnalysis
 		private partial void MarkType (TypeProxy type)
 			=> _reflectionMethodBodyScanner.MarkType (_analysisContext, type.Type);
 
+		private partial bool MarkAssociatedProperty (MethodProxy method)
+		{
+			if (method.Method.TryGetProperty (out PropertyDefinition? propertyDefinition)) {
+				_reflectionMethodBodyScanner.MarkProperty (_analysisContext, propertyDefinition);
+				return true;
+			}
+
+			return false;
+		}
+
 		private partial string GetContainingSymbolDisplayName () => _callingMethodDefinition.GetDisplayName ();
 	}
 }

@@ -10,13 +10,16 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	[ExpectedNoWarnings]
 	public class ExpressionFieldString
 	{
+		[ExpectedWarning ("IL2110", nameof (StaticWithDAM))]
+		[ExpectedWarning ("IL2110", "_publicFieldOnBase")]
 		[ExpectedWarning ("IL2072", nameof (Expression) + "." + nameof (Expression.Field))]
 		public static void Main ()
 		{
-			Expression.Field (Expression.Parameter (typeof (int), ""), typeof (ExpressionFieldString), "Field");
+			Expression.Field (Expression.Parameter (typeof (int), ""), typeof (ExpressionFieldString), "InstanceField");
 			Expression.Field (null, typeof (ExpressionFieldString), "StaticField");
+			Expression.Field (null, typeof (ExpressionFieldString), "StaticWithDAM"); // IL2110
 			Expression.Field (null, typeof (Derived), "_protectedFieldOnBase");
-			Expression.Field (null, typeof (Derived), "_publicFieldOnBase");
+			Expression.Field (null, typeof (Derived), "_publicFieldOnBase"); // IL2110
 			UnknownType.Test ();
 			UnknownTypeNoAnnotation.Test ();
 			UnknownString.Test ();
@@ -29,12 +32,19 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		private int Field;
+		private int InstanceField;
 
 		[Kept]
 		static private int StaticField;
 
+		[Kept]
+		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+		static private Type StaticWithDAM;
+
 		private int UnusedField;
+
+		public static int StaticField1 { get => StaticField; set => StaticField = value; }
 
 		[Kept]
 		static Type GetType ()
@@ -142,7 +152,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Expression.Field (null, typeof (Base), noValue);
 		}
 
-
 		[Kept]
 		class Base
 		{
@@ -150,7 +159,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			protected static bool _protectedFieldOnBase;
 
 			[Kept]
-			public static bool _publicFieldOnBase;
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			public static Type _publicFieldOnBase;
 		}
 
 		[Kept]
