@@ -25,7 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ancillary.Interop\Ancillary.Interop.csproj" />
-    <ProjectReference Include="..\..\gen\DllImportGenerator\DllImportGenerator.csproj" />
+    <ProjectReference Include="..\..\gen\LibraryImportGenerator\LibraryImportGenerator.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -33,7 +33,7 @@
   <ItemGroup Condition="'@(EnabledGenerators)' != ''
                         and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'DllImportGenerator'))">
     <ProjectReference
-      Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj"
+      Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj"
       OutputItemType="Analyzer"
       ReferenceOutputAssembly="false" />
     <ProjectReference
@@ -88,5 +88,5 @@
     </PropertyGroup>
   </Target>
 
-  <Import Project="$(LibrariesProjectRoot)System.Runtime.InteropServices/gen/DllImportGenerator/Microsoft.Interop.DllImportGenerator.props" />
+  <Import Project="$(LibrariesProjectRoot)System.Runtime.InteropServices/gen/LibraryImportGenerator/Microsoft.Interop.LibraryImportGenerator.props" />
 </Project>
