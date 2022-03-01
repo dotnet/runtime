@@ -31,11 +31,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <_HelixLocalNodePath Condition="'$(NeedsEMSDK)' == 'true' and '$(WindowsShell)' != 'true'">$HELIX_CORRELATION_PAYLOAD/build/emsdk/node</_HelixLocalNodePath>
-    <_HelixLocalNodePath Condition="'$(NeedsEMSDK)' == 'true' and '$(WindowsShell)' == 'true'">%HELIX_CORRELATION_PAYLOAD%\build\emsdk\node</_HelixLocalNodePath>
-
     <_HelixLocalNodePath Condition="'$(NeedsEMSDKNode)' == 'true' and '$(WindowsShell)' != 'true'">$HELIX_CORRELATION_PAYLOAD/build/emsdk-node</_HelixLocalNodePath>
     <_HelixLocalNodePath Condition="'$(NeedsEMSDKNode)' == 'true' and '$(WindowsShell)' == 'true'">%HELIX_CORRELATION_PAYLOAD%\build\emsdk-node</_HelixLocalNodePath>
+
+    <_HelixLocalNodePath Condition="'$(NeedsEMSDK)' == 'true' and '$(WindowsShell)' != 'true'">$HELIX_CORRELATION_PAYLOAD/build/emsdk/node</_HelixLocalNodePath>
+    <_HelixLocalNodePath Condition="'$(NeedsEMSDK)' == 'true' and '$(WindowsShell)' == 'true'">%HELIX_CORRELATION_PAYLOAD%\build\emsdk\node</_HelixLocalNodePath>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' != 'true'">
