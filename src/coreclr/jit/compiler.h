@@ -3600,7 +3600,7 @@ public:
     void gtDispLeaf(GenTree* tree, IndentStack* indentStack);
     void gtDispNodeName(GenTree* tree);
 #if FEATURE_MULTIREG_RET
-    unsigned gtDispRegCount(GenTree* tree);
+    unsigned gtDispMultiRegCount(GenTree* tree);
 #endif
     void gtDispRegVal(GenTree* tree);
     void gtDispZeroFieldSeq(GenTree* tree);
@@ -6443,6 +6443,7 @@ private:
     GenTree* fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node);
 #endif
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
+    GenTree* fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp);
     GenTree* fgOptimizeAddition(GenTreeOp* add);
     GenTree* fgOptimizeMultiply(GenTreeOp* mul);
     GenTree* fgOptimizeBitwiseAnd(GenTreeOp* andOp);
@@ -7680,6 +7681,7 @@ public:
         O1K_BOUND_OPER_BND,
         O1K_BOUND_LOOP_BND,
         O1K_CONSTANT_LOOP_BND,
+        O1K_CONSTANT_LOOP_BND_UN,
         O1K_EXACT_TYPE,
         O1K_SUBTYPE,
         O1K_VALUE_NUMBER,
@@ -7694,6 +7696,7 @@ public:
         O2K_CONST_INT,
         O2K_CONST_LONG,
         O2K_CONST_DOUBLE,
+        O2K_ZEROOBJ,
         O2K_SUBRANGE,
         O2K_COUNT
     };
@@ -7756,7 +7759,12 @@ public:
         bool IsConstantBound()
         {
             return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) &&
-                    op1.kind == O1K_CONSTANT_LOOP_BND);
+                    (op1.kind == O1K_CONSTANT_LOOP_BND));
+        }
+        bool IsConstantBoundUnsigned()
+        {
+            return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) &&
+                    (op1.kind == O1K_CONSTANT_LOOP_BND_UN));
         }
         bool IsBoundsCheckNoThrow()
         {
@@ -7829,6 +7837,9 @@ public:
                 case O2K_CONST_DOUBLE:
                     // exact match because of positive and negative zero.
                     return (memcmp(&op2.dconVal, &that->op2.dconVal, sizeof(double)) == 0);
+
+                case O2K_ZEROOBJ:
+                    return true;
 
                 case O2K_LCLVAR_COPY:
                     return (op2.lcl.lclNum == that->op2.lcl.lclNum) &&
@@ -7966,7 +7977,6 @@ public:
     bool optAssertionIsNonNull(GenTree*         op,
                                ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased) DEBUGARG(AssertionIndex* pIndex));
 
-    // Used for Relop propagation.
     AssertionIndex optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2);
     AssertionIndex optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_TP assertions, GenTree* op1);
     AssertionIndex optLocalAssertionIsEqualOrNotEqual(
@@ -7980,10 +7990,13 @@ public:
     GenTree* optConstantAssertionProp(AssertionDsc*        curAssertion,
                                       GenTreeLclVarCommon* tree,
                                       Statement* stmt DEBUGARG(AssertionIndex index));
+    bool optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertions);
 
     // Assertion propagation functions.
     GenTree* optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
+    GenTree* optAssertionProp_Asg(ASSERT_VALARG_TP assertions, GenTreeOp* asg, Statement* stmt);
+    GenTree* optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeUnOp* ret, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);

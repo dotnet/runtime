@@ -7,6 +7,13 @@
     <ContractDependencyPaths Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))">$(ContractDependencyPaths);$(MicrosoftNetCoreAppRefPackRefDir)</ContractDependencyPaths>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <GenAPIExcludeAttributesList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</GenAPIExcludeAttributesList>
+    <GenAPIHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GenAPIHeaderFile>
+    <GenAPITargetPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</GenAPITargetPath>
+    <GenAPILangVersion Condition="'$(LangVersion)' != ''">$(LangVersion)</GenAPILangVersion>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
     <ContractProject Condition="'$(ContractProject)' == ''">$(LibrariesProjectRoot)$(MSBuildProjectName)\ref\$(MSBuildProjectName).csproj</ContractProject>
     <HasMatchingContract Condition="'$(HasMatchingContract)' == '' and Exists('$(ContractProject)')">true</HasMatchingContract>
@@ -53,4 +60,13 @@
                                       ReferenceAssembly="" />
     </ItemGroup>
   </Target>
+  
+  <Target Name="SetGenAPIProperties"
+          BeforeTargets="GenerateReferenceAssemblySource">
+    <PropertyGroup>
+      <GenAPIFollowTypeForwards Condition="'%(ProjectReference.Identity)' == '$(CoreLibProject)'">true</GenAPIFollowTypeForwards>
+    </PropertyGroup>
+  </Target>
+
+  <Import Project="$(RepositoryEngineeringDir)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
 </Project>

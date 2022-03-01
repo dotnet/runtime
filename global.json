@@ -7,10 +7,6 @@
   "tools": {
     "dotnet": "6.0.100"
   },
-  "native-tools": {
-    "cmake": "3.16.4",
-    "python3": "3.7.1"
-  },
   "msbuild-sdks": {
     "Microsoft.DotNet.Arcade.Sdk": "7.0.0-beta.22122.3",
     "Microsoft.DotNet.Helix.Sdk": "7.0.0-beta.22122.3",
