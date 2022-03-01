@@ -1865,6 +1865,7 @@ namespace System.Numerics
 
                         pVectorBasis_B = pVectorBasis_2;
                         pVectorBasis_C = pVectorBasis_0;
+
                     }
                     else
                     {
@@ -1875,6 +1876,7 @@ namespace System.Numerics
 
                         pVectorBasis_B = pVectorBasis_0;
                         pVectorBasis_C = pVectorBasis_2;
+
                     }
                 }
             }
@@ -1921,6 +1923,7 @@ namespace System.Numerics
 
                         pVectorBasis_B = pVectorBasis_1;
                         pVectorBasis_C = pVectorBasis_2;
+
                     }
                 }
             }
@@ -1994,45 +1997,85 @@ namespace System.Numerics
             pVectorBasis_C = Vector3.Normalize(pVectorBasis_C);
             if (a == 0)
             {
-                Unsafe.As<float, Vector3>(ref matTemp.M11) = pVectorBasis_A;
                 if (b == 1)
                 {
-                    Unsafe.As<float, Vector3>(ref matTemp.M21) = pVectorBasis_B;
-                    Unsafe.As<float, Vector3>(ref matTemp.M31) = pVectorBasis_C;
+                    matTemp.M11 = pVectorBasis_A.X;
+                    matTemp.M12 = pVectorBasis_A.Y;
+                    matTemp.M13 = pVectorBasis_A.Z;
+                    matTemp.M21 = pVectorBasis_B.X;
+                    matTemp.M22 = pVectorBasis_B.Y;
+                    matTemp.M23 = pVectorBasis_B.Z;
+                    matTemp.M31 = pVectorBasis_C.X;
+                    matTemp.M32 = pVectorBasis_C.Y;
+                    matTemp.M33 = pVectorBasis_C.Z;
                 }
                 else
                 {
-                    Unsafe.As<float, Vector3>(ref matTemp.M21) = pVectorBasis_C;
-                    Unsafe.As<float, Vector3>(ref matTemp.M31) = pVectorBasis_B;
+                    matTemp.M11 = pVectorBasis_A.X;
+                    matTemp.M12 = pVectorBasis_A.Y;
+                    matTemp.M13 = pVectorBasis_A.Z;
+                    matTemp.M21 = pVectorBasis_C.X;
+                    matTemp.M22 = pVectorBasis_C.Y;
+                    matTemp.M23 = pVectorBasis_C.Z;
+                    matTemp.M31 = pVectorBasis_B.X;
+                    matTemp.M32 = pVectorBasis_B.Y;
+                    matTemp.M33 = pVectorBasis_B.Z;
 
                 }
             }
             else if (a == 1)
             {
-                Unsafe.As<float, Vector3>(ref matTemp.M21) = pVectorBasis_A;
                 if (b == 0)
                 {
-                    Unsafe.As<float, Vector3>(ref matTemp.M11) = pVectorBasis_B;
-                    Unsafe.As<float, Vector3>(ref matTemp.M31) = pVectorBasis_C;
+                    matTemp.M11 = pVectorBasis_B.X;
+                    matTemp.M12 = pVectorBasis_B.Y;
+                    matTemp.M13 = pVectorBasis_B.Z;
+                    matTemp.M21 = pVectorBasis_A.X;
+                    matTemp.M22 = pVectorBasis_A.Y;
+                    matTemp.M23 = pVectorBasis_A.Z;
+                    matTemp.M31 = pVectorBasis_C.X;
+                    matTemp.M32 = pVectorBasis_C.Y;
+                    matTemp.M33 = pVectorBasis_C.Z;
                 }
                 else
                 {
-                    Unsafe.As<float, Vector3>(ref matTemp.M11) = pVectorBasis_C;
-                    Unsafe.As<float, Vector3>(ref matTemp.M31) = pVectorBasis_B;
+                    matTemp.M11 = pVectorBasis_C.X;
+                    matTemp.M12 = pVectorBasis_C.Y;
+                    matTemp.M13 = pVectorBasis_C.Z;
+                    matTemp.M21 = pVectorBasis_A.X;
+                    matTemp.M22 = pVectorBasis_A.Y;
+                    matTemp.M23 = pVectorBasis_A.Z;
+                    matTemp.M31 = pVectorBasis_B.X;
+                    matTemp.M32 = pVectorBasis_B.Y;
+                    matTemp.M33 = pVectorBasis_B.Z;
+
                 }
             }
             else
             {
-                Unsafe.As<float, Vector3>(ref matTemp.M31) = pVectorBasis_A;
                 if (b == 0)
                 {
-                    Unsafe.As<float, Vector3>(ref matTemp.M11) = pVectorBasis_B;
-                    Unsafe.As<float, Vector3>(ref matTemp.M21) = pVectorBasis_C;
+                    matTemp.M11 = pVectorBasis_B.X;
+                    matTemp.M12 = pVectorBasis_B.Y;
+                    matTemp.M13 = pVectorBasis_B.Z;
+                    matTemp.M21 = pVectorBasis_C.X;
+                    matTemp.M22 = pVectorBasis_C.Y;
+                    matTemp.M23 = pVectorBasis_C.Z;
+                    matTemp.M31 = pVectorBasis_A.X;
+                    matTemp.M32 = pVectorBasis_A.Y;
+                    matTemp.M33 = pVectorBasis_A.Z;
                 }
                 else
                 {
-                    Unsafe.As<float, Vector3>(ref matTemp.M11) = pVectorBasis_C;
-                    Unsafe.As<float, Vector3>(ref matTemp.M21) = pVectorBasis_B;
+                    matTemp.M11 = pVectorBasis_C.X;
+                    matTemp.M12 = pVectorBasis_C.Y;
+                    matTemp.M13 = pVectorBasis_C.Z;
+                    matTemp.M21 = pVectorBasis_B.X;
+                    matTemp.M22 = pVectorBasis_B.Y;
+                    matTemp.M23 = pVectorBasis_B.Z;
+                    matTemp.M31 = pVectorBasis_A.X;
+                    matTemp.M32 = pVectorBasis_A.Y;
+                    matTemp.M33 = pVectorBasis_A.Z;
                 }
             }
 
@@ -2054,15 +2097,21 @@ namespace System.Numerics
             {
                 if (a == 0)
                 {
-                    Unsafe.As<float, Vector3>(ref matTemp.M11) = pVectorBasis_A;
+                    matTemp.M11 = pVectorBasis_A.X;
+                    matTemp.M12 = pVectorBasis_A.Y;
+                    matTemp.M13 = pVectorBasis_A.Z;
                 }
                 else if (a == 1)
                 {
-                    Unsafe.As<float, Vector3>(ref matTemp.M21) = pVectorBasis_A;
+                    matTemp.M21 = pVectorBasis_A.X;
+                    matTemp.M22 = pVectorBasis_A.Y;
+                    matTemp.M23 = pVectorBasis_A.Z;
                 }
                 else
                 {
-                    Unsafe.As<float, Vector3>(ref matTemp.M31) = pVectorBasis_A;
+                    matTemp.M31 = pVectorBasis_A.X;
+                    matTemp.M32 = pVectorBasis_A.Y;
+                    matTemp.M33 = pVectorBasis_A.Z;
                 }
                 // Non-SRT matrix encountered
                 rotation = Quaternion.Identity;
