@@ -12572,7 +12572,6 @@ namespace System.Resources
         public string CultureName { get { throw null; } }
         public System.Resources.UltimateResourceFallbackLocation Location { get { throw null; } }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public partial class ResourceManager
     {
         public static readonly int HeaderVersionNumber;

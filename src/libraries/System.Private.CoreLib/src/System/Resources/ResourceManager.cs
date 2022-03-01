@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -91,7 +90,6 @@ namespace System.Resources
     // is one such example.
     //
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
     public partial class ResourceManager
     {
         internal sealed class CultureNameResourceSetPair
