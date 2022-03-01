@@ -24,14 +24,9 @@ namespace System.Text.RegularExpressions.Symbolic
         T ConvertFromCharSet(BDDAlgebra bddAlg, BDD set);
 
         /// <summary>
-        /// Compute the number of elements in the set
-        /// </summary>
-        ulong ComputeDomainSize(T set);
-
-        /// <summary>
         /// Convert a predicate into a set of characters.
         /// </summary>
-        BDD ConvertToCharSet(ICharAlgebra<BDD> bddalg, T pred);
+        BDD ConvertToCharSet(T pred);
 
         /// <summary>
         /// Returns the minterms (a partition of the full domain).

@@ -177,7 +177,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        private BDD ToBDD(S pred) => _solver.ConvertToCharSet(CharSetSolver.Instance, pred);
+        private BDD ToBDD(S pred) => _solver.ConvertToCharSet(pred);
 
         private T Choose<T>(IList<T> elems) => elems[_random.Next(elems.Count)];
 

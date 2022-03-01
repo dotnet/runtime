@@ -6,67 +6,30 @@ using System.Diagnostics;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
-    /// <summary>
-    /// Base class for bitvector algebras, which represent sets as bitvectors indexed by the elements. An element is in
-    /// the set if the corresponding bit is set.
-    ///
-    /// These bitvector algebras are used to represent sets of minterms, and thus represent sets of characters
-    /// indirectly. However, the bitvector algebras are aware of this indirection in that the cardinalities of sets
-    /// count the characters rather than the minterms. For example, the cardinality of a bitvector "110" where the bits
-    /// correspond to minterms [a-c], [0-9] and [^a-c0-9] is 13 rather than 2.
-    /// </summary>
-    internal abstract class BitVectorAlgebraBase
+    /// <summary>Provides an <see cref="ICharAlgebra{BitVector}"/> over arbitrary-length bit vectors.</summary>
+    internal sealed class BitVectorAlgebra : ICharAlgebra<BitVector>
     {
-        internal readonly MintermClassifier _classifier;
-        protected readonly ulong[] _cardinalities;
-        protected readonly int _bitCount;
-        protected readonly BDD[]? _partition;
-
-        internal BitVectorAlgebraBase(MintermClassifier classifier, ulong[] cardinalities, BDD[]? partition)
-        {
-            _classifier = classifier;
-            _cardinalities = cardinalities;
-            _bitCount = cardinalities.Length;
-            _partition = partition;
-        }
-    }
-
-    /// <summary>
-    /// Bit vector algebra
-    /// </summary>
-    internal sealed class BitVectorAlgebra : BitVectorAlgebraBase, ICharAlgebra<BitVector>
-    {
+        private readonly BDD[] _minterms;
         private readonly MintermGenerator<BitVector> _mintermGenerator;
-        internal BitVector[] _minterms;
+        internal readonly MintermClassifier _classifier;
+        private readonly BitVector[] _mintermVectors;
 
-        public ulong ComputeDomainSize(BitVector set)
+        public BitVectorAlgebra(CharSetSolver solver, BDD[] minterms)
         {
-            ulong size = 0;
-            for (int i = 0; i < _bitCount; i++)
-            {
-                // if the bit is set then add the minterm's size
-                if (set[i])
-                {
-                    size += _cardinalities[i];
-                }
-            }
+            _minterms = minterms;
 
-            return size;
-        }
-
-        public BitVectorAlgebra(CharSetSolver solver, BDD[] minterms) :
-            base(new MintermClassifier(solver, minterms), solver.ComputeDomainSizes(minterms), minterms)
-        {
+            _classifier = new MintermClassifier(solver, minterms);
             _mintermGenerator = new MintermGenerator<BitVector>(this);
-            False = BitVector.CreateFalse(_bitCount);
-            True = BitVector.CreateTrue(_bitCount);
 
-            var singleBitVectors = new BitVector[_bitCount];
+            var singleBitVectors = new BitVector[minterms.Length];
             for (int i = 0; i < singleBitVectors.Length; i++)
             {
-                singleBitVectors[i] = BitVector.CreateSingleBit(_bitCount, i);
+                singleBitVectors[i] = BitVector.CreateSingleBit(minterms.Length, i);
             }
-            _minterms = singleBitVectors;
+            _mintermVectors = singleBitVectors;
+
+            False = BitVector.CreateFalse(minterms.Length);
+            True = BitVector.CreateTrue(minterms.Length);
         }
 
         public BitVector False { get; }
@@ -90,7 +53,7 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             Debug.Assert(!caseInsensitive);
             int i = _classifier.GetMintermID(c);
-            return _minterms[i];
+            return _mintermVectors[i];
         }
 
         /// <summary>
@@ -99,36 +62,34 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         public BitVector ConvertFromCharSet(BDDAlgebra alg, BDD set)
         {
-            Debug.Assert(_partition is not null);
+            BDD[] partition = _minterms;
 
             BitVector res = False;
-            for (int i = 0; i < _bitCount; i++)
+            for (int i = 0; i < partition.Length; i++)
             {
-                BDD bdd_i = _partition[i];
-                BDD conj = alg.And(bdd_i, set);
-                if (alg.IsSatisfiable(conj))
+                if (alg.IsSatisfiable(alg.And(partition[i], set)))
                 {
-                    res = BitVector.Or(res, _minterms[i]);
+                    res = BitVector.Or(res, _mintermVectors[i]);
                 }
             }
 
             return res;
         }
 
-        public BDD ConvertToCharSet(ICharAlgebra<BDD> solver, BitVector pred)
+        public BDD ConvertToCharSet(BitVector pred)
         {
-            Debug.Assert(_partition is not null);
+            BDD[] partition = _minterms;
 
             // the result will be the union of all minterms in the set
-            BDD res = solver.False;
+            BDD res = CharSetSolver.Instance.False;
             if (!pred.Equals(False))
             {
-                for (int i = 0; i < _bitCount; i++)
+                for (int i = 0; i < partition.Length; i++)
                 {
                     // include the i'th minterm in the union if the i'th bit is set
                     if (pred[i])
                     {
-                        res = solver.Or(res, _partition[i]);
+                        res = CharSetSolver.Instance.Or(res, partition[i]);
                     }
                 }
             }
@@ -136,13 +97,9 @@ namespace System.Text.RegularExpressions.Symbolic
             return res;
         }
 
-        public BitVector[] GetMinterms() => _minterms;
+        public BitVector[] GetMinterms() => _mintermVectors;
 
         /// <summary>Pretty print the bitvector bv as the character set it represents.</summary>
-        public string PrettyPrint(BitVector bv)
-        {
-            CharSetSolver solver = CharSetSolver.Instance;
-            return solver.PrettyPrint(ConvertToCharSet(solver, bv));
-        }
+        public string PrettyPrint(BitVector bv) => CharSetSolver.Instance.PrettyPrint(ConvertToCharSet(bv));
     }
 }

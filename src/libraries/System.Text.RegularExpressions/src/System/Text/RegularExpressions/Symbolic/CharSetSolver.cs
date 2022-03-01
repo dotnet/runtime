@@ -108,30 +108,12 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         public BDD ConvertFromCharSet(BDDAlgebra _, BDD s) => s;
 
-        /// <summary>Calculate the number of elements in the set.</summary>
-        /// <param name="set">the given set</param>
-        /// <returns>the cardinality of the set</returns>
-        public ulong ComputeDomainSize(BDD set) => ComputeDomainSize(set, 15);
-
-        /// <summary>Calculate the number of elements in multiple sets.</summary>
-        /// <param name="sets">The sets</param>
-        /// <returns>An array of the cardinality of the sets.</returns>
-        public ulong[] ComputeDomainSizes(BDD[] sets)
-        {
-            var results = new ulong[sets.Length];
-            for (int i = 0; i < sets.Length; i++)
-            {
-                results[i] = ComputeDomainSize(sets[i]);
-            }
-            return results;
-        }
-
         /// <summary>
         /// Convert the set into an equivalent array of ranges. The ranges are nonoverlapping and ordered.
         /// </summary>
         public (uint, uint)[] ToRanges(BDD set) => BDDRangeConverter.ToRanges(set, 15);
 
-        public BDD ConvertToCharSet(ICharAlgebra<BDD> _, BDD pred) => pred;
+        public BDD ConvertToCharSet(BDD pred) => pred;
 
         public BDD[]? GetMinterms() => null;
 
