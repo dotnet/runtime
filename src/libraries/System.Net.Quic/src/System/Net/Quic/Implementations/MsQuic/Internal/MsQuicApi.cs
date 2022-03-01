@@ -3,6 +3,9 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+#if WINDOWS
+using Microsoft.Win32;
+#endif
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
@@ -158,7 +161,22 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         private static bool IsWindowsVersionSupported() => OperatingSystem.IsWindowsVersionAtLeast(MinWindowsVersion.Major,
             MinWindowsVersion.Minor, MinWindowsVersion.Build, MinWindowsVersion.Revision);
 
-        private static bool IsTls1_3Disabled() => MsQuicTlsSupportHelper.IsTls1_3Disabled();
+        private static bool IsTls1_3Disabled()
+        {
+#if WINDOWS
+            const string SChannelTLS1_3RegKey = @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3";
+
+            using var tls13Key = Registry.LocalMachine.OpenSubKey(SChannelTLS1_3RegKey);
+
+            if (tls13Key is null) return false;
+
+            if (tls13Key.GetValue("Enabled") is int enabled)
+            {
+                return enabled == 0;
+            }
+#endif
+            return false;
+        }
 
         // TODO: Consider updating all of these delegates to instead use function pointers.
         internal RegistrationOpenDelegate RegistrationOpenDelegate { get; }
