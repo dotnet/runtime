@@ -197,6 +197,7 @@ namespace SharedTypes
         }
     }
     
+    [CustomTypeMarshaller(typeof(string), BufferSize = 0x100, RequiresStackBuffer = true)]
     public unsafe ref struct Utf8StringMarshaller
     {
         private byte* allocated;
@@ -240,9 +241,6 @@ namespace SharedTypes
         public string? ToManaged() => Marshal.PtrToStringUTF8((IntPtr)Value);
 
         public void FreeNative() => Marshal.FreeCoTaskMem((IntPtr)allocated);
-
-        public const int BufferSize = 0x100;
-        public const bool RequiresStackBuffer = true;
     }
 
     [NativeMarshalling(typeof(IntStructWrapperNative))]
