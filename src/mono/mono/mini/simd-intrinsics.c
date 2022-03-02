@@ -586,12 +586,12 @@ static guint16 sri_vector_methods [] = {
 	SN_AsVector4,
 	SN_Ceiling,
 	SN_ConditionalSelect,
-	SN_ConvertToDouble,
-	SN_ConvertToInt32,
-	SN_ConvertToInt64,
-	SN_ConvertToSingle,
-	SN_ConvertToUInt32,
-	SN_ConvertToUInt64,
+	// SN_ConvertToDouble,
+	// SN_ConvertToInt32,
+	// SN_ConvertToInt64,
+	// SN_ConvertToSingle,
+	// SN_ConvertToUInt32,
+	// SN_ConvertToUInt64,
 	SN_Create,
 	SN_CreateScalar,
 	SN_CreateScalarUnsafe,
@@ -780,60 +780,60 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #endif
 	}
-	case SN_ConvertToDouble: {
-#ifdef TARGET_ARM64
-		if ((arg0_type != MONO_TYPE_I8) && (arg0_type != MONO_TYPE_U8))
-			return NULL;
-		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
-		int size = mono_class_value_size (arg_class, NULL);
-		int op = -1;
-		if (size == 8)
-			op = arg0_type == MONO_TYPE_I8 ? OP_ARM64_SCVTF_SCALAR : OP_ARM64_UCVTF_SCALAR;
-		else
-			op = arg0_type == MONO_TYPE_I8 ? OP_ARM64_SCVTF : OP_ARM64_UCVTF;
-		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
-#else
-		return NULL;
-#endif
-	}
-	case SN_ConvertToInt32: 
-	case SN_ConvertToUInt32: {
-#ifdef TARGET_ARM64
-		if (arg0_type != MONO_TYPE_R4)
-			return NULL;
-		int op = id == SN_ConvertToInt32 ? OP_ARM64_FCVTZS : OP_ARM64_FCVTZU;
-		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
-#else
-		return NULL;
-#endif
-	}
-	case SN_ConvertToInt64: 
-	case SN_ConvertToUInt64: {
-#ifdef TARGET_ARM64
-		if (arg0_type != MONO_TYPE_R8)
-			return NULL;
-		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
-		int size = mono_class_value_size (arg_class, NULL);
-		int op = -1;
-		if (id == SN_ConvertToInt64)
-			op = size == 8 ? OP_ARM64_FCVTZS_SCALAR : OP_ARM64_FCVTZS;
-		else
-			op = size == 8 ? OP_ARM64_FCVTZU_SCALAR : OP_ARM64_FCVTZU;
-		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
-#else
-		return NULL;
-#endif
-	}
-	case SN_ConvertToSingle: {
-#ifdef TARGET_ARM64
-		if ((arg0_type != MONO_TYPE_I4) && (arg0_type != MONO_TYPE_U4))
-			return NULL;
-		int op = arg0_type == MONO_TYPE_I4 ? OP_ARM64_SCVTF : OP_ARM64_UCVTF;
-		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
-#else
-		return NULL;
-#endif
-	}
+// 	case SN_ConvertToDouble: {
+// #ifdef TARGET_ARM64
+// 		if ((arg0_type != MONO_TYPE_I8) && (arg0_type != MONO_TYPE_U8))
+// 			return NULL;
+// 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+// 		int size = mono_class_value_size (arg_class, NULL);
+// 		int op = -1;
+// 		if (size == 8)
+// 			op = arg0_type == MONO_TYPE_I8 ? OP_ARM64_SCVTF_SCALAR : OP_ARM64_UCVTF_SCALAR;
+// 		else
+// 			op = arg0_type == MONO_TYPE_I8 ? OP_ARM64_SCVTF : OP_ARM64_UCVTF;
+// 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
+// #else
+// 		return NULL;
+// #endif
+// 	}
+// 	case SN_ConvertToInt32: 
+// 	case SN_ConvertToUInt32: {
+// #ifdef TARGET_ARM64
+// 		if (arg0_type != MONO_TYPE_R4)
+// 			return NULL;
+// 		int op = id == SN_ConvertToInt32 ? OP_ARM64_FCVTZS : OP_ARM64_FCVTZU;
+// 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
+// #else
+// 		return NULL;
+// #endif
+// 	}
+// 	case SN_ConvertToInt64: 
+// 	case SN_ConvertToUInt64: {
+// #ifdef TARGET_ARM64
+// 		if (arg0_type != MONO_TYPE_R8)
+// 			return NULL;
+// 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+// 		int size = mono_class_value_size (arg_class, NULL);
+// 		int op = -1;
+// 		if (id == SN_ConvertToInt64)
+// 			op = size == 8 ? OP_ARM64_FCVTZS_SCALAR : OP_ARM64_FCVTZS;
+// 		else
+// 			op = size == 8 ? OP_ARM64_FCVTZU_SCALAR : OP_ARM64_FCVTZU;
+// 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
+// #else
+// 		return NULL;
+// #endif
+// 	}
+// 	case SN_ConvertToSingle: {
+// #ifdef TARGET_ARM64
+// 		if ((arg0_type != MONO_TYPE_I4) && (arg0_type != MONO_TYPE_U4))
+// 			return NULL;
+// 		int op = arg0_type == MONO_TYPE_I4 ? OP_ARM64_SCVTF : OP_ARM64_UCVTF;
+// 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
+// #else
+// 		return NULL;
+// #endif
+// 	}
 	case SN_Create: {
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
 		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype))
