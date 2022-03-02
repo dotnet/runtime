@@ -2571,7 +2571,7 @@ public:
         return m_pszMethodName;
     }
 
-    // Baseed on the current flags, compute the equivalent as COR metaadata.
+    // Based on the current flags, compute the equivalent as COR metadata.
     WORD GetFlagsAsMetadata() const
     {
         LIMITED_METHOD_CONTRACT;
