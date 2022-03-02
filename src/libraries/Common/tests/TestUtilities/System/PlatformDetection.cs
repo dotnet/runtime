@@ -238,13 +238,14 @@ namespace System
         private static Lazy<bool> s_supportsTls11 = new Lazy<bool>(GetTls11Support);
         private static Lazy<bool> s_supportsTls12 = new Lazy<bool>(GetTls12Support);
         private static Lazy<bool> s_supportsTls13 = new Lazy<bool>(GetTls13Support);
-        private static Lazy<bool> s_supportsSendingCANamesInTls = new Lazy<bool>(GetTlsHandshakeCAListSupport);
+        private static Lazy<bool> s_sendsCAListByDefault = new Lazy<bool>(GetSendsCAListByDefault);
 
         public static bool SupportsTls10 => s_supportsTls10.Value;
         public static bool SupportsTls11 => s_supportsTls11.Value;
         public static bool SupportsTls12 => s_supportsTls12.Value;
         public static bool SupportsTls13 => s_supportsTls13.Value;
-        public static bool SupportsSendingCANamesInTls => s_supportsSendingCANamesInTls.Value;
+        public static bool SendsCAListByDefault => s_sendsCAListByDefault.Value;
+        public static bool SupportsSendingCustomCANamesInTls => UsesAppleCrypto || IsOpenSslSupported || (PlatformDetection.IsWindows8xOrLater && SendsCAListByDefault);
 
         private static Lazy<bool> s_largeArrayIsNotSupported = new Lazy<bool>(IsLargeArrayNotSupported);
 
@@ -514,16 +515,12 @@ namespace System
             return false;
         }
 
-        private static bool GetTlsHandshakeCAListSupport()
+        private static bool GetSendsCAListByDefault()
         {
-            if (IsOpenSslSupported || IsOSX)
-            {
-                return true;
-            }
-
             if (IsWindows)
             {
-                // Sending TrustedIssuers is conditioned on the registry.
+                // Sending TrustedIssuers is conditioned on the registry. Win7 sends trusted issuer list by default,
+                // newer Windows versions don't.
                 object val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL", "SendTrustedIssuerList", IsWindows7 ? 1 : 0);
                 if (val is int i)
                 {
