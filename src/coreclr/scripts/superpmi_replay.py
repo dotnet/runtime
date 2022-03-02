@@ -42,6 +42,7 @@ jit_flags_all = [
 
 def split(a, n):
     """ Splits array `a` in `n` partitions.
+        Slightly modified from https://stackoverflow.com/a/2135920.
 
     Args:
         args (ArgParse): args parsed by arg parser
