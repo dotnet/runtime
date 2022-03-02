@@ -43,11 +43,13 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap*
                 }
 
                 CopyPropSsaDefStack* stack = nullptr;
-                curSsaName->Lookup(lclNum, &stack);
-                stack->Pop();
-                if (stack->Empty())
+                if (curSsaName->Lookup(lclNum, &stack))
                 {
-                    curSsaName->Remove(lclNum);
+                    stack->Pop();
+                    if (stack->Empty())
+                    {
+                        curSsaName->Remove(lclNum);
+                    }
                 }
             }
         }
