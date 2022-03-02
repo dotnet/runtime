@@ -297,7 +297,7 @@ namespace System.Net
         public NetworkCredential(string? userName, string? password) { }
         public NetworkCredential(string? userName, string? password, string? domain) { }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public string Domain { get { throw null; } set { } }
+        public string Domain { get { throw null; } [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_domain")] set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Password { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]

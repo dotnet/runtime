@@ -223,10 +223,10 @@ namespace System.Text.RegularExpressions
         public RegexCompilationInfo(string pattern, System.Text.RegularExpressions.RegexOptions options, string name, string fullnamespace, bool ispublic, System.TimeSpan matchTimeout) { }
         public bool IsPublic { get { throw null; } set { } }
         public System.TimeSpan MatchTimeout { get { throw null; } set { } }
-        public string Name { get { throw null; } set { } }
-        public string Namespace { get { throw null; } set { } }
+        public string Name { get { throw null; } [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_name")] set { } }
+        public string Namespace { get { throw null; } [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_nspace")] set { } }
         public System.Text.RegularExpressions.RegexOptions Options { get { throw null; } set { } }
-        public string Pattern { get { throw null; } set { } }
+        public string Pattern { get { throw null; } [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_pattern")] set { } }
     }
     [System.AttributeUsageAttribute(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     public sealed partial class RegexGeneratorAttribute : System.Attribute

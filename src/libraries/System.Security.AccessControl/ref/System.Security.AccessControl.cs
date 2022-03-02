@@ -317,7 +317,7 @@ namespace System.Security.AccessControl
     {
         internal KnownAce() { }
         public int AccessMask { get { throw null; } set { } }
-        public System.Security.Principal.SecurityIdentifier SecurityIdentifier { get { throw null; } set { } }
+        public System.Security.Principal.SecurityIdentifier SecurityIdentifier { get { throw null; } [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_sid")] set { } }
     }
     public abstract partial class NativeObjectSecurity : System.Security.AccessControl.CommonObjectSecurity
     {

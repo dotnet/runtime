@@ -15,6 +15,9 @@
 
     <!-- We dont need to add null annotation within the ref for explicit interface methods. -->
     <NoWarn>$(NoWarn);CS8617</NoWarn>
+
+    <!-- MemberNotNullAttribute without underlying field. -->
+    <NoWarn>$(NoWarn);CS8776</NoWarn>
   </PropertyGroup>
 
   <!-- All reference assemblies should have a ReferenceAssemblyAttribute and the 0x70 flag which prevents them from loading. -->

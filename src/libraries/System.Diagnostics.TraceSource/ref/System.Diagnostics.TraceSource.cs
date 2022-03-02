@@ -42,7 +42,7 @@ namespace System.Diagnostics
     public partial class SourceFilter : System.Diagnostics.TraceFilter
     {
         public SourceFilter(string source) { }
-        public string Source { get { throw null; } set { } }
+        public string Source { get { throw null; } [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_src")] set { } }
         public override bool ShouldTrace(System.Diagnostics.TraceEventCache? cache, string source, System.Diagnostics.TraceEventType eventType, int id, string? formatOrMessage, object?[]? args, object? data1, object?[]? data) { throw null; }
     }
     [System.FlagsAttribute]
@@ -84,8 +84,8 @@ namespace System.Diagnostics
     {
         public SwitchAttribute(string switchName, System.Type switchType) { }
         public string? SwitchDescription { get { throw null; } set { } }
-        public string SwitchName { get { throw null; } set { } }
-        public System.Type SwitchType { get { throw null; } set { } }
+        public string SwitchName { get { throw null; } [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_name")] set { } }
+        public System.Type SwitchType { get { throw null; } [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_type")] set { } }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Types may be trimmed from the assembly.")]
         public static System.Diagnostics.SwitchAttribute[] GetAll(System.Reflection.Assembly assembly) { throw null; }
     }
@@ -93,7 +93,7 @@ namespace System.Diagnostics
     public sealed partial class SwitchLevelAttribute : System.Attribute
     {
         public SwitchLevelAttribute(System.Type switchLevelType) { }
-        public System.Type SwitchLevelType { get { throw null; } set { } }
+        public System.Type SwitchLevelType { get { throw null; } [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_type")] set { } }
     }
     public sealed partial class Trace
     {

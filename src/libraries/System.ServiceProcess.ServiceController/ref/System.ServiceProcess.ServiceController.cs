@@ -40,7 +40,7 @@ namespace System.ServiceProcess
         public int ExitCode { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected System.IntPtr ServiceHandle { get { throw null; } }
-        public string ServiceName { get { throw null; } set { } }
+        public string ServiceName { get { throw null; } [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_serviceName")] set { } }
         protected override void Dispose(bool disposing) { }
         protected virtual void OnContinue() { }
         protected virtual void OnCustomCommand(int command) { }

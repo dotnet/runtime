@@ -167,7 +167,7 @@ namespace System.Security.Cryptography
         public AsnEncodedData(string oid, byte[] rawData) { }
         public AsnEncodedData(string oid, System.ReadOnlySpan<byte> rawData) { }
         public System.Security.Cryptography.Oid? Oid { get { throw null; } set { } }
-        public byte[] RawData { get { throw null; } set { } }
+        public byte[] RawData { get { throw null; } [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_rawData")] set { } }
         public virtual void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
         public virtual string Format(bool multiLine) { throw null; }
     }

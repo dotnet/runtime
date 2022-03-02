@@ -9494,7 +9494,7 @@ namespace System.Globalization
         public string[] AbbreviatedMonthGenitiveNames { get { throw null; } set { } }
         public string[] AbbreviatedMonthNames { get { throw null; } set { } }
         public string AMDesignator { get { throw null; } set { } }
-        public System.Globalization.Calendar Calendar { get { throw null; } set { } }
+        public System.Globalization.Calendar Calendar { get { throw null; } [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("calendar")] set { } }
         public System.Globalization.CalendarWeekRule CalendarWeekRule { get { throw null; } set { } }
         public static System.Globalization.DateTimeFormatInfo CurrentInfo { get { throw null; } }
         public string DateSeparator { get { throw null; } set { } }
@@ -9943,7 +9943,7 @@ namespace System.Globalization
         public StringInfo() { }
         public StringInfo(string value) { }
         public int LengthInTextElements { get { throw null; } }
-        public string String { get { throw null; } set { } }
+        public string String { get { throw null; } [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_str")] set { } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static string GetNextTextElement(string str) { throw null; }

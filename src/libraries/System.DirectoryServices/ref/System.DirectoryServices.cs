@@ -182,6 +182,7 @@ namespace System.DirectoryServices
         public void InvokeSet(string propertyName, params object?[]? args) { }
         public void MoveTo(System.DirectoryServices.DirectoryEntry newParent) { }
         public void MoveTo(System.DirectoryServices.DirectoryEntry newParent, string? newName) { }
+        [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_adsObject")]
         public void RefreshCache() { }
         public void RefreshCache(string[] propertyNames) { }
         public void Rename(string? newName) { }

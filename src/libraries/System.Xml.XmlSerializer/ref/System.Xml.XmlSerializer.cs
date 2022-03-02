@@ -519,6 +519,7 @@ namespace System.Xml.Serialization
         protected object? ReadReferencedElement(string? name, string? ns) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         protected void ReadReferencedElements() { }
+        [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_callbacks")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         protected object? ReadReferencingElement(string? name, string? ns, bool elementCanBeType, out string? fixupReference) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]

@@ -4,7 +4,6 @@ T:System.ComponentModel.Design.Serialization.RootDesignerSerializerAttribute
 T:System.Configuration.ConfigurationPropertyAttribute
 T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute
 T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute
-T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute
 T:System.Diagnostics.CodeAnalysis.SuppressMessageAttribute
 T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute
 T:System.Diagnostics.DebuggerBrowsableAttribute

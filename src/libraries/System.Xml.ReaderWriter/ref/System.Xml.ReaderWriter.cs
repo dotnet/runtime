@@ -283,13 +283,13 @@ namespace System.Xml
     {
         protected internal XmlDeclaration(string version, string? encoding, string? standalone, System.Xml.XmlDocument doc) { }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public string Encoding { get { throw null; } set { } }
+        public string Encoding { get { throw null; } [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_encoding")] set { } }
         public override string InnerText { get { throw null; } set { } }
         public override string LocalName { get { throw null; } }
         public override string Name { get { throw null; } }
         public override System.Xml.XmlNodeType NodeType { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public string Standalone { get { throw null; } set { } }
+        public string Standalone { get { throw null; } [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_standalone")] set { } }
         public override string? Value { get { throw null; } set { } }
         public string Version { get { throw null; } }
         public override System.Xml.XmlNode CloneNode(bool deep) { throw null; }
@@ -1337,11 +1337,11 @@ namespace System.Xml
         public bool CloseOutput { get { throw null; } set { } }
         public System.Xml.ConformanceLevel ConformanceLevel { get { throw null; } set { } }
         public bool DoNotEscapeUriAttributes { get { throw null; } set { } }
-        public System.Text.Encoding Encoding { get { throw null; } set { } }
+        public System.Text.Encoding Encoding { get { throw null; } [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_encoding")] set { } }
         public bool Indent { get { throw null; } set { } }
-        public string IndentChars { get { throw null; } set { } }
+        public string IndentChars { get { throw null; } [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_indentChars")] set { } }
         public System.Xml.NamespaceHandling NamespaceHandling { get { throw null; } set { } }
-        public string NewLineChars { get { throw null; } set { } }
+        public string NewLineChars { get { throw null; } [System.Diagnostics.CodeAnalysis.MemberNotNullAttribute("_newLineChars")] set { } }
         public System.Xml.NewLineHandling NewLineHandling { get { throw null; } set { } }
         public bool NewLineOnAttributes { get { throw null; } set { } }
         public bool OmitXmlDeclaration { get { throw null; } set { } }
