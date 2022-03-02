@@ -2188,7 +2188,7 @@ void Stub::SetupStub(int numCodeBytes, DWORD flags
 #endif
 #endif
 
-    if (numCodeBytes >= MAX_CODEBYTES)
+    if (((DWORD)numCodeBytes) >= MAX_CODEBYTES)
         COMPlusThrowHR(COR_E_OVERFLOW);
 
     m_numCodeBytesAndFlags = numCodeBytes;
