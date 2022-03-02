@@ -88,5 +88,14 @@ public interface IField<TSelf, That> : IRing1<TSelf, That>, IDivisionOperators<T
 public interface INumber<TSelf, That> : IField<TSelf, That>, ISpanParseable<TSelf>, ISpanFormattable
     where TSelf : INumber<TSelf, That>//, ISpanParseable<TSelf>
 {
-    double Norm();
+    static abstract double Norm(TSelf value);
+
+    /// <summary>Clamps a value to an inclusive minimum and maximum value.</summary>
+    /// <param name="value">The value to clamp.</param>
+    /// <param name="min">The inclusive minimum to which <paramref name="value" /> should clamp.</param>
+    /// <param name="max">The inclusive maximum to which <paramref name="value" /> should clamp.</param>
+    /// <returns>The result of clamping <paramref name="value" /> to the inclusive range of <paramref name="min" /> and <paramref name="max" />.</returns>
+    /// <exception cref="ArgumentException"><paramref name="min" /> is greater than <paramref name="max" />.</exception>
+    static abstract TSelf Clamp(TSelf value, TSelf min, TSelf max);
+
 }

@@ -41,7 +41,11 @@ namespace System
         [Intrinsic]
         public static readonly IntPtr Zero;
 
-        public double Norm() => Math.Abs((int)_value);
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static unsafe double Norm(IntPtr value) => Math.Abs(value);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static double AsDouble(IntPtr value) => (int)value;
 
         [NonVersionable]
         public unsafe IntPtr(int value)
@@ -499,22 +503,22 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint INumber<nint>.One => 1;
+        static nint ISemiGroup<nint, nint>.One => 1;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint INumber<nint>.Zero => 0;
+        static nint ISemiAddGroup<nint, nint>.Zero => 0;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint INumber<nint>.Abs(nint value)
+        static nint IScalarNumber<nint, nint>.Abs(nint value)
             => Math.Abs(value);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint INumber<nint>.Clamp(nint value, nint min, nint max)
+        static nint INumber<nint, nint>.Clamp(nint value, nint min, nint max)
             => Math.Clamp(value, min, max);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nint INumber<nint>.Create<TOther>(TOther value)
+        static nint ICreate<nint>.Create<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -581,7 +585,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nint INumber<nint>.CreateSaturating<TOther>(TOther value)
+        static nint IScalarNumber<nint, nint>.CreateSaturating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -659,7 +663,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nint INumber<nint>.CreateTruncating<TOther>(TOther value)
+        static nint IScalarNumber<nint, nint>.CreateTruncating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -725,15 +729,15 @@ namespace System
         }
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static (nint Quotient, nint Remainder) INumber<nint>.DivRem(nint left, nint right)
+        static (nint Quotient, nint Remainder) IField<nint, nint>.DivRem(nint left, nint right)
             => Math.DivRem(left, right);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint INumber<nint>.Max(nint x, nint y)
+        static nint IScalarNumber<nint, nint>.Max(nint x, nint y)
             => Math.Max(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint INumber<nint>.Min(nint x, nint y)
+        static nint IScalarNumber<nint, nint>.Min(nint x, nint y)
             => Math.Min(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -745,12 +749,16 @@ namespace System
             => Parse(s, style, provider);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint INumber<nint>.Sign(nint value)
+        static nint IScalarNumber<nint, nint>.Sign(nint value)
             => Math.Sign(value);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IScalarNumber<nint, nint>.IsNegative(nint value)
+            => value < 0;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<nint>.TryCreate<TOther>(TOther value, out nint result)
+        static bool ICreate<nint>.TryCreate<TOther>(TOther value, out nint result)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -927,7 +935,7 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint ISignedNumber<nint>.NegativeOne => -1;
+        static nint ISignedNumber<nint, nint>.NegativeOne => -1;
 
         //
         // ISpanParseable

@@ -691,7 +691,7 @@ namespace System
                     return info.NaNSymbol;
                 }
 
-                return Half.IsNegative(value) ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
+                return Half.IsNegative_(value) ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
             }
 
             char fmt = ParseFormatSpecifier(format, out int precision);
@@ -703,7 +703,7 @@ namespace System
             }
 
             NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, HalfNumberBufferLength);
-            number.IsNegative = Half.IsNegative(value);
+            number.IsNegative = Half.IsNegative_(value);
 
             // We need to track the original precision requested since some formats
             // accept values like 0 and others may require additional fixups.

@@ -42,7 +42,7 @@ namespace System
 
         public static unsafe void Dragon4Half(Half value, int cutoffNumber, bool isSignificantDigits, ref NumberBuffer number)
         {
-            Half v = Half.IsNegative(value) ? Half.Negate(value) : value;
+            Half v = Half.IsNegative_(value) ? Half.Negate(value) : value;
 
             Debug.Assert((double)v > 0.0);
             Debug.Assert(Half.IsFinite(v));

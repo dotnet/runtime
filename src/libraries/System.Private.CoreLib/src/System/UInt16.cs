@@ -28,6 +28,19 @@ namespace System
         public const ushort MaxValue = (ushort)0xFFFF;
         public const ushort MinValue = 0;
 
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static double Norm(ushort value) => value;
+        public static double Abs(ushort value) => value;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static double AsDouble(ushort value) => value;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IScalarNumber<ushort, ushort>.IsNegative(ushort value) => false;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort ISignedNumber<ushort, ushort>.NegativeOne => unchecked((ushort)-1);
+
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
         // Returns a value less than zero if this  object
@@ -464,22 +477,22 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ushort INumber<ushort>.One => 1;
+        static ushort ISemiGroup<ushort, ushort>.One => 1;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ushort INumber<ushort>.Zero => 0;
+        static ushort ISemiAddGroup<ushort, ushort>.Zero => 0;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ushort INumber<ushort>.Abs(ushort value)
+        static ushort IScalarNumber<ushort, ushort>.Abs(ushort value)
             => value;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ushort INumber<ushort>.Clamp(ushort value, ushort min, ushort max)
+        static ushort INumber<ushort, ushort>.Clamp(ushort value, ushort min, ushort max)
             => Math.Clamp(value, min, max);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static ushort INumber<ushort>.Create<TOther>(TOther value)
+        static ushort ICreate<ushort>.Create<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -546,7 +559,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static ushort INumber<ushort>.CreateSaturating<TOther>(TOther value)
+        static ushort IScalarNumber<ushort, ushort>.CreateSaturating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -630,7 +643,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static ushort INumber<ushort>.CreateTruncating<TOther>(TOther value)
+        static ushort IScalarNumber<ushort, ushort>.CreateTruncating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -696,15 +709,15 @@ namespace System
         }
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static (ushort Quotient, ushort Remainder) INumber<ushort>.DivRem(ushort left, ushort right)
+        static (ushort Quotient, ushort Remainder) IField<ushort, ushort>.DivRem(ushort left, ushort right)
             => Math.DivRem(left, right);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ushort INumber<ushort>.Max(ushort x, ushort y)
+        static ushort IScalarNumber<ushort, ushort>.Max(ushort x, ushort y)
             => Math.Max(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ushort INumber<ushort>.Min(ushort x, ushort y)
+        static ushort IScalarNumber<ushort, ushort>.Min(ushort x, ushort y)
             => Math.Min(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -716,12 +729,12 @@ namespace System
             => Parse(s, style, provider);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ushort INumber<ushort>.Sign(ushort value)
+        static ushort IScalarNumber<ushort, ushort>.Sign(ushort value)
             => (ushort)((value == 0) ? 0 : 1);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<ushort>.TryCreate<TOther>(TOther value, out ushort result)
+        static bool ICreate<ushort>.TryCreate<TOther>(TOther value, out ushort result)
         {
             if (typeof(TOther) == typeof(byte))
             {

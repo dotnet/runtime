@@ -114,6 +114,16 @@ namespace System
         private readonly uint _hi32;
         private readonly ulong _lo64;
 
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static double Norm(decimal value) => Math.Abs((double)value);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static double AsDouble(decimal value) => (double)value;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IScalarNumber<decimal, decimal>.IsNegative(decimal value) => value < 0;
+        public static decimal NegativeOne() => - 1;
+
         // Constructs a Decimal from an integer value.
         //
         public Decimal(int value)
@@ -1208,18 +1218,18 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.One => 1.0m;
+        static decimal ISemiGroup<decimal, decimal>.One => 1.0m;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Zero => 0.0m;
+        static decimal ISemiAddGroup<decimal, decimal>.Zero => 0.0m;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Abs(decimal value)
+        static decimal IScalarNumber<decimal, decimal>.Abs(decimal value)
             => Math.Abs(value);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static decimal INumber<decimal>.Create<TOther>(TOther value)
+        static decimal ICreate<decimal>.Create<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1286,7 +1296,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static decimal INumber<decimal>.CreateSaturating<TOther>(TOther value)
+        static decimal IScalarNumber<decimal, decimal>.CreateSaturating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1353,7 +1363,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static decimal INumber<decimal>.CreateTruncating<TOther>(TOther value)
+        static decimal IScalarNumber<decimal, decimal>.CreateTruncating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1419,19 +1429,19 @@ namespace System
         }
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Clamp(decimal value, decimal min, decimal max)
+        static decimal INumber<decimal, decimal>.Clamp(decimal value, decimal min, decimal max)
             => Math.Clamp(value, min, max);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static (decimal Quotient, decimal Remainder) INumber<decimal>.DivRem(decimal left, decimal right)
+        static (decimal Quotient, decimal Remainder) IField<decimal, decimal>.DivRem(decimal left, decimal right)
             => (left / right, left % right);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Max(decimal x, decimal y)
+        static decimal IScalarNumber<decimal, decimal>.Max(decimal x, decimal y)
             => Math.Max(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Min(decimal x, decimal y)
+        static decimal IScalarNumber<decimal, decimal>.Min(decimal x, decimal y)
             => Math.Min(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -1443,12 +1453,12 @@ namespace System
             => Parse(s, style, provider);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Sign(decimal value)
+        static decimal IScalarNumber<decimal, decimal>.Sign(decimal value)
             => Math.Sign(value);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<decimal>.TryCreate<TOther>(TOther value, out decimal result)
+        static bool ICreate<decimal>.TryCreate<TOther>(TOther value, out decimal result)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1553,7 +1563,7 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal ISignedNumber<decimal>.NegativeOne => -1;
+        static decimal ISignedNumber<decimal, decimal>.NegativeOne => -1;
 
         //
         // ISpanParseable

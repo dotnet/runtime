@@ -492,22 +492,22 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nuint INumber<nuint>.One => 1;
+        static nuint ISemiGroup<nuint, nuint>.One => 1;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nuint INumber<nuint>.Zero => 0;
+        static nuint ISemiAddGroup<nuint, nuint>.Zero => 0;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nuint INumber<nuint>.Abs(nuint value)
+        static nuint IScalarNumber<nuint, nuint>.Abs(nuint value)
             => value;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nuint INumber<nuint>.Clamp(nuint value, nuint min, nuint max)
+        static nuint INumber<nuint, nuint>.Clamp(nuint value, nuint min, nuint max)
             => Math.Clamp(value, min, max);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nuint INumber<nuint>.Create<TOther>(TOther value)
+        static nuint ICreate<nuint>.Create<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -574,7 +574,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nuint INumber<nuint>.CreateSaturating<TOther>(TOther value)
+        static nuint IScalarNumber<nuint, nuint>.CreateSaturating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -655,7 +655,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nuint INumber<nuint>.CreateTruncating<TOther>(TOther value)
+        static nuint IScalarNumber<nuint, nuint>.CreateTruncating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -721,15 +721,15 @@ namespace System
         }
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static (nuint Quotient, nuint Remainder) INumber<nuint>.DivRem(nuint left, nuint right)
+        static (nuint Quotient, nuint Remainder) IField<nuint, nuint>.DivRem(nuint left, nuint right)
             => Math.DivRem(left, right);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nuint INumber<nuint>.Max(nuint x, nuint y)
+        static nuint IScalarNumber<nuint, nuint>.Max(nuint x, nuint y)
             => Math.Max(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nuint INumber<nuint>.Min(nuint x, nuint y)
+        static nuint IScalarNumber<nuint, nuint>.Min(nuint x, nuint y)
             => Math.Min(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -741,12 +741,25 @@ namespace System
             => Parse(s, style, provider);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nuint INumber<nuint>.Sign(nuint value)
+        static nuint IScalarNumber<nuint, nuint>.Sign(nuint value)
             => (nuint)((value == 0) ? 0 : 1);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static double Norm(nuint value) => Math.Abs(AsDouble(value));
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static double AsDouble(nuint value) => value;
+        public static nuint Sign(UIntPtr value) => (nuint)(value == (nuint)0 ? 0 : 1);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static bool IsNegative(UIntPtr value) => false;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static nuint ISignedNumber<nuint, nuint>.NegativeOne => unchecked((nuint)(-1));
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<nuint>.TryCreate<TOther>(TOther value, out nuint result)
+        static bool ICreate<nuint>.TryCreate<TOther>(TOther value, out nuint result)
         {
             if (typeof(TOther) == typeof(byte))
             {

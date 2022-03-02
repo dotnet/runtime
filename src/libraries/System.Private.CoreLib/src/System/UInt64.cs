@@ -28,6 +28,20 @@ namespace System
         public const ulong MaxValue = (ulong)0xffffffffffffffffL;
         public const ulong MinValue = 0x0;
 
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static double Norm(ulong value) => value;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static double AsDouble(ulong value) => value;
+        public static ulong Sign(ulong value) => value == 0 ? 0 : 1ul;
+        public static bool IsNegative(ulong value) => false;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ulong ISignedNumber<ulong, ulong>.NegativeOne => unchecked((ulong)-1);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IScalarNumber<ulong, ulong>.IsNegative(ulong value) => false;
+
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
         // Returns a value less than zero if this  object
@@ -449,22 +463,22 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong INumber<ulong>.One => 1;
+        static ulong ISemiGroup<ulong, ulong>.One => 1;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong INumber<ulong>.Zero => 0;
+        static ulong ISemiAddGroup<ulong, ulong>.Zero => 0;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong INumber<ulong>.Abs(ulong value)
+        static ulong IScalarNumber<ulong, ulong>.Abs(ulong value)
             => value;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong INumber<ulong>.Clamp(ulong value, ulong min, ulong max)
+        static ulong INumber<ulong, ulong>.Clamp(ulong value, ulong min, ulong max)
             => Math.Clamp(value, min, max);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static ulong INumber<ulong>.Create<TOther>(TOther value)
+        static ulong ICreate<ulong>.Create<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -531,7 +545,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static ulong INumber<ulong>.CreateSaturating<TOther>(TOther value)
+        static ulong IScalarNumber<ulong, ulong>.CreateSaturating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -609,7 +623,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static ulong INumber<ulong>.CreateTruncating<TOther>(TOther value)
+        static ulong IScalarNumber<ulong, ulong>.CreateTruncating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -675,15 +689,15 @@ namespace System
         }
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static (ulong Quotient, ulong Remainder) INumber<ulong>.DivRem(ulong left, ulong right)
+        static (ulong Quotient, ulong Remainder) IField<ulong, ulong>.DivRem(ulong left, ulong right)
             => Math.DivRem(left, right);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong INumber<ulong>.Max(ulong x, ulong y)
+        static ulong IScalarNumber<ulong, ulong>.Max(ulong x, ulong y)
             => Math.Max(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong INumber<ulong>.Min(ulong x, ulong y)
+        static ulong IScalarNumber<ulong, ulong>.Min(ulong x, ulong y)
             => Math.Min(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -695,12 +709,12 @@ namespace System
             => Parse(s, style, provider);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong INumber<ulong>.Sign(ulong value)
+        static ulong IScalarNumber<ulong, ulong>.Sign(ulong value)
             => (ulong)((value == 0) ? 0 : 1);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<ulong>.TryCreate<TOther>(TOther value, out ulong result)
+        static bool ICreate<ulong>.TryCreate<TOther>(TOther value, out ulong result)
         {
             if (typeof(TOther) == typeof(byte))
             {

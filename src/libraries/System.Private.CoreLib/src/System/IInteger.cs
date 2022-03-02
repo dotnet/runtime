@@ -13,7 +13,7 @@ namespace System
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
     [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface IBinaryInteger<TSelf>
-        : IBinaryNumber<TSelf>,
+        : IBinaryNumber<TSelf>, IScalarNumber<TSelf, TSelf>,
           IShiftOperators<TSelf, TSelf>
         where TSelf : IBinaryInteger<TSelf>
     {

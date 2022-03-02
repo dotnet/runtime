@@ -27,7 +27,12 @@ namespace System
         public const short MaxValue = (short)0x7FFF;
         public const short MinValue = unchecked((short)0x8000);
 
-        public double Norm() => Math.Abs(m_value);
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static double Norm(short value) => Math.Abs(value);
+        public static double Abs(short value) => Math.Abs(value);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static double AsDouble(short value) => value;
 
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
@@ -487,11 +492,11 @@ namespace System
         static short ISemiAddGroup<short, short>.Zero => 0;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static short INumber<short>.Abs(short value)
+        static short IScalarNumber<short, short>.Abs(short value)
             => Math.Abs(value);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static short INumber<short>.Clamp(short value, short min, short max)
+        static short INumber<short, short>.Clamp(short value, short min, short max)
             => Math.Clamp(value, min, max);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -563,7 +568,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static short INumber<short>.CreateSaturating<TOther>(TOther value)
+        static short IScalarNumber<short, short>.CreateSaturating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -647,7 +652,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static short INumber<short>.CreateTruncating<TOther>(TOther value)
+        static short IScalarNumber<short, short>.CreateTruncating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -717,11 +722,11 @@ namespace System
             => Math.DivRem(left, right);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static short INumber<short>.Max(short x, short y)
+        static short IScalarNumber<short, short>.Max(short x, short y)
             => Math.Max(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static short INumber<short>.Min(short x, short y)
+        static short IScalarNumber<short, short>.Min(short x, short y)
             => Math.Min(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -733,8 +738,12 @@ namespace System
             => Parse(s, style, provider);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static short INumber<short>.Sign(short value)
+        static short IScalarNumber<short, short>.Sign(short value)
             => (short)Math.Sign(value);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IScalarNumber<short, short>.IsNegative(short value)
+            => value < 0;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

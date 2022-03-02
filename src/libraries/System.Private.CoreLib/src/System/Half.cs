@@ -63,6 +63,8 @@ namespace System
 
         private const ushort MinValueBits = 0xFBFF;
         private const ushort MaxValueBits = 0x7BFF;
+        private const ushort MinusOneBits = 0b1_01111_00_0000_0000;
+        private const ushort OneBits = 0b0_01111_00_0000_0000;
 
         // Well-defined and commonly used values
 
@@ -81,6 +83,19 @@ namespace System
         // We use these explicit definitions to avoid the confusion between 0.0 and -0.0.
         private static readonly Half PositiveZero = new Half(PositiveZeroBits);            //  0.0
         private static readonly Half NegativeZero = new Half(NegativeZeroBits);            // -0.0
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static double Norm(Half value) => Math.Abs((double)value);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static double AsDouble(Half value) => (double)value;
+        public static Half NegativeOne() => new Half(MinusOneBits);
+        public static Half One() => new Half(OneBits);
+        public static Half Zero() => new Half(0);
+        public static Half Sign(Half value)
+            =>value < Zero() ? NegativeOne()
+            : value > Zero() ? One()
+            : Zero();
 
         private readonly ushort _value;
 
@@ -116,9 +131,9 @@ namespace System
                 return false;
             }
 
-            bool leftIsNegative = IsNegative(left);
+            bool leftIsNegative = IsNegative_(left);
 
-            if (leftIsNegative != IsNegative(right))
+            if (leftIsNegative != IsNegative_(right))
             {
                 // When the signs of left and right differ, we know that left is less than right if it is
                 // the negative value. The exception to this is if both values are zero, in which case IEEE
@@ -142,9 +157,9 @@ namespace System
                 return false;
             }
 
-            bool leftIsNegative = IsNegative(left);
+            bool leftIsNegative = IsNegative_(left);
 
-            if (leftIsNegative != IsNegative(right))
+            if (leftIsNegative != IsNegative_(right))
             {
                 // When the signs of left and right differ, we know that left is less than right if it is
                 // the negative value. The exception to this is if both values are zero, in which case IEEE
@@ -195,8 +210,11 @@ namespace System
             return StripSign(value) > PositiveInfinityBits;
         }
 
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IScalarNumber<Half, Half>.IsNegative(Half value) => IsNegative_(value);
+
         /// <summary>Determines whether the specified value is negative.</summary>
-        public static bool IsNegative(Half value)
+        private static bool IsNegative_(Half value)
         {
             return (short)(value._value) < 0;
         }
@@ -555,7 +573,7 @@ namespace System
         // -----------------------Start of from-half conversions-------------------------
         public static explicit operator float(Half value)
         {
-            bool sign = IsNegative(value);
+            bool sign = IsNegative_(value);
             int exp = value.Exponent;
             uint sig = value.Significand;
 
@@ -583,7 +601,7 @@ namespace System
 
         public static explicit operator double(Half value)
         {
-            bool sign = IsNegative(value);
+            bool sign = IsNegative_(value);
             int exp = value.Exponent;
             uint sig = value.Significand;
 
@@ -844,59 +862,59 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.E => (Half)MathF.E;
+        static Half IFloatingPoint<Half, Half>.E => (Half)MathF.E;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Epsilon => Epsilon;
+        static Half IFloatingPoint<Half, Half>.Epsilon => Epsilon;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.NaN => NaN;
+        static Half IFloatingPoint<Half, Half>.NaN => NaN;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.NegativeInfinity => NegativeInfinity;
+        static Half IFloatingPoint<Half, Half>.NegativeInfinity => NegativeInfinity;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.NegativeZero => NegativeZero;
+        static Half IFloatingPoint<Half, Half>.NegativeZero => NegativeZero;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Pi => (Half)MathF.PI;
+        static Half IFloatingPoint<Half, Half>.Pi => (Half)MathF.PI;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.PositiveInfinity => PositiveInfinity;
+        static Half IFloatingPoint<Half, Half>.PositiveInfinity => PositiveInfinity;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Tau => (Half)MathF.Tau;
+        static Half IFloatingPoint<Half, Half>.Tau => (Half)MathF.Tau;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Acos(Half x)
+        static Half IFloatingPoint<Half, Half>.Acos(Half x)
             => (Half)MathF.Acos((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Acosh(Half x)
+        static Half IFloatingPoint<Half, Half>.Acosh(Half x)
             => (Half)MathF.Acosh((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Asin(Half x)
+        static Half IFloatingPoint<Half, Half>.Asin(Half x)
             => (Half)MathF.Asin((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Asinh(Half x)
+        static Half IFloatingPoint<Half, Half>.Asinh(Half x)
             => (Half)MathF.Asinh((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Atan(Half x)
+        static Half IFloatingPoint<Half, Half>.Atan(Half x)
             => (Half)MathF.Atan((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Atan2(Half y, Half x)
+        static Half IFloatingPoint<Half, Half>.Atan2(Half y, Half x)
             => (Half)MathF.Atan2((float)y, (float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Atanh(Half x)
+        static Half IFloatingPoint<Half, Half>.Atanh(Half x)
             => (Half)MathF.Atanh((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.BitIncrement(Half x)
+        static Half IFloatingPoint<Half, Half>.BitIncrement(Half x)
         {
             ushort bits = BitConverter.HalfToUInt16Bits(x);
 
@@ -922,7 +940,7 @@ namespace System
         }
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.BitDecrement(Half x)
+        static Half IFloatingPoint<Half, Half>.BitDecrement(Half x)
         {
             ushort bits = BitConverter.HalfToUInt16Bits(x);
 
@@ -948,203 +966,200 @@ namespace System
         }
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Cbrt(Half x)
+        static Half IFloatingPoint<Half, Half>.Cbrt(Half x)
             => (Half)MathF.Cbrt((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Ceiling(Half x)
+        static Half IFloatingPoint<Half, Half>.Ceiling(Half x)
             => (Half)MathF.Ceiling((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.CopySign(Half x, Half y)
+        static Half IFloatingPoint<Half, Half>.CopySign(Half x, Half y)
             => (Half)MathF.CopySign((float)x, (float)y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Cos(Half x)
+        static Half IFloatingPoint<Half, Half>.Cos(Half x)
             => (Half)MathF.Cos((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Cosh(Half x)
+        static Half IFloatingPoint<Half, Half>.Cosh(Half x)
             => (Half)MathF.Cosh((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Exp(Half x)
+        static Half IFloatingPoint<Half, Half>.Exp(Half x)
             => (Half)MathF.Exp((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Floor(Half x)
+        static Half IFloatingPoint<Half, Half>.Floor(Half x)
             => (Half)MathF.Floor((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.FusedMultiplyAdd(Half left, Half right, Half addend)
+        static Half IFloatingPoint<Half, Half>.FusedMultiplyAdd(Half left, Half right, Half addend)
             => (Half)MathF.FusedMultiplyAdd((float)left, (float)right, (float)addend);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.IEEERemainder(Half left, Half right)
+        static Half IFloatingPoint<Half, Half>.IEEERemainder(Half left, Half right)
             => (Half)MathF.IEEERemainder((float)left, (float)right);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static TInteger IFloatingPoint<Half>.ILogB<TInteger>(Half x)
+        static TInteger IFloatingPoint<Half, Half>.ILogB<TInteger>(Half x)
             => TInteger.Create(MathF.ILogB((float)x));
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Log(Half x)
+        static Half IFloatingPoint<Half, Half>.Log(Half x)
             => (Half)MathF.Log((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Log(Half x, Half newBase)
+        static Half IFloatingPoint<Half, Half>.Log(Half x, Half newBase)
             => (Half)MathF.Log((float)x, (float)newBase);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Log2(Half x)
+        static Half IFloatingPoint<Half, Half>.Log2(Half x)
             => (Half)MathF.Log2((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Log10(Half x)
+        static Half IFloatingPoint<Half, Half>.Log10(Half x)
             => (Half)MathF.Log10((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.MaxMagnitude(Half x, Half y)
+        static Half IFloatingPoint<Half, Half>.MaxMagnitude(Half x, Half y)
             => (Half)MathF.MaxMagnitude((float)x, (float)y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.MinMagnitude(Half x, Half y)
+        static Half IFloatingPoint<Half, Half>.MinMagnitude(Half x, Half y)
             => (Half)MathF.MinMagnitude((float)x, (float)y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Pow(Half x, Half y)
+        static Half IFloatingPoint<Half, Half>.Pow(Half x, Half y)
             => (Half)MathF.Pow((float)x, (float)y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Round(Half x)
+        static Half IFloatingPoint<Half, Half>.Round(Half x)
             => (Half)MathF.Round((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Round<TInteger>(Half x, TInteger digits)
+        static Half IFloatingPoint<Half, Half>.Round<TInteger>(Half x, TInteger digits)
             => (Half)MathF.Round((float)x, int.Create(digits));
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Round(Half x, MidpointRounding mode)
+        static Half IFloatingPoint<Half, Half>.Round(Half x, MidpointRounding mode)
             => (Half)MathF.Round((float)x, mode);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Round<TInteger>(Half x, TInteger digits, MidpointRounding mode)
+        static Half IFloatingPoint<Half, Half>.Round<TInteger>(Half x, TInteger digits, MidpointRounding mode)
             => (Half)MathF.Round((float)x, int.Create(digits), mode);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.ScaleB<TInteger>(Half x, TInteger n)
+        static Half IFloatingPoint<Half, Half>.ScaleB<TInteger>(Half x, TInteger n)
             => (Half)MathF.ScaleB((float)x, int.Create(n));
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Sin(Half x)
+        static Half IFloatingPoint<Half, Half>.Sin(Half x)
             => (Half)MathF.Sin((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Sinh(Half x)
+        static Half IFloatingPoint<Half, Half>.Sinh(Half x)
             => (Half)MathF.Sinh((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Sqrt(Half x)
+        static Half IFloatingPoint<Half, Half>.Sqrt(Half x)
             => (Half)MathF.Sqrt((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Tan(Half x)
+        static Half IFloatingPoint<Half, Half>.Tan(Half x)
             => (Half)MathF.Tan((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Tanh(Half x)
+        static Half IFloatingPoint<Half, Half>.Tanh(Half x)
             => (Half)MathF.Tanh((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Truncate(Half x)
+        static Half IFloatingPoint<Half, Half>.Truncate(Half x)
             => (Half)MathF.Truncate((float)x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<Half>.IsFinite(Half x) => IsFinite(x);
+        static bool IFloatingPoint<Half, Half>.IsFinite(Half x) => IsFinite(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<Half>.IsInfinity(Half x) => IsInfinity(x);
+        static bool IFloatingPoint<Half, Half>.IsInfinity(Half x) => IsInfinity(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<Half>.IsNaN(Half x) => IsNaN(x);
+        static bool IFloatingPoint<Half, Half>.IsNaN(Half x) => IsNaN(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<Half>.IsNegative(Half x) => IsNegative(x);
+        static bool IFloatingPoint<Half, Half>.IsNegativeInfinity(Half x) => IsNegativeInfinity(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<Half>.IsNegativeInfinity(Half x) => IsNegativeInfinity(x);
+        static bool IFloatingPoint<Half, Half>.IsNormal(Half x) => IsNormal(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<Half>.IsNormal(Half x) => IsNormal(x);
+        static bool IFloatingPoint<Half, Half>.IsPositiveInfinity(Half x) => IsPositiveInfinity(x);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<Half>.IsPositiveInfinity(Half x) => IsPositiveInfinity(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<Half>.IsSubnormal(Half x) => IsSubnormal(x);
+        static bool IFloatingPoint<Half, Half>.IsSubnormal(Half x) => IsSubnormal(x);
 
 
-        // static Half IFloatingPoint<Half>.AcosPi(Half x)
+        // static Half IFloatingPoint<Half, Half>.AcosPi(Half x)
         //     => (Half)MathF.AcosPi((float)x);
         //
-        // static Half IFloatingPoint<Half>.AsinPi(Half x)
+        // static Half IFloatingPoint<Half, Half>.AsinPi(Half x)
         //     => (Half)MathF.AsinPi((float)x);
         //
-        // static Half IFloatingPoint<Half>.AtanPi(Half x)
+        // static Half IFloatingPoint<Half, Half>.AtanPi(Half x)
         //     => (Half)MathF.AtanPi((float)x);
         //
-        // static Half IFloatingPoint<Half>.Atan2Pi(Half y, Half x)
+        // static Half IFloatingPoint<Half, Half>.Atan2Pi(Half y, Half x)
         //     => (Half)MathF.Atan2Pi((float)y, (float)x);
         //
-        // static Half IFloatingPoint<Half>.Compound(Half x, Half n)
+        // static Half IFloatingPoint<Half, Half>.Compound(Half x, Half n)
         //     => (Half)MathF.Compound((float)x, (float)n);
         //
-        // static Half IFloatingPoint<Half>.CosPi(Half x)
+        // static Half IFloatingPoint<Half, Half>.CosPi(Half x)
         //     => (Half)MathF.CosPi((float)x);
         //
-        // static Half IFloatingPoint<Half>.ExpM1(Half x)
+        // static Half IFloatingPoint<Half, Half>.ExpM1(Half x)
         //     => (Half)MathF.ExpM1((float)x);
         //
-        // static Half IFloatingPoint<Half>.Exp2(Half x)
+        // static Half IFloatingPoint<Half, Half>.Exp2(Half x)
         //     => (Half)MathF.Exp2((float)x);
         //
-        // static Half IFloatingPoint<Half>.Exp2M1(Half x)
+        // static Half IFloatingPoint<Half, Half>.Exp2M1(Half x)
         //     => (Half)MathF.Exp2M1((float)x);
         //
-        // static Half IFloatingPoint<Half>.Exp10(Half x)
+        // static Half IFloatingPoint<Half, Half>.Exp10(Half x)
         //     => (Half)MathF.Exp10((float)x);
         //
-        // static Half IFloatingPoint<Half>.Exp10M1(Half x)
+        // static Half IFloatingPoint<Half, Half>.Exp10M1(Half x)
         //     => (Half)MathF.Exp10M1((float)x);
         //
-        // static Half IFloatingPoint<Half>.Hypot(Half x, Half y)
+        // static Half IFloatingPoint<Half, Half>.Hypot(Half x, Half y)
         //     => (Half)MathF.Hypot((float)x, (float)y);
         //
-        // static Half IFloatingPoint<Half>.LogP1(Half x)
+        // static Half IFloatingPoint<Half, Half>.LogP1(Half x)
         //     => (Half)MathF.LogP1((float)x);
         //
-        // static Half IFloatingPoint<Half>.Log2P1(Half x)
+        // static Half IFloatingPoint<Half, Half>.Log2P1(Half x)
         //     => (Half)MathF.Log2P1((float)x);
         //
-        // static Half IFloatingPoint<Half>.Log10P1(Half x)
+        // static Half IFloatingPoint<Half, Half>.Log10P1(Half x)
         //     => (Half)MathF.Log10P1((float)x);
         //
-        // static Half IFloatingPoint<Half>.MaxMagnitudeNumber(Half x, Half y)
+        // static Half IFloatingPoint<Half, Half>.MaxMagnitudeNumber(Half x, Half y)
         //     => (Half)MathF.MaxMagnitudeNumber((float)x, (float)y);
         //
-        // static Half IFloatingPoint<Half>.MaxNumber(Half x, Half y)
+        // static Half IFloatingPoint<Half, Half>.MaxNumber(Half x, Half y)
         //     => (Half)MathF.MaxNumber((float)x, (float)y);
         //
-        // static Half IFloatingPoint<Half>.MinMagnitudeNumber(Half x, Half y)
+        // static Half IFloatingPoint<Half, Half>.MinMagnitudeNumber(Half x, Half y)
         //     => (Half)MathF.MinMagnitudeNumber((float)x, (float)y);
         //
-        // static Half IFloatingPoint<Half>.MinNumber(Half x, Half y)
+        // static Half IFloatingPoint<Half, Half>.MinNumber(Half x, Half y)
         //     => (Half)MathF.MinNumber((float)x, (float)y);
         //
-        // static Half IFloatingPoint<Half>.Root(Half x, Half n)
+        // static Half IFloatingPoint<Half, Half>.Root(Half x, Half n)
         //     => (Half)MathF.Root((float)x, (float)n);
         //
-        // static Half IFloatingPoint<Half>.SinPi(Half x)
+        // static Half IFloatingPoint<Half, Half>.SinPi(Half x)
         //     => (Half)MathF.SinPi((float)x, (float)y);
         //
         // static Half TanPi(Half x)
@@ -1216,22 +1231,22 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half INumber<Half>.One => (Half)1.0f;
+        static Half ISemiGroup<Half, Half>.One => (Half)1.0f;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half INumber<Half>.Zero => PositiveZero;
+        static Half ISemiAddGroup<Half, Half>.Zero => PositiveZero;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half INumber<Half>.Abs(Half value)
+        static Half IScalarNumber<Half, Half>.Abs(Half value)
             => (Half)MathF.Abs((float)value);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half INumber<Half>.Clamp(Half value, Half min, Half max)
+        static Half INumber<Half, Half>.Clamp(Half value, Half min, Half max)
             => (Half)Math.Clamp((float)value, (float)min, (float)max);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static Half INumber<Half>.Create<TOther>(TOther value)
+        static Half ICreate<Half>.Create<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1298,7 +1313,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static Half INumber<Half>.CreateSaturating<TOther>(TOther value)
+        static Half IScalarNumber<Half, Half>.CreateSaturating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1365,7 +1380,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static Half INumber<Half>.CreateTruncating<TOther>(TOther value)
+        static Half IScalarNumber<Half, Half>.CreateTruncating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1431,15 +1446,15 @@ namespace System
         }
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static (Half Quotient, Half Remainder) INumber<Half>.DivRem(Half left, Half right)
+        static (Half Quotient, Half Remainder) IField<Half, Half>.DivRem(Half left, Half right)
             => ((Half, Half))((float)left / (float)right, (float)left % (float)right);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half INumber<Half>.Max(Half x, Half y)
+        static Half IScalarNumber<Half, Half>.Max(Half x, Half y)
             => (Half)MathF.Max((float)x, (float)y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half INumber<Half>.Min(Half x, Half y)
+        static Half IScalarNumber<Half, Half>.Min(Half x, Half y)
             => (Half)MathF.Min((float)x, (float)y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -1451,12 +1466,12 @@ namespace System
             => Parse(s, style, provider);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half INumber<Half>.Sign(Half value)
+        static Half IScalarNumber<Half, Half>.Sign(Half value)
             => (Half)MathF.Sign((float)value);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<Half>.TryCreate<TOther>(TOther value, out Half result)
+        static bool ICreate<Half>.TryCreate<TOther>(TOther value, out Half result)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1561,7 +1576,7 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half ISignedNumber<Half>.NegativeOne => (Half)(-1.0f);
+        static Half ISignedNumber<Half, Half>.NegativeOne => (Half)(-1.0f);
 
         //
         // ISpanParseable

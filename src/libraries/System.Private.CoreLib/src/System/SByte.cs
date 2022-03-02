@@ -31,6 +31,15 @@ namespace System
         // The minimum value that a Byte may represent: -128.
         public const sbyte MinValue = unchecked((sbyte)0x80);
 
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static double Norm(sbyte value) => Math.Abs(value);
+        public static double Abs(sbyte value) => Math.Abs(value);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static double AsDouble(sbyte value) => value;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IScalarNumber<sbyte, sbyte>.IsNegative(sbyte value) => value < 0;
 
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
@@ -488,22 +497,22 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static sbyte INumber<sbyte>.One => 1;
+        static sbyte ISemiGroup<sbyte, sbyte>.One => 1;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static sbyte INumber<sbyte>.Zero => 0;
+        static sbyte ISemiAddGroup<sbyte, sbyte>.Zero => 0;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static sbyte INumber<sbyte>.Abs(sbyte value)
+        static sbyte IScalarNumber<sbyte, sbyte>.Abs(sbyte value)
             => Math.Abs(value);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static sbyte INumber<sbyte>.Clamp(sbyte value, sbyte min, sbyte max)
+        static sbyte INumber<sbyte, sbyte>.Clamp(sbyte value, sbyte min, sbyte max)
             => Math.Clamp(value, min, max);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static sbyte INumber<sbyte>.Create<TOther>(TOther value)
+        static sbyte ICreate<sbyte>.Create<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -570,7 +579,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static sbyte INumber<sbyte>.CreateSaturating<TOther>(TOther value)
+        static sbyte IScalarNumber<sbyte, sbyte>.CreateSaturating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -657,7 +666,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static sbyte INumber<sbyte>.CreateTruncating<TOther>(TOther value)
+        static sbyte IScalarNumber<sbyte, sbyte>.CreateTruncating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -723,15 +732,15 @@ namespace System
         }
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static (sbyte Quotient, sbyte Remainder) INumber<sbyte>.DivRem(sbyte left, sbyte right)
+        static (sbyte Quotient, sbyte Remainder) IField<sbyte, sbyte>.DivRem(sbyte left, sbyte right)
             => Math.DivRem(left, right);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static sbyte INumber<sbyte>.Max(sbyte x, sbyte y)
+        static sbyte IScalarNumber<sbyte, sbyte>.Max(sbyte x, sbyte y)
             => Math.Max(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static sbyte INumber<sbyte>.Min(sbyte x, sbyte y)
+        static sbyte IScalarNumber<sbyte, sbyte>.Min(sbyte x, sbyte y)
             => Math.Min(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -743,12 +752,12 @@ namespace System
             => Parse(s, style, provider);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static sbyte INumber<sbyte>.Sign(sbyte value)
+        static sbyte IScalarNumber<sbyte, sbyte>.Sign(sbyte value)
             => (sbyte)Math.Sign(value);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<sbyte>.TryCreate<TOther>(TOther value, out sbyte result)
+        static bool ICreate<sbyte>.TryCreate<TOther>(TOther value, out sbyte result)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -973,7 +982,7 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static sbyte ISignedNumber<sbyte>.NegativeOne => -1;
+        static sbyte ISignedNumber<sbyte, sbyte>.NegativeOne => -1;
 
         //
         // ISpanParseable

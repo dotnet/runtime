@@ -1,9 +1,14 @@
-﻿namespace System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Runtime.Versioning;
+
+namespace System;
 
 /// <summary> Number with total Order => Min, Max and Sign are defined </summary>
-public interface IScalarNumber<TSelf, That>
-	: ISignedNumber<TSelf, That>, IComparisonOperators<TSelf, That> //, IConvertible
-	where TSelf : IScalarNumber<TSelf, That>
+[RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+public interface IScalarNumber<TSelf, That> : ISignedNumber<TSelf, That>, IComparisonOperators<TSelf, That> //, IConvertible
+    where TSelf : IScalarNumber<TSelf, That>
 {
     static abstract double AsDouble(TSelf value);
 
@@ -19,7 +24,11 @@ public interface IScalarNumber<TSelf, That>
     /// <param name="x">The value to compare with <paramref name="y" />.</param>
     /// <param name="y">The value to compare with <paramref name="x" />.</param>
     /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
-    /// <remarks>For <see cref="IFloatingPoint{TSelf}" /> this method matches the IEEE 754:2019 <c>maximum</c> function. This requires NaN inputs to be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+    /// <remarks>
+    /// For non-Scalars this operates component-wise.
+    /// For <see cref="IFloatingPoint{TSelf}" /> this method matches the IEEE 754:2019 <c>maximum</c> function.
+    /// This requires NaN inputs to be propagated back to the caller and for <c>-0.0</c>
+    /// to be treated as less than <c>+0.0</c>.</remarks>
     static abstract That Max(TSelf x, That y);
 
     /// <summary>Compares two values to compute which is lesser.</summary>
@@ -37,18 +46,9 @@ public interface IScalarNumber<TSelf, That>
 
     /// <summary>Computes the sign of a value.</summary>
     /// <param name="value">The value whose sign is to be computed.</param>
-    /// <returns>A positive value if <paramref name="value" /> is positive, <see cref="INumber{T,S}.Zero" /> if <paramref name="value" /> is zero, and a negative value if <paramref name="value" /> is negative.</returns>
+    /// <returns>A positive value if <paramref name="value" /> is positive, <see cref="ISemiAddGroup{T,S}.Zero" /> if <paramref name="value" /> is zero, and a negative value if <paramref name="value" /> is negative.</returns>
     /// <remarks>It is recommended that a function return <c>1</c>, <c>0</c>, and <c>-1</c>, respectively.</remarks>
     static abstract That Sign(TSelf value);
-
-
-    /// <summary>Clamps a value to an inclusive minimum and maximum value.</summary>
-    /// <param name="value">The value to clamp.</param>
-    /// <param name="min">The inclusive minimum to which <paramref name="value" /> should clamp.</param>
-    /// <param name="max">The inclusive maximum to which <paramref name="value" /> should clamp.</param>
-    /// <returns>The result of clamping <paramref name="value" /> to the inclusive range of <paramref name="min" /> and <paramref name="max" />.</returns>
-    /// <exception cref="ArgumentException"><paramref name="min" /> is greater than <paramref name="max" />.</exception>
-    static abstract TSelf Clamp(TSelf value, TSelf min, TSelf max);
 
     /// <summary>Creates an instance of the current type from a value, saturating any values that fall outside the representable range of the current type.</summary>
     /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>

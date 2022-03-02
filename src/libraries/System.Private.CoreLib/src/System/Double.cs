@@ -908,11 +908,11 @@ namespace System
         static double ISemiAddGroup<double, double>.Zero => 0.0;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double INumber<double>.Abs(double value)
+        static double IScalarNumber<double, double>.Abs(double value)
             => Math.Abs(value);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double INumber<double>.Clamp(double value, double min, double max)
+        static double INumber<double, double>.Clamp(double value, double min, double max)
             => Math.Clamp(value, min, max);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -984,7 +984,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static double INumber<double>.CreateSaturating<TOther>(TOther value)
+        static double IScalarNumber<double, double>.CreateSaturating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1051,7 +1051,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static double INumber<double>.CreateTruncating<TOther>(TOther value)
+        static double IScalarNumber<double, double>.CreateTruncating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1121,11 +1121,11 @@ namespace System
             => (left / right, left % right);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double INumber<double>.Max(double x, double y)
+        static double IScalarNumber<double, double>.Max(double x, double y)
             => Math.Max(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double INumber<double>.Min(double x, double y)
+        static double IScalarNumber<double, double>.Min(double x, double y)
             => Math.Min(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -1137,7 +1137,7 @@ namespace System
             => Parse(s, style, provider);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double INumber<double>.Sign(double value)
+        static double IScalarNumber<double, double>.Sign(double value)
             => Math.Sign(value);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -1260,18 +1260,12 @@ namespace System
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool ISpanParseable<double>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out double result)
             => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static double IScalarNumber<double, double>.AsDouble(double value) => value;
-        static double IScalarNumber<double, double>.Max(double x, double y) => Math.Max(x, y);
-        static double IScalarNumber<double, double>.Min(double x, double y) => Math.Max(x, y);
-        static double IScalarNumber<double, double>.Abs(double value) => Math.Abs(value);
-        static double IScalarNumber<double, double>.Sign(double value) => Math.Abs(value);
-        static double IScalarNumber<double, double>.Clamp(double value, double min, double max)
-            => value < min ? min
-            : value > max ? max
-            : value;
-        static double IScalarNumber<double, double>.CreateSaturating<TOther>(TOther value) => Create(value);
-        static double IScalarNumber<double, double>.CreateTruncating<TOther>(TOther value) => Create(value);
-        double INumber<double, double>.Norm() => throw new NotImplementedException();
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static double INumber<double, double>.Norm(double value) => Math.Abs(value);
 
         //
         // ISubtractionOperators

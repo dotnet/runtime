@@ -27,7 +27,11 @@ namespace System
         public const int MaxValue = 0x7fffffff;
         public const int MinValue = unchecked((int)0x80000000);
 
-        public double Norm() => Math.Abs(m_value);
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static double INumber<int, int>.Norm(int value) => Math.Abs(value);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static double AsDouble(int value) => value;
 
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
@@ -479,16 +483,24 @@ namespace System
         static int ISemiAddGroup<int, int>.Zero => 0;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static int INumber<int>.Abs(int value)
+        static int IScalarNumber<int, int>.Abs(int value)
             => Math.Abs(value);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static int INumber<int>.Clamp(int value, int min, int max)
+        static bool IScalarNumber<int, int>.IsNegative(int value)
+            => value < 0;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static int INumber<int, int>.Clamp(int value, int min, int max)
             => Math.Clamp(value, min, max);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static int ICreate<int>.Create<TOther>(TOther value) => Create(value);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         internal static int Create<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            //TODO: where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -555,11 +567,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static int ICreate<int>.Create<TOther>(TOther value) where TOther : ICreate<TOther> => Create(value);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static int INumber<int>.CreateSaturating<TOther>(TOther value)
+        static int IScalarNumber<int, int>.CreateSaturating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -639,7 +647,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static int INumber<int>.CreateTruncating<TOther>(TOther value)
+        static int IScalarNumber<int, int>.CreateTruncating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -709,11 +717,11 @@ namespace System
             => Math.DivRem(left, right);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static int INumber<int>.Max(int x, int y)
+        static int IScalarNumber<int, int>.Max(int x, int y)
             => Math.Max(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static int INumber<int>.Min(int x, int y)
+        static int IScalarNumber<int, int>.Min(int x, int y)
             => Math.Min(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -725,7 +733,7 @@ namespace System
             => Parse(s, style, provider);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static int INumber<int>.Sign(int value)
+        static int IScalarNumber<int, int>.Sign(int value)
             => Math.Sign(value);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]

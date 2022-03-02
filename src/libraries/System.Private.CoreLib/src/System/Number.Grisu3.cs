@@ -357,7 +357,7 @@ namespace System
 
             public static bool TryRunHalf(Half value, int requestedDigits, ref NumberBuffer number)
             {
-                Half v = Half.IsNegative(value) ? Half.Negate(value) : value;
+                Half v = Half.IsNegative_(value) ? Half.Negate(value) : value;
 
                 Debug.Assert((double)v > 0);
                 Debug.Assert(Half.IsFinite(v));

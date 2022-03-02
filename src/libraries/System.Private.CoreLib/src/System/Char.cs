@@ -113,6 +113,12 @@ namespace System
             return (int)m_value | ((int)m_value << 16);
         }
 
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static double Norm(char value) => value;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        public static double AsDouble(char value) => value;
+
         // Used for comparing two boxed Char objects.
         //
         public override bool Equals([NotNullWhen(true)] object? obj)
@@ -1250,22 +1256,22 @@ namespace System
         //
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static char INumber<char>.One => (char)1;
+        static char ISemiGroup<char, char>.One => (char)1;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static char INumber<char>.Zero => (char)0;
+        static char ISemiAddGroup<char, char>.Zero => (char)0;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static char INumber<char>.Abs(char value)
+        static char IScalarNumber<char, char>.Abs(char value)
             => value;
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static char INumber<char>.Clamp(char value, char min, char max)
+        static char INumber<char, char>.Clamp(char value, char min, char max)
             => (char)Math.Clamp(value, min, max);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static char INumber<char>.Create<TOther>(TOther value)
+        static char ICreate<char>.Create<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1332,7 +1338,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static char INumber<char>.CreateSaturating<TOther>(TOther value)
+        static char IScalarNumber<char, char>.CreateSaturating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1416,7 +1422,7 @@ namespace System
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static char INumber<char>.CreateTruncating<TOther>(TOther value)
+        static char IScalarNumber<char, char>.CreateTruncating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1482,15 +1488,15 @@ namespace System
         }
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static (char Quotient, char Remainder) INumber<char>.DivRem(char left, char right)
+        static (char Quotient, char Remainder) IField<char, char>.DivRem(char left, char right)
             => ((char, char))Math.DivRem(left, right);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static char INumber<char>.Max(char x, char y)
+        static char IScalarNumber<char, char>.Max(char x, char y)
             => (char)Math.Max(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static char INumber<char>.Min(char x, char y)
+        static char IScalarNumber<char, char>.Min(char x, char y)
             => (char)Math.Min(x, y);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -1508,12 +1514,18 @@ namespace System
         }
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static char INumber<char>.Sign(char value)
+        static char IScalarNumber<char, char>.Sign(char value)
             => (char)((value == 0) ? 0 : 1);
 
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IScalarNumber<char, char>.IsNegative(char value) => false;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char ISignedNumber<char, char>.NegativeOne => MaxValue;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<char>.TryCreate<TOther>(TOther value, out char result)
+        static bool ICreate<char>.TryCreate<TOther>(TOther value, out char result)
         {
             if (typeof(TOther) == typeof(byte))
             {
