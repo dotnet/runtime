@@ -335,9 +335,6 @@ export function mono_wasm_debugger_log(level: number, message_ptr: CharPtr): voi
 }
 
 function _readSymbolMapFile(filename: string): void {
-    if (Module.FS_readFile === undefined)
-        return;
-
     try {
         const res = Module.FS_readFile(filename, {flags: "r", encoding: "utf8"});
         res.split(/[\r\n]/).forEach((line: string) => {
