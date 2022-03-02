@@ -3028,6 +3028,7 @@ public:
     // For binary opers.
     GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
 
+    GenTreeColon* gtNewColonNode(var_types type, GenTree* elseNode, GenTree* thenNode);
     GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);
 
     GenTree* gtNewLargeOperNode(genTreeOps oper,
@@ -3037,6 +3038,9 @@ public:
 
     GenTreeIntCon* gtNewIconNode(ssize_t value, var_types type = TYP_INT);
     GenTreeIntCon* gtNewIconNode(unsigned fieldOffset, FieldSeqNode* fieldSeq);
+    GenTreeIntCon* gtNewNull();
+    GenTreeIntCon* gtNewTrue();
+    GenTreeIntCon* gtNewFalse();
 
     GenTree* gtNewPhysRegNode(regNumber reg, var_types type);
 
@@ -3365,7 +3369,7 @@ public:
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
     GenTree* gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, BasicBlockFlags bbFlags);
 
-    GenTree* gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
+    GenTreeField* gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
 
     GenTree* gtNewIndexRef(var_types typ, GenTree* arrayOp, GenTree* indexOp);
 
@@ -4407,6 +4411,19 @@ protected:
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
     GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
 
+    GenTree* impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags);
+    GenTree* impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags);
+    GenTree* impExpandHalfConstEquals(GenTreeLclVar* data,
+                                      GenTree*       lengthFld,
+                                      bool           checkForNull,
+                                      bool           startsWith,
+                                      WCHAR*         cnsData,
+                                      int            len,
+                                      int            dataOffset);
+    GenTree* impExpandHalfConstEqualsSWAR(GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset);
+    GenTree* impExpandHalfConstEqualsSIMD(GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset);
+    GenTreeStrCon* impGetStrConFromSpan(GenTree* span);
+
     GenTree* impIntrinsic(GenTree*                newobjThis,
                           CORINFO_CLASS_HANDLE    clsHnd,
                           CORINFO_METHOD_HANDLE   method,
@@ -4523,7 +4540,7 @@ public:
     void impInsertTreeBefore(GenTree* tree, const DebugInfo& di, Statement* stmtBefore);
     void impAssignTempGen(unsigned         tmp,
                           GenTree*         val,
-                          unsigned         curLevel,
+                          unsigned         curLevel   = (unsigned)CHECK_SPILL_NONE,
                           Statement**      pAfterStmt = nullptr,
                           const DebugInfo& di         = DebugInfo(),
                           BasicBlock*      block      = nullptr);
