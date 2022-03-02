@@ -20,10 +20,6 @@ pr:
       - src/libraries/System.Net.Http/*
       - src/libraries/System.Net.Security/*
 
-pool:
-  name: NetCore1ESPool-Public
-  demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
-
 variables:
   - template: ../variables.yml
   - name: enterpriseTestsSetup
@@ -33,34 +29,40 @@ variables:
   - name: containerLibrariesRoot
     value: /repo/src/libraries
 
-steps:
-- bash: |
-    cd $(enterpriseTestsSetup)
-    docker-compose build
-  displayName: Build test machine images
-  env:
-    DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
-
-- bash: |
-    cd $(enterpriseTestsSetup)
-    docker-compose up -d
-  displayName: Start test network and machines
-  env:
-    DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
-
-- bash: |
-    docker exec linuxclient bash /setup/test-webserver.sh
-  displayName: Test linuxclient connection to web server
-
-- bash: |
-    docker exec linuxclient bash -c '/repo/build.sh -subset clr+libs -runtimeconfiguration release -ci /p:NativeOptimizationDataSupported=false'
-  displayName: Build product sources
+jobs:
+- job: Enterprise Linux tests
   timeoutInMinutes: 180
+  pool:
+    name: NetCore1ESPool-Public
+    demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
+  steps:
+    - bash: |
+        cd $(enterpriseTestsSetup)
+        docker-compose build
+      displayName: Build test machine images
+      env:
+        DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
 
-- bash: |
-    docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Http/tests/EnterpriseTests/System.Net.Http.Enterprise.Tests.csproj
-    docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Security/tests/EnterpriseTests/System.Net.Security.Enterprise.Tests.csproj
-  displayName: Build and run tests
+    - bash: |
+        cd $(enterpriseTestsSetup)
+        docker-compose up -d
+      displayName: Start test network and machines
+      env:
+        DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
+
+    - bash: |
+        docker exec linuxclient bash /setup/test-webserver.sh
+      displayName: Test linuxclient connection to web server
+
+    - bash: |
+        docker exec linuxclient bash -c '/repo/build.sh -subset clr+libs -runtimeconfiguration release -ci /p:NativeOptimizationDataSupported=false'
+      displayName: Build product sources
+      timeoutInMinutes: 120
+
+    - bash: |
+        docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Http/tests/EnterpriseTests/System.Net.Http.Enterprise.Tests.csproj
+        docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Security/tests/EnterpriseTests/System.Net.Security.Enterprise.Tests.csproj
+      displayName: Build and run tests
 
 - bash: |
     cd $(enterpriseTestsSetup)
