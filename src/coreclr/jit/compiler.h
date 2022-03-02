@@ -352,13 +352,6 @@ public:
         assert(ssaNum != SsaConfig::RESERVED_SSA_NUM);
         return GetSsaDefByIndex(ssaNum - GetMinSsaNum());
     }
-
-    // Get an SSA number associated with the specified SSA def (that must be in this array).
-    unsigned GetSsaNum(T* ssaDef)
-    {
-        assert((m_array <= ssaDef) && (ssaDef < &m_array[m_count]));
-        return GetMinSsaNum() + static_cast<unsigned>(ssaDef - &m_array[0]);
-    }
 };
 
 enum RefCountState
@@ -1087,13 +1080,6 @@ public:
     LclSsaVarDsc* GetPerSsaData(unsigned ssaNum)
     {
         return lvPerSsaData.GetSsaDef(ssaNum);
-    }
-
-    // Returns the SSA number for "ssaDef". Requires "ssaDef" to be a valid definition
-    // of this variable.
-    unsigned GetSsaNumForSsaDef(LclSsaVarDsc* ssaDef)
-    {
-        return lvPerSsaData.GetSsaNum(ssaDef);
     }
 
     var_types GetRegisterType(const GenTreeLclVarCommon* tree) const;
@@ -7414,54 +7400,17 @@ protected:
 
 public:
     // VN based copy propagation.
-
-    // In DEBUG builds, we'd like to know the tree that the SSA definition was pushed for.
-    // While for ordinary SSA defs it will be available (as an ASG) in the SSA descriptor,
-    // for locals which will use "definitions from uses", it will not be, so we store it
-    // in this class instead.
-    class CopyPropSsaDef
-    {
-        LclSsaVarDsc* m_ssaDef;
-#ifdef DEBUG
-        GenTree* m_defNode;
-#endif
-    public:
-        CopyPropSsaDef(LclSsaVarDsc* ssaDef, GenTree* defNode)
-            : m_ssaDef(ssaDef)
-#ifdef DEBUG
-            , m_defNode(defNode)
-#endif
-        {
-        }
-
-        LclSsaVarDsc* GetSsaDef() const
-        {
-            return m_ssaDef;
-        }
-
-#ifdef DEBUG
-        GenTree* GetDefNode() const
-        {
-            return m_defNode;
-        }
-#endif
-    };
-
-    typedef ArrayStack<CopyPropSsaDef> CopyPropSsaDefStack;
-    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, CopyPropSsaDefStack*> LclNumToLiveDefsMap;
+    typedef ArrayStack<GenTree*> GenTreePtrStack;
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GenTreePtrStack*> LclNumToGenTreePtrStack;
 
     // Copy propagation functions.
-    void optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToLiveDefsMap* curSsaName);
-    void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
-    void optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
-    void optCopyPropPushDef(GenTreeOp*           asg,
-                            GenTreeLclVarCommon* lclNode,
-                            unsigned             lclNum,
-                            LclNumToLiveDefsMap* curSsaName);
+    void optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToGenTreePtrStack* curSsaName);
+    void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToGenTreePtrStack* curSsaName);
+    void optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curSsaName);
     unsigned optIsSsaLocal(GenTreeLclVarCommon* lclNode);
-    int optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDsc* copyVarDsc, bool preferOp2);
+    int optCopyProp_LclVarScore(LclVarDsc* lclVarDsc, LclVarDsc* copyVarDsc, bool preferOp2);
     void optVnCopyProp();
-    INDEBUG(void optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName));
+    INDEBUG(void optDumpCopyPropStack(LclNumToGenTreePtrStack* curSsaName));
 
     /**************************************************************************
      *               Early value propagation
