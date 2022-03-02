@@ -318,9 +318,10 @@ static GenTree* impCreateCompareInd(Compiler*      comp,
                                     bool           ignoreCase,
                                     bool           useXor = false)
 {
-    GenTree* offsetTree    = comp->gtNewIconNode(offset, TYP_I_IMPL);
-    GenTree* addOffsetTree = comp->gtNewOperNode(GT_ADD, TYP_BYREF, obj, offsetTree);
-    GenTree* indirTree     = comp->gtNewIndir(type, addOffsetTree);
+    var_types actualType    = genActualType(type);
+    GenTree*  offsetTree    = comp->gtNewIconNode(offset, TYP_I_IMPL);
+    GenTree*  addOffsetTree = comp->gtNewOperNode(GT_ADD, TYP_BYREF, obj, offsetTree);
+    GenTree*  indirTree     = comp->gtNewIndir(type, addOffsetTree);
 
     if (ignoreCase)
     {
@@ -330,12 +331,17 @@ static GenTree* impCreateCompareInd(Compiler*      comp,
             // value contains non-ASCII chars, we can't proceed further
             return nullptr;
         }
-        GenTree* toLowerMask = comp->gtNewIconNode(mask, genActualType(type));
-        indirTree            = comp->gtNewOperNode(GT_OR, genActualType(type), indirTree, toLowerMask);
+        GenTree* toLowerMask = comp->gtNewIconNode(mask, actualType);
+        indirTree            = comp->gtNewOperNode(GT_OR, actualType, indirTree, toLowerMask);
     }
 
     GenTree* valueTree = comp->gtNewIconNode(value, genActualType(type));
-    return comp->gtNewOperNode(useXor ? GT_XOR : GT_EQ, TYP_INT, indirTree, valueTree);
+    if (useXor)
+    {
+        // XOR is better than CMP if we want to join multiple comparisons
+        return comp->gtNewOperNode(GT_XOR, actualType, indirTree, valueTree);
+    }
+    return comp->gtNewOperNode(GT_EQ, TYP_INT, indirTree, valueTree);
 }
 
 //------------------------------------------------------------------------
@@ -521,6 +527,7 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVar* data,
             JITDUMP("unable to compose indirCmp\n");
             return nullptr;
         }
+        assert(indirCmp->TypeIs(TYP_INT, TYP_BOOL));
 
         GenTreeColon* lenCheckColon = gtNewColonNode(TYP_INT, indirCmp, gtNewFalse());
 
