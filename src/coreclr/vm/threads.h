@@ -3080,7 +3080,7 @@ private:
     // RtlRestoreContext is available on x86, but relatively recently.
     // RestoreContextSimulated uses SEH machinery for a similar result on legacy OS-es.
     // This function should not be used on new OS-es as the pattern is not
-    // guranteed to continue working in the future.
+    // guaranteed to continue working in the future.
     static void RestoreContextSimulated(Thread* pThread, CONTEXT* pCtx, void* pFrame, DWORD dwLastError);
 #endif
 
