@@ -319,7 +319,7 @@ jobs:
 
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), or(eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))) }}:
       - ${{ if eq(parameters.archType, 'x64') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot $(monoAotBuildshCommand) $(buildConfig) $(archType) $(runtimeVariantArg)
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot -test:JIT/HardwareIntrinsics/General/Vector128_1/Vector128_1_ro.csproj $(monoAotBuildshCommand) $(buildConfig) $(archType) $(runtimeVariantArg)
           displayName: "LLVM AOT compile CoreCLR tests"
       - ${{ if eq(parameters.archType, 'arm64') }}:
         - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot $(monoAotBuildshCommand) $(buildConfig) $(archType) cross $(runtimeVariantArg) -maxcpucount:2
