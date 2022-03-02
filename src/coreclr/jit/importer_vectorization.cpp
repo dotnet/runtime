@@ -335,7 +335,7 @@ static GenTree* impCreateCompareInd(Compiler*      comp,
         indirTree            = comp->gtNewOperNode(GT_OR, actualType, indirTree, toLowerMask);
     }
 
-    GenTree* valueTree = comp->gtNewIconNode(value, genActualType(type));
+    GenTree* valueTree = comp->gtNewIconNode(value, actualType);
     if (useXor)
     {
         // XOR is better than CMP if we want to join multiple comparisons
@@ -442,7 +442,8 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
         return nullptr;
     }
 
-    return gtNewOperNode(GT_EQ, TYP_INT, gtNewOperNode(GT_OR, TYP_LONG, firstIndir, secondIndir), gtNewIconNode(0));
+    return gtNewOperNode(GT_EQ, TYP_INT, gtNewOperNode(GT_OR, TYP_LONG, firstIndir, secondIndir),
+                         gtNewIconNode(0, TYP_LONG));
 #else // TARGET_64BIT
     return nullptr;
 #endif
