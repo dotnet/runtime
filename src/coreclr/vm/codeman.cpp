@@ -4198,7 +4198,6 @@ PTR_RUNTIME_FUNCTION EEJitManager::LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
             // make sure to returning the root record,
             // as the trailing records don't have prolog unwind codes.
             pFunctionEntry = FindRootEntry(pFunctionEntry, baseAddress);
-            pFunctionEntry = FindRootEntry(pFunctionEntry, baseAddress);
 #endif
 
             return pFunctionEntry;

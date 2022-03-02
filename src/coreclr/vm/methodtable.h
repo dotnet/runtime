@@ -750,7 +750,7 @@ public:
     void CheckRunClassInitAsIfConstructingThrowing();
 
 #if defined(TARGET_LOONGARCH64)
-    static int getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
+    static int GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
 #endif
 
 #if defined(UNIX_AMD64_ABI_ITF)

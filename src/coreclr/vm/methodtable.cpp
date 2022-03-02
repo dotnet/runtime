@@ -2882,7 +2882,7 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
 #if defined(TARGET_LOONGARCH64)
-int MethodTable::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
+int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 {
     TypeHandle th(cls);
 
@@ -2915,11 +2915,11 @@ int MethodTable::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                     pMethodTable  = pFieldStart->GetFieldTypeHandleThrowing().GetMethodTable();
                     if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
                     {
-                        size = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                        size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                     }
                     else if (pMethodTable->GetNumIntroducedInstanceFields() == 2)
                     {
-                        size = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                        size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                     }
                 }
             }
@@ -2943,7 +2943,7 @@ int MethodTable::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                     pMethodTable  = pFieldStart->GetFieldTypeHandleThrowing().GetMethodTable();
                     if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
                     {
-                        size = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                        size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         if (size == STRUCT_FLOAT_FIELD_ONLY_ONE)
                         {
                             size = pFieldStart[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_DOUBLE : STRUCT_FLOAT_FIELD_FIRST;
@@ -2982,7 +2982,7 @@ int MethodTable::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                     pMethodTable  = pFieldStart[1].GetFieldTypeHandleThrowing().GetMethodTable();
                     if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
                     {
-                        int size2 = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                        int size2 = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         if (size2 == STRUCT_FLOAT_FIELD_ONLY_ONE)
                         {
                             if (pFieldStart[1].GetSize() == 8)
@@ -3075,7 +3075,7 @@ int MethodTable::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                     if (nfc == NativeFieldCategory::NESTED)
                     {
                         pMethodTable = pNativeFieldDescs->GetNestedNativeMethodTable();
-                        size = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                        size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         return size;
                     }
                     else if (nfc == NativeFieldCategory::FLOAT)
@@ -3134,7 +3134,7 @@ int MethodTable::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
 
                         if ((pMethodTable2->GetNumInstanceFieldBytes() > 8) || (pMethodTable2->GetNumIntroducedInstanceFields() > 1))
                             goto _End_arg;
-                        size = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2);
+                        size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2);
                         if (size == STRUCT_FLOAT_FIELD_ONLY_ONE)
                         {
                             if (pFieldStart[0].GetSize() == 8)
@@ -3204,7 +3204,7 @@ int MethodTable::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                                 goto _End_arg;
                             }
 
-                            if (getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable) == STRUCT_FLOAT_FIELD_ONLY_ONE)
+                            if (GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable) == STRUCT_FLOAT_FIELD_ONLY_ONE)
                             {
                                 if (pMethodTable->GetNumInstanceFieldBytes() == 4)
                                     size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
@@ -3243,7 +3243,7 @@ int MethodTable::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                     }
                     else
                     {
-                        if (getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2) == 1)
+                        if (GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2) == 1)
                         {
                             if (pMethodTable2->GetNumInstanceFieldBytes() == 4)
                                 size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);

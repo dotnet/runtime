@@ -95,7 +95,7 @@ bool IsGcCoverageInterruptInstruction(PBYTE instrPtr)
 
 bool IsOriginalInstruction(PBYTE instrPtr, GCCoverageInfo* gcCover, DWORD offset)
 {
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     UINT32 instrVal = *reinterpret_cast<UINT32*>(instrPtr);
     UINT32 origInstrVal = *reinterpret_cast<UINT32*>(gcCover->savedCode + offset);
     return (instrVal == origInstrVal);
@@ -114,11 +114,6 @@ bool IsOriginalInstruction(PBYTE instrPtr, GCCoverageInfo* gcCover, DWORD offset
         UINT32 origInstrVal = *reinterpret_cast<UINT32*>(gcCover->savedCode + offset);
         return (instrVal == origInstrVal);
     }
-#elif defined(TARGET_LOONGARCH64)
-    _ASSERTE(!"not implemented for LOONGARCH64 platform");
-    UINT32 instrVal = *reinterpret_cast<UINT32*>(instrPtr);
-    UINT32 origInstrVal = *reinterpret_cast<UINT32*>(gcCover->savedCode + offset);
-    return (instrVal == origInstrVal);
 #else // x64 and x86
     UINT8 instrVal = *reinterpret_cast<UINT8*>(instrPtr);
     UINT8 origInstrVal = gcCover->savedCode[offset];

@@ -862,7 +862,7 @@ public:
             Object** lastIntReg  = (Object**)&this->GetContext()->X28;
 #elif defined(TARGET_LOONGARCH64)
             Object** firstIntReg = (Object**)&this->GetContext()->Tp;
-            Object** lastIntReg  = (Object**)&this->GetContext()->X0;
+            Object** lastIntReg  = (Object**)&this->GetContext()->S8;
 #else
             _ASSERTE(!"nyi for platform");
 #endif
@@ -870,14 +870,6 @@ public:
             {
                 fn(ppObj, sc, GC_CALL_INTERIOR | GC_CALL_PINNED);
             }
-#if defined(TARGET_LOONGARCH64)
-            firstIntReg = (Object**)&this->GetContext()->S0;
-            lastIntReg  = (Object**)&this->GetContext()->S8;
-            for (Object** ppObj = firstIntReg; ppObj <= lastIntReg; ppObj++)
-            {
-                fn(ppObj, sc, GC_CALL_INTERIOR | GC_CALL_PINNED);
-            }
-#endif
         }
 #endif
     }

@@ -43,7 +43,6 @@ struct ArgLocDesc
     int     m_byteStackSize;      // Stack size in bytes
 #if defined(TARGET_LOONGARCH64)
     int     m_structFields;       // Struct field info when using Float-register except two-doubles case.
-    int     m_structFloatFlag;    // flags for how the struct passed by registers when including float fields.
 #endif
 
 #if defined(UNIX_AMD64_ABI)
@@ -98,8 +97,7 @@ struct ArgLocDesc
         m_hfaFieldSize = 0;
 #endif // defined(TARGET_ARM64)
 #if defined(TARGET_LOONGARCH64)
-        m_structFloatFlag = 0;
-        m_structFields = 0;
+        m_structFields = STRUCT_NO_FLOAT_FIELD;
 #endif
 #if defined(UNIX_AMD64_ABI)
         m_eeClass = NULL;
@@ -348,9 +346,6 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         m_dwFlags = 0;
-#ifdef TARGET_LOONGARCH64
-        m_flags = 0;
-#endif
     }
 
     UINT SizeOfArgStack()
@@ -869,17 +864,6 @@ public:
             // At least one used integer register passed.
             pLoc->m_idxGenReg = TransitionBlock::GetArgumentIndexFromOffset(argOffset);
             pLoc->m_cGenReg = cSlots;
-
-            if ((GetArgType() == ELEMENT_TYPE_R4) || ((m_flags == STRUCT_FLOAT_FIELD_ONLY_ONE) && (GetArgSize() == 4)))
-            {
-                pLoc->m_structFloatFlag = 5;
-                return; // float by integer-reg.
-            }
-            else if ((GetArgType() == ELEMENT_TYPE_R8) || ((m_flags == STRUCT_FLOAT_FIELD_ONLY_ONE) && (GetArgSize() == 8)))
-            {
-                pLoc->m_structFloatFlag = 6;
-                return; // float by integer-reg.
-            }
         }
         else
         {
@@ -887,47 +871,9 @@ public:
             pLoc->m_byteStackSize = cSlots << 3;
         }
 
-        if (m_flags == STRUCT_NO_FLOAT_FIELD)
-        {
-            return; // no float
-        }
-
-        if ((STRUCT_FIRST_FIELD_DOUBLE & m_flags)  == STRUCT_FIRST_FIELD_DOUBLE)
-        {
-            assert(cSlots > 1);
-            pLoc->m_structFloatFlag = 7; // first double.
-        }
-        else if ((STRUCT_FIRST_FIELD_DOUBLE & m_flags)  == STRUCT_FLOAT_FIELD_FIRST)
-        {
-            pLoc->m_structFloatFlag = 1; // first float;
-        }
-        else if ((STRUCT_SECOND_FIELD_DOUBLE & m_flags)  == STRUCT_SECOND_FIELD_DOUBLE)
-        {
-            pLoc->m_structFloatFlag = 8; // second double.
-        }
-        else if ((STRUCT_SECOND_FIELD_DOUBLE & m_flags)  == STRUCT_FLOAT_FIELD_SECOND)
-        {
-            assert(cSlots == 1);
-            pLoc->m_structFloatFlag = 4; // second float;
-        }
-        else if (m_flags == STRUCT_FLOAT_FIELD_ONLY_TWO)
-        {
-            assert(cSlots == 1);
-            pLoc->m_structFloatFlag = 2; // two float;
-        }
-        else if (m_flags == (STRUCT_HAS_8BYTES_FIELDS_MASK | STRUCT_FLOAT_FIELD_ONLY_TWO))
-        {
-            assert(cSlots > 1);
-            pLoc->m_structFloatFlag = 9; // two double.
-        }
-
         return;
     }
 
-    int             m_idxGenReg;        // Next general register to be assigned a value
-    int             m_idxStack;         // Next stack slot to be assigned a value
-    int             m_idxFPReg;         // Next FP register to be assigned a value
-    int             m_flags;            // float-field within the struct which passed by registers.
 #endif // TARGET_LOONGARCH64
 
 protected:
@@ -968,6 +914,12 @@ protected:
 
 #ifdef TARGET_ARM64
     int             m_idxGenReg;        // Next general register to be assigned a value
+    int             m_idxFPReg;         // Next FP register to be assigned a value
+#endif
+
+#ifdef TARGET_LOONGARCH64
+    int             m_idxGenReg;        // Next general register to be assigned a value
+    int             m_idxStack;         // Next stack slot to be assigned a value
     int             m_idxFPReg;         // Next FP register to be assigned a value
 #endif
 
@@ -1688,9 +1640,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     case ELEMENT_TYPE_VALUETYPE:
     {
-        // Handle HFAs: packed structures of 2-4 floats or doubles that are passed in FP argument
-        // registers if possible. NOT support on LOONGARCH.
-        _ASSERTE(!thValueType.IsHFA() && "unimplemented on LOONGARCH yet! type-HFA");
+        // Handle struct which containing floats or doubles that can be passed
+        // in FP registers if possible.
 
         // Composite greater than 16bytes should be passed by reference
         if (argSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
@@ -1709,7 +1660,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 pMethodTable = thValueType.AsNativeValueType();
             }
             _ASSERTE(pMethodTable != nullptr);
-            flags = MethodTable::getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+            flags = MethodTable::GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
             if (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)
             {
                 cFPRegs = (flags & STRUCT_FLOAT_FIELD_ONLY_TWO) ? 2 : 1;
@@ -1775,7 +1726,6 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     {
         const int regSlots = ALIGN_UP(cbArg, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
-        m_flags = flags;
         if (m_idxGenReg + regSlots <= NUM_ARGUMENT_REGISTERS)
         {
             int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
@@ -1917,7 +1867,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
                 assert(!thValueType.IsTypeDesc());
 
                 MethodTable *pMethodTable = thValueType.AsMethodTable();
-                flags = (MethodTable::getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable) & 0xff) << RETURN_FP_SIZE_SHIFT;
+                flags = (MethodTable::GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable) & 0xff) << RETURN_FP_SIZE_SHIFT;
                 break;
             }
 #else

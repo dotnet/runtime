@@ -1823,7 +1823,6 @@ void GcInfoDecoder::ReportRegisterToGC(
 {
     GCINFODECODER_CONTRACT;
 
-    //_ASSERTE(regNum != 1);
     _ASSERTE(regNum > 0 && regNum <= 31);
 
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
