@@ -11545,12 +11545,7 @@ void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
 {
     if (use_large_pages_p)
         return;
-#ifdef USE_REGIONS
-    if (!dt_high_memory_load_p())
-    {
-        return;
-    }
-#endif
+
     uint8_t*  page_start = align_on_page (heap_segment_allocated(seg));
     assert (heap_segment_committed (seg) >= page_start);
 
@@ -30218,7 +30213,7 @@ heap_segment* gc_heap::find_first_valid_region (heap_segment* region, bool compa
                 set_region_plan_gen_num (current_region, plan_gen_num);
             }
 
-            if (gen_num != 0)
+            if (gen_num >= soh_gen2)
             {
                 dprintf (REGIONS_LOG, ("  gen%d decommit end of region %Ix(%Ix)",
                     gen_num, current_region, heap_segment_mem (current_region)));
