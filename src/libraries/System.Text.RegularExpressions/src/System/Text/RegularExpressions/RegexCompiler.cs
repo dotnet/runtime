@@ -2207,11 +2207,37 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.Kind is RegexNodeKind.Atomic, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
-                // Atomic simply outputs the code for the child, but it ensures that any done label left
-                // set by the child is reset to what it was prior to the node's processing.  That way,
-                // anything later that tries to jump back won't see labels set inside the atomic.
+                RegexNode child = node.Child(0);
+
+                if (!analysis.MayBacktrack(child))
+                {
+                    // If the child has no backtracking, the atomic is a nop and we can just skip it.
+                    // Note that the source generator equivalent for this is in the top-level EmitNode, in order to avoid
+                    // outputting some extra comments and scopes.  As such formatting isn't a concern for the compiler,
+                    // the logic is instead here in EmitAtomic.
+                    EmitNode(child, subsequent);
+                    return;
+                }
+
+                // Grab the current done label and the current backtracking position.  The purpose of the atomic node
+                // is to ensure that nodes after it that might backtrack skip over the atomic, which means after
+                // rendering the atomic's child, we need to reset the label so that subsequent backtracking doesn't
+                // see any label left set by the atomic's child.  We also need to reset the backtracking stack position
+                // so that the state on the stack remains consistent.
                 Label originalDoneLabel = doneLabel;
-                EmitNode(node.Child(0), subsequent);
+
+                // int startingStackpos = stackpos;
+                using RentedLocalBuilder startingStackpos = RentInt32Local();
+                Ldloc(stackpos);
+                Stloc(startingStackpos);
+
+                // Emit the child.
+                EmitNode(child, subsequent);
+
+                // Reset the stack position and done label.
+                // stackpos = startingStackpos;
+                Ldloc(startingStackpos);
+                Stloc(stackpos);
                 doneLabel = originalDoneLabel;
             }
 
