@@ -39610,8 +39610,18 @@ void gc_heap::decommit_ephemeral_segment_pages()
         if (decommit_target < heap_segment_committed (tail_region))
         {
             gradual_decommit_in_progress_p = TRUE;
+
+            dprintf (1, ("h%2d gen %d reduce_commit by %IdkB",
+                heap_number,
+                gen_number,
+                (heap_segment_committed (tail_region) - decommit_target)/1024));
         }
-        dprintf(1, ("h%2d gen %d reduce_commit by %Ix", heap_number, gen_number, heap_segment_committed (tail_region) - decommit_target));
+        dprintf(3, ("h%2d gen %d allocated: %IdkB committed: %IdkB target: %IdkB",
+            heap_number,
+            gen_number,
+            (heap_segment_allocated (tail_region) - heap_segment_mem (tail_region))/1024,
+            (heap_segment_committed (tail_region) - heap_segment_mem (tail_region))/1024,
+            (decommit_target                      - heap_segment_mem (tail_region))/1024));
     }
 #else //MULTIPLE_HEAPS && USE_REGIONS
 
@@ -39765,12 +39775,17 @@ size_t gc_heap::decommit_ephemeral_segment_pages_step ()
         if ((allocated <= decommit_target) && (decommit_target < committed))
         {
 #ifdef USE_REGIONS
-            enter_spin_lock (&more_space_lock_soh);
-            add_saved_spinlock_info (false, me_acquire, mt_decommit_step);
-            uint8_t* decommit_target = heap_segment_decommit_target (seg);
-            decommit_target += EXTRA_SPACE;
-            uint8_t* committed = heap_segment_committed (seg);
-            uint8_t* allocated = heap_segment_allocated (seg);
+            if (gen_number == soh_gen0)
+            {
+                // for gen 0, sync with the allocator by taking the more space lock
+                // and re-read the variables
+                enter_spin_lock (&more_space_lock_soh);
+                add_saved_spinlock_info (false, me_acquire, mt_decommit_step);
+                decommit_target = heap_segment_decommit_target (seg);
+                decommit_target += EXTRA_SPACE;
+                committed = heap_segment_committed (seg);
+                allocated = heap_segment_allocated (seg);
+            }
             if ((allocated <= decommit_target) && (decommit_target < committed))
 #else // USE_REGIONS
             // we rely on other threads not messing with committed if we are about to trim it down
@@ -39792,8 +39807,12 @@ size_t gc_heap::decommit_ephemeral_segment_pages_step ()
 #endif // _DEBUG
             }
 #ifdef USE_REGIONS
-            add_saved_spinlock_info (false, me_release, mt_decommit_step);
-            leave_spin_lock (&more_space_lock_soh);
+            if (gen_number == soh_gen0)
+            {
+                // for gen 0, we took the more space lock - leave it again
+                add_saved_spinlock_info (false, me_release, mt_decommit_step);
+                leave_spin_lock (&more_space_lock_soh);
+            }
 #endif // USE_REGIONS
         }
     }
