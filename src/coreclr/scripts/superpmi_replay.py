@@ -26,11 +26,13 @@ parser.add_argument("-log_directory", help="path to the directory containing sup
 
 jit_flags = [
     "JitStressRegs=0",
-    "JitStressRegs=1",
+    # JitStressRegs=1 disabled due to https://github.com/dotnet/runtime/issues/65332
+    # "JitStressRegs=1",
     "JitStressRegs=2",
     "JitStressRegs=3",
     "JitStressRegs=4",
-    "JitStressRegs=8",
+    # JitStressRegs=8 disabled due to https://github.com/dotnet/runtime/issues/65332
+    # "JitStressRegs=8",
     "JitStressRegs=0x10",
     "JitStressRegs=0x80",
     "JitStressRegs=0x1000",
