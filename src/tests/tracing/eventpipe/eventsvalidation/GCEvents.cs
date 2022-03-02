@@ -16,9 +16,9 @@ namespace Tracing.Tests.GCEvents
         {
             var providers = new List<EventPipeProvider>()
             {
-                new EventPipeProvider("Microsoft-DotNETCore-SampleProfiler"),
+                new EventPipeProvider("Microsoft-DotNETCore-SampleProfiler", EventLevel.Verbose),
                 //GCKeyword (0x1): 0b1
-                new EventPipeProvider("Microsoft-Windows-DotNETRuntime", 0b1, EventLevel.Informational)
+                new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1)
             };
 
             return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _DoesTraceContainEvents);
