@@ -48,12 +48,12 @@ namespace System.Net
             SafeFreeCertContext? remoteContext = null;
             try
             {
-                // SECPKG_ATTR_REMOTE_CERT_CHAIN can be used even before the TLS handshake completes, which is necessary
-                // in order to supply the certificate to the client cert selection callback. However, it is not available on
-                // windows 7, so use the SECPKG_ATTR_REMOTE_CERT_CONTEXT as a fallback option.
-                if (!SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CHAIN(GlobalSSPI.SSPISecureChannel, securityContext, out remoteContext))
+                if (!SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext, out remoteContext))
                 {
-                    SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext, out remoteContext);
+                    // The query can fail if TLS handshake has not completed yet. In that case we fallback to querying
+                    // SECPKG_ATTR_REMOTE_CERT_CHAIN that is more expensive but works even during handshake.
+                    // Note: On Windows versions which don't support querying CERT_CHAIN, we fail and always return null
+                    SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CHAIN(GlobalSSPI.SSPISecureChannel, securityContext, out remoteContext);
                 }
 
                 if (remoteContext != null && !remoteContext.IsInvalid)
