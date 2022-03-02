@@ -124,7 +124,7 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Only one of &apos;ConstantElementCount&apos; or &apos;ElementCountInfo&apos; may be used in a &apos;MarshalUsingAttribute&apos; for a given &apos;ElementIndirectionLevel&apos;.
+        ///   Looks up a localized string similar to Only one of &apos;ConstantElementCount&apos; or &apos;ElementCountInfo&apos; may be used in a &apos;MarshalUsingAttribute&apos; for a given &apos;ElementIndirectionDepth&apos;.
         /// </summary>
         internal static string ConstantAndElementCountInfoDisallowed {
             get {
@@ -178,7 +178,7 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Marshalling info was specified for &apos;ElementIndirectionLevel&apos; {0}, but marshalling info was only needed for {1} level(s) of indirection.
+        ///   Looks up a localized string similar to Marshalling info was specified for &apos;ElementIndirectionDepth&apos; {0}, but marshalling info was only needed for {1} level(s) of indirection.
         /// </summary>
         internal static string ExtraneousMarshallingInfo {
             get {

@@ -163,7 +163,7 @@ namespace Microsoft.Interop
     /// User-applied System.Runtime.InteropServices.NativeMarshallingAttribute
     /// with a contiguous collection marshaller
     /// </summary>
-    public sealed record NativeSpanCollectionMarshallingInfo(
+    public sealed record NativeLinearCollectionMarshallingInfo(
         ManagedTypeInfo NativeMarshallingType,
         ManagedTypeInfo? ValuePropertyType,
         CustomMarshallingFeatures MarshallingFeatures,
@@ -577,7 +577,7 @@ namespace Microsoft.Interop
 
             ITypeSymbol? valuePropertyType = ManualTypeMarshallingHelper.FindValueProperty(arrayMarshaller)?.Type;
 
-            return new NativeSpanCollectionMarshallingInfo(
+            return new NativeLinearCollectionMarshallingInfo(
                 NativeMarshallingType: ManagedTypeInfo.CreateTypeInfoForTypeSymbol(arrayMarshaller),
                 ValuePropertyType: valuePropertyType is not null ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(valuePropertyType) : null,
                 MarshallingFeatures: ~CustomMarshallingFeatures.ManagedTypePinning,
@@ -661,7 +661,7 @@ namespace Microsoft.Interop
 
             // The constructor that takes only the native element size is required for collection marshallers
             // in the native-to-managed scenario.
-            if ((customTypeMarshallerData.Value.Kind != CustomTypeMarshallerKind.SpanCollection
+            if ((customTypeMarshallerData.Value.Kind != CustomTypeMarshallerKind.LinearCollection
                     || (hasInt32Constructor && ManualTypeMarshallingHelper.HasSetUnmarshalledCollectionLengthMethod(nativeType)))
                 && ManualTypeMarshallingHelper.HasToManagedMethod(nativeType, type)
                 && (valueProperty is null or { SetMethod: not null }))
@@ -673,7 +673,7 @@ namespace Microsoft.Interop
             {
                 _diagnostics.ReportInvalidMarshallingAttributeInfo(
                     attrData,
-                    customTypeMarshallerData.Value.Kind == CustomTypeMarshallerKind.SpanCollection
+                    customTypeMarshallerData.Value.Kind == CustomTypeMarshallerKind.LinearCollection
                         ? nameof(Resources.CollectionNativeTypeMustHaveRequiredShapeMessage)
                         : nameof(Resources.NativeTypeMustHaveRequiredShapeMessage),
                     nativeType.ToDisplayString());
@@ -690,7 +690,7 @@ namespace Microsoft.Interop
                 features |= CustomMarshallingFeatures.NativeTypePinning;
             }
 
-            if (customTypeMarshallerData.Value.Kind == CustomTypeMarshallerKind.SpanCollection)
+            if (customTypeMarshallerData.Value.Kind == CustomTypeMarshallerKind.LinearCollection)
             {
                 if (!ManualTypeMarshallingHelper.HasNativeValueStorageProperty(nativeType, spanOfByte))
                 {
@@ -698,13 +698,13 @@ namespace Microsoft.Interop
                     return NoMarshallingInfo.Instance;
                 }
 
-                if (!ManualTypeMarshallingHelper.TryGetElementTypeFromSpanCollectionMarshaller(nativeType, out ITypeSymbol elementType))
+                if (!ManualTypeMarshallingHelper.TryGetElementTypeFromLinearCollectionMarshaller(nativeType, out ITypeSymbol elementType))
                 {
                     _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(Resources.CollectionNativeTypeMustHaveRequiredShapeMessage), nativeType.ToDisplayString());
                     return NoMarshallingInfo.Instance;
                 }
 
-                return new NativeSpanCollectionMarshallingInfo(
+                return new NativeLinearCollectionMarshallingInfo(
                     ManagedTypeInfo.CreateTypeInfoForTypeSymbol(nativeType),
                     valueProperty is not null ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(valueProperty.Type) : null,
                     features,
@@ -782,7 +782,7 @@ namespace Microsoft.Interop
                 var (_, _, customTypeMarshallerData) = ManualTypeMarshallingHelper.GetMarshallerShapeInfo(arrayMarshaller);
                 ITypeSymbol? valuePropertyType = ManualTypeMarshallingHelper.FindValueProperty(arrayMarshaller)?.Type;
 
-                marshallingInfo = new NativeSpanCollectionMarshallingInfo(
+                marshallingInfo = new NativeLinearCollectionMarshallingInfo(
                     NativeMarshallingType: ManagedTypeInfo.CreateTypeInfoForTypeSymbol(arrayMarshaller),
                     ValuePropertyType: valuePropertyType is not null ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(valuePropertyType) : null,
                     MarshallingFeatures: ~CustomMarshallingFeatures.ManagedTypePinning,
@@ -863,7 +863,7 @@ namespace Microsoft.Interop
 
             foreach (KeyValuePair<string, TypedConstant> arg in attrData.NamedArguments)
             {
-                if (arg.Key == ManualTypeMarshallingHelper.MarshalUsingProperties.ElementIndirectionLevel)
+                if (arg.Key == ManualTypeMarshallingHelper.MarshalUsingProperties.ElementIndirectionDepth)
                 {
                     indirectionLevel = (int)arg.Value.Value!;
                     return true;

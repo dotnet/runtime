@@ -12,7 +12,7 @@ namespace Microsoft.Interop
     public enum CustomTypeMarshallerKind
     {
         Value,
-        SpanCollection
+        LinearCollection
     }
     public readonly record struct CustomTypeMarshallerData(CustomTypeMarshallerKind Kind, int? BufferSize, bool RequiresStackBuffer);
     public static class ManualTypeMarshallingHelper
@@ -29,7 +29,7 @@ namespace Microsoft.Interop
 
         public static class MarshalUsingProperties
         {
-            public const string ElementIndirectionLevel = nameof(ElementIndirectionLevel);
+            public const string ElementIndirectionDepth = nameof(ElementIndirectionDepth);
             public const string CountElementName = nameof(CountElementName);
             public const string ConstantElementCount = nameof(ConstantElementCount);
         }
@@ -175,7 +175,7 @@ namespace Microsoft.Interop
             ITypeSymbol managedType,
             CustomTypeMarshallerKind variant)
         {
-            if (variant == CustomTypeMarshallerKind.SpanCollection)
+            if (variant == CustomTypeMarshallerKind.LinearCollection)
             {
                 return ctor.Parameters.Length == 2
                 && SymbolEqualityComparer.Default.Equals(managedType, ctor.Parameters[0].Type)
@@ -191,7 +191,7 @@ namespace Microsoft.Interop
             ITypeSymbol spanOfByte,
             CustomTypeMarshallerKind variant)
         {
-            if (variant == CustomTypeMarshallerKind.SpanCollection)
+            if (variant == CustomTypeMarshallerKind.LinearCollection)
             {
                 return ctor.Parameters.Length == 3
                 && SymbolEqualityComparer.Default.Equals(managedType, ctor.Parameters[0].Type)
@@ -238,7 +238,7 @@ namespace Microsoft.Interop
             return managedValuesProperty is not null;
         }
 
-        public static bool TryGetElementTypeFromSpanCollectionMarshaller(ITypeSymbol type, out ITypeSymbol elementType)
+        public static bool TryGetElementTypeFromLinearCollectionMarshaller(ITypeSymbol type, out ITypeSymbol elementType)
         {
             if (!TryGetManagedValuesProperty(type, out IPropertySymbol managedValuesProperty))
             {

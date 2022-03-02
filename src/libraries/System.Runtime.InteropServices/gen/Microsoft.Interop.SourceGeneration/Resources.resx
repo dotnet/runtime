@@ -199,7 +199,7 @@
     <value>Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}</value>
   </data>
   <data name="ExtraneousMarshallingInfo" xml:space="preserve">
-    <value>Marshalling info was specified for 'ElementIndirectionLevel' {0}, but marshalling info was only needed for {1} level(s) of indirection</value>
+    <value>Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</value>
   </data>
   <data name="NativeGenericTypeMustBeClosedOrMatchArityMessage" xml:space="preserve">
     <value>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</value>
@@ -217,7 +217,7 @@
     <value>The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</value>
   </data>
   <data name="ConstantAndElementCountInfoDisallowed" xml:space="preserve">
-    <value>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionLevel'</value>
+    <value>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</value>
   </data>
   <data name="RuntimeMarshallingMustBeDisabled" xml:space="preserve">
     <value>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</value>

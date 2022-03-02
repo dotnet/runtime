@@ -232,7 +232,7 @@ namespace Microsoft.Interop
         public static IEnumerable<TypePositionInfo> GetDependentElementsOfMarshallingInfo(
             MarshallingInfo elementMarshallingInfo)
         {
-            if (elementMarshallingInfo is NativeSpanCollectionMarshallingInfo nestedCollection)
+            if (elementMarshallingInfo is NativeLinearCollectionMarshallingInfo nestedCollection)
             {
                 if (nestedCollection.ElementCountInfo is CountElementCountInfo { ElementInfo: TypePositionInfo nestedCountElement })
                 {

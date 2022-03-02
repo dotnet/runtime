@@ -139,7 +139,7 @@
     <value>Specified 'GeneratedDllImportAttribute' arguments cannot be forwarded to 'DllImportAttribute'</value>
   </data>
   <data name="CollectionNativeTypeMustHaveRequiredShapeDescription" xml:space="preserve">
-    <value>A 'SpanCollection'-kind native type must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</value>
+    <value>A 'LinearCollection'-kind native type must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</value>
   </data>
   <data name="CollectionNativeTypeMustHaveRequiredShapeMessage" xml:space="preserve">
     <value>The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</value>
@@ -166,7 +166,7 @@
     <value>Specified configuration is not supported by source-generated P/Invokes.</value>
   </data>
   <data name="ConstantAndElementCountInfoDisallowed" xml:space="preserve">
-    <value>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionLevel'</value>
+    <value>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</value>
   </data>
   <data name="ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode" xml:space="preserve">
     <value>Automatically converting a P/Invoke with 'PreserveSig' set to 'false' to a source-generated P/Invoke may produce invalid code</value>

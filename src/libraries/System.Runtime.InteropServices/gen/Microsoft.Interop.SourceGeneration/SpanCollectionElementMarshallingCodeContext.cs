@@ -3,7 +3,7 @@
 
 namespace Microsoft.Interop
 {
-    internal sealed class SpanCollectionElementMarshallingCodeContext : StubCodeContext
+    internal sealed class LinearCollectionElementMarshallingCodeContext : StubCodeContext
     {
         private readonly string _nativeSpanIdentifier;
 
@@ -20,7 +20,7 @@ namespace Microsoft.Interop
         /// <param name="indexerIdentifier">The indexer in the loop to get the element to marshal from the collection.</param>
         /// <param name="nativeSpanIdentifier">The identifier of the native value storage cast to the target element type.</param>
         /// <param name="parentContext">The parent context.</param>
-        public SpanCollectionElementMarshallingCodeContext(
+        public LinearCollectionElementMarshallingCodeContext(
             Stage currentStage,
             string nativeSpanIdentifier,
             StubCodeContext parentContext)
@@ -55,7 +55,7 @@ namespace Microsoft.Interop
             int i = 0;
             while (parentContext is StubCodeContext context)
             {
-                if (context is SpanCollectionElementMarshallingCodeContext)
+                if (context is LinearCollectionElementMarshallingCodeContext)
                 {
                     i++;
                 }

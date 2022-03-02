@@ -373,7 +373,7 @@ namespace Microsoft.Interop.Analyzers
                 DiagnosticDescriptor requiredShapeRule = marshallerData.Value.Kind switch
                 {
                     CustomTypeMarshallerKind.Value => NativeTypeMustHaveRequiredShapeRule,
-                    CustomTypeMarshallerKind.SpanCollection => CollectionNativeTypeMustHaveRequiredShapeRule,
+                    CustomTypeMarshallerKind.LinearCollection => CollectionNativeTypeMustHaveRequiredShapeRule,
                     _ => throw new InvalidOperationException()
                 };
 
@@ -410,7 +410,7 @@ namespace Microsoft.Interop.Analyzers
                     }
                 }
 
-                if (marshallerData.Value.Kind == CustomTypeMarshallerKind.SpanCollection)
+                if (marshallerData.Value.Kind == CustomTypeMarshallerKind.LinearCollection)
                 {
                     requiredShapeRule = CollectionNativeTypeMustHaveRequiredShapeRule;
                     if (!ManualTypeMarshallingHelper.TryGetManagedValuesProperty(marshallerType, out _)

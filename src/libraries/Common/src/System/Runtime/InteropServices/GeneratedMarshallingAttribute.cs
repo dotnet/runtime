@@ -18,7 +18,7 @@ namespace System.Runtime.InteropServices
     {
     }
 
-    [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
+    [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Delegate)]
 #if DLLIMPORT_GENERATOR_TEST
     public
 #else
@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices
         public Type NativeType { get; }
     }
 
-    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue | AttributeTargets.Field, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue, AllowMultiple = true)]
 #if DLLIMPORT_GENERATOR_TEST
     public
 #else
@@ -59,7 +59,7 @@ namespace System.Runtime.InteropServices
 
         public int ConstantElementCount { get; set; }
 
-        public int ElementIndirectionLevel { get; set; }
+        public int ElementIndirectionDepth { get; set; }
 
         public const string ReturnsCountValue = "return-value";
     }
@@ -81,7 +81,6 @@ namespace System.Runtime.InteropServices
         public Type ManagedType { get; }
         public CustomTypeMarshallerKind MarshallerKind { get; }
         public int BufferSize { get; set; }
-        public bool RequiresStackBuffer { get; set; }
 
         /// <summary>
         /// This type is used as a placeholder for the first generic parameter when generic parameters cannot be used
@@ -100,6 +99,6 @@ namespace System.Runtime.InteropServices
     enum CustomTypeMarshallerKind
     {
         Value,
-        SpanCollection
+        LinearCollection
     }
 }

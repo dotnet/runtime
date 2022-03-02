@@ -93,7 +93,7 @@ namespace Microsoft.Interop
 
                 for (int i = 0; i < numIndirectionLevels; i++)
                 {
-                    if (marshallingInfo is NativeSpanCollectionMarshallingInfo collectionInfo)
+                    if (marshallingInfo is NativeLinearCollectionMarshallingInfo collectionInfo)
                     {
                         type = collectionInfo.ElementType;
                         marshallingInfo = collectionInfo.ElementMarshallingInfo;
@@ -129,7 +129,7 @@ namespace Microsoft.Interop
 
                 while (currentContext is not null)
                 {
-                    if (currentContext is SpanCollectionElementMarshallingCodeContext collectionContext)
+                    if (currentContext is LinearCollectionElementMarshallingCodeContext collectionContext)
                     {
                         indexerStack.Push(collectionContext.IndexerIdentifier);
                     }
@@ -172,7 +172,7 @@ namespace Microsoft.Interop
             }
 
             // Collections have extra configuration, so handle them here.
-            if (marshalInfo is NativeSpanCollectionMarshallingInfo collectionMarshallingInfo)
+            if (marshalInfo is NativeLinearCollectionMarshallingInfo collectionMarshallingInfo)
             {
                 return CreateNativeCollectionMarshaller(info, context, collectionMarshallingInfo, marshallingStrategy);
             }
@@ -255,24 +255,24 @@ namespace Microsoft.Interop
         private IMarshallingGenerator CreateNativeCollectionMarshaller(
             TypePositionInfo info,
             StubCodeContext context,
-            NativeSpanCollectionMarshallingInfo collectionInfo,
+            NativeLinearCollectionMarshallingInfo collectionInfo,
             ICustomNativeTypeMarshallingStrategy marshallingStrategy)
         {
             var elementInfo = new TypePositionInfo(collectionInfo.ElementType, collectionInfo.ElementMarshallingInfo) { ManagedIndex = info.ManagedIndex };
             IMarshallingGenerator elementMarshaller = _elementMarshallingGenerator.Create(
                 elementInfo,
-                new SpanCollectionElementMarshallingCodeContext(StubCodeContext.Stage.Setup, string.Empty, context));
+                new LinearCollectionElementMarshallingCodeContext(StubCodeContext.Stage.Setup, string.Empty, context));
             TypeSyntax elementType = elementMarshaller.AsNativeType(elementInfo);
 
             bool isBlittable = elementMarshaller is BlittableMarshaller;
 
             if (isBlittable)
             {
-                marshallingStrategy = new SpanCollectionWithBlittableElementsMarshalling(marshallingStrategy, collectionInfo.ElementType.Syntax);
+                marshallingStrategy = new LinearCollectionWithBlittableElementsMarshalling(marshallingStrategy, collectionInfo.ElementType.Syntax);
             }
             else
             {
-                marshallingStrategy = new SpanCollectionWithNonBlittableElementsMarshalling(marshallingStrategy, elementMarshaller, elementInfo);
+                marshallingStrategy = new LinearCollectionWithNonBlittableElementsMarshalling(marshallingStrategy, elementMarshaller, elementInfo);
             }
 
             // Explicitly insert the Value property handling here (before numElements handling) so that the numElements handling will be emitted before the Value property handling in unmarshalling.

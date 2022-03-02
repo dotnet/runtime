@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
     // Stack-alloc threshold set to 256 bytes to enable small arrays to be passed on the stack.
     // Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
     // blow the stack since this is a new optimization in the code-generated interop.
-    [CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder[]), CustomTypeMarshallerKind.SpanCollection, BufferSize = 0x200, RequiresStackBuffer = true)]
+    [CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder[]), CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200, RequiresStackBuffer = true)]
 #if DLLIMPORT_GENERATOR_TEST
     public
 #else
@@ -105,7 +105,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
     // Stack-alloc threshold set to 256 bytes to enable small arrays to be passed on the stack.
     // Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
     // blow the stack since this is a new optimization in the code-generated interop.
-    [CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder*[]), CustomTypeMarshallerKind.SpanCollection, BufferSize = 0x200, RequiresStackBuffer = true)]
+    [CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder*[]), CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200, RequiresStackBuffer = true)]
 #if DLLIMPORT_GENERATOR_TEST
     public
 #else

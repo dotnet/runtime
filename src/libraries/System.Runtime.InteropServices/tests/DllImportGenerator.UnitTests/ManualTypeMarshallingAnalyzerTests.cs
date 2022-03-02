@@ -588,7 +588,7 @@ class S
     public byte c;
 }
 
-[CustomTypeMarshaller(typeof(S), CustomTypeMarshallerKind.SpanCollection)]
+[CustomTypeMarshaller(typeof(S), CustomTypeMarshallerKind.LinearCollection)]
 struct {|#0:Native|}
 {
 }";
@@ -610,7 +610,7 @@ class S
     public byte c;
 }
 
-[CustomTypeMarshaller(typeof(S), CustomTypeMarshallerKind.SpanCollection)]
+[CustomTypeMarshaller(typeof(S), CustomTypeMarshallerKind.LinearCollection)]
 ref struct {|#0:Native|}
 {
     public Native(S s) : this() {}
@@ -638,7 +638,7 @@ class S
     public byte c;
 }
 
-[CustomTypeMarshaller(typeof(S), CustomTypeMarshallerKind.SpanCollection)]
+[CustomTypeMarshaller(typeof(S), CustomTypeMarshallerKind.LinearCollection)]
 ref struct Native
 {
     public Native(S s, int nativeElementSize) : this() {}
@@ -665,7 +665,7 @@ class S
     public byte c;
 }
 
-[CustomTypeMarshaller(typeof(S), CustomTypeMarshallerKind.SpanCollection, BufferSize = 1)]
+[CustomTypeMarshaller(typeof(S), CustomTypeMarshallerKind.LinearCollection, BufferSize = 1)]
 ref struct {|#0:Native|}
 {
     public Native(S s, Span<byte> stackSpace) : this() {}
@@ -693,7 +693,7 @@ class S
     public byte c;
 }
 
-[CustomTypeMarshaller(typeof(S), CustomTypeMarshallerKind.SpanCollection, BufferSize = 1)]
+[CustomTypeMarshaller(typeof(S), CustomTypeMarshallerKind.LinearCollection, BufferSize = 1)]
 ref struct {|#0:Native|}
 {
     public Native(S s, Span<byte> stackSpace, int nativeElementSize) : this() {}
@@ -721,7 +721,7 @@ class S
     public byte c;
 }
 
-[CustomTypeMarshaller(typeof(S), CustomTypeMarshallerKind.SpanCollection)]
+[CustomTypeMarshaller(typeof(S), CustomTypeMarshallerKind.LinearCollection)]
 ref struct {|#0:Native|}
 {
     public Native(S s, int nativeElementSize) : this() {}
@@ -748,7 +748,7 @@ class S
     public byte c;
 }
 
-[CustomTypeMarshaller(typeof(S), CustomTypeMarshallerKind.SpanCollection)]
+[CustomTypeMarshaller(typeof(S), CustomTypeMarshallerKind.LinearCollection)]
 ref struct {|#0:Native|}
 {
     public Native(S s, int nativeElementSize) : this() {}

@@ -706,14 +706,14 @@ namespace Microsoft.Interop
     }
 
     /// <summary>
-    /// Marshaller that enables support for marshalling blittable elements of a collection via a native type that implements the SpanCollection marshalling spec.
+    /// Marshaller that enables support for marshalling blittable elements of a collection via a native type that implements the LinearCollection marshalling spec.
     /// </summary>
-    internal sealed class SpanCollectionWithBlittableElementsMarshalling : ICustomNativeTypeMarshallingStrategy
+    internal sealed class LinearCollectionWithBlittableElementsMarshalling : ICustomNativeTypeMarshallingStrategy
     {
         private readonly ICustomNativeTypeMarshallingStrategy _innerMarshaller;
         private readonly TypeSyntax _elementType;
 
-        public SpanCollectionWithBlittableElementsMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller, TypeSyntax elementType)
+        public LinearCollectionWithBlittableElementsMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller, TypeSyntax elementType)
         {
             _innerMarshaller = innerMarshaller;
             _elementType = elementType;
@@ -846,15 +846,15 @@ namespace Microsoft.Interop
     }
 
     /// <summary>
-    /// Marshaller that enables support for marshalling non-blittable elements of a collection via a native type that implements the SpanCollection marshalling spec.
+    /// Marshaller that enables support for marshalling non-blittable elements of a collection via a native type that implements the LinearCollection marshalling spec.
     /// </summary>
-    internal sealed class SpanCollectionWithNonBlittableElementsMarshalling : ICustomNativeTypeMarshallingStrategy
+    internal sealed class LinearCollectionWithNonBlittableElementsMarshalling : ICustomNativeTypeMarshallingStrategy
     {
         private readonly ICustomNativeTypeMarshallingStrategy _innerMarshaller;
         private readonly IMarshallingGenerator _elementMarshaller;
         private readonly TypePositionInfo _elementInfo;
 
-        public SpanCollectionWithNonBlittableElementsMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller,
+        public LinearCollectionWithNonBlittableElementsMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller,
             IMarshallingGenerator elementMarshaller,
             TypePositionInfo elementInfo)
         {
@@ -900,11 +900,11 @@ namespace Microsoft.Interop
         {
             string nativeIdentifier = context.GetIdentifiers(info).native;
             string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
-            var elementSetupSubContext = new SpanCollectionElementMarshallingCodeContext(
+            var elementSetupSubContext = new LinearCollectionElementMarshallingCodeContext(
                 StubCodeContext.Stage.Setup,
                 nativeSpanIdentifier,
                 context);
-            var elementSubContext = new SpanCollectionElementMarshallingCodeContext(
+            var elementSubContext = new LinearCollectionElementMarshallingCodeContext(
                 context.CurrentStage,
                 nativeSpanIdentifier,
                 context);

@@ -261,7 +261,7 @@ namespace SharedTypes
         public IntStructWrapper ToManaged() => new IntStructWrapper { Value = value };
     }
 
-    [CustomTypeMarshaller(typeof(List<>), CustomTypeMarshallerKind.SpanCollection, BufferSize = 0x200, RequiresStackBuffer = true)]
+    [CustomTypeMarshaller(typeof(List<>), CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200, RequiresStackBuffer = true)]
     public unsafe ref struct ListMarshaller<T>
     {
         private List<T> managedList;
