@@ -64,17 +64,17 @@ jobs:
         docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Security/tests/EnterpriseTests/System.Net.Security.Enterprise.Tests.csproj
       displayName: Build and run tests
 
-- bash: |
-    cd $(enterpriseTestsSetup)
-    docker-compose down
-  displayName: Stop test network and machines
-  env:
-    DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
+    - bash: |
+        cd $(enterpriseTestsSetup)
+        docker-compose down
+    displayName: Stop test network and machines
+    env:
+      DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
 
-- task: PublishTestResults@2
-  inputs:
-    testRunner: 'xUnit'
-    testResultsFiles: '**/testResults.xml'
-    testRunTitle: 'Enterprise Tests'
-    mergeTestResults: true
-    failTaskOnFailedTests: true
+    - task: PublishTestResults@2
+      inputs:
+        testRunner: 'xUnit'
+        testResultsFiles: '**/testResults.xml'
+        testRunTitle: 'Enterprise Tests'
+        mergeTestResults: true
+        failTaskOnFailedTests: true
