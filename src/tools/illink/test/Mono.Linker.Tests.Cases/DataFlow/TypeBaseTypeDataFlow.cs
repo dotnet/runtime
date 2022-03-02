@@ -9,16 +9,19 @@ using System.Text;
 using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
+	[SandboxDependency ("Dependencies/TestSystemTypeBase.cs")]
 	[ExpectedNoWarnings]
 	public class TypeBaseTypeDataFlow
 	{
 		public static void Main ()
 		{
 			TestAllPropagated (typeof (TestType));
+			AllPropagatedWithDerivedClass.Test ();
 
 			TestPublicConstructorsAreNotPropagated (typeof (TestType));
 			TestPublicEventsPropagated (typeof (TestType));
@@ -52,6 +55,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static void TestAllPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresAll ();
+		}
+
+		class AllPropagatedWithDerivedClass
+		{
+			// https://github.com/dotnet/linker/issues/2673
+			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (TestSystemTypeBase.BaseType) + ".get",
+				ProducedBy = ProducedBy.Analyzer)]
+			static void TestAllPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] TestSystemTypeBase derivedType)
+			{
+				derivedType.BaseType.RequiresAll ();
+			}
+
+			[ExpectedWarning ("IL2062", nameof (TestAllPropagated))]
+			public static void Test ()
+			{
+				TestAllPropagated (new TestSystemTypeBase ());
+			}
 		}
 
 		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicConstructors))]
