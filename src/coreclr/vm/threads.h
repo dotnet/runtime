@@ -3081,7 +3081,7 @@ private:
     // RestoreContextSimulated uses SEH machinery for a similar result on legacy OS-es.
     // This function should not be used on new OS-es as the pattern is not
     // guranteed to continue working in the future.
-    static void RestoreContextSimulated(Thread* pThread, CONTEXT* pCtx, void* pFrame);
+    static void RestoreContextSimulated(Thread* pThread, CONTEXT* pCtx, void* pFrame, DWORD dwLastError);
 #endif
 
     friend void CPFH_AdjustContextForThreadSuspensionRace(T_CONTEXT *pContext, Thread *pThread);

@@ -2526,7 +2526,8 @@ void RedirectedThreadFrame::ExceptionUnwind()
 int RedirectedHandledJITCaseExceptionFilter(
     PEXCEPTION_POINTERS pExcepPtrs,     // Exception data
     RedirectedThreadFrame *pFrame,      // Frame on stack
-    CONTEXT *pCtx)                      // Saved context
+    CONTEXT *pCtx,                      // Saved context
+    DWORD dwLastError)                  // saved last error
 {
     // !!! Do not use a non-static contract here.
     // !!! Contract may insert an exception handling record.
@@ -2590,6 +2591,9 @@ int RedirectedHandledJITCaseExceptionFilter(
     // Register the special OS handler as the top handler with the OS
     SetCurrentSEHRecord(pCurSEH);
 
+    // restore last error
+    SetLastError(dwLastError);
+
     // Resume execution at point where thread was originally redirected
     return (EXCEPTION_CONTINUE_EXECUTION);
 }
@@ -2624,7 +2628,7 @@ extern "C" PCONTEXT __stdcall GetCurrentSavedRedirectContext()
 
 #ifdef TARGET_X86
 
-void  __stdcall Thread::RestoreContextSimulated(Thread* pThread, CONTEXT* pCtx, void* pFrame)
+void Thread::RestoreContextSimulated(Thread* pThread, CONTEXT* pCtx, void* pFrame, DWORD dwLastError)
 {
     pThread->HandleThreadAbort();        // Might throw an exception.
 
@@ -2645,7 +2649,7 @@ void  __stdcall Thread::RestoreContextSimulated(Thread* pThread, CONTEXT* pCtx, 
         RaiseException(EXCEPTION_HIJACK, 0, 0, NULL);
     }
     __except (++filter_count == 1
-            ? RedirectedHandledJITCaseExceptionFilter(GetExceptionInformation(), (RedirectedThreadFrame*)pFrame, pCtx)
+            ? RedirectedHandledJITCaseExceptionFilter(GetExceptionInformation(), (RedirectedThreadFrame*)pFrame, pCtx, dwLastError)
             : EXCEPTION_CONTINUE_SEARCH)
     {
         _ASSERTE(!"Reached body of __except in Thread::RedirectedHandledJITCase");
@@ -2709,7 +2713,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
 #ifdef TARGET_X86
     if (!pfnRtlRestoreContext)
     {
-        RestoreContextSimulated(pThread, pCtx, &frame);
+        RestoreContextSimulated(pThread, pCtx, &frame, dwLastError);
 
         // we never return to the caller.
         __UNREACHABLE();
