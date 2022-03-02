@@ -587,10 +587,10 @@ static guint16 sri_vector_methods [] = {
 	SN_Ceiling,
 	SN_ConditionalSelect,
 	SN_ConvertToDouble,
-	// SN_ConvertToInt32,
+	SN_ConvertToInt32,
 	// SN_ConvertToInt64,
 	// SN_ConvertToSingle,
-	// SN_ConvertToUInt32,
+	SN_ConvertToUInt32,
 	// SN_ConvertToUInt64,
 	SN_Create,
 	SN_CreateScalar,
@@ -796,17 +796,17 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #endif
 	}
-// 	case SN_ConvertToInt32: 
-// 	case SN_ConvertToUInt32: {
-// #ifdef TARGET_ARM64
-// 		if (arg0_type != MONO_TYPE_R4)
-// 			return NULL;
-// 		int op = id == SN_ConvertToInt32 ? OP_ARM64_FCVTZS : OP_ARM64_FCVTZU;
-// 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
-// #else
-// 		return NULL;
-// #endif
-// 	}
+	case SN_ConvertToInt32: 
+	case SN_ConvertToUInt32: {
+#ifdef TARGET_ARM64
+		if (arg0_type != MONO_TYPE_R4)
+			return NULL;
+		int op = id == SN_ConvertToInt32 ? OP_ARM64_FCVTZS : OP_ARM64_FCVTZU;
+		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
+#else
+		return NULL;
+#endif
+	}
 // 	case SN_ConvertToInt64: 
 // 	case SN_ConvertToUInt64: {
 // #ifdef TARGET_ARM64
