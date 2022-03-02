@@ -8,7 +8,7 @@ using System.Text;
 
 using Xunit;
 
-namespace DllImportGenerator.IntegrationTests
+namespace LibraryImportGenerator.IntegrationTests
 {
     partial class NativeExportsNE
     {

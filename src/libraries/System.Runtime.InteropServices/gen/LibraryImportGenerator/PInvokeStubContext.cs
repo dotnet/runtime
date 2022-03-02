@@ -21,7 +21,7 @@ namespace Microsoft.Interop
         TargetFramework TargetFramework,
         Version TargetFrameworkVersion,
         bool ModuleSkipLocalsInit,
-        DllImportGeneratorOptions Options)
+        LibraryImportGeneratorOptions Options)
     {
         /// <summary>
         /// Override for determining if two StubEnvironment instances are
@@ -40,17 +40,17 @@ namespace Microsoft.Interop
         }
     }
 
-    internal sealed class DllImportStubContext : IEquatable<DllImportStubContext>
+    internal sealed class PInvokeStubContext : IEquatable<PInvokeStubContext>
     {
-        private static readonly string GeneratorName = typeof(DllImportGenerator).Assembly.GetName().Name;
+        private static readonly string GeneratorName = typeof(LibraryImportGenerator).Assembly.GetName().Name;
 
-        private static readonly string GeneratorVersion = typeof(DllImportGenerator).Assembly.GetName().Version.ToString();
+        private static readonly string GeneratorVersion = typeof(LibraryImportGenerator).Assembly.GetName().Version.ToString();
 
         // We don't need the warnings around not setting the various
         // non-nullable fields/properties on this type in the constructor
         // since we always use a property initializer.
 #pragma warning disable 8618
-        private DllImportStubContext()
+        private PInvokeStubContext()
         {
         }
 #pragma warning restore
@@ -82,13 +82,13 @@ namespace Microsoft.Interop
 
         public ImmutableArray<AttributeListSyntax> AdditionalAttributes { get; init; }
 
-        public DllImportGeneratorOptions Options { get; init; }
+        public LibraryImportGeneratorOptions Options { get; init; }
 
         public IMarshallingGeneratorFactory GeneratorFactory { get; init; }
 
-        public static DllImportStubContext Create(
+        public static PInvokeStubContext Create(
             IMethodSymbol method,
-            GeneratedDllImportData dllImportData,
+            LibraryImportData libraryImportData,
             StubEnvironment env,
             GeneratorDiagnostics diagnostics,
             CancellationToken token)
@@ -123,7 +123,7 @@ namespace Microsoft.Interop
                 currType = currType.ContainingType;
             }
 
-            (ImmutableArray<TypePositionInfo> typeInfos, IMarshallingGeneratorFactory generatorFactory) = GenerateTypeInformation(method, dllImportData, diagnostics, env);
+            (ImmutableArray<TypePositionInfo> typeInfos, IMarshallingGeneratorFactory generatorFactory) = GenerateTypeInformation(method, libraryImportData, diagnostics, env);
 
             ImmutableArray<AttributeListSyntax>.Builder additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
 
@@ -154,7 +154,7 @@ namespace Microsoft.Interop
                             Attribute(ParseName(TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute)))));
             }
 
-            return new DllImportStubContext()
+            return new PInvokeStubContext()
             {
                 StubReturnType = method.ReturnType.AsTypeSyntax(),
                 ElementTypeInformation = typeInfos,
@@ -166,13 +166,13 @@ namespace Microsoft.Interop
             };
         }
 
-        private static (ImmutableArray<TypePositionInfo>, IMarshallingGeneratorFactory) GenerateTypeInformation(IMethodSymbol method, GeneratedDllImportData dllImportData, GeneratorDiagnostics diagnostics, StubEnvironment env)
+        private static (ImmutableArray<TypePositionInfo>, IMarshallingGeneratorFactory) GenerateTypeInformation(IMethodSymbol method, LibraryImportData libraryImportData, GeneratorDiagnostics diagnostics, StubEnvironment env)
         {
             // Compute the current default string encoding value.
             CharEncoding defaultEncoding = CharEncoding.Undefined;
-            if (dllImportData.IsUserDefined.HasFlag(DllImportMember.StringMarshalling))
+            if (libraryImportData.IsUserDefined.HasFlag(LibraryImportMember.StringMarshalling))
             {
-                defaultEncoding = dllImportData.StringMarshalling switch
+                defaultEncoding = libraryImportData.StringMarshalling switch
                 {
                     StringMarshalling.Utf16 => CharEncoding.Utf16,
                     StringMarshalling.Utf8 => CharEncoding.Utf8,
@@ -180,12 +180,12 @@ namespace Microsoft.Interop
                     _ => CharEncoding.Undefined, // [Compat] Do not assume a specific value
                 };
             }
-            else if (dllImportData.IsUserDefined.HasFlag(DllImportMember.StringMarshallingCustomType))
+            else if (libraryImportData.IsUserDefined.HasFlag(LibraryImportMember.StringMarshallingCustomType))
             {
                 defaultEncoding = CharEncoding.Custom;
             }
 
-            var defaultInfo = new DefaultMarshallingInfo(defaultEncoding, dllImportData.StringMarshallingCustomType);
+            var defaultInfo = new DefaultMarshallingInfo(defaultEncoding, libraryImportData.StringMarshallingCustomType);
 
             var marshallingAttributeParser = new MarshallingAttributeInfoParser(env.Compilation, diagnostics, defaultInfo, method);
 
@@ -252,10 +252,10 @@ namespace Microsoft.Interop
 
         public override bool Equals(object obj)
         {
-            return obj is DllImportStubContext other && Equals(other);
+            return obj is PInvokeStubContext other && Equals(other);
         }
 
-        public bool Equals(DllImportStubContext other)
+        public bool Equals(PInvokeStubContext other)
         {
             // We don't check if the generator factories are equal since
             // the generator factory is deterministically created based on the ElementTypeInformation and Options.

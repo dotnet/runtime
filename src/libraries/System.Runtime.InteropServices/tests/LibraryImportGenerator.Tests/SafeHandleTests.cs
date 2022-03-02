@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
-namespace DllImportGenerator.IntegrationTests
+namespace LibraryImportGenerator.IntegrationTests
 {
     partial class NativeExportsNE
     {
@@ -24,7 +24,7 @@ namespace DllImportGenerator.IntegrationTests
 
             public static NativeExportsSafeHandle CreateNewHandle() => AllocateHandle();
 
-            
+
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "alloc_handle")]
             private static partial NativeExportsSafeHandle AllocateHandle();
         }
