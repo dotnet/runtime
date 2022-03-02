@@ -275,11 +275,8 @@ namespace System.Net.Security.Tests
                     return sendClientCertificate ? clientCertificate : null;
                 };
 
-                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
-                {
-                    ServerCertificate = serverCertificate,
-                    AllowRenegotiation = false
-                };
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate,
+                                                                                                      AllowRenegotiation = false  };
                 serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
                 {
                     if (negotiateClientCertificateCalled && sendClientCertificate)
@@ -356,7 +353,7 @@ namespace System.Net.Security.Tests
                 // Send application data instead of Client hello.
                 await client.WriteAsync(new byte[500], cts.Token);
                 // Fail as it is not allowed to receive non handshake frames during handshake.
-                await Assert.ThrowsAsync<InvalidOperationException>(() => t);
+                await Assert.ThrowsAsync<InvalidOperationException>(()=> t);
             }
         }
 
@@ -407,7 +404,7 @@ namespace System.Net.Security.Tests
                 int read = await server.ReadAsync(buffer, cts.Token);
 
                 // Fail as there are still some undrained data (incomplete incoming TLS frame)
-                await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                await Assert.ThrowsAsync<InvalidOperationException>(()=>
                     server.NegotiateClientCertificateAsync(cts.Token)
                 );
 
@@ -475,10 +472,17 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58927", TestPlatforms.Windows)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SslStream_NegotiateClientCertificateAsyncTls13_Succeeds(bool sendClientCertificate)
         {
+            if (PlatformDetection.IsWindows10Version22000OrGreater)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/58927")]
+                throw new SkipTestException("Unstable on Windows 11");
+            }
+
             bool negotiateClientCertificateCalled = false;
             using CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(TestConfiguration.PassingTestTimeout);
@@ -723,11 +727,12 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
         public async Task SslStream_UntrustedCaWithCustomCallback_OK(bool usePartialChain)
         {
             int split = Random.Shared.Next(0, certificates.serverChain.Count - 1);
 
-            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
+            var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
             clientOptions.RemoteCertificateValidationCallback =
                 (sender, certificate, chain, sslPolicyErrors) =>
                 {
@@ -785,10 +790,11 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
         public async Task SslStream_UntrustedCaWithCustomCallback_Throws(bool customCallback)
         {
             string errorMessage;
-            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
+            var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
             if (customCallback)
             {
                 clientOptions.RemoteCertificateValidationCallback =
@@ -830,7 +836,8 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
         public async Task SslStream_ClientCertificate_SendsChain()
         {
             List<SslStream> streams = new List<SslStream>();
@@ -857,7 +864,7 @@ namespace System.Net.Security.Tests
                 }
             }
 
-            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost", };
+            var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost",  };
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
             clientOptions.LocalCertificateSelectionCallback = (sender, target, certificates, remoteCertificate, issuers) => clientCertificate;
 
@@ -901,7 +908,7 @@ namespace System.Net.Security.Tests
                 c.Dispose();
             }
 
-            foreach (SslStream s in streams)
+            foreach (SslStream s in  streams)
             {
                 s.Dispose();
             }
