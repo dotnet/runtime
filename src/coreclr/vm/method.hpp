@@ -2509,15 +2509,14 @@ public:
         // Flags for DynamicMethodDesc
         // Define new flags in descending order. This allows the IL type enumeration to increase naturally.
         FlagNone                = 0x00000000,
-        FlagPublic              = 0x00000400,
-        FlagStatic              = 0x00000800,
-        FlagUnbreakable         = 0x00001000,
+        FlagPublic              = 0x00000800,
+        FlagStatic              = 0x00001000,
         FlagRequiresCOM         = 0x00002000,
         FlagIsLCGMethod         = 0x00004000,
         FlagIsILStub            = 0x00008000,
         FlagIsDelegate          = 0x00010000,
         FlagIsCALLI             = 0x00020000,
-        FlagMask                = 0x0003fc00,
+        FlagMask                = 0x0003f800,
         StackArgSizeMask        = 0xfffc0000, // native stack arg size for IL stubs
         ILStubTypeMask          = ~(FlagMask | StackArgSizeMask)
     };
@@ -2617,8 +2616,15 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsILStub());
+
+        bool isStepThrough = false;
+
+#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
         ILStubType type = GetILStubType();
-        return type == StubUnboxingIL || type == StubInstantiating;
+        isStepThrough = type == StubUnboxingIL || type == StubInstantiating;
+#endif // FEATURE_INSTANTIATINGSTUB_AS_IL
+
+        return isStepThrough;
     }
 
     bool IsCLRToCOMStub() const

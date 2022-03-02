@@ -773,16 +773,8 @@ StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data)
         // Does the current and latched frame represent the same call?
         if (pCf->pFrame == pData->LatchedCF.pFrame)
         {
-            if (pData->LatchedCF.GetFunction()->AsDynamicMethodDesc()->AreFlagSets(DynamicMethodDesc::FlagUnbreakable))
-            {
-                // Report only the latched IL stub frame which is a CER root.
-                frameAction = DiscardCurrentFrame;
-            }
-            else
-            {
-                // Report the interop method (current frame) which may be annotated, then the IL stub.
-                frameAction = ProcessLatchedReversed;
-            }
+            // Report the interop method (current frame) which may be annotated, then the IL stub.
+            frameAction = ProcessLatchedReversed;
         }
         else
         {
@@ -805,20 +797,7 @@ StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data)
     // However, we still want to discard the interop method frame if the call is unbreakable by convention.
     if (pData->fHaveLatchedCF)
     {
-        MethodDesc *pMD = pCf->GetFunction();
-        if (pMD != NULL && pMD->IsILStub() &&
-            pData->LatchedCF.GetFrame()->GetReturnAddress() == GetControlPC(pCf->GetRegisterSet()) &&
-            pMD->AsDynamicMethodDesc()->AreFlagSets(DynamicMethodDesc::FlagUnbreakable))
-        {
-            // The current and latched frame represent the same call and the IL stub is marked as unbreakable.
-            // We will discard the interop method and report only the IL stub which is a CER root.
-            frameAction = DiscardLatchedFrame;
-        }
-        else
-        {
-            // Otherwise process the two frames in order.
-            frameAction = ProcessLatchedInOrder;
-        }
+        frameAction = ProcessLatchedInOrder;
         pData->fHaveLatchedCF = FALSE;
     }
     else

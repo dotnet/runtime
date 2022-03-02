@@ -1872,6 +1872,13 @@ UINT StubLinker::GetStackFrameSize()
 
 #ifndef DACCESS_COMPILE
 
+// Redeclaring the Stub type here and assert its size.
+// The size assertion is done here because of where CODE_SIZE_ALIGN
+// is defined - it is not included in all places where stublink.h
+// is consumed.
+class Stub;
+static_assert_no_msg((sizeof(Stub) % CODE_SIZE_ALIGN) == 0);
+
 //-------------------------------------------------------------------
 // Inc the refcount.
 //-------------------------------------------------------------------

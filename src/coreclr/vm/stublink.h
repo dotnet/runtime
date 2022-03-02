@@ -840,7 +840,6 @@ class Stub
 
         Stub() = delete; // Stubs are created by NewStub(), not "new".
 };
-static_assert_no_msg(sizeof(Stub) % CODE_SIZE_ALIGN == 0);
 
 //-------------------------------------------------------------------------
 // Each platform encodes the "branch" instruction in a different

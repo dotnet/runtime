@@ -3825,19 +3825,6 @@ static void CreateNDirectStubWorker(StubState*               pss,
                             DEBUG_ARG(pSigDesc->m_pDebugClassName)
                             );
 
-    // If the return value is a SafeHandle or CriticalHandle, mark the stub method.
-    // Interop methods that use this stub will have an implicit reliability contract
-    // (see code:TAStackCrawlCallBack).
-    if (!SF_IsHRESULTSwapping(dwStubFlags))
-    {
-        if (marshalType == MarshalInfo::MARSHAL_TYPE_SAFEHANDLE ||
-            marshalType == MarshalInfo::MARSHAL_TYPE_CRITICALHANDLE)
-        {
-            if (pMD->IsDynamicMethod())
-                pMD->AsDynamicMethodDesc()->SetFlags(DynamicMethodDesc::FlagUnbreakable);
-        }
-    }
-
     if (SF_IsHRESULTSwapping(dwStubFlags))
     {
         if (msig.GetReturnType() != ELEMENT_TYPE_VOID)
