@@ -2714,72 +2714,69 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
         // we never return to the caller.
         __UNREACHABLE();
     }
-    else
 #endif // TARGET_X86
+
+#if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
+    //
+    // If GCStress interrupts an IL stub or inlined p/invoke while it's running in preemptive mode, it switches the mode to
+    // cooperative - but we will resume to preemptive below.  We should not trigger an abort in that case, as it will fail
+    // due to the GC mode.
+    //
+    if (!pThread->m_fPreemptiveGCDisabledForGCStress)
+#endif
     {
 
-#if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
-        //
-        // If GCStress interrupts an IL stub or inlined p/invoke while it's running in preemptive mode, it switches the mode to
-        // cooperative - but we will resume to preemptive below.  We should not trigger an abort in that case, as it will fail
-        // due to the GC mode.
-        //
-        if (!pThread->m_fPreemptiveGCDisabledForGCStress)
-#endif
+        UINT_PTR uAbortAddr;
+        UINT_PTR uResumePC = (UINT_PTR)GetIP(pCtx);
+        CopyOSContext(pThread->m_OSContext, pCtx);
+        uAbortAddr = (UINT_PTR)COMPlusCheckForAbort();
+        if (uAbortAddr)
         {
+            LOG((LF_EH, LL_INFO100, "thread abort in progress, resuming thread under control... (handled jit case)\n"));
 
-            UINT_PTR uAbortAddr;
-            UINT_PTR uResumePC = (UINT_PTR)GetIP(pCtx);
-            CopyOSContext(pThread->m_OSContext, pCtx);
-            uAbortAddr = (UINT_PTR)COMPlusCheckForAbort();
-            if (uAbortAddr)
-            {
-                LOG((LF_EH, LL_INFO100, "thread abort in progress, resuming thread under control... (handled jit case)\n"));
+            CONSISTENCY_CHECK(CheckPointer(pCtx));
 
-                CONSISTENCY_CHECK(CheckPointer(pCtx));
+            STRESS_LOG1(LF_EH, LL_INFO10, "resume under control: ip: %p (handled jit case)\n", uResumePC);
 
-                STRESS_LOG1(LF_EH, LL_INFO10, "resume under control: ip: %p (handled jit case)\n", uResumePC);
-
-                SetIP(pThread->m_OSContext, uResumePC);
+            SetIP(pThread->m_OSContext, uResumePC);
 
 #if defined(TARGET_ARM)
-                // Save the original resume PC in Lr
-                pCtx->Lr = uResumePC;
+            // Save the original resume PC in Lr
+            pCtx->Lr = uResumePC;
 
-                // Since we have set a new IP, we have to clear conditional execution flags too.
-                ClearITState(pThread->m_OSContext);
+            // Since we have set a new IP, we have to clear conditional execution flags too.
+            ClearITState(pThread->m_OSContext);
 #endif // TARGET_ARM
 
-                SetIP(pCtx, uAbortAddr);
-            }
+            SetIP(pCtx, uAbortAddr);
         }
+    }
 
-        // Unlink the frame in preparation for resuming in managed code
-        frame.Pop();
+    // Unlink the frame in preparation for resuming in managed code
+    frame.Pop();
 
-        // Allow future use of the context
-        pThread->UnmarkRedirectContextInUse(pCtx);
+    // Allow future use of the context
+    pThread->UnmarkRedirectContextInUse(pCtx);
 
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
-        if (pThread->m_fPreemptiveGCDisabledForGCStress)
-        {
-            pThread->EnablePreemptiveGC();
-            pThread->m_fPreemptiveGCDisabledForGCStress = false;
-        }
+    if (pThread->m_fPreemptiveGCDisabledForGCStress)
+    {
+        pThread->EnablePreemptiveGC();
+        pThread->m_fPreemptiveGCDisabledForGCStress = false;
+    }
 #endif
 
-        LOG((LF_SYNC, LL_INFO1000, "Resuming execution with RtlRestoreContext\n"));
-        SetLastError(dwLastError); // END_PRESERVE_LAST_ERROR
+    LOG((LF_SYNC, LL_INFO1000, "Resuming execution with RtlRestoreContext\n"));
+    SetLastError(dwLastError); // END_PRESERVE_LAST_ERROR
 
 #ifdef TARGET_X86
-        pfnRtlRestoreContext(pCtx, NULL);
+    pfnRtlRestoreContext(pCtx, NULL);
 #else
-        RtlRestoreContext(pCtx, NULL);
+    RtlRestoreContext(pCtx, NULL);
 #endif
 
-        // we never return to the caller.
-        __UNREACHABLE();
-    }
+    // we never return to the caller.
+    __UNREACHABLE();
 }
 
 //****************************************************************************************
