@@ -54,15 +54,11 @@ static bool ConvertToLowerCase(WCHAR* input, WCHAR* mask, int length)
             return false;
         }
 
-        // Inside [0..127] range only [a-Z] and [A-Z] sub-ranges are
-        // eligible for case changing
-        if ((ch >= 'A') && (ch <= 'Z'))
+        // Inside [0..127] range only [a-z] and [A-Z] sub-ranges are
+        // eligible for case changing, we can't apply 0x20 bit for e.g. '-'
+        if (((ch >= 'A') && (ch <= 'Z')) || ((ch >= 'a') && (ch <= 'z')))
         {
             input[i] |= 0x20;
-            mask[i] = 0x20;
-        }
-        else if ((ch >= 'a') && (ch <= 'z'))
-        {
             mask[i] = 0x20;
         }
         else
@@ -308,13 +304,19 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
 //    offset     - Offset for the data pointer
 //    value      - Constant value to compare against
 //    ignoreCase - Ignore case mode (works only for ASCII cns)
+//    useXor     - Use GT_XOR instead of GT_EQ
 //
 // Return Value:
 //    A tree with indirect load and comparison
 //    nullptr in case of 'ignoreCase' mode and non-ASCII value
 //
-static GenTree* impCreateCompareInd(
-    Compiler* comp, GenTreeLclVar* obj, var_types type, ssize_t offset, ssize_t value, bool ignoreCase)
+static GenTree* impCreateCompareInd(Compiler*      comp,
+                                    GenTreeLclVar* obj,
+                                    var_types      type,
+                                    ssize_t        offset,
+                                    ssize_t        value,
+                                    bool           ignoreCase,
+                                    bool           useXor = false)
 {
     GenTree* offsetTree    = comp->gtNewIconNode(offset, TYP_I_IMPL);
     GenTree* addOffsetTree = comp->gtNewOperNode(GT_ADD, TYP_BYREF, obj, offsetTree);
@@ -333,7 +335,7 @@ static GenTree* impCreateCompareInd(
     }
 
     GenTree* valueTree = comp->gtNewIconNode(value, genActualType(type));
-    return comp->gtNewOperNode(GT_EQ, TYP_INT, indirTree, valueTree);
+    return comp->gtNewOperNode(useXor ? GT_XOR : GT_EQ, TYP_INT, indirTree, valueTree);
 }
 
 //------------------------------------------------------------------------
@@ -393,20 +395,16 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
         //
         UINT32   value1      = MAKEINT32(cns[0], cns[1]);
         UINT32   value2      = MAKEINT32(cns[1], cns[2]);
-        GenTree* firstIndir  = impCreateCompareInd(this, data, TYP_INT, dataOffset, value1, ignoreCase);
+        GenTree* firstIndir  = impCreateCompareInd(this, data, TYP_INT, dataOffset, value1, ignoreCase, true);
         GenTree* secondIndir = impCreateCompareInd(this, gtClone(data)->AsLclVar(), TYP_INT,
-                                                   dataOffset + sizeof(USHORT), value2, ignoreCase);
+                                                   dataOffset + sizeof(USHORT), value2, ignoreCase, true);
 
         if ((firstIndir == nullptr) || (secondIndir == nullptr))
         {
             return nullptr;
         }
 
-        // TODO-Unroll-CQ: Consider merging two indirs via XOR instead of QMARK
-        // e.g. gtNewOperNode(GT_XOR, TYP_INT, firstIndir, secondIndir);
-        // but it currently has CQ issues (redundant movs)
-        GenTreeColon* doubleIndirColon = gtNewColonNode(TYP_INT, secondIndir, gtNewFalse());
-        return gtNewQmarkNode(TYP_INT, firstIndir, doubleIndirColon);
+        return gtNewOperNode(GT_EQ, TYP_INT, gtNewOperNode(GT_OR, TYP_INT, firstIndir, secondIndir), gtNewIconNode(0));
     }
 
     assert(len >= 4 && len <= 8);
@@ -427,19 +425,18 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
     //                 [          value2          ]
     //
     UINT64   value2     = MAKEINT64(cns[len - 4], cns[len - 3], cns[len - 2], cns[len - 1]);
-    GenTree* firstIndir = impCreateCompareInd(this, data, TYP_LONG, dataOffset, value1, ignoreCase);
+    GenTree* firstIndir = impCreateCompareInd(this, data, TYP_LONG, dataOffset, value1, ignoreCase, true);
 
-    ssize_t  offset      = dataOffset + len * sizeof(WCHAR) - sizeof(UINT64);
-    GenTree* secondIndir = impCreateCompareInd(this, gtClone(data)->AsLclVar(), TYP_LONG, offset, value2, ignoreCase);
+    ssize_t  offset = dataOffset + len * sizeof(WCHAR) - sizeof(UINT64);
+    GenTree* secondIndir =
+        impCreateCompareInd(this, gtClone(data)->AsLclVar(), TYP_LONG, offset, value2, ignoreCase, true);
 
     if ((firstIndir == nullptr) || (secondIndir == nullptr))
     {
         return nullptr;
     }
 
-    // TODO-Unroll-CQ: Consider merging two indirs via XOR instead of QMARK
-    GenTreeColon* doubleIndirColon = gtNewColonNode(TYP_INT, secondIndir, gtNewFalse());
-    return gtNewQmarkNode(TYP_INT, firstIndir, doubleIndirColon);
+    return gtNewOperNode(GT_EQ, TYP_INT, gtNewOperNode(GT_OR, TYP_LONG, firstIndir, secondIndir), gtNewIconNode(0));
 #else // TARGET_64BIT
     return nullptr;
 #endif
