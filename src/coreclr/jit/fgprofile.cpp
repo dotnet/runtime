@@ -1735,13 +1735,11 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     // inlnee), so we'll lose a bit of their profile data. We can support this
     // eventually if it turns out to matter.
     //
-    // Similar issues arise with partially jitted methods. Because we currently
-    // only defer jitting for throw blocks, we currently ignore the impact of partial
-    // jitting on PGO. If we ever implement a broader pattern of deferral -- say deferring
-    // based on static PGO -- we will need to reconsider.
+    // Similar issues arise with partially jitted methods; they must also use
+    // block based profiles.
     //
     // Under OSR stress we may add patchpoints even without backedges. So we also
-    // need to change the PGO instrumetation approach if OSR stress is enabled.
+    // need to change the PGO instrumentation approach if OSR stress is enabled.
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
@@ -1753,7 +1751,8 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
 #endif
 
     const bool mayHavePatchpoints =
-        (JitConfig.TC_OnStackReplacement() > 0) && (compHasBackwardJump || mayHaveStressPatchpoints);
+        ((JitConfig.TC_OnStackReplacement() > 0) && (compHasBackwardJump || mayHaveStressPatchpoints)) ||
+        (JitConfig.TC_PartialCompilation() > 0);
     const bool prejit               = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
     const bool tier0WithPatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && mayHavePatchpoints;
     const bool osrMethod            = opts.IsOSR();
