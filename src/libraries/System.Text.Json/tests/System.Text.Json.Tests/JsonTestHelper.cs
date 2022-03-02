@@ -801,7 +801,7 @@ namespace System.Text.Json
             }
         }
 
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
         // This is needed due to the fact that git might normalize line endings when checking-out files
         public static string NormalizeLineEndings(this string value) => value.ReplaceLineEndings();
 #else

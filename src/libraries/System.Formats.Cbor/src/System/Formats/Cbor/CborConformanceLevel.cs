@@ -207,7 +207,7 @@ namespace System.Formats.Cbor
         public static int GetKeyEncodingHashCode(ReadOnlySpan<byte> encoding)
         {
             HashCode hash = default;
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
             hash.AddBytes(encoding);
 #else
             while (encoding.Length >= sizeof(int))

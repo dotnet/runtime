@@ -2276,6 +2276,9 @@ mono_metadata_method_has_param_attrs (MonoImage *m, int def)
 	MonoTableInfo *methodt = &m->tables [MONO_TABLE_METHOD];
 	guint lastp, i, param_index = mono_metadata_decode_row_col (methodt, def - 1, MONO_METHOD_PARAMLIST);
 
+	if (param_index == 0)
+		return FALSE;
+
 	/* FIXME: metadata-update */
 	if (def < table_info_get_rows (methodt))
 		lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
@@ -7968,6 +7971,18 @@ mono_generate_v3_guid_for_interface (MonoClass* klass, guint8* guid)
 }
 #endif
 
+static gint
+mono_unichar_xdigit_value (gunichar c)
+{
+	if (c >= 0x30 && c <= 0x39) /*0-9*/
+		return (c - 0x30);
+	if (c >= 0x41 && c <= 0x46) /*A-F*/
+		return (c - 0x37);
+	if (c >= 0x61 && c <= 0x66) /*a-f*/
+		return (c - 0x57);
+	return -1;
+}
+
 /**
  * mono_string_to_guid:
  *
@@ -7981,7 +7996,7 @@ mono_string_to_guid (MonoString* string, guint8 *guid) {
 	static const guint8 indexes[16] = {7, 5, 3, 1, 12, 10, 17, 15, 20, 22, 25, 27, 29, 31, 33, 35};
 
 	for (i = 0; i < sizeof(indexes); i++)
-		guid [i] = g_unichar_xdigit_value (chars [indexes [i]]) + (g_unichar_xdigit_value (chars [indexes [i] - 1]) << 4);
+		guid [i] = mono_unichar_xdigit_value (chars [indexes [i]]) + (mono_unichar_xdigit_value (chars [indexes [i] - 1]) << 4);
 }
 
 static GENERATE_GET_CLASS_WITH_CACHE (guid_attribute, "System.Runtime.InteropServices", "GuidAttribute")

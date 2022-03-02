@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.Reflection;
@@ -16,7 +17,7 @@ namespace System.Drawing
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             if ((destinationType == typeof(string)) || (destinationType == typeof(InstanceDescriptor)))
             {

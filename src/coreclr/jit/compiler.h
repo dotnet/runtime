@@ -3028,6 +3028,7 @@ public:
     // For binary opers.
     GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
 
+    GenTreeColon* gtNewColonNode(var_types type, GenTree* elseNode, GenTree* thenNode);
     GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);
 
     GenTree* gtNewLargeOperNode(genTreeOps oper,
@@ -3037,6 +3038,9 @@ public:
 
     GenTreeIntCon* gtNewIconNode(ssize_t value, var_types type = TYP_INT);
     GenTreeIntCon* gtNewIconNode(unsigned fieldOffset, FieldSeqNode* fieldSeq);
+    GenTreeIntCon* gtNewNull();
+    GenTreeIntCon* gtNewTrue();
+    GenTreeIntCon* gtNewFalse();
 
     GenTree* gtNewPhysRegNode(regNumber reg, var_types type);
 
@@ -3365,7 +3369,7 @@ public:
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
     GenTree* gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, BasicBlockFlags bbFlags);
 
-    GenTree* gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
+    GenTreeField* gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
 
     GenTree* gtNewIndexRef(var_types typ, GenTree* arrayOp, GenTree* indexOp);
 
@@ -3600,7 +3604,7 @@ public:
     void gtDispLeaf(GenTree* tree, IndentStack* indentStack);
     void gtDispNodeName(GenTree* tree);
 #if FEATURE_MULTIREG_RET
-    unsigned gtDispRegCount(GenTree* tree);
+    unsigned gtDispMultiRegCount(GenTree* tree);
 #endif
     void gtDispRegVal(GenTree* tree);
     void gtDispZeroFieldSeq(GenTree* tree);
@@ -4407,6 +4411,19 @@ protected:
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
     GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
 
+    GenTree* impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags);
+    GenTree* impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags);
+    GenTree* impExpandHalfConstEquals(GenTreeLclVar* data,
+                                      GenTree*       lengthFld,
+                                      bool           checkForNull,
+                                      bool           startsWith,
+                                      WCHAR*         cnsData,
+                                      int            len,
+                                      int            dataOffset);
+    GenTree* impExpandHalfConstEqualsSWAR(GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset);
+    GenTree* impExpandHalfConstEqualsSIMD(GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset);
+    GenTreeStrCon* impGetStrConFromSpan(GenTree* span);
+
     GenTree* impIntrinsic(GenTree*                newobjThis,
                           CORINFO_CLASS_HANDLE    clsHnd,
                           CORINFO_METHOD_HANDLE   method,
@@ -4523,7 +4540,7 @@ public:
     void impInsertTreeBefore(GenTree* tree, const DebugInfo& di, Statement* stmtBefore);
     void impAssignTempGen(unsigned         tmp,
                           GenTree*         val,
-                          unsigned         curLevel,
+                          unsigned         curLevel   = (unsigned)CHECK_SPILL_NONE,
                           Statement**      pAfterStmt = nullptr,
                           const DebugInfo& di         = DebugInfo(),
                           BasicBlock*      block      = nullptr);
@@ -7696,6 +7713,7 @@ public:
         O2K_CONST_INT,
         O2K_CONST_LONG,
         O2K_CONST_DOUBLE,
+        O2K_ZEROOBJ,
         O2K_SUBRANGE,
         O2K_COUNT
     };
@@ -7837,6 +7855,9 @@ public:
                     // exact match because of positive and negative zero.
                     return (memcmp(&op2.dconVal, &that->op2.dconVal, sizeof(double)) == 0);
 
+                case O2K_ZEROOBJ:
+                    return true;
+
                 case O2K_LCLVAR_COPY:
                     return (op2.lcl.lclNum == that->op2.lcl.lclNum) &&
                            (!vnBased || op2.lcl.ssaNum == that->op2.lcl.ssaNum) &&
@@ -7973,7 +7994,6 @@ public:
     bool optAssertionIsNonNull(GenTree*         op,
                                ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased) DEBUGARG(AssertionIndex* pIndex));
 
-    // Used for Relop propagation.
     AssertionIndex optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2);
     AssertionIndex optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_TP assertions, GenTree* op1);
     AssertionIndex optLocalAssertionIsEqualOrNotEqual(
@@ -7987,10 +8007,13 @@ public:
     GenTree* optConstantAssertionProp(AssertionDsc*        curAssertion,
                                       GenTreeLclVarCommon* tree,
                                       Statement* stmt DEBUGARG(AssertionIndex index));
+    bool optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertions);
 
     // Assertion propagation functions.
     GenTree* optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
+    GenTree* optAssertionProp_Asg(ASSERT_VALARG_TP assertions, GenTreeOp* asg, Statement* stmt);
+    GenTree* optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeUnOp* ret, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);

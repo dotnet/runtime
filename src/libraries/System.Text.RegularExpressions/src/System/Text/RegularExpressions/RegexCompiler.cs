@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -20,7 +21,6 @@ namespace System.Text.RegularExpressions
         private static readonly FieldInfo s_runtextendField = RegexRunnerField("runtextend");
         private static readonly FieldInfo s_runtextstartField = RegexRunnerField("runtextstart");
         private static readonly FieldInfo s_runtextposField = RegexRunnerField("runtextpos");
-        private static readonly FieldInfo s_runtextField = RegexRunnerField("runtext");
         private static readonly FieldInfo s_runstackField = RegexRunnerField("runstack");
 
         private static readonly MethodInfo s_captureMethod = RegexRunnerMethod("Capture");
@@ -29,9 +29,9 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_isMatchedMethod = RegexRunnerMethod("IsMatched");
         private static readonly MethodInfo s_matchLengthMethod = RegexRunnerMethod("MatchLength");
         private static readonly MethodInfo s_matchIndexMethod = RegexRunnerMethod("MatchIndex");
-        private static readonly MethodInfo s_isBoundaryMethod = RegexRunnerMethod("IsBoundary");
+        private static readonly MethodInfo s_isBoundaryMethod = typeof(RegexRunner).GetMethod("IsBoundary", BindingFlags.NonPublic | BindingFlags.Instance, new[] { typeof(ReadOnlySpan<char>), typeof(int) })!;
         private static readonly MethodInfo s_isWordCharMethod = RegexRunnerMethod("IsWordChar");
-        private static readonly MethodInfo s_isECMABoundaryMethod = RegexRunnerMethod("IsECMABoundary");
+        private static readonly MethodInfo s_isECMABoundaryMethod = typeof(RegexRunner).GetMethod("IsECMABoundary", BindingFlags.NonPublic | BindingFlags.Instance, new[] { typeof(ReadOnlySpan<char>), typeof(int) })!;
         private static readonly MethodInfo s_crawlposMethod = RegexRunnerMethod("Crawlpos");
         private static readonly MethodInfo s_charInClassMethod = RegexRunnerMethod("CharInClass");
         private static readonly MethodInfo s_checkTimeoutMethod = RegexRunnerMethod("CheckTimeout");
@@ -68,8 +68,8 @@ namespace System.Text.RegularExpressions
         protected ILGenerator? _ilg;
         /// <summary>The options for the expression.</summary>
         protected RegexOptions _options;
-        /// <summary>The code written for the expression.</summary>
-        protected RegexCode? _code;
+        /// <summary>The <see cref="RegexTree"/> written for the expression.</summary>
+        protected RegexTree? _regexTree;
         /// <summary>Whether this expression has a non-infinite timeout.</summary>
         protected bool _hasTimeout;
 
@@ -93,8 +93,8 @@ namespace System.Text.RegularExpressions
         /// Entry point to dynamically compile a regular expression.  The expression is compiled to
         /// an in-memory assembly.
         /// </summary>
-        internal static RegexRunnerFactory? Compile(string pattern, RegexCode code, RegexOptions options, bool hasTimeout) =>
-            new RegexLWCGCompiler().FactoryInstanceFromCode(pattern, code, options, hasTimeout);
+        internal static RegexRunnerFactory? Compile(string pattern, RegexTree regexTree, RegexOptions options, bool hasTimeout) =>
+            new RegexLWCGCompiler().FactoryInstanceFromCode(pattern, regexTree, options, hasTimeout);
 
         /// <summary>A macro for _ilg.DefineLabel</summary>
         private Label DefineLabel() => _ilg!.DefineLabel();
@@ -180,12 +180,19 @@ namespace System.Text.RegularExpressions
         /// <summary>A macro for _ilg.Emit(OpCodes.Ldarg_0).</summary>
         protected void Ldthis() => _ilg!.Emit(OpCodes.Ldarg_0);
 
+        /// <summary>A macro for _ilgEmit(OpCodes.Ldarg_1) </summary>
+        private void Ldarg_1() => _ilg!.Emit(OpCodes.Ldarg_1);
+
         /// <summary>A macro for Ldthis(); Ldfld();</summary>
         protected void Ldthisfld(FieldInfo ft)
         {
             Ldthis();
             _ilg!.Emit(OpCodes.Ldfld, ft);
         }
+
+        /// <summary>Fetches the address of argument in passed in <paramref name="position"/></summary>
+        /// <param name="position">The position of the argument which address needs to be fetched.</param>
+        private void Ldarga_s(int position) => _ilg!.Emit(OpCodes.Ldarga_S, position);
 
         /// <summary>A macro for Ldthis(); Ldfld(); Stloc();</summary>
         private void Mvfldloc(FieldInfo ft, LocalBuilder lt)
@@ -271,6 +278,9 @@ namespace System.Text.RegularExpressions
 
         private void Switch(Label[] table) => _ilg!.Emit(OpCodes.Switch, table);
 
+        /// <summary>Declares a local bool.</summary>
+        private LocalBuilder DeclareBool() => _ilg!.DeclareLocal(typeof(bool));
+
         /// <summary>Declares a local int.</summary>
         private LocalBuilder DeclareInt32() => _ilg!.DeclareLocal(typeof(int));
 
@@ -353,10 +363,10 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>Generates the implementation for FindFirstChar.</summary>
-        protected void EmitFindFirstChar()
+        /// <summary>Generates the implementation for TryFindNextPossibleStartingPosition.</summary>
+        protected void EmitTryFindNextPossibleStartingPosition()
         {
-            Debug.Assert(_code != null);
+            Debug.Assert(_regexTree != null);
             _int32LocalsPool?.Clear();
             _readOnlySpanCharLocalsPool?.Clear();
 
@@ -367,13 +377,13 @@ namespace System.Text.RegularExpressions
             _textInfo = null;
             if ((_options & RegexOptions.CultureInvariant) == 0)
             {
-                bool needsCulture = _code.FindOptimizations.FindMode switch
+                bool needsCulture = _regexTree.FindOptimizations.FindMode switch
                 {
                     FindNextStartingPositionMode.FixedLiteral_LeftToRight_CaseInsensitive or
                     FindNextStartingPositionMode.FixedSets_LeftToRight_CaseInsensitive or
                     FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseInsensitive => true,
 
-                    _ when _code.FindOptimizations.FixedDistanceSets is List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)> sets => sets.Exists(set => set.CaseInsensitive),
+                    _ when _regexTree.FindOptimizations.FixedDistanceSets is List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)> sets => sets.Exists(set => set.CaseInsensitive),
 
                     _ => false,
                 };
@@ -388,17 +398,16 @@ namespace System.Text.RegularExpressions
             // Load necessary locals
             // int pos = base.runtextpos;
             // int end = base.runtextend;
-            // ReadOnlySpan<char> inputSpan = base.runtext.AsSpan();
+            // ReadOnlySpan<char> inputSpan = input;
             Mvfldloc(s_runtextposField, pos);
             Mvfldloc(s_runtextendField, end);
-            Ldthisfld(s_runtextField);
-            Call(s_stringAsSpanMethod);
+            Ldarg_1();
             Stloc(inputSpan);
 
             // Generate length check.  If the input isn't long enough to possibly match, fail quickly.
             // It's rare for min required length to be 0, so we don't bother special-casing the check,
             // especially since we want the "return false" code regardless.
-            int minRequiredLength = _code.Tree.MinRequiredLength;
+            int minRequiredLength = _regexTree.FindOptimizations.MinRequiredLength;
             Debug.Assert(minRequiredLength >= 0);
             Label returnFalse = DefineLabel();
             Label finishedLengthCheck = DefineLabel();
@@ -433,28 +442,28 @@ namespace System.Text.RegularExpressions
             }
 
             // Either anchors weren't specified, or they don't completely root all matches to a specific location.
-            switch (_code.FindOptimizations.FindMode)
+            switch (_regexTree.FindOptimizations.FindMode)
             {
                 case FindNextStartingPositionMode.LeadingPrefix_LeftToRight_CaseSensitive:
-                    Debug.Assert(!string.IsNullOrEmpty(_code.FindOptimizations.LeadingCaseSensitivePrefix));
-                    EmitIndexOf_LeftToRight(_code.FindOptimizations.LeadingCaseSensitivePrefix);
+                    Debug.Assert(!string.IsNullOrEmpty(_regexTree.FindOptimizations.LeadingCaseSensitivePrefix));
+                    EmitIndexOf_LeftToRight(_regexTree.FindOptimizations.LeadingCaseSensitivePrefix);
                     break;
 
                 case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseSensitive:
                 case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseInsensitive:
                 case FindNextStartingPositionMode.FixedSets_LeftToRight_CaseSensitive:
                 case FindNextStartingPositionMode.FixedSets_LeftToRight_CaseInsensitive:
-                    Debug.Assert(_code.FindOptimizations.FixedDistanceSets is { Count: > 0 });
+                    Debug.Assert(_regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
                     EmitFixedSet_LeftToRight();
                     break;
 
                 case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive:
-                    Debug.Assert(_code.FindOptimizations.LiteralAfterLoop is not null);
+                    Debug.Assert(_regexTree.FindOptimizations.LiteralAfterLoop is not null);
                     EmitLiteralAfterAtomicLoop();
                     break;
 
                 default:
-                    Debug.Fail($"Unexpected mode: {_code.FindOptimizations.FindMode}");
+                    Debug.Fail($"Unexpected mode: {_regexTree.FindOptimizations.FindMode}");
                     goto case FindNextStartingPositionMode.NoSearch;
 
                 case FindNextStartingPositionMode.NoSearch:
@@ -470,8 +479,8 @@ namespace System.Text.RegularExpressions
             {
                 Label label;
 
-                // Anchors that fully implement FindFirstChar, with a check that leads to immediate success or failure determination.
-                switch (_code.FindOptimizations.FindMode)
+                // Anchors that fully implement TryFindNextPossibleStartingPosition, with a check that leads to immediate success or failure determination.
+                switch (_regexTree.FindOptimizations.FindMode)
                 {
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
                         label = DefineLabel();
@@ -529,16 +538,16 @@ namespace System.Text.RegularExpressions
                     case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ:
                         // Jump to the end, minus the min required length, which in this case is actually the fixed length.
                         {
-                            int extraNewlineBump = _code.FindOptimizations.FindMode == FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ ? 1 : 0;
+                            int extraNewlineBump = _regexTree.FindOptimizations.FindMode == FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ ? 1 : 0;
                             label = DefineLabel();
                             Ldloc(pos);
                             Ldloc(end);
-                            Ldc(_code.Tree.MinRequiredLength + extraNewlineBump);
+                            Ldc(_regexTree.FindOptimizations.MinRequiredLength + extraNewlineBump);
                             Sub();
                             Bge(label);
                             Ldthis();
                             Ldloc(end);
-                            Ldc(_code.Tree.MinRequiredLength + extraNewlineBump);
+                            Ldc(_regexTree.FindOptimizations.MinRequiredLength + extraNewlineBump);
                             Sub();
                             Stfld(s_runtextposField);
                             MarkLabel(label);
@@ -550,7 +559,7 @@ namespace System.Text.RegularExpressions
 
                 // Now handle anchors that boost the position but don't determine immediate success or failure.
 
-                switch (_code.FindOptimizations.LeadingAnchor)
+                switch (_regexTree.FindOptimizations.LeadingAnchor)
                 {
                     case RegexNodeKind.Bol:
                         {
@@ -616,12 +625,12 @@ namespace System.Text.RegularExpressions
                         break;
                 }
 
-                switch (_code.FindOptimizations.TrailingAnchor)
+                switch (_regexTree.FindOptimizations.TrailingAnchor)
                 {
-                    case RegexNodeKind.End or RegexNodeKind.EndZ when _code.FindOptimizations.MaxPossibleLength is int maxLength:
+                    case RegexNodeKind.End or RegexNodeKind.EndZ when _regexTree.FindOptimizations.MaxPossibleLength is int maxLength:
                         // Jump to the end, minus the max allowed length.
                         {
-                            int extraNewlineBump = _code.FindOptimizations.FindMode == FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ ? 1 : 0;
+                            int extraNewlineBump = _regexTree.FindOptimizations.FindMode == FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ ? 1 : 0;
                             label = DefineLabel();
                             Ldloc(pos);
                             Ldloc(end);
@@ -674,7 +683,7 @@ namespace System.Text.RegularExpressions
 
             void EmitFixedSet_LeftToRight()
             {
-                List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)>? sets = _code.FindOptimizations.FixedDistanceSets;
+                List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)>? sets = _regexTree.FindOptimizations.FixedDistanceSets;
                 (char[]? Chars, string Set, int Distance, bool CaseInsensitive) primarySet = sets![0];
                 const int MaxSets = 4;
                 int setsToUse = Math.Min(sets.Count, MaxSets);
@@ -873,8 +882,8 @@ namespace System.Text.RegularExpressions
             // Emits a search for a literal following a leading atomic single-character loop.
             void EmitLiteralAfterAtomicLoop()
             {
-                Debug.Assert(_code.FindOptimizations.LiteralAfterLoop is not null);
-                (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal) target = _code.FindOptimizations.LiteralAfterLoop.Value;
+                Debug.Assert(_regexTree.FindOptimizations.LiteralAfterLoop is not null);
+                (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal) target = _regexTree.FindOptimizations.LiteralAfterLoop.Value;
 
                 Debug.Assert(target.LoopNode.Kind is RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic);
                 Debug.Assert(target.LoopNode.N == int.MaxValue);
@@ -1016,8 +1025,8 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>Generates the implementation for Go.</summary>
-        protected void EmitGo()
+        /// <summary>Generates the implementation for TryMatchAtCurrentPosition.</summary>
+        protected void EmitTryMatchAtCurrentPosition()
         {
             // In .NET Framework and up through .NET Core 3.1, the code generated for RegexOptions.Compiled was effectively an unrolled
             // version of what RegexInterpreter would process.  The RegexNode tree would be turned into a series of opcodes via
@@ -1036,31 +1045,31 @@ namespace System.Text.RegularExpressions
             // label that code should jump back to when backtracking.  That way, a subsequent EmitXx function doesn't need to know exactly
             // where to jump: it simply always jumps to "doneLabel" on match failure, and "doneLabel" is always configured to point to
             // the right location.  In an expression without backtracking, or before any backtracking constructs have been encountered,
-            // "doneLabel" is simply the final return location from the Go method that will undo any captures and exit, signaling to
+            // "doneLabel" is simply the final return location from the TryMatchAtCurrentPosition method that will undo any captures and exit, signaling to
             // the calling scan loop that nothing was matched.
 
-            Debug.Assert(_code != null);
+            Debug.Assert(_regexTree != null);
             _int32LocalsPool?.Clear();
             _readOnlySpanCharLocalsPool?.Clear();
 
             // Get the root Capture node of the tree.
-            RegexNode node = _code.Tree.Root;
+            RegexNode node = _regexTree.Root;
             Debug.Assert(node.Kind == RegexNodeKind.Capture, "Every generated tree should begin with a capture node");
             Debug.Assert(node.ChildCount() == 1, "Capture nodes should have one child");
 
             // Skip the Capture node. We handle the implicit root capture specially.
             node = node.Child(0);
 
-            // In some limited cases, FindFirstChar will only return true if it successfully matched the whole expression.
-            // We can special case these to do essentially nothing in Go other than emit the capture.
+            // In some limited cases, TryFindNextPossibleStartingPosition will only return true if it successfully matched the whole expression.
+            // We can special case these to do essentially nothing in TryMatchAtCurrentPosition other than emit the capture.
             switch (node.Kind)
             {
                 case RegexNodeKind.Multi or RegexNodeKind.Notone or RegexNodeKind.One or RegexNodeKind.Set when !IsCaseInsensitive(node):
                     // This is the case for single and multiple characters, though the whole thing is only guaranteed
-                    // to have been validated in FindFirstChar when doing case-sensitive comparison.
+                    // to have been validated in TryFindNextPossibleStartingPosition when doing case-sensitive comparison.
                     // base.Capture(0, base.runtextpos, base.runtextpos + node.Str.Length);
                     // base.runtextpos = base.runtextpos + node.Str.Length;
-                    // return;
+                    // return true;
                     Ldthis();
                     Dup();
                     Ldc(0);
@@ -1073,6 +1082,7 @@ namespace System.Text.RegularExpressions
                     Ldc(node.Kind == RegexNodeKind.Multi ? node.Str!.Length : 1);
                     Add();
                     Stfld(s_runtextposField);
+                    Ldc(1);
                     Ret();
                     return;
 
@@ -1080,13 +1090,14 @@ namespace System.Text.RegularExpressions
                 // performance.  Since that's not applicable to RegexCompiler, that code isn't mirrored here.
             }
 
+            AnalysisResults analysis = RegexTreeAnalyzer.Analyze(_regexTree);
+
             // Initialize the main locals used throughout the implementation.
             LocalBuilder inputSpan = DeclareReadOnlySpanChar();
             LocalBuilder originalPos = DeclareInt32();
             LocalBuilder pos = DeclareInt32();
             LocalBuilder slice = DeclareReadOnlySpanChar();
             LocalBuilder end = DeclareInt32();
-            Label stopSuccessLabel = DefineLabel();
             Label doneLabel = DefineLabel();
             Label originalDoneLabel = doneLabel;
             if (_hasTimeout)
@@ -1095,12 +1106,11 @@ namespace System.Text.RegularExpressions
             }
 
             // CultureInfo culture = CultureInfo.CurrentCulture; // only if the whole expression or any subportion is ignoring case, and we're not using invariant
-            InitializeCultureForGoIfNecessary();
+            InitializeCultureForTryMatchAtCurrentPositionIfNecessary(analysis);
 
-            // ReadOnlySpan<char> inputSpan = base.runtext.AsSpan();
+            // ReadOnlySpan<char> inputSpan = input;
             // int end = base.runtextend;
-            Ldthisfld(s_runtextField);
-            Call(s_stringAsSpanMethod);
+            Ldarg_1();
             Stloc(inputSpan);
             Mvfldloc(s_runtextendField, end);
 
@@ -1125,8 +1135,6 @@ namespace System.Text.RegularExpressions
             int sliceStaticPos = 0;
             SliceInputSpan();
 
-            AnalysisResults analysis = RegexTreeAnalyzer.Analyze(_code);
-
             // Check whether there are captures anywhere in the expression. If there isn't, we can skip all
             // the boilerplate logic around uncapturing, as there won't be anything to uncapture.
             bool expressionHasCaptures = analysis.MayContainCapture(node);
@@ -1134,11 +1142,10 @@ namespace System.Text.RegularExpressions
             // Emit the code for all nodes in the tree.
             EmitNode(node);
 
-            // Success:
             // pos += sliceStaticPos;
             // base.runtextpos = pos;
             // Capture(0, originalpos, pos);
-            MarkLabel(stopSuccessLabel);
+            // return true;
             Ldthis();
             Ldloc(pos);
             if (sliceStaticPos > 0)
@@ -1154,6 +1161,16 @@ namespace System.Text.RegularExpressions
             Ldloc(originalPos);
             Ldloc(pos);
             Call(s_captureMethod);
+            Ldc(1);
+            Ret();
+
+            // NOTE: The following is a difference from the source generator.  The source generator emits:
+            //     UncaptureUntil(0);
+            //     return false;
+            // at every location where the all-up match is known to fail. In contrast, the compiler currently
+            // emits this uncapture/return code in one place and jumps to it upon match failure.  The difference
+            // stems primarily from the return-at-each-location pattern resulting in cleaner / easier to read
+            // source code, which is not an issue for RegexCompiler emitting IL instead of C#.
 
             // If the graph contained captures, undo any remaining to handle failed matches.
             if (expressionHasCaptures)
@@ -1184,7 +1201,8 @@ namespace System.Text.RegularExpressions
                 MarkLabel(originalDoneLabel);
             }
 
-            // return;
+            // return false;
+            Ldc(0);
             Ret();
 
             // Generated code successfully.
@@ -1452,7 +1470,7 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Backreference, $"Unexpected type: {node.Kind}");
 
-                int capnum = RegexParser.MapCaptureNumber(node.M, _code!.Caps);
+                int capnum = RegexParser.MapCaptureNumber(node.M, _regexTree!.CaptureNumberSparseMapping);
 
                 TransferSliceStaticPosToPos();
 
@@ -1551,7 +1569,7 @@ namespace System.Text.RegularExpressions
                 TransferSliceStaticPosToPos();
 
                 // Get the capture number to test.
-                int capnum = RegexParser.MapCaptureNumber(node.M, _code!.Caps);
+                int capnum = RegexParser.MapCaptureNumber(node.M, _regexTree!.CaptureNumberSparseMapping);
 
                 // Get the "yes" branch and the "no" branch.  The "no" branch is optional in syntax and is thus
                 // somewhat likely to be Empty.
@@ -1871,8 +1889,8 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.Kind is RegexNodeKind.Capture, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
-                int capnum = RegexParser.MapCaptureNumber(node.M, _code!.Caps);
-                int uncapnum = RegexParser.MapCaptureNumber(node.N, _code.Caps);
+                int capnum = RegexParser.MapCaptureNumber(node.M, _regexTree!.CaptureNumberSparseMapping);
+                int uncapnum = RegexParser.MapCaptureNumber(node.N, _regexTree.CaptureNumberSparseMapping);
                 bool isAtomic = analysis.IsAtomicByAncestor(node);
 
                 // pos += sliceStaticPos;
@@ -2311,16 +2329,15 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Boundary or RegexNodeKind.NonBoundary or RegexNodeKind.ECMABoundary or RegexNodeKind.NonECMABoundary, $"Unexpected type: {node.Kind}");
 
-                // if (!IsBoundary(pos + sliceStaticPos, base.runtextbeg, end)) goto doneLabel;
+                // if (!IsBoundary(inputSpan, pos + sliceStaticPos)) goto doneLabel;
                 Ldthis();
+                Ldloc(inputSpan);
                 Ldloc(pos);
                 if (sliceStaticPos > 0)
                 {
                     Ldc(sliceStaticPos);
                     Add();
                 }
-                Ldthisfld(s_runtextbegField);
-                Ldloc(end);
                 switch (node.Kind)
                 {
                     case RegexNodeKind.Boundary:
@@ -3953,31 +3970,60 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        private void InitializeCultureForGoIfNecessary()
+        protected void EmitScan(DynamicMethod tryFindNextStartingPositionMethod, DynamicMethod tryMatchAtCurrentPositionMethod)
+        {
+            Label returnLabel = DefineLabel();
+
+            // while (TryFindNextPossibleStartingPosition(text))
+            Label whileLoopBody = DefineLabel();
+            MarkLabel(whileLoopBody);
+            Ldthis();
+            Ldarg_1();
+            Call(tryFindNextStartingPositionMethod);
+            BrfalseFar(returnLabel);
+
+            if (_hasTimeout)
+            {
+                // CheckTimeout();
+                Ldthis();
+                Call(s_checkTimeoutMethod);
+            }
+
+            // if (TryMatchAtCurrentPosition(text) || runtextpos == text.length)
+            //   return;
+            Ldthis();
+            Ldarg_1();
+            Call(tryMatchAtCurrentPositionMethod);
+            BrtrueFar(returnLabel);
+            Ldthisfld(s_runtextposField);
+            Ldarga_s(1);
+            Call(s_spanGetLengthMethod);
+            Ceq();
+            BrtrueFar(returnLabel);
+
+            // runtextpos += 1
+            Ldthis();
+            Ldthisfld(s_runtextposField);
+            Ldc(1);
+            Add();
+            Stfld(s_runtextposField);
+
+            // End loop body.
+            BrFar(whileLoopBody);
+
+            // return;
+            MarkLabel(returnLabel);
+            Ret();
+        }
+
+        private void InitializeCultureForTryMatchAtCurrentPositionIfNecessary(AnalysisResults analysis)
         {
             _textInfo = null;
-            if ((_options & RegexOptions.CultureInvariant) == 0)
+            if (analysis.HasIgnoreCase && (_options & RegexOptions.CultureInvariant) == 0)
             {
-                bool needsCulture = (_options & RegexOptions.IgnoreCase) != 0;
-                if (!needsCulture)
-                {
-                    int[] codes = _code!.Codes;
-                    for (int codepos = 0; codepos < codes.Length; codepos += RegexCode.OpcodeSize((RegexOpcode)codes[codepos]))
-                    {
-                        if (((RegexOpcode)codes[codepos] & RegexOpcode.CaseInsensitive) == RegexOpcode.CaseInsensitive)
-                        {
-                            needsCulture = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (needsCulture)
-                {
-                    // cache CultureInfo in local variable which saves excessive thread local storage accesses
-                    _textInfo = DeclareTextInfo();
-                    InitLocalCultureInfo();
-                }
+                // cache CultureInfo in local variable which saves excessive thread local storage accesses
+                _textInfo = DeclareTextInfo();
+                InitLocalCultureInfo();
             }
         }
 
