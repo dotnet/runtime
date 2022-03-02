@@ -81,6 +81,7 @@ namespace System.Text.RegularExpressions.Symbolic
             SymbolicRegexSet<TElement>?,
             SymbolicRegexInfo), SymbolicRegexNode<TElement>> _nodeCache = new();
 
+#if DEBUG
         internal readonly Dictionary<(TransitionRegexKind, // _kind
             TElement?,                                     // _test
             TransitionRegex<TElement>?,                    // _first
@@ -88,6 +89,7 @@ namespace System.Text.RegularExpressions.Symbolic
             SymbolicRegexNode<TElement>?,                  // _leaf
             DerivativeEffect?),                            // _effect
             TransitionRegex<TElement>> _trCache = new();
+#endif
 
         /// <summary>
         /// Maps state ids to states, initial capacity is 1024 states.
@@ -198,15 +200,22 @@ namespace System.Text.RegularExpressions.Symbolic
         internal SymbolicRegexNode<TElement> OrderedOr(params SymbolicRegexNode<TElement>[] nodes)
         {
             SymbolicRegexNode<TElement>? or = null;
-            foreach (SymbolicRegexNode<TElement> elem in nodes)
+            // Iterate backwards to avoid quadratic rebuilding of the Or nodes, which are always simplified to
+            // right associative form. Concretely:
+            // In (a|(b|c)) | d -> (a|(b|(c|d)) the first argument is not a subtree of the result.
+            // In a | (b|(c|d)) -> (a|(b|(c|d)) the second argument is a subtree of the result.
+            // The first case performs linear work for each element, leading to a quadratic blowup.
+            for (int i = nodes.Length - 1; i >= 0; --i)
             {
+                SymbolicRegexNode<TElement> elem = nodes[i];
+
                 if (elem.IsNothing)
                     continue;
 
-                or = or is null ? elem : SymbolicRegexNode<TElement>.OrderedOr(this, or, elem);
+                or = or is null ? elem : SymbolicRegexNode<TElement>.OrderedOr(this, elem, or);
 
                 if (elem.IsAnyStar)
-                    break; // .* is the absorbing element
+                    or = elem; // .* is the absorbing element
             }
 
             return or ?? _nothing;

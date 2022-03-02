@@ -275,7 +275,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 if (p is null)
                 {
                     // Build the new state and store it into the array.
-                    p = state.NfaEagerNextWithEffects(minterm);
+                    p = state.NfaNextWithEffects(minterm);
                     Volatile.Write(ref _builder._capturingDelta[offset], p);
                 }
 
@@ -601,8 +601,8 @@ namespace System.Text.RegularExpressions.Symbolic
 
             Debug.Assert(i_end != input.Length && endState is not null);
             // Apply effects for finishing at the stored end state
-            endState.Node.ApplyEffects(effect => endRegisters.ApplyEffect(effect, i_end + 1),
-                CharKind.Context(endState.PrevCharKind, GetCharKind(input, i_end + 1)));
+            endState.Node.ApplyEffects((effect, args) => args.Registers.ApplyEffect(effect, args.Pos),
+                CharKind.Context(endState.PrevCharKind, GetCharKind(input, i_end + 1)), (Registers: endRegisters, Pos: i_end + 1));
             resultRegisters = endRegisters;
             return i_end;
         }

@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if DEBUG
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -157,7 +158,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             Debug.Assert(_builder._solver.IsSatisfiable(pathIn));
 
-            #region Conditional
+#region Conditional
             // Intersect when this is a Conditional
             if (_kind == TransitionRegexKind.Conditional)
             {
@@ -193,9 +194,9 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 return that.IntersectWith(this, pathIn);
             }
-            #endregion
+#endregion
 
-            #region Union
+#region Union
             // Intersect when this is a Union
             // Use the following law of distributivity: (A|B)&C = A&C|B&C
             if (_kind == TransitionRegexKind.Union)
@@ -209,9 +210,9 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 return that.IntersectWith(this, pathIn);
             }
-            #endregion
+#endregion
 
-            #region Nullability
+#region Nullability
             if (_kind == TransitionRegexKind.Lookaround)
             {
                 Debug.Assert(_node is not null && _first is not null && _second is not null);
@@ -223,7 +224,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 Debug.Assert(that._node is not null && that._first is not null && that._second is not null);
                 return Lookaround(that._node, that._first.IntersectWith(this, pathIn), that._second.IntersectWith(this, pathIn));
             }
-            #endregion
+#endregion
 
             // Propagate intersection to the leaves
             Debug.Assert(_kind is TransitionRegexKind.Leaf && that._kind is TransitionRegexKind.Leaf && _node is not null && that._node is not null);
@@ -296,7 +297,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 _ => $"if (IsNull({_node}), {_first}, {_second})",
             };
 
-#if DEBUG
         /// <summary>Enumerates all the paths in this transition regex excluding dead-end paths</summary>
         public IEnumerable<(S, SymbolicRegexNode<S>?, SymbolicRegexNode<S>)> EnumeratePaths(S pathCondition)
         {
@@ -359,6 +359,6 @@ namespace System.Text.RegularExpressions.Symbolic
                     break;
             }
         }
-#endif
     }
 }
+#endif
