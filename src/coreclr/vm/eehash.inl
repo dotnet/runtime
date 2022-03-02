@@ -198,7 +198,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::Init(DWORD dwNumBucke
     m_pVolatileBucketTable->m_pBuckets++;
     m_pVolatileBucketTable->m_dwNumBuckets = dwNumBuckets;
 #ifdef TARGET_64BIT
-    m_pVolatileBucketTable->m_dwNumBucketsMul = GetFastModMultiplier(dwNumBuckets);
+    m_pVolatileBucketTable->m_dwNumBucketsMul = dwNumBuckets == 0 ? 0 : GetFastModMultiplier(dwNumBuckets);
 #endif
 
     m_Heap = pHeap;
@@ -786,7 +786,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GrowHashTable()
     pNewBucketTable->m_pBuckets = pNewBuckets;
     pNewBucketTable->m_dwNumBuckets = dwNewNumBuckets;
 #ifdef TARGET_64BIT
-    pNewBucketTable->m_dwNumBucketsMul = GetFastModMultiplier(dwNewNumBuckets);
+    pNewBucketTable->m_dwNumBucketsMul = dwNewNumBuckets == 0 ? 0 : GetFastModMultiplier(dwNewNumBuckets);
 #endif
 
     // Add old table to the to free list. Note that the SyncClean thing will only

@@ -1017,7 +1017,10 @@ inline UINT64 GetFastModMultiplier(UINT32 divisor)
 
 inline UINT32 FastMod(UINT32 value, UINT32 divisor, UINT64 multiplier)
 {
-    return (UINT32)(((((multiplier * value) >> 32) + 1) * divisor) >> 32);
+    _ASSERTE(divisor <= INT_MAX);
+    UINT32 highbits = (UINT32)(((((multiplier * value) >> 32) + 1) * divisor) >> 32);
+    _ASSERTE(highbits == value % divisor);
+    return highbits;
 }
 #endif
 
