@@ -15,6 +15,7 @@ namespace System.Text.Tests
     public static unsafe class AsciiUtilityTests
     {
         private const int SizeOfVector128 = 128 / 8;
+        private const int SizeOfVector256 = 256 / 8;
 
         // The delegate definitions and members below provide us access to CoreLib's internals.
         // We use UIntPtr instead of nuint everywhere here since we don't know what our target arch is.
@@ -151,6 +152,40 @@ namespace System.Text.Tests
                 }
             }
         }
+
+        [Fact]
+        public static void GetIndexOfFirstNonAsciiChar_Vector256InnerLoop()
+        {
+            // The purpose of this test is to make sure we're identifying the correct
+            // vector (of the two that we're reading simultaneously) when performing
+            // the final ASCII drain at the end of the method once we've broken out
+            // of the inner loop.
+            //
+            // Use U+0123 instead of U+0080 for this test because if our implementation
+            // uses pminuw / pmovmskb incorrectly, U+0123 will incorrectly show up as ASCII,
+            // causing our test to produce a false negative.
+
+            using (BoundedMemory<char> mem = BoundedMemory.Allocate<char>(1024))
+            {
+                Span<char> chars = mem.Span;
+
+                for (int i = 0; i < chars.Length; i++)
+                {
+                    chars[i] &= '\u007F'; // make sure each char (of the pre-populated random data) is ASCII
+                }
+
+                // Two vectors have offsets 0 .. 64. We'll go backward to avoid having to
+                // re-clear the vector every time.
+
+                for (int i = 2 * SizeOfVector256 - 1; i >= 0; i--)
+                {
+                    chars[100 + i * 13] = '\u0123'; // 13 is relatively prime to 64, so it ensures all possible positions are hit
+                    Assert.Equal(100 + i * 13, CallGetIndexOfFirstNonAsciiChar(chars));
+                }
+            }
+        }
+
+
 
         [Fact]
         public static void GetIndexOfFirstNonAsciiChar_Boundaries()
