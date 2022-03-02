@@ -205,106 +205,105 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			try {
 				foreach (var assemblyName in checks.Keys) {
-					using (var linkedAssembly = ResolveLinkedAssembly (assemblyName)) {
-						foreach (var checkAttrInAssembly in checks[assemblyName]) {
-							var attributeTypeName = checkAttrInAssembly.AttributeType.Name;
+					var linkedAssembly = ResolveLinkedAssembly (assemblyName);
+					foreach (var checkAttrInAssembly in checks[assemblyName]) {
+						var attributeTypeName = checkAttrInAssembly.AttributeType.Name;
 
-							switch (attributeTypeName) {
-							case nameof (KeptAllTypesAndMembersInAssemblyAttribute):
-								VerifyKeptAllTypesAndMembersInAssembly (linkedAssembly);
+						switch (attributeTypeName) {
+						case nameof (KeptAllTypesAndMembersInAssemblyAttribute):
+							VerifyKeptAllTypesAndMembersInAssembly (linkedAssembly);
+							continue;
+						case nameof (KeptAttributeInAssemblyAttribute):
+							VerifyKeptAttributeInAssembly (checkAttrInAssembly, linkedAssembly);
+							continue;
+						case nameof (RemovedAttributeInAssembly):
+							VerifyRemovedAttributeInAssembly (checkAttrInAssembly, linkedAssembly);
+							continue;
+						default:
+							break;
+						}
+
+						var expectedTypeName = checkAttrInAssembly.ConstructorArguments[1].Value.ToString ();
+						TypeDefinition linkedType = linkedAssembly.MainModule.GetType (expectedTypeName);
+
+						if (linkedType == null && linkedAssembly.MainModule.HasExportedTypes) {
+							ExportedType exportedType = linkedAssembly.MainModule.ExportedTypes
+									.FirstOrDefault (exported => exported.FullName == expectedTypeName);
+
+							// Note that copied assemblies could have dangling references.
+							if (exportedType != null && original.EntryPoint.DeclaringType.CustomAttributes.FirstOrDefault (
+								ca => ca.AttributeType.Name == nameof (RemovedAssemblyAttribute)
+								&& ca.ConstructorArguments[0].Value.ToString () == exportedType.Scope.Name + ".dll") != null)
 								continue;
-							case nameof (KeptAttributeInAssemblyAttribute):
-								VerifyKeptAttributeInAssembly (checkAttrInAssembly, linkedAssembly);
+
+							linkedType = exportedType?.Resolve ();
+						}
+
+						switch (attributeTypeName) {
+						case nameof (RemovedTypeInAssemblyAttribute):
+							if (linkedType != null)
+								Assert.Fail ($"Type `{expectedTypeName}' should have been removed");
+							GetOriginalTypeFromInAssemblyAttribute (checkAttrInAssembly);
+							break;
+						case nameof (KeptTypeInAssemblyAttribute):
+							if (linkedType == null)
+								Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
+							break;
+						case nameof (RemovedInterfaceOnTypeInAssemblyAttribute):
+							if (linkedType == null)
+								Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
+							VerifyRemovedInterfaceOnTypeInAssembly (checkAttrInAssembly, linkedType);
+							break;
+						case nameof (KeptInterfaceOnTypeInAssemblyAttribute):
+							if (linkedType == null)
+								Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
+							VerifyKeptInterfaceOnTypeInAssembly (checkAttrInAssembly, linkedType);
+							break;
+						case nameof (RemovedMemberInAssemblyAttribute):
+							if (linkedType == null)
 								continue;
-							case nameof (RemovedAttributeInAssembly):
-								VerifyRemovedAttributeInAssembly (checkAttrInAssembly, linkedAssembly);
-								continue;
-							default:
-								break;
-							}
 
-							var expectedTypeName = checkAttrInAssembly.ConstructorArguments[1].Value.ToString ();
-							TypeDefinition linkedType = linkedAssembly.MainModule.GetType (expectedTypeName);
+							VerifyRemovedMemberInAssembly (checkAttrInAssembly, linkedType);
+							break;
+						case nameof (KeptBaseOnTypeInAssemblyAttribute):
+							if (linkedType == null)
+								Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
+							VerifyKeptBaseOnTypeInAssembly (checkAttrInAssembly, linkedType);
+							break;
+						case nameof (KeptMemberInAssemblyAttribute):
+							if (linkedType == null)
+								Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
 
-							if (linkedType == null && linkedAssembly.MainModule.HasExportedTypes) {
-								ExportedType exportedType = linkedAssembly.MainModule.ExportedTypes
-										.FirstOrDefault (exported => exported.FullName == expectedTypeName);
+							VerifyKeptMemberInAssembly (checkAttrInAssembly, linkedType);
+							break;
+						case nameof (RemovedForwarderAttribute):
+							if (linkedAssembly.MainModule.ExportedTypes.Any (l => l.Name == expectedTypeName))
+								Assert.Fail ($"Forwarder `{expectedTypeName}' should have been removed");
 
-								// Note that copied assemblies could have dangling references.
-								if (exportedType != null && original.EntryPoint.DeclaringType.CustomAttributes.FirstOrDefault (
-									ca => ca.AttributeType.Name == nameof (RemovedAssemblyAttribute)
-									&& ca.ConstructorArguments[0].Value.ToString () == exportedType.Scope.Name + ".dll") != null)
-									continue;
+							break;
 
-								linkedType = exportedType?.Resolve ();
-							}
+						case nameof (RemovedAssemblyReferenceAttribute):
+							Assert.False (linkedAssembly.MainModule.AssemblyReferences.Any (l => l.Name == expectedTypeName),
+								$"AssemblyRef '{expectedTypeName}' should have been removed");
+							break;
 
-							switch (attributeTypeName) {
-							case nameof (RemovedTypeInAssemblyAttribute):
-								if (linkedType != null)
-									Assert.Fail ($"Type `{expectedTypeName}' should have been removed");
-								GetOriginalTypeFromInAssemblyAttribute (checkAttrInAssembly);
-								break;
-							case nameof (KeptTypeInAssemblyAttribute):
-								if (linkedType == null)
-									Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
-								break;
-							case nameof (RemovedInterfaceOnTypeInAssemblyAttribute):
-								if (linkedType == null)
-									Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
-								VerifyRemovedInterfaceOnTypeInAssembly (checkAttrInAssembly, linkedType);
-								break;
-							case nameof (KeptInterfaceOnTypeInAssemblyAttribute):
-								if (linkedType == null)
-									Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
-								VerifyKeptInterfaceOnTypeInAssembly (checkAttrInAssembly, linkedType);
-								break;
-							case nameof (RemovedMemberInAssemblyAttribute):
-								if (linkedType == null)
-									continue;
-
-								VerifyRemovedMemberInAssembly (checkAttrInAssembly, linkedType);
-								break;
-							case nameof (KeptBaseOnTypeInAssemblyAttribute):
-								if (linkedType == null)
-									Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
-								VerifyKeptBaseOnTypeInAssembly (checkAttrInAssembly, linkedType);
-								break;
-							case nameof (KeptMemberInAssemblyAttribute):
-								if (linkedType == null)
-									Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
-
-								VerifyKeptMemberInAssembly (checkAttrInAssembly, linkedType);
-								break;
-							case nameof (RemovedForwarderAttribute):
-								if (linkedAssembly.MainModule.ExportedTypes.Any (l => l.Name == expectedTypeName))
-									Assert.Fail ($"Forwarder `{expectedTypeName}' should have been removed");
-
-								break;
-
-							case nameof (RemovedAssemblyReferenceAttribute):
-								Assert.False (linkedAssembly.MainModule.AssemblyReferences.Any (l => l.Name == expectedTypeName),
-									$"AssemblyRef '{expectedTypeName}' should have been removed");
-								break;
-
-							case nameof (KeptResourceInAssemblyAttribute):
-								VerifyKeptResourceInAssembly (checkAttrInAssembly);
-								break;
-							case nameof (RemovedResourceInAssemblyAttribute):
-								VerifyRemovedResourceInAssembly (checkAttrInAssembly);
-								break;
-							case nameof (KeptReferencesInAssemblyAttribute):
-								VerifyKeptReferencesInAssembly (checkAttrInAssembly);
-								break;
-							case nameof (ExpectedInstructionSequenceOnMemberInAssemblyAttribute):
-								if (linkedType == null)
-									Assert.Fail ($"Type `{expectedTypeName}` should have been kept");
-								VerifyExpectedInstructionSequenceOnMemberInAssembly (checkAttrInAssembly, linkedType);
-								break;
-							default:
-								UnhandledOtherAssemblyAssertion (expectedTypeName, checkAttrInAssembly, linkedType);
-								break;
-							}
+						case nameof (KeptResourceInAssemblyAttribute):
+							VerifyKeptResourceInAssembly (checkAttrInAssembly);
+							break;
+						case nameof (RemovedResourceInAssemblyAttribute):
+							VerifyRemovedResourceInAssembly (checkAttrInAssembly);
+							break;
+						case nameof (KeptReferencesInAssemblyAttribute):
+							VerifyKeptReferencesInAssembly (checkAttrInAssembly);
+							break;
+						case nameof (ExpectedInstructionSequenceOnMemberInAssemblyAttribute):
+							if (linkedType == null)
+								Assert.Fail ($"Type `{expectedTypeName}` should have been kept");
+							VerifyExpectedInstructionSequenceOnMemberInAssembly (checkAttrInAssembly, linkedType);
+							break;
+						default:
+							UnhandledOtherAssemblyAssertion (expectedTypeName, checkAttrInAssembly, linkedType);
+							break;
 						}
 					}
 				}
