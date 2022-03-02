@@ -357,11 +357,13 @@ namespace System.Reflection.Emit
             return default;
         }
 
+        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
         public override Type MakeArrayType()
         {
             return default;
         }
 
+        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
         public override Type MakeArrayType(int rank)
         {
             return default;

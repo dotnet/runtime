@@ -432,11 +432,13 @@ namespace System.Reflection.Emit
             return _tb.IsDefined(attributeType, inherit);
         }
 
+        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
         public override Type MakeArrayType()
         {
             return new ArrayType(this, 0);
         }
 
+        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
         public override Type MakeArrayType(int rank)
         {
             if (rank < 1)

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -502,6 +503,7 @@ namespace Internal.Runtime.CompilerHelpers
 #endif
         }
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available. Use the SizeOf<T> overload instead.")]
         internal static int AsAnyGetNativeSize(object o)
         {
             // Array, string and StringBuilder are not implemented.
@@ -516,6 +518,7 @@ namespace Internal.Runtime.CompilerHelpers
             return Marshal.SizeOf(o.GetType());
         }
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available. Use the StructureToPtr<T> overload instead.")]
         internal static void AsAnyMarshalManagedToNative(object o, IntPtr address)
         {
             // Array, string and StringBuilder are not implemented.
@@ -542,6 +545,7 @@ namespace Internal.Runtime.CompilerHelpers
             Marshal.PtrToStructureImpl(address, o);
         }
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available. Use the DestroyStructure<T> overload instead.")]
         internal static void AsAnyCleanupNative(IntPtr address, object o)
         {
             // Array, string and StringBuilder are not implemented.
