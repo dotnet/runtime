@@ -395,6 +395,16 @@ public:
     // This just exists to convert legacy OS Critical Section patterns over to holders.
     typedef DacHolder<CrstBase *, CrstBase::ReleaseLock, CrstBase::AcquireLock, 0, CompareDefault> UnsafeCrstInverseHolder;
 
+    // This holder acquires the lock in preemptive GC mode and puts the thread in a forbid-suspend-for-debugger region. It is
+    // used when cooperative GC mode would be entered while the lock is held, which can normally suspend for the debugger and
+    // cause FuncEvals to deadlock upon trying to acquire the lock. Using this holder prevents the thread from suspending for
+    // the debugger upon GC mode switches inside the forbid region.
+    //
+    // However, the forbid region does not prevent the thread from waiting for a pending GC upon allocating from the GC. For
+    // instance, some other thread may have started a GC and suspended for the debugger, then this thread allocates from the GC
+    // and needs to perform a GC, so it waits for the other GC to complete. At that point debugger suspension cannot complete
+    // because this thread is stuck inside the forbid region. So, this holder should not be used in cases that may allocate from
+    // the GC.
     class CrstAndForbidSuspendForDebuggerHolder
     {
     private:

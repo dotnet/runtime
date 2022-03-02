@@ -2113,9 +2113,18 @@ void Thread::RareDisablePreemptiveGC()
     // Note IsGCInProgress is also true for say Pause (anywhere SuspendEE happens) and GCThread is the
     // thread that did the Pause. While in Pause if another thread attempts Rev/Pinvoke it should get inside the following and
     // block until resume
-    if ((GCHeapUtilities::IsGCInProgress() && (this != ThreadSuspend::GetSuspensionThread())) ||
-        ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion()) ||
-        (m_State & TS_StackCrawlNeeded))
+    if ((
+            (GCHeapUtilities::IsGCInProgress() && (this != ThreadSuspend::GetSuspensionThread())) ||
+            (m_State & TS_DebugSuspendPending) ||
+            (m_State & TS_StackCrawlNeeded)
+        ) &&
+
+        // When in a forbid-suspend-for-debugger region and the thread waits for an in-progress GC, it would become stuck in the
+        // forbid region until the GC is complete. In the meantime, the debugger may need to have the runtime suspend for the
+        // debugger first, perhaps in a GC-unsafe point. This thread would not be able to suspend for the debugger and would
+        // cause a deadlock during debugger suspension. When in the forbid region, allow disabling preemptive GC and bypass the
+        // above heuristics.
+        !IsInForbidSuspendForDebuggerRegion())
     {
         STRESS_LOG1(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: entering. Thread state = %x\n", m_State.Load());
 
@@ -2181,9 +2190,10 @@ void Thread::RareDisablePreemptiveGC()
             // However, it is possible for the current thread to become the GC
             // thread while in this loop.  This happens if you use the COM+
             // debugger to suspend this thread and then release it.
+            _ASSERTE(!IsInForbidSuspendForDebuggerRegion());
             if (! ((GCHeapUtilities::IsGCInProgress() && (this != ThreadSuspend::GetSuspensionThread())) ||
-                    ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion()) ||
-                    (m_State & TS_StackCrawlNeeded)) )
+                   (m_State & TS_DebugSuspendPending) ||
+                   (m_State & TS_StackCrawlNeeded)) )
             {
                 break;
             }
