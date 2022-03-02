@@ -182,6 +182,7 @@ steps:
         ../../../dotnet publish Microsoft.NetConf2021.Maui.csproj -bl:MauiAndroid.binlog -r android-arm64 --self-contained --no-restore -f net6.0-android -c Release
         mkdir  $(Build.SourcesDirectory)/MauiTesting/
         mv ./bin/Release/net6.0-android/android-arm64/com.Microsoft.NetConf2021.Maui-Signed.apk $(Build.SourcesDirectory)/MauiTesting/MauiAndroidDefault.apk
+        mv ./obj $(Build.SourcesDirectory)/MauiTesting
       displayName: Build podcast app for MAUI
       workingDirectory:  $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile
 
