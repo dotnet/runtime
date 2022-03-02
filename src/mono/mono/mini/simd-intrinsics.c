@@ -715,7 +715,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_Min:
 	case SN_Multiply:
 	case SN_Subtract: {
-		if (!is_element_type_primitive (fsig->ret) || !is_element_type_primitive (fsig->params [0]) || !is_element_type_primitive (fsig->params [1]))
+		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		int instc0 = -1;
 		if (arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8) {
@@ -767,7 +767,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
 	}
 	case SN_AndNot:
-		if (!is_element_type_primitive (fsig->ret) || !is_element_type_primitive (fsig->params [0]) || !is_element_type_primitive (fsig->params [1]))
+		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 #ifdef TARGET_ARM64
 		return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_BIC, -1, arg0_type, fsig, args);
@@ -777,7 +777,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_BitwiseAnd:
 	case SN_BitwiseOr:
 	case SN_Xor: {
-		if (!is_element_type_primitive (fsig->ret) || !is_element_type_primitive (fsig->params [0]) || !is_element_type_primitive (fsig->params [1]))
+		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		int instc0 = -1;
 		switch (id) {
@@ -812,8 +812,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	case SN_Ceiling:
 	case SN_Floor: {
-		if (!is_element_type_primitive (fsig->ret) || !is_element_type_primitive (fsig->params [0]))
-			return NULL;
 #ifdef TARGET_ARM64
 		if ((arg0_type != MONO_TYPE_R4) && (arg0_type != MONO_TYPE_R8))
 			return NULL;
@@ -824,7 +822,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 	}
 	case SN_ConditionalSelect: {
-		if (!is_element_type_primitive (fsig->ret) || !is_element_type_primitive (fsig->params [0]) || !is_element_type_primitive (fsig->params [1]) || !is_element_type_primitive (fsig->params [2]))
+		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 #ifdef TARGET_ARM64
 		return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_BSL, -1, arg0_type, fsig, args);
@@ -849,9 +847,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_Equals:
 	case SN_EqualsAll:
 	case SN_EqualsAny: {
-		if (!is_element_type_primitive (fsig->params [0]) || !is_element_type_primitive (fsig->params [1]))
+		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-
 		switch (id) {
 			case SN_Equals:
 				return emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
@@ -881,7 +878,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	case SN_GetLower:
 	case SN_GetUpper: {
-		if (!is_element_type_primitive (fsig->ret) || !is_element_type_primitive (fsig->params [0]))
+		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		int op = id == SN_GetLower ? OP_XLOWER : OP_XUPPER;
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
@@ -890,9 +887,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_GreaterThanOrEqual:
 	case SN_LessThan:
 	case SN_LessThanOrEqual: {
-		if (!is_element_type_primitive (fsig->params [0]) || !is_element_type_primitive (fsig->params [1]))
+		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-
 		gboolean is_unsigned = type_is_unsigned (fsig->params [0]);
 		MonoInst *ins = emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
 		switch (id) {
@@ -915,6 +911,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	case SN_Negate:
 	case SN_OnesComplement: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
 #ifdef TARGET_ARM64
 		int op = id == SN_Negate ? OP_ARM64_XNEG : OP_ARM64_MVN;
 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
@@ -923,6 +921,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 	}
 	case SN_Sqrt: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
 #ifdef TARGET_ARM64
 		if ((arg0_type != MONO_TYPE_R4) && (arg0_type != MONO_TYPE_R8))
 			return NULL;
@@ -940,12 +940,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_ToVector128:
 	case SN_ToVector128Unsafe: {
 		if (!is_element_type_primitive (fsig->params [0]))
-				return NULL;
+			return NULL;
 		int op = id == SN_ToVector128 ? OP_XWIDEN : OP_XWIDEN_UNSAFE;
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
 	}
 	case SN_WithElement: {
-		if (!is_element_type_primitive (fsig->ret) || !is_element_type_primitive (fsig->params [0]))
+		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
@@ -962,7 +962,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	case SN_WithLower:
 	case SN_WithUpper: {
-		if (!is_element_type_primitive (fsig->ret) || !is_element_type_primitive (fsig->params [0]))
+		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		int op = id == SN_GetLower ? OP_XINSERT_LOWER : OP_XINSERT_UPPER;
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
