@@ -1679,7 +1679,7 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
         sl.EmitComputedInstantiatingMethodStub(pUnboxedMD, &portableShuffle[0], NULL);
 
         pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD);
-        pstub->SetMethodDesc(pUnboxedMD);
+        pstub->SetInstantiatedMethodDesc(pUnboxedMD);
     }
     else
 #endif
@@ -1753,7 +1753,7 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
         sl.EmitComputedInstantiatingMethodStub(pSharedMD, &portableShuffle[0], extraArg);
 
         pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD);
-        pstub->SetMethodDesc(pSharedMD);
+        pstub->SetInstantiatedMethodDesc(pSharedMD);
     }
     else
 #endif

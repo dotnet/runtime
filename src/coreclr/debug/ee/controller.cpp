@@ -593,7 +593,7 @@ DebuggerControllerPatch *DebuggerPatchTable::AddPatchForAddress(DebuggerControll
     _ASSERTE(kind == PATCH_KIND_NATIVE_MANAGED || kind == PATCH_KIND_NATIVE_UNMANAGED);
     LOG((LF_CORDB,LL_INFO10000,"DCP:AddPatchForAddress bound "
         "absolute to 0x%p with dji 0x%p (mdDef:0x%x) "
-        "controller:0x%xp AD:0x%p\n",
+        "controller:0x%p AD:0x%p\n",
         address, dji, (fd!=NULL?fd->GetMemberDef():0), controller,
         pAppDomain));
 

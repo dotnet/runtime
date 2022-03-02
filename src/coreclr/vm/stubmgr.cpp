@@ -1195,14 +1195,15 @@ BOOL StubLinkStubManager::DoTraceStub(PCODE stubStartAddress,
         LOG_TRACE_DESTINATION(trace, stubStartAddress, "StubLinkStubManager(MCDel)::DoTraceStub");
         return TRUE;
     }
-    else if (stub->IsInstantiatingMethodStub())
+    else if (stub->IsInstantiatingStub())
     {
         trace->InitForManagerPush(stubStartAddress, this);
         LOG_TRACE_DESTINATION(trace, stubStartAddress, "StubLinkStubManager(InstantiatingMethod)::DoTraceStub");
         return TRUE;
     }
-    else if (stub->GetOffset() != 0)
+    else if (stub->GetPatchOffset() != 0)
     {
+        // The patch offset is currently only non-zero in x86 non-IL delegate scenarios.
         trace->InitForFramePush((PCODE)stub->GetPatchAddress());
         LOG_TRACE_DESTINATION(trace, stubStartAddress, "StubLinkStubManager::DoTraceStub");
         return TRUE;
@@ -1221,6 +1222,7 @@ static PCODE GetStubTarget(PTR_MethodDesc pTargetMD)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
+        PRECONDITION(pTargetMD != NULL);
     }
     CONTRACTL_END;
 
@@ -1260,17 +1262,17 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
     LOG((LF_CORDB,LL_INFO10000, "SLSM:TM 0x%p, retAddr is 0x%p\n", pc, (*pRetAddr)));
 
     Stub *stub = Stub::RecoverStub((PCODE)pc);
-    if (stub->IsInstantiatingMethodStub())
+    if (stub->IsInstantiatingStub())
     {
         LOG((LF_CORDB,LL_INFO10000, "SLSM:TM Instantiating method stub\n"));
-        PTR_PTR_MethodDesc ppMD = stub->GetMethodDescLocation();
-        _ASSERTE(*ppMD != NULL);
+        PTR_MethodDesc pMD = stub->GetInstantiatedMethodDesc();
+        _ASSERTE(pMD != NULL);
 
-        PCODE target = GetStubTarget(*ppMD);
+        PCODE target = GetStubTarget(pMD);
         if (target == NULL)
         {
-            LOG((LF_CORDB,LL_INFO10000, "SLSM:TM Unable to determine stub target, ppMD 0x%p\n", ppMD));
-            trace->InitForUnjittedMethod(*ppMD);
+            LOG((LF_CORDB,LL_INFO10000, "SLSM:TM Unable to determine stub target, fd 0x%p\n", pMD));
+            trace->InitForUnjittedMethod(pMD);
             return TRUE;
         }
 
@@ -1284,6 +1286,9 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
         return DelegateInvokeStubManager::TraceDelegateObject(pbDel, trace);
     }
 
+    // Runtime bug if we get here. Did we make a change in StubLinkStubManager::DoTraceStub() that
+    // dispatched new stubs to TraceManager without writing the code to handle them?
+    _ASSERTE(!"SLSM:TM wasn't expected to handle any other stub types");
     return FALSE;
 }
 
@@ -2109,7 +2114,7 @@ BOOL DelegateInvokeStubManager::TraceManager(Thread *thread, TraceDestination *t
 
         // We use the patch offset field to indicate whether the stub has a hidden return buffer argument.
         // This field is set in SetupShuffleThunk().
-        if (pStub->GetOffset() != 0)
+        if (pStub->GetPatchOffset() != 0)
         {
             // This stub has a hidden return buffer argument.
             orDelegate = (DELEGATEREF)ObjectToOBJECTREF(StubManagerHelpers::GetSecondArg(pContext));

@@ -91,7 +91,7 @@ struct StubUnwindInfoHeader
     UNWIND_INFO UnwindInfo;  // variable length
 
     // Computes the size needed for this variable-sized struct.
-    static SIZE_T ComputeSize(UINT nUnwindInfoSize);
+    static SIZE_T ComputeAlignedSize(UINT nUnwindInfoSize);
 
     void Init ();
 
@@ -465,21 +465,18 @@ class Stub
     friend class CheckAsmOffsets;
 
     protected:
-
-    // These values are shared with the debugger - see FakeStub.
     enum
     {
         MULTICAST_DELEGATE_BIT  = 0x80000000,
         EXTERNAL_ENTRY_BIT      = 0x40000000,
         LOADER_HEAP_BIT         = 0x20000000,
-        INSTANTIATING_METHOD_BIT= 0x10000000,
+        INSTANTIATING_STUB_BIT= 0x10000000,
         UNWIND_INFO_BIT         = 0x08000000,
 
-        OFFSET_MASK             = UNWIND_INFO_BIT - 1,
-        MAX_OFFSET              = OFFSET_MASK + 1,
+        CODEBYTES_MASK          = UNWIND_INFO_BIT - 1,
+        MAX_CODEBYTES           = CODEBYTES_MASK + 1,
     };
-
-    static_assert_no_msg(OFFSET_MASK < UNWIND_INFO_BIT);
+    static_assert_no_msg(CODEBYTES_MASK < UNWIND_INFO_BIT);
 
     public:
         //-------------------------------------------------------------------
@@ -512,37 +509,40 @@ class Stub
         BOOL IsMulticastDelegate()
         {
             LIMITED_METHOD_CONTRACT;
-            return (m_Offset & MULTICAST_DELEGATE_BIT) != 0;
+            return (m_numCodeBytesAndFlags & MULTICAST_DELEGATE_BIT) != 0;
         }
 
         //-------------------------------------------------------------------
         // Used by the debugger to help step through stubs
         //-------------------------------------------------------------------
-        BOOL IsInstantiatingMethodStub()
+        BOOL IsInstantiatingStub()
         {
             LIMITED_METHOD_CONTRACT;
-            return (m_Offset & INSTANTIATING_METHOD_BIT) != 0;
+            return (m_numCodeBytesAndFlags & INSTANTIATING_STUB_BIT) != 0;
         }
 
-        USHORT GetOffset()
+        //-------------------------------------------------------------------
+        // For stubs which execute user code, a patch offset needs to be set
+        // to tell the debugger how far into the stub code the debugger has
+        // to step until the frame is set up.
+        //-------------------------------------------------------------------
+        void SetPatchOffset(USHORT offset)
         {
             LIMITED_METHOD_CONTRACT;
-            return (USHORT)(m_Offset & OFFSET_MASK);
+            _ASSERTE(!IsInstantiatingStub());
+            m_data.PatchOffset = offset;
         }
 
-        void SetOffset(USHORT offset)
+        //-------------------------------------------------------------------
+        // For stubs which execute user code, a patch offset needs to be set
+        // to tell the debugger how far into the stub code the debugger has
+        // to step until the frame is set up.
+        //-------------------------------------------------------------------
+        USHORT GetPatchOffset()
         {
             LIMITED_METHOD_CONTRACT;
-            _ASSERTE(GetOffset() == 0);
-            m_Offset |= offset;
-            _ASSERTE(GetOffset() == offset);
-        }
-
-        void SetMethodDesc(PTR_MethodDesc pMD)
-        {
-            LIMITED_METHOD_CONTRACT;
-            _ASSERTE(IsInstantiatingMethodStub());
-            *GetMethodDescLocation() = pMD;
+            _ASSERTE(!IsInstantiatingStub());
+            return m_data.PatchOffset;
         }
 
         //-------------------------------------------------------------------
@@ -552,9 +552,9 @@ class Stub
         //-------------------------------------------------------------------
         TADDR GetPatchAddress()
         {
-            WRAPPER_NO_CONTRACT;
-            _ASSERTE(!IsInstantiatingMethodStub());
-            return dac_cast<TADDR>(GetEntryPointInternal()) + GetOffset();
+            LIMITED_METHOD_CONTRACT;
+            _ASSERTE(!IsInstantiatingStub());
+            return dac_cast<TADDR>(GetEntryPointInternal()) + GetPatchOffset();
         }
 
         //-------------------------------------------------------------------
@@ -562,11 +562,23 @@ class Stub
         // to tell the debugger where to step through the instantiating method
         // stub.
         //-------------------------------------------------------------------
-        PTR_PTR_MethodDesc GetMethodDescLocation()
+        void SetInstantiatedMethodDesc(PTR_MethodDesc pMD)
         {
             LIMITED_METHOD_CONTRACT;
-            _ASSERTE(IsInstantiatingMethodStub());
-            return dac_cast<PTR_PTR_MethodDesc>(GetEntryPointInternal() + GetOffset());
+            _ASSERTE(IsInstantiatingStub());
+            m_data.InstantiatedMethod = pMD;
+        }
+
+        //-------------------------------------------------------------------
+        // For instantiating methods, the target MethodDesc needs to be set
+        // to tell the debugger where to step through the instantiating method
+        // stub.
+        //-------------------------------------------------------------------
+        PTR_MethodDesc GetInstantiatedMethodDesc()
+        {
+            LIMITED_METHOD_CONTRACT;
+            _ASSERTE(IsInstantiatingStub());
+            return m_data.InstantiatedMethod;
         }
 
         //-------------------------------------------------------------------
@@ -578,7 +590,7 @@ class Stub
         BOOL HasUnwindInfo()
         {
             LIMITED_METHOD_CONTRACT;
-            return (m_Offset & UNWIND_INFO_BIT) != 0;
+            return (m_numCodeBytesAndFlags & UNWIND_INFO_BIT) != 0;
         }
 
         StubUnwindInfoHeaderSuffix *GetUnwindInfoHeaderSuffix()
@@ -609,12 +621,14 @@ class Stub
             }
             CONTRACTL_END
 
+            _ASSERTE(HasUnwindInfo());
+
             StubUnwindInfoHeaderSuffix *pSuffix = GetUnwindInfoHeaderSuffix();
 
             TADDR suffixEnd = dac_cast<TADDR>(pSuffix) + sizeof(*pSuffix);
 
             return PTR_StubUnwindInfoHeader(suffixEnd -
-                                            StubUnwindInfoHeader::ComputeSize(pSuffix->nUnwindInfoSize));
+                                            StubUnwindInfoHeader::ComputeAlignedSize(pSuffix->nUnwindInfoSize));
         }
 
 #endif // STUBLINKER_GENERATES_UNWIND_INFO
@@ -654,7 +668,7 @@ class Stub
             WRAPPER_NO_CONTRACT;
             SUPPORTS_DAC;
 
-            return m_numCodeBytes;
+            return (m_numCodeBytesAndFlags & CODEBYTES_MASK);
         }
 
         //-------------------------------------------------------------------
@@ -690,7 +704,7 @@ class Stub
             CONTRACT_END;
 
             Stub *pStub = Stub::RecoverStub(pEntryPoint);
-            *pSize = sizeof(Stub) + pStub->m_numCodeBytes;
+            *pSize = sizeof(Stub) + pStub->GetNumCodeBytes();
             RETURN pStub;
         }
 
@@ -698,12 +712,12 @@ class Stub
         {
             LIMITED_METHOD_CONTRACT;
             if ((pBuffer == NULL) ||
-                (dwBufferSize < (sizeof(*this) + m_numCodeBytes)))
+                (dwBufferSize < (sizeof(*this) + GetNumCodeBytes())))
             {
                 return E_INVALIDARG;
             }
 
-            memcpyNoGCRefs(pBuffer, this, sizeof(*this) + m_numCodeBytes);
+            memcpyNoGCRefs(pBuffer, this, sizeof(*this) + GetNumCodeBytes());
             reinterpret_cast<Stub *>(pBuffer)->m_refcount = 1;
 
             return S_OK;
@@ -746,7 +760,7 @@ class Stub
         {
             LIMITED_METHOD_CONTRACT;
 
-            return (m_Offset & EXTERNAL_ENTRY_BIT) != 0;
+            return (m_numCodeBytesAndFlags & EXTERNAL_ENTRY_BIT) != 0;
         }
 
         //-------------------------------------------------------------------
@@ -801,10 +815,13 @@ class Stub
             }
         }
 
-        ULONG   m_refcount;
-        ULONG   m_Offset;
-
-        UINT    m_numCodeBytes;
+        UINT32 m_refcount;
+        UINT32 m_numCodeBytesAndFlags;
+        union
+        {
+            USHORT          PatchOffset;
+            PTR_MethodDesc  InstantiatedMethod;
+        } m_data;
 
 #ifdef _DEBUG
         enum {
@@ -813,17 +830,17 @@ class Stub
         };
 
         UINT32  m_signature;
-#else
 #ifdef HOST_64BIT
-        //README ALIGNMENT: in retail mode UINT m_numCodeBytes does not align to 16byte for the code
-        //                   after the Stub struct. This is to pad properly
-        UINT    m_pad_code_bytes;
+        //README ALIGNMENT: Enusure code after the Stub struct align to 16-bytes.
+        UINT32  m_pad_code_bytes1;
+        UINT32  m_pad_code_bytes2;
+        UINT32  m_pad_code_bytes3;
 #endif // HOST_64BIT
 #endif // _DEBUG
 
         Stub() = delete; // Stubs are created by NewStub(), not "new".
 };
-
+static_assert_no_msg(sizeof(Stub) % CODE_SIZE_ALIGN == 0);
 
 //-------------------------------------------------------------------------
 // Each platform encodes the "branch" instruction in a different

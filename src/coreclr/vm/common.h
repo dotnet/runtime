@@ -138,7 +138,6 @@ typedef VPTR(struct IUnknown)           PTR_IUnknown;
 typedef DPTR(class InstMethodHashTable) PTR_InstMethodHashTable;
 typedef DPTR(class MetaSig)             PTR_MetaSig;
 typedef DPTR(class MethodDesc)          PTR_MethodDesc;
-typedef DPTR(PTR_MethodDesc)            PTR_PTR_MethodDesc;
 typedef DPTR(class MethodDescChunk)     PTR_MethodDescChunk;
 typedef DPTR(class MethodImpl)          PTR_MethodImpl;
 typedef DPTR(class MethodTable)         PTR_MethodTable;
