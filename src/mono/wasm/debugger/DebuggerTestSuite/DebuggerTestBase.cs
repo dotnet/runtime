@@ -323,7 +323,7 @@ namespace DebuggerTests
             await CheckValue(l["value"], TString(value), name);
         }
 
-        internal async Task<JToken> CheckChar(JToken locals, string name, char value)
+        internal async Task<JToken> CheckSymbol(JToken locals, string name, char value)
         {
             var l = GetAndAssertObjectWithName(locals, name);
             await CheckValue(l["value"], TChar(value), name);

@@ -233,7 +233,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     case "symbol":
                      {
-                         valueRet = $"\'{value?.Value<char>()}\'";
+                         valueRet = $"'{value?.Value<char>()}'";
                          typeRet = "char";
                          break;
                      }
