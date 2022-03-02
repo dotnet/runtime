@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup>
     <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
@@ -60,6 +60,10 @@
     </ItemGroup>
   </Target>
 
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <Target Name="PublishToDisk" DependsOnTargets="GetFilesToPublish" />
+
   <Target Name="GetFilesToPublish">
     <MSBuild Projects="$(MSBuildProjectFullPath)"
           Targets="_GetAllSharedFrameworkFiles"
@@ -74,4 +78,5 @@
                        TargetPath="" />
     </ItemGroup>
   </Target>
+
 </Project>

@@ -30,7 +30,7 @@
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
     <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>
-    <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkPath>
+    <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
 
     <!-- Forced by ILLink targets; we should fix the SDK -->
