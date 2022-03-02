@@ -1067,6 +1067,12 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Match_Timeout_Repetition_Throws(RegexEngine engine)
         {
+            if (engine == RegexEngine.NonBacktracking)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/65991")]
+                return;
+            }
+
             int repetitionCount = 800_000_000;
             Regex regex = await RegexHelpers.GetRegexAsync(engine, @"a\s{" + repetitionCount + "}", RegexOptions.None, TimeSpan.FromSeconds(1));
             string input = @"a" + new string(' ', repetitionCount) + @"b";
