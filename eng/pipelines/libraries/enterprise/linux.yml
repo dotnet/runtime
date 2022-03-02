@@ -30,7 +30,7 @@ variables:
     value: /repo/src/libraries
 
 jobs:
-- job: Enterprise Linux tests
+- job: EnterpriseLinuxTests
   timeoutInMinutes: 180
   pool:
     name: NetCore1ESPool-Public
