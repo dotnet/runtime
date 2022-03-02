@@ -288,4 +288,19 @@
     <Error Condition="'$(ServicingVersion)' == '0'" Text="ServicingVersion is set to 0 and it should be an increment of the patch version from the last released package." />
   </Target>
 
+  <ItemDefinitionGroup>
+    <TargetPathWithTargetPlatformMoniker>
+      <GeneratePackageOnBuild>$(GeneratePackageOnBuild)</GeneratePackageOnBuild>
+    </TargetPathWithTargetPlatformMoniker>
+  </ItemDefinitionGroup>
+
+  <Target Name="ValidateBuiltPackageInServicing" 
+          Condition="'$(PreReleaseVersionLabel)' == 'servicing' and '$(IsPackable)' == 'true'"
+          AfterTargets="ResolveReferences">
+
+      <Error Condition="'$(GeneratePackageOnBuild)' != 'true' and 
+                        '%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' and 
+                        '%(ReferencePath.GeneratePackageOnBuild)' == 'true'"
+             Text="This project did not set GeneratePackageOnBuild, but dependencies '%(ReferencePath.OriginalProjectReferenceItemSpec)' did.  Please ship this project by setting GeneratePackageOnBuild to true." />
+  </Target>
 </Project>
