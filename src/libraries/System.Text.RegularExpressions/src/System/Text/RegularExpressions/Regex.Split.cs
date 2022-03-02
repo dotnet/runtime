@@ -35,7 +35,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return Split(this, input, 0, UseOptionR() ? input.Length : 0);
+            return Split(this, input, 0, RightToLeft ? input.Length : 0);
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return Split(this, input, count, UseOptionR() ? input.Length : 0);
+            return Split(this, input, count, RightToLeft ? input.Length : 0);
         }
 
         /// <summary>

@@ -70,7 +70,7 @@ namespace DllImportGenerator.UnitTests
         /// the expected failure diagnostics.
         /// </summary>
         /// <param name="comp"></param>
-        public static void AssertPreSourceGeneratorCompilation(Compilation comp)
+        public static void AssertPreSourceGeneratorCompilation(Compilation comp, params string[] additionalAllowedDiagnostics)
         {
             var allowedDiagnostics = new HashSet<string>()
             {
@@ -79,6 +79,12 @@ namespace DllImportGenerator.UnitTests
                 "CS0246", // Missing type or namespace - GeneratedDllImportAttribute
                 "CS8019", // Unnecessary using
             };
+
+            foreach (string diagnostic in additionalAllowedDiagnostics)
+            {
+                allowedDiagnostics.Add(diagnostic);
+            }
+
             var compDiags = comp.GetDiagnostics();
             Assert.All(compDiags, diag =>
             {

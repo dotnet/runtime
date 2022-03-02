@@ -8,49 +8,49 @@ namespace System.Reflection.Emit
 {
     public sealed class DynamicMethod : MethodInfo
     {
-        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes, Module m, bool skipVisibility)
         {
             ReflectionEmitThrower.ThrowPlatformNotSupportedException();
         }
 
-        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes, Type owner, bool skipVisibility)
         {
             ReflectionEmitThrower.ThrowPlatformNotSupportedException();
         }
 
-        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, Type returnType, Type[] parameterTypes)
         {
             ReflectionEmitThrower.ThrowPlatformNotSupportedException();
         }
 
-        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, Type returnType, Type[] parameterTypes, bool restrictedSkipVisibility)
         {
             ReflectionEmitThrower.ThrowPlatformNotSupportedException();
         }
 
-        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, Type returnType, Type[] parameterTypes, Module m)
         {
             ReflectionEmitThrower.ThrowPlatformNotSupportedException();
         }
 
-        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, Type returnType, Type[] parameterTypes, Module m, bool skipVisibility)
         {
             ReflectionEmitThrower.ThrowPlatformNotSupportedException();
         }
 
-        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, Type returnType, Type[] parameterTypes, Type owner)
         {
             ReflectionEmitThrower.ThrowPlatformNotSupportedException();
         }
 
-        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, Type returnType, Type[] parameterTypes, Type owner, bool skipVisibility)
         {
             ReflectionEmitThrower.ThrowPlatformNotSupportedException();

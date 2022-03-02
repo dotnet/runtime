@@ -30,14 +30,14 @@ namespace System.Text.RegularExpressions
         private static int s_regexCount;
 
         /// <summary>The top-level driver. Initializes everything then calls the Generate* methods.</summary>
-        public RegexRunnerFactory? FactoryInstanceFromCode(string pattern, RegexCode code, RegexOptions options, bool hasTimeout)
+        public RegexRunnerFactory? FactoryInstanceFromCode(string pattern, RegexTree regexTree, RegexOptions options, bool hasTimeout)
         {
-            if (!code.Tree.Root.SupportsCompilation())
+            if (!regexTree.Root.SupportsCompilation())
             {
                 return null;
             }
 
-            _code = code;
+            _regexTree = regexTree;
             _options = options;
             _hasTimeout = hasTimeout;
 

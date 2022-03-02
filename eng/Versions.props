@@ -137,7 +137,6 @@
     <NETStandardLibraryRefVersion>2.1.0</NETStandardLibraryRefVersion>
     <NetStandardLibraryVersion>2.0.3</NetStandardLibraryVersion>
     <MicrosoftDiagnosticsToolsRuntimeClientVersion>1.0.4-preview6.19326.1</MicrosoftDiagnosticsToolsRuntimeClientVersion>
-    <MicrosoftDiagnosticsNETCoreClientVersion>0.2.61701</MicrosoftDiagnosticsNETCoreClientVersion>
     <DNNEVersion>1.0.27</DNNEVersion>
     <MicrosoftBuildVersion>16.10.0</MicrosoftBuildVersion>
     <MicrosoftBuildTasksCoreVersion>$(MicrosoftBuildVersion)</MicrosoftBuildTasksCoreVersion>
@@ -163,7 +162,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>6.0.0-preview-20220104.1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>7.0.100-1.22122.1</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>7.0.100-1.22128.3</MicrosoftNETILLinkTasksVersion>
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>7.0.0-preview.3.22122.1</MicrosoftNETCoreRuntimeICUTransportVersion>

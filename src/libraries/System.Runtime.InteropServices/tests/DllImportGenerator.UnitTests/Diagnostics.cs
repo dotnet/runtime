@@ -426,6 +426,164 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
+        [ConditionalFact]
+        public async Task NonPartialMethod_ReportsDiagnostic()
+        {
+            string source = @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static void Method() { }
+
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static extern void ExternMethod();
+}
+";
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            DiagnosticResult[] expectedDiags = new DiagnosticResult[]
+            {
+                (new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedMethodSignature))
+                    .WithSpan(6, 24, 6, 30)
+                    .WithArguments("Method"),
+                (new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedMethodSignature))
+                    .WithSpan(9, 31, 9, 43)
+                    .WithArguments("ExternMethod"),
+            };
+            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
+            var newCompDiags = newComp.GetDiagnostics();
+            Assert.Empty(newCompDiags);
+        }
+
+        [ConditionalFact]
+        public async Task NonStaticMethod_ReportsDiagnostic()
+        {
+            string source = @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public partial void Method();
+}
+";
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            DiagnosticResult[] expectedDiags = new DiagnosticResult[]
+            {
+                (new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedMethodSignature))
+                    .WithSpan(6, 25, 6, 31)
+                    .WithArguments("Method")
+            };
+            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
+
+            // Generator ignores the method
+            TestUtils.AssertPreSourceGeneratorCompilation(newComp);
+        }
+
+        [ConditionalFact]
+        public async Task GenericMethod_ReportsDiagnostic()
+        {
+            string source = @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method1<T>();
+
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method2<T, U>();
+}
+";
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            DiagnosticResult[] expectedDiags = new DiagnosticResult[]
+            {
+                (new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedMethodSignature))
+                    .WithSpan(6, 32, 6, 39)
+                    .WithArguments("Method1"),
+                (new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedMethodSignature))
+                    .WithSpan(9, 32, 9, 39)
+                    .WithArguments("Method2"),
+            };
+            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
+
+            // Generator ignores the method
+            TestUtils.AssertPreSourceGeneratorCompilation(newComp);
+        }
+
+        [ConditionalTheory]
+        [InlineData("class")]
+        [InlineData("struct")]
+        [InlineData("record")]
+        public async Task NonPartialParentType_Diagnostic(string typeKind)
+        {
+            string source = $@"
+using System.Runtime.InteropServices;
+{typeKind} Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method();
+}}
+";
+            Compilation comp = await TestUtils.CreateCompilation(source);
+
+            // Also expect CS0751: A partial method must be declared within a partial type
+            string additionalDiag = "CS0751";
+            TestUtils.AssertPreSourceGeneratorCompilation(comp, additionalDiag);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            DiagnosticResult[] expectedDiags = new DiagnosticResult[]
+            {
+                (new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers))
+                    .WithSpan(6, 32, 6, 38)
+                    .WithArguments("Method", "Test"),
+            };
+            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
+
+            // Generator ignores the method
+            TestUtils.AssertPreSourceGeneratorCompilation(newComp, additionalDiag);
+        }
+
+        [ConditionalTheory]
+        [InlineData("class")]
+        [InlineData("struct")]
+        [InlineData("record")]
+        public async Task NonPartialGrandparentType_Diagnostic(string typeKind)
+        {
+            string source = $@"
+using System.Runtime.InteropServices;
+{typeKind} Test
+{{
+    partial class TestInner
+    {{
+        [GeneratedDllImport(""DoesNotExist"")]
+        static partial void Method();
+    }}
+}}
+";
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            DiagnosticResult[] expectedDiags = new DiagnosticResult[]
+            {
+                (new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers))
+                    .WithSpan(8, 29, 8, 35)
+                    .WithArguments("Method", "Test"),
+            };
+            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
+
+            // Generator ignores the method
+            TestUtils.AssertPreSourceGeneratorCompilation(newComp);
+        }
+
         private static void VerifyDiagnostics(DiagnosticResult[] expectedDiagnostics, Diagnostic[] actualDiagnostics)
         {
             Assert.True(expectedDiagnostics.Length == actualDiagnostics.Length,

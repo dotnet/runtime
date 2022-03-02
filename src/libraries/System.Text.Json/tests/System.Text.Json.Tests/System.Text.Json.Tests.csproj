@@ -17,6 +17,11 @@
   <PropertyGroup>
     <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
+    <HighAotMemoryUsageAssembly Include="System.Text.Json.Tests.dll"/>
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs" Link="CommonTest\System\IO\WrappedMemoryStream.cs" />
     <Compile Include="..\Common\CollectionTests\CollectionTests.AsyncEnumerable.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.AsyncEnumerable.cs" />
