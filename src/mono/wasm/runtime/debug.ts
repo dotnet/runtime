@@ -356,7 +356,7 @@ function _readSymbolMapFile(filename: string): void {
     }
 }
 
-function _symbolicate_string(message: string): string {
+export function mono_wasm_symbolicate_string(message: string): string {
     try {
         if (wasm_func_map.size == 0)
             return message;
@@ -400,7 +400,7 @@ export function mono_wasm_stringify_as_error_with_stack(err: Error | string): st
         errObj = new Error(err);
 
     // Error
-    return _symbolicate_string(errObj.stack);
+    return mono_wasm_symbolicate_string(errObj.stack);
 }
 
 export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: CharPtr, message_ptr: CharPtr, fatal: number, user_data: VoidPtr): void {
