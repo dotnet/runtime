@@ -4419,9 +4419,10 @@ protected:
                                       bool           startsWith,
                                       WCHAR*         cnsData,
                                       int            len,
-                                      int            dataOffset);
-    GenTree* impExpandHalfConstEqualsSWAR(GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset);
-    GenTree* impExpandHalfConstEqualsSIMD(GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset);
+                                      int            dataOffset,
+                                      bool           ignoreCase);
+    GenTree* impExpandHalfConstEqualsSWAR(GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset, bool ignoreCase);
+    GenTree* impExpandHalfConstEqualsSIMD(GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset, bool ignoreCase);
     GenTreeStrCon* impGetStrConFromSpan(GenTree* span);
 
     GenTree* impIntrinsic(GenTree*                newobjThis,
