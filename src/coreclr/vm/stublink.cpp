@@ -351,6 +351,7 @@ StubLinker::StubLinker()
     m_pFirstCodeLabel   = NULL;
     m_pFirstLabelRef    = NULL;
     m_pPatchLabel       = NULL;
+    m_pTargetMethod     = NULL;
     m_stackSize         = 0;
     m_fDataOnly         = FALSE;
 #ifdef TARGET_ARM
@@ -678,7 +679,20 @@ CodeLabel* StubLinker::NewExternalCodeLabel(LPVOID pExternalAddress)
     return pCodeLabel;
 }
 
-
+//---------------------------------------------------------------
+// Set the target method for Instantiating stubs.
+//---------------------------------------------------------------
+void StubLinker::SetTargetMethod(PTR_MethodDesc pMD)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(pMD != NULL);
+    }
+    CONTRACTL_END;
+    m_pTargetMethod = pMD;
+}
 
 
 //---------------------------------------------------------------
@@ -1079,11 +1093,23 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap
             ZeroMemory(pCodeRW + lastCodeOffset, globalsize - lastCodeOffset);
     }
 
-    // Fill in patch offset, if we have one
-    // Note that these offsets are relative to the start of the stub,
-    // not the code, so you'll have to add sizeof(Stub) to get to the
-    // right spot.
-    if (m_pPatchLabel != NULL)
+    // Set additional stub data.
+    // - Fill in the target method for the Instantiating stub.
+    //
+    // - Fill in patch offset, if we have one
+    //      Note that these offsets are relative to the start of the stub,
+    //      not the code, so you'll have to add sizeof(Stub) to get to the
+    //      right spot.
+    if (pStubRW->IsInstantiatingStub())
+    {
+        _ASSERTE(m_pTargetMethod != NULL);
+        _ASSERTE(m_pPatchLabel == NULL);
+        pStubRW->SetInstantiatedMethodDesc(m_pTargetMethod);
+
+        LOG((LF_CORDB, LL_INFO100, "SL::ES: InstantiatedMethod fd:0x%x\n",
+            pStub->GetInstantiatedMethodDesc()));
+    }
+    else if (m_pPatchLabel != NULL)
     {
         UINT32 uLabelOffset = GetLabelOffset(m_pPatchLabel);
         _ASSERTE(FitsIn<USHORT>(uLabelOffset));

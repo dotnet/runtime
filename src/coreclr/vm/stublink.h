@@ -215,6 +215,11 @@ class StubLinker
         }
 
         //---------------------------------------------------------------
+        // Set the target method for Instantiating stubs.
+        //---------------------------------------------------------------
+        void SetTargetMethod(PTR_MethodDesc pMD);
+
+        //---------------------------------------------------------------
         // Push and Pop can be used to keep track of stack growth.
         // These should be adjusted by opcodes written to the stream.
         //
@@ -288,6 +293,7 @@ public:
         CodeLabel     *m_pPatchLabel;       // label of stub patch offset
                                             // currently just for multicast
                                             // frames.
+        PTR_MethodDesc m_pTargetMethod;     // Used for instantiating stubs.
         SHORT         m_stackSize;          // count of pushes/pops
         CQuickHeap    m_quickHeap;          // throwaway heap for
                                             //   labels, and
