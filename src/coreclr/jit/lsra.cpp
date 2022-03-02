@@ -6359,7 +6359,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
                                           Interval*    upperVectorInterval,
                                           BasicBlock*  block)
 {
-    JITDUMP("Adding UpperVectorRestore for RP #%d ", refPosition->rpNum);
+    JITDUMP("Inserting UpperVectorRestore for RP #%d ", refPosition->rpNum);
     Interval* lclVarInterval = upperVectorInterval->relatedInterval;
     assert(lclVarInterval->isLocalVar == true);
     regNumber lclVarReg = lclVarInterval->physReg;
@@ -6407,7 +6407,6 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     simdNode->SetRegNum(restoreReg);
 
     LIR::Range& blockRange = LIR::AsRange(block);
-    JITDUMP("Adding UpperVectorRestore ");
     if (tree != nullptr)
     {
         JITDUMP("before %d.%s:\n", tree->gtTreeID, GenTree::OpName(tree->gtOper));

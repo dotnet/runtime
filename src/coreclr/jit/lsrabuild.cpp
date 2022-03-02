@@ -1457,6 +1457,34 @@ Interval* LinearScan::getUpperVectorInterval(unsigned varIndex)
 }
 
 //------------------------------------------------------------------------
+// shouldBuildUpperVectorSaveRestore - Check if vector save/restore is needed.
+//
+// Arguments:
+//    tree       - The current node being handled
+//
+// Notes: Vector save/restore is usually not needed before the call that never returns.
+//        It is also not needed if the block ends with a throw.
+bool LinearScan::shouldBuildUpperVectorSaveRestore(GenTree* tree)
+{
+    if ((tree != nullptr) && tree->IsCall())
+    {
+        if (tree->AsCall()->IsNoReturn())
+        {
+            // No point in having vector save/restore if the call will not return.
+            return false;
+        }
+    }
+
+    if ((compiler->compCurBB != nullptr) && (compiler->compCurBB->KindIs(BBJ_THROW)))
+    {
+        // No point in having vector save/restore if the block ends with throw.
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // buildUpperVectorSaveRefPositions - Create special RefPositions for saving
 //                                    the upper half of a set of large vectors.
 //
@@ -1473,13 +1501,9 @@ Interval* LinearScan::getUpperVectorInterval(unsigned varIndex)
 //
 void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet)
 {
-    if ((tree != nullptr) && tree->IsCall())
+    if (!shouldBuildUpperVectorSaveRestore(tree))
     {
-        if (tree->AsCall()->IsNoReturn())
-        {
-            // No point in having vector save/restore if the call will not return.
-            return;
-        }
+        return;
     }
 
     if (enregisterLocalVars && !VarSetOps::IsEmpty(compiler, largeVectorVars))
@@ -1575,6 +1599,8 @@ void LinearScan::buildUpperVectorRestoreRefPosition(Interval* lclVarInterval, Ls
 {
     if (lclVarInterval->isPartiallySpilled)
     {
+        assert(shouldBuildUpperVectorSaveRestore(node));
+
         unsigned     varIndex            = lclVarInterval->getVarIndex(compiler);
         Interval*    upperVectorInterval = getUpperVectorInterval(varIndex);
         RefPosition* pos = newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorRestore, node, RBM_NONE);
@@ -2254,6 +2280,7 @@ void LinearScan::buildIntervals()
     for (block = startBlockSequence(); block != nullptr; block = moveToNextBlock())
     {
         JITDUMP("\nNEW BLOCK " FMT_BB "\n", block->bbNum);
+        compiler->compCurBB = block;
 
         bool predBlockIsAllocated = false;
         predBlock                 = findPredBlockForLiveIn(block, prevBlock DEBUGARG(&predBlockIsAllocated));
