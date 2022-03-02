@@ -91,6 +91,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(SupportsSendingCustomCANamesInTls))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void SslStream_SendCertificateTrust_CertificateCollection_ThrowsOnWindows()
         {
             (X509Certificate2 certificate, X509Certificate2Collection caCerts) = TestHelper.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
@@ -99,7 +100,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(DoesNotSupportSendingCustomCANamesInTls))]
-        [SkipOnPlatform(TestPlatform.Windows)]
+        [SkipOnPlatform(TestPlatforms.Windows, "Windows tested separately")]
         public void SslStream_SendCertificateTrust_ThrowsOnUnsupportedPlatform()
         {
             (X509Certificate2 certificate, X509Certificate2Collection caCerts) = TestHelper.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
