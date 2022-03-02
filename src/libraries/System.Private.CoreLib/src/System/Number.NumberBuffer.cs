@@ -4,6 +4,8 @@
 using System.Diagnostics;
 using System.Text;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
@@ -28,23 +30,22 @@ namespace System
             public NumberBufferKind Kind;
             public Span<byte> Digits;
 
-            public NumberBuffer(NumberBufferKind kind, byte* digits, int digitsLength)
+            public NumberBuffer(NumberBufferKind kind, Span<byte> digits)
             {
-                Debug.Assert(digits != null);
-                Debug.Assert(digitsLength > 0);
+                Debug.Assert(!digits.IsEmpty);
 
                 DigitsCount = 0;
                 Scale = 0;
                 IsNegative = false;
                 HasNonZeroTail = false;
                 Kind = kind;
-                Digits = new Span<byte>(digits, digitsLength);
+                Digits = digits;
 
 #if DEBUG
                 Digits.Fill(0xCC);
 #endif
 
-                Digits[0] = (byte)('\0');
+                Digits[0] = (byte)'\0';
                 CheckConsistency();
             }
 
@@ -74,14 +75,16 @@ namespace System
 #endif // DEBUG
             }
 
-            public byte* GetDigitsPointer()
-            {
-                // This is safe to do since we are a ref struct
-                return (byte*)(Unsafe.AsPointer(ref Digits[0]));
-            }
+            public byte* GetDigitsPointer() =>
+                // This is safe to do since, although Digits is a span, it's always created from
+                // a pinned or otherwise immovable pointer (typically stackalloc).
+                (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(Digits));
+
+            public ref byte GetDigitsReference() =>
+                ref MemoryMarshal.GetReference(Digits);
 
             //
-            // Code coverage note: This only exists so that Number displays nicely in the VS watch window. So yes, I know it works.
+            // Code coverage note:b  This only exists so that Number displays nicely in the VS watch window.
             //
             public override string ToString()
             {
