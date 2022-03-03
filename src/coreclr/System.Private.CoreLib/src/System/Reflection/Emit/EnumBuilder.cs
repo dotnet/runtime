@@ -323,13 +323,13 @@ namespace System.Reflection.Emit
             return SymbolType.FormCompoundType("&", this, 0)!;
         }
 
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
+        [RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType()
         {
             return SymbolType.FormCompoundType("[]", this, 0)!;
         }
 
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
+        [RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank)
         {
             string s = GetRankString(rank);
