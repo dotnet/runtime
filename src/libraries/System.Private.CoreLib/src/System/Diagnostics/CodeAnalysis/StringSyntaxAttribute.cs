@@ -37,6 +37,9 @@ namespace System.Diagnostics.CodeAnalysis
         /// <summary>Optional arguments associated with the specific syntax employed.</summary>
         public object?[] Arguments { get; }
 
+        /// <summary>The syntax identifier for strings containing composite formats for string formatting.</summary>
+        public const string CompositeFormat = nameof(CompositeFormat);
+
         /// <summary>The syntax identifier for strings containing date format specifiers.</summary>
         public const string DateFormat = nameof(DateFormat);
 

@@ -2373,6 +2373,7 @@ namespace System
     {
         protected FormattableString() { }
         public abstract int ArgumentCount { get; }
+        [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")]
         public abstract string Format { get; }
         public static string CurrentCulture(System.FormattableString formattable) { throw null; }
         public abstract object? GetArgument(int index);
@@ -4348,14 +4349,14 @@ namespace System
         public static bool Equals(System.String? a, System.String? b) { throw null; }
         public static bool Equals(System.String? a, System.String? b, System.StringComparison comparisonType) { throw null; }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.String? value, System.StringComparison comparisonType) { throw null; }
-        public static System.String Format(System.IFormatProvider? provider, System.String format, object? arg0) { throw null; }
-        public static System.String Format(System.IFormatProvider? provider, System.String format, object? arg0, object? arg1) { throw null; }
-        public static System.String Format(System.IFormatProvider? provider, System.String format, object? arg0, object? arg1, object? arg2) { throw null; }
-        public static System.String Format(System.IFormatProvider? provider, System.String format, params object?[] args) { throw null; }
-        public static System.String Format(System.String format, object? arg0) { throw null; }
-        public static System.String Format(System.String format, object? arg0, object? arg1) { throw null; }
-        public static System.String Format(System.String format, object? arg0, object? arg1, object? arg2) { throw null; }
-        public static System.String Format(System.String format, params object?[] args) { throw null; }
+        public static System.String Format(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] System.String format, object? arg0) { throw null; }
+        public static System.String Format(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] System.String format, object? arg0, object? arg1) { throw null; }
+        public static System.String Format(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] System.String format, object? arg0, object? arg1, object? arg2) { throw null; }
+        public static System.String Format(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] System.String format, params object?[] args) { throw null; }
+        public static System.String Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] System.String format, object? arg0) { throw null; }
+        public static System.String Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] System.String format, object? arg0, object? arg1) { throw null; }
+        public static System.String Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] System.String format, object? arg0, object? arg1, object? arg2) { throw null; }
+        public static System.String Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] System.String format, params object?[] args) { throw null; }
         public System.CharEnumerator GetEnumerator() { throw null; }
         public override int GetHashCode() { throw null; }
         public static int GetHashCode(System.ReadOnlySpan<char> value) { throw null; }
@@ -6312,9 +6313,9 @@ namespace System.CodeDom.Compiler
         public override void Write(object? value) { }
         public override void Write(float value) { }
         public override void Write(string? s) { }
-        public override void Write(string format, object? arg0) { }
-        public override void Write(string format, object? arg0, object? arg1) { }
-        public override void Write(string format, params object?[] arg) { }
+        public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { }
+        public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
+        public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
         public override System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -6331,9 +6332,9 @@ namespace System.CodeDom.Compiler
         public override void WriteLine(object? value) { }
         public override void WriteLine(float value) { }
         public override void WriteLine(string? s) { }
-        public override void WriteLine(string format, object? arg0) { }
-        public override void WriteLine(string format, object? arg0, object? arg1) { }
-        public override void WriteLine(string format, params object?[] arg) { }
+        public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { }
+        public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
+        public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
         [System.CLSCompliantAttribute(false)]
         public override void WriteLine(uint value) { }
         public override System.Threading.Tasks.Task WriteLineAsync() { throw null; }
@@ -6896,7 +6897,7 @@ namespace System.Diagnostics
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message, string? detailMessage) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message, string detailMessageFormat, params object?[] args) { }
+        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string detailMessageFormat, params object?[] args) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Close() { }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
@@ -6912,7 +6913,7 @@ namespace System.Diagnostics
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Print(string? message) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Print(string format, params object?[] args) { }
+        public static void Print([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] args) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Unindent() { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
@@ -6942,7 +6943,7 @@ namespace System.Diagnostics
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteLine(string? message) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void WriteLine(string format, params object?[] args) { }
+        public static void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] args) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteLine(string? message, string? category) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
@@ -7275,6 +7276,7 @@ namespace System.Diagnostics.CodeAnalysis
         public StringSyntaxAttribute(string syntax, params object?[] arguments) { }
         public string Syntax { get { throw null; } }
         public object?[] Arguments { get { throw null; } }
+        public const string CompositeFormat = "CompositeFormat";
         public const string DateFormat = "DateFormat";
         public const string DateTimeFormat = "DateTimeFormat";
         public const string EnumFormat = "EnumFormat";
@@ -8994,20 +8996,20 @@ namespace System.IO
         public override void Write(char[] buffer, int index, int count) { }
         public override void Write(System.ReadOnlySpan<char> buffer) { }
         public override void Write(string? value) { }
-        public override void Write(string format, object? arg0) { }
-        public override void Write(string format, object? arg0, object? arg1) { }
-        public override void Write(string format, object? arg0, object? arg1, object? arg2) { }
-        public override void Write(string format, params object?[] arg) { }
+        public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { }
+        public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
+        public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
+        public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
         public override System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(string? value) { throw null; }
         public override void WriteLine(System.ReadOnlySpan<char> buffer) { }
         public override void WriteLine(string? value) { }
-        public override void WriteLine(string format, object? arg0) { }
-        public override void WriteLine(string format, object? arg0, object? arg1) { }
-        public override void WriteLine(string format, object? arg0, object? arg1, object? arg2) { }
-        public override void WriteLine(string format, params object?[] arg) { }
+        public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { }
+        public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
+        public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
+        public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
         public override System.Threading.Tasks.Task WriteLineAsync() { throw null; }
         public override System.Threading.Tasks.Task WriteLineAsync(char value) { throw null; }
         public override System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { throw null; }
@@ -9119,10 +9121,10 @@ namespace System.IO
         public virtual void Write(System.ReadOnlySpan<char> buffer) { }
         public virtual void Write(float value) { }
         public virtual void Write(string? value) { }
-        public virtual void Write(string format, object? arg0) { }
-        public virtual void Write(string format, object? arg0, object? arg1) { }
-        public virtual void Write(string format, object? arg0, object? arg1, object? arg2) { }
-        public virtual void Write(string format, params object?[] arg) { }
+        public virtual void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { }
+        public virtual void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
+        public virtual void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
+        public virtual void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
         public virtual void Write(System.Text.StringBuilder? value) { }
         [System.CLSCompliantAttribute(false)]
         public virtual void Write(uint value) { }
@@ -9147,10 +9149,10 @@ namespace System.IO
         public virtual void WriteLine(System.ReadOnlySpan<char> buffer) { }
         public virtual void WriteLine(float value) { }
         public virtual void WriteLine(string? value) { }
-        public virtual void WriteLine(string format, object? arg0) { }
-        public virtual void WriteLine(string format, object? arg0, object? arg1) { }
-        public virtual void WriteLine(string format, object? arg0, object? arg1, object? arg2) { }
-        public virtual void WriteLine(string format, params object?[] arg) { }
+        public virtual void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { }
+        public virtual void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
+        public virtual void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
+        public virtual void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
         public virtual void WriteLine(System.Text.StringBuilder? value) { }
         [System.CLSCompliantAttribute(false)]
         public virtual void WriteLine(uint value) { }
@@ -11346,7 +11348,7 @@ namespace System.Runtime.CompilerServices
     }
     public static partial class FormattableStringFactory
     {
-        public static System.FormattableString Create(string format, params object?[] arguments) { throw null; }
+        public static System.FormattableString Create([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arguments) { throw null; }
     }
     public partial interface IAsyncStateMachine
     {
@@ -12538,7 +12540,7 @@ namespace System.Security.Cryptography
         protected CryptographicException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public CryptographicException(string? message) { }
         public CryptographicException(string? message, System.Exception? inner) { }
-        public CryptographicException(string format, string? insert) { }
+        public CryptographicException([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string? insert) { }
     }
 }
 namespace System.Security.Permissions
@@ -13040,14 +13042,14 @@ namespace System.Text
         public System.Text.StringBuilder Append(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public System.Text.StringBuilder Append(ulong value) { throw null; }
-        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, string format, object? arg0) { throw null; }
-        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, string format, object? arg0, object? arg1) { throw null; }
-        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, string format, object? arg0, object? arg1, object? arg2) { throw null; }
-        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, string format, params object?[] args) { throw null; }
-        public System.Text.StringBuilder AppendFormat(string format, object? arg0) { throw null; }
-        public System.Text.StringBuilder AppendFormat(string format, object? arg0, object? arg1) { throw null; }
-        public System.Text.StringBuilder AppendFormat(string format, object? arg0, object? arg1, object? arg2) { throw null; }
-        public System.Text.StringBuilder AppendFormat(string format, params object?[] args) { throw null; }
+        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { throw null; }
+        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { throw null; }
+        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { throw null; }
+        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] args) { throw null; }
+        public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { throw null; }
+        public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { throw null; }
+        public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { throw null; }
+        public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] args) { throw null; }
         public System.Text.StringBuilder AppendJoin(char separator, params object?[] values) { throw null; }
         public System.Text.StringBuilder AppendJoin(char separator, params string?[] values) { throw null; }
         public System.Text.StringBuilder AppendJoin(string? separator, params object?[] values) { throw null; }
