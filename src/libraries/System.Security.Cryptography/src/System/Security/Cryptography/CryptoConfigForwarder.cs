@@ -15,11 +15,11 @@ namespace System.Security.Cryptography
     {
         internal const string CreateFromNameUnreferencedCodeMessage = "The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.";
 
-        // This UnconditionalSuppressMessage attribute is understood by the trim analyzer but not by the linker.
-        // The assembly-level suppression suppresses the same warning for the linker.
+        // Suppressed for the linker by the assembly-level UnconditionalSuppressMessageAttribute
         // https://github.com/dotnet/linker/issues/2648
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode")]
+#pragma warning disable IL2026
         private static readonly Func<string, object?> s_createFromName = BindCreateFromName();
+#pragma warning restore IL2026
 
         [RequiresUnreferencedCode(CreateFromNameUnreferencedCodeMessage)]
         private static Func<string, object?> BindCreateFromName()
