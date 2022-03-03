@@ -57,7 +57,7 @@ jobs:
   - bash: |
       docker exec linuxclient bash -c '/repo/build.sh -subset clr+libs -runtimeconfiguration release -ci /p:NativeOptimizationDataSupported=false'
       docker exec linuxclient bash -c '/repo/dotnet.sh build $(containerLibrariesRoot)/System.Net.Http/tests/EnterpriseTests/System.Net.Http.Enterprise.Tests.csproj'
-      docker exec linuxclient bash -c '/repo/dotnet.sh build $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Security/tests/EnterpriseTests/System.Net.Security.Enterprise.Tests.csproj'
+      docker exec linuxclient bash -c '/repo/dotnet.sh build $(containerLibrariesRoot)/System.Net.Security/tests/EnterpriseTests/System.Net.Security.Enterprise.Tests.csproj'
     displayName: Build product sources
 
   - bash: |
