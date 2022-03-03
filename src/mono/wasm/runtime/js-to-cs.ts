@@ -10,12 +10,12 @@ import {
 } from "./gc-handles";
 import corebindings from "./corebindings";
 import cwraps from "./cwraps";
-import { mono_wasm_new_root, mono_wasm_release_roots } from "./roots";
+import { mono_wasm_new_root, mono_wasm_release_roots, WasmRoot } from "./roots";
 import { wrap_error } from "./method-calls";
-import { js_string_to_mono_string_ref, js_string_to_mono_string_interned_ref } from "./strings";
+import { js_string_to_mono_string_rooted, js_string_to_mono_string_interned_rooted } from "./strings";
 import { isThenable } from "./cancelable-promise";
 import { has_backing_array_buffer } from "./buffers";
-import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, wasm_type_symbol } from "./types";
+import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, wasm_type_symbol, MonoClass } from "./types";
 import { setI32, setU32, setF64 } from "./memory";
 import { Int32Ptr, TypedArray } from "./types/emscripten";
 
@@ -36,101 +36,100 @@ export function _js_to_mono_uri(should_add_in_flight: boolean, js_obj: any): Mon
 // this is only used from Blazor
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function js_to_mono_obj(js_obj: any): MonoObject {
-    return _js_to_mono_obj(false, js_obj);
+    const temp = mono_wasm_new_root<MonoObject>();
+    try {
+        _js_to_mono_obj_rooted(false, js_obj, temp);
+        return temp.value;
+    } finally {
+        temp.release();
+    }
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function _js_to_mono_obj(should_add_in_flight: boolean, js_obj: any): MonoObject {
+export function _js_to_mono_obj_rooted(should_add_in_flight: boolean, js_obj: any, result: WasmRoot<MonoObject>): void {
     switch (true) {
         case js_obj === null:
         case typeof js_obj === "undefined":
-            return MonoObjectNull;
+            result.clear();
+            return;
         case typeof js_obj === "number": {
-            let result = null;
-            if ((js_obj | 0) === js_obj)
-                result = _box_js_int(js_obj);
-            else if ((js_obj >>> 0) === js_obj)
-                result = _box_js_uint(js_obj);
-            else
-                result = _box_js_double(js_obj);
+            let box_class : MonoClass;
+            if ((js_obj | 0) === js_obj) {
+                setI32(runtimeHelpers._box_buffer, js_obj);
+                box_class = runtimeHelpers._class_int32;
+            } else if ((js_obj >>> 0) === js_obj) {
+                setU32(runtimeHelpers._box_buffer, js_obj);
+                box_class = runtimeHelpers._class_uint32;
+            } else {
+                setF64(runtimeHelpers._box_buffer, js_obj);
+                box_class = runtimeHelpers._class_double;
+            }
 
-            if (!result)
+            cwraps.mono_wasm_box_primitive_ref(box_class, runtimeHelpers._box_buffer, 8, result.address);
+
+            if (!result.value)
                 throw new Error(`Boxing failed for ${js_obj}`);
-
-            return result;
-        } case typeof js_obj === "string":
-            return <any>js_string_to_mono_string(js_obj);
+            return;
+        }
+        case typeof js_obj === "string":
+            js_string_to_mono_string_rooted(js_obj, <any>result);
+            return;
         case typeof js_obj === "symbol":
-            return <any>js_string_to_mono_string_interned(js_obj);
+            js_string_to_mono_string_interned_rooted(js_obj, <any>result);
+            return;
         case typeof js_obj === "boolean":
-            return _box_js_bool(js_obj);
+            // FIXME
+            result.value = _box_js_bool(js_obj);
+            return;
         case isThenable(js_obj) === true: {
+            // FIXME: ref/rooted
             const { task_ptr } = _wrap_js_thenable_as_task(js_obj);
             // task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
-            return task_ptr;
+            result.value = task_ptr;
+            return;
         }
         case js_obj.constructor.name === "Date":
             // getTime() is always UTC
-            return corebindings._create_date_time(js_obj.getTime());
+            // FIXME: ref/rooted
+            result.value = corebindings._create_date_time(js_obj.getTime());
+            return;
         default:
-            return _extract_mono_obj(should_add_in_flight, js_obj);
+            _extract_mono_obj_rooted(should_add_in_flight, js_obj, result);
+            return;
     }
 }
 
-function _extract_mono_obj(should_add_in_flight: boolean, js_obj: any): MonoObject {
+function _extract_mono_obj_rooted(should_add_in_flight: boolean, js_obj: any, result: WasmRoot<MonoObject>): void {
+    result.clear();
+
     if (js_obj === null || typeof js_obj === "undefined")
-        return MonoObjectNull;
+        return;
 
-    const resultRoot = mono_wasm_new_root<MonoObject>();
-    try {
-        if (js_obj[js_owned_gc_handle_symbol]) {
-            // for js_owned_gc_handle we don't want to create new proxy
-            // since this is strong gc_handle we don't need to in-flight reference
-            get_js_owned_object_by_gc_handle_ref(js_obj[js_owned_gc_handle_symbol], resultRoot.address);
-            return resultRoot.value;
-        }
-        if (js_obj[cs_owned_js_handle_symbol]) {
-            get_cs_owned_object_by_js_handle_ref(js_obj[cs_owned_js_handle_symbol], should_add_in_flight, resultRoot.address);
-
-            // It's possible the managed object corresponding to this JS object was collected,
-            //  in which case we need to make a new one.
-            if (!resultRoot.value) {
-                delete js_obj[cs_owned_js_handle_symbol];
-            }
-        }
-
-        if (!resultRoot.value) {
-            // Obtain the JS -> C# type mapping.
-            const wasm_type = js_obj[wasm_type_symbol];
-            const wasm_type_id = typeof wasm_type === "undefined" ? 0 : wasm_type;
-
-            const js_handle = mono_wasm_get_js_handle(js_obj);
-
-            corebindings._create_cs_owned_proxy_ref(js_handle, wasm_type_id, should_add_in_flight ? 1 : 0, resultRoot.address);
-        }
-
-        return resultRoot.value;
-    } finally {
-        resultRoot.release();
+    if (js_obj[js_owned_gc_handle_symbol]) {
+        // for js_owned_gc_handle we don't want to create new proxy
+        // since this is strong gc_handle we don't need to in-flight reference
+        get_js_owned_object_by_gc_handle_ref(js_obj[js_owned_gc_handle_symbol], result.address);
+        return;
     }
-}
+    if (js_obj[cs_owned_js_handle_symbol]) {
+        get_cs_owned_object_by_js_handle_ref(js_obj[cs_owned_js_handle_symbol], should_add_in_flight, result.address);
 
-function _box_js_int(js_obj: number) {
-    setI32(runtimeHelpers._box_buffer, js_obj);
-    cwraps.mono_wasm_box_primitive_ref(runtimeHelpers._class_int32, runtimeHelpers._box_buffer, 4, runtimeHelpers._box_root.address);
-    return runtimeHelpers._box_root.value;
-}
+        // It's possible the managed object corresponding to this JS object was collected,
+        //  in which case we need to make a new one.
+        if (!result.value) {
+            delete js_obj[cs_owned_js_handle_symbol];
+        }
+    }
 
-function _box_js_uint(js_obj: number) {
-    setU32(runtimeHelpers._box_buffer, js_obj);
-    cwraps.mono_wasm_box_primitive_ref(runtimeHelpers._class_uint32, runtimeHelpers._box_buffer, 4, runtimeHelpers._box_root.address);
-    return runtimeHelpers._box_root.value;
-}
+    if (!result.value) {
+        // Obtain the JS -> C# type mapping.
+        const wasm_type = js_obj[wasm_type_symbol];
+        const wasm_type_id = typeof wasm_type === "undefined" ? 0 : wasm_type;
 
-function _box_js_double(js_obj: number) {
-    setF64(runtimeHelpers._box_buffer, js_obj);
-    cwraps.mono_wasm_box_primitive_ref(runtimeHelpers._class_double, runtimeHelpers._box_buffer, 8, runtimeHelpers._box_root.address);
-    return runtimeHelpers._box_root.value;
+        const js_handle = mono_wasm_get_js_handle(js_obj);
+
+        corebindings._create_cs_owned_proxy_ref(js_handle, wasm_type_id, should_add_in_flight ? 1 : 0, result.address);
+    }
 }
 
 export function _box_js_bool(js_obj: boolean): MonoObject {

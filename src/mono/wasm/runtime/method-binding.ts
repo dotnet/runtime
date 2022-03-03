@@ -4,8 +4,8 @@
 import { WasmRoot, WasmRootBuffer, mono_wasm_new_root } from "./roots";
 import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull, MonoType, MarshalType } from "./types";
 import { BINDING, Module, runtimeHelpers } from "./imports";
-import { js_to_mono_enum, _js_to_mono_obj, _js_to_mono_uri } from "./js-to-cs";
-import { js_string_to_mono_string_ref, js_string_to_mono_string_interned_ref } from "./strings";
+import { js_to_mono_enum, _js_to_mono_obj_rooted, _js_to_mono_uri } from "./js-to-cs";
+import { js_string_to_mono_string_rooted, js_string_to_mono_string_interned_rooted } from "./strings";
 import { _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
 import {
     _create_temp_frame,
@@ -122,12 +122,12 @@ export function _create_rebindable_named_function(name: string, argumentNames: s
 export function _create_primitive_converters(): void {
     const result = primitiveConverters;
     result.set("m", { steps: [{}], size: 0 });
-    result.set("s", { steps: [{ convert: js_string_to_mono_string.bind(BINDING) }], size: 0, needs_root: true });
-    result.set("S", { steps: [{ convert: js_string_to_mono_string_interned.bind(BINDING) }], size: 0, needs_root: true });
+    result.set("s", { steps: [{ convert_rooted: js_string_to_mono_string_rooted.bind(BINDING) }], size: 0, needs_root: true });
+    result.set("S", { steps: [{ convert_rooted: js_string_to_mono_string_interned_rooted.bind(BINDING) }], size: 0, needs_root: true });
     // note we also bind first argument to false for both _js_to_mono_obj and _js_to_mono_uri,
     // because we will root the reference, so we don't need in-flight reference
     // also as those are callback arguments and we don't have platform code which would release the in-flight reference on C# end
-    result.set("o", { steps: [{ convert: _js_to_mono_obj.bind(BINDING, false) }], size: 0, needs_root: true });
+    result.set("o", { steps: [{ convert_rooted: _js_to_mono_obj_rooted.bind(BINDING, false) }], size: 0, needs_root: true });
     result.set("u", { steps: [{ convert: _js_to_mono_uri.bind(BINDING, false) }], size: 0, needs_root: true });
 
     // result.set ('k', { steps: [{ convert: js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
@@ -241,7 +241,9 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
         const argKey = "arg" + i;
         argumentNames.push(argKey);
 
-        if (step.convert) {
+        if (step.convert_rooted) {
+            throw new Error("Not implemented: Converter.convert_rooted");
+        } else if (step.convert) {
             closure[closureKey] = step.convert;
             body.push(`let ${valueKey} = ${closureKey}(${argKey}, method, ${i});`);
         } else {
@@ -581,6 +583,7 @@ type ConverterStepIndirects = "u32" | "i32" | "float" | "double" | "i64"
 export type Converter = {
     steps: {
         convert?: boolean | Function;
+        convert_rooted?: Function;
         needs_root?: boolean;
         needs_unbox?: boolean;
         indirect?: ConverterStepIndirects;

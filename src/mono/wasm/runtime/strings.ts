@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_wasm_new_root_buffer, WasmRootBuffer } from "./roots";
-import { MonoString, MonoStringNull, MonoObjectRef, MonoObjectRefNull } from "./types";
+import { MonoString, MonoStringNull } from "./types";
 import { Module } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_new_root, WasmRoot } from "./roots";
@@ -114,6 +114,8 @@ export function mono_intern_string(string: string): string {
     if (string.length === 0)
         return mono_wasm_empty_string;
 
+    // HACK: This would normally be unsafe, but the return value of js_string_to_mono_string_interned is always an
+    //  interned string, so the address will never change and it is safe for us to use the raw pointer. Don't do this though
     const ptr = js_string_to_mono_string_interned(string);
     const result = interned_string_table.get(ptr);
     if (!result)
