@@ -180,9 +180,10 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal("SYSLIB1043", Assert.Single(diagnostics).Id);
         }
 
-        [ActiveIssue("https://github.com/dotnet/roslyn/pull/55866")]
-        [Fact]
-        public async Task Diagnostic_InvalidLangVersion()
+        [Theory]
+        [InlineData(LanguageVersion.CSharp9)]
+        [InlineData(LanguageVersion.CSharp10)]
+        public async Task Diagnostic_InvalidLangVersion(LanguageVersion version)
         {
             IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@"
                 using System.Text.RegularExpressions;
@@ -191,7 +192,7 @@ namespace System.Text.RegularExpressions.Tests
                     [RegexGenerator(""ab"")]
                     private static partial Regex InvalidLangVersion();
                 }
-            ", langVersion: LanguageVersion.CSharp9);
+            ", langVersion: version);
 
             Assert.Equal("SYSLIB1044", Assert.Single(diagnostics).Id);
         }

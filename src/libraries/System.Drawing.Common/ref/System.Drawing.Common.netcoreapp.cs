@@ -20,8 +20,10 @@ namespace System.Drawing
         [System.ObsoleteAttribute("Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations.", DiagnosticId = "SYSLIB0016", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public object GetContextInfo() { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public void GetContextInfo(out PointF offset) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public void GetContextInfo(out PointF offset, out Region? clip) { throw null; }
     }
 }

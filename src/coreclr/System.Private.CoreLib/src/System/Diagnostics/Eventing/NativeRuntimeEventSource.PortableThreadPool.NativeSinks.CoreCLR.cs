@@ -52,7 +52,7 @@ namespace System.Diagnostics.Tracing
         internal static partial void LogThreadPoolIOEnqueue(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
-            bool MultiDequeues,
+            [MarshalAs(UnmanagedType.Bool)] bool MultiDequeues,
             ushort ClrInstanceID);
 
         [NonEvent]

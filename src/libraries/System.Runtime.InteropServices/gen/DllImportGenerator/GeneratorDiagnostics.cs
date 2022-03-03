@@ -5,32 +5,31 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Text;
 
 namespace Microsoft.Interop
 {
     /// <summary>
-    /// Class for reporting diagnostics in the DLL import generator
+    /// Class for reporting diagnostics in the library import generator
     /// </summary>
     public class GeneratorDiagnostics : IGeneratorDiagnostics
     {
         public class Ids
         {
-            public const string Prefix = "DLLIMPORTGEN";
-            public const string InvalidGeneratedDllImportAttributeUsage = Prefix + "001";
-            public const string TypeNotSupported = Prefix + "002";
-            public const string ConfigurationNotSupported = Prefix + "003";
-            public const string TargetFrameworkNotSupported = Prefix + "004";
-            public const string CannotForwardToDllImport = Prefix + "005";
+            // SYSLIB1050-SYSLIB1059 are reserved for LibraryImportGenerator
+            public const string Prefix = "SYSLIB";
+            public const string InvalidLibraryImportAttributeUsage = Prefix + "1050";
+            public const string TypeNotSupported = Prefix + "1051";
+            public const string ConfigurationNotSupported = Prefix + "1052";
+            public const string TargetFrameworkNotSupported = Prefix + "1053";
+            public const string CannotForwardToDllImport = Prefix + "1054";
         }
 
-        private const string Category = "SourceGeneration";
+        private const string Category = "LibraryImportGenerator";
 
         public static readonly DiagnosticDescriptor InvalidAttributedMethodSignature =
             new DiagnosticDescriptor(
-            Ids.InvalidGeneratedDllImportAttributeUsage,
+            Ids.InvalidLibraryImportAttributeUsage,
             GetResourceString(nameof(Resources.InvalidLibraryImportAttributeUsageTitle)),
             GetResourceString(nameof(Resources.InvalidAttributedMethodSignatureMessage)),
             Category,
@@ -40,7 +39,7 @@ namespace Microsoft.Interop
 
         public static readonly DiagnosticDescriptor InvalidAttributedMethodContainingTypeMissingModifiers =
             new DiagnosticDescriptor(
-            Ids.InvalidGeneratedDllImportAttributeUsage,
+            Ids.InvalidLibraryImportAttributeUsage,
             GetResourceString(nameof(Resources.InvalidLibraryImportAttributeUsageTitle)),
             GetResourceString(nameof(Resources.InvalidAttributedMethodContainingTypeMissingModifiersMessage)),
             Category,
@@ -50,7 +49,7 @@ namespace Microsoft.Interop
 
         public static readonly DiagnosticDescriptor InvalidStringMarshallingConfiguration =
             new DiagnosticDescriptor(
-            Ids.InvalidGeneratedDllImportAttributeUsage,
+            Ids.InvalidLibraryImportAttributeUsage,
             GetResourceString(nameof(Resources.InvalidLibraryImportAttributeUsageTitle)),
             GetResourceString(nameof(Resources.InvalidStringMarshallingConfigurationMessage)),
             Category,

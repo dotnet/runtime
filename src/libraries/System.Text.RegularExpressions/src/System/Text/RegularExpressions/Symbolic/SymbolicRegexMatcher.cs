@@ -147,7 +147,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Constructs matcher for given symbolic regex.</summary>
-        internal SymbolicRegexMatcher(SymbolicRegexNode<TSetType> sr, RegexCode code, BDD[] minterms, TimeSpan matchTimeout)
+        internal SymbolicRegexMatcher(SymbolicRegexNode<TSetType> sr, RegexTree regexTree, BDD[] minterms, TimeSpan matchTimeout)
         {
             Debug.Assert(sr._builder._solver is BV64Algebra or BVAlgebra or CharSetSolver, $"Unsupported algebra: {sr._builder._solver}");
 
@@ -161,17 +161,17 @@ namespace System.Text.RegularExpressions.Symbolic
                 BVAlgebra bv => bv._classifier,
                 _ => new MintermClassifier((CharSetSolver)(object)_builder._solver, minterms),
             };
-            _capsize = code.CapSize;
+            _capsize = regexTree.CaptureCount;
 
-            if (code.Tree.MinRequiredLength == code.FindOptimizations.MaxPossibleLength)
+            if (regexTree.FindOptimizations.MinRequiredLength == regexTree.FindOptimizations.MaxPossibleLength)
             {
-                _fixedMatchLength = code.Tree.MinRequiredLength;
+                _fixedMatchLength = regexTree.FindOptimizations.MinRequiredLength;
             }
 
-            if (code.FindOptimizations.FindMode != FindNextStartingPositionMode.NoSearch &&
-                code.FindOptimizations.LeadingAnchor == 0) // If there are any anchors, we're better off letting the DFA quickly do its job of determining whether there's a match.
+            if (regexTree.FindOptimizations.FindMode != FindNextStartingPositionMode.NoSearch &&
+                regexTree.FindOptimizations.LeadingAnchor == 0) // If there are any anchors, we're better off letting the DFA quickly do its job of determining whether there's a match.
             {
-                _findOpts = code.FindOptimizations;
+                _findOpts = regexTree.FindOptimizations;
             }
 
             // Determine the number of initial states. If there's no anchor, only the default previous

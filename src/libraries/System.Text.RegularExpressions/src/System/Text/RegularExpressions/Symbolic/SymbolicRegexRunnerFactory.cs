@@ -13,7 +13,7 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly SymbolicRegexMatcher _matcher;
 
         /// <summary>Initializes the factory.</summary>
-        public SymbolicRegexRunnerFactory(RegexCode code, RegexOptions options, TimeSpan matchTimeout, CultureInfo culture)
+        public SymbolicRegexRunnerFactory(RegexTree regexTree, RegexOptions options, TimeSpan matchTimeout, CultureInfo culture)
         {
             // RightToLeft and ECMAScript are currently not supported in conjunction with NonBacktracking.
             if ((options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) != 0)
@@ -23,9 +23,9 @@ namespace System.Text.RegularExpressions.Symbolic
                         (options & RegexOptions.RightToLeft) != 0 ? nameof(RegexOptions.RightToLeft) : nameof(RegexOptions.ECMAScript)));
             }
 
-            var converter = new RegexNodeConverter(culture, code.Caps);
+            var converter = new RegexNodeConverter(culture, regexTree.CaptureNumberSparseMapping);
             CharSetSolver solver = CharSetSolver.Instance;
-            SymbolicRegexNode<BDD> root = converter.ConvertToSymbolicRegexNode(code.Tree.Root, tryCreateFixedLengthMarker: true);
+            SymbolicRegexNode<BDD> root = converter.ConvertToSymbolicRegexNode(regexTree.Root, tryCreateFixedLengthMarker: true);
 
             BDD[] minterms = root.ComputeMinterms();
             if (minterms.Length > 64)
@@ -42,7 +42,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 // Convert the BDD-based AST to BV-based AST
                 SymbolicRegexNode<BV> rootBV = converter._builder.Transform(root, builderBV, bdd => builderBV._solver.ConvertFromCharSet(solver, bdd));
-                _matcher = new SymbolicRegexMatcher<BV>(rootBV, code, minterms, matchTimeout);
+                _matcher = new SymbolicRegexMatcher<BV>(rootBV, regexTree, minterms, matchTimeout);
             }
             else
             {
@@ -58,7 +58,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 // Convert the BDD-based AST to ulong-based AST
                 SymbolicRegexNode<ulong> root64 = converter._builder.Transform(root, builder64, bdd => builder64._solver.ConvertFromCharSet(solver, bdd));
-                _matcher = new SymbolicRegexMatcher<ulong>(root64, code, minterms, matchTimeout);
+                _matcher = new SymbolicRegexMatcher<ulong>(root64, regexTree, minterms, matchTimeout);
             }
         }
 

@@ -94,7 +94,7 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.AndroidCryptoNative)]
         private static partial int AndroidCryptoNative_GetECKeyParameters(
             SafeEcKeyHandle key,
-            bool includePrivate,
+            [MarshalAs(UnmanagedType.Bool)] bool includePrivate,
             out SafeBignumHandle qx_bn, out int x_cb,
             out SafeBignumHandle qy_bn, out int y_cb,
             out SafeBignumHandle d_bn, out int d_cb);
@@ -152,7 +152,7 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.AndroidCryptoNative)]
         private static partial int AndroidCryptoNative_GetECCurveParameters(
             SafeEcKeyHandle key,
-            bool includePrivate,
+            [MarshalAs(UnmanagedType.Bool)] bool includePrivate,
             out ECCurve.ECCurveType curveType,
             out SafeBignumHandle qx, out int x_cb,
             out SafeBignumHandle qy, out int y_cb,

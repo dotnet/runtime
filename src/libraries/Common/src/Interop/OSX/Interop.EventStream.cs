@@ -127,6 +127,7 @@ internal static partial class Interop
         /// <param name="streamRef">The stream to receive events on.</param>
         /// <returns>Returns true if the stream was started; otherwise, returns false and no events will be received.</returns>
         [GeneratedDllImport(Interop.Libraries.CoreServicesLibrary)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool FSEventStreamStart(SafeEventStreamHandle streamRef);
 
         /// <summary>
