@@ -2610,6 +2610,9 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.NonBoundary:
                     case RegexNodeKind.ECMABoundary:
                     case RegexNodeKind.NonECMABoundary:
+                    case RegexNodeKind.Beginning or RegexNodeKind.Start:
+                    case RegexNodeKind.Bol or RegexNodeKind.Eol:
+                    case RegexNodeKind.End or RegexNodeKind.EndZ:
                         break;
 
                     // Not yet supported for RightToLeft (when this section is empty because
@@ -2623,9 +2626,6 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Alternate:
                     case RegexNodeKind.Backreference:
                     case RegexNodeKind.BackreferenceConditional or RegexNodeKind.ExpressionConditional:
-                    case RegexNodeKind.Beginning or RegexNodeKind.Start:
-                    case RegexNodeKind.Bol or RegexNodeKind.Eol:
-                    case RegexNodeKind.End or RegexNodeKind.EndZ:
                         reason = "an unsupported positive or negative lookbehind was used";
                         return false;
 

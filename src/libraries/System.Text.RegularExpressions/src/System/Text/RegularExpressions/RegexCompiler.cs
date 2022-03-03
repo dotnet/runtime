@@ -2096,6 +2096,16 @@ namespace System.Text.RegularExpressions
                     return;
                 }
 
+                // RightToLeft doesn't take advantage of static positions.  While RightToLeft won't update static
+                // positions, a previous operation may have left us with a non-zero one.  Make sure it's zero'd out
+                // such that pos and slice are up-to-date.  Note that RightToLeft also shouldn't use the slice span,
+                // as it's not kept up-to-date; any RightToLeft implementation that wants to use it must first update
+                // it from pos.
+                if ((node.Options & RegexOptions.RightToLeft) != 0)
+                {
+                    TransferSliceStaticPosToPos();
+                }
+
                 switch (node.Kind)
                 {
                     case RegexNodeKind.Beginning:
@@ -2318,12 +2328,7 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily, $"Unexpected type: {node.Kind}");
 
                 bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
-                if (rtl)
-                {
-                    // We don't use static position for RTL.  We always consult the current position and load directly from the original text span.
-                    Debug.Assert(offset is null);
-                    TransferSliceStaticPosToPos();
-                }
+                Debug.Assert(!rtl || offset is null);
 
                 if (emitLengthCheck)
                 {
@@ -2445,6 +2450,8 @@ namespace System.Text.RegularExpressions
             void EmitAnchors(RegexNode node)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Beginning or RegexNodeKind.Start or RegexNodeKind.Bol or RegexNodeKind.End or RegexNodeKind.EndZ or RegexNodeKind.Eol, $"Unexpected type: {node.Kind}");
+                Debug.Assert((node.Options & RegexOptions.RightToLeft) == 0 || sliceStaticPos == 0);
+                Debug.Assert(sliceStaticPos >= 0);
 
                 Debug.Assert(sliceStaticPos >= 0);
                 switch (node.Kind)
@@ -2486,8 +2493,8 @@ namespace System.Text.RegularExpressions
                         }
                         else
                         {
-                            // We can't use our slice in this case, because we'd need to access slice[-1], so we access the runtext field directly:
-                            // if (pos > 0 && base.runtext[pos - 1] != '\n') goto doneLabel;
+                            // We can't use our slice in this case, because we'd need to access slice[-1], so we access the inputSpan directly:
+                            // if (pos > 0 && inputSpan[pos - 1] != '\n') goto doneLabel;
                             Label success = DefineLabel();
                             Ldloc(pos);
                             Ldc(0);
@@ -2505,17 +2512,35 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case RegexNodeKind.End:
-                        // if (sliceStaticPos < slice.Length) goto doneLabel;
-                        Ldc(sliceStaticPos);
-                        Ldloca(slice);
+                        if (sliceStaticPos > 0)
+                        {
+                            // if (sliceStaticPos < slice.Length) goto doneLabel;
+                            Ldc(sliceStaticPos);
+                            Ldloca(slice);
+                        }
+                        else
+                        {
+                            // if (pos < inputSpan.Length) goto doneLabel;
+                            Ldloc(pos);
+                            Ldloca(inputSpan);
+                        }
                         Call(s_spanGetLengthMethod);
                         BltUnFar(doneLabel);
                         break;
 
                     case RegexNodeKind.EndZ:
-                        // if (sliceStaticPos < slice.Length - 1) goto doneLabel;
-                        Ldc(sliceStaticPos);
-                        Ldloca(slice);
+                        if (sliceStaticPos > 0)
+                        {
+                            // if (sliceStaticPos < slice.Length - 1) goto doneLabel;
+                            Ldc(sliceStaticPos);
+                            Ldloca(slice);
+                        }
+                        else
+                        {
+                            // if (pos < inputSpan.Length - 1) goto doneLabel
+                            Ldloc(pos);
+                            Ldloca(inputSpan);
+                        }
                         Call(s_spanGetLengthMethod);
                         Ldc(1);
                         Sub();
@@ -2523,8 +2548,9 @@ namespace System.Text.RegularExpressions
                         goto case RegexNodeKind.Eol;
 
                     case RegexNodeKind.Eol:
-                        // if (sliceStaticPos < slice.Length && slice[sliceStaticPos] != '\n') goto doneLabel;
+                        if (sliceStaticPos > 0)
                         {
+                            // if (sliceStaticPos < slice.Length && slice[sliceStaticPos] != '\n') goto doneLabel;
                             Label success = DefineLabel();
                             Ldc(sliceStaticPos);
                             Ldloca(slice);
@@ -2532,6 +2558,22 @@ namespace System.Text.RegularExpressions
                             BgeUn(success);
                             Ldloca(slice);
                             Ldc(sliceStaticPos);
+                            Call(s_spanGetItemMethod);
+                            LdindU2();
+                            Ldc('\n');
+                            BneFar(doneLabel);
+                            MarkLabel(success);
+                        }
+                        else
+                        {
+                            // if ((uint)pos < (uint)inputSpan.Length && inputSpan[pos] != '\n') goto doneLabel;
+                            Label success = DefineLabel();
+                            Ldloc(pos);
+                            Ldloca(inputSpan);
+                            Call(s_spanGetLengthMethod);
+                            BgeUn(success);
+                            Ldloca(inputSpan);
+                            Ldloc(pos);
                             Call(s_spanGetItemMethod);
                             LdindU2();
                             Ldc('\n');

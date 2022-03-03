@@ -94,6 +94,10 @@ namespace System.Text.RegularExpressions.Tests
                     yield return (@"(?<=a\wc)def", "123abcdef", RegexOptions.None, 0, 9, true, "def");
                     yield return (@"(?<=\ba\wc)def", "123 abcdef", RegexOptions.None, 0, 10, true, "def");
                     yield return (@"(?<=.\ba\wc\B)def", "123 abcdef", RegexOptions.None, 0, 10, true, "def");
+                    yield return (@"(?<=^123 abc)def", "123 abcdef", RegexOptions.None, 0, 10, true, "def");
+                    yield return (@"(?<=^123 abc)def", "123 abcdef", RegexOptions.Multiline, 0, 10, true, "def");
+                    yield return (@"(?<=123$\nabc)def", "123\nabcdef", RegexOptions.Multiline, 0, 10, true, "def");
+                    yield return (@"123(?<!$) abcdef", "123 abcdef", RegexOptions.None, 0, 10, true, "123 abcdef");
 
                     // Zero-width negative lookbehind assertion: Actual - "(\\w){6}(?<!XXX)def"
                     yield return (@"(\w){6}(?<!XXX)def", "XXXabcdef", RegexOptions.None, 0, 9, true, "XXXabcdef");

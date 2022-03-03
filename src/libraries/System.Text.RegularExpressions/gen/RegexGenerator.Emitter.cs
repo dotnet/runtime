@@ -1923,6 +1923,16 @@ namespace System.Text.RegularExpressions.Generator
                     return;
                 }
 
+                // RightToLeft doesn't take advantage of static positions.  While RightToLeft won't update static
+                // positions, a previous operation may have left us with a non-zero one.  Make sure it's zero'd out
+                // such that pos and slice are up-to-date.  Note that RightToLeft also shouldn't use the slice span,
+                // as it's not kept up-to-date; any RightToLeft implementation that wants to use it must first update
+                // it from pos.
+                if ((node.Options & RegexOptions.RightToLeft) != 0)
+                {
+                    TransferSliceStaticPosToPos();
+                }
+
                 // Separate out several node types that, for conciseness, don't need a header and scope written into the source.
                 switch (node.Kind)
                 {
@@ -2214,13 +2224,8 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily, $"Unexpected type: {node.Kind}");
 
                 bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
-                if (rtl)
-                {
-                    // We don't use static position for RTL.  We always consult the current position and load directly from the original text span.
-                    Debug.Assert(offset is null);
-                    Debug.Assert(!clauseOnly);
-                    TransferSliceStaticPosToPos();
-                }
+                Debug.Assert(!rtl || offset is null);
+                Debug.Assert(!rtl || !clauseOnly);
 
                 string expr = !rtl ?
                     $"{sliceSpan}[{Sum(sliceStaticPos, offset)}]" :
@@ -2268,12 +2273,6 @@ namespace System.Text.RegularExpressions.Generator
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Boundary or RegexNodeKind.NonBoundary or RegexNodeKind.ECMABoundary or RegexNodeKind.NonECMABoundary, $"Unexpected type: {node.Kind}");
 
-                if ((node.Options & RegexOptions.RightToLeft) != 0)
-                {
-                    // RightToLeft doesn't use static position.  This ensures it's 0.
-                    TransferSliceStaticPosToPos();
-                }
-
                 string call = node.Kind switch
                 {
                     RegexNodeKind.Boundary => "!IsBoundary",
@@ -2301,8 +2300,9 @@ namespace System.Text.RegularExpressions.Generator
             void EmitAnchors(RegexNode node)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Beginning or RegexNodeKind.Start or RegexNodeKind.Bol or RegexNodeKind.End or RegexNodeKind.EndZ or RegexNodeKind.Eol, $"Unexpected type: {node.Kind}");
-
+                Debug.Assert((node.Options & RegexOptions.RightToLeft) == 0 || sliceStaticPos == 0);
                 Debug.Assert(sliceStaticPos >= 0);
+
                 switch (node.Kind)
                 {
                     case RegexNodeKind.Beginning:
@@ -2315,7 +2315,9 @@ namespace System.Text.RegularExpressions.Generator
                         }
                         else
                         {
-                            using (EmitBlock(writer, node.Kind == RegexNodeKind.Beginning ? "if (pos != 0)" : "if (pos != base.runtextstart)"))
+                            using (EmitBlock(writer, node.Kind == RegexNodeKind.Beginning ?
+                                "if (pos != 0)" :
+                                "if (pos != base.runtextstart)"))
                             {
                                 Goto(doneLabel);
                             }
@@ -2323,48 +2325,40 @@ namespace System.Text.RegularExpressions.Generator
                         break;
 
                     case RegexNodeKind.Bol:
-                        if (sliceStaticPos > 0)
+                        using (EmitBlock(writer, sliceStaticPos > 0 ?
+                            $"if ({sliceSpan}[{sliceStaticPos - 1}] != '\\n')" :
+                            $"if (pos > 0 && inputSpan[pos - 1] != '\\n')"))
                         {
-                            using (EmitBlock(writer, $"if ({sliceSpan}[{sliceStaticPos - 1}] != '\\n')"))
-                            {
-                                Goto(doneLabel);
-                            }
-                        }
-                        else
-                        {
-                            // We can't use our slice in this case, because we'd need to access slice[-1], so we access the inputSpan field directly:
-                            using (EmitBlock(writer, $"if (pos > 0 && inputSpan[pos - 1] != '\\n')"))
-                            {
-                                Goto(doneLabel);
-                            }
+                            Goto(doneLabel);
                         }
                         break;
 
                     case RegexNodeKind.End:
-                        using (EmitBlock(writer, $"if ({IsSliceLengthGreaterThanSliceStaticPos()})"))
+                        using (EmitBlock(writer, sliceStaticPos > 0 ?
+                            $"if ({sliceStaticPos} < {sliceSpan}.Length)" :
+                            "if ((uint)pos < (uint)inputSpan.Length)"))
                         {
                             Goto(doneLabel);
                         }
                         break;
 
                     case RegexNodeKind.EndZ:
-                        writer.WriteLine($"if ({sliceSpan}.Length > {sliceStaticPos + 1} || ({IsSliceLengthGreaterThanSliceStaticPos()} && {sliceSpan}[{sliceStaticPos}] != '\\n'))");
-                        using (EmitBlock(writer, null))
+                        using (EmitBlock(writer, sliceStaticPos > 0 ?
+                            $"if ({sliceStaticPos + 1} < {sliceSpan}.Length || ({sliceStaticPos} < {sliceSpan}.Length && {sliceSpan}[{sliceStaticPos}] != '\\n'))" :
+                            "if (pos < inputSpan.Length - 1 || ((uint)pos < (uint)inputSpan.Length && inputSpan[pos] != '\\n'))"))
                         {
                             Goto(doneLabel);
                         }
                         break;
 
                     case RegexNodeKind.Eol:
-                        using (EmitBlock(writer, $"if ({IsSliceLengthGreaterThanSliceStaticPos()} && {sliceSpan}[{sliceStaticPos}] != '\\n')"))
+                        using (EmitBlock(writer, sliceStaticPos > 0 ?
+                            $"if ({sliceStaticPos} < {sliceSpan}.Length && {sliceSpan}[{sliceStaticPos}] != '\\n')" :
+                            "if ((uint)pos < (uint)inputSpan.Length && inputSpan[pos] != '\\n')"))
                         {
                             Goto(doneLabel);
                         }
                         break;
-
-                        string IsSliceLengthGreaterThanSliceStaticPos() =>
-                            sliceStaticPos == 0 ? $"!{sliceSpan}.IsEmpty" :
-                            $"{sliceSpan}.Length > {sliceStaticPos}";
                 }
             }
 
@@ -2383,8 +2377,6 @@ namespace System.Text.RegularExpressions.Generator
                 if (rightToLeft)
                 {
                     Debug.Assert(emitLengthCheck);
-                    TransferSliceStaticPosToPos();
-
                     using (EmitBlock(writer, $"if ((uint)(pos - {str.Length}) >= inputSpan.Length)"))
                     {
                         Goto(doneLabel);
