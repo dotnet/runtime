@@ -356,7 +356,7 @@ namespace System.Xml
         public virtual void Load(System.IO.TextReader txtReader) { }
         public virtual void Load(string filename) { }
         public virtual void Load(System.Xml.XmlReader reader) { }
-        public virtual void LoadXml(string xml) { }
+        public virtual void LoadXml([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Xml")] string xml) { }
         public virtual System.Xml.XmlNode? ReadNode(System.Xml.XmlReader reader) { throw null; }
         public virtual void Save(System.IO.Stream outStream) { }
         public virtual void Save(System.IO.TextWriter writer) { }
@@ -1009,7 +1009,7 @@ namespace System.Xml
         public XmlTextReader(string url, System.IO.TextReader input) { }
         public XmlTextReader(string url, System.IO.TextReader input, System.Xml.XmlNameTable nt) { }
         public XmlTextReader(string url, System.Xml.XmlNameTable nt) { }
-        public XmlTextReader(string xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext? context) { }
+        public XmlTextReader([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Xml")] string xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext? context) { }
         protected XmlTextReader(System.Xml.XmlNameTable nt) { }
         public override int AttributeCount { get { throw null; } }
         public override string BaseURI { get { throw null; } }
@@ -1150,7 +1150,7 @@ namespace System.Xml
     public partial class XmlValidatingReader : System.Xml.XmlReader, System.Xml.IXmlLineInfo, System.Xml.IXmlNamespaceResolver
     {
         public XmlValidatingReader(System.IO.Stream xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext context) { }
-        public XmlValidatingReader(string xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext context) { }
+        public XmlValidatingReader([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Xml")] string xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext context) { }
         public XmlValidatingReader(System.Xml.XmlReader reader) { }
         public override int AttributeCount { get { throw null; } }
         public override string BaseURI { get { throw null; } }

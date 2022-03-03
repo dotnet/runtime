@@ -88,7 +88,7 @@ namespace System.Xml
             _impl.OuterReader = this;
         }
 
-        public XmlTextReader(string xmlFragment, XmlNodeType fragType, XmlParserContext? context)
+        public XmlTextReader([StringSyntax(StringSyntaxAttribute.Xml)] string xmlFragment, XmlNodeType fragType, XmlParserContext? context)
         {
             _impl = new XmlTextReaderImpl(xmlFragment, fragType, context);
             _impl.OuterReader = this;

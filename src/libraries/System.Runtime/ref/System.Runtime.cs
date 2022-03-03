@@ -7286,6 +7286,7 @@ namespace System.Diagnostics.CodeAnalysis
         public const string Regex = "Regex";
         public const string TimeFormat = "TimeFormat";
         public const string TimeSpanFormat = "TimeSpanFormat";
+        public const string Xml = "Xml";
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=true)]
     [System.Diagnostics.ConditionalAttribute("CODE_ANALYSIS")]
