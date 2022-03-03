@@ -111,7 +111,7 @@ internal static partial class Interop
             SafeSslHandle sslHandle,
             SafeCreateHandle cfCertRefs);
 
-        [GeneratedDllImport(Interop.Libraries.AppleCryptoNative, CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Interop.Libraries.AppleCryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial int AppleCryptoNative_SslSetTargetName(
             SafeSslHandle sslHandle,
             string targetName,
@@ -160,6 +160,22 @@ internal static partial class Interop
 
         [GeneratedDllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetEnabledCipherSuites")]
         internal static unsafe partial int SslSetEnabledCipherSuites(SafeSslHandle sslHandle, uint* cipherSuites, int numCipherSuites);
+
+        [GeneratedDllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetCertificateAuthorities")]
+        internal static partial int SslSetCertificateAuthorities(SafeSslHandle sslHandle, SafeCreateHandle certificateOrArray, int replaceExisting);
+
+        internal static unsafe void SslSetCertificateAuthorities(SafeSslHandle sslHandle, Span<IntPtr> certificates, bool replaceExisting)
+        {
+            using (SafeCreateHandle cfCertRefs = CoreFoundation.CFArrayCreate(certificates))
+            {
+                int osStatus = SslSetCertificateAuthorities(sslHandle, cfCertRefs, replaceExisting ? 1 : 0);
+
+                if (osStatus != 0)
+                {
+                    throw CreateExceptionForOSStatus(osStatus);
+                }
+            }
+        }
 
         internal static void SslSetAcceptClientCert(SafeSslHandle sslHandle)
         {

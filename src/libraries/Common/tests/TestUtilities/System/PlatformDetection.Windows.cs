@@ -146,6 +146,7 @@ namespace System
         private const int PRODUCT_HOME_PREMIUM_N = 0x0000001A;
 
         [GeneratedDllImport("kernel32.dll", SetLastError = false)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool GetProductInfo(
             int dwOSMajorVersion,
             int dwOSMinorVersion,
@@ -241,6 +242,8 @@ namespace System
         }
 
         public static bool CanRunImpersonatedTests => PlatformDetection.IsNotWindowsNanoServer && PlatformDetection.IsWindowsAndElevated;
+
+        public static bool IsWindowsX86OrX64 => PlatformDetection.IsWindows && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process);
 
         private static int s_isWindowsElevated = -1;
         public static bool IsWindowsAndElevated

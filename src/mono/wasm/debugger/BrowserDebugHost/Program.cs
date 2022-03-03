@@ -3,14 +3,12 @@
 
 using System;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+
+#nullable enable
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -33,6 +31,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             FirefoxProxyServer proxyFirefox = new FirefoxProxyServer(loggerFactory, 6000);
             proxyFirefox.Run();
 
+            IConfigurationRoot config = new ConfigurationBuilder().AddCommandLine(args).Build();
+            int proxyPort = 0;
+            if (config["proxy-port"] is not null && int.TryParse(config["proxy-port"], out int port))
+                proxyPort = port;
+
             IWebHost host = new WebHostBuilder()
                 .UseSetting("UseIISIntegration", false.ToString())
                 .UseKestrel()
@@ -42,7 +45,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     config.AddCommandLine(args);
                 })
-                .UseUrls("http://127.0.0.1:0")
+                .UseUrls($"http://127.0.0.1:{proxyPort}")
                 .Build();
 
             host.Run();

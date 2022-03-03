@@ -53,7 +53,7 @@ typedef struct SeqPointInfo SeqPointInfo;
 #include "mini-arch.h"
 #include "regalloc.h"
 #include "mini-unwind.h"
-#include <mono/mini/jit.h>
+#include <mono/jit/jit.h>
 #include "cfgdump.h"
 #include "tiered.h"
 
@@ -1238,6 +1238,7 @@ typedef struct {
 	guint            disable_div_with_mul : 1;
 	guint            explicit_null_checks : 1;
 	guint            optimized_div : 1;
+	guint            force_float32 : 1;
 	int              monitor_enter_adjustment;
 	int              dyn_call_param_area;
 } MonoBackend;
@@ -1480,6 +1481,7 @@ typedef struct {
 	guint            no_inline : 1;
 	guint            gshared : 1;
 	guint            gsharedvt : 1;
+	guint            r4fp : 1;
 	guint            llvm_only : 1;
 	guint            interp : 1;
 	guint            use_current_cpu : 1;
@@ -2579,16 +2581,6 @@ MONO_API gboolean mono_exception_walk_trace     (MonoException *ex, MonoExceptio
 MONO_COMPONENT_API void mono_restore_context                       (MonoContext *ctx);
 guint8* mono_jinfo_get_unwind_info              (MonoJitInfo *ji, guint32 *unwind_info_len);
 int  mono_jinfo_get_epilog_size                 (MonoJitInfo *ji);
-G_EXTERN_C void mono_llvm_rethrow_exception     (MonoObject *ex);
-G_EXTERN_C void mono_llvm_throw_exception       (MonoObject *ex);
-G_EXTERN_C void mono_llvm_throw_corlib_exception (guint32 ex_token_index);
-G_EXTERN_C void mono_llvm_resume_exception      (void);
-G_EXTERN_C void mono_llvm_clear_exception       (void);
-G_EXTERN_C MonoObject *mono_llvm_load_exception (void);
-void     mono_llvm_reset_exception              (void);
-void     mono_llvm_raise_exception              (MonoException *e);
-void     mono_llvm_reraise_exception            (MonoException *e);
-G_EXTERN_C gint32 mono_llvm_match_exception     (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end, gpointer rgctx, MonoObject *this_obj);
 
 gboolean
 mono_find_jit_info_ext (MonoJitTlsData *jit_tls,

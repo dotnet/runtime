@@ -19,7 +19,6 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -77,7 +76,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             catch (Exception e) { Logger.LogError(e, "webserver: SendNodeList failed"); }
         }
 
-        public async Task LaunchAndServe(ProcessStartInfo psi, HttpContext context, Func<string, ILogger<TestHarnessProxy>, Task<string>> extract_conn_url, Uri devToolsUrl)
+        public async Task LaunchAndServe(ProcessStartInfo psi,
+                                         HttpContext context,
+                                         Func<string, ILogger<TestHarnessProxy>, Task<string>> extract_conn_url,
+                                         Uri devToolsUrl,
+                                         string test_id,
+                                         string message_prefix,
+                                         int get_con_url_timeout_ms=20000)
         {
 
             if (!context.WebSockets.IsWebSocketRequest)
@@ -94,11 +99,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 proc.ErrorDataReceived += (sender, e) =>
                 {
                     var str = e.Data;
-                    Logger.LogTrace($"browser-stderr: {str}");
+                    Logger.LogTrace($"{message_prefix} browser-stderr: {str}");
 
                     if (tcs.Task.IsCompleted)
                         return;
-                    if (str != null)
+
+                    if (!string.IsNullOrEmpty(str))
                     {
                         var match = parseConnection.Match(str);
                         if (match.Success)
@@ -110,7 +116,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 proc.OutputDataReceived += (sender, e) =>
                 {
-                    Logger.LogTrace($"browser-stdout: {e.Data}");
+                    Logger.LogTrace($"{message_prefix} browser-stdout: {e.Data}");
                 };
 
                 proc.BeginErrorReadLine();
@@ -124,29 +130,37 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     else
                     {
-                        Logger.LogError("Didnt get the con string after 20s.");
-                        throw new Exception("node.js timedout");
+                        Logger.LogError($"{message_prefix} Timed out after {get_con_url_timeout_ms/1000}s waiting for a connection string from {psi.FileName}");
+                        return;
                     }
                 }
                 line = await tcs.Task;
                 var con_str = extract_conn_url != null ? await extract_conn_url(line, Logger) : line;
 
-                Logger.LogInformation($"launching proxy for {con_str}");
+                Logger.LogInformation($"{message_prefix} launching proxy for {con_str}");
+                string logFilePath = Path.Combine(DebuggerTests.DebuggerTestBase.TestLogPath, $"{test_id}-proxy.log");
+                File.Delete(logFilePath);
+
+                var proxyLoggerFactory = LoggerFactory.Create(
+                    builder => builder
+                        .AddFile(logFilePath, minimumLevel: LogLevel.Information)
+                        .AddFilter(null, LogLevel.Trace));
+
 #if RUN_IN_CHROME
-                var proxy = new DebuggerProxy(_loggerFactory, null);
+                var proxy = new DebuggerProxy(proxyLoggerFactory, null, loggerId: test_id);
                 var browserUri = new Uri(con_str);
-                var ideSocket = await context.WebSockets.AcceptWebSocketAsync();
-                await proxy.Run(browserUri, ideSocket);
+                var ideSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
+
+                await proxy.Run(browserUri, ideSocket).ConfigureAwait(false);
 #else
                 var ideSocket = await context.WebSockets.AcceptWebSocketAsync();
-                var proxyFirefox = new FirefoxProxyServer(_loggerFactory, 6000);
+                var proxyFirefox = new FirefoxProxyServer(proxyLoggerFactory, 6000);
                 await proxyFirefox.RunForTests(9500, ideSocket);
 #endif
-                Logger.LogInformation("Proxy done");
             }
             catch (Exception e)
             {
-                Logger.LogError("got exception {0}", e);
+                Logger.LogError($"{message_prefix} got exception {e}");
             }
             finally
             {
@@ -185,7 +199,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 router.MapGet("launch-browser-and-connect", async context =>
                 {
-                    Logger.LogInformation("New test request");
+                    string test_id;
+                    if (context.Request.Query.TryGetValue("test_id", out var value) && value.Count == 1)
+                        test_id = value[0];
+                    else
+                        test_id = "unknown";
+
+                    string message_prefix = $"[testId: {test_id}]";
+                    Logger.LogInformation($"{message_prefix} New test request for test id {test_id}");
                     try
                     {
                         var psi = new ProcessStartInfo();
@@ -195,11 +216,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         psi.FileName = options.BrowserPath;
                         psi.RedirectStandardError = true;
                         psi.RedirectStandardOutput = true;
-                        await LaunchAndServe(psi, context, options.ExtractConnUrl, devToolsUrl);
+                        await LaunchAndServe(psi, context, options.ExtractConnUrl, devToolsUrl, test_id, message_prefix).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogError($"launch-browser-and-connect failed with {ex.ToString()}");
+                        Logger.LogError($"{message_prefix} launch-chrome-and-connect failed with {ex.ToString()}");
                     }
                 });
             });
@@ -226,7 +247,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     router.MapGet("json/version", SendNodeVersion);
                     router.MapGet("launch-done-and-connect", async context =>
                     {
-                        await LaunchAndServe(psi, context, null, null);
+                        await LaunchAndServe(psi, context, null, null, null, null);
                     });
                 });
             }

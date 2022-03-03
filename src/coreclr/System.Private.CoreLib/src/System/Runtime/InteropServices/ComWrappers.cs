@@ -100,6 +100,7 @@ namespace System.Runtime.InteropServices
         }
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_TryGetOrCreateComInterfaceForObject")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool TryGetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack comWrappersImpl, long wrapperId, ObjectHandleOnStack instance, CreateComInterfaceFlags flags, out IntPtr retValue);
 
         // Called by the runtime to execute the abstract instance function
@@ -244,6 +245,7 @@ namespace System.Runtime.InteropServices
         }
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_TryGetOrCreateObjectForComInstance")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool TryGetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack comWrappersImpl, long wrapperId, IntPtr externalComObject, IntPtr innerMaybe, CreateObjectFlags flags, ObjectHandleOnStack wrapper, ObjectHandleOnStack retValue);
 
         // Call to execute the virtual instance function

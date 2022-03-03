@@ -179,6 +179,7 @@ namespace System.Net.Security
 
             switch (protocol)
             {
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                 case SslProtocols.Tls:
                     protocolSessionsOpen = ref _sessionsOpenTls10;
                     handshakeDurationCounter = _handshakeDurationTls10Counter;
@@ -188,6 +189,7 @@ namespace System.Net.Security
                     protocolSessionsOpen = ref _sessionsOpenTls11;
                     handshakeDurationCounter = _handshakeDurationTls11Counter;
                     break;
+#pragma warning restore SYSLIB0039
 
                 case SslProtocols.Tls12:
                     protocolSessionsOpen = ref _sessionsOpenTls12;
@@ -220,6 +222,7 @@ namespace System.Net.Security
 
             switch (protocol)
             {
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                 case SslProtocols.Tls:
                     count = Interlocked.Decrement(ref _sessionsOpenTls10);
                     break;
@@ -227,6 +230,7 @@ namespace System.Net.Security
                 case SslProtocols.Tls11:
                     count = Interlocked.Decrement(ref _sessionsOpenTls11);
                     break;
+#pragma warning restore SYSLIB0039
 
                 case SslProtocols.Tls12:
                     count = Interlocked.Decrement(ref _sessionsOpenTls12);

@@ -39,7 +39,6 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<ulong>() };
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<float>() };
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<double>() };
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers<bool>() };
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<IntPtr>() };
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<UIntPtr>() };
 
@@ -54,7 +53,6 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<ulong>() };
             yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<float>() };
             yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<double>() };
-            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<bool>() };
             yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<IntPtr>() };
             yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<UIntPtr>() };
             yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<byte>(isByRef: false) };
@@ -78,11 +76,14 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<IntPtr>(isByRef: true) };
             yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<UIntPtr>(isByRef: true) };
 
-            // CharSet
-            yield return new[] { CodeSnippets.BasicParametersAndModifiersWithCharSet<char>(CharSet.Unicode) };
-            yield return new[] { CodeSnippets.BasicParametersAndModifiersWithCharSet<string>(CharSet.Unicode) };
-            yield return new[] { CodeSnippets.BasicParametersAndModifiersWithCharSet<string>(CharSet.Ansi) };
-            yield return new[] { CodeSnippets.BasicParametersAndModifiersWithCharSet<string>(CharSet.Auto) };
+            // StringMarshalling
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<char>(StringMarshalling.Utf16) };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf16) };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf8) };
+
+            // StringMarshallingCustomType
+            yield return new[] { CodeSnippets.CustomStringMarshallingParametersAndModifiers<char>() };
+            yield return new[] { CodeSnippets.CustomStringMarshallingParametersAndModifiers<string>() };
 
             // MarshalAs
             yield return new[] { CodeSnippets.MarshalAsParametersAndModifiers<bool>(UnmanagedType.Bool) };
@@ -102,8 +103,8 @@ namespace DllImportGenerator.UnitTests
 
             // [In, Out] attributes
             // By value non-blittable array
-            yield return new[] { CodeSnippets.ByValueParameterWithModifier<bool[]>("Out", CodeSnippets.DisableRuntimeMarshalling) };
-            yield return new[] { CodeSnippets.ByValueParameterWithModifier<bool[]>("In, Out", CodeSnippets.DisableRuntimeMarshalling) };
+            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "Out", CodeSnippets.DisableRuntimeMarshalling + CodeSnippets.BasicNonBlittableUserDefinedType) };
+            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "In, Out", CodeSnippets.DisableRuntimeMarshalling + CodeSnippets.BasicNonBlittableUserDefinedType) };
 
             // Enums
             yield return new[] { CodeSnippets.EnumParameters };
@@ -162,7 +163,7 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.ByValueParameterWithName("Method", "@var") };
             yield return new[] { CodeSnippets.ByValueParameterWithName("@params", "i") };
 
-            // Generics
+            //Generics
             yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<byte>() };
             yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<sbyte>() };
             yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<short>() };
@@ -187,7 +188,6 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.CollectionByValue<ulong>() };
             yield return new[] { CodeSnippets.CollectionByValue<float>() };
             yield return new[] { CodeSnippets.CollectionByValue<double>() };
-            yield return new[] { CodeSnippets.CollectionByValue<bool>() };
             yield return new[] { CodeSnippets.CollectionByValue<IntPtr>() };
             yield return new[] { CodeSnippets.CollectionByValue<UIntPtr>() };
             yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<byte[]>() };
@@ -200,7 +200,6 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<ulong[]>() };
             yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<float[]>() };
             yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<double[]>() };
-            yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<bool[]>() };
             yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<IntPtr[]>() };
             yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<UIntPtr[]>() };
             yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<byte>() };
@@ -213,7 +212,6 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<ulong>() };
             yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<float>() };
             yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<double>() };
-            yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<bool>() };
             yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<IntPtr>() };
             yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<UIntPtr>() };
             yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<byte>() };
@@ -226,7 +224,6 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<ulong>() };
             yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<float>() };
             yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<double>() };
-            yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<bool>() };
             yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<IntPtr>() };
             yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<UIntPtr>() };
             yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerReturnValueLength<int>() };
@@ -298,7 +295,7 @@ namespace DllImportGenerator.UnitTests
 
             // Confirm that all unsupported target frameworks fallback to a forwarder.
             {
-                string code = CodeSnippets.BasicParametersAndModifiersWithCharSet<string>(CharSet.Unicode, CodeSnippets.GeneratedDllImportAttributeDeclaration);
+                string code = CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf16, CodeSnippets.GeneratedDllImportAttributeDeclaration);
                 yield return new object[] { code, TestTargetFramework.Net5, true };
                 yield return new object[] { code, TestTargetFramework.Core, true };
                 yield return new object[] { code, TestTargetFramework.Standard, true };
@@ -443,7 +440,7 @@ namespace DllImportGenerator.UnitTests
         public static IEnumerable<object[]> CodeSnippetsToCompileMultipleSources()
         {
             yield return new object[] { new[] { CodeSnippets.BasicParametersAndModifiers<int>(), CodeSnippets.MarshalAsParametersAndModifiers<bool>(UnmanagedType.Bool) } };
-            yield return new object[] { new[] { CodeSnippets.BasicParametersAndModifiersWithCharSet<int>(CharSet.Unicode), CodeSnippets.MarshalAsParametersAndModifiers<bool>(UnmanagedType.Bool) } };
+            yield return new object[] { new[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<int>(StringMarshalling.Utf16), CodeSnippets.MarshalAsParametersAndModifiers<bool>(UnmanagedType.Bool) } };
             yield return new object[] { new[] { CodeSnippets.BasicParameterByValue("int[]", CodeSnippets.DisableRuntimeMarshalling), CodeSnippets.BasicParameterWithByRefModifier("ref", "int") } };
         }
 

@@ -35,13 +35,13 @@ namespace DllImportGenerator.IntegrationTests
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "create_range_array_out")]
             public static partial void CreateRange_Out(int start, int end, out int numValues, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)] out int[] res);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_char_array", CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_char_array", StringMarshalling = StringMarshalling.Utf16)]
             public static partial int SumChars(char[] chars, int numElements);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "fill_char_array", CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "fill_char_array", StringMarshalling = StringMarshalling.Utf16)]
             public static partial void FillChars([Out] char[] chars, int length, ushort start);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "reverse_char_array", CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "reverse_char_array", StringMarshalling = StringMarshalling.Utf16)]
             public static partial void ReverseChars([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref char[] chars, int numElements);
 
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_string_lengths")]
@@ -69,7 +69,7 @@ namespace DllImportGenerator.IntegrationTests
             public static partial bool FillRangeArray([Out] IntStructWrapper[] array, int length, int start);
 
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "double_values")]
-            public static partial bool DoubleValues([In, Out] IntStructWrapper[] array, int length);
+            public static partial void DoubleValues([In, Out] IntStructWrapper[] array, int length);
 
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "and_all_members")]
             [return:MarshalAs(UnmanagedType.U1)]

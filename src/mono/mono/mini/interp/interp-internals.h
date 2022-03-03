@@ -210,6 +210,7 @@ typedef struct {
 	/* Lets interpreter know it has to resume execution after EH */
 	gboolean has_resume_state;
 	/* Frame to resume execution at */
+	/* Can be NULL if the exception is caught in an AOTed frame */
 	InterpFrame *handler_frame;
 	/* IP to resume execution at */
 	const guint16 *handler_ip;

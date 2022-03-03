@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -21,8 +22,6 @@ namespace DebuggerTests
         // https://console.spec.whatwg.org/#formatting-specifiers
         private static Regex _consoleArgsRegex = new(@"(%[sdifoOc])", RegexOptions.Compiled);
 
-        private const int DefaultTestTimeoutMs = 1 * 60 * 1000;
-
         Dictionary<string, TaskCompletionSource<JObject>> notifications = new Dictionary<string, TaskCompletionSource<JObject>>();
         Dictionary<string, Func<JObject, CancellationToken, Task>> eventListeners = new Dictionary<string, Func<JObject, CancellationToken, Task>>();
 
@@ -30,30 +29,37 @@ namespace DebuggerTests
         public const string READY = "ready";
         public CancellationToken Token { get; }
         public InspectorClient Client { get; }
+        public bool DetectAndFailOnAssertions { get; set; } = true;
 
         private CancellationTokenSource _cancellationTokenSource;
 
         protected ILoggerFactory _loggerFactory;
         protected ILogger _logger;
+        public int Id { get; init; }
 
-        public Inspector()
+        public Inspector(int testId)
         {
+            Id = testId;
             _cancellationTokenSource = new CancellationTokenSource();
             Token = _cancellationTokenSource.Token;
 
+            string logFilePath = Path.Combine(DebuggerTestBase.TestLogPath, $"{Id}-test.log");
+            File.Delete(logFilePath);
             _loggerFactory = LoggerFactory.Create(builder =>
-                    builder.AddSimpleConsole(options =>
+                    builder
+                        .AddFile(logFilePath, minimumLevel: LogLevel.Debug)
+                        .AddSimpleConsole(options =>
                             {
                                 options.SingleLine = true;
                                 options.TimestampFormat = "[HH:mm:ss] ";
                             })
                            .AddFilter(null, LogLevel.Trace));
 #if RUN_IN_CHROME
-            Client = new InspectorClient(_loggerFactory.CreateLogger<InspectorClient>());
+            Client = new InspectorClient(_loggerFactory.CreateLogger($"{nameof(InspectorClient)}-{Id}"));
 #else
-            Client = new FirefoxInspectorClient(_loggerFactory.CreateLogger<InspectorClient>());
+            Client = new FirefoxInspectorClient(_loggerFactory.CreateLogger($"{nameof(InspectorClient)}-{Id}"));
 #endif
-            _logger = _loggerFactory.CreateLogger<Inspector>();
+            _logger = _loggerFactory.CreateLogger($"{nameof(Inspector)}-{Id}");
         }
 
         public Task<JObject> WaitFor(string what)
@@ -182,8 +188,17 @@ namespace DebuggerTests
                     NotifyOf(READY, args);
                     break;
                 case "Runtime.consoleAPICalled":
-                    _logger.LogInformation(FormatConsoleAPICalled(args));
+                {
+                    string line = FormatConsoleAPICalled(args);
+                    _logger.LogInformation(line);
+                    if (DetectAndFailOnAssertions && line.Contains("console.error: * Assertion at"))
+                    {
+                        args["__forMethod"] = method;
+                        Client.Fail(new ArgumentException($"Assertion detected in the messages: {line}{Environment.NewLine}{args}"));
+                        return;
+                    }
                     break;
+                }
                 case "Inspector.detached":
                 case "Inspector.targetCrashed":
                 case "Inspector.targetReloadedAfterCrash":
@@ -205,11 +220,10 @@ namespace DebuggerTests
             }
         }
 
-        public async Task LaunchBrowser(DateTime start, TimeSpan? span = null)
+        public async Task LaunchBrowser(DateTime start, TimeSpan span)
         {
-            _cancellationTokenSource.CancelAfter(span?.Milliseconds ?? DefaultTestTimeoutMs);
-
-            var uri = new Uri($"ws://{TestHarnessProxy.Endpoint.Authority}/launch-browser-and-connect");
+            _cancellationTokenSource.CancelAfter(span);
+            var uri = new Uri($"ws://{TestHarnessProxy.Endpoint.Authority}/launch-browser-and-connect/?test_id={Id}");
 
             await Client.Connect(uri, OnMessage, _cancellationTokenSource.Token);
             Client.RunLoopStopped += (_, args) =>
@@ -231,7 +245,7 @@ namespace DebuggerTests
             }; 
         }
 
-        public async Task OpenSessionAsync(Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> getInitCmds, TimeSpan? span = null)
+        public async Task OpenSessionAsync(Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> getInitCmds, TimeSpan span)
         {
             var start = DateTime.Now;
             try

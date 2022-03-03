@@ -9,11 +9,15 @@
 #include <dlfcn.h>
 #include <sys/stat.h>
 
+#include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/class.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/image.h>
+#include <mono/metadata/loader.h>
 #include <mono/metadata/mono-gc.h>
+#include <mono/metadata/object.h>
 // FIXME: unavailable in emscripten
 // #include <mono/metadata/gc-internals.h>
 

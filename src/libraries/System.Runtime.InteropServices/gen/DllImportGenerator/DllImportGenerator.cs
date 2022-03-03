@@ -44,30 +44,13 @@ namespace Microsoft.Interop
             }
         }
 
-        public class IncrementalityTracker
+        public static class StepNames
         {
-            public enum StepName
-            {
-                CalculateStubInformation,
-                GenerateSingleStub,
-                NormalizeWhitespace,
-                ConcatenateStubs,
-                OutputSourceFile
-            }
-
-            public record ExecutedStepInfo(StepName Step, object Input);
-
-            private readonly List<ExecutedStepInfo> _executedSteps = new();
-            public IEnumerable<ExecutedStepInfo> ExecutedSteps => _executedSteps;
-
-            internal void RecordExecutedStep(ExecutedStepInfo step) => _executedSteps.Add(step);
+            public const string CalculateStubInformation = nameof(CalculateStubInformation);
+            public const string GenerateSingleStub = nameof(GenerateSingleStub);
+            public const string NormalizeWhitespace = nameof(NormalizeWhitespace);
+            public const string ConcatenateStubs = nameof(ConcatenateStubs);
         }
-
-        /// <summary>
-        /// This property provides a test-only hook to enable testing the incrementality of the source generator.
-        /// This will be removed when https://github.com/dotnet/roslyn/issues/54832 is implemented and can be consumed.
-        /// </summary>
-        public IncrementalityTracker? IncrementalTracker { get; set; }
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -75,23 +58,31 @@ namespace Microsoft.Interop
                 .CreateSyntaxProvider(
                     static (node, ct) => ShouldVisitNode(node),
                     static (context, ct) =>
-                        new
+                    {
+                        MethodDeclarationSyntax syntax = (MethodDeclarationSyntax)context.Node;
+                        if (context.SemanticModel.GetDeclaredSymbol(syntax, ct) is IMethodSymbol methodSymbol
+                            && methodSymbol.GetAttributes().Any(static attribute => attribute.AttributeClass?.ToDisplayString() == TypeNames.GeneratedDllImportAttribute))
                         {
-                            Syntax = (MethodDeclarationSyntax)context.Node,
-                            Symbol = (IMethodSymbol)context.SemanticModel.GetDeclaredSymbol(context.Node, ct)!
-                        })
+                            return new { Syntax = syntax, Symbol = methodSymbol };
+                        }
+
+                        return null;
+                    })
                 .Where(
-                    static modelData => modelData.Symbol.IsStatic && modelData.Symbol.GetAttributes().Any(
-                        static attribute => attribute.AttributeClass?.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
-                );
+                    static modelData => modelData is not null);
 
-            var methodsToGenerate = attributedMethods.Where(static data => !data.Symbol.ReturnsByRef && !data.Symbol.ReturnsByRefReadonly);
-
-            var refReturnMethods = attributedMethods.Where(static data => data.Symbol.ReturnsByRef || data.Symbol.ReturnsByRefReadonly);
-
-            context.RegisterSourceOutput(refReturnMethods, static (context, refReturnMethod) =>
+            var methodsWithDiagnostics = attributedMethods.Select(static (data, ct) =>
             {
-                context.ReportDiagnostic(Diagnostic.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, refReturnMethod.Syntax.GetLocation(), "ref return", refReturnMethod.Symbol.ToDisplayString()));
+                Diagnostic? diagnostic = GetDiagnosticIfInvalidMethodForGeneration(data.Syntax, data.Symbol);
+                return new { Syntax = data.Syntax, Symbol = data.Symbol, Diagnostic = diagnostic };
+            });
+
+            var methodsToGenerate = methodsWithDiagnostics.Where(static data => data.Diagnostic is null);
+            var invalidMethodDiagnostics = methodsWithDiagnostics.Where(static data => data.Diagnostic is not null);
+
+            context.RegisterSourceOutput(invalidMethodDiagnostics, static (context, invalidMethod) =>
+            {
+                context.ReportDiagnostic(invalidMethod.Diagnostic);
             });
 
             IncrementalValueProvider<(Compilation compilation, TargetFramework targetFramework, Version targetFrameworkVersion)> compilationAndTargetFramework = context.CompilationProvider
@@ -120,7 +111,7 @@ namespace Microsoft.Interop
                 });
 
             IncrementalValueProvider<DllImportGeneratorOptions> stubOptions = context.AnalyzerConfigOptionsProvider
-                .Select((options, ct) => new DllImportGeneratorOptions(options.GlobalOptions));
+                .Select(static (options, ct) => new DllImportGeneratorOptions(options.GlobalOptions));
 
             IncrementalValueProvider<StubEnvironment> stubEnvironment = compilationAndTargetFramework
                 .Combine(stubOptions)
@@ -143,34 +134,24 @@ namespace Microsoft.Interop
                     Environment = data.Right
                 })
                 .Select(
-                    (data, ct) =>
-                    {
-                        IncrementalTracker?.RecordExecutedStep(new IncrementalityTracker.ExecutedStepInfo(IncrementalityTracker.StepName.CalculateStubInformation, data));
-                        return (data.Syntax, StubContext: CalculateStubInformation(data.Symbol, data.Environment, ct));
-                    }
+                    static (data, ct) => (data.Syntax, StubContext: CalculateStubInformation(data.Symbol, data.Environment, ct))
                 )
                 .WithComparer(Comparers.CalculatedContextWithSyntax)
+                .WithTrackingName(StepNames.CalculateStubInformation)
                 .Combine(stubOptions)
                 .Select(
-                    (data, ct) =>
-                    {
-                        IncrementalTracker?.RecordExecutedStep(new IncrementalityTracker.ExecutedStepInfo(IncrementalityTracker.StepName.GenerateSingleStub, data));
-                        return GenerateSource(data.Left.StubContext, data.Left.Syntax, data.Right);
-                    }
+                    static (data, ct) => GenerateSource(data.Left.StubContext, data.Left.Syntax, data.Right)
                 )
                 .WithComparer(Comparers.GeneratedSyntax)
+                .WithTrackingName(StepNames.GenerateSingleStub)
                 // Handle NormalizeWhitespace as a separate stage for incremental runs since it is an expensive operation.
                 .Select(
-                    (data, ct) =>
-                    {
-                        IncrementalTracker?.RecordExecutedStep(new IncrementalityTracker.ExecutedStepInfo(IncrementalityTracker.StepName.NormalizeWhitespace, data));
-                        return (data.Item1.NormalizeWhitespace().ToFullString(), data.Item2);
-                    })
+                    static (data, ct) => (data.Item1.NormalizeWhitespace().ToFullString(), data.Item2))
+                .WithTrackingName(StepNames.NormalizeWhitespace)
                 .Collect()
                 .WithComparer(Comparers.GeneratedSourceSet)
-                .Select((generatedSources, ct) =>
+                .Select(static (generatedSources, ct) =>
                 {
-                    IncrementalTracker?.RecordExecutedStep(new IncrementalityTracker.ExecutedStepInfo(IncrementalityTracker.StepName.ConcatenateStubs, generatedSources));
                     StringBuilder source = new();
                     // Mark in source that the file is auto-generated.
                     source.AppendLine("// <auto-generated/>");
@@ -182,12 +163,12 @@ namespace Microsoft.Interop
                     }
                     return (source: source.ToString(), diagnostics: diagnostics.ToImmutable());
                 })
-                .WithComparer(Comparers.GeneratedSource);
+                .WithComparer(Comparers.GeneratedSource)
+                .WithTrackingName(StepNames.ConcatenateStubs);
 
             context.RegisterSourceOutput(methodSourceAndDiagnostics,
-                (context, data) =>
+                static (context, data) =>
                 {
-                    IncrementalTracker?.RecordExecutedStep(new IncrementalityTracker.ExecutedStepInfo(IncrementalityTracker.StepName.OutputSourceFile, data));
                     foreach (Diagnostic diagnostic in data.Item2)
                     {
                         context.ReportDiagnostic(diagnostic);
@@ -353,9 +334,11 @@ namespace Microsoft.Interop
             // documented semanatics of DllImportAttribute:
             //   - https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute
             DllImportMember userDefinedValues = DllImportMember.None;
-            CharSet charSet = CharSet.Ansi;
             string? entryPoint = null;
             bool setLastError = false;
+
+            StringMarshalling stringMarshalling = StringMarshalling.Custom;
+            INamedTypeSymbol? stringMarshallingCustomType = null;
 
             // All other data on attribute is defined as NamedArguments.
             foreach (KeyValuePair<string, TypedConstant> namedArg in attrData.NamedArguments)
@@ -363,18 +346,11 @@ namespace Microsoft.Interop
                 switch (namedArg.Key)
                 {
                     default:
-                        Debug.Fail($"An unknown member was found on {attrData.AttributeClass}");
-                        continue;
-                    case nameof(GeneratedDllImportData.CharSet):
-                        userDefinedValues |= DllImportMember.CharSet;
-                        // TypedConstant's Value property only contains primitive values.
-                        if (namedArg.Value.Value is not int)
-                        {
-                            return null;
-                        }
-                        // A boxed primitive can be unboxed to an enum with the same underlying type.
-                        charSet = (CharSet)namedArg.Value.Value!;
-                        break;
+                        // This should never occur in a released build,
+                        // but can happen when evolving the ecosystem.
+                        // Return null here to indicate invalid attribute data.
+                        Debug.WriteLine($"An unknown member '{namedArg.Key}' was found on {attrData.AttributeClass}");
+                        return null;
                     case nameof(GeneratedDllImportData.EntryPoint):
                         userDefinedValues |= DllImportMember.EntryPoint;
                         if (namedArg.Value.Value is not string)
@@ -391,6 +367,24 @@ namespace Microsoft.Interop
                         }
                         setLastError = (bool)namedArg.Value.Value!;
                         break;
+                    case nameof(GeneratedDllImportData.StringMarshalling):
+                        userDefinedValues |= DllImportMember.StringMarshalling;
+                        // TypedConstant's Value property only contains primitive values.
+                        if (namedArg.Value.Value is not int)
+                        {
+                            return null;
+                        }
+                        // A boxed primitive can be unboxed to an enum with the same underlying type.
+                        stringMarshalling = (StringMarshalling)namedArg.Value.Value!;
+                        break;
+                    case nameof(GeneratedDllImportData.StringMarshallingCustomType):
+                        userDefinedValues |= DllImportMember.StringMarshallingCustomType;
+                        if (namedArg.Value.Value is not INamedTypeSymbol)
+                        {
+                            return null;
+                        }
+                        stringMarshallingCustomType = (INamedTypeSymbol)namedArg.Value.Value;
+                        break;
                 }
             }
 
@@ -402,9 +396,10 @@ namespace Microsoft.Interop
             return new GeneratedDllImportData(attrData.ConstructorArguments[0].Value!.ToString())
             {
                 IsUserDefined = userDefinedValues,
-                CharSet = charSet,
                 EntryPoint = entryPoint,
                 SetLastError = setLastError,
+                StringMarshalling = stringMarshalling,
+                StringMarshallingCustomType = stringMarshallingCustomType,
             };
         }
 
@@ -458,6 +453,23 @@ namespace Microsoft.Interop
                 stubDllImportData = new GeneratedDllImportData("INVALID_CSHARP_SYNTAX");
             }
 
+            if (stubDllImportData.IsUserDefined.HasFlag(DllImportMember.StringMarshalling))
+            {
+                // User specified StringMarshalling.Custom without specifying StringMarshallingCustomType
+                if (stubDllImportData.StringMarshalling == StringMarshalling.Custom && stubDllImportData.StringMarshallingCustomType is null)
+                {
+                    generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
+                        generatedDllImportAttr, symbol.Name, Resources.InvalidStringMarshallingConfigurationMissingCustomType);
+                }
+
+                // User specified something other than StringMarshalling.Custom while specifying StringMarshallingCustomType
+                if (stubDllImportData.StringMarshalling != StringMarshalling.Custom && stubDllImportData.StringMarshallingCustomType is not null)
+                {
+                    generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
+                        generatedDllImportAttr, symbol.Name, Resources.InvalidStringMarshallingConfigurationNotCustom);
+                }
+            }
+
             if (lcidConversionAttr is not null)
             {
                 // Using LCIDConversion with GeneratedDllImport is not supported
@@ -471,17 +483,16 @@ namespace Microsoft.Interop
             return new IncrementalStubGenerationContext(environment, dllImportStub, additionalAttributes.ToImmutableArray(), stubDllImportData, generatorDiagnostics.Diagnostics.ToImmutableArray());
         }
 
-        private (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateSource(
+        private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateSource(
             IncrementalStubGenerationContext dllImportStub,
             MethodDeclarationSyntax originalSyntax,
             DllImportGeneratorOptions options)
         {
+            var diagnostics = new GeneratorDiagnostics();
             if (options.GenerateForwarders)
             {
-                return (PrintForwarderStub(originalSyntax, dllImportStub), dllImportStub.Diagnostics);
+                return (PrintForwarderStub(originalSyntax, dllImportStub, diagnostics), dllImportStub.Diagnostics.AddRange(diagnostics.Diagnostics));
             }
-
-            var diagnostics = new GeneratorDiagnostics();
 
             // Generate stub code
             var stubGenerator = new PInvokeStubCodeGenerator(
@@ -499,7 +510,7 @@ namespace Microsoft.Interop
             if (stubGenerator.StubIsBasicForwarder
                 || !stubGenerator.SupportsTargetFramework)
             {
-                return (PrintForwarderStub(originalSyntax, dllImportStub), dllImportStub.Diagnostics.AddRange(diagnostics.Diagnostics));
+                return (PrintForwarderStub(originalSyntax, dllImportStub, diagnostics), dllImportStub.Diagnostics.AddRange(diagnostics.Diagnostics));
             }
 
             ImmutableArray<AttributeSyntax> forwardedAttributes = dllImportStub.ForwardedAttributes;
@@ -529,8 +540,33 @@ namespace Microsoft.Interop
             return (PrintGeneratedSource(originalSyntax, dllImportStub.StubContext, code), dllImportStub.Diagnostics.AddRange(diagnostics.Diagnostics));
         }
 
-        private MemberDeclarationSyntax PrintForwarderStub(MethodDeclarationSyntax userDeclaredMethod, IncrementalStubGenerationContext stub)
+        private static MemberDeclarationSyntax PrintForwarderStub(MethodDeclarationSyntax userDeclaredMethod, IncrementalStubGenerationContext stub, GeneratorDiagnostics diagnostics)
         {
+            GeneratedDllImportData targetDllImportData = GetTargetDllImportDataFromStubData(
+                stub.DllImportData,
+                userDeclaredMethod.Identifier.ValueText,
+                forwardAll: true);
+
+            if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.StringMarshalling)
+                && targetDllImportData.StringMarshalling != StringMarshalling.Utf16)
+            {
+                diagnostics.ReportCannotForwardToDllImport(
+                    userDeclaredMethod,
+                    $"{nameof(TypeNames.GeneratedDllImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}",
+                    $"{nameof(StringMarshalling)}{Type.Delimiter}{targetDllImportData.StringMarshalling}");
+
+                targetDllImportData = targetDllImportData with { IsUserDefined = targetDllImportData.IsUserDefined & ~DllImportMember.StringMarshalling };
+            }
+
+            if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.StringMarshallingCustomType))
+            {
+                diagnostics.ReportCannotForwardToDllImport(
+                    userDeclaredMethod,
+                    $"{nameof(TypeNames.GeneratedDllImportAttribute)}{Type.Delimiter}{nameof(DllImportMember.StringMarshallingCustomType)}");
+
+                targetDllImportData = targetDllImportData with { IsUserDefined = targetDllImportData.IsUserDefined & ~DllImportMember.StringMarshallingCustomType };
+            }
+
             SyntaxTokenList modifiers = StripTriviaFromModifiers(userDeclaredMethod.Modifiers);
             modifiers = AddToModifiers(modifiers, SyntaxKind.ExternKeyword);
             // Create stub function
@@ -542,11 +578,7 @@ namespace Microsoft.Interop
                 .AddAttributeLists(
                     AttributeList(
                         SingletonSeparatedList(
-                            CreateDllImportAttributeForTarget(
-                                GetTargetDllImportDataFromStubData(
-                                    stub.DllImportData,
-                                    userDeclaredMethod.Identifier.ValueText,
-                                    forwardAll: true)))));
+                            CreateDllImportAttributeForTarget(targetDllImportData))));
 
             MemberDeclarationSyntax toPrint = WrapMethodInContainingScopes(stub.StubContext, stubMethod);
 
@@ -560,6 +592,8 @@ namespace Microsoft.Interop
             string stubTargetName,
             string stubMethodName)
         {
+            Debug.Assert(!options.GenerateForwarders, "GenerateForwarders should have already been handled to use a forwarder stub");
+
             (ParameterListSyntax parameterList, TypeSyntax returnType, AttributeListSyntax returnTypeAttributes) = stubGenerator.GenerateTargetMethodSignatureData();
             LocalFunctionStatementSyntax localDllImport = LocalFunctionStatement(returnType, stubTargetName)
                 .AddModifiers(
@@ -574,7 +608,7 @@ namespace Microsoft.Interop
                                 GetTargetDllImportDataFromStubData(
                                     dllImportData,
                                     stubMethodName,
-                                    options.GenerateForwarders))))))
+                                    forwardAll: false))))))
                 .WithParameterList(parameterList);
             if (returnTypeAttributes is not null)
             {
@@ -600,10 +634,11 @@ namespace Microsoft.Interop
                     CreateBoolExpressionSyntax(true))
             };
 
-            if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.CharSet))
+            if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.StringMarshalling))
             {
+                Debug.Assert(targetDllImportData.StringMarshalling == StringMarshalling.Utf16);
                 NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.CharSet));
-                ExpressionSyntax value = CreateEnumExpressionSyntax(targetDllImportData.CharSet);
+                ExpressionSyntax value = CreateEnumExpressionSyntax(CharSet.Unicode);
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }
             if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.SetLastError))
@@ -647,7 +682,9 @@ namespace Microsoft.Interop
             DllImportMember membersToForward = DllImportMember.All
                                // https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.setlasterror
                                // If SetLastError=true (default is false), the P/Invoke stub gets/caches the last error after invoking the native function.
-                               & ~DllImportMember.SetLastError;
+                               & ~DllImportMember.SetLastError
+                               // StringMarshalling does not have a direct mapping on DllImport. The generated code should handle string marshalling.
+                               & ~DllImportMember.StringMarshalling;
             if (forwardAll)
             {
                 membersToForward = DllImportMember.All;
@@ -655,9 +692,9 @@ namespace Microsoft.Interop
 
             var targetDllImportData = new GeneratedDllImportData(dllImportData.ModuleName)
             {
-                CharSet = dllImportData.CharSet,
                 EntryPoint = dllImportData.EntryPoint,
                 SetLastError = dllImportData.SetLastError,
+                StringMarshalling = dllImportData.StringMarshalling,
                 IsUserDefined = dllImportData.IsUserDefined & membersToForward
             };
 
@@ -683,8 +720,12 @@ namespace Microsoft.Interop
                 return false;
             }
 
-            var methodSyntax = (MethodDeclarationSyntax)syntaxNode;
+            // Filter out methods with no attributes early.
+            return ((MethodDeclarationSyntax)syntaxNode).AttributeLists.Count > 0;
+        }
 
+        private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
+        {
             // Verify the method has no generic types or defined implementation
             // and is marked static and partial.
             if (methodSyntax.TypeParameterList is not null
@@ -692,7 +733,7 @@ namespace Microsoft.Interop
                 || !methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)
                 || !methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
             {
-                return false;
+                return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedMethodSignature, methodSyntax.Identifier.GetLocation(), method.Name);
             }
 
             // Verify that the types the method is declared in are marked partial.
@@ -700,17 +741,17 @@ namespace Microsoft.Interop
             {
                 if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
                 {
-                    return false;
+                    return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers, methodSyntax.Identifier.GetLocation(), method.Name, typeDecl.Identifier);
                 }
             }
 
-            // Filter out methods with no attributes early.
-            if (methodSyntax.AttributeLists.Count == 0)
+            // Verify the method does not have a ref return
+            if (method.ReturnsByRef || method.ReturnsByRefReadonly)
             {
-                return false;
+                return Diagnostic.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, methodSyntax.Identifier.GetLocation(), "ref return", method.ToDisplayString());
             }
 
-            return true;
+            return null;
         }
     }
 }

@@ -10,6 +10,7 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
         [GeneratedDllImport(Interop.Libraries.Advapi32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool GetTokenInformation(
             SafeAccessTokenHandle TokenHandle,
             TOKEN_INFORMATION_CLASS TokenInformationClass,

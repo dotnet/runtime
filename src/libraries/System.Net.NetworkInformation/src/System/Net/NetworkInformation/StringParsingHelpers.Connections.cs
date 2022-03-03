@@ -13,13 +13,8 @@ namespace System.Net.NetworkInformation
 
         internal static int ParseNumSocketConnections(string filePath, string protocolName)
         {
-            if (!File.Exists(filePath))
-            {
-                throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-            }
-
             // Parse the number of active connections out of /proc/net/sockstat
-            string sockstatFile = File.ReadAllText(filePath);
+            string sockstatFile = ReadAllText(filePath);
             int indexOfTcp = sockstatFile.IndexOf(protocolName, StringComparison.Ordinal);
             int endOfTcpLine = sockstatFile.IndexOf(Environment.NewLine, indexOfTcp + 1, StringComparison.Ordinal);
             string tcpLineData = sockstatFile.Substring(indexOfTcp, endOfTcpLine - indexOfTcp);
@@ -31,15 +26,10 @@ namespace System.Net.NetworkInformation
 
         internal static TcpConnectionInformation[] ParseActiveTcpConnectionsFromFiles(string tcp4ConnectionsFile, string tcp6ConnectionsFile)
         {
-            if (!File.Exists(tcp4ConnectionsFile) || !File.Exists(tcp6ConnectionsFile))
-            {
-                throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-            }
-
-            string tcp4FileContents = File.ReadAllText(tcp4ConnectionsFile);
+            string tcp4FileContents = ReadAllText(tcp4ConnectionsFile);
             string[] v4connections = tcp4FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
-            string tcp6FileContents = File.ReadAllText(tcp6ConnectionsFile);
+            string tcp6FileContents = ReadAllText(tcp6ConnectionsFile);
             string[] v6connections = tcp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
             // First line is header in each file. On WSL, this file may be empty.
@@ -99,15 +89,10 @@ namespace System.Net.NetworkInformation
 
         internal static IPEndPoint[] ParseActiveTcpListenersFromFiles(string tcp4ConnectionsFile, string tcp6ConnectionsFile)
         {
-            if (!File.Exists(tcp4ConnectionsFile) || !File.Exists(tcp6ConnectionsFile))
-            {
-                throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-            }
-
-            string tcp4FileContents = File.ReadAllText(tcp4ConnectionsFile);
+            string tcp4FileContents = ReadAllText(tcp4ConnectionsFile);
             string[] v4connections = tcp4FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
-            string tcp6FileContents = File.ReadAllText(tcp6ConnectionsFile);
+            string tcp6FileContents = ReadAllText(tcp6ConnectionsFile);
             string[] v6connections = tcp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
             // First line is header in each file. On WSL, this file may be empty.
@@ -167,15 +152,10 @@ namespace System.Net.NetworkInformation
 
         public static IPEndPoint[] ParseActiveUdpListenersFromFiles(string udp4File, string udp6File)
         {
-            if (!File.Exists(udp4File) || !File.Exists(udp6File))
-            {
-                throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-            }
-
-            string udp4FileContents = File.ReadAllText(udp4File);
+            string udp4FileContents = ReadAllText(udp4File);
             string[] v4connections = udp4FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
-            string udp6FileContents = File.ReadAllText(udp6File);
+            string udp6FileContents = ReadAllText(udp6File);
             string[] v6connections = udp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
             // First line is header in each file. On WSL, this file may be empty.

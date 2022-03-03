@@ -94,7 +94,7 @@ namespace System.Text.RegularExpressions.Symbolic
         public int GetMintermID(int c)
         {
             int[] ascii = _ascii;
-            return (uint)c < ascii.Length ? ascii[c] : _nonAscii.Find(c);
+            return (uint)c < (uint)ascii.Length ? ascii[c] : _nonAscii.Find(c);
         }
     }
 }

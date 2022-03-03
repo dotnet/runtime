@@ -21,6 +21,7 @@ internal static partial class Interop
         internal static unsafe partial void WakeConditionVariable(CONDITION_VARIABLE* ConditionVariable);
 
         [GeneratedDllImport(Libraries.Kernel32)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool SleepConditionVariableCS(CONDITION_VARIABLE* ConditionVariable, CRITICAL_SECTION* CriticalSection, int dwMilliseconds);
     }
 }

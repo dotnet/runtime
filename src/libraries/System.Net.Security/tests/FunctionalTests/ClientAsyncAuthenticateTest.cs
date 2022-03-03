@@ -42,7 +42,9 @@ namespace System.Net.Security.Tests
             await Assert.ThrowsAsync<AuthenticationException>(
                 () => ClientAsyncSslHelper(
                     EncryptionPolicy.NoEncryption,
-                    SslProtocolSupport.DefaultSslProtocols, SslProtocols.Tls | SslProtocols.Tls11 |  SslProtocols.Tls12));
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
+                    SslProtocolSupport.DefaultSslProtocols, SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12));
+#pragma warning restore SYSLIB0039
         }
 
         [Theory]
@@ -95,14 +97,16 @@ namespace System.Net.Security.Tests
             var supportedProtocols = new SslProtocolSupport.SupportedSslProtocolsTestData();
 
             foreach (var serverProtocols in supportedProtocols)
-            foreach (var clientProtocols in supportedProtocols)
             {
-                SslProtocols serverProtocol = (SslProtocols)serverProtocols[0];
-                SslProtocols clientProtocol = (SslProtocols)clientProtocols[0];
-
-                if (clientProtocol != serverProtocol)
+                foreach (var clientProtocols in supportedProtocols)
                 {
-                    yield return new object[] { clientProtocol, serverProtocol, typeof(AuthenticationException) };
+                    SslProtocols serverProtocol = (SslProtocols)serverProtocols[0];
+                    SslProtocols clientProtocol = (SslProtocols)clientProtocols[0];
+
+                    if (clientProtocol != serverProtocol)
+                    {
+                        yield return new object[] { clientProtocol, serverProtocol, typeof(AuthenticationException) };
+                    }
                 }
             }
         }

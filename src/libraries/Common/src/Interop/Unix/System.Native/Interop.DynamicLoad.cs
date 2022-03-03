@@ -8,13 +8,13 @@ internal static partial class Interop
 {
     internal unsafe partial class Sys
     {
-        [GeneratedDllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_LoadLibrary", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_LoadLibrary", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial IntPtr LoadLibrary(string filename);
 
         [GeneratedDllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetProcAddress")]
         internal static partial IntPtr GetProcAddress(IntPtr handle, byte* symbol);
 
-        [GeneratedDllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetProcAddress", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetProcAddress", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial IntPtr GetProcAddress(IntPtr handle, string symbol);
 
         [GeneratedDllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_FreeLibrary")]

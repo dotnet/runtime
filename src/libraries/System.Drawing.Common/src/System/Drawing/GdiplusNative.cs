@@ -47,7 +47,7 @@ namespace System.Drawing
             HandleRef graphics, int state);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipCreateAdjustableArrowCap(float height, float width, bool isFilled, out IntPtr adjustableArrowCap);
+            internal static partial int GdipCreateAdjustableArrowCap(float height, float width, [MarshalAs(UnmanagedType.Bool)] bool isFilled, out IntPtr adjustableArrowCap);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipGetAdjustableArrowCapHeight(
@@ -96,14 +96,14 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef adjustableArrowCap, bool fillState);
+            HandleRef adjustableArrowCap, [MarshalAs(UnmanagedType.Bool)] bool fillState);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipGetAdjustableArrowCapFillState(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef adjustableArrowCap, out bool fillState);
+            HandleRef adjustableArrowCap, [MarshalAs(UnmanagedType.Bool)] out bool fillState);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipGetCustomLineCapType(IntPtr customCap, out CustomLineCapType capType);
@@ -225,7 +225,7 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef pathIter, out int resultCount, out int startIndex, out int endIndex, out bool isClosed);
+            HandleRef pathIter, out int resultCount, out int startIndex, out int endIndex, [MarshalAs(UnmanagedType.Bool)] out bool isClosed);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipPathIterNextSubpathPath(
@@ -236,7 +236,7 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef path, out bool isClosed);
+            HandleRef path, [MarshalAs(UnmanagedType.Bool)] out bool isClosed);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipPathIterNextPathType(
@@ -282,7 +282,7 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef pathIter, out bool hasCurve);
+            HandleRef pathIter, [MarshalAs(UnmanagedType.Bool)] out bool hasCurve);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipPathIterRewind(
@@ -349,10 +349,10 @@ namespace System.Drawing
             internal static partial int GdipCreateLineBrushFromRectI(ref Rectangle rect, int color1, int color2, LinearGradientMode lineGradientMode, WrapMode wrapMode, out IntPtr lineGradient);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipCreateLineBrushFromRectWithAngle(ref RectangleF rect, int color1, int color2, float angle, bool isAngleScaleable, WrapMode wrapMode, out IntPtr lineGradient);
+            internal static partial int GdipCreateLineBrushFromRectWithAngle(ref RectangleF rect, int color1, int color2, float angle, [MarshalAs(UnmanagedType.Bool)] bool isAngleScaleable, WrapMode wrapMode, out IntPtr lineGradient);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipCreateLineBrushFromRectWithAngleI(ref Rectangle rect, int color1, int color2, float angle, bool isAngleScaleable, WrapMode wrapMode, out IntPtr lineGradient);
+            internal static partial int GdipCreateLineBrushFromRectWithAngleI(ref Rectangle rect, int color1, int color2, float angle, [MarshalAs(UnmanagedType.Bool)] bool isAngleScaleable, WrapMode wrapMode, out IntPtr lineGradient);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipSetLineColors(
@@ -380,14 +380,14 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef brush, out bool useGammaCorrection);
+            HandleRef brush, [MarshalAs(UnmanagedType.Bool)] out bool useGammaCorrection);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipSetLineGammaCorrection(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef brush, bool useGammaCorrection);
+            HandleRef brush, [MarshalAs(UnmanagedType.Bool)] bool useGammaCorrection);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipSetLineSigmaBlend(
@@ -763,7 +763,7 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef imageattr, ColorAdjustType type, bool enableFlag,
+            HandleRef imageattr, ColorAdjustType type, [MarshalAs(UnmanagedType.Bool)] bool enableFlag,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(ColorMatrix.PinningMarshaller))]
 #endif
@@ -778,56 +778,56 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef imageattr, ColorAdjustType type, bool enableFlag, float threshold);
+            HandleRef imageattr, ColorAdjustType type, [MarshalAs(UnmanagedType.Bool)] bool enableFlag, float threshold);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipSetImageAttributesGamma(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef imageattr, ColorAdjustType type, bool enableFlag, float gamma);
+            HandleRef imageattr, ColorAdjustType type, [MarshalAs(UnmanagedType.Bool)] bool enableFlag, float gamma);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipSetImageAttributesNoOp(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef imageattr, ColorAdjustType type, bool enableFlag);
+            HandleRef imageattr, ColorAdjustType type, [MarshalAs(UnmanagedType.Bool)] bool enableFlag);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipSetImageAttributesColorKeys(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef imageattr, ColorAdjustType type, bool enableFlag, int colorLow, int colorHigh);
+            HandleRef imageattr, ColorAdjustType type, [MarshalAs(UnmanagedType.Bool)] bool enableFlag, int colorLow, int colorHigh);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipSetImageAttributesOutputChannel(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef imageattr, ColorAdjustType type, bool enableFlag, ColorChannelFlag flags);
+            HandleRef imageattr, ColorAdjustType type, [MarshalAs(UnmanagedType.Bool)] bool enableFlag, ColorChannelFlag flags);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipSetImageAttributesOutputChannelColorProfile(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef imageattr, ColorAdjustType type, bool enableFlag, string colorProfileFilename);
+            HandleRef imageattr, ColorAdjustType type, [MarshalAs(UnmanagedType.Bool)] bool enableFlag, string colorProfileFilename);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipSetImageAttributesRemapTable(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef imageattr, ColorAdjustType type, bool enableFlag, int mapSize, IntPtr map);
+            HandleRef imageattr, ColorAdjustType type, [MarshalAs(UnmanagedType.Bool)] bool enableFlag, int mapSize, IntPtr map);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipSetImageAttributesWrapMode(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef imageattr, int wrapmode, int argb, bool clamp);
+            HandleRef imageattr, int wrapmode, int argb, [MarshalAs(UnmanagedType.Bool)] bool clamp);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipGetImageAttributesAdjustedPalette(
@@ -1008,7 +1008,7 @@ namespace System.Drawing
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipCloneFontFamily(IntPtr fontfamily, out IntPtr clonefontfamily);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipCreateFontFamilyFromName(string name,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -1031,7 +1031,7 @@ namespace System.Drawing
 #endif
             HandleRef fontFamily);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipGetFamilyName(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -1082,7 +1082,7 @@ namespace System.Drawing
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipDeletePrivateFontCollection(ref IntPtr fontCollection);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipPrivateAddFontFile(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -2222,7 +2222,7 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef graphics, out bool result);
+            HandleRef graphics, [MarshalAs(UnmanagedType.Bool)] out bool result);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipGetVisibleClipBounds(
@@ -2236,35 +2236,35 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef graphics, out bool result);
+            HandleRef graphics, [MarshalAs(UnmanagedType.Bool)] out bool result);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipIsVisiblePoint(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef graphics, float x, float y, out bool result);
+            HandleRef graphics, float x, float y, [MarshalAs(UnmanagedType.Bool)] out bool result);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipIsVisiblePointI(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef graphics, int x, int y, out bool result);
+            HandleRef graphics, int x, int y, [MarshalAs(UnmanagedType.Bool)] out bool result);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipIsVisibleRect(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef graphics, float x, float y, float width, float height, out bool result);
+            HandleRef graphics, float x, float y, float width, float height, [MarshalAs(UnmanagedType.Bool)] out bool result);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipIsVisibleRectI(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef graphics, int x, int y, int width, int height, out bool result);
+            HandleRef graphics, int x, int y, int width, int height, [MarshalAs(UnmanagedType.Bool)] out bool result);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipFlush(
@@ -2575,10 +2575,10 @@ namespace System.Drawing
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipDisposeImage(IntPtr image);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipCreateBitmapFromFile(string filename, out IntPtr bitmap);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipCreateBitmapFromFileICM(string filename, out IntPtr bitmap);
 
             [GeneratedDllImport(LibraryName)]
@@ -2686,34 +2686,34 @@ namespace System.Drawing
             HandleRef image, Guid* dimensionIDs, int count);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipCreateMetafileFromEmf(IntPtr hEnhMetafile, bool deleteEmf, out IntPtr metafile);
+            internal static partial int GdipCreateMetafileFromEmf(IntPtr hEnhMetafile, [MarshalAs(UnmanagedType.Bool)] bool deleteEmf, out IntPtr metafile);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipCreateMetafileFromWmf(IntPtr hMetafile, bool deleteWmf,
+            internal static partial int GdipCreateMetafileFromWmf(IntPtr hMetafile, [MarshalAs(UnmanagedType.Bool)] bool deleteWmf,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(WmfPlaceableFileHeader.PinningMarshaller))]
 #endif
                 WmfPlaceableFileHeader wmfplacealbeHeader, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipCreateMetafileFromFile(string file, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipRecordMetafile(IntPtr referenceHdc, EmfType emfType, IntPtr pframeRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipRecordMetafile(IntPtr referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipRecordMetafileI(IntPtr referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipRecordMetafileFileName(string fileName, IntPtr referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipRecordMetafileFileName(string fileName, IntPtr referenceHdc, EmfType emfType, IntPtr pframeRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipRecordMetafileFileNameI(string fileName, IntPtr referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
             [GeneratedDllImport(LibraryName)]
@@ -2976,7 +2976,7 @@ namespace System.Drawing
 #endif
             HandleRef brush, Rectangle* rects, int count);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, SetLastError = true)]
+            [GeneratedDllImport(LibraryName,  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipDrawString(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -3189,7 +3189,7 @@ namespace System.Drawing
 #endif
             HandleRef brush, int x, int y, int width, int height, float startAngle, float sweepAngle);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipMeasureString(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -3204,7 +3204,7 @@ namespace System.Drawing
 #endif
             HandleRef stringFormat, ref RectangleF boundingBox, out int codepointsFitted, out int linesFilled);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipMeasureCharacterRanges(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -3430,10 +3430,10 @@ namespace System.Drawing
 #endif
             HandleRef graphics, int destSpace, int srcSpace, Point* points, int count);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipLoadImageFromFileICM(string filename, out IntPtr image);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipLoadImageFromFile(string filename, out IntPtr image);
 
             [GeneratedDllImport(LibraryName)]

@@ -5,9 +5,9 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <EnableDllImportGenerator>true</EnableDllImportGenerator>
     <!--
-      DLLIMPORTGEN003: DllImportGenerator Target Framework Not Supported.
+      SYSLIB1053: LibraryImportGenerator Target Framework Not Supported.
      -->
-    <NoWarn>$(NoWarn);DLLIMPORTGEN003</NoWarn>
+    <NoWarn>$(NoWarn);SYSLIB1053</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <DefineConstants>FEATURE_GC_STRESS;$(DefineConstants)</DefineConstants>
@@ -66,6 +66,9 @@
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\TypeCast.cs">
       <Link>Runtime.Base\src\System\Runtime\TypeCast.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\MarshalAsAttribute.cs">
+      <Link>Runtime.Base\src\System\Runtime\InteropServices\MarshalAsAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\UnsafeGCHandle.cs">
       <Link>Runtime.Base\src\System\Runtime\InteropServices\UnsafeGCHandle.cs</Link>

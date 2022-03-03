@@ -213,7 +213,7 @@ partial class Test
     public static partial void Method1([MarshalAs(UnmanagedType.BStr)] int i1, int i2);
 
     [GeneratedDllImport(""DoesNotExist"")]
-    public static partial void Method2(bool b1, [MarshalAs(UnmanagedType.FunctionPtr)] bool b2);
+    public static partial void Method2(int i1, [MarshalAs(UnmanagedType.FunctionPtr)] bool b2);
 }
 ";
             Compilation comp = await TestUtils.CreateCompilation(source);
@@ -226,7 +226,7 @@ partial class Test
                     .WithSpan(6, 76, 6, 78)
                     .WithArguments(nameof(MarshalAsAttribute), "i1"),
                 (new DiagnosticResult(GeneratorDiagnostics.ParameterConfigurationNotSupported))
-                    .WithSpan(9, 93, 9, 95)
+                    .WithSpan(9, 92, 9, 94)
                     .WithArguments(nameof(MarshalAsAttribute), "b2"),
             };
             VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
@@ -248,7 +248,7 @@ partial class Test
 
     [GeneratedDllImport(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.FunctionPtr)]
-    public static partial bool Method2(bool b);
+    public static partial bool Method2(int i);
 }
 ";
             Compilation comp = await TestUtils.CreateCompilation(source);
@@ -282,7 +282,7 @@ partial class Test
     public static partial int Method1(int i);
 
     [GeneratedDllImport(""DoesNotExist"")]
-    public static partial bool Method2([MarshalAs((short)0)] bool b);
+    public static partial int Method2([MarshalAs((short)0)] bool b);
 }
 ";
             Compilation comp = await TestUtils.CreateCompilation(source);
@@ -298,10 +298,10 @@ partial class Test
                     .WithSpan(7, 31, 7, 38)
                     .WithArguments(nameof(MarshalAsAttribute), "Method1"),
                 (new DiagnosticResult(GeneratorDiagnostics.ConfigurationValueNotSupported))
-                    .WithSpan(10, 41, 10, 60)
+                    .WithSpan(10, 40, 10, 59)
                     .WithArguments(0, nameof(UnmanagedType)),
                 (new DiagnosticResult(GeneratorDiagnostics.ParameterConfigurationNotSupported))
-                    .WithSpan(10, 67, 10, 68)
+                    .WithSpan(10, 66, 10, 67)
                     .WithArguments(nameof(MarshalAsAttribute), "b"),
             };
             VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
@@ -322,7 +322,7 @@ partial class Test
     public static partial int Method1(int i);
 
     [GeneratedDllImport(""DoesNotExist"")]
-    public static partial bool Method2([MarshalAs(UnmanagedType.I1, IidParameterIndex = 1)] bool b);
+    public static partial int Method2([MarshalAs(UnmanagedType.I1, IidParameterIndex = 1)] bool b);
 }
 ";
             Compilation comp = await TestUtils.CreateCompilation(source);
@@ -335,7 +335,7 @@ partial class Test
                     .WithSpan(6, 14, 6, 73)
                     .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.SafeArraySubType)}"),
                 (new DiagnosticResult(GeneratorDiagnostics.ConfigurationNotSupported))
-                    .WithSpan(10, 41, 10, 91)
+                    .WithSpan(10, 40, 10, 90)
                     .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.IidParameterIndex)}"),
             };
             VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
@@ -343,9 +343,251 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
+        [ConditionalFact]
+        public async Task StringMarshallingForwardingNotSupported_ReportsDiagnostic()
+        {
+            string source = @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial void Method1(string s);
+
+    [GeneratedDllImport(""DoesNotExist"", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Native))]
+    public static partial void Method2(string s);
+
+    struct Native
+    {
+        public Native(string s) { }
+        public string ToManaged() => default;
+    }
+}
+" + CodeSnippets.GeneratedDllImportAttributeDeclaration;
+
+            // Compile against Standard so that we generate forwarders
+            Compilation comp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            DiagnosticResult[] expectedDiags = new DiagnosticResult[]
+            {
+                (new DiagnosticResult(GeneratorDiagnostics.CannotForwardToDllImport))
+                    .WithSpan(6, 32, 6, 39)
+                    .WithArguments($"{nameof(TypeNames.GeneratedDllImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Utf8)}"),
+                (new DiagnosticResult(GeneratorDiagnostics.CannotForwardToDllImport))
+                    .WithSpan(9, 32, 9, 39)
+                    .WithArguments($"{nameof(TypeNames.GeneratedDllImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Custom)}"),
+                (new DiagnosticResult(GeneratorDiagnostics.CannotForwardToDllImport))
+                    .WithSpan(9, 32, 9, 39)
+                    .WithArguments($"{nameof(TypeNames.GeneratedDllImportAttribute)}{Type.Delimiter}{nameof(GeneratedDllImportAttribute.StringMarshallingCustomType)}", $"{nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Custom)}"),
+                (new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails))
+                    .WithSpan(9, 47, 9, 48)
+            };
+            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
+            var newCompDiags = newComp.GetDiagnostics();
+            Assert.Empty(newCompDiags);
+        }
+
+        [ConditionalFact]
+        public async Task InvalidStringMarshallingConfiguration_ReportsDiagnostic()
+        {
+            string source = @$"
+using System.Runtime.InteropServices;
+{CodeSnippets.DisableRuntimeMarshalling}
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"", StringMarshalling = StringMarshalling.Custom)]
+    public static partial void Method1(out int i);
+
+    [GeneratedDllImport(""DoesNotExist"", StringMarshalling = StringMarshalling.Utf8, StringMarshallingCustomType = typeof(Native))]
+    public static partial void Method2(out int i);
+
+    struct Native
+    {{
+        public Native(string s) {{ }}
+        public string ToManaged() => default;
+    }}
+}}
+";
+
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            DiagnosticResult[] expectedDiags = new DiagnosticResult[]
+            {
+                (new DiagnosticResult(GeneratorDiagnostics.InvalidStringMarshallingConfiguration))
+                    .WithSpan(6, 6, 6, 86),
+                (new DiagnosticResult(GeneratorDiagnostics.InvalidStringMarshallingConfiguration))
+                    .WithSpan(9, 6, 9, 130)
+            };
+            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
+            var newCompDiags = newComp.GetDiagnostics();
+            Assert.Empty(newCompDiags);
+        }
+
+        [ConditionalFact]
+        public async Task NonPartialMethod_ReportsDiagnostic()
+        {
+            string source = @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static void Method() { }
+
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static extern void ExternMethod();
+}
+";
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            DiagnosticResult[] expectedDiags = new DiagnosticResult[]
+            {
+                (new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedMethodSignature))
+                    .WithSpan(6, 24, 6, 30)
+                    .WithArguments("Method"),
+                (new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedMethodSignature))
+                    .WithSpan(9, 31, 9, 43)
+                    .WithArguments("ExternMethod"),
+            };
+            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
+            var newCompDiags = newComp.GetDiagnostics();
+            Assert.Empty(newCompDiags);
+        }
+
+        [ConditionalFact]
+        public async Task NonStaticMethod_ReportsDiagnostic()
+        {
+            string source = @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public partial void Method();
+}
+";
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            DiagnosticResult[] expectedDiags = new DiagnosticResult[]
+            {
+                (new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedMethodSignature))
+                    .WithSpan(6, 25, 6, 31)
+                    .WithArguments("Method")
+            };
+            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
+
+            // Generator ignores the method
+            TestUtils.AssertPreSourceGeneratorCompilation(newComp);
+        }
+
+        [ConditionalFact]
+        public async Task GenericMethod_ReportsDiagnostic()
+        {
+            string source = @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method1<T>();
+
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method2<T, U>();
+}
+";
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            DiagnosticResult[] expectedDiags = new DiagnosticResult[]
+            {
+                (new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedMethodSignature))
+                    .WithSpan(6, 32, 6, 39)
+                    .WithArguments("Method1"),
+                (new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedMethodSignature))
+                    .WithSpan(9, 32, 9, 39)
+                    .WithArguments("Method2"),
+            };
+            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
+
+            // Generator ignores the method
+            TestUtils.AssertPreSourceGeneratorCompilation(newComp);
+        }
+
+        [ConditionalTheory]
+        [InlineData("class")]
+        [InlineData("struct")]
+        [InlineData("record")]
+        public async Task NonPartialParentType_Diagnostic(string typeKind)
+        {
+            string source = $@"
+using System.Runtime.InteropServices;
+{typeKind} Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method();
+}}
+";
+            Compilation comp = await TestUtils.CreateCompilation(source);
+
+            // Also expect CS0751: A partial method must be declared within a partial type
+            string additionalDiag = "CS0751";
+            TestUtils.AssertPreSourceGeneratorCompilation(comp, additionalDiag);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            DiagnosticResult[] expectedDiags = new DiagnosticResult[]
+            {
+                (new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers))
+                    .WithSpan(6, 32, 6, 38)
+                    .WithArguments("Method", "Test"),
+            };
+            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
+
+            // Generator ignores the method
+            TestUtils.AssertPreSourceGeneratorCompilation(newComp, additionalDiag);
+        }
+
+        [ConditionalTheory]
+        [InlineData("class")]
+        [InlineData("struct")]
+        [InlineData("record")]
+        public async Task NonPartialGrandparentType_Diagnostic(string typeKind)
+        {
+            string source = $@"
+using System.Runtime.InteropServices;
+{typeKind} Test
+{{
+    partial class TestInner
+    {{
+        [GeneratedDllImport(""DoesNotExist"")]
+        static partial void Method();
+    }}
+}}
+";
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            DiagnosticResult[] expectedDiags = new DiagnosticResult[]
+            {
+                (new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers))
+                    .WithSpan(8, 29, 8, 35)
+                    .WithArguments("Method", "Test"),
+            };
+            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
+
+            // Generator ignores the method
+            TestUtils.AssertPreSourceGeneratorCompilation(newComp);
+        }
+
         private static void VerifyDiagnostics(DiagnosticResult[] expectedDiagnostics, Diagnostic[] actualDiagnostics)
         {
-            Assert.Equal(expectedDiagnostics.Length, actualDiagnostics.Length);
+            Assert.True(expectedDiagnostics.Length == actualDiagnostics.Length,
+                $"Expected {expectedDiagnostics.Length} diagnostics, but encountered {actualDiagnostics.Length}. Actual diagnostics:{Environment.NewLine}{string.Join(Environment.NewLine, actualDiagnostics.Select(d => d.ToString()))}");
             for (var i = 0; i < expectedDiagnostics.Length; i++)
             {
                 DiagnosticResult expected = expectedDiagnostics[i];
