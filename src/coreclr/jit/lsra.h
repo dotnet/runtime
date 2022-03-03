@@ -1926,6 +1926,7 @@ public:
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         , isUpperVector(false)
         , isPartiallySpilled(false)
+        , saveRestorePairCount(0)
 #endif
         , isWriteThru(false)
         , isSingleDef(false)
@@ -2014,6 +2015,13 @@ public:
 
     // True if this interval has been partially spilled
     bool isPartiallySpilled : 1;
+    unsigned int saveRestorePairCount;
+
+    
+    bool isSaveRestoreExpensive(Compiler* comp)
+    {
+        return saveRestorePairCount * BB_UNITY_WEIGHT > getLocalVar(comp)->lvRefCntWtd();
+    }
 #else
     bool IsUpperVector() const
     {

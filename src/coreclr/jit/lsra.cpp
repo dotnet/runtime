@@ -5006,12 +5006,16 @@ void LinearScan::allocateRegisters()
             if (refType == RefTypeUpperVectorSave)
             {
                 if ((lclVarInterval->physReg == REG_NA) ||
-                    (lclVarInterval->isPartiallySpilled && (currentInterval->physReg == REG_STK)))
+                    (lclVarInterval->isPartiallySpilled &&
+                     ((currentInterval->physReg == REG_STK) || currentRefPosition->skipSaveRestore)) ||
+                    lclVarInterval->isSaveRestoreExpensive(compiler))
                 {
                     allocate = false;
+                    setIntervalAsSpilled(currentInterval);
                 }
                 else
                 {
+                    //assert(lclVarInterval->saveRestorePairCount * BB_UNITY_WEIGHT <= lclVarInterval->getLocalVar(compiler)->lvRefCntWtd());
                     lclVarInterval->isPartiallySpilled = true;
                 }
             }
@@ -6294,8 +6298,8 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     // while on x86 we can spill directly to memory.
     regNumber spillReg = refPosition->assignedReg();
 #ifdef TARGET_ARM64
-    bool spillToMem = refPosition->spillAfter;
-    assert(spillReg != REG_NA);
+    bool spillToMem = refPosition->spillAfter || lclVarInterval->isSaveRestoreExpensive(compiler);
+    assert((spillReg != REG_NA) || lclVarInterval->isSaveRestoreExpensive(compiler));
 #else
     bool spillToMem = (spillReg == REG_NA);
     assert(!refPosition->spillAfter);
@@ -6396,11 +6400,11 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
         // We need a stack location for this.
         assert(lclVarInterval->isSpilled);
 #ifdef TARGET_AMD64
-        assert(refPosition->assignedReg() == REG_NA);
+        //assert(refPosition->assignedReg() == REG_NA);
         simdNode->gtFlags |= GTF_NOREG_AT_USE;
 #else
         simdNode->gtFlags |= GTF_SPILLED;
-        assert(refPosition->assignedReg() != REG_NA);
+        //assert(refPosition->assignedReg() != REG_NA);
         restoreReg = refPosition->assignedReg();
 #endif
     }
@@ -6825,7 +6829,7 @@ void LinearScan::resolveRegisters()
                     Interval* localVarInterval = interval->relatedInterval;
                     if ((localVarInterval->physReg != REG_NA) && !localVarInterval->isPartiallySpilled)
                     {
-                        if (!currentRefPosition->skipSaveRestore)
+                        if (!currentRefPosition->skipSaveRestore && !localVarInterval->isSaveRestoreExpensive(compiler))
                         {
                             // If the localVar is in a register, it must be in a register that is not trashed by
                             // the current node (otherwise it would have already been spilled).
@@ -6859,7 +6863,7 @@ void LinearScan::resolveRegisters()
                     assert((localVarInterval->assignedReg != nullptr) &&
                            (localVarInterval->assignedReg->regNum == localVarInterval->physReg) &&
                            (localVarInterval->assignedReg->assignedInterval == localVarInterval));
-                    if (!currentRefPosition->skipSaveRestore)
+                    if (!currentRefPosition->skipSaveRestore && !localVarInterval->isSaveRestoreExpensive(compiler))
                     {
                         insertUpperVectorRestore(treeNode, currentRefPosition, interval, block);
                     }

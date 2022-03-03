@@ -1509,6 +1509,8 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
                     newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorSave, tree, RBM_FLT_CALLEE_SAVED);
                 varInterval->isPartiallySpilled = true;
                 pos->skipSaveRestore = isThrowBlock;
+
+                varInterval->saveRestorePairCount++;
 #ifdef TARGET_XARCH
                 pos->regOptional = true;
 #endif
