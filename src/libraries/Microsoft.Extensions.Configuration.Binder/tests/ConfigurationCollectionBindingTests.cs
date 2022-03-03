@@ -24,8 +24,8 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddInMemoryCollection(input);
             var config = configurationBuilder.Build();
-            var list = new List<string>();
-            config.GetSection("StringList").Bind(list);
+
+            var list = config.GetSection("StringList").Get<List<string>>();
 
             Assert.Equal(4, list.Count);
 
@@ -33,6 +33,84 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val1", list[1]);
             Assert.Equal("val2", list[2]);
             Assert.Equal("valx", list[3]);
+        }
+
+        [Fact]
+        public void GetHashSet()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"HashSet:0", "val0"},
+                {"HashSet:1", "val1"},
+                {"HashSet:2", "val2"},
+                {"HashSet:3", "val2"},  // Duplicate value
+                {"HashSet:x", "valx"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var set = config.GetSection("HashSet").Get<HashSet<string>>();
+
+            Assert.Equal(4, set.Count);
+
+            Assert.Contains("val0", set);
+            Assert.Contains("val1", set);
+            Assert.Contains("val2", set);
+            Assert.Contains("valx", set);
+        }
+
+        [Fact]
+        public void GetSortedSet()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"SortedSet:0", "val0"},
+                {"SortedSet:1", "val1"},
+                {"SortedSet:2", "val2"},
+                {"SortedSet:3", "val2"},  // Duplicate value
+                {"SortedSet:x", "valx"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var set = config.GetSection("SortedSet").Get<SortedSet<string>>();
+
+            Assert.Equal(4, set.Count);
+
+            Assert.Contains("val0", set);
+            Assert.Contains("val1", set);
+            Assert.Contains("val2", set);
+            Assert.Contains("valx", set);
+        }
+
+        [Fact]
+        public void GetSet()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ISet:0", "val0"},
+                {"ISet:1", "val1"},
+                {"ISet:2", "val2"},
+                {"ISet:3", "val2"},  // Duplicate value
+                {"ISet:x", "valx"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var set = config.GetSection("ISet").Get<ISet<string>>();
+
+            Assert.Equal(4, set.Count);
+
+            Assert.Contains("val0", set);
+            Assert.Contains("val1", set);
+            Assert.Contains("val2", set);
+            Assert.Contains("valx", set);
         }
 
         [Fact]
@@ -223,8 +301,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddInMemoryCollection(input);
             var config = configurationBuilder.Build();
-            var options = new OptionsWithLists();
-            config.Bind(options);
+            var options = config.Get<OptionsWithLists>();
 
             var list = options.StringList;
 
@@ -277,9 +354,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddInMemoryCollection(input);
             var config = configurationBuilder.Build();
-
-            var options = new OptionsWithLists();
-            config.Bind(options);
+            var options = config.Get<OptionsWithLists>();
 
             var list = options.IntList;
 
@@ -581,6 +656,34 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void AlreadyInitializedSetDictionaryInterfaceBinding()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"AlreadyInitializedSetDictionaryInterface:abc:0", "val_1"},
+                {"AlreadyInitializedSetDictionaryInterface:abc:1", "val_2"},
+                {"AlreadyInitializedSetDictionaryInterface:def:0", "val_3"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithDictionary();
+            config.Bind(options);
+
+            var dictionary = options.AlreadyInitializedSetDictionaryInterface;
+            Assert.NotNull(dictionary);
+            Assert.Equal(2, dictionary.Count);
+            Assert.Equal(2, dictionary["abc"].Count);
+            Assert.Equal(1, dictionary["def"].Count);
+
+            Assert.Contains("val_1", dictionary["abc"]);
+            Assert.Contains("val_2", dictionary["abc"]);
+            Assert.Contains("val_3", dictionary["def"]);
+        }
+
+        [Fact]
         public void CanOverrideExistingDictionaryKey()
         {
             var input = new Dictionary<string, string>
@@ -731,6 +834,90 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             config.Bind(options);
 
             Assert.Empty(options.NonStringKeyDictionary);
+        }
+
+        [Fact]
+        public void SetDictionaryBinding()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"SetDictionary:abc:0", "val_1_1"},
+                {"SetDictionary:abc:1", "val_1_2"},
+                {"SetDictionary:def:0", "val_2"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithDictionary();
+            config.Bind(options);
+
+            var dictionary = options.SetDictionary;
+            Assert.NotNull(dictionary);
+            Assert.Equal(2, dictionary.Count);
+            Assert.Equal(2, dictionary["abc"].Count);
+            Assert.Equal(1, dictionary["def"].Count);
+
+            Assert.Contains("val_1_1", dictionary["abc"]);
+            Assert.Contains("val_1_2", dictionary["abc"]);
+            Assert.Contains("val_2", dictionary["def"]);
+        }
+
+        [Fact]
+        public void HashSetDictionaryBinding()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"HashSetDictionary:abc:0", "val_1_1"},
+                {"HashSetDictionary:abc:1", "val_1_2"},
+                {"HashSetDictionary:def:0", "val_2"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithDictionary();
+            config.Bind(options);
+
+            var dictionary = options.HashSetDictionary;
+            Assert.NotNull(dictionary);
+            Assert.Equal(2, dictionary.Count);
+            Assert.Equal(2, dictionary["abc"].Count);
+            Assert.Equal(1, dictionary["def"].Count);
+
+            Assert.Contains("val_1_1", dictionary["abc"]);
+            Assert.Contains("val_1_2", dictionary["abc"]);
+            Assert.Contains("val_2", dictionary["def"]);
+        }
+
+        [Fact]
+        public void SortedSetDictionaryBinding()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"SortedSetDictionary:abc:0", "val_1_1"},
+                {"SortedSetDictionary:abc:1", "val_1_2"},
+                {"SortedSetDictionary:def:0", "val_2"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithDictionary();
+            config.Bind(options);
+
+            var dictionary = options.SortedSetDictionary;
+            Assert.NotNull(dictionary);
+            Assert.Equal(2, dictionary.Count);
+            Assert.Equal(2, dictionary["abc"].Count);
+            Assert.Equal(1, dictionary["def"].Count);
+
+            Assert.Contains("val_1_1", dictionary["abc"]);
+            Assert.Contains("val_1_2", dictionary["abc"]);
+            Assert.Contains("val_2", dictionary["def"]);
         }
 
         [Fact]
@@ -987,6 +1174,63 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void CanBindUninitializedIList()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"IList:0", "val0"},
+                {"IList:1", "val1"},
+                {"IList:2", "val2"},
+                {"IList:x", "valx"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new UnintializedCollectionsOptions();
+            config.Bind(options);
+
+            var list = options.IList;
+
+            Assert.Equal(4, list.Count);
+
+            Assert.Equal("val0", list[0]);
+            Assert.Equal("val1", list[1]);
+            Assert.Equal("val2", list[2]);
+            Assert.Equal("valx", list[3]);
+        }
+
+        [Fact]
+        public void CanBindUninitializedISet()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ISet:0", "val0"},
+                {"ISet:1", "val1"},
+                {"ISet:2", "val2"},
+                {"ISet:3", "val2"}, // Duplicate value
+                {"ISet:x", "valx"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new UnintializedCollectionsOptions();
+            config.Bind(options);
+
+            var set = options.ISet;
+
+            Assert.Equal(4, set.Count);
+
+            Assert.Contains("val0", set);
+            Assert.Contains("val1", set);
+            Assert.Contains("val2", set);
+            Assert.Contains("valx", set);
+        }
+
+        [Fact]
         public void CanBindUninitializedIReadOnlyCollection()
         {
             var input = new Dictionary<string, string>
@@ -1013,6 +1257,37 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val2", array[2]);
             Assert.Equal("valx", array[3]);
         }
+
+#if NET5_0_OR_GREATER
+        [Fact]
+        public void CanBindUninitializedIReadOnlySet()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"IReadOnlySet:0", "val0"},
+                {"IReadOnlySet:1", "val1"},
+                {"IReadOnlySet:2", "val2"},
+                {"IReadOnlySet:3", "val2"}, // Duplicate value
+                {"IReadOnlySet:x", "valx"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new UnintializedCollectionsOptions();
+            config.Bind(options);
+
+            var set = options.IReadOnlySet;
+
+            Assert.Equal(4, set.Count);
+
+            Assert.Contains("val0", set);
+            Assert.Contains("val1", set);
+            Assert.Contains("val2", set);
+            Assert.Contains("valx", set);
+        }
+#endif
 
         [Fact]
         public void CanBindUninitializedIReadOnlyList()
@@ -1096,7 +1371,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public IDictionary<string, string> IDictionary { get; set; }
             public ICollection<string> ICollection { get; set; }
             public IList<string> IList { get; set; }
+            public ISet<string> ISet { get; set; }
             public IReadOnlyCollection<string> IReadOnlyCollection { get; set; }
+#if NET5_0_OR_GREATER
+            public IReadOnlySet<string> IReadOnlySet { get; set; }
+#endif
             public IReadOnlyList<string> IReadOnlyList { get; set; }
             public IReadOnlyDictionary<string, string> IReadOnlyDictionary { get; set; }
         }
@@ -1194,6 +1473,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         {
             public OptionsWithDictionary()
             {
+                AlreadyInitializedSetDictionaryInterface = new Dictionary<string, ISet<string>>();
                 AlreadyInitializedStringDictionaryInterface = new Dictionary<string, string>
                 {
                     ["123"] = "This was already here"
@@ -1208,6 +1488,12 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             public Dictionary<string, List<string>> ListDictionary { get; set; }
 
+            public Dictionary<string, HashSet<string>> HashSetDictionary { get; set; }
+
+            public Dictionary<string, SortedSet<string>> SortedSetDictionary { get; set; }
+
+            public Dictionary<string, ISet<string>> SetDictionary { get; set; }
+
             public Dictionary<NestedOptions, string> NonStringKeyDictionary { get; set; }
 
             // This cannot be initialized because we cannot
@@ -1215,6 +1501,8 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public IDictionary<string, string> StringDictionaryInterface { get; set; }
 
             public IDictionary<string, string> AlreadyInitializedStringDictionaryInterface { get; set; }
+
+            public IDictionary<string, ISet<string>> AlreadyInitializedSetDictionaryInterface { get; set; }
         }
     }
 }

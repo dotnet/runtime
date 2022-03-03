@@ -260,6 +260,15 @@ namespace Microsoft.Extensions.Configuration
             return instance;
         }
 
+        [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the object collection in type so its members may be trimmed.")]
+        private static object? BindToSet(Type type, IConfiguration config, BinderOptions options)
+        {
+            Type genericType = typeof(HashSet<>).MakeGenericType(type.GenericTypeArguments[0]);
+            object? instance = Activator.CreateInstance(genericType);
+            BindCollection(instance, genericType, config, options);
+            return instance;
+        }
+
         // Try to create an array/dictionary instance to back various collection interfaces
         [RequiresUnreferencedCode("In case type is a Dictionary, cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
         private static object? AttemptBindToCollectionInterfaces(
@@ -296,11 +305,27 @@ namespace Microsoft.Extensions.Configuration
                 return instance;
             }
 
+#if NET5_0_OR_GREATER
+            collectionInterface = FindOpenGenericInterface(typeof(IReadOnlySet<>), type);
+            if (collectionInterface != null)
+            {
+                // IReadOnlySet<T> is guaranteed to have exactly one parameter
+                return BindToSet(type, config, options);
+            }
+#endif
+
             collectionInterface = FindOpenGenericInterface(typeof(IReadOnlyCollection<>), type);
             if (collectionInterface != null)
             {
                 // IReadOnlyCollection<T> is guaranteed to have exactly one parameter
                 return BindToCollection(type, config, options);
+            }
+
+            collectionInterface = FindOpenGenericInterface(typeof(ISet<>), type);
+            if (collectionInterface != null)
+            {
+                // ISet<T> is guaranteed to have exactly one parameter
+                return BindToSet(type, config, options);
             }
 
             collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
