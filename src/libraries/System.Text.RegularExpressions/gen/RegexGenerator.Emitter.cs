@@ -103,11 +103,11 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Gets whether a given regular expression method is supported by the code generator.</summary>
-        private static bool SupportsCodeGeneration(RegexMethod rm)
+        private static bool SupportsCodeGeneration(RegexMethod rm, out string? reason)
         {
             RegexNode root = rm.Tree.Root;
 
-            if (!root.SupportsCompilation())
+            if (!root.SupportsCompilation(out reason))
             {
                 return false;
             }
@@ -119,6 +119,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Place an artificial limit on max tree depth in order to mitigate such issues.
                 // The allowed depth can be tweaked as needed;its exceedingly rare to find
                 // expressions with such deep trees.
+                reason = "the regex will result in code that may exceed C# compiler limits";
                 return false;
             }
 
@@ -163,8 +164,10 @@ namespace System.Text.RegularExpressions.Generator
             writer.Write("    public static global::System.Text.RegularExpressions.Regex Instance { get; } = ");
 
             // If we can't support custom generation for this regex, spit out a Regex constructor call.
-            if (!SupportsCodeGeneration(rm))
+            if (!SupportsCodeGeneration(rm, out string? reason))
             {
+                writer.WriteLine();
+                writer.WriteLine($"// Cannot generate Regex-derived implementation because {reason}.");
                 writer.WriteLine($"new global::System.Text.RegularExpressions.Regex({patternExpression}, {optionsExpression}, {timeoutExpression});");
                 writer.WriteLine("}");
                 return ImmutableArray.Create(Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, rm.MethodSyntax.GetLocation()));
