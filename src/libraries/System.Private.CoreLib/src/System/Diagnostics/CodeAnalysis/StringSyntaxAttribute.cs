@@ -67,6 +67,9 @@ namespace System.Diagnostics.CodeAnalysis
         /// <summary>The syntax identifier for strings containing <see cref="TimeSpan"/> format specifiers.</summary>
         public const string TimeSpanFormat = nameof(TimeSpanFormat);
 
+        /// <summary>The syntax identifier for strings containing URIs.</summary>
+        public const string Uri = nameof(Uri);
+
         /// <summary>The syntax identifier for strings containing XML.</summary>
         public const string Xml = nameof(Xml);
     }

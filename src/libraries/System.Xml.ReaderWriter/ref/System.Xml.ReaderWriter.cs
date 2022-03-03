@@ -511,15 +511,15 @@ namespace System.Xml
         public XmlNamespaceManager(System.Xml.XmlNameTable nameTable) { }
         public virtual string DefaultNamespace { get { throw null; } }
         public virtual System.Xml.XmlNameTable? NameTable { get { throw null; } }
-        public virtual void AddNamespace(string prefix, string uri) { }
+        public virtual void AddNamespace(string prefix, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uri) { }
         public virtual System.Collections.IEnumerator GetEnumerator() { throw null; }
         public virtual System.Collections.Generic.IDictionary<string, string> GetNamespacesInScope(System.Xml.XmlNamespaceScope scope) { throw null; }
         public virtual bool HasNamespace(string prefix) { throw null; }
         public virtual string? LookupNamespace(string prefix) { throw null; }
-        public virtual string? LookupPrefix(string uri) { throw null; }
+        public virtual string? LookupPrefix([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uri) { throw null; }
         public virtual bool PopScope() { throw null; }
         public virtual void PushScope() { }
-        public virtual void RemoveNamespace(string prefix, string uri) { }
+        public virtual void RemoveNamespace(string prefix, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uri) { }
     }
     public enum XmlNamespaceScope
     {
@@ -1003,12 +1003,12 @@ namespace System.Xml
         public XmlTextReader(System.IO.Stream xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext? context) { }
         public XmlTextReader(System.IO.TextReader input) { }
         public XmlTextReader(System.IO.TextReader input, System.Xml.XmlNameTable nt) { }
-        public XmlTextReader(string url) { }
-        public XmlTextReader(string url, System.IO.Stream input) { }
-        public XmlTextReader(string url, System.IO.Stream input, System.Xml.XmlNameTable nt) { }
-        public XmlTextReader(string url, System.IO.TextReader input) { }
-        public XmlTextReader(string url, System.IO.TextReader input, System.Xml.XmlNameTable nt) { }
-        public XmlTextReader(string url, System.Xml.XmlNameTable nt) { }
+        public XmlTextReader([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string url) { }
+        public XmlTextReader([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string url, System.IO.Stream input) { }
+        public XmlTextReader([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string url, System.IO.Stream input, System.Xml.XmlNameTable nt) { }
+        public XmlTextReader([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string url, System.IO.TextReader input) { }
+        public XmlTextReader([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string url, System.IO.TextReader input, System.Xml.XmlNameTable nt) { }
+        public XmlTextReader([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string url, System.Xml.XmlNameTable nt) { }
         public XmlTextReader([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Xml")] string xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext? context) { }
         protected XmlTextReader(System.Xml.XmlNameTable nt) { }
         public override int AttributeCount { get { throw null; } }
@@ -1621,7 +1621,7 @@ namespace System.Xml.Schema
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
         public event System.Xml.Schema.ValidationEventHandler ValidationEventHandler { add { } remove { } }
-        public System.Xml.Schema.XmlSchema? Add(string? ns, string uri) { throw null; }
+        public System.Xml.Schema.XmlSchema? Add(string? ns, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uri) { throw null; }
         public System.Xml.Schema.XmlSchema? Add(string? ns, System.Xml.XmlReader reader) { throw null; }
         public System.Xml.Schema.XmlSchema? Add(string? ns, System.Xml.XmlReader reader, System.Xml.XmlResolver? resolver) { throw null; }
         public System.Xml.Schema.XmlSchema? Add(System.Xml.Schema.XmlSchema schema) { throw null; }
@@ -2874,8 +2874,8 @@ namespace System.Xml.Xsl
     {
         public XslTransform() { }
         public System.Xml.XmlResolver? XmlResolver { set { } }
-        public void Load(string url) { }
-        public void Load(string url, System.Xml.XmlResolver? resolver) { }
+        public void Load([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string url) { }
+        public void Load([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string url, System.Xml.XmlResolver? resolver) { }
         public void Load(System.Xml.XmlReader stylesheet) { }
         public void Load(System.Xml.XmlReader stylesheet, System.Xml.XmlResolver? resolver) { }
         public void Load(System.Xml.XPath.IXPathNavigable stylesheet) { }
