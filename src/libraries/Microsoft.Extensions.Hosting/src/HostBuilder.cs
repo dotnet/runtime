@@ -21,6 +21,7 @@ namespace Microsoft.Extensions.Hosting
     /// </summary>
     public partial class HostBuilder : IHostBuilder
     {
+        private const string HostBuildingDiagnosticListenerName = "Microsoft.Extensions.Hosting";
         private const string HostBuildingEventName = "HostBuilding";
         private const string HostBuiltEventName = "HostBuilt";
 
@@ -145,13 +146,25 @@ namespace Microsoft.Extensions.Hosting
             return ResolveHost(_appServices, diagnosticListener);
         }
 
-        internal static DiagnosticListener LogHostBuilding(IHostBuilder builder)
+        private static DiagnosticListener LogHostBuilding(IHostBuilder hostBuilder)
         {
-            var diagnosticListener = new DiagnosticListener("Microsoft.Extensions.Hosting");
+            var diagnosticListener = new DiagnosticListener(HostBuildingDiagnosticListenerName);
 
             if (diagnosticListener.IsEnabled() && diagnosticListener.IsEnabled(HostBuildingEventName))
             {
-                Write(diagnosticListener, HostBuildingEventName, builder);
+                Write(diagnosticListener, HostBuildingEventName, hostBuilder);
+            }
+
+            return diagnosticListener;
+        }
+
+        internal static DiagnosticListener LogHostBuilding(HostApplicationBuilder hostApplicationBuilder)
+        {
+            var diagnosticListener = new DiagnosticListener(HostBuildingDiagnosticListenerName);
+
+            if (diagnosticListener.IsEnabled() && diagnosticListener.IsEnabled(HostBuildingEventName))
+            {
+                Write(diagnosticListener, HostBuildingEventName, hostApplicationBuilder.AsHostBuilder());
             }
 
             return diagnosticListener;

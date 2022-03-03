@@ -26,6 +26,7 @@ namespace Microsoft.Extensions.Hosting
 
         private Func<IServiceProvider> _createServiceProvider;
         private Action<object> _configureContainer = _ => { };
+        private HostBuilderAdapter? _hostBuilderAdapter;
 
         private IServiceProvider? _appServices;
         private bool _hostBuilt;
@@ -217,9 +218,8 @@ namespace Microsoft.Extensions.Hosting
             }
             _hostBuilt = true;
 
-            var hostBuilderAdapter = new HostBuilderAdapter(this);
-            using DiagnosticListener diagnosticListener = HostBuilder.LogHostBuilding(hostBuilderAdapter);
-            hostBuilderAdapter.ApplyChanges();
+            using DiagnosticListener diagnosticListener = HostBuilder.LogHostBuilding(this);
+            _hostBuilderAdapter?.ApplyChanges();
 
             _appServices = _createServiceProvider();
 
@@ -228,6 +228,9 @@ namespace Microsoft.Extensions.Hosting
 
             return HostBuilder.ResolveHost(_appServices, diagnosticListener);
         }
+
+        // Lazily allocate HostBuilderAdapter so the allocations can be avoided if there's nothing observing the events.
+        internal IHostBuilder AsHostBuilder() => _hostBuilderAdapter ??= new HostBuilderAdapter(this);
 
         private sealed class HostBuilderAdapter : IHostBuilder
         {
