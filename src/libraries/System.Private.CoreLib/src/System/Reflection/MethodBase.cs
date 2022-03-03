@@ -63,6 +63,7 @@ namespace System.Reflection
         public override bool Equals(object? obj) => base.Equals(obj);
         public override int GetHashCode() => base.GetHashCode();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(MethodBase? left, MethodBase? right)
         {
             // Test "right" first to allow branch elimination when inlined for null checks (== null)

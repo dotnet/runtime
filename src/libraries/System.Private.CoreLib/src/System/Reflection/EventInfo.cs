@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
@@ -83,6 +84,7 @@ namespace System.Reflection
         public override bool Equals(object? obj) => base.Equals(obj);
         public override int GetHashCode() => base.GetHashCode();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(EventInfo? left, EventInfo? right)
         {
             // Test "right" first to allow branch elimination when inlined for null checks (== null)

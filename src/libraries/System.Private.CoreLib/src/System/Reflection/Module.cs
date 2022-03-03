@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System.Reflection
@@ -136,6 +137,7 @@ namespace System.Reflection
         public override bool Equals(object? o) => base.Equals(o);
         public override int GetHashCode() => base.GetHashCode();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Module? left, Module? right)
         {
             // Test "right" first to allow branch elimination when inlined for null checks (== null)

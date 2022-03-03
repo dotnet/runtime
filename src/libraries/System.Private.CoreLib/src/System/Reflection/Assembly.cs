@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.Security;
 using System.Runtime.Loader;
+using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
@@ -178,6 +179,7 @@ namespace System.Reflection
         public override bool Equals(object? o) => base.Equals(o);
         public override int GetHashCode() => base.GetHashCode();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Assembly? left, Assembly? right)
         {
             // Test "right" first to allow branch elimination when inlined for null checks (== null)

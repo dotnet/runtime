@@ -59,6 +59,7 @@ namespace System.Globalization
             return m_NlsVersion * 7 | m_SortId.GetHashCode();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(SortVersion? left, SortVersion? right)
         {
             // Test "right" first to allow branch elimination when inlined for null checks (== null)

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
@@ -57,6 +58,7 @@ namespace System.Reflection
         public override bool Equals(object? obj) => base.Equals(obj);
         public override int GetHashCode() => base.GetHashCode();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(PropertyInfo? left, PropertyInfo? right)
         {
             // Test "right" first to allow branch elimination when inlined for null checks (== null)

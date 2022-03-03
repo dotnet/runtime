@@ -109,6 +109,7 @@ namespace System
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(MulticastDelegate? d1, MulticastDelegate? d2)
         {
             // Test d2 first to allow branch elimination when inlined for null checks (== null)
@@ -121,6 +122,7 @@ namespace System
             return ReferenceEquals(d2, d1) ? true : d2.Equals((object?)d1);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(MulticastDelegate? d1, MulticastDelegate? d2)
         {
             // Can't call the == operator as it will call object==

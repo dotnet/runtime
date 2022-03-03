@@ -369,6 +369,7 @@ namespace System
             return int.TryParse(component, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsedComponent) && parsedComponent >= 0;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Version? v1, Version? v2)
         {
             // Test "right" first to allow branch elimination when inlined for null checks (== null)

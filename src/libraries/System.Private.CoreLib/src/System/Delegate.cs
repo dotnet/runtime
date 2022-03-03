@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
@@ -92,6 +93,7 @@ namespace System
             return newDelegate;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Delegate? d1, Delegate? d2)
         {
             // Test d2 first to allow branch elimination when inlined for null checks (== null)
@@ -104,6 +106,7 @@ namespace System
             return ReferenceEquals(d2, d1) ? true : d2.Equals((object?)d1);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Delegate? d1, Delegate? d2)
         {
             // Test d2 first to allow branch elimination when inlined for not null checks (!= null)
