@@ -159,7 +159,7 @@ function _store_string_in_intern_table(string: string, root: WasmRoot<MonoString
     rootBuffer.copy_value_from_address(index, root.address);
 }
 
-export function js_string_to_mono_string_interned(string: string | symbol): MonoString {
+export function js_string_to_mono_string_interned_rooted(string: string | symbol, result: WasmRoot<MonoString>): void {
     const text = (typeof (string) === "symbol")
         ? (string.description || Symbol.keyFor(string) || "<unknown Symbol>")
         : string;
@@ -170,55 +170,89 @@ export function js_string_to_mono_string_interned(string: string | symbol): Mono
         throw new Error(`Argument to js_string_to_mono_string_interned must be a string but was ${string}`);
     }
 
-    if ((text.length === 0) && _empty_string_ptr)
-        return _empty_string_ptr;
+    if ((text.length === 0) && _empty_string_ptr) {
+        result.set(_empty_string_ptr);
+        return;
+    }
 
     const ptr = interned_js_string_table.get(text);
-    if (ptr)
-        return ptr;
-
-    const root = mono_wasm_new_root<MonoString>();
-    try {
-        root.value = js_string_to_mono_string_new(text);
-        _store_string_in_intern_table(text, root, true);
-        return root.value;
-    } finally {
-        root.release();
+    if (ptr) {
+        result.set(ptr);
+        return;
     }
+
+    js_string_to_mono_string_new_rooted(text, result);
+    _store_string_in_intern_table(text, result, true);
 }
 
-export function js_string_to_mono_string(string: string): MonoString {
+export function js_string_to_mono_string_rooted(string: string, result: WasmRoot<MonoString>): void {
+    result.clear();
+
     if (string === null)
-        return MonoStringNull;
+        return;
     else if (typeof (string) === "symbol")
-        return js_string_to_mono_string_interned(string);
+        js_string_to_mono_string_interned_rooted(string, result);
     else if (typeof (string) !== "string")
         throw new Error("Expected string argument, got " + typeof (string));
+    else if (string.length === 0)
+        // Always use an interned pointer for empty strings
+        js_string_to_mono_string_interned_rooted(string, result);
+    else {
+        // Looking up large strings in the intern table will require the JS runtime to
+        //  potentially hash them and then do full byte-by-byte comparisons, which is
+        //  very expensive. Because we can not guarantee it won't happen, try to minimize
+        //  the cost of this and prevent performance issues for large strings
+        if (string.length <= 256) {
+            const interned = interned_js_string_table.get(string);
+            if (interned) {
+                result.set(interned);
+                return;
+            }
+        }
 
-    // Always use an interned pointer for empty strings
-    if (string.length === 0)
-        return js_string_to_mono_string_interned(string);
-
-    // Looking up large strings in the intern table will require the JS runtime to
-    //  potentially hash them and then do full byte-by-byte comparisons, which is
-    //  very expensive. Because we can not guarantee it won't happen, try to minimize
-    //  the cost of this and prevent performance issues for large strings
-    if (string.length <= 256) {
-        const interned = interned_js_string_table.get(string);
-        if (interned)
-            return interned;
+        js_string_to_mono_string_new_rooted(string, result);
     }
-
-    return js_string_to_mono_string_new(string);
 }
 
-export function js_string_to_mono_string_new(string: string): MonoString {
+export function js_string_to_mono_string_new_rooted(string: string, result: WasmRoot<MonoString>): void {
     const buffer = Module._malloc((string.length + 1) * 2);
     const buffer16 = (<any>buffer >>> 1) | 0;
     for (let i = 0; i < string.length; i++)
         Module.HEAP16[buffer16 + i] = string.charCodeAt(i);
     Module.HEAP16[buffer16 + string.length] = 0;
-    const result = cwraps.mono_wasm_string_from_utf16(<any>buffer, string.length);
+    cwraps.mono_wasm_string_from_utf16_ref(<any>buffer, string.length, result.address);
     Module._free(buffer);
-    return result;
+}
+
+// Deprecated
+export function js_string_to_mono_string_interned(string: string | symbol): MonoString {
+    const temp = mono_wasm_new_root<MonoString>();
+    try {
+        js_string_to_mono_string_interned_rooted(string, temp);
+        return temp.value;
+    } finally {
+        temp.release();
+    }
+}
+
+// Deprecated
+export function js_string_to_mono_string(string: string): MonoString {
+    const temp = mono_wasm_new_root<MonoString>();
+    try {
+        js_string_to_mono_string_rooted(string, temp);
+        return temp.value;
+    } finally {
+        temp.release();
+    }
+}
+
+// Deprecated
+export function js_string_to_mono_string_new(string: string): MonoString {
+    const temp = mono_wasm_new_root<MonoString>();
+    try {
+        js_string_to_mono_string_new_rooted(string, temp);
+        return temp.value;
+    } finally {
+        temp.release();
+    }
 }

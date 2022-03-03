@@ -12,7 +12,7 @@ import corebindings from "./corebindings";
 import cwraps from "./cwraps";
 import { mono_wasm_new_root, mono_wasm_release_roots } from "./roots";
 import { wrap_error } from "./method-calls";
-import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./strings";
+import { js_string_to_mono_string_ref, js_string_to_mono_string_interned_ref } from "./strings";
 import { isThenable } from "./cancelable-promise";
 import { has_backing_array_buffer } from "./buffers";
 import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, wasm_type_symbol } from "./types";

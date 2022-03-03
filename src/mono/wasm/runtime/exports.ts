@@ -112,8 +112,11 @@ export type MONOType = typeof MONO;
 
 const BINDING = {
     //current "public" BINDING API
+    // Deprecated
     mono_obj_array_new: cwraps.mono_wasm_obj_array_new,
+    // Deprecated
     mono_obj_array_set: cwraps.mono_wasm_obj_array_set,
+    // Deprecated
     js_string_to_mono_string,
     js_typed_array_to_array,
     js_to_mono_obj,

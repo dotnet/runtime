@@ -5,7 +5,7 @@ import { WasmRoot, WasmRootBuffer, mono_wasm_new_root } from "./roots";
 import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull, MonoType, MarshalType } from "./types";
 import { BINDING, Module, runtimeHelpers } from "./imports";
 import { js_to_mono_enum, _js_to_mono_obj, _js_to_mono_uri } from "./js-to-cs";
-import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./strings";
+import { js_string_to_mono_string_ref, js_string_to_mono_string_interned_ref } from "./strings";
 import { _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
 import {
     _create_temp_frame,

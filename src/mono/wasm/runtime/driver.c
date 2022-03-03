@@ -783,15 +783,18 @@ mono_wasm_string_from_js (const char *str)
 		return NULL;
 }
 
-EMSCRIPTEN_KEEPALIVE MonoString *
-mono_wasm_string_from_utf16 (const mono_unichar2 * chars, int length)
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_string_from_utf16_ref (const mono_unichar2 * chars, int length, MonoString **result)
 {
 	assert (length >= 0);
 
-	if (chars)
-		return mono_string_new_utf16 (root_domain, chars, length);
-	else
-		return NULL;
+	MONO_ENTER_GC_UNSAFE;
+	if (chars) {
+		mono_gc_wbarrier_generic_store_atomic(result, (MonoObject *)mono_string_new_utf16 (root_domain, chars, length));
+	} else {
+		mono_gc_wbarrier_generic_store_atomic(result, NULL);
+	}
+	MONO_EXIT_GC_UNSAFE;
 }
 
 static int

@@ -17,7 +17,7 @@ import {
     _decide_if_result_is_marshaled, find_method,
     BoundMethodToken
 } from "./method-binding";
-import { conv_string, conv_string_rooted, js_string_to_mono_string } from "./strings";
+import { conv_string, conv_string_rooted, js_string_to_mono_string, js_string_to_mono_string_rooted } from "./strings";
 import cwraps from "./cwraps";
 import { bindings_lazy_init } from "./startup";
 import { _create_temp_frame, _release_temp_frame } from "./memory";
@@ -536,8 +536,10 @@ export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo:
         return blazorExports._internal.invokeJSFromDotNet(callInfo, arg0, arg1, arg2);
     } catch (ex: any) {
         const exceptionJsString = ex.message + "\n" + ex.stack;
-        const exceptionSystemString = cwraps.mono_wasm_string_from_js(exceptionJsString);
-        Module.setValue(exceptionMessage, <any>exceptionSystemString, "i32"); // *exceptionMessage = exceptionSystemString;
+        const exceptionRoot = mono_wasm_new_root<MonoString>();
+        js_string_to_mono_string_rooted(exceptionJsString, exceptionRoot);
+        exceptionRoot.copy_to_address(<any>exceptionMessage);
+        exceptionRoot.release();
         return 0;
     }
 }
