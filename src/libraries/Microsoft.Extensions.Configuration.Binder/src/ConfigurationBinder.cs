@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
@@ -373,16 +374,25 @@ namespace Microsoft.Extensions.Configuration
                 }
                 else
                 {
-                    // See if its an IEnumerable
-                    collectionInterface = FindOpenGenericInterface(typeof(IEnumerable<>), type);
+                    // See if its an ICollection
+                    collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
                     if (collectionInterface != null)
                     {
-                        instance = BindExistingCollection((IEnumerable)instance!, config, options);
+                        BindCollection(instance, collectionInterface, config, options);
                     }
-                    // Something else
                     else
                     {
-                        BindNonScalar(config, instance, options);
+                        // See if its an IEnumerable
+                        collectionInterface = FindOpenGenericInterface(typeof(IEnumerable<>), type);
+                        if (collectionInterface != null)
+                        {
+                            instance = BindExistingCollection((IEnumerable)instance!, config, options);
+                        }
+                        // Something else
+                        else
+                        {
+                            BindNonScalar(config, instance, options);
+                        }
                     }
                 }
             }
@@ -503,9 +513,11 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the object collection so its members may be trimmed.")]
         private static IEnumerable BindExistingCollection(IEnumerable source, IConfiguration config, BinderOptions options)
         {
-            Type elementType = source.GetType().GenericTypeArguments[0];
-
+            // find the interface that is IEnumerable<T>
+            Type type = source.GetType().GetInterface("IEnumerable`1", false)!;
+            Type elementType = type.GenericTypeArguments[0];
             Type genericType = typeof(List<>).MakeGenericType(elementType);
+
             IList newList = (IList)Activator.CreateInstance(genericType, source)!;
 
             IConfigurationSection[] children = config.GetChildren().ToArray();
@@ -519,6 +531,7 @@ namespace Microsoft.Extensions.Configuration
                         instance: null,
                         config: children[i],
                         options: options);
+
                     if (item != null)
                     {
                         newList.Add(item);
