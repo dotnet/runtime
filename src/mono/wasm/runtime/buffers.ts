@@ -5,7 +5,7 @@ import { JSHandle, MonoArray, MonoObject, MonoString } from "./types";
 import { Module } from "./imports";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { wrap_error } from "./method-calls";
-import { _js_to_mono_obj } from "./js-to-cs";
+import { _js_to_mono_obj_unsafe } from "./js-to-cs";
 import { Int32Ptr, TypedArray, VoidPtr } from "./types/emscripten";
 
 // Creates a new typed array from pinned array address from pinned_array allocated on the heap to the typed array.
@@ -142,14 +142,14 @@ export function mono_wasm_typed_array_copy_to(js_handle: JSHandle, pinned_array:
 
     const res = typedarray_copy_to(js_obj, pinned_array, begin, end, bytes_per_element);
     // returns num_of_bytes boxed
-    return _js_to_mono_obj(false, res);
+    return _js_to_mono_obj_unsafe(false, res);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function mono_wasm_typed_array_from(pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number, type: number, is_exception: Int32Ptr): MonoObject {
     const res = typed_array_from(pinned_array, begin, end, bytes_per_element, type);
     // returns JS typed array like Int8Array, to be wraped with JSObject proxy
-    return _js_to_mono_obj(true, res);
+    return _js_to_mono_obj_unsafe(true, res);
 }
 
 export function mono_wasm_typed_array_copy_from(js_handle: JSHandle, pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number, is_exception: Int32Ptr): MonoObject | MonoString {
@@ -160,7 +160,7 @@ export function mono_wasm_typed_array_copy_from(js_handle: JSHandle, pinned_arra
 
     const res = typedarray_copy_from(js_obj, pinned_array, begin, end, bytes_per_element);
     // returns num_of_bytes boxed
-    return _js_to_mono_obj(false, res);
+    return _js_to_mono_obj_unsafe(false, res);
 }
 
 export function has_backing_array_buffer(js_obj: TypedArray): boolean {

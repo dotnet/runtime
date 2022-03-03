@@ -10,14 +10,14 @@ import {
 import { BINDING, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
 import { _mono_array_root_to_js_array, _unbox_mono_obj_root } from "./cs-to-js";
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
-import { js_array_to_mono_array, _box_js_bool, _js_to_mono_obj } from "./js-to-cs";
+import { js_array_to_mono_array, _box_js_bool, _js_to_mono_obj_unsafe } from "./js-to-cs";
 import {
     mono_bind_method,
     Converter, _compile_converter_for_marshal_string,
     _decide_if_result_is_marshaled, find_method,
     BoundMethodToken
 } from "./method-binding";
-import { conv_string, conv_string_rooted, js_string_to_mono_string, js_string_to_mono_string_rooted } from "./strings";
+import { conv_string, conv_string_root, js_string_to_mono_string, js_string_to_mono_string_root } from "./strings";
 import cwraps from "./cwraps";
 import { bindings_lazy_init } from "./startup";
 import { _create_temp_frame, _release_temp_frame } from "./memory";
@@ -118,7 +118,7 @@ function _convert_exception_for_method_call(result: WasmRoot<MonoString>, except
         return null;
 
     // FIXME: rooted
-    const msg = conv_string_rooted(result);
+    const msg = conv_string_root(result);
     const err = new Error(msg!); //the convention is that invoke_method ToString () any outgoing exception
     // console.warn (`error ${msg} at location ${err.stack});
     return err;
@@ -300,7 +300,7 @@ export function mono_call_assembly_entry_point(assembly: string, args?: any[], s
 export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: MonoString, args: MonoArray, is_exception: Int32Ptr): any {
     const argsRoot = mono_wasm_new_root(args), nameRoot = mono_wasm_new_root(method_name);
     try {
-        const js_name = conv_string_rooted(nameRoot);
+        const js_name = conv_string_root(nameRoot);
         if (!js_name || (typeof (js_name) !== "string")) {
             return wrap_error(is_exception, "ERR12: Invalid method name object '" + nameRoot.value + "'");
         }
@@ -317,7 +317,7 @@ export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: 
             if (typeof m === "undefined")
                 throw new Error("Method: '" + js_name + "' not found for: '" + Object.prototype.toString.call(obj) + "'");
             const res = m.apply(obj, js_args);
-            return _js_to_mono_obj(true, res);
+            return _js_to_mono_obj_unsafe(true, res);
         } catch (ex) {
             return wrap_error(is_exception, ex);
         }
@@ -330,7 +330,7 @@ export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: 
 export function mono_wasm_get_object_property(js_handle: JSHandle, property_name: MonoString, is_exception: Int32Ptr): any {
     const nameRoot = mono_wasm_new_root(property_name);
     try {
-        const js_name = conv_string_rooted(nameRoot);
+        const js_name = conv_string_root(nameRoot);
         if (!js_name) {
             return wrap_error(is_exception, "Invalid property name object '" + nameRoot.value + "'");
         }
@@ -343,7 +343,7 @@ export function mono_wasm_get_object_property(js_handle: JSHandle, property_name
         try {
             const m = obj[js_name];
 
-            return _js_to_mono_obj(true, m);
+            return _js_to_mono_obj_unsafe(true, m);
         } catch (ex) {
             return wrap_error(is_exception, ex);
         }
@@ -356,7 +356,7 @@ export function mono_wasm_set_object_property(js_handle: JSHandle, property_name
     const valueRoot = mono_wasm_new_root(value), nameRoot = mono_wasm_new_root(property_name);
     try {
 
-        const property = conv_string_rooted(nameRoot);
+        const property = conv_string_root(nameRoot);
         if (!property) {
             return wrap_error(is_exception, "Invalid property name object '" + property_name + "'");
         }
@@ -406,7 +406,7 @@ export function mono_wasm_get_by_index(js_handle: JSHandle, property_index: numb
 
     try {
         const m = obj[property_index];
-        return _js_to_mono_obj(true, m);
+        return _js_to_mono_obj_unsafe(true, m);
     } catch (ex) {
         return wrap_error(is_exception, ex);
     }
@@ -436,7 +436,7 @@ export function mono_wasm_set_by_index(js_handle: JSHandle, property_index: numb
 export function mono_wasm_get_global_object(global_name: MonoString, is_exception: Int32Ptr): MonoObject {
     const nameRoot = mono_wasm_new_root(global_name);
     try {
-        const js_name = conv_string_rooted(nameRoot);
+        const js_name = conv_string_root(nameRoot);
 
         let globalObj;
 
@@ -452,7 +452,7 @@ export function mono_wasm_get_global_object(global_name: MonoString, is_exceptio
             return wrap_error(is_exception, "Global object '" + js_name + "' not found.");
         }
 
-        return _js_to_mono_obj(true, globalObj);
+        return _js_to_mono_obj_unsafe(true, globalObj);
     } finally {
         nameRoot.release();
     }
@@ -537,7 +537,7 @@ export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo:
     } catch (ex: any) {
         const exceptionJsString = ex.message + "\n" + ex.stack;
         const exceptionRoot = mono_wasm_new_root<MonoString>();
-        js_string_to_mono_string_rooted(exceptionJsString, exceptionRoot);
+        js_string_to_mono_string_root(exceptionJsString, exceptionRoot);
         exceptionRoot.copy_to_address(<any>exceptionMessage);
         exceptionRoot.release();
         return 0;
@@ -586,7 +586,7 @@ export function mono_wasm_compile_function(code: MonoString, is_exception: Int32
         if (!res || typeof res !== "function")
             return wrap_error(is_exception, "Code must return an instance of a JavaScript function. Please use `return` statement to return a function.");
         Module.setValue(is_exception, 0, "i32");
-        return _js_to_mono_obj(true, res);
+        return _js_to_mono_obj_unsafe(true, res);
     } catch (ex) {
         return wrap_error(is_exception, ex);
     }

@@ -12,7 +12,7 @@ import corebindings from "./corebindings";
 import cwraps from "./cwraps";
 import { mono_wasm_new_root, mono_wasm_release_roots, WasmRoot } from "./roots";
 import { wrap_error } from "./method-calls";
-import { js_string_to_mono_string_rooted, js_string_to_mono_string_interned_rooted } from "./strings";
+import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "./strings";
 import { isThenable } from "./cancelable-promise";
 import { has_backing_array_buffer } from "./buffers";
 import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, wasm_type_symbol, MonoClass } from "./types";
@@ -20,16 +20,20 @@ import { setI32, setU32, setF64 } from "./memory";
 import { Int32Ptr, TypedArray } from "./types/emscripten";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function _js_to_mono_uri(should_add_in_flight: boolean, js_obj: any): MonoObject {
+export function _js_to_mono_uri_root(should_add_in_flight: boolean, js_obj: any, result: WasmRoot<MonoObject>): void {
     switch (true) {
         case js_obj === null:
         case typeof js_obj === "undefined":
-            return MonoObjectNull;
+            result.clear();
+            return;
         case typeof js_obj === "symbol":
         case typeof js_obj === "string":
-            return corebindings._create_uri(js_obj);
+            // FIXME
+            result.value = corebindings._create_uri(js_obj);
+            return;
         default:
-            return _extract_mono_obj(should_add_in_flight, js_obj);
+            _extract_mono_obj_root(should_add_in_flight, js_obj, result);
+            return;
     }
 }
 
@@ -38,7 +42,19 @@ export function _js_to_mono_uri(should_add_in_flight: boolean, js_obj: any): Mon
 export function js_to_mono_obj(js_obj: any): MonoObject {
     const temp = mono_wasm_new_root<MonoObject>();
     try {
-        _js_to_mono_obj_rooted(false, js_obj, temp);
+        _js_to_mono_obj_root(false, js_obj, temp);
+        return temp.value;
+    } finally {
+        temp.release();
+    }
+}
+
+// Deprecated
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function _js_to_mono_obj_unsafe(should_add_in_flight: boolean, js_obj: any): MonoObject {
+    const temp = mono_wasm_new_root<MonoObject>();
+    try {
+        _js_to_mono_obj_root(should_add_in_flight, js_obj, temp);
         return temp.value;
     } finally {
         temp.release();
@@ -46,7 +62,7 @@ export function js_to_mono_obj(js_obj: any): MonoObject {
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function _js_to_mono_obj_rooted(should_add_in_flight: boolean, js_obj: any, result: WasmRoot<MonoObject>): void {
+export function _js_to_mono_obj_root(should_add_in_flight: boolean, js_obj: any, result: WasmRoot<MonoObject>): void {
     switch (true) {
         case js_obj === null:
         case typeof js_obj === "undefined":
@@ -72,10 +88,10 @@ export function _js_to_mono_obj_rooted(should_add_in_flight: boolean, js_obj: an
             return;
         }
         case typeof js_obj === "string":
-            js_string_to_mono_string_rooted(js_obj, <any>result);
+            js_string_to_mono_string_root(js_obj, <any>result);
             return;
         case typeof js_obj === "symbol":
-            js_string_to_mono_string_interned_rooted(js_obj, <any>result);
+            js_string_to_mono_string_interned_root(js_obj, <any>result);
             return;
         case typeof js_obj === "boolean":
             // FIXME
@@ -94,12 +110,12 @@ export function _js_to_mono_obj_rooted(should_add_in_flight: boolean, js_obj: an
             result.value = corebindings._create_date_time(js_obj.getTime());
             return;
         default:
-            _extract_mono_obj_rooted(should_add_in_flight, js_obj, result);
+            _extract_mono_obj_root(should_add_in_flight, js_obj, result);
             return;
     }
 }
 
-function _extract_mono_obj_rooted(should_add_in_flight: boolean, js_obj: any, result: WasmRoot<MonoObject>): void {
+function _extract_mono_obj_root(should_add_in_flight: boolean, js_obj: any, result: WasmRoot<MonoObject>): void {
     result.clear();
 
     if (js_obj === null || typeof js_obj === "undefined")
@@ -193,8 +209,7 @@ export function js_array_to_mono_array(js_array: any[], asString: boolean, shoul
             if (asString)
                 obj = obj.toString();
 
-            // TODO: pass elemRoot into new API that copies
-            elemRoot.value = _js_to_mono_obj(should_add_in_flight, obj);
+            _js_to_mono_obj_root(should_add_in_flight, obj, elemRoot);
             cwraps.mono_wasm_obj_array_set_ref(arrayAddress, i, elemAddress);
         }
 

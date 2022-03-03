@@ -29,12 +29,12 @@ export class StringDecoder {
             return null;
 
         this.mono_wasm_string_root.value = mono_string;
-        const result = this.copy_rooted(this.mono_wasm_string_root);
+        const result = this.copy_root(this.mono_wasm_string_root);
         this.mono_wasm_string_root.value = MonoStringNull;
         return result;
     }
 
-    copy_rooted(root: WasmRoot<MonoString>): string | null {
+    copy_root(root: WasmRoot<MonoString>): string | null {
         this.init_fields();
         if (root.value === MonoStringNull)
             return null;
@@ -104,8 +104,8 @@ export function conv_string(mono_obj: MonoString): string | null {
     return string_decoder.copy(mono_obj);
 }
 
-export function conv_string_rooted(root: WasmRoot<MonoString>): string | null {
-    return string_decoder.copy_rooted(root);
+export function conv_string_root(root: WasmRoot<MonoString>): string | null {
+    return string_decoder.copy_root(root);
 }
 
 // Ensures the string is already interned on both the managed and JavaScript sides,
@@ -161,7 +161,7 @@ function _store_string_in_intern_table(string: string, root: WasmRoot<MonoString
     rootBuffer.copy_value_from_address(index, root.address);
 }
 
-export function js_string_to_mono_string_interned_rooted(string: string | symbol, result: WasmRoot<MonoString>): void {
+export function js_string_to_mono_string_interned_root(string: string | symbol, result: WasmRoot<MonoString>): void {
     const text = (typeof (string) === "symbol")
         ? (string.description || Symbol.keyFor(string) || "<unknown Symbol>")
         : string;
@@ -183,22 +183,22 @@ export function js_string_to_mono_string_interned_rooted(string: string | symbol
         return;
     }
 
-    js_string_to_mono_string_new_rooted(text, result);
+    js_string_to_mono_string_new_root(text, result);
     _store_string_in_intern_table(text, result, true);
 }
 
-export function js_string_to_mono_string_rooted(string: string, result: WasmRoot<MonoString>): void {
+export function js_string_to_mono_string_root(string: string, result: WasmRoot<MonoString>): void {
     result.clear();
 
     if (string === null)
         return;
     else if (typeof (string) === "symbol")
-        js_string_to_mono_string_interned_rooted(string, result);
+        js_string_to_mono_string_interned_root(string, result);
     else if (typeof (string) !== "string")
         throw new Error("Expected string argument, got " + typeof (string));
     else if (string.length === 0)
         // Always use an interned pointer for empty strings
-        js_string_to_mono_string_interned_rooted(string, result);
+        js_string_to_mono_string_interned_root(string, result);
     else {
         // Looking up large strings in the intern table will require the JS runtime to
         //  potentially hash them and then do full byte-by-byte comparisons, which is
@@ -212,11 +212,11 @@ export function js_string_to_mono_string_rooted(string: string, result: WasmRoot
             }
         }
 
-        js_string_to_mono_string_new_rooted(string, result);
+        js_string_to_mono_string_new_root(string, result);
     }
 }
 
-export function js_string_to_mono_string_new_rooted(string: string, result: WasmRoot<MonoString>): void {
+export function js_string_to_mono_string_new_root(string: string, result: WasmRoot<MonoString>): void {
     const buffer = Module._malloc((string.length + 1) * 2);
     const buffer16 = (<any>buffer >>> 1) | 0;
     for (let i = 0; i < string.length; i++)
@@ -230,7 +230,7 @@ export function js_string_to_mono_string_new_rooted(string: string, result: Wasm
 export function js_string_to_mono_string_interned(string: string | symbol): MonoString {
     const temp = mono_wasm_new_root<MonoString>();
     try {
-        js_string_to_mono_string_interned_rooted(string, temp);
+        js_string_to_mono_string_interned_root(string, temp);
         return temp.value;
     } finally {
         temp.release();
@@ -241,7 +241,7 @@ export function js_string_to_mono_string_interned(string: string | symbol): Mono
 export function js_string_to_mono_string(string: string): MonoString {
     const temp = mono_wasm_new_root<MonoString>();
     try {
-        js_string_to_mono_string_rooted(string, temp);
+        js_string_to_mono_string_root(string, temp);
         return temp.value;
     } finally {
         temp.release();
@@ -252,7 +252,7 @@ export function js_string_to_mono_string(string: string): MonoString {
 export function js_string_to_mono_string_new(string: string): MonoString {
     const temp = mono_wasm_new_root<MonoString>();
     try {
-        js_string_to_mono_string_new_rooted(string, temp);
+        js_string_to_mono_string_new_root(string, temp);
         return temp.value;
     } finally {
         temp.release();
