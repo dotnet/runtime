@@ -122,13 +122,9 @@ steps:
     displayName: Install MAUI workload
     workingDirectory: $(Build.SourcesDirectory)
 
-<<<<<<< HEAD
   - script: $(Build.SourcesDirectory)/eng/testing/performance/create-provisioning-profile.sh
     displayName: Create iOS code signing and provisioning profile
 
-=======
-  
->>>>>>> 556a076739c... Run both podcast and new maui.
   - script: |
       ./dotnet new maui -n MauiTesting
       cd MauiTesting
@@ -199,7 +195,8 @@ steps:
       ../dotnet build -bl:MauiiOS.binlog -f net6.0-ios -c Release
       mv ./bin/Release/net6.0-ios/iossimulator-x64/MauiTesting.app ./MauiiOSDefault.app
     displayName: Build MAUI iOS
-  workingDirectory: $(Build.SourcesDirectory)/MauiTesting>>>>>>> 6712350e0bd... Fixed spacing.
+  workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+
 
   - script: |
       chmod -R a+r .
