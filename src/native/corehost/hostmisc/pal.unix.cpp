@@ -718,6 +718,7 @@ static
 pal::string_t normalize_linux_rid(pal::string_t rid)
 {
     pal::string_t rhelPrefix(_X("rhel."));
+    pal::string_t anolisPrefix(_X("anolis."));
     pal::string_t alpinePrefix(_X("alpine."));
     pal::string_t rockyPrefix(_X("rocky."));
     size_t lastVersionSeparatorIndex = std::string::npos;
@@ -737,6 +738,10 @@ pal::string_t normalize_linux_rid(pal::string_t rid)
     else if (rid.compare(0, rockyPrefix.length(), rockyPrefix) == 0)
     {
         lastVersionSeparatorIndex = rid.find(_X("."), rockyPrefix.length());
+    }
+    else if (rid.compare(0, anolisPrefix.length(), anolisPrefix) == 0)
+    {
+        lastVersionSeparatorIndex = rid.find(_X("."), anolisPrefix.length());
     }
 
     if (lastVersionSeparatorIndex != std::string::npos)
