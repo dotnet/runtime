@@ -429,6 +429,46 @@ const pal::string_t& runtime_config_t::get_tfm() const
     return m_tfm;
 }
 
+const int runtime_config_t::get_compat_major_version_from_tfm() const
+{
+    assert(m_valid);
+
+    // TFM is in form
+    // - netcoreapp#.#  for <= 3.1
+    // - net#.#  for >= 5.0
+    // In theory it could contain a suffix like `net6.0-windows` (or more than one)
+    // or it may lack the minor version like `net6`. SDK will normalize this, but the runtime should not 100% rely on it
+
+    if (m_tfm.empty())
+        return runtime_config_t::unknown_version;
+
+    int majorVersionStartIndex;
+    if (m_tfm.rfind(_X("netcoreapp"), 0) == 0) // this is StartsWith("netcoreapp") in std speak
+    {
+        majorVersionStartIndex = 10;  // "netcoreapp".Length
+    }
+    else
+    {
+        majorVersionStartIndex = 3;  // "net".Length
+    }
+
+    if (majorVersionStartIndex >= m_tfm.length())
+        return runtime_config_t::unknown_version;
+
+    int majorVersionEndIndex = index_of_non_numeric (m_tfm, majorVersionStartIndex);
+    if (majorVersionEndIndex == pal::string_t::npos || majorVersionEndIndex == majorVersionStartIndex)
+        return runtime_config_t::unknown_version;
+
+    return std::stoul(m_tfm.substr(majorVersionStartIndex, majorVersionEndIndex - majorVersionStartIndex));
+}
+
+bool runtime_config_t::get_is_multilevel_lookup_disabled() const
+{
+    // Starting with .NET 7 multi-level lookup is fully disabled
+    int compat_major_version = get_compat_major_version_from_tfm();
+    return (compat_major_version >= 7 || compat_major_version == runtime_config_t::unknown_version);
+}
+
 bool runtime_config_t::get_is_framework_dependent() const
 {
     return m_is_framework_dependent;

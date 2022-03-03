@@ -93,21 +93,22 @@ void fx_resolver_t::display_missing_framework_error(
     const pal::string_t& fx_name,
     const pal::string_t& fx_version,
     const pal::string_t& fx_dir,
-    const pal::string_t& dotnet_root)
+    const pal::string_t& dotnet_root,
+    bool disable_multilevel_lookup)
 {
     std::vector<framework_info> framework_infos;
     pal::string_t fx_ver_dirs;
     if (fx_dir.length())
     {
         fx_ver_dirs = fx_dir;
-        framework_info::get_all_framework_infos(get_directory(fx_dir), fx_name, &framework_infos);
+        framework_info::get_all_framework_infos(get_directory(fx_dir), fx_name, disable_multilevel_lookup, &framework_infos);
     }
     else
     {
         fx_ver_dirs = dotnet_root;
     }
 
-    framework_info::get_all_framework_infos(dotnet_root, fx_name, &framework_infos);
+    framework_info::get_all_framework_infos(dotnet_root, fx_name, disable_multilevel_lookup, &framework_infos);
 
     // Display the error message about missing FX.
     if (fx_version.length())

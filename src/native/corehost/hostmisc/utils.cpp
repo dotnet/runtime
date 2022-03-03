@@ -284,9 +284,9 @@ bool multilevel_lookup_enabled()
     return multilevel_lookup;
 }
 
-void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, std::vector<pal::string_t>* locations)
+void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, const bool disable_multilevel_lookup, std::vector<pal::string_t>* locations)
 {
-    bool multilevel_lookup = multilevel_lookup_enabled();
+    bool multilevel_lookup = disable_multilevel_lookup ? false : multilevel_lookup_enabled();
 
     // Multi-level lookup will look for the most appropriate version in several locations
     // by following the priority rank below:

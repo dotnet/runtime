@@ -466,7 +466,7 @@ namespace
             }
             else
             {
-                rc = fx_resolver_t::resolve_frameworks_for_app(host_info, override_settings, app_config, fx_definitions);
+                rc = fx_resolver_t::resolve_frameworks_for_app(host_info, app_config.get_is_multilevel_lookup_disabled(), override_settings, app_config, fx_definitions);
                 if (rc != StatusCode::Success)
                 {
                     return rc;
@@ -620,7 +620,7 @@ namespace
             return StatusCode::InvalidConfigFile;
         }
 
-        rc = fx_resolver_t::resolve_frameworks_for_app(host_info, override_settings, app_config, fx_definitions);
+        rc = fx_resolver_t::resolve_frameworks_for_app(host_info, app_config.get_is_multilevel_lookup_disabled(), override_settings, app_config, fx_definitions);
         if (rc != StatusCode::Success)
             return rc;
 

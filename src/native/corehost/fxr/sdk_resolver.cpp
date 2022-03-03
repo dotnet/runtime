@@ -61,7 +61,7 @@ pal::string_t sdk_resolver::resolve(const pal::string_t& dotnet_root, bool print
     fx_ver_t resolved_version;
 
     vector<pal::string_t> locations;
-    get_framework_and_sdk_locations(dotnet_root, &locations);
+    get_framework_and_sdk_locations(dotnet_root, /*disable_multilevel_lookup*/ true, &locations);
 
     for (auto&& dir : locations)
     {
