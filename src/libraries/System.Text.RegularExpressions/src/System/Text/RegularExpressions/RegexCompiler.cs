@@ -2272,13 +2272,15 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.Kind is RegexNodeKind.Concatenate, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() >= 2, $"Expected at least 2 children, found {node.ChildCount()}");
 
+                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+
                 // Emit the code for each child one after the other.
                 int childCount = node.ChildCount();
                 for (int i = 0; i < childCount; i++)
                 {
                     // If we can find a subsequence of fixed-length children, we can emit a length check once for that sequence
                     // and then skip the individual length checks for each.
-                    if (emitLengthChecksIfRequired && node.TryGetJoinableLengthCheckChildRange(i, out int requiredLength, out int exclusiveEnd))
+                    if (!rtl && emitLengthChecksIfRequired && node.TryGetJoinableLengthCheckChildRange(i, out int requiredLength, out int exclusiveEnd))
                     {
                         EmitSpanLengthCheck(requiredLength);
                         for (; i < exclusiveEnd; i++)
@@ -2315,19 +2317,49 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily, $"Unexpected type: {node.Kind}");
 
-                // This only emits a single check, but it's called from the looping constructs in a loop
-                // to generate the code for a single check, so we check for each "family" (one, notone, set)
-                // rather than only for the specific single character nodes.
+                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                if (rtl)
+                {
+                    // We don't use static position for RTL.  We always consult the current position and load directly from the original text span.
+                    Debug.Assert(offset is null);
+                    TransferSliceStaticPosToPos();
+                }
 
-                // if ((uint)(sliceStaticPos + offset) >= slice.Length || slice[sliceStaticPos + offset] != ch) goto Done;
                 if (emitLengthCheck)
                 {
-                    EmitSpanLengthCheck(1, offset);
+                    if (!rtl)
+                    {
+                        // if ((uint)(sliceStaticPos + offset) >= slice.Length) goto Done;
+                        EmitSpanLengthCheck(1, offset);
+                    }
+                    else
+                    {
+                        // if ((uint)(pos - 1) >= inputSpan.Length) goto Done;
+                        Ldloc(pos);
+                        Ldc(1);
+                        Sub();
+                        Ldloca(inputSpan);
+                        Call(s_spanGetLengthMethod);
+                        BgeUnFar(doneLabel);
+                    }
                 }
-                Ldloca(slice);
-                EmitSum(sliceStaticPos, offset);
+
+                if (!rtl)
+                {
+                    // slice[staticPos + offset]
+                    Ldloca(slice);
+                    EmitSum(sliceStaticPos, offset);
+                }
+                else
+                {
+                    // inputSpan[pos - 1]
+                    Ldloca(inputSpan);
+                    EmitSum(-1, pos);
+                }
                 Call(s_spanGetItemMethod);
                 LdindU2();
+
+                // if (loadedChar != ch) goto doneLabel;
                 if (node.IsSetFamily)
                 {
                     EmitMatchCharacterClass(node.Str!, IsCaseInsensitive(node));
@@ -2350,13 +2382,30 @@ namespace System.Text.RegularExpressions
                     }
                 }
 
-                sliceStaticPos++;
+                if (!rtl)
+                {
+                    sliceStaticPos++;
+                }
+                else
+                {
+                    // pos--;
+                    Ldloc(pos);
+                    Ldc(1);
+                    Sub();
+                    Stloc(pos);
+                }
             }
 
             // Emits the code to handle a boundary check on a character.
             void EmitBoundary(RegexNode node)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Boundary or RegexNodeKind.NonBoundary or RegexNodeKind.ECMABoundary or RegexNodeKind.NonECMABoundary, $"Unexpected type: {node.Kind}");
+
+                if ((node.Options & RegexOptions.RightToLeft) != 0)
+                {
+                    // RightToLeft doesn't use static position.  This ensures it's 0.
+                    TransferSliceStaticPosToPos();
+                }
 
                 // if (!IsBoundary(inputSpan, pos + sliceStaticPos)) goto doneLabel;
                 Ldthis();
@@ -2497,12 +2546,47 @@ namespace System.Text.RegularExpressions
             void EmitMultiChar(RegexNode node, bool emitLengthCheck)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Multi, $"Unexpected type: {node.Kind}");
-                EmitMultiCharString(node.Str!, IsCaseInsensitive(node), emitLengthCheck);
+                EmitMultiCharString(node.Str!, IsCaseInsensitive(node), emitLengthCheck, (node.Options & RegexOptions.RightToLeft) != 0);
             }
 
-            void EmitMultiCharString(string str, bool caseInsensitive, bool emitLengthCheck)
+            void EmitMultiCharString(string str, bool caseInsensitive, bool emitLengthCheck, bool rightToLeft)
             {
                 Debug.Assert(str.Length >= 2);
+
+                if (rightToLeft)
+                {
+                    Debug.Assert(emitLengthCheck);
+                    TransferSliceStaticPosToPos();
+
+                    // if ((uint)(pos - str.Length) >= inputSpan.Length) goto doneLabel;
+                    Ldloc(pos);
+                    Ldc(str.Length);
+                    Sub();
+                    Ldloca(inputSpan);
+                    Call(s_spanGetLengthMethod);
+                    BgeUnFar(doneLabel);
+
+                    for (int i = str.Length - 1; i >= 0; i--)
+                    {
+                        // if (inputSpan[--pos] != str[str.Length - 1 - i]) goto doneLabel
+                        Ldloc(pos);
+                        Ldc(1);
+                        Sub();
+                        Stloc(pos);
+                        Ldloca(inputSpan);
+                        Ldloc(pos);
+                        Call(s_spanGetItemMethod);
+                        LdindU2();
+                        if (caseInsensitive)
+                        {
+                            CallToLower();
+                        }
+                        Ldc(str[i]);
+                        BneFar(doneLabel);
+                    }
+
+                    return;
+                }
 
                 if (caseInsensitive) // StartsWith(..., XxIgnoreCase) won't necessarily be the same as char-by-char comparison
                 {
@@ -3288,7 +3372,7 @@ namespace System.Text.RegularExpressions
                     case <= RegexNode.MultiVsRepeaterLimit when node.IsOneFamily && !IsCaseInsensitive(node):
                         // This is a repeated case-sensitive character; emit it as a multi in order to get all the optimizations
                         // afforded to a multi, e.g. unrolling the loop with multi-char reads/comparisons at a time.
-                        EmitMultiCharString(new string(node.Ch, iterations), caseInsensitive: false, emitLengthChecksIfRequired);
+                        EmitMultiCharString(new string(node.Ch, iterations), caseInsensitive: false, emitLengthChecksIfRequired, (node.Options & RegexOptions.RightToLeft) != 0);
                         return;
                 }
 

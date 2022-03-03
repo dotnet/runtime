@@ -84,11 +84,16 @@ namespace System.Text.RegularExpressions.Tests
 
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
-                    // Zero-width negative lookahead assertion: Actual - "abc(?!XXX)\\w+"
+                    // Zero-width negative lookahead assertion
                     yield return (@"abc(?!XXX)\w+", "abcXXXdef", RegexOptions.None, 0, 9, false, string.Empty);
 
-                    // Zero-width positive lookbehind assertion: Actual - "(\\w){6}(?<=XXX)def"
+                    // Zero-width positive lookbehind assertion
                     yield return (@"(\w){6}(?<=XXX)def", "abcXXXdef", RegexOptions.None, 0, 9, true, "abcXXXdef");
+                    yield return (@"(?<=c)def", "123abcdef", RegexOptions.None, 0, 9, true, "def");
+                    yield return (@"(?<=abc)def", "123abcdef", RegexOptions.None, 0, 9, true, "def");
+                    yield return (@"(?<=a\wc)def", "123abcdef", RegexOptions.None, 0, 9, true, "def");
+                    yield return (@"(?<=\ba\wc)def", "123 abcdef", RegexOptions.None, 0, 10, true, "def");
+                    yield return (@"(?<=.\ba\wc\B)def", "123 abcdef", RegexOptions.None, 0, 10, true, "def");
 
                     // Zero-width negative lookbehind assertion: Actual - "(\\w){6}(?<!XXX)def"
                     yield return (@"(\w){6}(?<!XXX)def", "XXXabcdef", RegexOptions.None, 0, 9, true, "XXXabcdef");

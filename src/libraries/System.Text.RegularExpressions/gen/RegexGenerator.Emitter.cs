@@ -1835,14 +1835,15 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
-            // Emits the code to handle a positive lookahead assertion.
-            void EmitPositiveLookaheadAssertion(RegexNode node)
+            // Emits the code to handle a positive lookaround assertion. This is a positive lookahead
+            // for left-to-right and a positive lookbehind for right-to-left.
+            void EmitPositiveLookaroundAssertion(RegexNode node)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.PositiveLookaround, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
-                // Save off pos.  We'll need to reset this upon successful completion of the lookahead.
-                string startingPos = ReserveName("positivelookahead_starting_pos");
+                // Save off pos.  We'll need to reset this upon successful completion of the lookaround.
+                string startingPos = ReserveName("positivelookaround_starting_pos");
                 writer.WriteLine($"int {startingPos} = pos;");
                 writer.WriteLine();
                 int startingSliceStaticPos = sliceStaticPos;
@@ -1860,28 +1861,29 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // After the child completes successfully, reset the text positions.
-                // Do not reset captures, which persist beyond the lookahead.
+                // Do not reset captures, which persist beyond the lookaround.
                 writer.WriteLine();
                 writer.WriteLine($"pos = {startingPos};");
                 SliceInputSpan(writer);
                 sliceStaticPos = startingSliceStaticPos;
             }
 
-            // Emits the code to handle a negative lookahead assertion.
-            void EmitNegativeLookaheadAssertion(RegexNode node)
+            // Emits the code to handle a negative lookaround assertion. This is a negative lookahead
+            // for left-to-right and a negative lookbehind for right-to-left.
+            void EmitNegativeLookaroundAssertion(RegexNode node)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.NegativeLookaround, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
                 string originalDoneLabel = doneLabel;
 
-                // Save off pos.  We'll need to reset this upon successful completion of the lookahead.
-                string startingPos = ReserveName("negativelookahead_starting_pos");
+                // Save off pos.  We'll need to reset this upon successful completion of the lookaround.
+                string startingPos = ReserveName("negativelookaround_starting_pos");
                 writer.WriteLine($"int {startingPos} = pos;");
                 int startingSliceStaticPos = sliceStaticPos;
 
-                string negativeLookaheadDoneLabel = ReserveName("NegativeLookaheadMatch");
-                doneLabel = negativeLookaheadDoneLabel;
+                string negativeLookaroundDoneLabel = ReserveName("NegativeLookaroundMatch");
+                doneLabel = negativeLookaroundDoneLabel;
 
                 // Emit the child.
                 RegexNode child = node.Child(0);
@@ -1895,16 +1897,16 @@ namespace System.Text.RegularExpressions.Generator
                     EmitNode(child);
                 }
 
-                // If the generated code ends up here, it matched the lookahead, which actually
-                // means failure for a _negative_ lookahead, so we need to jump to the original done.
+                // If the generated code ends up here, it matched the lookaround, which actually
+                // means failure for a _negative_ lookaround, so we need to jump to the original done.
                 writer.WriteLine();
                 Goto(originalDoneLabel);
                 writer.WriteLine();
 
-                // Failures (success for a negative lookahead) jump here.
-                MarkLabel(negativeLookaheadDoneLabel, emitSemicolon: false);
+                // Failures (success for a negative lookaround) jump here.
+                MarkLabel(negativeLookaroundDoneLabel, emitSemicolon: false);
 
-                // After the child completes in failure (success for negative lookahead), reset the text positions.
+                // After the child completes in failure (success for negative lookaround), reset the text positions.
                 writer.WriteLine($"pos = {startingPos};");
                 SliceInputSpan(writer);
                 sliceStaticPos = startingSliceStaticPos;
@@ -2028,11 +2030,11 @@ namespace System.Text.RegularExpressions.Generator
                             break;
 
                         case RegexNodeKind.PositiveLookaround:
-                            EmitPositiveLookaheadAssertion(node);
+                            EmitPositiveLookaroundAssertion(node);
                             break;
 
                         case RegexNodeKind.NegativeLookaround:
-                            EmitNegativeLookaheadAssertion(node);
+                            EmitNegativeLookaroundAssertion(node);
                             break;
 
                         case RegexNodeKind.UpdateBumpalong:
@@ -2093,6 +2095,8 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(node.Kind is RegexNodeKind.Concatenate, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() >= 2, $"Expected at least 2 children, found {node.ChildCount()}");
 
+                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+
                 // Emit the code for each child one after the other.
                 string? prevDescription = null;
                 int childCount = node.ChildCount();
@@ -2101,7 +2105,7 @@ namespace System.Text.RegularExpressions.Generator
                     // If we can find a subsequence of fixed-length children, we can emit a length check once for that sequence
                     // and then skip the individual length checks for each.  We also want to minimize the repetition of if blocks,
                     // and so we try to emit a series of clauses all part of the same if block rather than one if block per child.
-                    if (emitLengthChecksIfRequired && node.TryGetJoinableLengthCheckChildRange(i, out int requiredLength, out int exclusiveEnd))
+                    if (!rtl && emitLengthChecksIfRequired && node.TryGetJoinableLengthCheckChildRange(i, out int requiredLength, out int exclusiveEnd))
                     {
                         bool wroteClauses = true;
                         writer.Write($"if ({SpanLengthCheck(requiredLength)}");
@@ -2209,11 +2213,18 @@ namespace System.Text.RegularExpressions.Generator
             {
                 Debug.Assert(node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily, $"Unexpected type: {node.Kind}");
 
-                // This only emits a single check, but it's called from the looping constructs in a loop
-                // to generate the code for a single check, so we map those looping constructs to the
-                // appropriate single check.
+                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                if (rtl)
+                {
+                    // We don't use static position for RTL.  We always consult the current position and load directly from the original text span.
+                    Debug.Assert(offset is null);
+                    Debug.Assert(!clauseOnly);
+                    TransferSliceStaticPosToPos();
+                }
 
-                string expr = $"{sliceSpan}[{Sum(sliceStaticPos, offset)}]";
+                string expr = !rtl ?
+                    $"{sliceSpan}[{Sum(sliceStaticPos, offset)}]" :
+                     "inputSpan[pos - 1]";
 
                 if (node.IsSetFamily)
                 {
@@ -2231,19 +2242,37 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 else
                 {
-                    using (EmitBlock(writer, emitLengthCheck ? $"if ({SpanLengthCheck(1, offset)} || {expr})" : $"if ({expr})"))
+                    string clause =
+                        !emitLengthCheck ? $"if ({expr})" :
+                        !rtl ? $"if ({SpanLengthCheck(1, offset)} || {expr})" :
+                        $"if ((uint)(pos - 1) >= inputSpan.Length || {expr})";
+
+                    using (EmitBlock(writer, clause))
                     {
                         Goto(doneLabel);
                     }
                 }
 
-                sliceStaticPos++;
+                if (!rtl)
+                {
+                    sliceStaticPos++;
+                }
+                else
+                {
+                    writer.WriteLine("pos--;");
+                }
             }
 
             // Emits the code to handle a boundary check on a character.
             void EmitBoundary(RegexNode node)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Boundary or RegexNodeKind.NonBoundary or RegexNodeKind.ECMABoundary or RegexNodeKind.NonECMABoundary, $"Unexpected type: {node.Kind}");
+
+                if ((node.Options & RegexOptions.RightToLeft) != 0)
+                {
+                    // RightToLeft doesn't use static position.  This ensures it's 0.
+                    TransferSliceStaticPosToPos();
+                }
 
                 string call = node.Kind switch
                 {
@@ -2344,12 +2373,34 @@ namespace System.Text.RegularExpressions.Generator
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Multi, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.Str is not null);
-                EmitMultiCharString(node.Str, IsCaseInsensitive(node), emitLengthCheck);
+                EmitMultiCharString(node.Str, IsCaseInsensitive(node), emitLengthCheck, (node.Options & RegexOptions.RightToLeft) != 0);
             }
 
-            void EmitMultiCharString(string str, bool caseInsensitive, bool emitLengthCheck)
+            void EmitMultiCharString(string str, bool caseInsensitive, bool emitLengthCheck, bool rightToLeft)
             {
                 Debug.Assert(str.Length >= 2);
+
+                if (rightToLeft)
+                {
+                    Debug.Assert(emitLengthCheck);
+                    TransferSliceStaticPosToPos();
+
+                    using (EmitBlock(writer, $"if ((uint)(pos - {str.Length}) >= inputSpan.Length)"))
+                    {
+                        Goto(doneLabel);
+                    }
+                    writer.WriteLine();
+
+                    using (EmitBlock(writer, $"for (int i = 0; i < {str.Length}; i++)"))
+                    {
+                        using (EmitBlock(writer, $"if ({ToLowerIfNeeded(hasTextInfo, options, "inputSpan[--pos]", caseInsensitive)} != {Literal(str)}[{str.Length - 1} - i])"))
+                        {
+                            Goto(doneLabel);
+                        }
+                    }
+
+                    return;
+                }
 
                 if (caseInsensitive) // StartsWith(..., XxIgnoreCase) won't necessarily be the same as char-by-char comparison
                 {
@@ -2883,7 +2934,7 @@ namespace System.Text.RegularExpressions.Generator
                     case <= RegexNode.MultiVsRepeaterLimit when node.IsOneFamily && !IsCaseInsensitive(node):
                         // This is a repeated case-sensitive character; emit it as a multi in order to get all the optimizations
                         // afforded to a multi, e.g. unrolling the loop with multi-char reads/comparisons at a time.
-                        EmitMultiCharString(new string(node.Ch, iterations), caseInsensitive: false, emitLengthCheck);
+                        EmitMultiCharString(new string(node.Ch, iterations), caseInsensitive: false, emitLengthCheck, rightToLeft: false);
                         return;
                 }
 
@@ -3708,8 +3759,10 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Gets a textual description of the node fit for rendering in a comment in source.</summary>
-        private static string DescribeNode(RegexNode node, AnalysisResults analysis) =>
-            node.Kind switch
+        private static string DescribeNode(RegexNode node, AnalysisResults analysis)
+        {
+            bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+            return node.Kind switch
             {
                 RegexNodeKind.Alternate => $"Match with {node.ChildCount()} alternative expressions{(analysis.IsAtomicByAncestor(node) ? ", atomically" : "")}.",
                 RegexNodeKind.Atomic => $"Atomic group.",
@@ -3726,18 +3779,18 @@ namespace System.Text.RegularExpressions.Generator
                 RegexNodeKind.EndZ => "Match if at the end of the string or if before an ending newline.",
                 RegexNodeKind.Eol => "Match if at the end of a line.",
                 RegexNodeKind.Loop or RegexNodeKind.Lazyloop => node.M == 0 && node.N == 1 ? $"Optional ({(node.Kind is RegexNodeKind.Loop ? "greedy" : "lazy")})." : $"Loop {DescribeLoop(node, analysis)}.",
-                RegexNodeKind.Multi => $"Match the string {Literal(node.Str!)}.",
+                RegexNodeKind.Multi => $"Match the string {Literal(node.Str!)}{(rtl ? " backwards" : "")}.",
                 RegexNodeKind.NonBoundary => $"Match if at anything other than a word boundary.",
                 RegexNodeKind.NonECMABoundary => $"Match if at anything other than a word boundary (according to ECMAScript rules).",
                 RegexNodeKind.Nothing => $"Fail to match.",
-                RegexNodeKind.Notone => $"Match any character other than {Literal(node.Ch)}.",
+                RegexNodeKind.Notone => $"Match any character other than {Literal(node.Ch)}{(rtl ? " backwards" : "")}.",
                 RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy => $"Match a character other than {Literal(node.Ch)} {DescribeLoop(node, analysis)}.",
-                RegexNodeKind.One => $"Match {Literal(node.Ch)}.",
+                RegexNodeKind.One => $"Match {Literal(node.Ch)}{(rtl ? " backwards" : "")}.",
                 RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy => $"Match {Literal(node.Ch)} {DescribeLoop(node, analysis)}.",
-                RegexNodeKind.NegativeLookaround => $"Zero-width negative lookahead assertion.",
+                RegexNodeKind.NegativeLookaround => $"Zero-width negative {(rtl ? "lookbehind" : "lookahead")}.",
                 RegexNodeKind.Backreference => $"Match the same text as matched by the {DescribeCapture(node.M, analysis)}.",
-                RegexNodeKind.PositiveLookaround => $"Zero-width positive lookahead assertion.",
-                RegexNodeKind.Set => $"Match {DescribeSet(node.Str!)}.",
+                RegexNodeKind.PositiveLookaround => $"Zero-width positive {(rtl ? "lookbehind" : "lookahead")}.",
+                RegexNodeKind.Set => $"Match {DescribeSet(node.Str!)}{(rtl ? " backwards" : "")}.",
                 RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy => $"Match {DescribeSet(node.Str!)} {DescribeLoop(node, analysis)}.",
                 RegexNodeKind.Start => "Match if at the start position.",
                 RegexNodeKind.ExpressionConditional => $"Conditionally match one of two expressions depending on whether an initial expression matches.",
@@ -3745,6 +3798,7 @@ namespace System.Text.RegularExpressions.Generator
                 RegexNodeKind.UpdateBumpalong => $"Advance the next matching position.",
                 _ => $"Unknown node type {node.Kind}",
             };
+        }
 
         /// <summary>Gets an identifer to describe a capture group.</summary>
         private static string DescribeCapture(int capNum, AnalysisResults analysis)

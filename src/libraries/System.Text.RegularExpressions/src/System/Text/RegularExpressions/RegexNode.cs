@@ -2572,22 +2572,68 @@ namespace System.Text.RegularExpressions
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                reason = "run-time limits were exceeded";
+                reason = "run-time execution limits were exceeded";
                 return false;
             }
 
-            // NonBacktracking isn't supported, nor RightToLeft.  The latter applies to both the top-level
-            // options as well as when used to specify positive and negative lookbehinds.
             if ((Options & RegexOptions.NonBacktracking) != 0)
             {
-                reason = "RegexOptions.NonBacktracking was specified";
+                reason = "RegexOptions.NonBacktracking isn't supported";
                 return false;
             }
 
             if ((Options & RegexOptions.RightToLeft) != 0)
             {
-                reason = "RegexOptions.RightToLeft or a positive/negative lookbehind was used";
-                return false;
+                if (Parent is null)
+                {
+                    // RegexOptions.RightToLeft at the top-level (as a user-specified option) isn't supported.
+                    // (As an implementation detail, RightToLeft is also how lookbehinds are implemented.)
+                    reason = "RegexOptions.RightToLeft isn't supported";
+                    return false;
+                }
+
+                switch (Kind)
+                {
+                    // RightToLeft special-casing implemented (or not needed):
+                    case RegexNodeKind.One:
+                    case RegexNodeKind.Notone:
+                    case RegexNodeKind.Set:
+                    case RegexNodeKind.Multi:
+                    case RegexNodeKind.Atomic:
+                    case RegexNodeKind.Capture:
+                    case RegexNodeKind.Concatenate:
+                    case RegexNodeKind.Empty:
+                    case RegexNodeKind.Nothing:
+                    case RegexNodeKind.PositiveLookaround:
+                    case RegexNodeKind.NegativeLookaround:
+                    case RegexNodeKind.Boundary:
+                    case RegexNodeKind.NonBoundary:
+                    case RegexNodeKind.ECMABoundary:
+                    case RegexNodeKind.NonECMABoundary:
+                        break;
+
+                    // Not yet supported for RightToLeft (when this section is empty because
+                    // all such nodes have been implemented, the entire RightToLeft special-casing
+                    // switch statement can be deleted):
+                    case RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop:
+                    case RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy:
+                    case RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloopatomic:
+                    case RegexNodeKind.Loop:
+                    case RegexNodeKind.Lazyloop:
+                    case RegexNodeKind.Alternate:
+                    case RegexNodeKind.Backreference:
+                    case RegexNodeKind.BackreferenceConditional or RegexNodeKind.ExpressionConditional:
+                    case RegexNodeKind.Beginning or RegexNodeKind.Start:
+                    case RegexNodeKind.Bol or RegexNodeKind.Eol:
+                    case RegexNodeKind.End or RegexNodeKind.EndZ:
+                        reason = "an unsupported positive or negative lookbehind was used";
+                        return false;
+
+                    default:
+                        Debug.Fail($"Unexpected node: {Kind}");
+                        reason = "an unknown regular expression construct was used";
+                        return false;
+                }
             }
 
             int childCount = ChildCount();
