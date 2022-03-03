@@ -149,7 +149,6 @@ namespace System.Text.RegularExpressions.Generator
         private static ImmutableArray<Diagnostic> EmitRegexMethod(IndentedTextWriter writer, RegexMethod rm, string id, bool allowUnsafe)
         {
             string patternExpression = Literal(rm.Pattern);
-            string optionsExpression = Literal(rm.Options);
             string timeoutExpression = rm.MatchTimeout == Timeout.Infinite ?
                 "global::System.Threading.Timeout.InfiniteTimeSpan" :
                 $"global::System.TimeSpan.FromMilliseconds({rm.MatchTimeout.ToString(CultureInfo.InvariantCulture)})";
@@ -166,9 +165,12 @@ namespace System.Text.RegularExpressions.Generator
             // If we can't support custom generation for this regex, spit out a Regex constructor call.
             if (!SupportsCodeGeneration(rm, out string? reason))
             {
+                // Note that we remove Compiled from the options, as it has the same support as the source generator, so if the source
+                // generator can't support the regex, we shouldn't pay to try again to compile only to realize we can't.  On top of that,
+                // we explicitly add in Compiled, so it's likely the user hadn't actually specified it.
                 writer.WriteLine();
-                writer.WriteLine($"// Cannot generate Regex-derived implementation because {reason}.");
-                writer.WriteLine($"new global::System.Text.RegularExpressions.Regex({patternExpression}, {optionsExpression}, {timeoutExpression});");
+                writer.WriteLine($"        // Cannot generate Regex-derived implementation because {reason}.");
+                writer.WriteLine($"        new global::System.Text.RegularExpressions.Regex({patternExpression}, {Literal(rm.Options & ~RegexOptions.Compiled)}, {timeoutExpression});");
                 writer.WriteLine("}");
                 return ImmutableArray.Create(Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, rm.MethodSyntax.GetLocation()));
             }
@@ -180,7 +182,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"    private {id}()");
             writer.WriteLine($"    {{");
             writer.WriteLine($"        base.pattern = {patternExpression};");
-            writer.WriteLine($"        base.roptions = {optionsExpression};");
+            writer.WriteLine($"        base.roptions = {Literal(rm.Options)};");
             writer.WriteLine($"        base.internalMatchTimeout = {timeoutExpression};");
             writer.WriteLine($"        base.factory = new RunnerFactory();");
             if (rm.Tree.CaptureNumberSparseMapping is not null)
