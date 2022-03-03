@@ -10,10 +10,17 @@ using Microsoft.Extensions.Logging;
 namespace Microsoft.Extensions.Hosting
 {
     /// <summary>
-    /// Options for constructing an <see cref="HostApplicationBuilder"/>.
+    /// Settings for constructing an <see cref="HostApplicationBuilder"/>.
     /// </summary>
     public sealed class HostApplicationBuilderSettings
     {
+        /// <summary>
+        /// Initializes an instance of the <see cref="HostApplicationBuilderSettings"/> class.
+        /// </summary>
+        public HostApplicationBuilderSettings()
+        {
+        }
+
         /// <summary>
         /// If <see langword="false"/>, configures the <see cref="HostApplicationBuilder"/> instance with pre-configured defaults.
         /// This has a similar effect to calling <see cref="HostingHostBuilderExtensions.ConfigureDefaults(IHostBuilder, string[])"/>.

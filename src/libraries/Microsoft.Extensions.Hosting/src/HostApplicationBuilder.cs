@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Hosting
         private bool _hostBuilt;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="HostApplicationBuilder"/> class with pre-configured defaults.
+        /// Initializes a new instance of the <see cref="HostApplicationBuilder"/> class with preconfigured defaults.
         /// </summary>
         /// <remarks>
         ///   The following defaults are applied to the returned <see cref="HostApplicationBuilder"/>:
@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="HostApplicationBuilder"/> class with pre-configured defaults.
+        /// Initializes a new instance of the <see cref="HostApplicationBuilder"/> class with preconfigured defaults.
         /// </summary>
         /// <remarks>
         ///   The following defaults are applied to the returned <see cref="HostApplicationBuilder"/>:
@@ -89,21 +89,21 @@ namespace Microsoft.Extensions.Hosting
                 HostingHostBuilderExtensions.ApplyDefaultHostConfiguration(Configuration, settings.Args);
             }
 
-            // HostApplicationOptions override all other config sources.
+            // HostApplicationBuilderSettings override all other config sources.
             List<KeyValuePair<string, string?>>? optionList = null;
             if (settings.ApplicationName is not null)
             {
-                optionList ??= new();
+                optionList ??= new List<KeyValuePair<string, string?>>();
                 optionList.Add(new KeyValuePair<string, string?>(HostDefaults.ApplicationKey, settings.ApplicationName));
             }
             if (settings.EnvironmentName is not null)
             {
-                optionList ??= new();
+                optionList ??= new List<KeyValuePair<string, string?>>();
                 optionList.Add(new KeyValuePair<string, string?>(HostDefaults.EnvironmentKey, settings.EnvironmentName));
             }
             if (settings.ContentRootPath is not null)
             {
-                optionList ??= new();
+                optionList ??= new List<KeyValuePair<string, string?>>();
                 optionList.Add(new KeyValuePair<string, string?>(HostDefaults.ContentRootKey, settings.ContentRootPath));
             }
             if (optionList is not null)
@@ -359,7 +359,7 @@ namespace Microsoft.Extensions.Hosting
             }
         }
 
-        internal sealed class CheckedServiceCollection : IServiceCollection
+        private sealed class CheckedServiceCollection : IServiceCollection
         {
             private readonly IServiceCollection _services = new ServiceCollection();
 
