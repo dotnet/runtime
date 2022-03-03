@@ -630,7 +630,7 @@ void CryptoNative_SslSessionFree(SSL_SESSION* session)
 
 const char* CryptoNative_SslSessionGetHostname(SSL_SESSION* session)
 {
-#ifdef SSL_SESSION_get0_hostname
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
     if (API_EXISTS(SSL_SESSION_get0_hostname))
     {
         return SSL_SESSION_get0_hostname(session);
@@ -643,7 +643,7 @@ const char* CryptoNative_SslSessionGetHostname(SSL_SESSION* session)
 
 int CryptoNative_SslSessionSetHostname(SSL_SESSION* session, const char* hostname)
 {
-#ifdef SSL_SESSION_set1_hostname
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
     if (API_EXISTS(SSL_SESSION_set1_hostname))
     {
         SSL_SESSION_set1_hostname(session, hostname);
