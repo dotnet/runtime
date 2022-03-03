@@ -2580,7 +2580,7 @@ namespace System.Text.RegularExpressions
             // options as well as when used to specify positive and negative lookbehinds.
             if ((Options & RegexOptions.NonBacktracking) != 0)
             {
-                reason = "RegexOptions.NonBacktracking is specified";
+                reason = "RegexOptions.NonBacktracking was specified";
                 return false;
             }
 

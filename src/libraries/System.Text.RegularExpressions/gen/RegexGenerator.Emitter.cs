@@ -119,7 +119,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Place an artificial limit on max tree depth in order to mitigate such issues.
                 // The allowed depth can be tweaked as needed;its exceedingly rare to find
                 // expressions with such deep trees.
-                reason = "the regex is too complex";
+                reason = "the regex will result in code that may exceed C# compiler limits";
                 return false;
             }
 
