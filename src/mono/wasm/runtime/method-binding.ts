@@ -222,7 +222,8 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
         setU32,
         setF32,
         setF64,
-        setI64
+        setI64,
+        scratchValueRoot: converter.scratchValueRoot
     };
     let indirectLocalOffset = 0;
 
@@ -243,8 +244,13 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
 
         if (step.convert_root) {
             // FIXME: Optimize this!!!
+            if (!converter.scratchValueRoot)
+                closure.scratchValueRoot = converter.scratchValueRoot = mono_wasm_new_root<MonoObject>();
 
-            throw new Error("Not implemented: Converter.convert_root");
+            closure[closureKey] = step.convert_root;
+            body.push(`${closureKey}(${argKey}, scratchValueRoot);`);
+            // FIXME: Not GC safe
+            body.push(`let ${valueKey} = scratchValueRoot.value;`);
         } else if (step.convert) {
             closure[closureKey] = step.convert;
             body.push(`let ${valueKey} = ${closureKey}(${argKey}, method, ${i});`);
@@ -584,8 +590,9 @@ type ConverterStepIndirects = "u32" | "i32" | "float" | "double" | "i64"
 
 export type Converter = {
     steps: {
+        // (value: any, method: MonoMethod, arg_index: int)
         convert?: boolean | Function;
-        // Accepts a result param at the end of type WasmRoot<...>
+        // (value: any, result_root: WasmRoot<MonoObject>)
         convert_root?: Function;
         needs_root?: boolean;
         needs_unbox?: boolean;
@@ -606,6 +613,7 @@ export type Converter = {
     compiled_function?: Function | null;
     scratchRootBuffer?: WasmRootBuffer | null;
     scratchBuffer?: VoidPtr;
+    scratchValueRoot?: WasmRoot<MonoObject>;
     has_warned_about_signature?: boolean;
     convert?: Function | null;
     method?: MonoMethod | null;
