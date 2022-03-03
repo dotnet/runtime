@@ -1024,16 +1024,20 @@ namespace System.Text.RegularExpressions.Generator
                 // the whole alternation can be treated as a simple switch, so we special-case that. However,
                 // we can't goto _into_ switch cases, which means we can't use this approach if there's any
                 // possibility of backtracking into the alternation.
-                bool useSwitchedBranches = isAtomic;
-                if (!useSwitchedBranches)
+                bool useSwitchedBranches = false;
+                if ((node.Options & RegexOptions.RightToLeft) == 0)
                 {
-                    useSwitchedBranches = true;
-                    for (int i = 0; i < childCount; i++)
+                    useSwitchedBranches = isAtomic;
+                    if (!useSwitchedBranches)
                     {
-                        if (analysis.MayBacktrack(node.Child(i)))
+                        useSwitchedBranches = true;
+                        for (int i = 0; i < childCount; i++)
                         {
-                            useSwitchedBranches = false;
-                            break;
+                            if (analysis.MayBacktrack(node.Child(i)))
+                            {
+                                useSwitchedBranches = false;
+                                break;
+                            }
                         }
                     }
                 }

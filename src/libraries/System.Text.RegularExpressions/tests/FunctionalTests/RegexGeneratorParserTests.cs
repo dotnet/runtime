@@ -249,7 +249,7 @@ namespace System.Text.RegularExpressions.Tests
                 using System.Text.RegularExpressions;
                 partial class C
                 {
-                    [RegexGenerator(@""(?<!(Saturday|Sunday) )\b\w+ \d{1,2}, \d{4}\b"")]
+                    [RegexGenerator(@""(?<!(Saturday|Sun?day) )\b\w+ \d{1,2}, \d{4}\b"")]
                     private static partial Regex NegativeLookbehindNotSupported();
                 }
             ");

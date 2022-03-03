@@ -2602,6 +2602,7 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Atomic:
                     case RegexNodeKind.Capture:
                     case RegexNodeKind.Concatenate:
+                    case RegexNodeKind.Alternate:
                     case RegexNodeKind.Empty:
                     case RegexNodeKind.Nothing:
                     case RegexNodeKind.PositiveLookaround:
@@ -2623,7 +2624,6 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloopatomic:
                     case RegexNodeKind.Loop:
                     case RegexNodeKind.Lazyloop:
-                    case RegexNodeKind.Alternate:
                     case RegexNodeKind.Backreference:
                     case RegexNodeKind.BackreferenceConditional or RegexNodeKind.ExpressionConditional:
                         reason = "an unsupported positive or negative lookbehind was used";
