@@ -1,0 +1,33 @@
+{% metadata_file .yamato/Globals.metafile %}
+---
+name: Generate OSX x64Arm64
+
+agent:
+  type: Unity::VM::osx
+  image: platform-foundation/mac-10.15-bokken:v0.1.1-1022244
+  flavor: m1.mac
+
+variables:
+  ARTIFACT_FILENAME: {{globals.artifact_base_name}}-osx-x64arm64.7z
+
+dependencies:
+  - path: .yamato/build_osx_arm64.yml
+  - path: .yamato/build_osx_x64.yml
+
+commands:
+  - curl https://public-stevedore.unity3d.com/r/public/7za-mac-x64/e6c75fb7ffda_5bd76652986a0e3756d1cfd7e84ce056a9e1dbfc5f70f0514a001f724c0fbad2.zip --output artifacts/7za-mac-x64.zip
+  - unzip artifacts/7za-mac-x64.zip -d artifacts/7za-mac-x64
+  - mkdir -p ./artifacts/bin/microsoft.netcore.app.runtime.osx-x64arm64/Release/runtimes/osx-x64arm64
+  - perl .yamato/scripts/the_liponator.pl ./artifacts/bin/microsoft.netcore.app.runtime.osx-x64/Release/runtimes/osx-x64 ./artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Release/runtimes/osx-arm64 ./artifacts/bin/microsoft.netcore.app.runtime.osx-x64arm64/Release/runtimes/osx-x64arm64
+  - artifacts/7za-mac-x64/7za a artifacts/unity/$ARTIFACT_FILENAME ./artifacts/bin/microsoft.netcore.app.runtime.osx-x64arm64/Release/runtimes/osx-x64arm64/*
+
+triggers:
+  pull_requests:
+    - targets:
+        only:
+          - "unity-main"
+
+artifacts:
+  osx-x64arm64-7z:
+    paths:
+      - artifacts/unity/**

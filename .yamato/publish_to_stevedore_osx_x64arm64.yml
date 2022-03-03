@@ -1,0 +1,20 @@
+{% metadata_file .yamato/Globals.metafile %}
+---
+name: Publish To Stevedore OSX x64arm64
+
+agent:
+  type: Unity::VM::osx
+  image: platform-foundation/mac-bokken:latest
+  flavor: m1.mac
+
+dependencies:
+  - path: .yamato/build_osx_x64arm64.yml
+
+variables:
+  STEVEDORE_REPO: {{globals.stevedore_publish_location}}
+
+commands:
+# upload to stevedore
+  - curl -sSo StevedoreUpload "$STEVEDORE_UPLOAD_TOOL_MAC_X64_URL"
+  - chmod +x StevedoreUpload
+  - ./StevedoreUpload --version-len=12 --repo=$STEVEDORE_REPO --version="$GIT_REVISION" artifacts/unity/*
