@@ -600,7 +600,6 @@ int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, SslCtxNewSessionCallba
         SSL_CTX_set_options(ctx, SSL_OP_NO_TICKET);
     }
 
-    if (newSessionCb != NULL || removeSessionCb != NULL)
     if (newSessionCb != NULL)
     {
         SSL_CTX_sess_set_new_cb(ctx, newSessionCb);
@@ -614,22 +613,22 @@ int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, SslCtxNewSessionCallba
     return retValue;
 }
 
-const char* CryptoNative_SslGetServerName(SSL * ssl)
+const char* CryptoNative_SslGetServerName(SSL* ssl)
 {
     return SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
 }
 
-int32_t CryptoNative_SslSetSession(SSL* ssl, SSL_SESSION *session)
+int32_t CryptoNative_SslSetSession(SSL* ssl, SSL_SESSION* session)
 {
     return SSL_set_session(ssl, session);
 }
 
-void CryptoNative_SslSessionFree(SSL_SESSION *session)
+void CryptoNative_SslSessionFree(SSL_SESSION* session)
 {
     SSL_SESSION_free(session);
 }
 
-const char* CryptoNative_SslSessionGetHostname(SSL_SESSION *session)
+const char* CryptoNative_SslSessionGetHostname(SSL_SESSION* session)
 {
 #ifdef SSL_SESSION_get0_hostname
     if (API_EXISTS(SSL_SESSION_get0_hostname))
@@ -642,7 +641,7 @@ const char* CryptoNative_SslSessionGetHostname(SSL_SESSION *session)
     return NULL;
 }
 
-int CryptoNative_SslSessionSetHostname(SSL_SESSION *session, const char *hostname)
+int CryptoNative_SslSessionSetHostname(SSL_SESSION* session, const char* hostname)
 {
 #ifdef SSL_SESSION_set1_hostname
     if (API_EXISTS(SSL_SESSION_set1_hostname))
@@ -876,7 +875,7 @@ void CryptoNative_SslCtxSetAlpnSelectCb(SSL_CTX* ctx, SslCtxSetAlpnCallback cb, 
 #endif
 }
 
-static int client_certificate_cb(SSL *ssl, void* state)
+static int client_certificate_cb(SSL* ssl, void* state)
 {
     (void*)ssl;
     (void*)state;
@@ -904,7 +903,7 @@ void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val)
 #endif
 }
 
-int32_t CryptoNative_SslSetData(SSL* ssl, void *ptr)
+int32_t CryptoNative_SslSetData(SSL* ssl, void* ptr)
 {
     ERR_clear_error();
     return SSL_set_ex_data(ssl, 0, ptr);
@@ -916,7 +915,7 @@ void* CryptoNative_SslGetData(SSL* ssl)
     return SSL_get_ex_data(ssl, 0);
 }
 
-int32_t CryptoNative_SslCtxSetData(SSL_CTX* ctx, void *ptr)
+int32_t CryptoNative_SslCtxSetData(SSL_CTX* ctx, void* ptr)
 {
     return SSL_CTX_set_ex_data(ctx, 0, ptr);
 }
@@ -990,7 +989,7 @@ int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
 }
 
 // This function generates key pair and creates simple certificate.
-static int MakeSelfSignedCertificate(X509 * cert, EVP_PKEY* evp)
+static int MakeSelfSignedCertificate(X509* cert, EVP_PKEY* evp)
 {
     RSA* rsa = NULL;
     ASN1_TIME* time = ASN1_TIME_new();

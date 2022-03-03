@@ -181,9 +181,6 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionFree")]
         internal static partial void SessionFree(IntPtr session);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionSetHostname", CharSet = CharSet.Ansi)]
-        internal static partial int SessionSetHostname(IntPtr session, string name);
-
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionSetHostname")]
         internal static partial int SessionSetHostname(IntPtr session, IntPtr name);
 
