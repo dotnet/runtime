@@ -236,7 +236,7 @@ steps:
         archiveType: tar
         tarCompression: gz
 
-    - template: /eng/pipelines/common/upload-artifact-step.yml
+  - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
         rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidPodcasts.apk
         includeRootFolder: true
