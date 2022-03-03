@@ -52,7 +52,7 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_obj_array_set_ref", "void", ["number", "number", "number"]],
     ["mono_wasm_register_bundled_satellite_assemblies", "void", []],
     ["mono_wasm_try_unbox_primitive_and_get_type_ref", "number", ["number", "number", "number"]],
-    ["mono_wasm_box_primitive", "number", ["number", "number", "number"]],
+    ["mono_wasm_box_primitive_ref", "void", ["number", "number", "number", "number"]],
     ["mono_wasm_intern_string_ref", "void", ["number"]],
     ["mono_wasm_assembly_get_entry_point", "number", ["number"]],
     ["mono_wasm_get_delegate_invoke", "number", ["number"]],
@@ -122,7 +122,7 @@ export interface t_Cwraps {
     mono_wasm_obj_array_set_ref(array: MonoObjectRef, idx: number, obj: MonoObjectRef): void;
     mono_wasm_register_bundled_satellite_assemblies(): void;
     mono_wasm_try_unbox_primitive_and_get_type_ref(obj: MonoObjectRef, buffer: VoidPtr, buffer_size: number): number;
-    mono_wasm_box_primitive(klass: MonoClass, value: VoidPtr, value_size: number): MonoObject;
+    mono_wasm_box_primitive_ref(klass: MonoClass, value: VoidPtr, value_size: number, result: MonoObjectRef): void;
     mono_wasm_intern_string_ref(strRef: MonoObjectRef): void;
     mono_wasm_assembly_get_entry_point(assembly: MonoAssembly): MonoMethod;
     mono_wasm_get_delegate_invoke(delegate: MonoObject): MonoMethod;

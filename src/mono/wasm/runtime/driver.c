@@ -656,18 +656,20 @@ mono_wasm_get_delegate_invoke (MonoObject *delegate)
 	return mono_get_delegate_invoke(mono_object_get_class (delegate));
 }
 
-EMSCRIPTEN_KEEPALIVE MonoObject*
-mono_wasm_box_primitive (MonoClass *klass, void *value, int value_size)
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_box_primitive_ref (MonoClass *klass, void *value, int value_size, MonoObject **result)
 {
 	assert (klass);
 
 	MonoType *type = mono_class_get_type (klass);
 	int alignment;
 	if (mono_type_size (type, &alignment) > value_size)
-		return NULL;
+		return;
 
 	// TODO: use mono_value_box_checked and propagate error out
-	return mono_value_box (root_domain, klass, value);
+	MONO_ENTER_GC_UNSAFE;
+	mono_gc_wbarrier_generic_store_atomic(result, mono_value_box (root_domain, klass, value));
+	MONO_EXIT_GC_UNSAFE;
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -679,20 +681,21 @@ mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void 
 	else
 		out_exc = &temp_exc;
 
+	MONO_ENTER_GC_UNSAFE;
 	if (out_result) {
 		*out_result = NULL;
-		*out_result = mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, out_exc);
+		mono_gc_wbarrier_generic_store_atomic(out_result, mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, out_exc));
 	} else {
 		mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, out_exc);
 	}
 
 	if (*out_exc && out_result) {
 		MonoObject *exc2 = NULL;
-		*out_result = (MonoObject*)mono_object_to_string (*out_exc, &exc2);
+		mono_gc_wbarrier_generic_store_atomic(out_result, (MonoObject*)mono_object_to_string (*out_exc, &exc2));
 		if (exc2)
-			*out_result = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
-		return;
+			mono_gc_wbarrier_generic_store_atomic(out_result, (MonoObject*)mono_string_new (root_domain, "Exception Double Fault"));
 	}
+	MONO_EXIT_GC_UNSAFE;
 }
 
 // deprecated
@@ -1131,7 +1134,7 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_array_get_ref (MonoArray **array, int idx, MonoObject **result)
 {
 	MONO_ENTER_GC_UNSAFE;
-	*result = mono_array_get (*array, MonoObject*, idx);
+	mono_gc_wbarrier_generic_store_atomic(result, mono_array_get (*array, MonoObject*, idx));
 	MONO_EXIT_GC_UNSAFE;
 }
 
@@ -1139,7 +1142,7 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_obj_array_new_ref (int size, MonoArray **result)
 {
 	MONO_ENTER_GC_UNSAFE;
-	*result = mono_array_new (root_domain, mono_get_object_class (), size);
+	mono_gc_wbarrier_generic_store_atomic(result, (MonoObject *)mono_array_new (root_domain, mono_get_object_class (), size));
 	MONO_EXIT_GC_UNSAFE;
 }
 
@@ -1170,7 +1173,7 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_string_array_new_ref (int size, MonoArray **result)
 {
 	MONO_ENTER_GC_UNSAFE;
-	*result = mono_array_new (root_domain, mono_get_string_class (), size);
+	mono_gc_wbarrier_generic_store_atomic(result, (MonoObject *)mono_array_new (root_domain, mono_get_string_class (), size));
 	MONO_EXIT_GC_UNSAFE;
 }
 
@@ -1214,7 +1217,7 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_intern_string_ref (MonoString **string)
 {
 	MONO_ENTER_GC_UNSAFE;
-	*string = mono_string_intern (*string);
+	mono_gc_wbarrier_generic_store_atomic(string, (MonoObject *)mono_string_intern (*string));
 	MONO_EXIT_GC_UNSAFE;
 }
 

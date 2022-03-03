@@ -347,7 +347,7 @@ class WasmJsOwnedRoot<T extends ManagedPointer | NativePointer> implements WasmR
     }
 
     valueOf(): T {
-        return this.get();
+        throw new Error("Implicit conversion of roots to pointers is no longer supported. Use .value or .address as appropriate");
     }
 
     clear(): void {
@@ -440,7 +440,7 @@ class WasmExternalRoot<T extends ManagedPointer | NativePointer> implements Wasm
     }
 
     valueOf(): T {
-        return this.get();
+        throw new Error("Implicit conversion of roots to pointers is no longer supported. Use .value or .address as appropriate");
     }
 
     clear(): void {

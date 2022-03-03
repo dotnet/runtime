@@ -129,6 +129,7 @@ export type RuntimeHelpers = {
 
     _box_buffer: VoidPtr;
     _unbox_buffer: VoidPtr;
+    _box_root: any;
     _class_int32: MonoClass;
     _class_uint32: MonoClass;
     _class_double: MonoClass;

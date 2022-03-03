@@ -117,22 +117,26 @@ function _extract_mono_obj(should_add_in_flight: boolean, js_obj: any): MonoObje
 
 function _box_js_int(js_obj: number) {
     setI32(runtimeHelpers._box_buffer, js_obj);
-    return cwraps.mono_wasm_box_primitive(runtimeHelpers._class_int32, runtimeHelpers._box_buffer, 4);
+    cwraps.mono_wasm_box_primitive_ref(runtimeHelpers._class_int32, runtimeHelpers._box_buffer, 4, runtimeHelpers._box_root.address);
+    return runtimeHelpers._box_root.value;
 }
 
 function _box_js_uint(js_obj: number) {
     setU32(runtimeHelpers._box_buffer, js_obj);
-    return cwraps.mono_wasm_box_primitive(runtimeHelpers._class_uint32, runtimeHelpers._box_buffer, 4);
+    cwraps.mono_wasm_box_primitive_ref(runtimeHelpers._class_uint32, runtimeHelpers._box_buffer, 4, runtimeHelpers._box_root.address);
+    return runtimeHelpers._box_root.value;
 }
 
 function _box_js_double(js_obj: number) {
     setF64(runtimeHelpers._box_buffer, js_obj);
-    return cwraps.mono_wasm_box_primitive(runtimeHelpers._class_double, runtimeHelpers._box_buffer, 8);
+    cwraps.mono_wasm_box_primitive_ref(runtimeHelpers._class_double, runtimeHelpers._box_buffer, 8, runtimeHelpers._box_root.address);
+    return runtimeHelpers._box_root.value;
 }
 
 export function _box_js_bool(js_obj: boolean): MonoObject {
     setI32(runtimeHelpers._box_buffer, js_obj ? 1 : 0);
-    return cwraps.mono_wasm_box_primitive(runtimeHelpers._class_boolean, runtimeHelpers._box_buffer, 4);
+    cwraps.mono_wasm_box_primitive_ref(runtimeHelpers._class_boolean, runtimeHelpers._box_buffer, 4, runtimeHelpers._box_root.address);
+    return runtimeHelpers._box_root.value;
 }
 
 // https://github.com/Planeshifter/emscripten-examples/blob/master/01_PassingArrays/sum_post.js
