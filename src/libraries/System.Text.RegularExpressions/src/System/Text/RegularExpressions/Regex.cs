@@ -20,8 +20,6 @@ namespace System.Text.RegularExpressions
     /// </summary>
     public partial class Regex : ISerializable
     {
-        internal const int MaxOptionShift = 11;
-
         [StringSyntax(StringSyntaxAttribute.Regex)]
         protected internal string? pattern;                   // The string pattern provided
         protected internal RegexOptions roptions;             // the top-level options from the options string
@@ -33,7 +31,6 @@ namespace System.Text.RegularExpressions
 
         private WeakReference<RegexReplacement?>? _replref;   // cached parsed replacement pattern
         private volatile RegexRunner? _runner;                // cached runner
-        private RegexCode? _code;                             // if interpreted, this is the code for RegexInterpreter
 
         protected Regex()
         {
@@ -63,64 +60,69 @@ namespace System.Text.RegularExpressions
 
         internal Regex(string pattern, CultureInfo? culture)
         {
-            // Call Init directly rather than delegating to a Regex ctor that takes
-            // options to enable linking / tree shaking to remove the Regex compiler
-            // and NonBacktracking implementation if it's not used.
-            Init(pattern, RegexOptions.None, s_defaultMatchTimeout, culture ?? CultureInfo.CurrentCulture);
+            // Validate arguments.
+            ValidatePattern(pattern);
+
+            // Parse and store the argument information.
+            RegexTree tree = Init(pattern, RegexOptions.None, s_defaultMatchTimeout, ref culture);
+
+            // Create the interpreter factory.
+            factory = new RegexInterpreterFactory(tree, culture);
+
+            // NOTE: This overload _does not_ delegate to the one that takes options, in order
+            // to avoid unnecessarily rooting the support for RegexOptions.NonBacktracking/Compiler
+            // if no options are ever used.
         }
 
         internal Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, CultureInfo? culture)
         {
-            culture ??= RegexParser.GetTargetCulture(options);
-            Init(pattern, options, matchTimeout, culture);
-
-            if ((options & RegexOptions.NonBacktracking) != 0)
-            {
-                // If we're in non-backtracking mode, create the appropriate factory.
-                factory = new SymbolicRegexRunnerFactory(_code, options, matchTimeout, culture);
-                _code = null;
-            }
-            else if (RuntimeFeature.IsDynamicCodeCompiled && UseOptionC())
-            {
-                // If the compile option is set and compilation is supported, then compile the code.
-                // If the compiler can't compile this regex, it'll return null, and we'll fall back
-                // to the interpreter.
-                factory = Compile(pattern, _code, options, matchTimeout != InfiniteMatchTimeout);
-                if (factory is not null)
-                {
-                    _code = null;
-                }
-            }
-        }
-
-        /// <summary>Initializes the instance.</summary>
-        /// <remarks>
-        /// This is separated out of the constructor so that an app only using 'new Regex(pattern)'
-        /// rather than 'new Regex(pattern, options)' can avoid statically referencing the Regex
-        /// compiler, such that a tree shaker / linker can trim it away if it's not otherwise used.
-        /// </remarks>
-        [MemberNotNull(nameof(_code))]
-        private void Init(string pattern, RegexOptions options, TimeSpan matchTimeout, CultureInfo culture)
-        {
+            // Validate arguments.
             ValidatePattern(pattern);
             ValidateOptions(options);
             ValidateMatchTimeout(matchTimeout);
 
+            // Parse and store the argument information.
+            RegexTree tree = Init(pattern, options, matchTimeout, ref culture);
+
+            // Create the appropriate factory.
+            if ((options & RegexOptions.NonBacktracking) != 0)
+            {
+                // If we're in non-backtracking mode, create the appropriate factory.
+                factory = new SymbolicRegexRunnerFactory(tree, options, matchTimeout, culture);
+            }
+            else
+            {
+                if (RuntimeFeature.IsDynamicCodeCompiled && (options & RegexOptions.Compiled) != 0)
+                {
+                    // If the compile option is set and compilation is supported, then compile the code.
+                    // If the compiler can't compile this regex, it'll return null, and we'll fall back
+                    // to the interpreter.
+                    factory = Compile(pattern, tree, options, matchTimeout != InfiniteMatchTimeout);
+                }
+
+                // If no factory was created, fall back to creating one for the interpreter.
+                factory ??= new RegexInterpreterFactory(tree, culture);
+            }
+        }
+
+        /// <summary>Stores the supplied arguments and capture information, returning the parsed expression.</summary>
+        private RegexTree Init(string pattern, RegexOptions options, TimeSpan matchTimeout, [NotNull] ref CultureInfo? culture)
+        {
             this.pattern = pattern;
-            internalMatchTimeout = matchTimeout;
             roptions = options;
+            internalMatchTimeout = matchTimeout;
+            culture ??= RegexParser.GetTargetCulture(options);
 
-            // Parse the input
-            RegexTree tree = RegexParser.Parse(pattern, roptions, culture);
+            // Parse the pattern.
+            RegexTree tree = RegexParser.Parse(pattern, options, culture);
 
-            // Generate the RegexCode from the node tree.  This is required for interpreting,
-            // and is used as input into RegexOptions.Compiled and RegexOptions.NonBacktracking.
-            _code = RegexWriter.Write(tree, culture);
+            // Store the relevant information, constructing the appropriate factory.
+            capnames = tree.CaptureNameToNumberMapping;
+            capslist = tree.CaptureNames;
+            caps = tree.CaptureNumberSparseMapping;
+            capsize = tree.CaptureCount;
 
-            capnames = tree.CapNames;
-            capslist = tree.CapsList;
-            caps = _code.Caps;
-            capsize = _code.CapSize;
+            return tree;
         }
 
         internal static void ValidatePattern(string pattern)
@@ -133,9 +135,9 @@ namespace System.Text.RegularExpressions
 
         internal static void ValidateOptions(RegexOptions options)
         {
+            const int MaxOptionShift = 11;
             if (((((uint)options) >> MaxOptionShift) != 0) ||
-                ((options & RegexOptions.ECMAScript) != 0 &&
-                 (options & ~(RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.NonBacktracking | RegexOptions.CultureInvariant)) != 0))
+                ((options & RegexOptions.ECMAScript) != 0 && (options & ~(RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.NonBacktracking | RegexOptions.CultureInvariant)) != 0))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.options);
             }
@@ -199,8 +201,8 @@ namespace System.Text.RegularExpressions
         /// instantiating a non-compiled regex.
         /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static RegexRunnerFactory? Compile(string pattern, RegexCode code, RegexOptions options, bool hasTimeout) =>
-            RegexCompiler.Compile(pattern, code, options, hasTimeout);
+        private static RegexRunnerFactory? Compile(string pattern, RegexTree regexTree, RegexOptions options, bool hasTimeout) =>
+            RegexCompiler.Compile(pattern, regexTree, options, hasTimeout);
 
         [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname) =>
@@ -254,7 +256,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Indicates whether the regular expression matches from right to left.
         /// </summary>
-        public bool RightToLeft => UseOptionR();
+        public bool RightToLeft => (roptions & RegexOptions.RightToLeft) != 0;
 
         /// <summary>
         /// Returns the regular expression pattern passed into the constructor
@@ -554,13 +556,14 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Creates a new runner instance.</summary>
         private RegexRunner CreateRunner() =>
-            factory?.CreateInstance() ??
-            new RegexInterpreter(_code!, RegexParser.GetTargetCulture(roptions));
+            // The factory needs to be set by the ctor.  `factory` is a protected field, so it's possible a derived
+            // type nulls out the factory after we've set it, but that's the nature of the design.
+            factory!.CreateInstance();
 
         /// <summary>True if the <see cref="RegexOptions.Compiled"/> option was set.</summary>
         protected bool UseOptionC() => (roptions & RegexOptions.Compiled) != 0;
 
         /// <summary>True if the <see cref="RegexOptions.RightToLeft"/> option was set.</summary>
-        protected internal bool UseOptionR() => (roptions & RegexOptions.RightToLeft) != 0;
+        protected internal bool UseOptionR() => RightToLeft;
     }
 }

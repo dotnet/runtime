@@ -629,7 +629,7 @@ partial class Test
 }}
 ";
 
-        public static string CustomStructMarshallingParametersAndModifiers = BasicParametersAndModifiers("S", DisableRuntimeMarshalling) + @"
+        public static string BasicNonBlittableUserDefinedType = @"
 [NativeMarshalling(typeof(Native))]
 struct S
 {
@@ -645,8 +645,9 @@ struct Native
     }
 
     public S ToManaged() => new S { b = i != 0 };
-}
-";
+}";
+
+        public static string CustomStructMarshallingParametersAndModifiers = BasicParametersAndModifiers("S", DisableRuntimeMarshalling) + BasicNonBlittableUserDefinedType;
 
         public static string CustomStructMarshallingMarshalUsingParametersAndModifiers = MarshalUsingParametersAndModifiers("S", "Native", DisableRuntimeMarshalling) + @"
 struct S

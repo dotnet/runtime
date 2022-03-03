@@ -32,13 +32,13 @@ namespace System.ComponentModel
         /// Gets a value indicating whether this converter can convert an object to the given
         /// destination type using the context.
         /// </summary>
-        public bool CanConvertTo(Type destinationType) => CanConvertTo(null, destinationType);
+        public bool CanConvertTo([NotNullWhen(true)] Type? destinationType) => CanConvertTo(null, destinationType);
 
         /// <summary>
         /// Gets a value indicating whether this converter can convert an object to the given
         /// destination type using the context.
         /// </summary>
-        public virtual bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+        public virtual bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return destinationType == typeof(string);
         }

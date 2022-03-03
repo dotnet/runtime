@@ -25,7 +25,9 @@ namespace System.Net.Security.Tests
         private VerboseTestLogging _log;
         private TcpListener _listener;
         private bool _useSsl;
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
         private SslProtocols _sslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls;
+#pragma warning restore SYSLIB0039
         private EncryptionPolicy _sslEncryptionPolicy;
         private IPEndPoint _remoteEndPoint;
         private DummyTcpServerReceiveCallback _receiveCallback;

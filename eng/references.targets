@@ -7,8 +7,8 @@
     <_FindDependencies>false</_FindDependencies>
   </PropertyGroup>
 
-  <!-- Project references shouldn't be copied to the output for non test apps. -->
-  <ItemDefinitionGroup Condition="'$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true' and '$(IsGeneratorProject)' != 'true'">
+  <!-- Project references shouldn't be copied to the output for reference or source projects. -->
+  <ItemDefinitionGroup Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true'">
     <ProjectReference>
       <Private>false</Private>
     </ProjectReference>
@@ -70,15 +70,15 @@
 
   <ItemDefinitionGroup>
     <TargetPathWithTargetPlatformMoniker>
-      <IsReferenceAssembly>$(IsReferenceAssembly)</IsReferenceAssembly>
+      <IsReferenceAssemblyProject>$(IsReferenceAssemblyProject)</IsReferenceAssemblyProject>
     </TargetPathWithTargetPlatformMoniker>
   </ItemDefinitionGroup>
 
   <Target Name="ValidateReferenceAssemblyProjectReferences"
           AfterTargets="ResolveReferences"
-          Condition="'$(IsReferenceAssembly)' == 'true' and
+          Condition="'$(IsReferenceAssemblyProject)' == 'true' and
                      '$(SkipValidateReferenceAssemblyProjectReferences)' != 'true'">
-    <Error Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' and '%(ReferencePath.IsReferenceAssembly)' != 'true' and '%(ReferencePath.ReferenceAssembly)' == ''"
+    <Error Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' and '%(ReferencePath.IsReferenceAssemblyProject)' != 'true' and '%(ReferencePath.ReferenceAssembly)' == ''"
            Text="Reference assemblies must only reference other reference assemblies and '%(ReferencePath.ProjectReferenceOriginalItemSpec)' is not a reference assembly project and does not set 'ProduceReferenceAssembly'." />
   </Target>
 

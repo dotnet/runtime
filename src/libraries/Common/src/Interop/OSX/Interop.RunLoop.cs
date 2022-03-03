@@ -89,6 +89,7 @@ internal static partial class Interop
         /// false if rl either is not running or is currently processing
         /// a source, timer, or observer.</returns>
         [GeneratedDllImport(Interop.Libraries.CoreFoundationLibrary)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CFRunLoopIsWaiting(CFRunLoopRef rl);
     }
 }

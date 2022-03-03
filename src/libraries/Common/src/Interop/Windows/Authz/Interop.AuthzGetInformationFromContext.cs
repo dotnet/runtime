@@ -9,6 +9,7 @@ internal static partial class Interop
     internal static partial class Authz
     {
         [GeneratedDllImport(Libraries.Authz, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool AuthzGetInformationFromContext(
             IntPtr hAuthzClientContext,
             int InfoClass,

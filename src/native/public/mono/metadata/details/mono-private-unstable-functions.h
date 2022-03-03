@@ -26,3 +26,6 @@ MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY MonoAssemblyLoadContextGCHandle, mono_al
 MONO_API_FUNCTION(void, mono_register_bundled_satellite_assemblies, (const MonoBundledSatelliteAssembly **assemblies))
 
 MONO_API_FUNCTION(MonoBundledSatelliteAssembly *, mono_create_new_bundled_satellite_assembly, (const char *name, const char *culture, const unsigned char *data, unsigned int size))
+
+
+MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY void*, mono_method_get_unmanaged_callers_only_ftnptr, (MonoMethod *method, MonoError *error))

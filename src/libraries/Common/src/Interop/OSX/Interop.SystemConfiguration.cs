@@ -127,6 +127,7 @@ internal static partial class Interop
         /// or IntPtr.Zero if no key patterns are to be monitored.</param>
         /// <returns>Non-zero if the set of notification keys and patterns was successfully updated; zero otherwise.</returns>
         [GeneratedDllImport(Libraries.SystemConfigurationLibrary)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SCDynamicStoreSetNotificationKeys(SCDynamicStoreRef store, CFArrayRef keys, CFArrayRef patterns);
     }
 }

@@ -531,17 +531,17 @@ internal static partial class Interop
         internal static partial uint GetIcmpStatisticsEx(out MibIcmpInfoEx statistics, AddressFamily family);
 
         [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
-        internal static unsafe partial uint GetTcpTable(IntPtr pTcpTable, uint* dwOutBufLen, bool order);
+        internal static unsafe partial uint GetTcpTable(IntPtr pTcpTable, uint* dwOutBufLen, [MarshalAs(UnmanagedType.Bool)] bool order);
 
         [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
-        internal static unsafe partial uint GetExtendedTcpTable(IntPtr pTcpTable, uint* dwOutBufLen, bool order,
+        internal static unsafe partial uint GetExtendedTcpTable(IntPtr pTcpTable, uint* dwOutBufLen, [MarshalAs(UnmanagedType.Bool)] bool order,
                                                         uint IPVersion, TcpTableClass tableClass, uint reserved);
 
         [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
-        internal static unsafe partial uint GetUdpTable(IntPtr pUdpTable, uint* dwOutBufLen, bool order);
+        internal static unsafe partial uint GetUdpTable(IntPtr pUdpTable, uint* dwOutBufLen, [MarshalAs(UnmanagedType.Bool)] bool order);
 
         [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
-        internal static unsafe partial uint GetExtendedUdpTable(IntPtr pUdpTable, uint* dwOutBufLen, bool order,
+        internal static unsafe partial uint GetExtendedUdpTable(IntPtr pUdpTable, uint* dwOutBufLen, [MarshalAs(UnmanagedType.Bool)] bool order,
                                                         uint IPVersion, UdpTableClass tableClass, uint reserved);
 
         [GeneratedDllImport(Interop.Libraries.IpHlpApi)]

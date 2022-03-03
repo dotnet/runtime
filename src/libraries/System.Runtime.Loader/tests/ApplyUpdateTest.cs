@@ -395,5 +395,37 @@ namespace System.Reflection.Metadata
             bool result = MetadataUpdater.IsSupported;
             Assert.False(result);
         }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestStaticLambdaRegression()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression).Assembly;
+                var x = new System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression();
+
+                Assert.Equal (0, x.count);
+
+                x.TestMethod();
+                x.TestMethod();
+
+                Assert.Equal (2, x.count);
+
+                ApplyUpdateUtil.ApplyUpdate(assm, usePDB: false);
+
+                x.TestMethod();
+                x.TestMethod();
+
+                Assert.Equal (4, x.count);
+
+                ApplyUpdateUtil.ApplyUpdate(assm, usePDB: false);
+
+                x.TestMethod();
+                x.TestMethod();
+
+                Assert.Equal (6, x.count);
+
+            });
+        }
     }
 }
