@@ -165,9 +165,18 @@ initDistroRidGlobal()
             distroRid="linux-musl-${buildArch}"
         fi
 
+        # Unlike Musl, we can't execute things to detect Bionic
+        # Instead assume that if we think is is Linux, but find
+        # Android specific files in the sysroot, then it's Bionic
+        if [ "$targetOs" = "Linux" ] && [ -d "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/" ]; then
+            distroRid="linux-bionic-${buildArch}"
+        fi
+
         if [ -z "${distroRid}" ]; then
             if [ "$targetOs" = "Linux" ]; then
                 distroRid="linux-$buildArch"
+            elif [ "$targetOs" = "linux-bionic" ]; then
+                distroRid="linux-bionic-$buildArch"
             elif [ "$targetOs" = "OSX" ]; then
                 distroRid="osx-$buildArch"
             elif [ "$targetOs" = "MacCatalyst" ]; then

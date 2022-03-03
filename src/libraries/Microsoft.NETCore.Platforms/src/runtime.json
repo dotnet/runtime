@@ -1504,6 +1504,23 @@
         "unix-armv6"
       ]
     },
+    "linux-bionic": {
+      "#import": [
+        "android"
+      ]
+    },
+    "linux-bionic-arm64": {
+      "#import": [
+        "linux-bionic",
+        "android-arm64"
+      ]
+    },
+    "linux-bionic-x64": {
+      "#import": [
+        "linux-bionic",
+        "android-x64"
+      ]
+    },
     "linux-loongarch64": {
       "#import": [
         "linux",

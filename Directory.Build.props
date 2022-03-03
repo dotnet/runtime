@@ -137,6 +137,7 @@
 
     <_portableOS>linux</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'linux-musl'">linux-musl</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'linux-bionic'">linux-bionic</_portableOS>
     <_portableOS Condition="'$(_hostOS)' == 'OSX'">osx</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'win' or '$(TargetOS)' == 'windows'">win</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'FreeBSD' or '$(TargetOS)' == 'FreeBSD'">freebsd</_portableOS>
@@ -169,9 +170,9 @@
     <_toolsRID Condition="'$(_runtimeOS)' == 'browser' and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
 
     <!-- There are no Android tools, so use the default ones -->
-    <_toolsRID Condition="'$(_runtimeOS)' == 'android'">linux-x64</_toolsRID>
-    <_toolsRID Condition="'$(_runtimeOS)' == 'android' and '$(HostOS)' == 'windows'">win-x64</_toolsRID>
-    <_toolsRID Condition="'$(_runtimeOS)' == 'android' and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
+    <_toolsRID Condition="'$(_runtimeOS)' == 'android' or '$(_runtimeOS)' == 'linux-bionic'">linux-x64</_toolsRID>
+    <_toolsRID Condition="('$(_runtimeOS)' == 'android' or '$(_runtimeOS)' == 'linux-bionic') and '$(HostOS)' == 'windows'">win-x64</_toolsRID>
+    <_toolsRID Condition="('$(_runtimeOS)' == 'android' or '$(_runtimeOS)' == 'linux-bionic') and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
 
     <!-- There are no Mac Catalyst, iOS or tvOS tools and it can be built on OSX only, so use that -->
     <_toolsRID Condition="'$(_runtimeOS)' == 'maccatalyst' or '$(_runtimeOS)' == 'ios' or '$(_runtimeOS)' == 'iOSSimulator' or '$(_runtimeOS)' == 'tvos' or '$(_runtimeOS)' == 'tvOSSimulator'">osx-x64</_toolsRID>
@@ -195,7 +196,8 @@
     <TargetsFreeBSD Condition="'$(TargetOS)' == 'FreeBSD'">true</TargetsFreeBSD>
     <Targetsillumos Condition="'$(TargetOS)' == 'illumos'">true</Targetsillumos>
     <TargetsSolaris Condition="'$(TargetOS)' == 'Solaris'">true</TargetsSolaris>
-    <TargetsLinux Condition="'$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'Android'">true</TargetsLinux>
+    <TargetsLinux Condition="'$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'Android' or '$(RuntimeOS)' == 'Linux-bionic'">true</TargetsLinux>
+    <TargetsLinuxBionic Condition="'$(RuntimeOS)' == 'Linux-bionic'">true</TargetsLinuxBionic>
     <TargetsNetBSD Condition="'$(TargetOS)' == 'NetBSD'">true</TargetsNetBSD>
     <TargetsOSX Condition="'$(TargetOS)' == 'OSX'">true</TargetsOSX>
     <TargetsMacCatalyst Condition="'$(TargetOS)' == 'MacCatalyst'">true</TargetsMacCatalyst>
