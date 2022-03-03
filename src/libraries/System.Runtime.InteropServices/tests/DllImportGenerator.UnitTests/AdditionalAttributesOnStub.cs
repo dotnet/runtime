@@ -64,6 +64,57 @@ partial class C
             Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
         }
 
+        [ConditionalFact]
+        public async Task GeneratedCodeAdded()
+        {
+            string source = @"
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+[assembly:DisableRuntimeMarshalling]
+partial class C
+{
+    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    public static partial S Method();
+}
+
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+}
+
+struct Native
+{
+    public Native(S s) { }
+    public S ToManaged() { return default; }
+}";
+            Compilation comp = await TestUtils.CreateCompilation(source);
+
+            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.DllImportGenerator());
+
+            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
+            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
+            Assert.Contains(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName);
+        }
+
+        [ConditionalFact]
+        public async Task GeneratedCodeNotAddedOnForwardingStub()
+        {
+            string source = @"
+using System.Runtime.InteropServices;
+partial class C
+{
+    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    public static partial void Method();
+}";
+            Compilation comp = await TestUtils.CreateCompilation(source);
+
+            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.DllImportGenerator());
+
+            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
+            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
+            Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName);
+        }
+
         public static IEnumerable<object[]> GetDownlevelTargetFrameworks()
         {
             yield return new object[] { TestTargetFramework.Net, true };

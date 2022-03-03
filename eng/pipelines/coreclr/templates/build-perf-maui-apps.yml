@@ -110,12 +110,19 @@ steps:
   #      overwriteExistingFiles: true
   #      cleanDestinationFolder: false
 
+  # Get the current maui nuget config so all things can be found, and add the Emscription version to the rollback file
+  # Add emscription line using sed based on https://stackoverflow.com/questions/6739258/how-do-i-add-a-line-of-text-to-the-middle-of-a-file-using-bash.
+  # This is a workaround as the current
   - script: |
+      curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/main/NuGet.config'
+      curl -o rollback.json 'https://maui.blob.core.windows.net/metadata/rollbacks/main.json'
+      sed -n 'H;${x;s/^\n//;s/  "microsoft.net.sdk.android".*$/  "microsoft.net.workload.emscripten": "6.0.2",\n&/;p;}' rollback.json > updated_rollback.json
+      cat updated_rollback.json
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
       chmod -R a+rx .
       ./dotnet-install.sh --channel 6.0.2xx --quality daily --install-dir .
       ./dotnet --info
-      ./dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/main.json --source https://aka.ms/dotnet6/nuget/index.json --source https://api.nuget.org/v3/index.json
+      ./dotnet workload install maui --from-rollback-file ./updated_rollback.json --configfile NuGet.config
     displayName: Install MAUI workload
     workingDirectory: $(Build.SourcesDirectory)
 
@@ -124,14 +131,27 @@ steps:
       cd MauiTesting
       cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
       cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
+      cp $(Build.SourcesDirectory)/NuGet.config ./NuGet.config
     displayName: Setup MAUI Project
     workingDirectory: $(Build.SourcesDirectory)
 
   - script: |
       chmod -R a+r .
-      ../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
-      mv ./bin/Release/net6.0-android/com.companyname.MauiTesting-Signed.apk ./MauiAndroidDefault.apk
+      # Restore is split out because of https://github.com/dotnet/sdk/issues/21877, can be removed with --no-restore once fixed
+      ../dotnet restore
+      ../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release -r android-arm64 --no-restore --self-contained
+      mv ./bin/Release/net6.0-android/android-arm64/com.companyname.mauitesting-Signed.apk ./MauiAndroidDefault.apk
     displayName: Build MAUI Android
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+
+    # This step pulls the product version from the used Microsoft.Maui.dll file properties and saves it for upload with the maui test counter.
+    # We pull from this file as we did not find another place to reliably get the version information pre or post build.
+  - powershell: |
+      $RetrievedMauiVersion = Get-ChildItem .\obj\Release\net6.0-android\android-arm64\linked\Microsoft.Maui.dll | Select-Object -ExpandProperty VersionInfo | Select-Object ProductVersion | Select-Object -ExpandProperty ProductVersion
+      $RetrievedMauiVersion
+      Write-Host "##vso[task.setvariable variable=mauiVersion;isOutput=true]$RetrievedMauiVersion"
+    name: getMauiVersion
+    displayName: Get and Save MAUI Version
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
   - script: |

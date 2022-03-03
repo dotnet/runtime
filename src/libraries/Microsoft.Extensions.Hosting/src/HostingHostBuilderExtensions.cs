@@ -224,7 +224,7 @@ namespace Microsoft.Extensions.Hosting
             .ConfigureLogging((hostingContext, logging) =>
             {
                 bool isWindows =
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
                     OperatingSystem.IsWindows();
 #else
                     RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
@@ -239,7 +239,7 @@ namespace Microsoft.Extensions.Hosting
                 }
 
                 logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
                 if (!OperatingSystem.IsBrowser())
 #endif
                 {

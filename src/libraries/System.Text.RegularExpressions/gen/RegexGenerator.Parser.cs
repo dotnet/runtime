@@ -178,10 +178,10 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Parse the input pattern
-            RegexCode code;
+            RegexTree tree;
             try
             {
-                code = RegexWriter.Write(RegexParser.Parse(pattern, regexOptions, culture), culture);
+                tree = RegexParser.Parse(pattern, regexOptions, culture);
             }
             catch (Exception e)
             {
@@ -199,7 +199,7 @@ namespace System.Text.RegularExpressions.Generator
                 pattern,
                 regexOptions,
                 matchTimeout ?? Timeout.Infinite,
-                code);
+                tree);
 
             var regexType = new RegexType(
                 regexMethod,
@@ -233,7 +233,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>A regex method.</summary>
-        internal sealed record RegexMethod(MethodDeclarationSyntax MethodSyntax, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int MatchTimeout, RegexCode Code);
+        internal sealed record RegexMethod(MethodDeclarationSyntax MethodSyntax, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int MatchTimeout, RegexTree Tree);
 
         /// <summary>A type holding a regex method.</summary>
         internal sealed record RegexType(RegexMethod? Method, string Keyword, string Namespace, string Name)

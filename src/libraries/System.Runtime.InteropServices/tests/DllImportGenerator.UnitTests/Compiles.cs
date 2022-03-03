@@ -83,6 +83,10 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf16) };
             yield return new[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf8) };
 
+            // StringMarshallingCustomType
+            yield return new[] { CodeSnippets.CustomStringMarshallingParametersAndModifiers<char>() };
+            yield return new[] { CodeSnippets.CustomStringMarshallingParametersAndModifiers<string>() };
+
             // MarshalAs
             yield return new[] { CodeSnippets.MarshalAsParametersAndModifiers<bool>(UnmanagedType.Bool) };
             yield return new[] { CodeSnippets.MarshalAsParametersAndModifiers<bool>(UnmanagedType.VariantBool) };
@@ -161,7 +165,7 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.ByValueParameterWithName("Method", "@var") };
             yield return new[] { CodeSnippets.ByValueParameterWithName("@params", "i") };
 
-            // Generics
+            //Generics
             yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<byte>() };
             yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<sbyte>() };
             yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<short>() };

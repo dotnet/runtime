@@ -1073,8 +1073,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     // case is handled separately.
     if (actualData->IsMultiRegNode())
     {
-        regCount = actualData->IsMultiRegLclVar() ? actualData->AsLclVar()->GetFieldCount(compiler)
-                                                  : actualData->GetMultiRegCount();
+        regCount = actualData->GetMultiRegCount(compiler);
         if (regCount > 1)
         {
             genMultiRegStoreToLocal(tree);

@@ -663,47 +663,6 @@ LOCAL_LABEL(GoCallCalliWorker):
     jmp C_FUNC(GenericPInvokeCalliHelper)
 LEAF_END GenericPInvokeCalliHelper, _TEXT
 
-// ==========================================================================
-NESTED_ENTRY ExternalMethodFixupStub, _TEXT_ NoHandler
-    // pop off the return address to the stub
-    // leaving the actual caller's return address on top of the stack
-    pop     eax
-
-    STUB_PROLOG
-
-    mov         esi, esp
-
-    // EAX is return address into CORCOMPILE_EXTERNAL_METHOD_THUNK. Subtract 5 to get start address.
-    sub         eax, 5
-
-.att_syntax
-    pushl       $0
-    pushl       $0
-.intel_syntax noprefix
-
-    push        eax
-
-    // pTransitionBlock
-    push        esi
-
-    call        C_FUNC(ExternalMethodFixupWorker)
-
-    // eax now contains replacement stub. PreStubWorker will never return
-    // NULL (it throws an exception if stub creation fails.)
-
-    // From here on, mustn't trash eax
-
-    STUB_EPILOG
-
-PATCH_LABEL ExternalMethodFixupPatchLabel
-    // Tailcall target
-    jmp eax
-
-    // This will never be executed. It is just to help out stack-walking logic
-    // which disassembles the epilog to unwind the stack.
-    ret
-NESTED_END ExternalMethodFixupStub, _TEXT
-
 #ifdef FEATURE_READYTORUN
 NESTED_ENTRY DynamicHelperArgsStub, _TEXT, NoHandler
     .cfi_def_cfa_offset 16
@@ -739,8 +698,9 @@ NESTED_ENTRY DelayLoad_MethodCall, _TEXT, NoHandler
 
     STUB_EPILOG
 
-    // Share the patch label
-    jmp C_FUNC(ExternalMethodFixupPatchLabel)
+PATCH_LABEL ExternalMethodFixupPatchLabel
+    // Tailcall target
+    jmp eax
 
     // This will never be executed. It is just to help out stack-walking logic
     // which disassembles the epilog to unwind the stack.

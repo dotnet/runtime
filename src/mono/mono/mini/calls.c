@@ -111,7 +111,10 @@ handle_enum:
 	case MONO_TYPE_U8:
 		return calli? OP_LCALL_REG: virt? OP_LCALL_MEMBASE: OP_LCALL;
 	case MONO_TYPE_R4:
-		return calli? OP_RCALL_REG: virt? OP_RCALL_MEMBASE: OP_RCALL;
+		if (cfg->r4fp)
+			return calli? OP_RCALL_REG: virt? OP_RCALL_MEMBASE: OP_RCALL;
+		else
+			return calli? OP_FCALL_REG: virt? OP_FCALL_MEMBASE: OP_FCALL;
 	case MONO_TYPE_R8:
 		return calli? OP_FCALL_REG: virt? OP_FCALL_MEMBASE: OP_FCALL;
 	case MONO_TYPE_VALUETYPE:
