@@ -2922,6 +2922,12 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                         size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                     }
                 }
+                else if (fieldType == ELEMENT_TYPE_CLASS)
+                {
+                    pMethodTable = pFieldStart->GetFieldTypeHandleThrowing().GetMethodTable();
+                    if (pMethodTable->IsArray())
+                        size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                }
             }
             else if (numIntroducedFields == 2)
             {
@@ -2964,6 +2970,29 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                         goto _End_arg;
                     }
                 }
+                else if (fieldType == ELEMENT_TYPE_CLASS)
+                {
+                    MethodTable* pMethodTable2  = pFieldStart->GetFieldTypeHandleThrowing().GetMethodTable();
+                    if (pMethodTable2->IsArray())
+                    {
+                        size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2);
+                        if (size == STRUCT_FLOAT_FIELD_ONLY_ONE)
+                        {
+                            size = pFieldStart[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_DOUBLE : STRUCT_FLOAT_FIELD_FIRST;
+                        }
+                        else if (size == STRUCT_NO_FLOAT_FIELD)
+                        {
+                            size = pFieldStart[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_SIZE_IS8: STRUCT_NO_FLOAT_FIELD;
+                        }
+                        else
+                        {
+                            size = STRUCT_NO_FLOAT_FIELD;
+                            goto _End_arg;
+                        }
+                    }
+                    else if (pFieldStart[0].GetSize() == 8)
+                        size = STRUCT_FIRST_FIELD_SIZE_IS8;
+                }
                 else if (pFieldStart[0].GetSize() == 8)
                     size = STRUCT_FIRST_FIELD_SIZE_IS8;
 
@@ -2990,7 +3019,7 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                             else
                                 size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
                         }
-                        else if (size2 == 0)
+                        else if (size2 == STRUCT_NO_FLOAT_FIELD)
                         {
                             size |= pFieldStart[1].GetSize() == 8 ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0;
                         }
@@ -3005,6 +3034,37 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                         size = STRUCT_NO_FLOAT_FIELD;
                         goto _End_arg;
                     }
+                }
+                else if (fieldType == ELEMENT_TYPE_CLASS)
+                {
+                    MethodTable* pMethodTable2  = pFieldStart[1].GetFieldTypeHandleThrowing().GetMethodTable();
+                    if (pMethodTable2->IsArray())
+                    {
+                        int size2 = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2);
+                        if (size2 == STRUCT_FLOAT_FIELD_ONLY_ONE)
+                        {
+                            if (pFieldStart[1].GetSize() == 8)
+                                size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
+                            else
+                                size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
+                        }
+                        else if ((size2 == STRUCT_NO_FLOAT_FIELD) && (size & STRUCT_FLOAT_FIELD_FIRST) && (pFieldStart[1].GetSize() == 8))
+                        {
+                            size |= STRUCT_SECOND_FIELD_SIZE_IS8;
+                        }
+                        else
+                        {
+                            size = STRUCT_NO_FLOAT_FIELD;
+                            goto _End_arg;
+                        }
+                    }
+                    else if (!(size & STRUCT_FLOAT_FIELD_FIRST))
+                    {
+                        size = STRUCT_NO_FLOAT_FIELD;
+                        goto _End_arg;
+                    }
+                    else if (pFieldStart[1].GetSize() == 8)
+                        size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                 }
                 else if (pFieldStart[1].GetSize() == 8)
                     size |= STRUCT_SECOND_FIELD_SIZE_IS8;
@@ -3091,6 +3151,12 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                         }
                     }
                 }
+                else if ((fieldType == ELEMENT_TYPE_CLASS) && pMethodTable->IsArray())
+                {
+                    MethodTable* pMethodTable2  = pFieldStart->GetFieldTypeHandleThrowing().GetMethodTable();
+                    if (pMethodTable2->IsArray())
+                        size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2);
+                }
             }
             else if (numIntroducedFields == 2)
             {
@@ -3161,6 +3227,33 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                             size = STRUCT_FIRST_FIELD_DOUBLE;
                         }
                     }
+                }
+                else if (fieldType == ELEMENT_TYPE_CLASS)
+                {
+                    MethodTable* pMethodTable2  = pFieldStart->GetFieldTypeHandleThrowing().GetMethodTable();
+                    if (pMethodTable2->IsArray())
+                    {
+                        int size2 = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2);
+                        if (size2 == STRUCT_FLOAT_FIELD_ONLY_ONE)
+                        {
+                            if (pMethodTable2->GetNumInstanceFieldBytes() == 8)
+                                size = STRUCT_FIRST_FIELD_DOUBLE;
+                            else
+                                size = STRUCT_FLOAT_FIELD_FIRST;
+                        }
+                        else
+                        {
+                            if (pMethodTable2->GetNumInstanceFieldBytes() > 8)
+                            {
+                                size = STRUCT_NO_FLOAT_FIELD;
+                                goto _End_arg;
+                            }
+                            else if (pMethodTable2->GetNumInstanceFieldBytes() == 8)
+                                size = STRUCT_FIRST_FIELD_SIZE_IS8;
+                        }
+                    }
+                    else if (pFieldStart[0].GetSize() == 8)
+                        size = STRUCT_FIRST_FIELD_SIZE_IS8;
                 }
                 else if (pFieldStart[0].GetSize() == 8)
                     size = STRUCT_FIRST_FIELD_SIZE_IS8;
@@ -3253,6 +3346,46 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                         else if (pMethodTable2->GetNumInstanceFieldBytes() == 8)
                             size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                     }
+                }
+                else if (fieldType == ELEMENT_TYPE_CLASS)
+                {
+                    MethodTable* pMethodTable2  = pFieldStart[1].GetFieldTypeHandleThrowing().GetMethodTable();
+                    if (pMethodTable2->IsArray())
+                    {
+                        int size2 = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2);
+                        if (size2 == STRUCT_FLOAT_FIELD_ONLY_ONE)
+                        {
+                            if (pMethodTable2->GetNumInstanceFieldBytes() == 8)
+                                size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
+                            else
+                                size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
+                        }
+                        else
+                        {
+                            if (pMethodTable2->GetNumInstanceFieldBytes() > 8)
+                            {
+                                size = STRUCT_NO_FLOAT_FIELD;
+                                goto _End_arg;
+                            }
+                            else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
+                            {
+                                size = STRUCT_NO_FLOAT_FIELD;
+                                goto _End_arg;
+                            }
+                            else if (pMethodTable2->GetNumInstanceFieldBytes() == 8)
+                                size |= STRUCT_SECOND_FIELD_SIZE_IS8;
+                        }
+                    }
+                    else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
+                    {
+                        size = STRUCT_NO_FLOAT_FIELD;
+                    }
+                    else if (pFieldStart[1].GetSize() == 8)
+                        size |= STRUCT_SECOND_FIELD_SIZE_IS8;
+                }
+                else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
+                {
+                    size = STRUCT_NO_FLOAT_FIELD;
                 }
                 else if (pFieldStart[1].GetSize() == 8)
                     size |= STRUCT_SECOND_FIELD_SIZE_IS8;
