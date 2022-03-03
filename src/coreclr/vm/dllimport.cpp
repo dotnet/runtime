@@ -5693,7 +5693,7 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
 
     if (pStubMD != NULL
         && pStubMD->IsILStub()
-        && pStubMD->AsDynamicMethodDesc()->AreFlagSets(DynamicMethodDesc::FlagRequiresCOM))
+        && pStubMD->AsDynamicMethodDesc()->HasFlags(DynamicMethodDesc::FlagRequiresCOM))
     {
         // the stub uses COM so make sure that it is started
         EnsureComStarted();

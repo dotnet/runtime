@@ -1729,7 +1729,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         }
         trace->InitForManaged(target);
     }
-    else if (pStubMD->IsDelegateStub())
+    else if (pStubMD->HasFlags(DynamicMethodDesc::FlagIsDelegate))
     {
         // This is forward delegate P/Invoke stub, the argument is undefined
         DelegateObject *pDel = (DelegateObject *)pThis;
@@ -1738,7 +1738,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Forward delegate P/Invoke case 0x%p\n", target));
         trace->InitForUnmanaged(target);
     }
-    else if (pStubMD->AreFlagSets(DynamicMethodDesc::FlagIsCALLI))
+    else if (pStubMD->HasFlags(DynamicMethodDesc::FlagIsCALLI))
     {
         // This is unmanaged CALLI stub, the argument is the target
         target = (PCODE)arg;

@@ -1318,7 +1318,7 @@ DWORD MethodDesc::GetAttrs() const
     if (IsArray())
         return dac_cast<PTR_ArrayMethodDesc>(this)->GetAttrs();
     else if (IsNoMetadata())
-        return dac_cast<PTR_DynamicMethodDesc>(this)->GetFlagsAsMetadata();
+        return dac_cast<PTR_DynamicMethodDesc>(this)->GetAttrs();
 
     DWORD dwAttributes;
     if (FAILED(GetMDImport()->GetMethodDefProps(GetMemberDef(), &dwAttributes)))

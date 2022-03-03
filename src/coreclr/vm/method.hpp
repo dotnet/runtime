@@ -2530,7 +2530,7 @@ public:
     {
         m_dwExtendedFlags = flags;
     }
-    bool AreFlagSets(DWORD flags) const
+    bool HasFlags(DWORD flags) const
     {
         return !!(m_dwExtendedFlags & flags);
     }
@@ -2546,19 +2546,19 @@ public:
     ILStubType GetILStubType() const
     {
         ILStubType type = (ILStubType)(m_dwExtendedFlags & ILStubTypeMask);
-        _ASSERTE(type == StubNotSet || AreFlagSets(FlagIsILStub));
+        _ASSERTE(type == StubNotSet || HasFlags(FlagIsILStub));
         return type;
     }
 
     void SetILStubType(ILStubType type)
     {
-        _ASSERTE(AreFlagSets(FlagIsILStub));
+        _ASSERTE(HasFlags(FlagIsILStub));
         m_dwExtendedFlags |= type;
     }
 
 public:
-    bool IsILStub() const { LIMITED_METHOD_DAC_CONTRACT; return AreFlagSets(FlagIsILStub); }
-    bool IsLCGMethod() const { LIMITED_METHOD_DAC_CONTRACT; return AreFlagSets(FlagIsLCGMethod); }
+    bool IsILStub() const { LIMITED_METHOD_DAC_CONTRACT; return HasFlags(FlagIsILStub); }
+    bool IsLCGMethod() const { LIMITED_METHOD_DAC_CONTRACT; return HasFlags(FlagIsLCGMethod); }
 
 	inline PTR_DynamicResolver    GetResolver();
     inline PTR_LCGMethodResolver  GetLCGMethodResolver();
@@ -2571,12 +2571,12 @@ public:
     }
 
     // Based on the current flags, compute the equivalent as COR metadata.
-    WORD GetFlagsAsMetadata() const
+    WORD GetAttrs() const
     {
         LIMITED_METHOD_CONTRACT;
         WORD asMetadata = 0;
-        asMetadata |= AreFlagSets(FlagPublic) ? mdPublic : 0;
-        asMetadata |= AreFlagSets(FlagStatic) ? mdStatic : 0;
+        asMetadata |= HasFlags(FlagPublic) ? mdPublic : 0;
+        asMetadata |= HasFlags(FlagStatic) ? mdStatic : 0;
         return asMetadata;
     }
 
@@ -2605,13 +2605,6 @@ public:
         return type == StubCOMToCLRInterop || type == StubNativeToCLRInterop;
     }
 
-    bool IsDelegateStub() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(IsILStub());
-        return AreFlagSets(FlagIsDelegate);
-    }
-
     bool IsStepThroughStub() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -2631,19 +2624,21 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsILStub());
-        return !AreFlagSets(FlagStatic) && GetILStubType() == StubCLRToCOMInterop;
+        return !HasFlags(FlagStatic) && GetILStubType() == StubCLRToCOMInterop;
     }
     bool IsCOMToCLRStub() const
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsILStub());
-        return !AreFlagSets(FlagStatic) && GetILStubType() == StubCOMToCLRInterop;
+        return !HasFlags(FlagStatic) && GetILStubType() == StubCOMToCLRInterop;
     }
     bool IsPInvokeStub() const
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsILStub());
-        return AreFlagSets(FlagStatic) && GetILStubType() == StubCLRToNativeInterop;
+        return HasFlags(FlagStatic)
+            && !HasFlags(FlagIsCALLI)
+            && GetILStubType() == StubCLRToNativeInterop;
     }
 
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
@@ -2673,7 +2668,7 @@ public:
     bool HasMDContextArg() const
     {
         LIMITED_METHOD_CONTRACT;
-        return IsCLRToCOMStub() || (IsPInvokeStub() && !IsDelegateStub());
+        return IsCLRToCOMStub() || (IsPInvokeStub() && !HasFlags(FlagIsDelegate));
     }
 
     //
