@@ -11404,7 +11404,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             if (!optValnumCSE_phase)
             {
 #ifdef TARGET_ARM64
-                if (oper == GT_UMOD && op2->IsIntegralConstPow2())
+                if ((tree->OperGet() == GT_UMOD) && op2->IsIntegralConstPow2())
                 {
                     // Transformation: a % b = a & (b - 1);
                     tree = fgMorphUModToAndSub(tree->AsOp());
@@ -11420,7 +11420,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 // when 'b' is not a power of 2 constant and mod operator is signed.
                 // Lowering for XARCH does this optimization already,
                 // but is also done here to take advantage of CSE.
-                if (oper == GT_MOD && !op2->IsIntegralConstAbsPow2())
+                if ((tree->OperGet() == GT_MOD) && !op2->IsIntegralConstAbsPow2())
 #endif
                 {
                     // Transformation: a % b = a - (a / b) * b;
