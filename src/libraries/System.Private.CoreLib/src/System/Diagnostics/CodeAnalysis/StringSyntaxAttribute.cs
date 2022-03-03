@@ -37,6 +37,9 @@ namespace System.Diagnostics.CodeAnalysis
         /// <summary>Optional arguments associated with the specific syntax employed.</summary>
         public object?[] Arguments { get; }
 
+        /// <summary>The syntax identifier for strings containing date format specifiers.</summary>
+        public const string DateFormat = nameof(DateFormat);
+
         /// <summary>The syntax identifier for strings containing date and time format specifiers.</summary>
         public const string DateTimeFormat = nameof(DateTimeFormat);
 
@@ -45,5 +48,8 @@ namespace System.Diagnostics.CodeAnalysis
 
         /// <summary>The syntax identifier for strings containing regular expressions.</summary>
         public const string Regex = nameof(Regex);
+
+        /// <summary>The syntax identifier for strings containing time format specifiers.</summary>
+        public const string TimeFormat = nameof(TimeFormat);
     }
 }
