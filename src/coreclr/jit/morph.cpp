@@ -11411,9 +11411,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     op1  = tree->AsOp()->gtOp1;
                     op2  = tree->AsOp()->gtOp2;
                 }
-                else if (oper == GT_MOD && op2->IsIntegralConstPow2())
-                {
-                }
                 // ARM64 architecture manual suggests this transformation
                 // for the mod operator.
                 else
