@@ -378,7 +378,7 @@ namespace System.Text.RegularExpressions.Generator
             var additionalDeclarations = new HashSet<string>();
 
             // Emit locals initialization
-            writer.WriteLine("int pos = base.runtextpos, end = base.runtextend;");
+            writer.WriteLine("int pos = base.runtextpos;");
             writer.Flush();
             int additionalDeclarationsPosition = ((StringWriter)writer.InnerWriter).GetStringBuilder().Length;
             int additionalDeclarationsIndent = writer.Indent;
@@ -391,9 +391,9 @@ namespace System.Text.RegularExpressions.Generator
             Debug.Assert(minRequiredLength >= 0);
             string clause = minRequiredLength switch
                             {
-                                0 => "if (pos <= end)",
-                                1 => "if (pos < end)",
-                                _ => $"if (pos < end - {minRequiredLength - 1})"
+                                0 => "if (pos <= inputSpan.Length)",
+                                1 => "if (pos < inputSpan.Length)",
+                                _ => $"if (pos < inputSpan.Length - {minRequiredLength - 1})"
                             };
             using (EmitBlock(writer, clause))
             {
@@ -443,7 +443,7 @@ namespace System.Text.RegularExpressions.Generator
             const string NoStartingPositionFound = "NoStartingPositionFound";
             writer.WriteLine("// No starting position found");
             writer.WriteLine($"{NoStartingPositionFound}:");
-            writer.WriteLine("base.runtextpos = end;");
+            writer.WriteLine("base.runtextpos = inputSpan.Length;");
             writer.WriteLine("return false;");
 
             // We're done.  Patch up any additional declarations.
@@ -462,8 +462,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
                         writer.WriteLine("// Beginning \\A anchor");
-                        additionalDeclarations.Add("int beginning = base.runtextbeg;");
-                        using (EmitBlock(writer, "if (pos > beginning)"))
+                        using (EmitBlock(writer, "if (pos > 0)"))
                         {
                             Goto(NoStartingPositionFound);
                         }
@@ -481,18 +480,18 @@ namespace System.Text.RegularExpressions.Generator
 
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
                         writer.WriteLine("// Leading end \\Z anchor");
-                        using (EmitBlock(writer, "if (pos < end - 1)"))
+                        using (EmitBlock(writer, "if (pos < inputSpan.Length - 1)"))
                         {
-                            writer.WriteLine("base.runtextpos = end - 1;");
+                            writer.WriteLine("base.runtextpos = inputSpan.Length - 1;");
                         }
                         writer.WriteLine("return true;");
                         return true;
 
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
                         writer.WriteLine("// Leading end \\z anchor");
-                        using (EmitBlock(writer, "if (pos < end)"))
+                        using (EmitBlock(writer, "if (pos < inputSpan.Length)"))
                         {
-                            writer.WriteLine("base.runtextpos = end;");
+                            writer.WriteLine("base.runtextpos = inputSpan.Length;");
                         }
                         writer.WriteLine("return true;");
                         return true;
@@ -500,9 +499,9 @@ namespace System.Text.RegularExpressions.Generator
                     case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ:
                         // Jump to the end, minus the min required length, which in this case is actually the fixed length, minus 1 (for a possible ending \n).
                         writer.WriteLine("// Trailing end \\Z anchor with fixed-length match");
-                        using (EmitBlock(writer, $"if (pos < end - {regexTree.FindOptimizations.MinRequiredLength + 1})"))
+                        using (EmitBlock(writer, $"if (pos < inputSpan.Length - {regexTree.FindOptimizations.MinRequiredLength + 1})"))
                         {
-                            writer.WriteLine($"base.runtextpos = end - {regexTree.FindOptimizations.MinRequiredLength + 1};");
+                            writer.WriteLine($"base.runtextpos = inputSpan.Length - {regexTree.FindOptimizations.MinRequiredLength + 1};");
                         }
                         writer.WriteLine("return true;");
                         return true;
@@ -510,9 +509,9 @@ namespace System.Text.RegularExpressions.Generator
                     case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End:
                         // Jump to the end, minus the min required length, which in this case is actually the fixed length.
                         writer.WriteLine("// Trailing end \\z anchor with fixed-length match");
-                        using (EmitBlock(writer, $"if (pos < end - {regexTree.FindOptimizations.MinRequiredLength})"))
+                        using (EmitBlock(writer, $"if (pos < inputSpan.Length - {regexTree.FindOptimizations.MinRequiredLength})"))
                         {
-                            writer.WriteLine($"base.runtextpos = end - {regexTree.FindOptimizations.MinRequiredLength};");
+                            writer.WriteLine($"base.runtextpos = inputSpan.Length - {regexTree.FindOptimizations.MinRequiredLength};");
                         }
                         writer.WriteLine("return true;");
                         return true;
@@ -528,11 +527,10 @@ namespace System.Text.RegularExpressions.Generator
                         // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
                         // to boost our position to the next line, and then continue normally with any searches.
                         writer.WriteLine("// Beginning-of-line anchor");
-                        additionalDeclarations.Add("int beginning = base.runtextbeg;");
-                        using (EmitBlock(writer, "if (pos > beginning && inputSpan[pos - 1] != '\\n')"))
+                        using (EmitBlock(writer, "if (pos > 0 && inputSpan[pos - 1] != '\\n')"))
                         {
                             writer.WriteLine("int newlinePos = global::System.MemoryExtensions.IndexOf(inputSpan.Slice(pos), '\\n');");
-                            using (EmitBlock(writer, "if (newlinePos < 0 || newlinePos + pos + 1 > end)"))
+                            using (EmitBlock(writer, "if ((uint)newlinePos > inputSpan.Length - pos - 1)"))
                             {
                                 Goto(NoStartingPositionFound);
                             }
@@ -546,18 +544,18 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     case RegexNodeKind.End when regexTree.FindOptimizations.MaxPossibleLength is int maxLength:
                         writer.WriteLine("// End \\z anchor with maximum-length match");
-                        using (EmitBlock(writer, $"if (pos < end - {maxLength})"))
+                        using (EmitBlock(writer, $"if (pos < inputSpan.Length - {maxLength})"))
                         {
-                            writer.WriteLine($"pos = end - {maxLength};");
+                            writer.WriteLine($"pos = inputSpan.Length - {maxLength};");
                         }
                         writer.WriteLine();
                         break;
 
                     case RegexNodeKind.EndZ when regexTree.FindOptimizations.MaxPossibleLength is int maxLength:
                         writer.WriteLine("// End \\Z anchor with maximum-length match");
-                        using (EmitBlock(writer, $"if (pos < end - {maxLength + 1})"))
+                        using (EmitBlock(writer, $"if (pos < inputSpan.Length - {maxLength + 1})"))
                         {
-                            writer.WriteLine($"pos = end - {maxLength + 1};");
+                            writer.WriteLine($"pos = inputSpan.Length - {maxLength + 1};");
                         }
                         writer.WriteLine();
                         break;
@@ -569,7 +567,7 @@ namespace System.Text.RegularExpressions.Generator
             // Emits a case-sensitive prefix search for a string at the beginning of the pattern.
             void EmitIndexOf(string prefix)
             {
-                writer.WriteLine($"int i = global::System.MemoryExtensions.IndexOf(inputSpan.Slice(pos, end - pos), {Literal(prefix)});");
+                writer.WriteLine($"int i = global::System.MemoryExtensions.IndexOf(inputSpan.Slice(pos), {Literal(prefix)});");
                 writer.WriteLine("if (i >= 0)");
                 writer.WriteLine("{");
                 writer.WriteLine("    base.runtextpos = pos + i;");
@@ -595,7 +593,7 @@ namespace System.Text.RegularExpressions.Generator
                 FinishEmitScope loopBlock = default;
                 if (needLoop)
                 {
-                    writer.WriteLine("global::System.ReadOnlySpan<char> span = inputSpan.Slice(pos, end - pos);");
+                    writer.WriteLine("global::System.ReadOnlySpan<char> span = inputSpan.Slice(pos);");
                     string upperBound = "span.Length" + (setsToUse > 1 || primarySet.Distance != 0 ? $" - {minRequiredLength - 1}" : "");
                     loopBlock = EmitBlock(writer, $"for (int i = 0; i < {upperBound}; i++)");
                 }
@@ -604,7 +602,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     string span = needLoop ?
                         "span" :
-                        "inputSpan.Slice(pos, end - pos)";
+                        "inputSpan.Slice(pos)";
 
                     span = (needLoop, primarySet.Distance) switch
                     {
@@ -704,7 +702,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 using (EmitBlock(writer, "while (true)"))
                 {
-                    writer.WriteLine($"global::System.ReadOnlySpan<char> slice = inputSpan.Slice(pos, end - pos);");
+                    writer.WriteLine($"global::System.ReadOnlySpan<char> slice = inputSpan.Slice(pos);");
                     writer.WriteLine();
 
                     // Find the literal.  If we can't find it, we're done searching.
@@ -847,7 +845,7 @@ namespace System.Text.RegularExpressions.Generator
 
             // Declare some locals.
             string sliceSpan = "slice";
-            writer.WriteLine("int pos = base.runtextpos, end = base.runtextend;");
+            writer.WriteLine("int pos = base.runtextpos;");
             writer.WriteLine($"int original_pos = pos;");
             bool hasTimeout = EmitLoopTimeoutCounterIfNeeded(writer, rm);
             bool hasTextInfo = EmitInitializeCultureForTryMatchAtCurrentPositionIfNecessary(writer, rm, analysis);
@@ -965,7 +963,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     writer.Write("global::System.ReadOnlySpan<char> ");
                 }
-                writer.WriteLine($"{sliceSpan} = inputSpan.Slice(pos, end - pos);");
+                writer.WriteLine($"{sliceSpan} = inputSpan.Slice(pos);");
             }
 
             // Emits the sum of a constant and a value from a local.
@@ -2288,8 +2286,7 @@ namespace System.Text.RegularExpressions.Generator
                         }
                         else
                         {
-                            additionalDeclarations.Add(node.Kind == RegexNodeKind.Beginning ? "int beginning = base.runtextbeg;" : "int start = base.runtextstart;");
-                            using (EmitBlock(writer, node.Kind == RegexNodeKind.Beginning ? "if (pos != beginning)" : "if (pos != start)"))
+                            using (EmitBlock(writer, node.Kind == RegexNodeKind.Beginning ? "if (pos != 0)" : "if (pos != base.runtextstart)"))
                             {
                                 Goto(doneLabel);
                             }
@@ -2307,8 +2304,7 @@ namespace System.Text.RegularExpressions.Generator
                         else
                         {
                             // We can't use our slice in this case, because we'd need to access slice[-1], so we access the inputSpan field directly:
-                            additionalDeclarations.Add("int beginning = base.runtextbeg;");
-                            using (EmitBlock(writer, $"if (pos > beginning && inputSpan[pos - 1] != '\\n')"))
+                            using (EmitBlock(writer, $"if (pos > 0 && inputSpan[pos - 1] != '\\n')"))
                             {
                                 Goto(doneLabel);
                             }
@@ -3032,9 +3028,8 @@ namespace System.Text.RegularExpressions.Generator
                     // .* was used with RegexOptions.Singleline, which means it'll consume everything.  Just jump to the end.
                     // The unbounded constraint is the same as in the Notone case above, done purely for simplicity.
 
-                    // int i = end - pos;
                     TransferSliceStaticPosToPos();
-                    writer.WriteLine($"int {iterationLocal} = end - pos;");
+                    writer.WriteLine($"int {iterationLocal} = inputSpan.Length - pos;");
                 }
                 else
                 {
