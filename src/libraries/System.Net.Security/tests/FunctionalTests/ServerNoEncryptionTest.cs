@@ -59,7 +59,9 @@ namespace System.Net.Security.Tests
 
                 using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null, EncryptionPolicy.AllowNoEncryption))
                 {
-                    await sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocols.Tls | SslProtocols.Tls11 |  SslProtocols.Tls12, false);
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
+                    await sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12, false);
+#pragma warning restore SYSLIB0039
 
                     _log.WriteLine("Client authenticated to server({0}) with encryption cipher: {1} {2}-bit strength",
                         serverNoEncryption.RemoteEndPoint, sslStream.CipherAlgorithm, sslStream.CipherStrength);
@@ -84,8 +86,10 @@ namespace System.Net.Security.Tests
                 {
                     if (SupportsNullEncryption)
                     {
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                         // null encryption is not permitted with Tls13
-                        await sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocols.Tls | SslProtocols.Tls11 |  SslProtocols.Tls12, false);
+                        await sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12, false);
+#pragma warning restore SYSLIB0039
                         _log.WriteLine("Client authenticated to server({0}) with encryption cipher: {1} {2}-bit strength",
                             serverNoEncryption.RemoteEndPoint, sslStream.CipherAlgorithm, sslStream.CipherStrength);
 

@@ -221,6 +221,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.DefaultConstructor:
                 case ReadyToRunHelperId.ObjectAllocator:
                 case ReadyToRunHelperId.TypeHandleForCasting:
+                case ReadyToRunHelperId.ConstrainedDirectCall:
                     {
                         EmitDictionaryLookup(factory, ref encoder, contextRegister, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
                         encoder.EmitRET();

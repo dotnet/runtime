@@ -25,9 +25,11 @@ namespace System.Text.Json
         // Stores the non-string dictionary keys for continuation.
         public object? DictionaryKey;
 
+#if DEBUG
         // Validation state.
         public int OriginalDepth;
         public JsonTokenType OriginalTokenType;
+#endif
 
         // Current object (POCO or IEnumerable).
         public object? ReturnValue; // The current return value used for re-entry.

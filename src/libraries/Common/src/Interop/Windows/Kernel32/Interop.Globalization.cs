@@ -96,7 +96,7 @@ internal static partial class Interop
                     int cchCount1,
                     char* lpString2,
                     int cchCount2,
-                    bool bIgnoreCase);
+                    [MarshalAs(UnmanagedType.Bool)] bool bIgnoreCase);
 
         [GeneratedDllImport("kernel32.dll", EntryPoint = "FindStringOrdinal", SetLastError = SetLastErrorForDebug)]
         internal static unsafe partial int FindStringOrdinal(
@@ -108,6 +108,7 @@ internal static partial class Interop
                     BOOL bIgnoreCase);
 
         [GeneratedDllImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool IsNLSDefinedString(
                     int Function,
                     uint dwFlags,
@@ -122,9 +123,11 @@ internal static partial class Interop
         internal static unsafe partial int GetLocaleInfoEx(string lpLocaleName, uint LCType, void* lpLCData, int cchData);
 
         [GeneratedDllImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool EnumSystemLocalesEx(delegate* unmanaged<char*, uint, void*, BOOL> lpLocaleEnumProcEx, uint dwFlags, void* lParam, IntPtr reserved);
 
         [GeneratedDllImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool EnumTimeFormatsEx(delegate* unmanaged<char*, void*, BOOL> lpTimeFmtEnumProcEx, string lpLocaleName, uint dwFlags, void* lParam);
 
         [GeneratedDllImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
@@ -140,6 +143,7 @@ internal static partial class Interop
         internal static unsafe partial int GetGeoInfo(int location, int geoType, char* lpGeoData, int cchData, int LangId);
 
         [GeneratedDllImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool EnumCalendarInfoExEx(delegate* unmanaged<char*, uint, IntPtr, void*, BOOL> pCalInfoEnumProcExEx, string lpLocaleName, uint Calendar, string? lpReserved, uint CalType, void* lParam);
 
         [StructLayout(LayoutKind.Sequential)]
@@ -153,6 +157,7 @@ internal static partial class Interop
         }
 
         [GeneratedDllImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool GetNLSVersionEx(int function, string localeName, NlsVersionInfoEx* lpVersionInformation);
     }
 }

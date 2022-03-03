@@ -21,6 +21,7 @@ internal static partial class Interop
         }
 
         [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "CryptAcquireContextW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptAcquireContext(
             out SafeProvHandle phProv,
             string? szContainer,

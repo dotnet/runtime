@@ -441,6 +441,7 @@ namespace Microsoft.Win32
 
         // SEEK
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtSeek(
                             EventLogHandle resultSet,
                             long position,
@@ -460,6 +461,7 @@ namespace Microsoft.Win32
                             int flags);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtNext(
                             EventLogHandle queryHandle,
                             int eventSize,
@@ -469,12 +471,15 @@ namespace Microsoft.Win32
                             ref int returned);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtCancel(EventLogHandle handle);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtClose(IntPtr handle);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtGetEventInfo(
                             EventLogHandle eventHandle,
                             EvtEventPropertyId propertyId,
@@ -483,6 +488,7 @@ namespace Microsoft.Win32
                             out int bufferUsed);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtGetQueryInfo(
                             EventLogHandle queryHandle,
                             EvtQueryPropertyId propertyId,
@@ -500,6 +506,7 @@ namespace Microsoft.Win32
                             int flags);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtGetPublisherMetadataProperty(
                             EventLogHandle publisherMetadataHandle,
                             EvtPublisherMetadataPropertyId propertyId,
@@ -511,11 +518,13 @@ namespace Microsoft.Win32
         // NEW
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtGetObjectArraySize(
                             EventLogHandle objectArray,
                             out int objectArraySize);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtGetObjectArrayProperty(
                             EventLogHandle objectArray,
                             int propertyId,
@@ -537,6 +546,7 @@ namespace Microsoft.Win32
                             int flags);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtGetEventMetadataProperty(
                             EventLogHandle eventMetadata,
                             EvtEventMetadataPropertyId propertyId,
@@ -553,6 +563,7 @@ namespace Microsoft.Win32
                             int flags);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtNextChannelPath(
                             EventLogHandle channelEnum,
                             int channelPathBufferSize,
@@ -565,6 +576,7 @@ namespace Microsoft.Win32
                             int flags);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtNextPublisherId(
                             EventLogHandle publisherEnum,
                             int publisherIdBufferSize,
@@ -578,11 +590,13 @@ namespace Microsoft.Win32
                             int flags);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtSaveChannelConfig(
                             EventLogHandle channelConfig,
                             int flags);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtSetChannelConfigProperty(
                             EventLogHandle channelConfig,
                             EvtChannelConfigPropertyId propertyId,
@@ -590,6 +604,7 @@ namespace Microsoft.Win32
                             ref EvtVariant propertyValue);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtGetChannelConfigProperty(
                             EventLogHandle channelConfig,
                             EvtChannelConfigPropertyId propertyId,
@@ -607,6 +622,7 @@ namespace Microsoft.Win32
                             PathType flags);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtGetLogInfo(
                             EventLogHandle log,
                             EvtLogPropertyId propertyId,
@@ -617,6 +633,7 @@ namespace Microsoft.Win32
         // LOG MANIPULATION
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtExportLog(
                             EventLogHandle session,
                             [MarshalAs(UnmanagedType.LPWStr)] string channelPath,
@@ -625,6 +642,7 @@ namespace Microsoft.Win32
                             int flags);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtArchiveExportedLog(
                             EventLogHandle session,
                             [MarshalAs(UnmanagedType.LPWStr)]string logFilePath,
@@ -632,6 +650,7 @@ namespace Microsoft.Win32
                             int flags);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtClearLog(
                             EventLogHandle session,
                             [MarshalAs(UnmanagedType.LPWStr)]string channelPath,
@@ -647,6 +666,7 @@ namespace Microsoft.Win32
                             EvtRenderContextFlags flags);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtRender(
                             EventLogHandle context,
                             EventLogHandle eventHandle,
@@ -657,6 +677,7 @@ namespace Microsoft.Win32
                             out int propCount);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtRender", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtRender(
                             EventLogHandle context,
                             EventLogHandle eventHandle,
@@ -716,6 +737,7 @@ namespace Microsoft.Win32
         };
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtFormatMessage(
                              EventLogHandle publisherMetadataHandle,
                              EventLogHandle eventHandle,
@@ -728,6 +750,7 @@ namespace Microsoft.Win32
                              out int bufferUsed);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtFormatMessage", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtFormatMessageBuffer(
                              EventLogHandle publisherMetadataHandle,
                              EventLogHandle eventHandle,
@@ -753,6 +776,7 @@ namespace Microsoft.Win32
                             [MarshalAs(UnmanagedType.LPWStr)] string bookmarkXml);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtUpdateBookmark(
                             EventLogHandle bookmark,
                             EventLogHandle eventHandle);

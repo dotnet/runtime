@@ -16,6 +16,7 @@ namespace System
         }
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ClrConfig_GetConfigBoolValue", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial bool GetConfigBoolValue(string configSwitchName, out bool exist);
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool GetConfigBoolValue(string configSwitchName, [MarshalAs(UnmanagedType.Bool)] out bool exist);
     }
 }

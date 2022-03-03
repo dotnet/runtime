@@ -12,6 +12,6 @@ internal static partial class Interop
         internal static partial int IsEqualDomainSid(
             byte[] sid1,
             byte[] sid2,
-            out bool result);
+            [MarshalAs(UnmanagedType.Bool)] out bool result);
     }
 }
