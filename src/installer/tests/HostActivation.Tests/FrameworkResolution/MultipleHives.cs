@@ -37,11 +37,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [InlineData("5.0.0", "net6.0", true, "5.1.2")]
         [InlineData("5.0.0", "net6.0", null, "5.1.2")]
         [InlineData("5.0.0", "net6.0", false, "5.2.0")]
-        [InlineData("7.0.0", "net7.0", true, "7.0.1")]
-        [InlineData("7.0.0", "net7.0", null, "7.0.1")]
+        [InlineData("7.0.0", "net7.0", true, "7.1.2")] // MLL disabled by default - setting it doesn't change anything
+        [InlineData("7.0.0", "net7.0", null, "7.1.2")] // MLL disabled by default
         [InlineData("7.0.0", "net7.0", false, "7.1.2")]
-        [InlineData("7.0.0", "net8.0", true, "7.0.1")]
-        [InlineData("7.0.0", "net8.0", null, "7.0.1")]
+        [InlineData("7.0.0", "net8.0", true, "7.1.2")] // MLL disabled by default - setting it doesn't change anything
+        [InlineData("7.0.0", "net8.0", null, "7.1.2")] // MLL disabled by default
         [InlineData("7.0.0", "net8.0", false, "7.1.2")]
         // MLL where main hive has a better match
         [InlineData("6.0.0", "net6.0", true, "6.1.4")] // Global hive with better version (higher patch)
