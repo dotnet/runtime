@@ -168,6 +168,7 @@ initDistroRidGlobal()
         # Unlike Musl, we can't execute things to detect Bionic
         # Instead assume that if we think is is Linux, but find
         # Android specific files in the sysroot, then it's Bionic
+        local ANDROID_NDK_ROOT="${ANDROID_NDK_ROOT:=}"
         if [ "$targetOs" = "Linux" ] && [ -d "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/" ]; then
             distroRid="linux-bionic-${buildArch}"
         fi
