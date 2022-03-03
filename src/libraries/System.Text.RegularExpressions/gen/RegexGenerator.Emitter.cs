@@ -1840,9 +1840,6 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(node.Kind is RegexNodeKind.PositiveLookaround, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
-                // Lookarounds are implicitly atomic.  Store the original done label to reset at the end.
-                string originalDoneLabel = doneLabel;
-
                 // Save off pos.  We'll need to reset this upon successful completion of the lookahead.
                 string startingPos = ReserveName("positivelookahead_starting_pos");
                 writer.WriteLine($"int {startingPos} = pos;");
@@ -1850,7 +1847,16 @@ namespace System.Text.RegularExpressions.Generator
                 int startingSliceStaticPos = sliceStaticPos;
 
                 // Emit the child.
-                EmitNode(node.Child(0));
+                RegexNode child = node.Child(0);
+                if (analysis.MayBacktrack(child))
+                {
+                    // Lookarounds are implicitly atomic, so we need to emit the node as atomic if it might backtrack.
+                    EmitAtomic(node, null);
+                }
+                else
+                {
+                    EmitNode(child);
+                }
 
                 // After the child completes successfully, reset the text positions.
                 // Do not reset captures, which persist beyond the lookahead.
@@ -1858,8 +1864,6 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine($"pos = {startingPos};");
                 SliceInputSpan(writer);
                 sliceStaticPos = startingSliceStaticPos;
-
-                doneLabel = originalDoneLabel;
             }
 
             // Emits the code to handle a negative lookahead assertion.
@@ -1868,7 +1872,6 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(node.Kind is RegexNodeKind.NegativeLookaround, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
-                // Lookarounds are implicitly atomic.  Store the original done label to reset at the end.
                 string originalDoneLabel = doneLabel;
 
                 // Save off pos.  We'll need to reset this upon successful completion of the lookahead.
@@ -1880,7 +1883,16 @@ namespace System.Text.RegularExpressions.Generator
                 doneLabel = negativeLookaheadDoneLabel;
 
                 // Emit the child.
-                EmitNode(node.Child(0));
+                RegexNode child = node.Child(0);
+                if (analysis.MayBacktrack(child))
+                {
+                    // Lookarounds are implicitly atomic, so we need to emit the node as atomic if it might backtrack.
+                    EmitAtomic(node, null);
+                }
+                else
+                {
+                    EmitNode(child);
+                }
 
                 // If the generated code ends up here, it matched the lookahead, which actually
                 // means failure for a _negative_ lookahead, so we need to jump to the original done.
@@ -1920,9 +1932,9 @@ namespace System.Text.RegularExpressions.Generator
                         Goto(doneLabel);
                         return;
 
-                    // Atomic is invisible in the generated source, other than its impact on the targets of jumps
-                    case RegexNodeKind.Atomic:
-                        EmitAtomic(node, subsequent);
+                    // Skip atomic nodes that wrap non-backtracking children; in such a case there's nothing to be made atomic.
+                    case RegexNodeKind.Atomic when !analysis.MayBacktrack(node.Child(0)):
+                        EmitNode(node.Child(0));
                         return;
 
                     // Concatenate is a simplification in the node tree so that a series of children can be represented as one.
@@ -2006,6 +2018,10 @@ namespace System.Text.RegularExpressions.Generator
                             EmitExpressionConditional(node);
                             break;
 
+                        case RegexNodeKind.Atomic when analysis.MayBacktrack(node.Child(0)):
+                            EmitAtomic(node, subsequent);
+                            return;
+
                         case RegexNodeKind.Capture:
                             EmitCapture(node, subsequent);
                             break;
@@ -2032,14 +2048,27 @@ namespace System.Text.RegularExpressions.Generator
             // Emits the node for an atomic.
             void EmitAtomic(RegexNode node, RegexNode? subsequent)
             {
-                Debug.Assert(node.Kind is RegexNodeKind.Atomic, $"Unexpected type: {node.Kind}");
+                Debug.Assert(node.Kind is RegexNodeKind.Atomic or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
+                Debug.Assert(analysis.MayBacktrack(node.Child(0)), "Expected child to potentially backtrack");
 
-                // Atomic simply outputs the code for the child, but it ensures that any done label left
-                // set by the child is reset to what it was prior to the node's processing.  That way,
-                // anything later that tries to jump back won't see labels set inside the atomic.
+                // Grab the current done label and the current backtracking position.  The purpose of the atomic node
+                // is to ensure that nodes after it that might backtrack skip over the atomic, which means after
+                // rendering the atomic's child, we need to reset the label so that subsequent backtracking doesn't
+                // see any label left set by the atomic's child.  We also need to reset the backtracking stack position
+                // so that the state on the stack remains consistent.
                 string originalDoneLabel = doneLabel;
+                additionalDeclarations.Add("int stackpos = 0;");
+                string startingStackpos = ReserveName("atomic_stackpos");
+                writer.WriteLine($"int {startingStackpos} = stackpos;");
+                writer.WriteLine();
+
+                // Emit the child.
                 EmitNode(node.Child(0), subsequent);
+                writer.WriteLine();
+
+                // Reset the stack position and done label.
+                writer.WriteLine($"stackpos = {startingStackpos};");
                 doneLabel = originalDoneLabel;
             }
 
