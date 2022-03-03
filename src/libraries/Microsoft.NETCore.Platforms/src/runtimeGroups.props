@@ -137,6 +137,14 @@
       <Versions>1;2</Versions>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="miraclelinux">
+      <Parent>rhel</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>8;9</Versions>
+      <ApplyVersionsToParent>true</ApplyVersionsToParent>
+      <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
+    </RuntimeGroup>
+
     <RuntimeGroup Include="ol">
       <Parent>rhel</Parent>
       <Architectures>x64</Architectures>

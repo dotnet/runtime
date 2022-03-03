@@ -94,6 +94,8 @@
              Link="Common\System\Net\SecurityStatusPal.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" 
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <!-- This file depends on IANA registry. We do not want anyone's build to break after the update -->
   <!-- or if they don't have internet connection - explicit opt-in required -->
