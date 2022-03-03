@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using Xunit;
 
@@ -47,6 +48,10 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             {
                 get { return null; }
             }
+
+            public IEnumerable<string> InstantiatedCovariantIEnumerable { get; set; } = new List<string>();
+            public ICollection<string> InstantiatedCovariantICollection { get; set; } = new List<string>();
+            public IReadOnlyCollection<string> InstantiatedCovariantIReadOnlyCollection { get; set; } = new List<string>();
         }
 
         public class NestedOptions
@@ -218,6 +223,87 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<ComplexOptions>();
             
             Assert.Equal("Yo", options.NamedProperty);
+        }
+
+        [Fact]
+        public void CanBindInstantiatedCovariantIEnumerableWithItems()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedCovariantIEnumerable:0", "Yo1"},
+                {"InstantiatedCovariantIEnumerable:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedCovariantIEnumerable.Count());
+            Assert.Equal("Yo1", options.InstantiatedCovariantIEnumerable.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedCovariantIEnumerable.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedCovariantICollectionWithItems()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedCovariantICollection:0", "Yo1"},
+                {"InstantiatedCovariantICollection:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedCovariantICollection.Count());
+            Assert.Equal("Yo1", options.InstantiatedCovariantICollection.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedCovariantICollection.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedCovariantIReadOnlyCollectionWithItems()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedCovariantIReadOnlyCollection:0", "Yo1"},
+                {"InstantiatedCovariantIReadOnlyCollection:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedCovariantIReadOnlyCollection.Count);
+            Assert.Equal("Yo1", options.InstantiatedCovariantIReadOnlyCollection.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedCovariantIReadOnlyCollection.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedCovariantIEnumerableWithNullItems()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedCovariantIEnumerable:0", null},
+                {"InstantiatedCovariantIEnumerable:1", "Yo1"},
+                {"InstantiatedCovariantIEnumerable:2", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedCovariantIEnumerable.Count());
+            Assert.Equal("Yo1", options.InstantiatedCovariantIEnumerable.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedCovariantIEnumerable.ElementAt(1));
         }
 
         [Fact]
