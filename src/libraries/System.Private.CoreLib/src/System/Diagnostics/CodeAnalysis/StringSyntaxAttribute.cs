@@ -54,5 +54,8 @@ namespace System.Diagnostics.CodeAnalysis
 
         /// <summary>The syntax identifier for strings containing time format specifiers.</summary>
         public const string TimeFormat = nameof(TimeFormat);
+
+        /// <summary>The syntax identifier for strings containing <see cref="TimeSpan"/> format specifiers.</summary>
+        public const string TimeSpanFormat = nameof(TimeSpanFormat);
     }
 }
