@@ -31,7 +31,7 @@ variables:
 
 jobs:
 - job: EnterpriseLinuxTests
-  timeoutInMinutes: 180
+  timeoutInMinutes: 120
   pool:
     name: NetCore1ESPool-Public
     demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
@@ -56,10 +56,12 @@ jobs:
 
   - bash: |
       docker exec linuxclient bash -c '/repo/build.sh -subset clr+libs -runtimeconfiguration release -ci /p:NativeOptimizationDataSupported=false'
+      docker exec linuxclient bash -c '/repo/dotnet.sh build $(containerLibrariesRoot)/System.Net.Http/tests/EnterpriseTests/System.Net.Http.Enterprise.Tests.csproj'
+      docker exec linuxclient bash -c '/repo/dotnet.sh build $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Security/tests/EnterpriseTests/System.Net.Security.Enterprise.Tests.csproj'
     displayName: Build product sources
-    timeoutInMinutes: 120
 
   - bash: |
+      docker exec linuxclient bash -c 'if [ -f /erc/resolv.conf.ORI ]; then cp -f /erc/resolv.conf.ORI /etc/resolv.conf; fi'
       docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Http/tests/EnterpriseTests/System.Net.Http.Enterprise.Tests.csproj
       docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Security/tests/EnterpriseTests/System.Net.Security.Enterprise.Tests.csproj
     displayName: Build and run tests

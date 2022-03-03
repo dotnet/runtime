@@ -7,6 +7,7 @@ kdestroy
 
 nslookup github.com
 if [ $? -ne 0 ]; then
+  cp /etc/resolv.conf /etc/resolv.conf.ORI
   # try to fix-up DNS by adding public server
   echo nameserver 8.8.8.8 >> /etc/resolv.conf
 
