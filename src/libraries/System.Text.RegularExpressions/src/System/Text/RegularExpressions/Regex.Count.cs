@@ -20,7 +20,7 @@ namespace System.Text.RegularExpressions
 
             int count = 0;
 
-            Run(input, 0, ref count, static (ref int count, Match match) =>
+            RunAllMatchesWithCallback(input, 0, ref count, static (ref int count, Match match) =>
             {
                 count++;
                 return true;
@@ -38,7 +38,7 @@ namespace System.Text.RegularExpressions
         {
             int count = 0;
 
-            Run(input, 0, ref count, static (ref int count, Match match) =>
+            RunAllMatchesWithCallback(input, 0, ref count, static (ref int count, Match match) =>
             {
                 count++;
                 return true;
