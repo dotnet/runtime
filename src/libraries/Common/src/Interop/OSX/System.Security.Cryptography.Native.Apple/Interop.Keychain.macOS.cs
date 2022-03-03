@@ -76,7 +76,7 @@ internal static partial class Interop
         private static partial int AppleCryptoNative_X509StoreRemoveCertificate(
             SafeKeychainItemHandle cert,
             SafeKeychainHandle keychain,
-            bool isReadOnlyMode,
+            [MarshalAs(UnmanagedType.Bool)] bool isReadOnlyMode,
             out int pOSStatus);
 
         private static SafeKeychainHandle SecKeychainItemCopyKeychain(SafeHandle item)

@@ -283,9 +283,10 @@ protected:
     Compiler* m_comp;
     unsigned  m_schemaCount;
     unsigned  m_instrCount;
+    bool      m_modifiedFlow;
 
 protected:
-    Instrumentor(Compiler* comp) : m_comp(comp), m_schemaCount(0), m_instrCount(0)
+    Instrumentor(Compiler* comp) : m_comp(comp), m_schemaCount(0), m_instrCount(0), m_modifiedFlow(false)
     {
     }
 
@@ -309,13 +310,23 @@ public:
     virtual void SuppressProbes()
     {
     }
-    unsigned SchemaCount()
+    unsigned SchemaCount() const
     {
         return m_schemaCount;
     }
-    unsigned InstrCount()
+    unsigned InstrCount() const
     {
         return m_instrCount;
+    }
+
+    void SetModifiedFlow()
+    {
+        m_modifiedFlow = true;
+    }
+
+    bool ModifiedFlow() const
+    {
+        return m_modifiedFlow;
     }
 };
 
@@ -483,6 +494,11 @@ void BlockCountInstrumentor::Prepare(bool preImport)
         // Note we could also route any non-tail-call pred via the
         // intermedary. Doing so would cut down on probe duplication.
         //
+        if (specialReturnBlocks.Size() > 0)
+        {
+            SetModifiedFlow();
+        }
+
         while (specialReturnBlocks.Size() > 0)
         {
             bool              first        = true;
@@ -1915,7 +1931,18 @@ PhaseStatus Compiler::fgInstrumentMethod()
         //
         fgCountInstrumentor->SuppressProbes();
         fgClassInstrumentor->SuppressProbes();
-        return PhaseStatus::MODIFIED_NOTHING;
+
+        // If we needed to create cheap preds, we're done with them now.
+        //
+        if (fgCheapPredsValid)
+        {
+            fgRemovePreds();
+        }
+
+        // We may have modified control flow preparing for instrumentation.
+        //
+        const bool modifiedFlow = fgCountInstrumentor->ModifiedFlow() || fgClassInstrumentor->ModifiedFlow();
+        return modifiedFlow ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
 
     JITDUMP("Instrumentation data base address is %p\n", dspPtr(profileMemory));

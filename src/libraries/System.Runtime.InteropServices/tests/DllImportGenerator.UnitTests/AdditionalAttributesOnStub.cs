@@ -135,6 +135,7 @@ using System.Runtime.InteropServices;
 partial class C
 {{
     [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool Method();
 }}";
             Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
