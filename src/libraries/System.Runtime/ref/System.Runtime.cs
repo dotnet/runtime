@@ -2141,7 +2141,7 @@ namespace System
         protected Enum() { }
         public int CompareTo(object? target) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
-        public static string Format(System.Type enumType, object value, string format) { throw null; }
+        public static string Format(System.Type enumType, object value, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("EnumFormat")] string format) { throw null; }
         public override int GetHashCode() { throw null; }
         public static string? GetName(System.Type enumType, object value) { throw null; }
         public static string? GetName<TEnum>(TEnum value) where TEnum : struct, System.Enum { throw null; }
@@ -2194,9 +2194,9 @@ namespace System
         public override string ToString() { throw null; }
         [System.ObsoleteAttribute("The provider argument is not used. Use ToString() instead.")]
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("EnumFormat")] string? format) { throw null; }
         [System.ObsoleteAttribute("The provider argument is not used. Use ToString(String) instead.")]
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("EnumFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public static bool TryParse(System.Type enumType, System.ReadOnlySpan<char> value, bool ignoreCase, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
         public static bool TryParse(System.Type enumType, System.ReadOnlySpan<char> value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
         public static bool TryParse(System.Type enumType, string? value, bool ignoreCase, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
@@ -7277,6 +7277,7 @@ namespace System.Diagnostics.CodeAnalysis
         public object?[] Arguments { get { throw null; } }
         public const string DateFormat = "DateFormat";
         public const string DateTimeFormat = "DateTimeFormat";
+        public const string EnumFormat = "EnumFormat";
         public const string Json = "Json";
         public const string NumericFormat = "NumericFormat";
         public const string Regex = "Regex";
