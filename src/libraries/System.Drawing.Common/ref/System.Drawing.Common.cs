@@ -776,7 +776,7 @@ namespace System.Drawing
         public static bool CanAnimate([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Drawing.Image? image) { throw null; }
         public static void StopAnimate(System.Drawing.Image image, System.EventHandler onFrameChangedHandler) { }
         public static void UpdateFrames() { }
-        public static void UpdateFrames(System.Drawing.Image image) { }
+        public static void UpdateFrames(System.Drawing.Image? image) { }
     }
     public partial class ImageConverter : System.ComponentModel.TypeConverter
     {
