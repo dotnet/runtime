@@ -17,12 +17,13 @@
     <NativeAotSupported>false</NativeAotSupported>
   </PropertyGroup>
 
+  <Import Project="ReadyToRun.targets" />
+
   <Target Name="PublishCrossgen"
           BeforeTargets="GetFilesToPackage">
-    <Import Project="../../../../installer/pkg/sfx/Microsoft.NETCore.App/ReadyToRun.targets" />
 
     <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
-             Properties="RunningPublish=true"
+             Properties="RunningPublish=true;RuntimeIdentifier=$(RuntimeIdentifier)"
              Targets="Publish;PublishItemsOutputGroup">
       <Output TaskParameter="TargetOutputs"
               ItemName="_RawCrossgenPublishFiles" />

@@ -1,7 +1,0 @@
-<!-- Building this project publishes a self-contained copy of crossgen2. -->
-<Project>
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
-
-  <Import Project="crossgen2.props" />
-
-</Project>

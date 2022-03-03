@@ -1,12 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
   <PropertyGroup>
     <OutputPath>$(RuntimeBinDir)/crossgen2</OutputPath>
     <!-- Trimming is not currently working, but set the appropriate feature flags for NativeAOT -->
     <PublishTrimmed Condition="'$(NativeAotSupported)' == 'true'">true</PublishTrimmed>
+    <RuntimeIdentifiers Condition="'$(RunningPublish)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;freebsd-x64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64;win-arm</RuntimeIdentifiers>
   </PropertyGroup>
 
   <Import Project="crossgen2.props" />
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup Condition="'$(NativeAotSupported)' != 'true'">
     <PublishReadyToRun>true</PublishReadyToRun>
@@ -16,6 +19,8 @@
     <PublishReadyToRun Condition="'$(TargetOS)'=='FreeBSD' and '$(CrossBuild)'=='true'">false</PublishReadyToRun>
     <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
   </PropertyGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup Condition="'$(NativeAotSupported)' == 'true'">
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
@@ -29,7 +34,7 @@
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
 
     <!-- Forced by ILLink targets; we should fix the SDK -->
-    <SelfContained>true</SelfContained>
+    <SelfContained Condition="'$(RunningPublish)' == 'true'">true</SelfContained>
   </PropertyGroup>
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.targets"
