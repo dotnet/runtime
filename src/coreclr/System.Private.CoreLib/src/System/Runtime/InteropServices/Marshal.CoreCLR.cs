@@ -256,6 +256,7 @@ namespace System.Runtime.InteropServices
         internal static bool IsBuiltInComSupported { get; } = IsBuiltInComSupportedInternal();
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_IsBuiltInComSupported")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool IsBuiltInComSupportedInternal();
 
         /// <summary>

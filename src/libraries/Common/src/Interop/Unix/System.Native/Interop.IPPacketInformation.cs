@@ -21,6 +21,7 @@ internal static partial class Interop
         internal static partial int GetControlMessageBufferSize(int isIPv4, int isIPv6);
 
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_TryGetIPPacketInformation")]
-        internal static unsafe partial bool TryGetIPPacketInformation(MessageHeader* messageHeader, bool isIPv4, IPPacketInformation* packetInfo);
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool TryGetIPPacketInformation(MessageHeader* messageHeader, [MarshalAs(UnmanagedType.Bool)] bool isIPv4, IPPacketInformation* packetInfo);
     }
 }

@@ -21,6 +21,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         });
 
         [GeneratedDllImport("kernel32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool GetHandleInformation(IntPtr hObject, out uint lpdwFlags);
 
         private const uint HANDLE_FLAG_INHERIT = 0x00000001;

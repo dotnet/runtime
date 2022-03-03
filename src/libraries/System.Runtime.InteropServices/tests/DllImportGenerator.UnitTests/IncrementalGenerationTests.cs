@@ -16,6 +16,8 @@ namespace DllImportGenerator.UnitTests
 {
     public class IncrementalGenerationTests
     {
+        private static readonly GeneratorDriverOptions EnableIncrementalTrackingDriverOptions = new GeneratorDriverOptions(IncrementalGeneratorOutputKind.None, trackIncrementalGeneratorSteps: true);
+
         public const string RequiresIncrementalSyntaxTreeModifySupport = "The GeneratorDriver treats all SyntaxTree replace operations on a Compilation as an Add/Remove operation instead of a Modify operation"
             + ", so all cached results based on that input are thrown out. As a result, we cannot validate that unrelated changes within the same SyntaxTree do not cause regeneration.";
 
@@ -27,25 +29,23 @@ namespace DllImportGenerator.UnitTests
             Compilation comp1 = await TestUtils.CreateCompilation(source);
 
             Microsoft.Interop.DllImportGenerator generator = new();
-            GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new IIncrementalGenerator[] { generator });
+            GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new IIncrementalGenerator[] { generator }, EnableIncrementalTrackingDriverOptions);
 
             driver = driver.RunGenerators(comp1);
 
-            generator.IncrementalTracker = new IncrementalityTracker();
-
             Compilation comp2 = comp1.AddSyntaxTrees(CSharpSyntaxTree.ParseText("struct Foo {}", new CSharpParseOptions(LanguageVersion.Preview)));
-            driver.RunGenerators(comp2);
+            GeneratorDriver driver2 = driver.RunGenerators(comp2);
+            GeneratorRunResult runResult = driver2.GetRunResult().Results[0];
 
-            Assert.Collection(generator.IncrementalTracker.ExecutedSteps,
+            Assert.Collection(runResult.TrackedSteps[StepNames.CalculateStubInformation],
                 step =>
                 {
-                    Assert.Equal(IncrementalityTracker.StepName.CalculateStubInformation, step.Step);
+                    Assert.Collection(step.Outputs,
+                        output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
                 });
         }
 
-#pragma warning disable xUnit1004 // Test methods should not be skipped. These tests will be updated to use the new incremental work tracking APIs and enabled then.
-        [ConditionalFact(Skip = RequiresIncrementalSyntaxTreeModifySupport)]
-#pragma warning restore
+        [ConditionalFact]
         public async Task AppendingUnrelatedSource_DoesNotRegenerateSource()
         {
             string source = $"namespace NS{{{CodeSnippets.BasicParametersAndModifiers<int>()}}}";
@@ -55,21 +55,23 @@ namespace DllImportGenerator.UnitTests
             Compilation comp1 = await TestUtils.CreateCompilation(new[] { syntaxTree });
 
             Microsoft.Interop.DllImportGenerator generator = new();
-            GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new[] { generator });
+            GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new[] { generator }, EnableIncrementalTrackingDriverOptions);
 
             driver = driver.RunGenerators(comp1);
-
-            generator.IncrementalTracker = new IncrementalityTracker();
 
             SyntaxTree newTree = syntaxTree.WithRootAndOptions(syntaxTree.GetCompilationUnitRoot().AddMembers(SyntaxFactory.ParseMemberDeclaration("struct Foo {}")!), syntaxTree.Options);
 
             Compilation comp2 = comp1.ReplaceSyntaxTree(comp1.SyntaxTrees.First(), newTree);
-            driver.RunGenerators(comp2);
+            GeneratorDriver driver2 = driver.RunGenerators(comp2);
+            GeneratorRunResult runResult = driver2.GetRunResult().Results[0];
 
-            Assert.Collection(generator.IncrementalTracker.ExecutedSteps,
+            Assert.Collection(runResult.TrackedSteps[StepNames.CalculateStubInformation],
                 step =>
                 {
-                    Assert.Equal(IncrementalityTracker.StepName.CalculateStubInformation, step.Step);
+                    // The input contains symbols and Compilation objects, so it will always be different.
+                    // However, we validate that the calculated stub information is identical.
+                    Assert.Collection(step.Outputs,
+                        output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
                 });
         }
 
@@ -81,44 +83,53 @@ namespace DllImportGenerator.UnitTests
             Compilation comp1 = await TestUtils.CreateCompilation(source);
 
             Microsoft.Interop.DllImportGenerator generator = new();
-            GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new[] { generator });
+            GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new[] { generator }, EnableIncrementalTrackingDriverOptions);
 
             driver = driver.RunGenerators(comp1);
 
-            generator.IncrementalTracker = new IncrementalityTracker();
-
             Compilation comp2 = comp1.AddSyntaxTrees(CSharpSyntaxTree.ParseText(CodeSnippets.BasicParametersAndModifiers<bool>(), new CSharpParseOptions(LanguageVersion.Preview)));
-            driver.RunGenerators(comp2);
 
-            Assert.Equal(2, generator.IncrementalTracker.ExecutedSteps.Count(s => s.Step == IncrementalityTracker.StepName.CalculateStubInformation));
-            Assert.Equal(1, generator.IncrementalTracker.ExecutedSteps.Count(s => s.Step == IncrementalityTracker.StepName.GenerateSingleStub));
-            Assert.Equal(1, generator.IncrementalTracker.ExecutedSteps.Count(s => s.Step == IncrementalityTracker.StepName.NormalizeWhitespace));
-            Assert.Equal(1, generator.IncrementalTracker.ExecutedSteps.Count(s => s.Step == IncrementalityTracker.StepName.ConcatenateStubs));
-            Assert.Equal(1, generator.IncrementalTracker.ExecutedSteps.Count(s => s.Step == IncrementalityTracker.StepName.OutputSourceFile));
+            GeneratorDriver driver2 = driver.RunGenerators(comp2);
+            GeneratorRunResult runResult = driver2.GetRunResult().Results[0];
+
+            Assert.Collection(runResult.TrackedSteps[StepNames.CalculateStubInformation],
+                step =>
+                {
+                    Assert.Collection(step.Outputs,
+                        output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
+                },
+                step =>
+                {
+                    Assert.Collection(step.Outputs,
+                        output => Assert.Equal(IncrementalStepRunReason.New, output.Reason));
+                });
         }
 
         [ConditionalFact]
         public async Task ReplacingFileWithNewGeneratedDllImport_DoesNotRegenerateStubsInOtherFiles()
         {
-            string source = CodeSnippets.BasicParametersAndModifiers<int>();
-
             Compilation comp1 = await TestUtils.CreateCompilation(new string[] { CodeSnippets.BasicParametersAndModifiers<int>(), CodeSnippets.BasicParametersAndModifiers<bool>() });
 
             Microsoft.Interop.DllImportGenerator generator = new();
-            GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new[] { generator });
+            GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new[] { generator }, EnableIncrementalTrackingDriverOptions);
 
             driver = driver.RunGenerators(comp1);
 
-            generator.IncrementalTracker = new IncrementalityTracker();
-
             Compilation comp2 = comp1.ReplaceSyntaxTree(comp1.SyntaxTrees.First(), CSharpSyntaxTree.ParseText(CodeSnippets.BasicParametersAndModifiers<ulong>(), new CSharpParseOptions(LanguageVersion.Preview)));
-            driver.RunGenerators(comp2);
+            GeneratorDriver driver2 = driver.RunGenerators(comp2);
+            GeneratorRunResult runResult = driver2.GetRunResult().Results[0];
 
-            Assert.Equal(2, generator.IncrementalTracker.ExecutedSteps.Count(s => s.Step == IncrementalityTracker.StepName.CalculateStubInformation));
-            Assert.Equal(1, generator.IncrementalTracker.ExecutedSteps.Count(s => s.Step == IncrementalityTracker.StepName.GenerateSingleStub));
-            Assert.Equal(1, generator.IncrementalTracker.ExecutedSteps.Count(s => s.Step == IncrementalityTracker.StepName.NormalizeWhitespace));
-            Assert.Equal(1, generator.IncrementalTracker.ExecutedSteps.Count(s => s.Step == IncrementalityTracker.StepName.ConcatenateStubs));
-            Assert.Equal(1, generator.IncrementalTracker.ExecutedSteps.Count(s => s.Step == IncrementalityTracker.StepName.OutputSourceFile));
+            Assert.Collection(runResult.TrackedSteps[StepNames.CalculateStubInformation],
+                step =>
+                {
+                    Assert.Collection(step.Outputs,
+                        output => Assert.Equal(IncrementalStepRunReason.Modified, output.Reason));
+                },
+                step =>
+                {
+                    Assert.Collection(step.Outputs,
+                        output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
+                });
         }
 
         [ConditionalFact]
@@ -137,41 +148,30 @@ namespace DllImportGenerator.UnitTests
             comp1 = comp1.AddSyntaxTrees(customTypeImpl1Tree);
 
             Microsoft.Interop.DllImportGenerator generator = new();
-            GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new[] { generator });
+            GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new[] { generator }, EnableIncrementalTrackingDriverOptions);
 
             driver = driver.RunGenerators(comp1);
 
-            generator.IncrementalTracker = new IncrementalityTracker();
-
             Compilation comp2 = comp1.ReplaceSyntaxTree(customTypeImpl1Tree, CSharpSyntaxTree.ParseText(customTypeImpl2, new CSharpParseOptions(LanguageVersion.Preview)));
-            driver.RunGenerators(comp2);
+            GeneratorDriver driver2 = driver.RunGenerators(comp2);
+            GeneratorRunResult runResult = driver2.GetRunResult().Results[0];
 
-            Assert.Collection(generator.IncrementalTracker.ExecutedSteps,
+            Assert.Collection(runResult.TrackedSteps[StepNames.CalculateStubInformation],
                 step =>
                 {
-                    Assert.Equal(IncrementalityTracker.StepName.CalculateStubInformation, step.Step);
-                },
+                    Assert.Collection(step.Outputs,
+                        output => Assert.Equal(IncrementalStepRunReason.Modified, output.Reason));
+                });
+
+            Assert.Collection(runResult.TrackedSteps[StepNames.GenerateSingleStub],
                 step =>
                 {
-                    Assert.Equal(IncrementalityTracker.StepName.GenerateSingleStub, step.Step);
-                },
-                step =>
-                {
-                    Assert.Equal(IncrementalityTracker.StepName.NormalizeWhitespace, step.Step);
-                },
-                step =>
-                {
-                    Assert.Equal(IncrementalityTracker.StepName.ConcatenateStubs, step.Step);
-                },
-                step =>
-                {
-                    Assert.Equal(IncrementalityTracker.StepName.OutputSourceFile, step.Step);
+                    Assert.Collection(step.Outputs,
+                        output => Assert.Equal(IncrementalStepRunReason.Modified, output.Reason));
                 });
         }
 
-#pragma warning disable xUnit1004 // Test methods should not be skipped. These tests will be updated to use the new incremental work tracking APIs and enabled then.
-        [ConditionalFact(Skip = RequiresIncrementalSyntaxTreeModifySupport)]
-#pragma warning restore
+        [ConditionalFact]
         public async Task ChangingMarshallingAttributes_SameStrategy_DoesNotRegenerate()
         {
             string source = CodeSnippets.BasicParametersAndModifiers<bool>();
@@ -181,29 +181,32 @@ namespace DllImportGenerator.UnitTests
             Compilation comp1 = await TestUtils.CreateCompilation(new[] { syntaxTree });
 
             Microsoft.Interop.DllImportGenerator generator = new();
-            GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new[] { generator });
+            GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new[] { generator }, EnableIncrementalTrackingDriverOptions);
 
             driver = driver.RunGenerators(comp1);
 
-            generator.IncrementalTracker = new IncrementalityTracker();
-
             SyntaxTree newTree = syntaxTree.WithRootAndOptions(
-                syntaxTree.GetCompilationUnitRoot().AddMembers(
-                    SyntaxFactory.ParseMemberDeclaration(
-                        CodeSnippets.MarshalAsParametersAndModifiers<bool>(System.Runtime.InteropServices.UnmanagedType.Bool))!),
+                SyntaxFactory.ParseCompilationUnit(
+                    CodeSnippets.MarshalAsParametersAndModifiers<bool>(System.Runtime.InteropServices.UnmanagedType.Bool)),
                 syntaxTree.Options);
 
             Compilation comp2 = comp1.ReplaceSyntaxTree(comp1.SyntaxTrees.First(), newTree);
-            driver.RunGenerators(comp2);
 
-            Assert.Collection(generator.IncrementalTracker.ExecutedSteps,
+            GeneratorDriver driver2 = driver.RunGenerators(comp2);
+            GeneratorRunResult runResult = driver2.GetRunResult().Results[0];
+
+            Assert.Collection(runResult.TrackedSteps[StepNames.CalculateStubInformation],
                 step =>
                 {
-                    Assert.Equal(IncrementalityTracker.StepName.CalculateStubInformation, step.Step);
-                },
+                    Assert.Collection(step.Outputs,
+                        output => Assert.Equal(IncrementalStepRunReason.Modified, output.Reason));
+                });
+
+            Assert.Collection(runResult.TrackedSteps[StepNames.GenerateSingleStub],
                 step =>
                 {
-                    Assert.Equal(IncrementalityTracker.StepName.GenerateSingleStub, step.Step);
+                    Assert.Collection(step.Outputs,
+                        output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
                 });
         }
     }

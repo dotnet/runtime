@@ -17,6 +17,7 @@ internal static partial class Interop
         }
 
         [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool PurgeComm(
             SafeFileHandle hFile,
             uint dwFlags);

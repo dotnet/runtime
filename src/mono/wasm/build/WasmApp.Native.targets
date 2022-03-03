@@ -471,10 +471,13 @@
     </ItemGroup>
     <PropertyGroup>
       <ActualEmccVersionRaw>%(_ReversedVersionLines.Identity)</ActualEmccVersionRaw>
+      <_VersionMismatchMessage>Emscripten version mismatch. The runtime pack in $(MicrosoftNetCoreAppRuntimePackDir) expects '$(RuntimeEmccVersionRaw)', but emcc being used has version '$(ActualEmccVersionRaw)'. This might cause build failures.</_VersionMismatchMessage>
     </PropertyGroup>
 
-    <Warning Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)'"
-             Text="Emscripten version mismatch. The runtime pack in $(MicrosoftNetCoreAppRuntimePackDir) expects '$(RuntimeEmccVersionRaw)', but emcc being used has version '$(ActualEmccVersionRaw)'. This might cause build failures." />
+    <Warning Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)' and '$(_WasmStrictVersionMatch)' != 'true'"
+             Text="$(_VersionMismatchMessage)" />
+    <Error Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)' and '$(_WasmStrictVersionMatch)' == 'true'"
+           Text="$(_VersionMismatchMessage)" />
   </Target>
 
   <!--

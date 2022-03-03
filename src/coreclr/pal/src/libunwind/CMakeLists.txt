@@ -153,6 +153,8 @@ if(CLR_CMAKE_HOST_WIN32)
     # files for cross os compilation
     include_directories(include/win)
 
+    add_definitions(-D_CRT_DECLARE_NONSTDC_NAMES)
+
     # Warnings in release builds
     add_compile_options(-wd4068) # ignore unknown pragma warnings (gcc pragmas)
     add_compile_options(-wd4146) # minus operator applied to unsigned

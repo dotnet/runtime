@@ -21,6 +21,7 @@ internal static partial class Interop
         }
 
         [GeneratedDllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_EnumCalendarInfo", StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         // We skip the following DllImport because of 'Parsing function pointer types in signatures is not supported.' for some targeted
         // platforms (for example, WASM build).
         private static unsafe partial bool EnumCalendarInfo(IntPtr callback, string localeName, CalendarId calendarId, CalendarDataType calendarDataType, IntPtr context);
@@ -29,6 +30,7 @@ internal static partial class Interop
         internal static partial int GetLatestJapaneseEra();
 
         [GeneratedDllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetJapaneseEraStartDate")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool GetJapaneseEraStartDate(int era, out int startYear, out int startMonth, out int startDay);
     }
 }

@@ -260,7 +260,7 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef addingPath, bool connect);
+            HandleRef addingPath, [MarshalAs(UnmanagedType.Bool)] bool connect);
 
             [GeneratedDllImport(LibraryName, StringMarshalling = StringMarshalling.Utf16)]
             internal static partial int GdipAddPathString(
@@ -469,7 +469,7 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef graphics, out bool result);
+            HandleRef graphics, [MarshalAs(UnmanagedType.Bool)] out bool result);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipIsVisiblePathPointI(
@@ -480,7 +480,7 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef graphics, out bool result);
+            HandleRef graphics, [MarshalAs(UnmanagedType.Bool)] out bool result);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipIsOutlineVisiblePathPoint(
@@ -495,7 +495,7 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef graphics, out bool result);
+            HandleRef graphics, [MarshalAs(UnmanagedType.Bool)] out bool result);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipIsOutlineVisiblePathPointI(
@@ -510,7 +510,7 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef graphics, out bool result);
+            HandleRef graphics, [MarshalAs(UnmanagedType.Bool)] out bool result);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipDeleteBrush(

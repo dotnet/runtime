@@ -138,7 +138,7 @@ namespace System.Text.RegularExpressions.Generator
                 return Diagnostic.Create(DiagnosticDescriptors.RegexMethodMustHaveValidSignature, methodSyntax.GetLocation());
             }
 
-            if (typeDec.SyntaxTree.Options is CSharpParseOptions { LanguageVersion: < LanguageVersion.CSharp10 })
+            if (typeDec.SyntaxTree.Options is CSharpParseOptions { LanguageVersion: <= LanguageVersion.CSharp10 })
             {
                 return Diagnostic.Create(DiagnosticDescriptors.InvalidLangVersion, methodSyntax.GetLocation());
             }
