@@ -2603,6 +2603,7 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Capture:
                     case RegexNodeKind.Concatenate:
                     case RegexNodeKind.Alternate:
+                    case RegexNodeKind.BackreferenceConditional or RegexNodeKind.ExpressionConditional:
                     case RegexNodeKind.Empty:
                     case RegexNodeKind.Nothing:
                     case RegexNodeKind.PositiveLookaround:
@@ -2625,7 +2626,6 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Loop:
                     case RegexNodeKind.Lazyloop:
                     case RegexNodeKind.Backreference:
-                    case RegexNodeKind.BackreferenceConditional or RegexNodeKind.ExpressionConditional:
                         reason = "an unsupported positive or negative lookbehind was used";
                         return false;
 
