@@ -167,7 +167,7 @@ namespace Internal.Runtime.InteropServices
             return alc;
         }
 
-        [RequiresDynamicCode("The native code for the method requested might not be available at runtime.")]
+        [RequiresDynamicCode(NativeAOTIncompatibleWarningMessage)]
         [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
         private static IntPtr InternalGetFunctionPointer(AssemblyLoadContext alc,
                                                          string typeName,
