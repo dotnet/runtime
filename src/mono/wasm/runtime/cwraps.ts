@@ -47,6 +47,7 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_array_get", "number", ["number", "number"]],
     ["mono_wasm_array_get_ref", "void", ["number", "number", "number"]],
     ["mono_wasm_obj_array_new", "number", ["number"]],
+    ["mono_wasm_obj_array_new_ref", "void", ["number", "number"]],
     ["mono_wasm_obj_array_set", "void", ["number", "number", "number"]],
     ["mono_wasm_obj_array_set_ref", "void", ["number", "number", "number"]],
     ["mono_wasm_register_bundled_satellite_assemblies", "void", []],
@@ -55,7 +56,7 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_intern_string_ref", "void", ["number"]],
     ["mono_wasm_assembly_get_entry_point", "number", ["number"]],
     ["mono_wasm_get_delegate_invoke", "number", ["number"]],
-    ["mono_wasm_string_array_new", "number", ["number"]],
+    ["mono_wasm_string_array_new_ref", "void", ["number", "number"]],
     ["mono_wasm_typed_array_new", "number", ["number", "number", "number", "number"]],
     ["mono_wasm_class_get_type", "number", ["number"]],
     ["mono_wasm_type_get_class", "number", ["number"]],
@@ -108,10 +109,16 @@ export interface t_Cwraps {
     mono_wasm_string_from_utf16(str: CharPtr, len: number): MonoString;
     mono_wasm_get_obj_type(str: MonoObject): number;
     mono_wasm_array_length(array: MonoArray): number;
-    mono_wasm_array_get(array: MonoArray, idx: number): MonoObject;
-    mono_wasm_array_get_ref(array: MonoObjectRef, idx: number, result: MonoObjectRef): void;
+
+    // Deprecated
     mono_wasm_obj_array_new(size: number): MonoArray;
+    // Deprecated
+    mono_wasm_array_get(array: MonoArray, idx: number): MonoObject;
+    // Deprecated
     mono_wasm_obj_array_set(array: MonoArray, idx: number, obj: MonoObject): void;
+
+    mono_wasm_array_get_ref(array: MonoObjectRef, idx: number, result: MonoObjectRef): void;
+    mono_wasm_obj_array_new_ref(size: number, result: MonoObjectRef): void;
     mono_wasm_obj_array_set_ref(array: MonoObjectRef, idx: number, obj: MonoObjectRef): void;
     mono_wasm_register_bundled_satellite_assemblies(): void;
     mono_wasm_try_unbox_primitive_and_get_type_ref(obj: MonoObjectRef, buffer: VoidPtr, buffer_size: number): number;
@@ -119,7 +126,7 @@ export interface t_Cwraps {
     mono_wasm_intern_string_ref(strRef: MonoObjectRef): void;
     mono_wasm_assembly_get_entry_point(assembly: MonoAssembly): MonoMethod;
     mono_wasm_get_delegate_invoke(delegate: MonoObject): MonoMethod;
-    mono_wasm_string_array_new(size: number): MonoArray;
+    mono_wasm_string_array_new_ref(size: number, result: MonoObjectRef): void;
     mono_wasm_typed_array_new(arr: VoidPtr, length: number, size: number, type: number): MonoArray;
     mono_wasm_class_get_type(klass: MonoClass): MonoType;
     mono_wasm_type_get_class(ty: MonoType): MonoClass;

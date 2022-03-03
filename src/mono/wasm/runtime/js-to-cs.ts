@@ -175,8 +175,11 @@ export function js_to_mono_enum(js_obj: any, method: MonoMethod, parmIdx: number
 }
 
 export function js_array_to_mono_array(js_array: any[], asString: boolean, should_add_in_flight: boolean): MonoArray {
-    const mono_array = asString ? cwraps.mono_wasm_string_array_new(js_array.length) : cwraps.mono_wasm_obj_array_new(js_array.length);
-    const arrayRoot = mono_wasm_new_root(mono_array);
+    const arrayRoot = mono_wasm_new_root<MonoArray>();
+    if (asString)
+        cwraps.mono_wasm_string_array_new_ref(js_array.length, arrayRoot.address);
+    else
+        cwraps.mono_wasm_obj_array_new_ref(js_array.length, arrayRoot.address);
     const elemRoot = mono_wasm_new_root(MonoObjectNull);
     const arrayAddress = arrayRoot.address;
     const elemAddress = elemRoot.address;
@@ -192,7 +195,7 @@ export function js_array_to_mono_array(js_array: any[], asString: boolean, shoul
             cwraps.mono_wasm_obj_array_set_ref(arrayAddress, i, elemAddress);
         }
 
-        return mono_array;
+        return arrayRoot.value;
     } finally {
         mono_wasm_release_roots(arrayRoot, elemRoot);
     }

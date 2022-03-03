@@ -198,18 +198,18 @@ EMSCRIPTEN_KEEPALIVE int
 mono_wasm_register_root (char *start, size_t size, const char *name)
 {
 	int result;
-	MONO_ENTER_GC_SAFE;
+	MONO_ENTER_GC_UNSAFE;
 	result = mono_gc_register_root (start, size, (MonoGCDescriptor)NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "mono_wasm_register_root");
-	MONO_EXIT_GC_SAFE;
+	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE void 
 mono_wasm_deregister_root (char *addr)
 {
-	MONO_ENTER_GC_SAFE;
+	MONO_ENTER_GC_UNSAFE;
 	mono_gc_deregister_root (addr);
-	MONO_EXIT_GC_SAFE;
+	MONO_EXIT_GC_UNSAFE;
 }
 
 #ifdef DRIVER_GEN
@@ -1135,10 +1135,21 @@ mono_wasm_array_get_ref (MonoArray **array, int idx, MonoObject **result)
 	MONO_EXIT_GC_UNSAFE;
 }
 
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_obj_array_new_ref (int size, MonoArray **result)
+{
+	MONO_ENTER_GC_UNSAFE;
+	*result = mono_array_new (root_domain, mono_get_object_class (), size);
+	MONO_EXIT_GC_UNSAFE;
+}
+
+// Deprecated
 EMSCRIPTEN_KEEPALIVE MonoArray*
 mono_wasm_obj_array_new (int size)
 {
-	return mono_array_new (root_domain, mono_get_object_class (), size);
+	MonoArray *result = NULL;
+	mono_wasm_obj_array_new_ref(size, &result);
+	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -1155,10 +1166,12 @@ mono_wasm_obj_array_set_ref (MonoArray **array, int idx, MonoObject **obj)
 	MONO_EXIT_GC_UNSAFE;
 }
 
-EMSCRIPTEN_KEEPALIVE MonoArray*
-mono_wasm_string_array_new (int size)
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_string_array_new_ref (int size, MonoArray **result)
 {
-	return mono_array_new (root_domain, mono_get_string_class (), size);
+	MONO_ENTER_GC_UNSAFE;
+	*result = mono_array_new (root_domain, mono_get_string_class (), size);
+	MONO_EXIT_GC_UNSAFE;
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -1200,7 +1213,9 @@ mono_wasm_enable_on_demand_gc (int enable)
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_intern_string_ref (MonoString **string)
 {
+	MONO_ENTER_GC_UNSAFE;
 	*string = mono_string_intern (*string);
+	MONO_EXIT_GC_UNSAFE;
 }
 
 EMSCRIPTEN_KEEPALIVE void
