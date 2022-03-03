@@ -25,7 +25,8 @@ Param(
     [switch] $NoPGO,
     [switch] $DynamicPGO,
     [switch] $FullPGO,
-    [switch] $iOSLlvmBuild
+    [switch] $iOSLlvmBuild,
+    [string] $MauiVersion
 )
 
 $RunFromPerformanceRepo = ($Repository -eq "dotnet/performance") -or ($Repository -eq "dotnet-performance")
@@ -143,19 +144,19 @@ if ($UseBaselineCoreRun) {
     Move-Item -Path $BaselineCoreRootDirectory -Destination $NewBaselineCoreRoot
 }
 
+if($MauiVersion -ne "")
+{
+    $SetupArguments = "$SetupArguments --maui-version $MauiVersion"
+}
+
 if ($AndroidMono) {
     if(!(Test-Path $WorkItemDirectory))
     {
         mkdir $WorkItemDirectory
     }
-    if(Test-Path "$SourceDirectory\androidHelloWorld\HelloAndroid.apk") {
-        Copy-Item -path "$SourceDirectory\androidHelloWorld\HelloAndroid.apk" $PayloadDirectory -Verbose
-    }
-        
-    if(Test-Path "$SourceDirectory\androidHelloWorldWithDiag\HelloAndroidWithDiag.apk") {
-        Copy-Item -path "$SourceDirectory\androidHelloWorldWithDiag\HelloAndroidWithDiag.apk" $PayloadDirectory -Verbose
-    }
-    Copy-Item -path "$SourceDirectory\MauiAndroidDefault.apk" $PayloadDirectory
+
+    Copy-Item -path "$SourceDirectory\androidHelloWorld\HelloAndroid.apk" $PayloadDirectory -Verbose      
+    Copy-Item -path "$SourceDirectory\MauiAndroidDefault.apk" $PayloadDirectory -Verbose
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
 }
 

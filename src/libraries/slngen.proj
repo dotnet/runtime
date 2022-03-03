@@ -1,17 +1,14 @@
-<!--
-  Targets that can be executed individually even though they are sequenced into build already:
-    - UpdateSolutionFile: Adds/updates solution files with slngen which includes dependencies.
-    - AddNuGetConfigToSolution: Checks if the solution needs a NuGet.config file to disable restore.
--->
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
+    <ScriptExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.cmd</ScriptExt>
+    <ScriptExt Condition="!$([MSBuild]::IsOSPlatform('WINDOWS'))">.sh</ScriptExt>
     <ProjTemplatePath>$(RepositoryEngineeringDir)slngen.template.proj</ProjTemplatePath>
-    <NuGetConfigTemplatePath>$(RepositoryEngineeringDir)slngen.nuget.config</NuGetConfigTemplatePath>
+    <SolutionNameOverride Condition="'$(SolutionNameOverride)' == ''">*</SolutionNameOverride>
   </PropertyGroup>
 
   <ItemGroup>
-    <SolutionFile Include="$(MSBuildThisFileDirectory)*\*.sln" />
-    <SourceProject Include="$(MSBuildThisFileDirectory)*\src\*.*proj" />
+    <!-- Unless a "/p:SolutionNameOverride" property is passed in, glob all solutions under src/libraries. -->
+    <SolutionFile Include="$(MSBuildThisFileDirectory)$(SolutionNameOverride)\*.sln" />
   </ItemGroup>
 
   <Target Name="UpdateSolutionFile"
@@ -24,71 +21,16 @@
           DestinationFiles="%(SolutionFile.ProjFilePath)" />
     
     <!-- Invoke slngen -->
-    <Exec Command="dotnet slngen -p SlnGenMainProject=%(SolutionFile.Filename) --launch false --nologo &quot;%(SolutionFile.ProjFilePath)&quot;" />
+    <Exec Command="&quot;$(RepoRoot)dotnet$(ScriptExt)&quot; slngen -p SlnGenMainProject=%(SolutionFile.Filename) --launch false --nologo &quot;%(SolutionFile.ProjFilePath)&quot;" />
 
     <!-- Delete temporary template file -->
     <Delete Files="%(SolutionFile.ProjFilePath)" />
   </Target>
 
-  <Target Name="AddNuGetConfigToSolution"
-          AfterTargets="Build"
-          DependsOnTargets="GetSolutionFiles;GetSourceProjectWithDuplicateTfm"
-          Inputs="@(SolutionFile)"
-          Outputs="%(NuGetConfigFilePath)">
-    <!-- Delete existing NuGet.config files -->
-    <Delete Files="%(SolutionFile.NuGetConfigFilePath)" />
-    
-    <!-- Check if solution file contains a source project with a duplicate tfm -->
-    <PropertyGroup>
-      <SolutionFileContent>$([System.IO.File]::ReadAllText('%(SolutionFile.Identity)'))</SolutionFileContent>
-      <SolutionFileContainsSourceProjectWithDuplicateTfm />
-      <SolutionFileContainsSourceProjectWithDuplicateTfm Condition="$(SolutionFileContent.Contains('src\%(SourceProjectWithDuplicateTfm.Identity)'))">true</SolutionFileContainsSourceProjectWithDuplicateTfm>
-    </PropertyGroup>
-    
-    <!-- Copy NuGet config template file -->
-    <Copy SourceFiles="$(NuGetConfigTemplatePath)"
-          DestinationFiles="%(SolutionFile.NuGetConfigFilePath)"
-          Condition="'$(SolutionFileContainsSourceProjectWithDuplicateTfm)' == 'true'" />
-    
-    <Message Text="Copying NuGet.config template file for %(SolutionFile.Filename)"
-             Importance="high"
-             Condition="'$(SolutionFileContainsSourceProjectWithDuplicateTfm)' == 'true'" />
-  </Target>
-
-  <Target Name="ClearNuGetConfigFile"
-          DependsOnTargets="GetSolutionFiles">
-    <!-- Delete existing NuGet.config files -->
-    <Delete Files="%(SolutionFile.NuGetConfigFilePath)" />
-  </Target>
-
   <Target Name="GetSolutionFiles">
     <ItemGroup>
       <!-- Add attributes that require a separate item mutation. -->
-      <SolutionFile ProjFilePath="%(RelativeDir)%(Filename).proj"
-                    NuGetConfigFilePath="%(RelativeDir)NuGet.config" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="GetSourceProjectWithDuplicateTfm"
-          Inputs="@(SourceProject)"
-          Outputs="%(Identity)">
-    <!-- Check if project file contains duplicate tfms -->
-    <PropertyGroup>
-      <ProjectFileContent>$([System.IO.File]::ReadAllText('%(SourceProject.Identity)'))</ProjectFileContent>
-      <!-- Get the target framework string out of the project file -->
-      <ProjectFileTargetFrameworks>$([System.Text.RegularExpressions.Regex]::Match($(ProjectFileContent), '&lt;TargetFrameworks&gt;(.+%3F)&lt;\/TargetFrameworks&gt;'))</ProjectFileTargetFrameworks>
-      <ProjectFileTargetFrameworks>$(ProjectFileTargetFrameworks.Replace('&lt;TargetFrameworks&gt;', ''))</ProjectFileTargetFrameworks>
-      <ProjectFileTargetFrameworks>$(ProjectFileTargetFrameworks.Replace('&lt;/TargetFrameworks&gt;', ''))</ProjectFileTargetFrameworks>
-      <!-- Strip away TargetFrameworkSuffixes -->
-      <ProjectFileTargetFrameworks>$([System.Text.RegularExpressions.Regex]::Replace('$(ProjectFileTargetFrameworks)', '(-[^;]+)', ''))</ProjectFileTargetFrameworks>
-      <!-- Check for duplicates of non .NETCoreApp frameworks -->
-      <ProjectFileTargetFrameworksHasDuplicates>$([System.Text.RegularExpressions.Regex]::IsMatch('$(ProjectFileTargetFrameworks);', '(netstandard.+|net4.+)(?=.*;\1;)'))</ProjectFileTargetFrameworksHasDuplicates>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <SourceProjectWithDuplicateTfm Include="%(SourceProject.Filename)%(SourceProject.Extension)"
-                                     Condition="'%(Identity)' == '%(SourceProject.Identity)' and
-                                                '$(ProjectFileTargetFrameworksHasDuplicates)' == 'true'" />
+      <SolutionFile ProjFilePath="%(RelativeDir)%(Filename).proj" />
     </ItemGroup>
   </Target>
 </Project>

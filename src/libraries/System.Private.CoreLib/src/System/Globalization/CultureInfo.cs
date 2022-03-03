@@ -164,13 +164,8 @@ namespace System.Globalization
         {
         }
 
-        public CultureInfo(string name, bool useUserOverride)
+        public CultureInfo(string name!!, bool useUserOverride)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             // Get our data providing record
             CultureData? cultureData = CultureData.GetCultureData(name, useUserOverride);
 
@@ -243,13 +238,8 @@ namespace System.Globalization
         /// name we create for it has to include both names, and the logic for this is in
         /// the GetCultureInfo override *only*.
         /// </summary>
-        internal CultureInfo(string cultureName, string textAndCompareCultureName)
+        internal CultureInfo(string cultureName, string textAndCompareCultureName!!)
         {
-            if (cultureName == null)
-            {
-                throw new ArgumentNullException(nameof(cultureName), SR.ArgumentNull_String);
-            }
-
             CultureData? cultureData = CultureData.GetCultureData(cultureName, false) ??
                 throw new CultureNotFoundException(nameof(cultureName), cultureName, GetCultureNotSupportedExceptionMessage());
 
@@ -397,10 +387,7 @@ namespace System.Globalization
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 if (s_asyncLocalCurrentCulture == null)
                 {
@@ -420,10 +407,7 @@ namespace System.Globalization
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 CultureInfo.VerifyCultureName(value, true);
 
@@ -579,6 +563,12 @@ namespace System.Globalization
         /// This one has the sort information (ie: de-DE_phoneb)
         /// </summary>
         internal string SortName => _sortName ??= _cultureData.SortName;
+
+        /// <summary>
+        /// The culture name to use to interop with the underlying native globalization libraries like ICU or Windows NLS APIs.
+        /// For example, we can have the name de_DE@collation=phonebook when using ICU for the German culture de-DE with the phonebook sorting behavior.
+        /// </summary>
+        internal string? InteropName => _cultureData.InteropName;
 
         public string IetfLanguageTag =>
                 // special case the compatibility cultures
@@ -744,10 +734,7 @@ namespace System.Globalization
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
                 _numInfo = value;
@@ -774,10 +761,7 @@ namespace System.Globalization
 
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
                 _dateTimeInfo = value;
@@ -965,13 +949,8 @@ namespace System.Globalization
             return ci;
         }
 
-        public static CultureInfo ReadOnly(CultureInfo ci)
+        public static CultureInfo ReadOnly(CultureInfo ci!!)
         {
-            if (ci == null)
-            {
-                throw new ArgumentNullException(nameof(ci));
-            }
-
             if (ci.IsReadOnly)
             {
                 return ci;
@@ -1077,14 +1056,8 @@ namespace System.Globalization
         /// Gets a cached copy of the specified culture from an internal
         /// hashtable (or creates it if not found). (Named version)
         /// </summary>
-        public static CultureInfo GetCultureInfo(string name)
+        public static CultureInfo GetCultureInfo(string name!!)
         {
-            // Make sure we have a valid, non-zero length string as name
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             name = CultureData.AnsiToLower(name);
             Dictionary<string, CultureInfo> nameTable = CachedCulturesByName;
             CultureInfo? result;
@@ -1117,17 +1090,8 @@ namespace System.Globalization
         /// Gets a cached copy of the specified culture from an internal
         /// hashtable (or creates it if not found).
         /// </summary>
-        public static CultureInfo GetCultureInfo(string name, string altName)
+        public static CultureInfo GetCultureInfo(string name!!, string altName!!)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-            if (altName is null)
-            {
-                throw new ArgumentNullException(nameof(altName));
-            }
-
             name = CultureData.AnsiToLower(name);
             altName = CultureData.AnsiToLower(altName);
             string nameAndAltName = name + "\xfffd" + altName;
@@ -1162,13 +1126,8 @@ namespace System.Globalization
             return result;
         }
 
-        public static CultureInfo GetCultureInfo(string name, bool predefinedOnly)
+        public static CultureInfo GetCultureInfo(string name!!, bool predefinedOnly)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             if (predefinedOnly && !GlobalizationMode.Invariant)
             {
                 if (GlobalizationMode.UseNls ? !CultureData.NlsIsEnsurePredefinedLocaleName(name): !CultureData.IcuIsEnsurePredefinedLocaleName(name))

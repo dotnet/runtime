@@ -7,6 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly reference_i { }
 .method public static class System.String 
         rems(int32& n,
@@ -68,8 +69,13 @@
   IL_005c:  ret
 } // end of global method rems
 
+.class public auto ansi beforefieldinit Test_reference_i extends [mscorlib]System.Object
+{
 .method public static int32 main() il managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   // Code size       66 (0x42)
   .maxstack  2
@@ -107,6 +113,17 @@
   IL_0037:  call       void [System.Console]System.Console::WriteLine()
   IL_003c:  ldc.i4     0x64
   IL_0041:  ret
-} // end of global method main
+} // end of method main
+
+
+.method public hidebysig  specialname rtspecialname
+        instance void .ctor() il managed
+{
+  .maxstack  8
+  IL_0000:  ldarg.0
+  IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
+  IL_0006:  ret
+}
+}
 
 //*********** DISASSEMBLY COMPLETE ***********************

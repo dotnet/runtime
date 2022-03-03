@@ -28,11 +28,8 @@ namespace System.Formats.Asn1
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="oidValue"/> is <see langword="null"/>.
         /// </exception>
-        public void WriteObjectIdentifier(string oidValue, Asn1Tag? tag = null)
+        public void WriteObjectIdentifier(string oidValue!!, Asn1Tag? tag = null)
         {
-            if (oidValue == null)
-                throw new ArgumentNullException(nameof(oidValue));
-
             WriteObjectIdentifier(oidValue.AsSpan(), tag);
         }
 

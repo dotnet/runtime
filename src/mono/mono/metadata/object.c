@@ -44,6 +44,7 @@
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/runtime.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
@@ -886,6 +887,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 				} else {
 					/* fall through */
 				}
+			case MONO_TYPE_TYPEDBYREF:
 			case MONO_TYPE_VALUETYPE: {
 				MonoClass *fclass = mono_class_from_mono_type_internal (field->type);
 				if (m_class_has_references (fclass)) {
@@ -908,7 +910,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			case MONO_TYPE_CHAR:
 				break;
 			default:
-				g_error ("compute_class_bitmap: Invalid type %x for field %s:%s\n", type->type, mono_type_get_full_name (field->parent), field->name);
+				g_error ("compute_class_bitmap: Invalid type %x for field %s:%s\n", type->type, mono_type_get_full_name (m_field_get_parent (field)), field->name);
 				break;
 			}
 		}
@@ -2171,7 +2173,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 	 * re-acquire them and check if another thread has created the vtable in the meantime.
 	 */
 	/* Special case System.MonoType to avoid infinite recursion */
-	if (klass != mono_defaults.runtimetype_class) {
+	if (!mono_runtime_get_no_exec () && klass != mono_defaults.runtimetype_class) {
 		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (m_class_get_byval_arg (klass), error);
 		vt->type = MONO_HANDLE_RAW (vt_type);
 		if (!is_ok (error)) {
@@ -2199,7 +2201,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 	mono_memory_barrier ();
 	mono_class_set_runtime_vtable (klass, vt);
 
-	if (klass == mono_defaults.runtimetype_class) {
+	if (!mono_runtime_get_no_exec () && klass == mono_defaults.runtimetype_class) {
 		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (m_class_get_byval_arg (klass), error);
 		vt->type = MONO_HANDLE_RAW (vt_type);
 		if (!is_ok (error)) {
@@ -2245,7 +2247,7 @@ mono_class_field_is_special_static (MonoClassField *field)
 	if (mono_field_is_deleted (field))
 		return FALSE;
 	if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
-		if (field_is_special_static (field->parent, field) != SPECIAL_STATIC_NONE)
+		if (field_is_special_static (m_field_get_parent (field), field) != SPECIAL_STATIC_NONE)
 			return TRUE;
 	}
 	return FALSE;
@@ -2267,7 +2269,7 @@ mono_class_field_get_special_static_type (MonoClassField *field)
 	if (mono_field_is_deleted (field))
 		return SPECIAL_STATIC_NONE;
 	if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL))
-		return field_is_special_static (field->parent, field);
+		return field_is_special_static (m_field_get_parent (field), field);
 	return SPECIAL_STATIC_NONE;
 }
 
@@ -2285,7 +2287,7 @@ mono_class_has_special_static_fields (MonoClass *klass)
 
 	iter = NULL;
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
-		g_assert (field->parent == klass);
+		g_assert (m_field_get_parent (field) == klass);
 		if (mono_class_field_is_special_static (field))
 			return TRUE;
 	}
@@ -2793,7 +2795,7 @@ mono_field_static_set_value_internal (MonoVTable *vt, MonoClassField *field, voi
 gpointer
 mono_special_static_field_get_offset (MonoClassField *field, MonoError *error)
 {
-	MonoMemoryManager *mem_manager = m_class_get_mem_manager (field->parent);
+	MonoMemoryManager *mem_manager = m_class_get_mem_manager (m_field_get_parent (field));
 	gpointer addr = NULL;
 
 	mono_mem_manager_lock (mem_manager);
@@ -2854,6 +2856,9 @@ mono_static_field_get_addr (MonoVTable *vt, MonoClassField *field)
 
 	g_assert (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 	if (field->offset == -1) {
+		if (G_UNLIKELY (m_field_is_from_update (field))) {
+			return mono_metadata_update_get_static_field_addr (field);
+		}
 		/* Special static */
 		ERROR_DECL (error);
 		gpointer addr = mono_special_static_field_get_offset (field, error);
@@ -3020,7 +3025,7 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 		is_static = TRUE;
 
 		if (!is_literal) {
-			vtable = mono_class_vtable_checked (field->parent, error);
+			vtable = mono_class_vtable_checked (m_field_get_parent (field), error);
 			goto_if_nok (error, return_null);
 
 			if (!vtable->initialized) {
@@ -3237,9 +3242,13 @@ mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
+	HANDLE_FUNCTION_ENTER ();
+
 	ERROR_DECL (error);
 	mono_field_static_get_value_checked (vt, field, value, MONO_HANDLE_NEW (MonoString, NULL), error);
 	mono_error_cleanup (error);
+
+	HANDLE_FUNCTION_RETURN ();
 }
 
 /**
@@ -3903,7 +3912,6 @@ mono_runtime_set_main_args (int argc, char* argv[])
 		utf8_arg = mono_utf8_from_external (argv[i]);
 		if (utf8_arg == NULL) {
 			g_print ("\nCannot determine the text encoding for argument %d (%s).\n", i, argv [i]);
-			g_print ("Please add the correct encoding to MONO_EXTERNAL_ENCODINGS and try again.\n");
 			exit (-1);
 		}
 
@@ -3951,7 +3959,6 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 			 * string.
 			 */
 			g_print ("\nCannot determine the text encoding for the assembly location: %s\n", fullpath);
-			g_print ("Please add the correct encoding to MONO_EXTERNAL_ENCODINGS and try again.\n");
 			exit (-1);
 		}
 
@@ -3961,7 +3968,6 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 		utf8_fullpath = mono_utf8_from_external (argv[0]);
 		if(utf8_fullpath == NULL) {
 			g_print ("\nCannot determine the text encoding for the assembly location: %s\n", argv[0]);
-			g_print ("Please add the correct encoding to MONO_EXTERNAL_ENCODINGS and try again.\n");
 			exit (-1);
 		}
 	}
@@ -3975,7 +3981,6 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 		if(utf8_arg==NULL) {
 			/* Ditto the comment about Invalid UTF-8 here */
 			g_print ("\nCannot determine the text encoding for argument %d (%s).\n", i, argv[i]);
-			g_print ("Please add the correct encoding to MONO_EXTERNAL_ENCODINGS and try again.\n");
 			exit (-1);
 		}
 
@@ -6214,31 +6219,6 @@ mono_string_new_checked (const char *text, MonoError *error)
 
 	g_free (ut);
 
-/*FIXME g_utf8_get_char, g_utf8_next_char and g_utf8_validate are not part of eglib.*/
-#if 0
-	gunichar2 *str;
-	const gchar *end;
-	int len;
-	MonoString *o = NULL;
-
-	if (!g_utf8_validate (text, -1, &end)) {
-		mono_error_set_argument (error, "text", "Not a valid utf8 string");
-		goto leave;
-	}
-
-	len = g_utf8_strlen (text, -1);
-	o = mono_string_new_size_checked (len, error);
-	if (!o)
-		goto leave;
-	str = mono_string_chars_internal (o);
-
-	while (text < end) {
-		*str++ = g_utf8_get_char (text);
-		text = g_utf8_next_char (text);
-	}
-
-leave:
-#endif
 	return o;
 }
 
@@ -6791,9 +6771,9 @@ mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError
 #ifdef HOST_WASM
 /**
  * mono_string_instance_is_interned:
- * Searches the interned string table for the provided string instance.
+ * Checks to see if the string instance has its interned flag set.
  * \param str String to probe
- * \returns TRUE if the string is interned, FALSE otherwise.
+ * \returns TRUE if the string instance is interned, FALSE otherwise.
  */
 int
 mono_string_instance_is_interned (MonoString *str)

@@ -360,7 +360,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         while (iData.Next_Unlocked(pDomainAssembly.This()))
         {
             // The assembly could be collected (ref-count = 0), do not use holder which calls add-ref
-            Assembly * pAssembly = pDomainAssembly->GetLoadedAssembly();
+            Assembly * pAssembly = pDomainAssembly->GetAssembly();
 
             if (pAssembly != NULL)
             {
@@ -393,7 +393,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         while (i.Next_Unlocked(pDomainAssembly.This()))
         {
             // The assembly could be collected (ref-count = 0), do not use holder which calls add-ref
-            Assembly * pAssembly = pDomainAssembly->GetLoadedAssembly();
+            Assembly * pAssembly = pDomainAssembly->GetAssembly();
 
             if (pAssembly != NULL)
             {
@@ -420,7 +420,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         while (i.Next_Unlocked(pDomainAssembly.This()))
         {
             // The assembly could be collected (ref-count = 0), do not use holder which calls add-ref
-            Assembly * pAssembly = pDomainAssembly->GetLoadedAssembly();
+            Assembly * pAssembly = pDomainAssembly->GetAssembly();
 
             if (pAssembly != NULL)
             {
@@ -672,7 +672,7 @@ BOOL LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
         DomainAssembly* pDomainAssembly = (DomainAssembly*)(pID->GetDomainAssemblyIterator());
         if (pDomainAssembly != NULL)
         {
-            Assembly *pAssembly = pDomainAssembly->GetCurrentAssembly();
+            Assembly *pAssembly = pDomainAssembly->GetAssembly();
             pLoaderAllocator->m_pFirstDomainAssemblyFromSameALCToDelete = pAssembly->GetDomainAssembly();
         }
 

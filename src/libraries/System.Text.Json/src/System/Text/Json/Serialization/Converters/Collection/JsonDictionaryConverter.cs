@@ -37,7 +37,28 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// When overridden, create the collection. It may be a temporary collection or the final collection.
         /// </summary>
-        protected virtual void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state) { }
+        protected virtual void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
+        {
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
+
+            if (typeInfo.CreateObject is null)
+            {
+                // The contract model was not able to produce a default constructor for two possible reasons:
+                // 1. Either the declared collection type is abstract and cannot be instantiated.
+                // 2. The collection type does not specify a default constructor.
+                if (TypeToConvert.IsAbstract || TypeToConvert.IsInterface)
+                {
+                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
+                }
+                else
+                {
+                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(TypeToConvert, ref reader, ref state);
+                }
+            }
+
+            state.Current.ReturnValue = typeInfo.CreateObject()!;
+            Debug.Assert(state.Current.ReturnValue is TDictionary);
+        }
 
         internal override Type ElementType => typeof(TValue);
 
@@ -218,7 +239,7 @@ namespace System.Text.Json.Serialization
                     {
                         state.Current.PropertyState = StackFramePropertyState.ReadValue;
 
-                        if (!SingleValueReadWithReadAhead(_valueConverter.ConverterStrategy, ref reader, ref state))
+                        if (!SingleValueReadWithReadAhead(_valueConverter.RequiresReadAhead, ref reader, ref state))
                         {
                             state.Current.DictionaryKey = key;
                             value = default;
@@ -290,13 +311,11 @@ namespace System.Text.Json.Serialization
                 writer.WriteStartObject();
                 if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
                 {
-                    if (JsonSerializer.WriteReferenceForObject(this, dictionary, ref state, writer) == MetadataPropertyName.Ref)
-                    {
-                        return true;
-                    }
+                    MetadataPropertyName propertyName = JsonSerializer.WriteReferenceForObject(this, ref state, writer);
+                    Debug.Assert(propertyName != MetadataPropertyName.Ref);
                 }
 
-                state.Current.DeclaredJsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
+                state.Current.JsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
             }
 
             bool success = OnWriteResume(writer, dictionary, options, ref state);

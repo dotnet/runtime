@@ -274,7 +274,7 @@ namespace System.Reflection.Emit
         /* helper methods */
         internal static int decode_len(byte[] data, int pos, out int rpos)
         {
-            int len = 0;
+            int len;
             if ((data[pos] & 0x80) == 0)
             {
                 len = (int)(data[pos++] & 0x7f);
@@ -317,8 +317,7 @@ namespace System.Reflection.Emit
 
         internal string? string_arg()
         {
-            int pos = 2;
-            return decode_string(data, pos, out pos);
+            return decode_string(data, 2, out _);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:UnrecognizedReflectionPattern",
@@ -507,7 +506,7 @@ namespace System.Reflection.Emit
         {
             byte[] data = customBuilder.Data;
             ConstructorInfo ctor = customBuilder.Ctor;
-            int pos = 0;
+            int pos;
 
             CustomAttributeInfo info = default;
 

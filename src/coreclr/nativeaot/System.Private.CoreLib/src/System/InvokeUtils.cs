@@ -320,13 +320,13 @@ namespace System
         {
             if (targetMethodOrDelegate == null)
             {
-                throw new ArgumentException(SR.Arg_DefaultValueMissingException);
+                throw new ArgumentException(SR.Arg_VarMissNull);
             }
 
             bool hasDefaultValue = RuntimeAugments.Callbacks.TryGetDefaultParameterValue(targetMethodOrDelegate, thType, argIndex, out object defaultValue);
             if (!hasDefaultValue)
             {
-                throw new ArgumentException(SR.Arg_DefaultValueMissingException, "parameters");
+                throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
             }
 
             // Note that we might return null even for value types which cannot have null value here.
@@ -352,7 +352,7 @@ namespace System
             IntPtr dynamicInvokeHelperMethod,
             IntPtr dynamicInvokeHelperGenericDictionary,
             object targetMethodOrDelegate,
-            object[]? parameters,
+            object?[]? parameters,
             BinderBundle? binderBundle,
             bool wrapInTargetInvocationException,
             bool methodToCallIsThisCall = true)
@@ -509,7 +509,7 @@ namespace System
             }
         }
 
-        internal static object DynamicInvokeBoxedValuetypeReturn(out DynamicInvokeParamLookupType paramLookupType, object? boxedValuetype, object[]? parameters, int index, RuntimeTypeHandle type, DynamicInvokeParamType paramType, ref object[] nullableCopyBackObjects)
+        internal static object DynamicInvokeBoxedValuetypeReturn(out DynamicInvokeParamLookupType paramLookupType, object? boxedValuetype, object?[]? parameters, int index, RuntimeTypeHandle type, DynamicInvokeParamType paramType, ref object[] nullableCopyBackObjects)
         {
             object finalObjectToReturn = boxedValuetype;
             EETypePtr eeType = type.ToEETypePtr();

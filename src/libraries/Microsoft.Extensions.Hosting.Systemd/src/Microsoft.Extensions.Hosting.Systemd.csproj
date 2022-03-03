@@ -10,12 +10,17 @@
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Remove="SystemdLifetime.netcoreapp.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Remove="SystemdLifetime.netstandard.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Unix\libc\Interop.GetParentPid.cs" Link="Common\Interop\Unix\libc\Interop.GetParentPid.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -17,6 +17,8 @@
 
 #if defined(TARGET_ARM64)
 #define TARGET_CPU_TYPE CPU_TYPE_ARM64
+#elif defined(TARGET_LOONGARCH64)
+#define TARGET_CPU_TYPE CPU_TYPE_LOONGARCH64
 #else
 #define TARGET_CPU_TYPE CPU_TYPE_X86_64
 #endif
@@ -81,7 +83,7 @@ namespace bundle
             return m_ptr;
         }
 
-        int8_t read()
+        int8_t read_byte()
         {
             bounds_check();
             return *m_ptr++;
@@ -98,16 +100,6 @@ namespace bundle
             bounds_check(len);
             memcpy(dest, m_ptr, to_size_t_dbgchecked(len));
             m_ptr += len;
-        }
-
-        // Return a pointer to the requested bytes within the memory-mapped file.
-        // Skip over len bytes.
-        const char* read_direct(int64_t len)
-        {
-            bounds_check(len);
-            const char *ptr = m_ptr;
-            m_ptr += len;
-            return ptr;
         }
 
         size_t read_path_length();

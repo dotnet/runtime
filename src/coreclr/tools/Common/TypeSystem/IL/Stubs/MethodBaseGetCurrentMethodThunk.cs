@@ -44,6 +44,14 @@ namespace Internal.IL.Stubs
             }
         }
 
+        public override string DiagnosticName
+        {
+            get
+            {
+                return Method.DiagnosticName;
+            }
+        }
+
         public override TypeDesc OwningType
         {
             get

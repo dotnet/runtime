@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -8,8 +7,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-
-#nullable enable
 
 namespace Mono.Linker.Dataflow
 {
@@ -589,15 +586,15 @@ namespace Mono.Linker.Dataflow
 		{
 			readonly TypeDefinition _type;
 			readonly DynamicallyAccessedMemberTypes _typeAnnotation;
-			readonly MethodAnnotations[] _annotatedMethods;
-			readonly FieldAnnotation[] _annotatedFields;
+			readonly MethodAnnotations[]? _annotatedMethods;
+			readonly FieldAnnotation[]? _annotatedFields;
 			readonly DynamicallyAccessedMemberTypes[]? _genericParameterAnnotations;
 
 			public TypeAnnotations (
 				TypeDefinition type,
 				DynamicallyAccessedMemberTypes typeAnnotation,
-				MethodAnnotations[] annotatedMethods,
-				FieldAnnotation[] annotatedFields,
+				MethodAnnotations[]? annotatedMethods,
+				FieldAnnotation[]? annotatedFields,
 				DynamicallyAccessedMemberTypes[]? genericParameterAnnotations)
 				=> (_type, _typeAnnotation, _annotatedMethods, _annotatedFields, _genericParameterAnnotations)
 				 = (type, typeAnnotation, annotatedMethods, annotatedFields, genericParameterAnnotations);

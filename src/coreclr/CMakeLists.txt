@@ -116,6 +116,9 @@ endif(CLR_CMAKE_HOST_UNIX)
 # Add this subdir. We install the headers for the jit.
 add_subdirectory(pal/prebuilt/inc)
 
+# These need to happen before the VM and debug-pal includes.
+set(EP_GENERATED_HEADER_PATH "${GENERATED_INCLUDE_DIR}")
+include (${CLR_SRC_NATIVE_DIR}/eventpipe/configure.cmake)
 add_subdirectory(debug/debug-pal)
 
 add_subdirectory(minipal)
@@ -247,7 +250,6 @@ add_subdirectory(debug)
 add_subdirectory(binder)
 add_subdirectory(classlibnative)
 add_subdirectory(dlls)
-add_subdirectory(ToolBox)
 add_subdirectory(tools)
 add_subdirectory(unwinder)
 add_subdirectory(interop)

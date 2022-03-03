@@ -205,6 +205,9 @@ public unsafe class Program
         int n = 12345;
         // Try invoking method
         Assert.Throws<InvalidProgramException>(() => { UnmanagedCallersOnlyDll.CallManagedProc((IntPtr)(delegate* unmanaged<bool, int>)&CallbackMethodNonBlittable, n); });
+        Assert.Throws<InvalidProgramException>(() => { UnmanagedCallersOnlyDll.CallManagedProc(UnmanagedCallersOnlyWithByRefs.GetWithByRefFunctionPointer(), n); });
+        Assert.Throws<InvalidProgramException>(() => { UnmanagedCallersOnlyDll.CallManagedProc(UnmanagedCallersOnlyWithByRefs.GetWithByRefInFunctionPointer(), n); });
+        Assert.Throws<InvalidProgramException>(() => { UnmanagedCallersOnlyDll.CallManagedProc(UnmanagedCallersOnlyWithByRefs.GetWithByRefOutFunctionPointer(), n); });
     }
 
     public static void NegativeTest_InstantiatedGenericArguments()

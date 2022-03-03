@@ -42,6 +42,10 @@ namespace Microsoft.Interop
 
     internal sealed class DllImportStubContext : IEquatable<DllImportStubContext>
     {
+        private static readonly string GeneratorName = typeof(DllImportGenerator).Assembly.GetName().Name;
+
+        private static readonly string GeneratorVersion = typeof(DllImportGenerator).Assembly.GetName().Version.ToString();
+
         // We don't need the warnings around not setting the various
         // non-nullable fields/properties on this type in the constructor
         // since we always use a property initializer.
@@ -123,18 +127,31 @@ namespace Microsoft.Interop
 
             ImmutableArray<AttributeListSyntax>.Builder additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
 
-            // Define additional attributes for the stub definition.
+            if (env.TargetFramework != TargetFramework.Unknown)
+            {
+                // Define additional attributes for the stub definition.
+                additionalAttrs.Add(
+                    AttributeList(
+                        SingletonSeparatedList(
+                            Attribute(ParseName(TypeNames.System_CodeDom_Compiler_GeneratedCodeAttribute),
+                                AttributeArgumentList(
+                                    SeparatedList(
+                                        new[]
+                                        {
+                                            AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(GeneratorName))),
+                                            AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(GeneratorVersion)))
+                                        }))))));
+            }
+
             if (env.TargetFrameworkVersion >= new Version(5, 0) && !MethodIsSkipLocalsInit(env, method))
             {
                 additionalAttrs.Add(
                     AttributeList(
-                        SeparatedList(new[]
-                        {
+                        SingletonSeparatedList(
                             // Adding the skip locals init indiscriminately since the source generator is
                             // targeted at non-blittable method signatures which typically will contain locals
                             // in the generated code.
-                            Attribute(ParseName(TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute))
-                        })));
+                            Attribute(ParseName(TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute)))));
             }
 
             return new DllImportStubContext()
@@ -153,18 +170,22 @@ namespace Microsoft.Interop
         {
             // Compute the current default string encoding value.
             CharEncoding defaultEncoding = CharEncoding.Undefined;
-            if (dllImportData.IsUserDefined.HasFlag(DllImportMember.CharSet))
+            if (dllImportData.IsUserDefined.HasFlag(DllImportMember.StringMarshalling))
             {
-                defaultEncoding = dllImportData.CharSet switch
+                defaultEncoding = dllImportData.StringMarshalling switch
                 {
-                    CharSet.Unicode => CharEncoding.Utf16,
-                    CharSet.Auto => CharEncoding.PlatformDefined,
-                    CharSet.Ansi => CharEncoding.Ansi,
-                    _ => CharEncoding.Undefined, // [Compat] Do not assume a specific value for None
+                    StringMarshalling.Utf16 => CharEncoding.Utf16,
+                    StringMarshalling.Utf8 => CharEncoding.Utf8,
+                    StringMarshalling.Custom => CharEncoding.Custom,
+                    _ => CharEncoding.Undefined, // [Compat] Do not assume a specific value
                 };
             }
+            else if (dllImportData.IsUserDefined.HasFlag(DllImportMember.StringMarshallingCustomType))
+            {
+                defaultEncoding = CharEncoding.Custom;
+            }
 
-            var defaultInfo = new DefaultMarshallingInfo(defaultEncoding);
+            var defaultInfo = new DefaultMarshallingInfo(defaultEncoding, dllImportData.StringMarshallingCustomType);
 
             var marshallingAttributeParser = new MarshallingAttributeInfoParser(env.Compilation, diagnostics, defaultInfo, method);
 
@@ -190,7 +211,7 @@ namespace Microsoft.Interop
                 NativeIndex = TypePositionInfo.ReturnIndex
             };
 
-            InteropGenerationOptions options = new(env.Options.UseMarshalType, env.Options.UseInternalUnsafeType);
+            InteropGenerationOptions options = new(env.Options.UseMarshalType);
             IMarshallingGeneratorFactory generatorFactory;
 
             if (env.Options.GenerateForwarders)
@@ -199,38 +220,28 @@ namespace Microsoft.Interop
             }
             else
             {
-                generatorFactory = new DefaultMarshallingGeneratorFactory(options);
-                IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, options);
-                // We don't need to include the later generator factories for collection elements
-                // as the later generator factories only apply to parameters or to the synthetic return value for PreserveSig support.
-                generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, options);
-                if (!dllImportData.PreserveSig)
+                if (env.TargetFramework != TargetFramework.Net || env.TargetFrameworkVersion.Major < 7)
                 {
-                    // Create type info for native out param
-                    if (!method.ReturnsVoid)
-                    {
-                        // Transform the managed return type info into an out parameter and add it as the last param
-                        TypePositionInfo nativeOutInfo = retTypeInfo with
-                        {
-                            InstanceIdentifier = PInvokeStubCodeGenerator.ReturnIdentifier,
-                            RefKind = RefKind.Out,
-                            RefKindSyntax = SyntaxKind.OutKeyword,
-                            ManagedIndex = TypePositionInfo.ReturnIndex,
-                            NativeIndex = typeInfos.Count
-                        };
-                        typeInfos.Add(nativeOutInfo);
-                    }
-
-                    // Use a marshalling generator that supports the HRESULT return->exception marshalling.
-                    generatorFactory = new NoPreserveSigMarshallingGeneratorFactory(generatorFactory);
-
-                    // Create type info for native HRESULT return
-                    retTypeInfo = new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance);
-                    retTypeInfo = retTypeInfo with
-                    {
-                        NativeIndex = TypePositionInfo.ReturnIndex
-                    };
+                    // If we're using our downstream support, fall back to the Forwarder marshaller when the TypePositionInfo is unhandled.
+                    generatorFactory = new ForwarderMarshallingGeneratorFactory();
                 }
+                else
+                {
+                    // If we're in a "supported" scenario, then emit a diagnostic as our final fallback.
+                    generatorFactory = new UnsupportedMarshallingFactory();
+                }
+
+                generatorFactory = new MarshalAsMarshallingGeneratorFactory(options, generatorFactory);
+
+                IAssemblySymbol coreLibraryAssembly = env.Compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
+                ITypeSymbol? disabledRuntimeMarshallingAttributeType = coreLibraryAssembly.GetTypeByMetadataName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute);
+                bool runtimeMarshallingDisabled = disabledRuntimeMarshallingAttributeType is not null
+                    && env.Compilation.Assembly.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, disabledRuntimeMarshallingAttributeType));
+
+                IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, new AttributedMarshallingModelOptions(runtimeMarshallingDisabled));
+                // We don't need to include the later generator factories for collection elements
+                // as the later generator factories only apply to parameters.
+                generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, new AttributedMarshallingModelOptions(runtimeMarshallingDisabled));
 
                 generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
             }

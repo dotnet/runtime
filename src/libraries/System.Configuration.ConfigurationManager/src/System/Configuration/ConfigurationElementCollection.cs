@@ -29,10 +29,8 @@ namespace System.Configuration
 
         protected ConfigurationElementCollection() { }
 
-        protected ConfigurationElementCollection(IComparer comparer)
+        protected ConfigurationElementCollection(IComparer comparer!!)
         {
-            if (comparer == null) throw new ArgumentNullException(nameof(comparer));
-
             _comparer = comparer;
         }
 

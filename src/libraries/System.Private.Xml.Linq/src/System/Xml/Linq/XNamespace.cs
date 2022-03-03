@@ -53,9 +53,8 @@ namespace System.Xml.Linq
         /// The returned <see cref="XName"/> object is guaranteed to be atomic (i.e. the only one in the system for this
         /// particular expanded name).
         /// </remarks>
-        public XName GetName(string localName)
+        public XName GetName(string localName!!)
         {
-            if (localName == null) throw new ArgumentNullException(nameof(localName));
             return GetName(localName, 0, localName.Length);
         }
 
@@ -112,9 +111,8 @@ namespace System.Xml.Linq
         /// The returned <see cref="XNamespace"/> object is guaranteed to be atomic
         /// (i.e. the only one in the system for that particular namespace name).
         /// </remarks>
-        public static XNamespace Get(string namespaceName)
+        public static XNamespace Get(string namespaceName!!)
         {
-            if (namespaceName == null) throw new ArgumentNullException(nameof(namespaceName));
             return Get(namespaceName, 0, namespaceName.Length);
         }
 
@@ -136,9 +134,8 @@ namespace System.Xml.Linq
         /// <param name="ns">The namespace for the expanded name.</param>
         /// <param name="localName">The local name for the expanded name.</param>
         /// <returns>The new XName constructed from the namespace and local name.</returns>
-        public static XName operator +(XNamespace ns, string localName)
+        public static XName operator +(XNamespace ns!!, string localName)
         {
-            if (ns == null) throw new ArgumentNullException(nameof(ns));
             return ns.GetName(localName);
         }
 

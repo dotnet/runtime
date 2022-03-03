@@ -56,7 +56,12 @@ namespace System
         // >= Windows 10 20H1 Update
         public static bool IsWindows10Version2004OrGreater => IsWindowsVersionOrLater(10, 0, 19041);
 
-        public static bool IsWindows10Version2004Build19573OrGreater => IsWindowsVersionOrLater(10, 0, 19573);
+        // WinHTTP update
+        public static bool IsWindows10Version19573OrGreater => IsWindowsVersionOrLater(10, 0, 19573);
+
+        // Windows Server 2022
+        public static bool IsWindows10Version20348OrGreater => IsWindowsVersionOrLater(10, 0, 20348);
+
 
         // Windows 11 aka 21H2
         public static bool IsWindows10Version22000OrGreater => IsWindowsVersionOrLater(10, 0, 22000);
@@ -149,7 +154,7 @@ namespace System
             out int pdwReturnedProductType
         );
 
-        [GeneratedDllImport("kernel32.dll", ExactSpelling = true)]
+        [GeneratedDllImport("kernel32.dll")]
         private static partial int GetCurrentApplicationUserModelId(ref uint applicationUserModelIdLength, byte[] applicationUserModelId);
 
         private static volatile Version s_windowsVersionObject;
@@ -236,6 +241,8 @@ namespace System
         }
 
         public static bool CanRunImpersonatedTests => PlatformDetection.IsNotWindowsNanoServer && PlatformDetection.IsWindowsAndElevated;
+
+        public static bool IsWindowsX86OrX64 => PlatformDetection.IsWindows && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process);
 
         private static int s_isWindowsElevated = -1;
         public static bool IsWindowsAndElevated

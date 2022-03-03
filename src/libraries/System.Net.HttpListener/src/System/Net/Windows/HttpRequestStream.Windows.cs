@@ -219,10 +219,7 @@ namespace System.Net
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"asyncResult: {asyncResult}");
 
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            ArgumentNullException.ThrowIfNull(asyncResult);
             HttpRequestStreamAsyncResult? castedAsyncResult = asyncResult as HttpRequestStreamAsyncResult;
             if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
             {
@@ -307,7 +304,7 @@ namespace System.Net
             private static void IOCompleted(HttpRequestStreamAsyncResult asyncResult, uint errorCode, uint numBytes)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"asyncResult: {asyncResult} errorCode:0x {errorCode:x8} numBytes: {numBytes}");
-                object? result = null;
+                object? result;
                 try
                 {
                     if (errorCode != Interop.HttpApi.ERROR_SUCCESS && errorCode != Interop.HttpApi.ERROR_HANDLE_EOF)

@@ -10,8 +10,7 @@ namespace System.IO
     {
         public static bool DirectoryExists(ReadOnlySpan<char> fullPath)
         {
-            Interop.ErrorInfo ignored;
-            return DirectoryExists(fullPath, out ignored);
+            return DirectoryExists(fullPath, out _);
         }
 
         private static bool DirectoryExists(ReadOnlySpan<char> fullPath, out Interop.ErrorInfo errorInfo)
@@ -30,8 +29,7 @@ namespace System.IO
 
         public static bool FileExists(ReadOnlySpan<char> fullPath)
         {
-            Interop.ErrorInfo ignored;
-            return FileExists(fullPath, out ignored);
+            return FileExists(fullPath, out _);
         }
 
         private static bool FileExists(ReadOnlySpan<char> fullPath, out Interop.ErrorInfo errorInfo)

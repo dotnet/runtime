@@ -3,11 +3,13 @@
 
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Diagnostics;
 
 namespace System.Threading
 {
     public static partial class ThreadPool
     {
+        [Conditional("unnecessary")]
         internal static void ReportThreadStatus(bool isWorking)
         {
         }
@@ -28,7 +30,7 @@ namespace System.Threading
             return UnsafeQueueUserWorkItem(NativeOverlappedCallback, (IntPtr)overlapped);
         }
 
-        [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.", false)]
+        [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.")]
         [SupportedOSPlatform("windows")]
         public static bool BindHandle(IntPtr osHandle)
         {

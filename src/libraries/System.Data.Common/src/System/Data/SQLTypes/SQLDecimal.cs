@@ -18,7 +18,7 @@ namespace System.Data.SqlTypes
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     [XmlSchemaProvider("GetXsdType")]
-    public struct SqlDecimal : INullable, IComparable, IXmlSerializable
+    public struct SqlDecimal : INullable, IComparable, IXmlSerializable, IEquatable<SqlDecimal>
     {
         // data in CSsNumeric in SQL Server
         // BYTE    m_cbLen;                // # of DWORDs + 1 (1 is for sign)
@@ -703,7 +703,6 @@ namespace System.Data.SqlTypes
                         {
                             dVal = Math.Floor(dInt / s_DUINT_BASE);
                             _data4 = (uint)(dInt - dVal * s_DUINT_BASE);
-                            dInt = dVal;
                             _bLen++;
                         }
                     }
@@ -1123,7 +1122,7 @@ namespace System.Data.SqlTypes
             if (IsNull)
                 throw new SqlNullValueException();
 
-            double dRet = 0.0;
+            double dRet;
 
             dRet = _data4;
             dRet = dRet * s_lInt32Base + _data3;
@@ -2729,9 +2728,8 @@ namespace System.Data.SqlTypes
                 // D8. Unnormalize: Divide D and R to get result
                 if (D1 > 1)
                 {
-                    uint ret;
-                    MpDiv1(rgulD, ref ciulD, D1, out ret);
-                    MpDiv1(rgulR, ref ciulR, D1, out ret);
+                    MpDiv1(rgulD, ref ciulD, D1, out _);
+                    MpDiv1(rgulR, ref ciulR, D1, out _);
                 }
             }
         }
@@ -3280,20 +3278,15 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals([NotNullWhen(true)] object? value)
-        {
-            if (!(value is SqlDecimal))
-            {
-                return false;
-            }
+        public override bool Equals([NotNullWhen(true)] object? value) =>
+            value is SqlDecimal other && Equals(other);
 
-            SqlDecimal i = (SqlDecimal)value;
-
-            if (i.IsNull || IsNull)
-                return (i.IsNull && IsNull);
-            else
-                return (this == i).Value;
-        }
+        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
+        /// <param name="other">An instance to compare with this instance.</param>
+        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        public bool Equals(SqlDecimal other) =>
+            other.IsNull || IsNull ? other.IsNull && IsNull :
+            (this == other).Value;
 
         // For hashing purpose
         public override int GetHashCode()

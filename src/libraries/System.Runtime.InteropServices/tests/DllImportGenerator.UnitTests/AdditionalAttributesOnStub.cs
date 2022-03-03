@@ -17,7 +17,9 @@ namespace DllImportGenerator.UnitTests
         public async Task SkipLocalsInitAdded()
         {
             string source = @"
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+[assembly:DisableRuntimeMarshalling]
 partial class C
 {
     [GeneratedDllImportAttribute(""DoesNotExist"")]
@@ -62,11 +64,62 @@ partial class C
             Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
         }
 
+        [ConditionalFact]
+        public async Task GeneratedCodeAdded()
+        {
+            string source = @"
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+[assembly:DisableRuntimeMarshalling]
+partial class C
+{
+    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    public static partial S Method();
+}
+
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+}
+
+struct Native
+{
+    public Native(S s) { }
+    public S ToManaged() { return default; }
+}";
+            Compilation comp = await TestUtils.CreateCompilation(source);
+
+            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.DllImportGenerator());
+
+            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
+            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
+            Assert.Contains(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName);
+        }
+
+        [ConditionalFact]
+        public async Task GeneratedCodeNotAddedOnForwardingStub()
+        {
+            string source = @"
+using System.Runtime.InteropServices;
+partial class C
+{
+    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    public static partial void Method();
+}";
+            Compilation comp = await TestUtils.CreateCompilation(source);
+
+            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.DllImportGenerator());
+
+            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
+            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
+            Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName);
+        }
+
         public static IEnumerable<object[]> GetDownlevelTargetFrameworks()
         {
             yield return new object[] { TestTargetFramework.Net, true };
             yield return new object[] { TestTargetFramework.Net6, true };
-            yield return new object[] { TestTargetFramework.Net5, false };
+            yield return new object[] { TestTargetFramework.Net5, true };
             yield return new object[] { TestTargetFramework.Core, false };
             yield return new object[] { TestTargetFramework.Standard, false };
             yield return new object[] { TestTargetFramework.Framework, false };
@@ -79,28 +132,10 @@ partial class C
             string source = $@"
 using System.Runtime.InteropServices;
 {CodeSnippets.GeneratedDllImportAttributeDeclaration}
-namespace System.Runtime.InteropServices
-{{
-    sealed class NativeMarshallingAttribute : System.Attribute
-    {{
-        public NativeMarshallingAttribute(System.Type nativeType) {{ }}
-    }}
-}}
 partial class C
 {{
     [GeneratedDllImportAttribute(""DoesNotExist"")]
-    public static partial S Method();
-}}
-
-[NativeMarshalling(typeof(Native))]
-struct S
-{{
-}}
-
-struct Native
-{{
-    public Native(S s) {{ }}
-    public S ToManaged() {{ return default; }}
+    public static partial bool Method();
 }}";
             Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
 

@@ -42,7 +42,7 @@ namespace System.Reflection.TypeLoading.Ecma
                 {
                     bool isPinned = false;
                     RoType localType = sig[i];
-                    if (localType is RoPinnedType roPinnedType)
+                    if (localType is RoPinnedType)
                     {
                         isPinned = true;
                         localType = localType.SkipTypeWrappers();

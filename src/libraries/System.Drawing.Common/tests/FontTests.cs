@@ -557,7 +557,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                Assert.Equal(font.GetHeight(graphics.DpiY), font.GetHeight(graphics), 5);
+                Assert.Equal((double)font.GetHeight(graphics.DpiY), font.GetHeight(graphics), 5);
             }
         }
 
@@ -574,7 +574,7 @@ namespace System.Drawing.Tests
             using (FontFamily family = FontFamily.GenericSansSerif)
             using (var font = new Font(family, 10))
             {
-                Assert.Equal(expected, font.GetHeight(dpi), 5);
+                Assert.Equal((double)expected, font.GetHeight(dpi), 5);
             }
         }
 

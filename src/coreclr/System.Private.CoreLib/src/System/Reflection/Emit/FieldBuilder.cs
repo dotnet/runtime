@@ -20,17 +20,12 @@ namespace System.Reflection.Emit
         internal FieldBuilder(TypeBuilder typeBuilder, string fieldName, Type type,
             Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
-            if (fieldName == null)
-                throw new ArgumentNullException(nameof(fieldName));
-
-            if (fieldName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(fieldName));
+            ArgumentException.ThrowIfNullOrEmpty(fieldName);
 
             if (fieldName[0] == '\0')
                 throw new ArgumentException(SR.Argument_IllegalName, nameof(fieldName));
 
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             if (type == typeof(void))
                 throw new ArgumentException(SR.Argument_BadFieldType);
@@ -159,14 +154,8 @@ namespace System.Reflection.Emit
             TypeBuilder.SetConstantValue(m_typeBuilder.GetModuleBuilder(), m_fieldTok, m_fieldType, defaultValue);
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
-
-            if (binaryAttribute == null)
-                throw new ArgumentNullException(nameof(binaryAttribute));
-
             ModuleBuilder module = (m_typeBuilder.Module as ModuleBuilder)!;
 
             m_typeBuilder.ThrowIfCreated();
@@ -175,11 +164,8 @@ namespace System.Reflection.Emit
                 m_fieldTok, module.GetConstructorToken(con), binaryAttribute);
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
-
             m_typeBuilder.ThrowIfCreated();
 
             ModuleBuilder? module = m_typeBuilder.Module as ModuleBuilder;

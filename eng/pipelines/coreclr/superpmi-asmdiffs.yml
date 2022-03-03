@@ -9,6 +9,8 @@ pr:
     include:
     - main
   paths:
+    # If you are changing these and start including eng/common, adjust the Maestro subscriptions
+    # so that this build can block dependency auto-updates (this build is currently ignored)
     include:
     - src/coreclr/jit/*
     exclude:

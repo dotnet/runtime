@@ -6,9 +6,9 @@ namespace Internal.TypeSystem.Interop
     // Functionality related to deterministic ordering of methods
     partial class PInvokeDelegateWrapperConstructor
     {
-        protected internal override int ClassCode => 1000342011;
+        protected override int ClassCode => 1000342011;
 
-        protected internal override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+        protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
             var owningType = (PInvokeDelegateWrapper)OwningType;
             var otherOwningType = (PInvokeDelegateWrapper)other.OwningType;

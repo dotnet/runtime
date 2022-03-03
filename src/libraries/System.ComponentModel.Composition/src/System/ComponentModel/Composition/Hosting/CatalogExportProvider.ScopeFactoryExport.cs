@@ -78,7 +78,7 @@ namespace System.ComponentModel.Composition.Hosting
                 public void Dispose()
                 {
                     CompositionContainer? childContainer = null;
-                    Export? export = null;
+                    Export? export;
 
                     if (_export != null)
                     {

@@ -94,8 +94,7 @@ namespace System.Runtime.Serialization
             if (assemblyName != null && typeName != null)
             {
                 Assembly assembly;
-                Type type;
-                DataContract? tempDataContract = ResolveDataContractInSharedTypeMode(assemblyName, typeName, out assembly, out type);
+                DataContract? tempDataContract = ResolveDataContractInSharedTypeMode(assemblyName, typeName, out assembly, out _);
                 if (tempDataContract == null)
                 {
                     if (assembly == null)
@@ -174,9 +173,7 @@ namespace System.Runtime.Serialization
             {
                 if (attributes.ClrAssembly != null && attributes.ClrType != null)
                 {
-                    Assembly assembly;
-                    Type type;
-                    return ResolveDataContractInSharedTypeMode(attributes.ClrAssembly, attributes.ClrType, out assembly, out type);
+                    return ResolveDataContractInSharedTypeMode(attributes.ClrAssembly, attributes.ClrType, out _, out _);
                 }
             }
             return null;

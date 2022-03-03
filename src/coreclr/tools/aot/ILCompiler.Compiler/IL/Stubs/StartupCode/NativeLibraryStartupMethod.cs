@@ -48,6 +48,14 @@ namespace Internal.IL.Stubs.StartupCode
             }
         }
 
+        public override string DiagnosticName
+        {
+            get
+            {
+                return "NativeLibraryStartup";
+            }
+        }
+
         public override MethodIL EmitIL()
         {
             ILEmitter emitter = new ILEmitter();

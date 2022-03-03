@@ -29,7 +29,7 @@ namespace System.Security.Cryptography
                 {
                     EccKeyFormatHelper.ReadSubjectPublicKeyInfo(
                         keyBlob,
-                        out int localRead,
+                        out _,
                         out ECParameters key);
                     return key;
                 }
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography
                     EccKeyFormatHelper.ReadEncryptedPkcs8(
                         keyBlob,
                         ExportPassword,
-                        out int localRead,
+                        out _,
                         out ECParameters key);
                     return key;
                 }

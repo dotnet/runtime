@@ -83,7 +83,7 @@ namespace System.Text.Json
 
         public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
-            JsonTypeInfo jsonTypeInfo = options.GetOrAddClassForRootType(type);
+            JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(type);
             Initialize(jsonTypeInfo, supportContinuation);
         }
 
@@ -113,7 +113,9 @@ namespace System.Text.Json
             {
                 if (_count == 0)
                 {
-                    // The first stack frame is held in Current.
+                    // Performance optimization: reuse the first stackframe on the first push operation.
+                    // NB need to be careful when making writes to Current _before_ the first `Push`
+                    // operation is performed.
                     _count = 1;
                 }
                 else
@@ -126,17 +128,17 @@ namespace System.Text.Json
                     {
                         if (Current.JsonPropertyInfo != null)
                         {
-                            jsonTypeInfo = Current.JsonPropertyInfo.RuntimeTypeInfo;
+                            jsonTypeInfo = Current.JsonPropertyInfo.JsonTypeInfo;
                         }
                         else
                         {
-                            jsonTypeInfo = Current.CtorArgumentState!.JsonParameterInfo!.RuntimeTypeInfo;
+                            jsonTypeInfo = Current.CtorArgumentState!.JsonParameterInfo!.JsonTypeInfo;
                         }
                     }
                     else if (converterStrategy == ConverterStrategy.Value)
                     {
                         // Although ConverterStrategy.Value doesn't push, a custom custom converter may re-enter serialization.
-                        jsonTypeInfo = Current.JsonPropertyInfo!.RuntimeTypeInfo;
+                        jsonTypeInfo = Current.JsonPropertyInfo!.JsonTypeInfo;
                     }
                     else
                     {

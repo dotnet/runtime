@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.IO.Strategies;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -25,7 +24,29 @@ namespace System.IO
         {
             ValidateInput(handle, fileOffset: 0);
 
-            return GetFileLength(handle);
+            return handle.GetFileLength();
+        }
+
+        /// <summary>
+        /// Sets the length of the file to the given value.
+        /// </summary>
+        /// <param name="handle">The file handle.</param>
+        /// <param name="length">A long value representing the length of the file in bytes.</param>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
+        /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
+        /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
+        /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
+        /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="length" /> is negative.</exception>
+        public static void SetLength(SafeFileHandle handle, long length)
+        {
+            ValidateInput(handle, fileOffset: 0);
+
+            if (length < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(nameof(length));
+            }
+
+            SetFileLength(handle, length);
         }
 
         /// <summary>

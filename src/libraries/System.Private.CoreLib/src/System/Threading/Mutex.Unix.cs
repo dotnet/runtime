@@ -29,15 +29,7 @@ namespace System.Threading
 
         private static OpenExistingResult OpenExistingWorker(string name, out Mutex? result)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
-            if (name.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             OpenExistingResult status = WaitSubsystem.OpenNamedMutex(name, out SafeWaitHandle? safeWaitHandle);
             result = status == OpenExistingResult.Success ? new Mutex(safeWaitHandle!) : null;

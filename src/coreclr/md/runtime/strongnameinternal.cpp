@@ -19,7 +19,7 @@
 //   cbKey - size in bytes of pbKey
 //
 
-bool StrongNameIsEcmaKey(__in_ecount(cbKey) const BYTE *pbKey, DWORD cbKey)
+bool StrongNameIsEcmaKey(_In_reads_(cbKey) const BYTE *pbKey, DWORD cbKey)
 {
     CONTRACTL
     {
@@ -68,7 +68,7 @@ bool StrongNameIsEcmaKey(const PublicKeyBlob &keyPublicKey)
 //   cbBuffer     - size of pbBuffer
 //
 
-bool StrongNameIsValidPublicKey(__in_ecount(cbBuffer) const BYTE *pbBuffer, DWORD cbBuffer)
+bool StrongNameIsValidPublicKey(_In_reads_(cbBuffer) const BYTE *pbBuffer, DWORD cbBuffer)
 {
     CONTRACTL
     {

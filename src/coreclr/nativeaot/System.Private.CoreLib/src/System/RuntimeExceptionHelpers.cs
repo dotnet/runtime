@@ -125,9 +125,8 @@ namespace System
             UnhandledException_ExceptionDispatchNotAllowed = 2,  // "Unhandled exception: no handler found before escaping a finally clause or other fail-fast scope."
             UnhandledException_CallerDidNotHandle = 3,           // "Unhandled exception: no handler found in calling method."
             ClassLibDidNotTranslateExceptionID = 4,              // "Unable to translate failure into a classlib-specific exception object."
-            IllegalUnmanagedCallersOnlyEntry = 5,                      // "Invalid Program: attempted to call a UnmanagedCallersOnly method from runtime-typesafe code."
-            PN_UnhandledException = 6,                           // ProjectN: "Unhandled exception: a managed exception was not handled before reaching unmanaged code"
-            PN_UnhandledExceptionFromPInvoke = 7,                // ProjectN: "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
+            PN_UnhandledException = 5,                           // ProjectN: "Unhandled exception: a managed exception was not handled before reaching unmanaged code"
+            PN_UnhandledExceptionFromPInvoke = 6,                // ProjectN: "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
             Max
         }
 
@@ -143,8 +142,6 @@ namespace System
                     return "Unhandled exception: no handler found in calling method.";
                 case RhFailFastReason.ClassLibDidNotTranslateExceptionID:
                     return "Unable to translate failure into a classlib-specific exception object.";
-                case RhFailFastReason.IllegalUnmanagedCallersOnlyEntry:
-                    return "Invalid Program: attempted to call a UnmanagedCallersOnly method from runtime-typesafe code.";
                 case RhFailFastReason.PN_UnhandledException:
                     return "Unhandled exception: a managed exception was not handled before reaching unmanaged code.";
                 case RhFailFastReason.PN_UnhandledExceptionFromPInvoke:

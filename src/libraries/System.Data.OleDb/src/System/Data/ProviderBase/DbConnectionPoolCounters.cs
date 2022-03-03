@@ -238,8 +238,6 @@ namespace System.Data.ProviderBase
         // SxS: this method uses GetCurrentProcessId to construct the instance name.
         private string GetInstanceName()
         {
-            string? result = null;
-
             string? instanceName = GetAssemblyName(); // instance perfcounter name
 
             if (ADP.IsEmpty(instanceName))
@@ -257,7 +255,7 @@ namespace System.Data.ProviderBase
             // to PERFMON.  They recommend that we translate them as shown below, to
             // prevent problems.
 
-            result = $"{instanceName}[{pid}]";
+            string result = $"{instanceName}[{pid}]";
             result = result.Replace('(', '[').Replace(')', ']').Replace('#', '_').Replace('/', '_').Replace('\\', '_');
 
             // counter instance name cannot be greater than 127

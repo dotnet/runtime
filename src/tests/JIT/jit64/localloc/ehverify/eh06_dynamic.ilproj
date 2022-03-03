@@ -11,6 +11,6 @@
     <Compile Include="eh06_dynamic.il" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\common\common.ilproj" />
+    <ProjectReference Include="..\..\..\common\localloc_common.ilproj" />
   </ItemGroup>
 </Project>

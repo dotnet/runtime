@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Internal.NativeFormat;
-using Internal.Runtime.CompilerServices;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -1414,8 +1413,6 @@ namespace Internal.Runtime
                 Debug.Assert((rareFlags & EETypeRareFlags.IsDynamicTypeWithThreadStatics) != 0);
                 return cbOffset;
             }
-            if ((rareFlags & EETypeRareFlags.IsDynamicTypeWithThreadStatics) != 0)
-                cbOffset += 4;
 
             Debug.Assert(false, "Unknown MethodTable field type");
             return 0;

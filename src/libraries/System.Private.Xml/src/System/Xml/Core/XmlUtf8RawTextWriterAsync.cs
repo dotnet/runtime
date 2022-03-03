@@ -740,7 +740,7 @@ namespace System.Xml
 
         protected async Task WriteAttributeTextBlockAsync(char[] chars, int index, int count)
         {
-            int writeLen = 0;
+            int writeLen;
             int curIndex = index;
             int leftCount = count;
             do
@@ -757,7 +757,7 @@ namespace System.Xml
 
         protected Task WriteAttributeTextBlockAsync(string text)
         {
-            int writeLen = 0;
+            int writeLen;
             int curIndex = 0;
             int leftCount = text.Length;
 
@@ -950,10 +950,10 @@ namespace System.Xml
 
         protected async Task WriteElementTextBlockAsync(char[] chars, int index, int count)
         {
-            int writeLen = 0;
+            int writeLen;
             int curIndex = index;
             int leftCount = count;
-            bool needWriteNewLine = false;
+            bool needWriteNewLine;
             do
             {
                 writeLen = WriteElementTextBlockNoFlush(chars, curIndex, leftCount, out needWriteNewLine);
@@ -975,10 +975,10 @@ namespace System.Xml
 
         protected Task WriteElementTextBlockAsync(string text)
         {
-            int writeLen = 0;
+            int writeLen;
             int curIndex = 0;
             int leftCount = text.Length;
-            bool needWriteNewLine = false;
+            bool needWriteNewLine;
 
             writeLen = WriteElementTextBlockNoFlush(text, curIndex, leftCount, out needWriteNewLine);
             curIndex += writeLen;
@@ -997,8 +997,8 @@ namespace System.Xml
 
         private async Task _WriteElementTextBlockAsync(bool newLine, string text, int curIndex, int leftCount)
         {
-            int writeLen = 0;
-            bool needWriteNewLine = false;
+            int writeLen;
+            bool needWriteNewLine;
 
             if (newLine)
             {
@@ -1184,7 +1184,7 @@ namespace System.Xml
 
             // Write out the remainder of the first string
             await FlushBufferAsync().ConfigureAwait(false);
-            int writeLen = 0;
+            int writeLen;
             do
             {
                 writeLen = RawTextNoFlush(text1, curIndex1, leftCount1);
@@ -1347,10 +1347,10 @@ namespace System.Xml
 
         protected async Task WriteRawWithCharCheckingAsync(char[] chars, int index, int count)
         {
-            int writeLen = 0;
+            int writeLen;
             int curIndex = index;
             int leftCount = count;
-            bool needWriteNewLine = false;
+            bool needWriteNewLine;
             do
             {
                 writeLen = WriteRawWithCharCheckingNoFlush(chars, curIndex, leftCount, out needWriteNewLine);
@@ -1371,10 +1371,10 @@ namespace System.Xml
 
         protected async Task WriteRawWithCharCheckingAsync(string text)
         {
-            int writeLen = 0;
+            int writeLen;
             int curIndex = 0;
             int leftCount = text.Length;
-            bool needWriteNewLine = false;
+            bool needWriteNewLine;
             do
             {
                 writeLen = WriteRawWithCharCheckingNoFlush(text, curIndex, leftCount, out needWriteNewLine);
@@ -1557,10 +1557,10 @@ namespace System.Xml
                 return;
             }
 
-            int writeLen = 0;
+            int writeLen;
             int curIndex = 0;
             int leftCount = text.Length;
-            bool needWriteNewLine = false;
+            bool needWriteNewLine;
             do
             {
                 writeLen = WriteCommentOrPiNoFlush(text, curIndex, leftCount, stopChar, out needWriteNewLine);
@@ -1740,10 +1740,10 @@ namespace System.Xml
                 return;
             }
 
-            int writeLen = 0;
+            int writeLen;
             int curIndex = 0;
             int leftCount = text.Length;
-            bool needWriteNewLine = false;
+            bool needWriteNewLine;
             do
             {
                 writeLen = WriteCDataSectionNoFlush(text, curIndex, leftCount, out needWriteNewLine);

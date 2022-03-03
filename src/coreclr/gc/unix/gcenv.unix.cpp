@@ -28,6 +28,10 @@
 #undef min
 #undef max
 
+#ifndef __has_cpp_attribute
+#define __has_cpp_attribute(x) (0)
+#endif
+
 #if __has_cpp_attribute(fallthrough)
 #define FALLTHROUGH [[fallthrough]]
 #else
@@ -98,7 +102,9 @@ extern "C"
 #   define __NR_membarrier  389
 #  elif defined(__aarch64__)
 #   define __NR_membarrier  283
-#  elif
+#  elif defined(__loongarch64)
+#   define __NR_membarrier  283
+#  else
 #   error Unknown architecture
 #  endif
 # endif
@@ -159,7 +165,7 @@ FOR_ALL_NUMA_FUNCTIONS
 
 #endif // HAVE_NUMA_H
 
-#if defined(HOST_ARM) || defined(HOST_ARM64)
+#if defined(HOST_ARM) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_CONF
 #else
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_ONLN
@@ -942,7 +948,12 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     {
         int64_t cacheSizeFromSysctl = 0;
         size_t sz = sizeof(cacheSizeFromSysctl);
-        const bool success = sysctlbyname("hw.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
+        const bool success = false
+            // macOS-arm64: Since macOS 12.0, Apple added ".perflevelX." to determinate cache sizes for efficiency 
+            // and performance cores separetely. "perflevel0" stands for "performance"
+            || sysctlbyname("hw.perflevel0.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
+            // macOS-arm64: these report cache sizes for efficiency cores only:
+            || sysctlbyname("hw.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
             || sysctlbyname("hw.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
             || sysctlbyname("hw.l1dcachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0;
         if (success)

@@ -45,11 +45,8 @@ namespace System.Text
             return GetCharCount(bytes, index, count, false);
         }
 
-        public override unsafe int GetCharCount(byte[] bytes, int index, int count, bool flush)
+        public override unsafe int GetCharCount(byte[] bytes!!, int index, int count, bool flush)
         {
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
-
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -94,11 +91,8 @@ namespace System.Text
             return result;
         }
 
-        public unsafe override int GetCharCount(byte* bytes, int count, bool flush)
+        public unsafe override int GetCharCount(byte* bytes!!, int count, bool flush)
         {
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
-
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -127,12 +121,9 @@ namespace System.Text
             return GetChars(bytes, byteIndex, byteCount, chars, charIndex, false);
         }
 
-        public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
-                                             char[] chars, int charIndex, bool flush)
+        public override unsafe int GetChars(byte[] bytes!!, int byteIndex, int byteCount,
+                                             char[] chars!!, int charIndex, bool flush)
         {
-            if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
-
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -158,11 +149,8 @@ namespace System.Text
             }
         }
 
-        public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount, bool flush)
+        public unsafe override int GetChars(byte* bytes!!, int byteCount, char* chars!!, int charCount, bool flush)
         {
-            if (chars == null || bytes == null)
-                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes), SR.ArgumentNull_Array);
-
             if (byteCount < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(byteCount < 0 ? nameof(byteCount) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -196,13 +184,10 @@ namespace System.Text
             return res;
         }
 
-        public override unsafe void Convert(byte[] bytes, int byteIndex, int byteCount,
-                                              char[] chars, int charIndex, int charCount, bool flush,
+        public override unsafe void Convert(byte[] bytes!!, int byteIndex, int byteCount,
+                                              char[] chars!!, int charIndex, int charCount, bool flush,
                                               out int bytesUsed, out int charsUsed, out bool completed)
         {
-            if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
-
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -233,12 +218,10 @@ namespace System.Text
             }
         }
 
-        public unsafe override void Convert(byte* bytes, int byteCount,
-                                              char* chars, int charCount, bool flush,
+        public unsafe override void Convert(byte* bytes!!, int byteCount,
+                                              char* chars!!, int charCount, bool flush,
                                               out int bytesUsed, out int charsUsed, out bool completed)
         {
-            if (chars == null || bytes == null)
-                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes), SR.ArgumentNull_Array);
             if (byteCount < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(byteCount < 0 ? nameof(byteCount) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
 

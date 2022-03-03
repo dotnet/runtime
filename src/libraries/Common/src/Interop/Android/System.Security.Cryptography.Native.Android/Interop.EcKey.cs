@@ -10,7 +10,7 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByOid", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByOid", StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeEcKeyHandle AndroidCryptoNative_EcKeyCreateByOid(string oid);
         internal static SafeEcKeyHandle? EcKeyCreateByOid(string oid)
         {

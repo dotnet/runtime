@@ -62,11 +62,8 @@ namespace System.Threading.Tasks.Dataflow
         /// </param>
         /// <param name="dataflowBlockOptions">The options with which to configure this <see cref="BroadcastBlock{T}"/>.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        public BroadcastBlock(Func<T, T>? cloningFunction, DataflowBlockOptions dataflowBlockOptions)
+        public BroadcastBlock(Func<T, T>? cloningFunction, DataflowBlockOptions dataflowBlockOptions!!)
         {
-            // Validate arguments
-            if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
-
             // Ensure we have options that can't be changed by the caller
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();
 
@@ -110,10 +107,8 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
-        void IDataflowBlock.Fault(Exception exception)
+        void IDataflowBlock.Fault(Exception exception!!)
         {
-            if (exception == null) throw new ArgumentNullException(nameof(exception));
-
             CompleteCore(exception, storeExceptionEvenIfAlreadyCompleting: false);
         }
 
@@ -1001,12 +996,8 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
-            internal IDisposable LinkTo(ITargetBlock<TOutput> target, DataflowLinkOptions linkOptions)
+            internal IDisposable LinkTo(ITargetBlock<TOutput> target!!, DataflowLinkOptions linkOptions!!)
             {
-                // Validate arguments
-                if (target == null) throw new ArgumentNullException(nameof(target));
-                if (linkOptions == null) throw new ArgumentNullException(nameof(linkOptions));
-
                 lock (OutgoingLock)
                 {
                     // If we've completed or completion has at least started, offer the message to this target,

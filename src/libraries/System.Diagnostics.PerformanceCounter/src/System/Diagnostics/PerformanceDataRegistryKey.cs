@@ -24,8 +24,7 @@ namespace System.Diagnostics
         public static PerformanceDataRegistryKey OpenRemoteBaseKey(string machineName)
         {
             // connect to the specified remote registry
-            SafeRegistryHandle foreignHKey = null;
-            int ret = Interop.Advapi32.RegConnectRegistry(machineName, new SafeRegistryHandle(new IntPtr(PerformanceData), ownsHandle: false), out foreignHKey);
+            int ret = Interop.Advapi32.RegConnectRegistry(machineName, new SafeRegistryHandle(new IntPtr(PerformanceData), ownsHandle: false), out SafeRegistryHandle foreignHKey);
 
             if (ret == Interop.Errors.ERROR_DLL_INIT_FAILED)
             {

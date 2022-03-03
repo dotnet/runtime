@@ -337,7 +337,7 @@ MethodDesc* AsMethodDesc(size_t addr)
 /*******************************************************************/
 
 WCHAR* formatMethodTable(MethodTable* pMT,
-                           __out_z __inout_ecount(bufSize) WCHAR* buff,
+                           _Inout_updates_z_(bufSize) WCHAR* buff,
                            DWORD bufSize)
 {
     CONTRACTL
@@ -377,7 +377,7 @@ WCHAR* formatMethodTable(MethodTable* pMT,
 /*******************************************************************/
 
 WCHAR* formatMethodDesc(MethodDesc* pMD,
-                          __out_z __inout_ecount(bufSize) WCHAR* buff,
+                          _Inout_updates_z_(bufSize) WCHAR* buff,
                           DWORD bufSize)
 {
     CONTRACTL
@@ -1015,7 +1015,7 @@ void printfToDbgOut(const char* fmt, ...)
     va_start(args, fmt);
 
     char buffer[4096];
-    _vsnprintf_s(buffer, COUNTOF(buffer), _TRUNCATE, fmt, args);
+    _vsnprintf_s(buffer, ARRAY_SIZE(buffer), _TRUNCATE, fmt, args);
 
     va_end(args);
     OutputDebugStringA( buffer );

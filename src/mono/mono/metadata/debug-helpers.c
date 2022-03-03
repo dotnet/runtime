@@ -88,7 +88,7 @@ append_class_name (GString *res, MonoClass *klass, gboolean include_namespace)
 static MonoClass*
 find_system_class (const char *name)
 {
-	if (!strcmp (name, "void")) 
+	if (!strcmp (name, "void"))
 		return mono_defaults.void_class;
 	else if (!strcmp (name, "char")) return mono_defaults.char_class;
 	else if (!strcmp (name, "bool")) return mono_defaults.boolean_class;
@@ -335,7 +335,7 @@ mono_context_get_desc (MonoGenericContext *context)
 	res = g_strdup (str->str);
 	g_string_free (str, TRUE);
 	return res;
-}	
+}
 
 /**
  * mono_method_desc_new:
@@ -360,7 +360,7 @@ mono_method_desc_new (const char *name, gboolean include_namespace)
 	char *class_name, *class_nspace, *method_name, *use_args, *end;
 	int use_namespace;
 	int generic_delim_stack;
-	
+
 	class_nspace = g_strdup (name);
 	use_args = strchr (class_nspace, '(');
 	if (use_args) {
@@ -429,7 +429,7 @@ MonoMethodDesc*
 mono_method_desc_from_method (MonoMethod *method)
 {
 	MonoMethodDesc *result;
-	
+
 	result = g_new0 (MonoMethodDesc, 1);
 	result->include_namespace = TRUE;
 	result->name = g_strdup (method->name);
@@ -583,7 +583,7 @@ mono_method_desc_search_in_class (MonoMethodDesc *desc, MonoClass *klass)
 {
 	MonoMethod* m;
 	gpointer iter = NULL;
-	
+
 	while ((m = mono_class_get_methods (klass, &iter)))
 		if (mono_method_desc_match (desc, m))
 			return m;
@@ -663,7 +663,7 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 	}
 	if (dh->label_format)
 		g_string_append_printf (str, dh->label_format, label);
-	
+
 	i = mono_opcode_value (&ip, end);
 	ip++;
 	opcode = &mono_opcodes [i];
@@ -833,7 +833,7 @@ mono_disasm_code_one (MonoDisHelper *dh, MonoMethod *method, const guchar *ip, c
 	ip = dis_one (res, dh, method, ip, ip + 2);
 	if (endp)
 		*endp = ip;
-	
+
 	result = res->str;
 	g_string_free (res, FALSE);
 	return result;
@@ -853,7 +853,7 @@ mono_disasm_code (MonoDisHelper *dh, MonoMethod *method, const guchar *ip, const
 	while (ip < end) {
 		ip = dis_one (res, dh, method, ip, end);
 	}
-	
+
 	result = res->str;
 	g_string_free (res, FALSE);
 	return result;
@@ -868,10 +868,10 @@ char *
 mono_field_full_name (MonoClassField *field)
 {
 	char *res;
-	const char *nspace = field->parent->name_space;
+	const char *nspace = m_field_get_parent (field)->name_space;
 
 	res = g_strdup_printf ("%s%s%s:%s", nspace, *nspace ? "." : "",
-						   field->parent->name, mono_field_get_name (field));
+						   m_field_get_parent (field)->name, mono_field_get_name (field));
 
 	return res;
 }

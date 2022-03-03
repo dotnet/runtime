@@ -44,13 +44,13 @@ namespace ILCompiler.Dataflow
                 return ((TypeDesc)parent).GetDisplayName();
         }
 
-        internal static string GetRequiresUnreferencedCodeAttributeMessage(MethodDesc method)
+        internal static string GetRequiresAttributeMessage(MethodDesc method, string requiresAttributeName)
         {
             var ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
             if (ecmaMethod == null)
                 return null;
 
-            var decoded = ecmaMethod.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresUnreferencedCodeAttribute");
+            var decoded = ecmaMethod.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
             if (decoded == null)
                 return null;
 
@@ -62,20 +62,20 @@ namespace ILCompiler.Dataflow
             return null;
         }
 
-        internal static string GetRequiresDynamicCodeAttributeMessage(MethodDesc method)
+        internal static string GetRequiresAttributeUrl(MethodDesc method, string requiresAttributeName)
         {
             var ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
             if (ecmaMethod == null)
                 return null;
 
-            var decoded = ecmaMethod.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresDynamicCodeAttribute");
+            var decoded = ecmaMethod.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
             if (decoded == null)
                 return null;
 
             var decodedValue = decoded.Value;
 
-            if (decodedValue.FixedArguments.Length != 0)
-                return (string)decodedValue.FixedArguments[0].Value;
+            if (decodedValue.NamedArguments.Length != 0 && decodedValue.NamedArguments[0].Name == "Url")
+                return (string)decodedValue.NamedArguments[0].Value;
 
             return null;
         }

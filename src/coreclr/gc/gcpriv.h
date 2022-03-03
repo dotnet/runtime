@@ -51,7 +51,7 @@ inline void FATAL_GC_ERROR()
 //
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
-// For now enable regions by default for only StandAlone GC builds
+// For now disable regions outside of StandAlone GC builds
 #if defined (HOST_64BIT) && defined (BUILD_AS_STANDALONE)
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
@@ -1165,20 +1165,29 @@ class region_free_list
     heap_segment* tail_free_region;
 
     static free_region_kind get_region_kind(heap_segment* region);
+    void update_added_region_info (heap_segment* region);
 
 public:
     region_free_list();
     void verify (bool empty_p);
     void reset();
     void add_region_front (heap_segment* region);
+    void add_region_in_descending_order (heap_segment* region_to_add);
     void transfer_regions (region_free_list* from);
     heap_segment* unlink_region_front();
     heap_segment* unlink_smallest_region (size_t size);
     size_t get_num_free_regions();
+    size_t get_size_committed_in_free() { return size_committed_in_free_regions; }
     size_t get_size_free_regions() { return size_free_regions; }
     heap_segment* get_first_free_region() { return head_free_region; }
     static void unlink_region (heap_segment* region);
     static void add_region (heap_segment* region, region_free_list to_free_list[count_free_region_kinds]);
+    static void add_region_descending (heap_segment* region, region_free_list to_free_list[count_free_region_kinds]);
+    void age_free_regions();
+    static void age_free_regions (region_free_list free_list[count_free_region_kinds]);
+    void print (int hn, const char* msg="", int* ages=nullptr);
+    static void print (region_free_list free_list[count_free_region_kinds], int hn, const char* msg="", int* ages=nullptr);
+    void sort_by_committed_and_age();
 };
 #endif
 
@@ -1286,9 +1295,9 @@ public:
     PER_HEAP
     void verify_free_lists();
     PER_HEAP
-    void verify_regions (int gen_number, bool can_verify_gen_num);
+    void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail);
     PER_HEAP
-    void verify_regions (bool can_verify_gen_num);
+    void verify_regions (bool can_verify_gen_num, bool concurrent_p);
     PER_HEAP_ISOLATED
     void enter_gc_lock_for_verify_heap();
     PER_HEAP_ISOLATED
@@ -2156,8 +2165,6 @@ protected:
     PER_HEAP
     void seg_clear_mark_array_bits_soh (heap_segment* seg);
     PER_HEAP
-    void clear_batch_mark_array_bits (uint8_t* start, uint8_t* end);
-    PER_HEAP
     void bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end);
 #ifdef VERIFY_HEAP
     PER_HEAP
@@ -2269,6 +2276,18 @@ protected:
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED
     void sync_promoted_bytes();
+
+    PER_HEAP
+    void set_heap_for_contained_basic_regions (heap_segment* region, gc_heap* hp);
+
+    PER_HEAP
+    heap_segment* unlink_first_rw_region (int gen_idx);
+
+    PER_HEAP
+    void thread_rw_region_front (int gen_idx, heap_segment* region);
+
+    PER_HEAP_ISOLATED
+    void equalize_promoted_bytes();
 #endif //USE_REGIONS
 
 #if !defined(USE_REGIONS) || defined(_DEBUG)
@@ -3440,6 +3459,9 @@ protected:
     PER_HEAP
     void decommit_mark_array_by_seg (heap_segment* seg);
 
+    PER_HEAP_ISOLATED
+    bool should_update_end_mark_size();
+
     PER_HEAP
     void background_mark_phase();
 
@@ -3592,9 +3614,6 @@ public:
 
     PER_HEAP
     int num_sip_regions;
-
-    PER_HEAP
-    size_t committed_in_free;
 
     PER_HEAP
     // After plan we calculate this as the planned end gen0 space;
@@ -4267,6 +4286,9 @@ protected:
     size_t     bgc_loh_size_increased;
     PER_HEAP
     size_t     bgc_poh_size_increased;
+
+    PER_HEAP
+    size_t     background_soh_size_end_mark;
 
     PER_HEAP
     size_t     background_soh_alloc_count;
@@ -5307,6 +5329,12 @@ heap_segment*& generation_tail_ro_region (generation* inst)
 {
   return inst->tail_ro_region;
 }
+
+inline
+heap_segment* generation_start_segment_rw (generation* inst)
+{
+    return inst->tail_ro_region != nullptr ? inst->tail_ro_region : inst->start_segment;
+}
 #endif //USE_REGIONS
 
 inline
@@ -5596,6 +5624,13 @@ public:
     int             survived;
     int             old_card_survived;
     int             pinned_survived;
+    // at the end of each GC, we increase each region in the region free list
+    // by 1. So we can observe if a region stays in the free list over many
+    // GCs. We stop at 99. It's initialized to 0 when a region is added to
+    // the region's free list.
+    #define MAX_AGE_IN_FREE 99
+    #define AGE_IN_FREE_TO_DECOMMIT 20
+    int             age_in_free;
     // This is currently only used by regions that are swept in plan -
     // we then thread this list onto the generation's free list.
     // We may keep per region free list later which requires more work.
@@ -6018,6 +6053,11 @@ inline
 int& heap_segment_plan_gen_num (heap_segment* inst)
 {
     return inst->plan_gen_num;
+}
+inline
+int& heap_segment_age_in_free (heap_segment* inst)
+{
+    return inst->age_in_free;
 }
 inline
 int& heap_segment_survived (heap_segment* inst)

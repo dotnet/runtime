@@ -46,6 +46,7 @@ internal static partial class Interop
             WouldBlock,
             ServerAuthCompleted,
             ClientAuthCompleted,
+            ClientCertRequested,
         }
 
         internal enum PAL_TlsIo
@@ -100,11 +101,17 @@ internal static partial class Interop
             out int pOSStatus);
 
         [GeneratedDllImport(Interop.Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SslSetBreakOnCertRequested(
+            SafeSslHandle sslHandle,
+            int setBreak,
+            out int pOSStatus);
+
+        [GeneratedDllImport(Interop.Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_SslSetCertificate(
             SafeSslHandle sslHandle,
             SafeCreateHandle cfCertRefs);
 
-        [GeneratedDllImport(Interop.Libraries.AppleCryptoNative, CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Interop.Libraries.AppleCryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial int AppleCryptoNative_SslSetTargetName(
             SafeSslHandle sslHandle,
             string targetName,
@@ -153,6 +160,22 @@ internal static partial class Interop
 
         [GeneratedDllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetEnabledCipherSuites")]
         internal static unsafe partial int SslSetEnabledCipherSuites(SafeSslHandle sslHandle, uint* cipherSuites, int numCipherSuites);
+
+        [GeneratedDllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetCertificateAuthorities")]
+        internal static partial int SslSetCertificateAuthorities(SafeSslHandle sslHandle, SafeCreateHandle certificateOrArray, int replaceExisting);
+
+        internal static unsafe void SslSetCertificateAuthorities(SafeSslHandle sslHandle, Span<IntPtr> certificates, bool replaceExisting)
+        {
+            using (SafeCreateHandle cfCertRefs = CoreFoundation.CFArrayCreate(certificates))
+            {
+                int osStatus = SslSetCertificateAuthorities(sslHandle, cfCertRefs, replaceExisting ? 1 : 0);
+
+                if (osStatus != 0)
+                {
+                    throw CreateExceptionForOSStatus(osStatus);
+                }
+            }
+        }
 
         internal static void SslSetAcceptClientCert(SafeSslHandle sslHandle)
         {
@@ -263,6 +286,25 @@ internal static partial class Interop
             }
 
             Debug.Fail($"AppleCryptoNative_SslSetBreakOnClientAuth returned {result}");
+            throw new SslException();
+        }
+
+        internal static void SslBreakOnCertRequested(SafeSslHandle sslHandle, bool setBreak)
+        {
+            int osStatus;
+            int result = AppleCryptoNative_SslSetBreakOnCertRequested(sslHandle, setBreak ? 1 : 0, out osStatus);
+
+            if (result == 1)
+            {
+                return;
+            }
+
+            if (result == 0)
+            {
+                throw CreateExceptionForOSStatus(osStatus);
+            }
+
+            Debug.Fail($"AppleCryptoNative_SslSetBreakOnCertRequested returned {result}");
             throw new SslException();
         }
 

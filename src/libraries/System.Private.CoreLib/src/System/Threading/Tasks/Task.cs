@@ -10,13 +10,11 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
 {
@@ -260,7 +258,21 @@ namespace System.Threading.Tasks
             internal void SetCompleted()
             {
                 ManualResetEventSlim? mres = m_completionEvent;
-                if (mres != null) mres.Set();
+                if (mres != null) SetEvent(mres);
+            }
+
+            internal static void SetEvent(ManualResetEventSlim mres)
+            {
+                try
+                {
+                    mres.Set();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // The event may have been exposed to external code, in which case it could have been disposed
+                    // prematurely / erroneously.  To avoid that causing problems for the unrelated stack trying to
+                    // set the event, eat any disposed exceptions.
+                }
             }
 
             /// <summary>
@@ -1483,7 +1495,7 @@ namespace System.Threading.Tasks
                     {
                         // We published the event as unset, but the task has subsequently completed.
                         // Set the event's state properly so that callers don't deadlock.
-                        newMre.Set();
+                        ContingentProperties.SetEvent(newMre);
                     }
                 }
 
@@ -1619,7 +1631,7 @@ namespace System.Threading.Tasks
                         // will deadlock; an ensuing Set() will not wake them up.  In the event of an AppDomainUnload,
                         // there is no guarantee that anyone else is going to signal the event, and it does no harm to
                         // call Set() twice on m_completionEvent.
-                        if (!ev.IsSet) ev.Set();
+                        ContingentProperties.SetEvent(ev);
 
                         // Finally, dispose of the event
                         ev.Dispose();
@@ -2428,7 +2440,7 @@ namespace System.Threading.Tasks
         #region Await Support
         /// <summary>Gets an awaiter used to await this <see cref="System.Threading.Tasks.Task"/>.</summary>
         /// <returns>An awaiter instance.</returns>
-        /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
+        /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
         public TaskAwaiter GetAwaiter()
         {
             return new TaskAwaiter(this);
@@ -4552,7 +4564,7 @@ namespace System.Threading.Tasks
                     // Find continuationObject in the continuation list
                     int index = continuationsLocalListRef.IndexOf(continuationObject);
 
-                    if (index != -1)
+                    if (index >= 0)
                     {
                         // null out that TaskContinuation entry, which will be interpreted as "to be cleaned up"
                         continuationsLocalListRef[index] = null;
@@ -5627,6 +5639,20 @@ namespace System.Threading.Tasks
                 _registration = token.UnsafeRegister(static (state, cancellationToken) =>
                 {
                     var thisRef = (DelayPromiseWithCancellation)state!;
+
+                    // Normally RunContinuationsAsynchronously is set at construction time.  We don't want to
+                    // set it at construction because we want the timer firing (already on a thread pool thread with
+                    // a stack in which it's fine to execute arbitrary code) to synchronously invoke any continuations
+                    // from this task.  However, a cancellation request will come synchronously from a call to
+                    // CancellationTokenSource.Cancel, and we don't want to invoke arbitrary continuations from
+                    // this delay task as part of that Cancel call.  As such, we set RunContinuationsAsynchronously
+                    // after the fact, only when the task is being completed due to cancellation.  There is a race
+                    // condition here, such that if the timer also fired concurrently, it might win, in which case
+                    // it might also observe this RunContinuationsAsynchronously, but that's benign.  An alternative
+                    // is to make the whole cancellation registration queue, but that's visible in that the Task's
+                    // IsCompleted wouldn't be set synchronously as part of IsCompleted.
+                    thisRef.AtomicStateUpdate((int)TaskCreationOptions.RunContinuationsAsynchronously, 0);
+
                     if (thisRef.TrySetCanceled(cancellationToken))
                     {
                         thisRef.Cleanup();
@@ -6187,8 +6213,7 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
         /// </exception>
-        public static Task<Task> WhenAny(Task task1, Task task2) =>
-            (task1 is null) || (task2 is null) ? throw new ArgumentNullException(task1 is null ? nameof(task1) : nameof(task2)) :
+        public static Task<Task> WhenAny(Task task1!!, Task task2!!) =>
             task1.IsCompleted ? FromResult(task1) :
             task2.IsCompleted ? FromResult(task2) :
             new TwoTaskWhenAnyPromise<Task>(task1, task2);
@@ -6380,8 +6405,7 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
         /// </exception>
-        public static Task<Task<TResult>> WhenAny<TResult>(Task<TResult> task1, Task<TResult> task2) =>
-            (task1 is null) || (task2 is null) ? throw new ArgumentNullException(task1 is null ? nameof(task1) : nameof(task2)) :
+        public static Task<Task<TResult>> WhenAny<TResult>(Task<TResult> task1!!, Task<TResult> task2!!) =>
             task1.IsCompleted ? FromResult(task1) :
             task2.IsCompleted ? FromResult(task2) :
             new TwoTaskWhenAnyPromise<Task<TResult>>(task1, task2);

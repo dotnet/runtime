@@ -132,7 +132,7 @@ class     Frame;
 class     ThreadBaseObject;
 class     AppDomainStack;
 class     LoadLevelLimiter;
-class     DomainFile;
+class     DomainAssembly;
 class     DeadlockAwareLock;
 struct    HelperMethodFrameCallerList;
 class     ThreadLocalIBCInfo;
@@ -2819,7 +2819,7 @@ private:
     StackWalkAction MakeStackwalkerCallback(CrawlFrame* pCF, PSTACKWALKFRAMESCALLBACK pCallback, VOID* pData DEBUG_ARG(UINT32 uLoopIteration));
 
 #ifdef _DEBUG
-    void            DebugLogStackWalkInfo(CrawlFrame* pCF, __in_z LPCSTR pszTag, UINT32 uLoopIteration);
+    void            DebugLogStackWalkInfo(CrawlFrame* pCF, _In_z_ LPCSTR pszTag, UINT32 uLoopIteration);
 #endif // _DEBUG
 
 public:
@@ -3075,6 +3075,14 @@ private:
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
     static void __stdcall RedirectedHandledJITCaseForGCStress();
 #endif // defined(HAVE_GCCOVER) && USE_REDIRECT_FOR_GCSTRESS
+
+#ifdef TARGET_X86
+    // RtlRestoreContext is available on x86, but relatively recently.
+    // RestoreContextSimulated uses SEH machinery for a similar result on legacy OS-es.
+    // This function should not be used on new OS-es as the pattern is not
+    // guaranteed to continue working in the future.
+    static void RestoreContextSimulated(Thread* pThread, CONTEXT* pCtx, void* pFrame, DWORD dwLastError);
+#endif
 
     friend void CPFH_AdjustContextForThreadSuspensionRace(T_CONTEXT *pContext, Thread *pThread);
 #endif // FEATURE_HIJACK && !TARGET_UNIX

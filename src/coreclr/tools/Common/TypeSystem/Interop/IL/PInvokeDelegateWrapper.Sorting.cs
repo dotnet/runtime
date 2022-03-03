@@ -6,9 +6,9 @@ namespace Internal.TypeSystem.Interop
     // Functionality related to determinstic ordering of types
     partial class PInvokeDelegateWrapper
     {
-        protected internal override int ClassCode => -262930217;
+        protected override int ClassCode => -262930217;
 
-        protected internal override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
+        protected override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
         {
             return comparer.Compare(DelegateType, ((PInvokeDelegateWrapper)other).DelegateType);
         }

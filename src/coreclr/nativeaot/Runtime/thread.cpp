@@ -607,13 +607,13 @@ static void* GcStressHijackTargets[1] =
 // static
 bool Thread::IsHijackTarget(void * address)
 {
-    for (int i = 0; i < COUNTOF(NormalHijackTargets); i++)
+    for (size_t i = 0; i < ARRAY_SIZE(NormalHijackTargets); i++)
     {
         if (NormalHijackTargets[i] == address)
             return true;
     }
 #ifdef FEATURE_GC_STRESS
-    for (int i = 0; i < COUNTOF(GcStressHijackTargets); i++)
+    for (size_t i = 0; i < ARRAY_SIZE(GcStressHijackTargets); i++)
     {
         if (GcStressHijackTargets[i] == address)
             return true;
@@ -1202,10 +1202,7 @@ void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
         // The TSF_DoNotTriggerGc mode is handled by the fast path (InlineTryFastReversePInvoke or equivalent assembly code)
         ASSERT(!IsDoNotTriggerGcSet());
 
-        // The platform specific assembly PInvoke helpers will route this fault to the class library inferred from the return
-        // address for nicer error reporting. For configurations without assembly helpers, we are going to fail fast without
-        // going through the class library here.
-        // RhpReversePInvokeBadTransition(return address);
+        PalPrintFatalError("\nFatal error. Invalid Program: attempted to call a UnmanagedCallersOnly method from managed code.\n");
         RhFailFast();
    }
 

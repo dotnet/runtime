@@ -117,7 +117,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             int assemId;
             int objectId = (int)nameInfo._objectId;
 
-            Debug.Assert(typeNameInfo != null); // Explicitly called with null, asserting for now https://github.com/dotnet/runtime/issues/31402
+            Debug.Assert(typeNameInfo != null); // Explicitly called with null. Potential bug, but closed as Won't Fix: https://github.com/dotnet/runtime/issues/31402
             string? objectName = objectId < 0 ?
                 typeNameInfo.NIname : // Nested Object
                 nameInfo.NIname; // Non-Nested
@@ -166,7 +166,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 var assemIdA = new int[numMembers];
                 for (int i = 0; i < numMembers; i++)
                 {
-                    object? typeInformation = null;
+                    object? typeInformation;
                     binaryTypeEnumA[i] = BinaryTypeConverter.GetBinaryTypeInfo(memberTypes[i], memberObjectInfos[i], null, _objectWriter, out typeInformation, out assemId);
                     typeInformationA[i] = typeInformation;
                     assemIdA[i] = assemId;
@@ -208,7 +208,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             var lengthA = new int[1];
             lengthA[0] = length;
             int[]? lowerBoundA = null;
-            object? typeInformation = null;
+            object? typeInformation;
 
             if (lowerBound == 0)
             {
@@ -290,8 +290,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
             var lengthA = new int[1];
             lengthA[0] = length;
             int[]? lowerBoundA = null;
-            object? typeInformation = null;
-            int assemId = 0;
+            object? typeInformation;
+            int assemId;
 
             if (lowerBound == 0)
             {
@@ -320,8 +320,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
             InternalWriteItemNull();
 
             BinaryArrayTypeEnum binaryArrayTypeEnum = BinaryArrayTypeEnum.Rectangular;
-            object? typeInformation = null;
-            int assemId = 0;
+            object? typeInformation;
+            int assemId;
             BinaryTypeEnum binaryTypeEnum = BinaryTypeConverter.GetBinaryTypeInfo(arrayElemTypeNameInfo._type!, objectInfo, arrayElemTypeNameInfo.NIname, _objectWriter, out typeInformation, out assemId);
 
             if (_binaryArray == null)

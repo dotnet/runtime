@@ -16,7 +16,7 @@ namespace DebuggerTests
             { "MONO_TYPE_OBJECT",      TObject("object", is_null: true),                        TObject("object") },
             { "MONO_TYPE_CLASS",       TObject("DebuggerTests.MONO_TYPE_CLASS", is_null: true), TObject("DebuggerTests.MONO_TYPE_CLASS") },
             { "MONO_TYPE_BOOLEAN",     TBool(default),                                          TBool(true) },
-            { "MONO_TYPE_CHAR",        TSymbol("0 '\u0000'"),                                   TSymbol("97 'a'") },
+            { "MONO_TYPE_CHAR",        TChar('\u0000'),                                         TChar('a') },
             { "MONO_TYPE_STRING",      TString(default),                                        TString("hello") },
             { "MONO_TYPE_ENUM",        TEnum("DebuggerTests.RGB", "Red"),                       TEnum("DebuggerTests.RGB", "Blue") },
             { "MONO_TYPE_ARRAY",       TObject("byte[]", is_null: true),                        TArray("byte[]", "byte[2]") },
@@ -49,7 +49,7 @@ namespace DebuggerTests
                 locals_fn: async (locals) =>
                 {
                     Assert.Equal(2, locals.Count());
-                    Check(locals, "r", checkDefault);
+                    await Check(locals, "r", checkDefault);
                     await Task.CompletedTask;
                 }
             );
@@ -59,7 +59,7 @@ namespace DebuggerTests
                 locals_fn: async (locals) =>
                 {
                     Assert.Equal(2, locals.Count());
-                    Check(locals, "r", checkValue);
+                    await Check(locals, "r", checkValue);
                     await Task.CompletedTask;
                 }
             );

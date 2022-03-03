@@ -5,27 +5,57 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Text;
 
 namespace Microsoft.Interop
 {
-
     /// <summary>
-    /// Class for reporting diagnostics in the DLL import generator
+    /// Class for reporting diagnostics in the library import generator
     /// </summary>
     public class GeneratorDiagnostics : IGeneratorDiagnostics
     {
         public class Ids
         {
-            public const string Prefix = "DLLIMPORTGEN";
-            public const string TypeNotSupported = Prefix + "001";
-            public const string ConfigurationNotSupported = Prefix + "002";
-            public const string TargetFrameworkNotSupported = Prefix + "003";
+            // SYSLIB1050-SYSLIB1059 are reserved for LibraryImportGenerator
+            public const string Prefix = "SYSLIB";
+            public const string InvalidLibraryImportAttributeUsage = Prefix + "1050";
+            public const string TypeNotSupported = Prefix + "1051";
+            public const string ConfigurationNotSupported = Prefix + "1052";
+            public const string TargetFrameworkNotSupported = Prefix + "1053";
+            public const string CannotForwardToDllImport = Prefix + "1054";
         }
 
-        private const string Category = "SourceGeneration";
+        private const string Category = "LibraryImportGenerator";
+
+        public static readonly DiagnosticDescriptor InvalidAttributedMethodSignature =
+            new DiagnosticDescriptor(
+            Ids.InvalidLibraryImportAttributeUsage,
+            GetResourceString(nameof(Resources.InvalidLibraryImportAttributeUsageTitle)),
+            GetResourceString(nameof(Resources.InvalidAttributedMethodSignatureMessage)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            description: GetResourceString(nameof(Resources.InvalidAttributedMethodDescription)));
+
+        public static readonly DiagnosticDescriptor InvalidAttributedMethodContainingTypeMissingModifiers =
+            new DiagnosticDescriptor(
+            Ids.InvalidLibraryImportAttributeUsage,
+            GetResourceString(nameof(Resources.InvalidLibraryImportAttributeUsageTitle)),
+            GetResourceString(nameof(Resources.InvalidAttributedMethodContainingTypeMissingModifiersMessage)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            description: GetResourceString(nameof(Resources.InvalidAttributedMethodDescription)));
+
+        public static readonly DiagnosticDescriptor InvalidStringMarshallingConfiguration =
+            new DiagnosticDescriptor(
+            Ids.InvalidLibraryImportAttributeUsage,
+            GetResourceString(nameof(Resources.InvalidLibraryImportAttributeUsageTitle)),
+            GetResourceString(nameof(Resources.InvalidStringMarshallingConfigurationMessage)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            description: GetResourceString(nameof(Resources.InvalidStringMarshallingConfigurationDescription)));
 
         public static readonly DiagnosticDescriptor ParameterTypeNotSupported =
             new DiagnosticDescriptor(
@@ -127,9 +157,37 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.TargetFrameworkNotSupportedDescription)));
 
+        public static readonly DiagnosticDescriptor CannotForwardToDllImport =
+            new DiagnosticDescriptor(
+                Ids.CannotForwardToDllImport,
+                GetResourceString(nameof(Resources.CannotForwardToDllImportTitle)),
+                GetResourceString(nameof(Resources.CannotForwardToDllImportMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(Resources.CannotForwardToDllImportDescription)));
+
         private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 
         public IEnumerable<Diagnostic> Diagnostics => _diagnostics;
+
+        /// <summary>
+        /// Report diagnostic for invalid configuration for string marshalling.
+        /// </summary>
+        /// <param name="attributeData">Attribute specifying the invalid configuration</param>
+        /// <param name="methodName">Name of the method</param>
+        /// <param name="detailsMessage">Specific reason the configuration is invalid</param>
+        public void ReportInvalidStringMarshallingConfiguration(
+            AttributeData attributeData,
+            string methodName,
+            string detailsMessage)
+        {
+            _diagnostics.Add(
+                attributeData.CreateDiagnostic(
+                    GeneratorDiagnostics.InvalidStringMarshallingConfiguration,
+                    methodName,
+                    detailsMessage));
+        }
 
         /// <summary>
         /// Report diagnostic for configuration that is not supported by the DLL import source generator
@@ -272,6 +330,21 @@ namespace Microsoft.Interop
                     TargetFrameworkNotSupported,
                     Location.None,
                     minimumSupportedVersion.ToString(2)));
+        }
+
+        /// <summary>
+        /// Report diagnostic for configuration that cannot be forwarded to <see cref="DllImportAttribute" />
+        /// </summary>
+        /// <param name="method">Method with the configuration that cannot be forwarded</param>
+        /// <param name="name">Configuration name</param>
+        /// <param name="value">Configuration value</param>
+        public void ReportCannotForwardToDllImport(MethodDeclarationSyntax method, string name, string? value = null)
+        {
+            _diagnostics.Add(
+                Diagnostic.Create(
+                    CannotForwardToDllImport,
+                    Location.Create(method.SyntaxTree, method.Identifier.Span),
+                    value is null ? name : $"{name}={value}"));
         }
 
         private static LocalizableResourceString GetResourceString(string resourceName)

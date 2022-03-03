@@ -99,8 +99,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                     foreach (TypeDefinitionHandle typeDefinitionHandle in namespaceDefinition.TypeDefinitions)
                     {
                         string fullName = ns + typeDefinitionHandle.GetTypeDefinition(reader).Name.GetString(reader).ToLowerInvariant();
-                        QHandle existingValue;
-                        if (!dict.TryGetValue(fullName, out existingValue))
+                        if (!dict.TryGetValue(fullName, out _))
                         {
                             dict.Add(fullName, new QHandle(reader, typeDefinitionHandle));
                         }
@@ -109,8 +108,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                     foreach (TypeForwarderHandle typeForwarderHandle in namespaceDefinition.TypeForwarders)
                     {
                         string fullName = ns + typeForwarderHandle.GetTypeForwarder(reader).Name.GetString(reader).ToLowerInvariant();
-                        QHandle existingValue;
-                        if (!dict.TryGetValue(fullName, out existingValue))
+                        if (!dict.TryGetValue(fullName, out _))
                         {
                             dict.Add(fullName, new QHandle(reader, typeForwarderHandle));
                         }

@@ -18,7 +18,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
-using Internal.Runtime.CompilerServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
@@ -39,7 +38,7 @@ namespace System.Threading
                 while (true)
                 {
                     WorkStealingQueue[] oldQueues = _queues;
-                    Debug.Assert(Array.IndexOf(oldQueues, queue) == -1);
+                    Debug.Assert(Array.IndexOf(oldQueues, queue) < 0);
 
                     var newQueues = new WorkStealingQueue[oldQueues.Length + 1];
                     Array.Copy(oldQueues, newQueues, oldQueues.Length);
@@ -63,7 +62,7 @@ namespace System.Threading
                     }
 
                     int pos = Array.IndexOf(oldQueues, queue);
-                    if (pos == -1)
+                    if (pos < 0)
                     {
                         Debug.Fail("Should have found the queue");
                         return;

@@ -40,44 +40,6 @@ struct CallInfo {
 	ArgInfo args [1];
 };
 
-/* Return whenever TYPE represents a vtype with only one scalar member */
-static gboolean
-is_scalar_vtype (MonoType *type)
-{
-	MonoClass *klass;
-	MonoClassField *field;
-	gpointer iter;
-
-	if (!MONO_TYPE_ISSTRUCT (type))
-		return FALSE;
-	klass = mono_class_from_mono_type_internal (type);
-	mono_class_init_internal (klass);
-
-	int size = mono_class_value_size (klass, NULL);
-	if (size == 0 || size >= 8)
-		return FALSE;
-
-	iter = NULL;
-	int nfields = 0;
-	field = NULL;
-	while ((field = mono_class_get_fields_internal (klass, &iter))) {
-		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
-			continue;
-		nfields ++;
-		if (nfields > 1)
-			return FALSE;
-		MonoType *t = mini_get_underlying_type (field->type);
-		if (MONO_TYPE_ISSTRUCT (t)) {
-			if (!is_scalar_vtype (t))
-				return FALSE;
-		} else if (!((MONO_TYPE_IS_PRIMITIVE (t) || MONO_TYPE_IS_REFERENCE (t)))) {
-			return FALSE;
-		}
-	}
-
-	return TRUE;
-}
-
 // WASM ABI: https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md
 
 static ArgStorage
@@ -117,7 +79,7 @@ get_storage (MonoType *type, gboolean is_return)
 		/* fall through */
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_TYPEDBYREF: {
-		if (is_scalar_vtype (type))
+		if (mini_wasm_is_scalar_vtype (type))
 			return ArgVtypeAsScalar;
 		return is_return ? ArgValuetypeAddrInIReg : ArgValuetypeAddrOnStack;
 	}
@@ -247,7 +209,6 @@ mono_arch_create_vars (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
 	CallInfo *cinfo;
-	MonoType *sig_ret;
 
 	sig = mono_method_signature_internal (cfg->method);
 
@@ -258,7 +219,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	// if (cinfo->ret.storage == ArgValuetypeInReg)
 	// 	cfg->ret_var_is_local = TRUE;
 
-	sig_ret = mini_get_underlying_type (sig->ret);
+	mini_get_underlying_type (sig->ret);
 	if (cinfo->ret.storage == ArgValuetypeAddrInIReg || cinfo->ret.storage == ArgGsharedVTOnStack) {
 		cfg->vret_addr = mono_compile_create_var (cfg, mono_get_int_type (), OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
@@ -546,6 +507,21 @@ mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
 	return 0;
 }
 
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
+
+void
+mono_runtime_install_handlers (void)
+{
+}
+
+void
+mono_init_native_crash_info (void)
+{
+	return;
+}
+
+#endif
+
 #ifdef HOST_BROWSER
 
 void
@@ -558,19 +534,8 @@ gboolean
 MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
 	g_error ("mono_chain_signal");
-	
+
 	return FALSE;
-}
-
-void
-mono_runtime_install_handlers (void)
-{
-}
-
-void
-mono_init_native_crash_info (void)
-{
-	return;
 }
 
 gboolean
@@ -681,8 +646,6 @@ mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpoi
 
 G_BEGIN_DECLS
 
-void * getgrnam (const char *name);
-void * getgrgid (gid_t gid);
 int inotify_init (void);
 int inotify_rm_watch (int fd, int wd);
 int inotify_add_watch (int fd, const char *pathname, uint32_t mask);
@@ -713,13 +676,6 @@ pthread_setschedparam(pthread_t thread, int policy, const struct sched_param *pa
 }
 
 int
-pthread_sigmask (int how, const sigset_t *set, sigset_t *oset)
-{
-	return 0;
-}
-
-
-int
 sigsuspend(const sigset_t *sigmask)
 {
 	g_error ("sigsuspend");
@@ -730,18 +686,6 @@ int
 getdtablesize (void)
 {
 	return 256; //random constant that is the fd limit
-}
-
-void *
-getgrnam (const char *name)
-{
-	return NULL;
-}
-
-void *
-getgrgid (gid_t gid)
-{
-	return NULL;
 }
 
 int
@@ -781,22 +725,6 @@ ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count)
 	return -1;
 }
 
-int
-getpwnam_r (const char *name, struct passwd *pwd, char *buffer, size_t bufsize,
-			struct passwd **result)
-{
-	*result = NULL;
-	return ENOTSUP;
-}
-
-int
-getpwuid_r (uid_t uid, struct passwd *pwd, char *buffer, size_t bufsize,
-			struct passwd **result)
-{
-	*result = NULL;
-	return ENOTSUP;
-}
-
 G_END_DECLS
 
 /* Helper for runtime debugging */
@@ -818,7 +746,7 @@ mono_arch_load_function (MonoJitICallId jit_icall_id)
 	return NULL;
 }
 
-MONO_API void 
+MONO_API void
 mono_wasm_enable_debugging (int log_level)
 {
 	mono_wasm_debug_level = log_level;
@@ -828,4 +756,42 @@ int
 mono_wasm_get_debug_level (void)
 {
 	return mono_wasm_debug_level;
+}
+
+/* Return whenever TYPE represents a vtype with only one scalar member */
+gboolean
+mini_wasm_is_scalar_vtype (MonoType *type)
+{
+	MonoClass *klass;
+	MonoClassField *field;
+	gpointer iter;
+
+	if (!MONO_TYPE_ISSTRUCT (type))
+		return FALSE;
+	klass = mono_class_from_mono_type_internal (type);
+	mono_class_init_internal (klass);
+
+	int size = mono_class_value_size (klass, NULL);
+	if (size == 0 || size >= 8)
+		return FALSE;
+
+	iter = NULL;
+	int nfields = 0;
+	field = NULL;
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		nfields ++;
+		if (nfields > 1)
+			return FALSE;
+		MonoType *t = mini_get_underlying_type (field->type);
+		if (MONO_TYPE_ISSTRUCT (t)) {
+			if (!mini_wasm_is_scalar_vtype (t))
+				return FALSE;
+		} else if (!((MONO_TYPE_IS_PRIMITIVE (t) || MONO_TYPE_IS_REFERENCE (t) || MONO_TYPE_IS_POINTER (t)))) {
+			return FALSE;
+		}
+	}
+
+	return TRUE;
 }

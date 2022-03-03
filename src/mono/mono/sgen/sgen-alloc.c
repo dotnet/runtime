@@ -52,7 +52,7 @@ static guint64 stat_bytes_alloced_los = 0;
  * This is not constantly syncrhonized, but only updated on each GC. */
 static guint64 bytes_allocated_attached = 0;
 
-/* Total bytes allocated so far in program execution by detached threads */ 
+/* Total bytes allocated so far in program execution by detached threads */
 static guint64 bytes_allocated_detached = 0;
 
 /*
@@ -532,7 +532,7 @@ sgen_clear_tlabs (void)
 	} FOREACH_THREAD_END
 
 	sgen_set_bytes_allocated_attached (total_bytes_allocated_globally);
-} 
+}
 
 void sgen_update_allocation_count (void)
 {
@@ -553,7 +553,7 @@ sgen_set_bytes_allocated_attached (guint64 bytes)
 }
 
 void
-sgen_increment_bytes_allocated_detached (guint64 bytes) 
+sgen_increment_bytes_allocated_detached (guint64 bytes)
 {
 	bytes_allocated_detached += bytes;
 }
@@ -561,16 +561,16 @@ sgen_increment_bytes_allocated_detached (guint64 bytes)
 guint64
 sgen_get_total_allocated_bytes (MonoBoolean precise)
 {
-	if (precise) {	
+	if (precise) {
 		LOCK_GC;
 		sgen_stop_world (0, FALSE);
 
 		sgen_update_allocation_count ();
-		
+
 		sgen_restart_world (0, FALSE);
 		UNLOCK_GC;
 	}
-	
+
 	return bytes_allocated_attached + bytes_allocated_detached;
 }
 

@@ -376,6 +376,10 @@ void SetThread(Thread* t)
     LIMITED_METHOD_CONTRACT
 
     gCurrentThreadInfo.m_pThread = t;
+    if (t != NULL)
+    {
+        EnsureTlsDestructionMonitor();
+    }
 }
 
 void SetAppDomain(AppDomain* ad)
@@ -1124,8 +1128,12 @@ extern "C" void *JIT_WriteBarrier_Loc;
 
 #ifdef TARGET_ARM64
 extern "C" void (*JIT_WriteBarrier_Table)();
-extern "C" void *JIT_WriteBarrier_Loc = 0;
-extern "C" void *JIT_WriteBarrier_Table_Loc = 0;
+
+extern "C" void *JIT_WriteBarrier_Loc;
+void *JIT_WriteBarrier_Loc = 0;
+
+extern "C" void *JIT_WriteBarrier_Table_Loc;
+void *JIT_WriteBarrier_Table_Loc = 0;
 #endif // TARGET_ARM64
 
 #ifdef TARGET_ARM
@@ -8526,8 +8534,8 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
         DacEnumCodeForStackwalk(callEnd);
 
         // To stackwalk through funceval frames, we need to be sure to preserve the
-        // DebuggerModule's m_pRuntimeDomainFile.  This is the only case that doesn't use the current
-        // vmDomainFile in code:DacDbiInterfaceImpl::EnumerateInternalFrames.  The following
+        // DebuggerModule's m_pRuntimeDomainAssembly.  This is the only case that doesn't use the current
+        // vmDomainAssembly in code:DacDbiInterfaceImpl::EnumerateInternalFrames.  The following
         // code mimics that function.
         // Allow failure, since we want to continue attempting to walk the stack regardless of the outcome.
         EX_TRY

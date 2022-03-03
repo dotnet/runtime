@@ -35,7 +35,7 @@ public:
     TypeNamesList();
     ~TypeNamesList();
 
-    HRESULT Init(__in_z LPCWSTR str);
+    HRESULT Init(_In_z_ LPCWSTR str);
     bool IsInList(LPCUTF8 typeName);
 };
 #endif
@@ -244,7 +244,7 @@ public:
         } CONTRACTL_END
         return RegexOrExactMatch(pszBreakOnStructMarshalSetup, className);
     }
-    static HRESULT ParseTypeList(__in_z LPWSTR str, TypeNamesList** out);
+    static HRESULT ParseTypeList(_In_z_ LPWSTR str, TypeNamesList** out);
     static void DestroyTypeList(TypeNamesList* list);
 
     inline bool ShouldGcCoverageOnMethod(LPCUTF8 methodName) const
@@ -491,7 +491,7 @@ private: //----------------------------------------------------------------
     bool   m_fInteropLogArguments; // Log all pinned arguments passed to an interop call
 
 #ifdef _DEBUG
-    static HRESULT ParseMethList(__in_z LPWSTR str, MethodNamesList* * out);
+    static HRESULT ParseMethList(_In_z_ LPWSTR str, MethodNamesList* * out);
     static void DestroyMethList(MethodNamesList* list);
     static bool IsInMethList(MethodNamesList* list, MethodDesc* pMD);
 

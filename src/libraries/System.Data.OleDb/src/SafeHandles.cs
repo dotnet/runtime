@@ -665,9 +665,8 @@ namespace System.Data.OleDb
     {
         internal static unsafe OleDbHResult IChapteredRowsetReleaseChapter(System.IntPtr ptr, System.IntPtr chapter)
         {
-            OleDbHResult hr = OleDbHResult.E_UNEXPECTED;
+            OleDbHResult hr;
             IntPtr hchapter = chapter;
-            System.Data.Common.UnsafeNativeMethods.IChapteredRowset? chapteredRowset = null;
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
@@ -677,8 +676,8 @@ namespace System.Data.OleDb
                 hr = (OleDbHResult)Marshal.QueryInterface(ptr, ref IID_IChapteredRowset, out var pChapteredRowset);
                 if (pChapteredRowset != IntPtr.Zero)
                 {
-                    chapteredRowset = (System.Data.Common.UnsafeNativeMethods.IChapteredRowset)Marshal.GetObjectForIUnknown(pChapteredRowset);
-                    hr = (OleDbHResult)chapteredRowset.ReleaseChapter(hchapter, out var refcount);
+                    var chapteredRowset = (System.Data.Common.UnsafeNativeMethods.IChapteredRowset)Marshal.GetObjectForIUnknown(pChapteredRowset);
+                    hr = (OleDbHResult)chapteredRowset.ReleaseChapter(hchapter, out _);
                     Marshal.ReleaseComObject(chapteredRowset);
                     Marshal.Release(pChapteredRowset);
                 }
@@ -688,8 +687,7 @@ namespace System.Data.OleDb
 
         internal static unsafe OleDbHResult ITransactionAbort(System.IntPtr ptr)
         {
-            OleDbHResult hr = OleDbHResult.E_UNEXPECTED;
-            ITransactionLocal? transactionLocal = null;
+            OleDbHResult hr;
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
@@ -699,7 +697,7 @@ namespace System.Data.OleDb
                 hr = (OleDbHResult)Marshal.QueryInterface(ptr, ref IID_ITransactionLocal, out var pTransaction);
                 if (pTransaction != IntPtr.Zero)
                 {
-                    transactionLocal = (ITransactionLocal)Marshal.GetObjectForIUnknown(pTransaction);
+                    ITransactionLocal transactionLocal = (ITransactionLocal)Marshal.GetObjectForIUnknown(pTransaction);
                     hr = (OleDbHResult)transactionLocal.Abort(IntPtr.Zero, false, false);
                     Marshal.ReleaseComObject(transactionLocal);
                     Marshal.Release(pTransaction);
@@ -710,8 +708,7 @@ namespace System.Data.OleDb
 
         internal static unsafe OleDbHResult ITransactionCommit(System.IntPtr ptr)
         {
-            OleDbHResult hr = OleDbHResult.E_UNEXPECTED;
-            ITransactionLocal? transactionLocal = null;
+            OleDbHResult hr;
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
@@ -721,7 +718,7 @@ namespace System.Data.OleDb
                 hr = (OleDbHResult)Marshal.QueryInterface(ptr, ref IID_ITransactionLocal, out var pTransaction);
                 if (pTransaction != IntPtr.Zero)
                 {
-                    transactionLocal = (ITransactionLocal)Marshal.GetObjectForIUnknown(pTransaction);
+                    ITransactionLocal transactionLocal = (ITransactionLocal)Marshal.GetObjectForIUnknown(pTransaction);
                     hr = (OleDbHResult)transactionLocal.Commit(false, (uint)XACTTC.XACTTC_SYNC_PHASETWO, 0);
                     Marshal.ReleaseComObject(transactionLocal);
                     Marshal.Release(pTransaction);

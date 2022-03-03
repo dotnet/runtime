@@ -4,8 +4,11 @@
     <WasmMainJSPath>main.mjs</WasmMainJSPath>
     <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     <WasmEnableES6>true</WasmEnableES6>
-  </PropertyGroup>
 
+    <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
+    <ExpectedExitCode>2</ExpectedExitCode>
+    <RunScriptCommand>$(ExecXHarnessCmd) wasm test --app=. --engine=NodeJS --engine-arg=--stack-trace-limit=1000 --js-file=main.mjs --output-directory=$(XHarnessOutput) --expected-exit-code $(ExpectedExitCode) -- --run $(MSBuildProjectName).dll</RunScriptCommand>
+  </PropertyGroup>
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="package.json" />

@@ -10,12 +10,11 @@ using System.Runtime.Loader;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Threading;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
     [NonVersionable]
-    public unsafe partial struct RuntimeTypeHandle : ISerializable
+    public unsafe partial struct RuntimeTypeHandle : IEquatable<RuntimeTypeHandle>, ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
         internal RuntimeTypeHandle GetNativeHandle()
@@ -519,7 +518,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IRuntimeMethodInfo GetDeclaringMethod(RuntimeType type);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeByName", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeByName", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void GetTypeByName(string name, bool throwOnError, bool ignoreCase, StackCrawlMarkHandle stackMark,
             ObjectHandleOnStack assemblyLoadContext,
             ObjectHandleOnStack type, ObjectHandleOnStack keepalive);
@@ -553,13 +552,12 @@ namespace System
             return type;
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeByNameUsingCARules", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeByNameUsingCARules", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void GetTypeByNameUsingCARules(string name, QCallModule scope, ObjectHandleOnStack type);
 
         internal static RuntimeType GetTypeByNameUsingCARules(string name, RuntimeModule scope)
         {
-            if (string.IsNullOrEmpty(name))
-                throw new ArgumentException(null, nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             RuntimeType? type = null;
             GetTypeByNameUsingCARules(name, new QCallModule(ref scope), ObjectHandleOnStack.Create(ref type));
@@ -814,7 +812,7 @@ namespace System
     }
 
     [NonVersionable]
-    public unsafe partial struct RuntimeMethodHandle : ISerializable
+    public unsafe partial struct RuntimeMethodHandle : IEquatable<RuntimeMethodHandle>, ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
         internal static IRuntimeMethodInfo EnsureNonNullMethodInfo(IRuntimeMethodInfo method)
@@ -1139,7 +1137,7 @@ namespace System
     }
 
     [NonVersionable]
-    public unsafe struct RuntimeFieldHandle : ISerializable
+    public unsafe struct RuntimeFieldHandle : IEquatable<RuntimeFieldHandle>, ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
         internal RuntimeFieldHandle GetNativeHandle()
@@ -1246,7 +1244,7 @@ namespace System
         }
     }
 
-    public unsafe partial struct ModuleHandle
+    public unsafe partial struct ModuleHandle : IEquatable<ModuleHandle>
     {
         #region Public Static Members
         public static readonly ModuleHandle EmptyHandle;

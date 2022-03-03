@@ -22,6 +22,9 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetAlpnSelectCb")]
         internal static unsafe partial void SslCtxSetAlpnSelectCb(SafeSslContextHandle ctx, delegate* unmanaged<IntPtr, byte**, byte*, byte*, uint, IntPtr, int> callback, IntPtr arg);
 
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetCaching")]
+        internal static unsafe partial void SslCtxSetCaching(SafeSslContextHandle ctx, int mode);
+
         internal static bool AddExtraChainCertificates(SafeSslContextHandle ctx, X509Certificate2[] chain)
         {
             // send pre-computed list of intermediates.

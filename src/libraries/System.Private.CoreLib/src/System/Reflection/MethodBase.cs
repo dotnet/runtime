@@ -6,7 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Reflection
 {

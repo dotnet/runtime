@@ -7,8 +7,6 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
-using Internal.Runtime.CompilerServices;
-
 namespace System
 {
     [ClassInterface(ClassInterfaceType.None)]
@@ -565,6 +563,7 @@ namespace System
         private static void ThrowNullThisInDelegateToInstance() =>
             throw new ArgumentException(SR.Arg_DlgtNullInst);
 
+#pragma warning disable IDE0060
         [System.Diagnostics.DebuggerNonUserCode]
         private void CtorClosed(object target, IntPtr methodPtr)
         {
@@ -629,5 +628,6 @@ namespace System
             this._methodPtrAux = GetCallStub(methodPtr);
             this._methodBase = System.Runtime.InteropServices.GCHandle.InternalGet(gchandle);
         }
+#pragma warning restore IDE0060
     }
 }

@@ -149,5 +149,13 @@ namespace Internal.IL.Stubs
                 return "__GetFieldHelper";
             }
         }
+
+        public override string DiagnosticName
+        {
+            get
+            {
+                return "__GetFieldHelper";
+            }
+        }
     }
 }

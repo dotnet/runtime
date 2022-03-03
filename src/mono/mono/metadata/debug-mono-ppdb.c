@@ -29,10 +29,12 @@
 #include <mono/utils/bsearch.h>
 #include <mono/utils/mono-logger-internals.h>
 
-#if HOST_WIN32 || HOST_WASM
+#ifndef DISABLE_EMBEDDED_PDB
+#ifdef INTERNAL_ZLIB
 #include <external/zlib/zlib.h>
-#elif HAVE_SYS_ZLIB
+#else
 #include <zlib.h>
+#endif
 #endif
 
 #include "debug-mono-ppdb.h"
@@ -162,7 +164,7 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 		return NULL;
 	}
 
-#if HOST_WIN32 || HOST_WASM || HAVE_SYS_ZLIB
+#ifndef DISABLE_EMBEDDED_PDB
 	if (ppdb_data) {
 		/* Embedded PPDB data */
 		/* ppdb_size is the uncompressed size */
@@ -503,7 +505,7 @@ mono_ppdb_get_seq_points_internal (MonoImage *image, MonoPPDBFile *ppdb, MonoMet
 	docidx = cols [MONO_METHODBODY_DOCUMENT];
 
 	if (!cols [MONO_METHODBODY_SEQ_POINTS])
-		return -1;
+		return 0;
 
 	ptr = mono_metadata_blob_heap (image, cols [MONO_METHODBODY_SEQ_POINTS]);
 	size = mono_metadata_decode_blob_size (ptr, &ptr);
@@ -597,7 +599,7 @@ gboolean
 mono_ppdb_get_seq_points_enc (MonoDebugMethodInfo *minfo, MonoPPDBFile *ppdb_file, int idx, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points)
 {
 	MonoMethod *method = minfo->method;
-	if (mono_ppdb_get_seq_points_internal (ppdb_file->image, ppdb_file, method, idx, source_file, source_file_list, source_files, seq_points, n_seq_points) > 0)
+	if (mono_ppdb_get_seq_points_internal (ppdb_file->image, ppdb_file, method, idx, source_file, source_file_list, source_files, seq_points, n_seq_points) >= 0)
 		return TRUE;
 	return FALSE;
 }

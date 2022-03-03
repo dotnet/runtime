@@ -32,7 +32,7 @@ namespace System.IO
         private readonly bool _exposable;   // Whether the array can be returned to the user.
         private bool _isOpen;      // Is this stream open or closed?
 
-        private Task<int>? _lastReadTask; // The last successful task returned from ReadAsync
+        private CachedCompletedInt32Task _lastReadTask; // The last successful task returned from ReadAsync
 
         private const int MemStreamMaxLength = int.MaxValue;
 
@@ -59,11 +59,8 @@ namespace System.IO
         {
         }
 
-        public MemoryStream(byte[] buffer, bool writable)
+        public MemoryStream(byte[] buffer!!, bool writable)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-
             _buffer = buffer;
             _length = _capacity = buffer.Length;
             _writable = writable;
@@ -80,10 +77,8 @@ namespace System.IO
         {
         }
 
-        public MemoryStream(byte[] buffer, int index, int count, bool writable, bool publiclyVisible)
+        public MemoryStream(byte[] buffer!!, int index, int count, bool writable, bool publiclyVisible)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
@@ -127,7 +122,7 @@ namespace System.IO
                     _writable = false;
                     _expandable = false;
                     // Don't set buffer to null - allow TryGetBuffer, GetBuffer & ToArray to work.
-                    _lastReadTask = null;
+                    _lastReadTask = default;
                 }
             }
             finally
@@ -389,10 +384,7 @@ namespace System.IO
             try
             {
                 int n = Read(buffer, offset, count);
-                Task<int>? t = _lastReadTask;
-                Debug.Assert(t == null || t.Status == TaskStatus.RanToCompletion,
-                    "Expected that a stored last task completed successfully");
-                return (t != null && t.Result == n) ? t : (_lastReadTask = Task.FromResult<int>(n));
+                return _lastReadTask.GetTask(n);
             }
             catch (OperationCanceledException oce)
             {
@@ -772,11 +764,8 @@ namespace System.IO
         }
 
         // Writes this MemoryStream to another stream.
-        public virtual void WriteTo(Stream stream)
+        public virtual void WriteTo(Stream stream!!)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream), SR.ArgumentNull_Stream);
-
             EnsureNotClosed();
 
             stream.Write(_buffer, _origin, _length - _origin);

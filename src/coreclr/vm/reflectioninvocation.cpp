@@ -1100,7 +1100,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
             LPVOID pReturnedReference = *(LPVOID*)&callDescrData.returnValue;
             if (pReturnedReference == NULL)
             {
-                COMPlusThrow(kNullReferenceException, IDS_INVOKE_NULLREF_RETURNED);
+                COMPlusThrow(kNullReferenceException, W("NullReference_InvokeNullRefReturned"));
             }
             CopyValueClass(gc.retVal->GetData(), pReturnedReference, gc.retVal->GetMethodTable());
         }
@@ -1123,7 +1123,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         LPVOID pReturnedReference = *(LPVOID*)&callDescrData.returnValue;
         if (pReturnedReference == NULL)
         {
-            COMPlusThrow(kNullReferenceException, IDS_INVOKE_NULLREF_RETURNED);
+            COMPlusThrow(kNullReferenceException, W("NullReference_InvokeNullRefReturned"));
         }
 
         gc.retVal = InvokeUtil::CreateObjectAfterInvoke(refReturnTargetTH, pReturnedReference);
@@ -1579,19 +1579,17 @@ extern "C" void QCALLTYPE ReflectionInvocation_RunClassConstructor(QCall::TypeHa
     END_QCALL;
 }
 
-// This method triggers the module constructor for a give module
+// This method triggers the module constructor for a given module
 extern "C" void QCALLTYPE ReflectionInvocation_RunModuleConstructor(QCall::ModuleHandle pModule)
 {
     QCALL_CONTRACT;
 
-    DomainFile *pDomainFile = pModule->GetDomainFile();
-    if (pDomainFile != NULL && pDomainFile->IsActive())
+    DomainAssembly *pDomainAssembly = pModule->GetDomainAssembly();
+    if (pDomainAssembly != NULL && pDomainAssembly->IsActive())
         return;
 
     BEGIN_QCALL;
-    if(pDomainFile == NULL)
-        pDomainFile = pModule->GetDomainFile();
-    pDomainFile->EnsureActive();
+    pDomainAssembly->EnsureActive();
     END_QCALL;
 }
 

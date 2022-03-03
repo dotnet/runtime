@@ -8,6 +8,8 @@ using System.Collections.Concurrent;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using ILLink.Shared;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
@@ -33,84 +35,6 @@ namespace ILCompiler
                 Debug.Assert(owner is EcmaMethod || owner is EcmaType);
                 TypeDesc ownerType = (owner as EcmaMethod)?.OwningType;
                 return _entitiesInCycles.Contains(owner) || (ownerType != null && _entitiesInCycles.Contains(ownerType));
-            }
-
-            // Chosen rather arbitrarily. For the app that I was looking at, cutoff point of 7 compiled
-            // more than 10 minutes on a release build of the compiler, and I lost patience.
-            // Cutoff point of 5 produced an 1.7 GB object file.
-            // Cutoff point of 4 produced an 830 MB object file.
-            // Cutoff point of 3 produced an 470 MB object file.
-            // We want this to be high enough so that it doesn't cut off too early. But also not too
-            // high because things that are recursive often end up expanding laterally as well
-            // through various other generic code the deep code calls into.
-            private const int CutoffPoint = 4;
-
-            public bool IsDeepPossiblyCyclicInstantiation(TypeSystemEntity entity)
-            {
-                if (entity is TypeDesc type)
-                {
-                    return IsDeepPossiblyCyclicInstantiation(type);
-                }
-                else
-                {
-                    return IsDeepPossiblyCyclicInstantiation((MethodDesc)entity);
-                }
-            }
-
-            public bool IsDeepPossiblyCyclicInstantiation(TypeDesc type, List<TypeDesc> seenTypes = null)
-            {
-                switch (type.Category)
-                {
-                    case TypeFlags.Array:
-                    case TypeFlags.SzArray:
-                        return IsDeepPossiblyCyclicInstantiation(((ParameterizedType)type).ParameterType, seenTypes);
-                    default:
-                        TypeDesc typeDef = type.GetTypeDefinition();
-                        if (type != typeDef)
-                        {
-                            (seenTypes ??= new List<TypeDesc>()).Add(typeDef);
-                            for (int i = 0; i < seenTypes.Count; i++)
-                            {
-                                TypeDesc typeToFind = seenTypes[i];
-                                int count = 1;
-                                for (int j = i + 1; j < seenTypes.Count; j++)
-                                {
-                                    if (seenTypes[j] == typeToFind)
-                                    {
-                                        count++;
-                                    }
-
-                                    if (count > CutoffPoint)
-                                    {
-                                        return true;
-                                    }
-                                }
-                            }
-
-                            bool result = IsDeepPossiblyCyclicInstantiation(type.Instantiation, seenTypes);
-                            seenTypes.RemoveAt(seenTypes.Count - 1);
-                            return result;
-                        }
-                        return false;
-                }
-            }
-
-            private bool IsDeepPossiblyCyclicInstantiation(Instantiation instantiation, List<TypeDesc> seenTypes = null)
-            {
-                foreach (TypeDesc arg in instantiation)
-                {
-                    if (IsDeepPossiblyCyclicInstantiation(arg, seenTypes))
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-
-            public bool IsDeepPossiblyCyclicInstantiation(MethodDesc method)
-            {
-                return IsDeepPossiblyCyclicInstantiation(method.Instantiation) || IsDeepPossiblyCyclicInstantiation(method.OwningType);
             }
         }
 
@@ -167,6 +91,81 @@ namespace ILCompiler
             // from the key, but since this is a key/value pair, might as well use the value too...
             private readonly ConcurrentDictionary<EntityPair, ModuleCycleInfo> _actualProblems = new ConcurrentDictionary<EntityPair, ModuleCycleInfo>();
 
+            private readonly int _cutoffPoint;
+
+            public GenericCycleDetector(int cutoffPoint)
+            {
+                _cutoffPoint = cutoffPoint;
+            }
+
+            private bool IsDeepPossiblyCyclicInstantiation(TypeSystemEntity entity)
+            {
+                if (entity is TypeDesc type)
+                {
+                    return IsDeepPossiblyCyclicInstantiation(type);
+                }
+                else
+                {
+                    return IsDeepPossiblyCyclicInstantiation((MethodDesc)entity);
+                }
+            }
+
+            private bool IsDeepPossiblyCyclicInstantiation(TypeDesc type, List<TypeDesc> seenTypes = null)
+            {
+                switch (type.Category)
+                {
+                    case TypeFlags.Array:
+                    case TypeFlags.SzArray:
+                        return IsDeepPossiblyCyclicInstantiation(((ParameterizedType)type).ParameterType, seenTypes);
+                    default:
+                        TypeDesc typeDef = type.GetTypeDefinition();
+                        if (type != typeDef)
+                        {
+                            (seenTypes ??= new List<TypeDesc>()).Add(typeDef);
+                            for (int i = 0; i < seenTypes.Count; i++)
+                            {
+                                TypeDesc typeToFind = seenTypes[i];
+                                int count = 1;
+                                for (int j = i + 1; j < seenTypes.Count; j++)
+                                {
+                                    if (seenTypes[j] == typeToFind)
+                                    {
+                                        count++;
+                                    }
+
+                                    if (count > _cutoffPoint)
+                                    {
+                                        return true;
+                                    }
+                                }
+                            }
+
+                            bool result = IsDeepPossiblyCyclicInstantiation(type.Instantiation, seenTypes);
+                            seenTypes.RemoveAt(seenTypes.Count - 1);
+                            return result;
+                        }
+                        return false;
+                }
+            }
+
+            private bool IsDeepPossiblyCyclicInstantiation(Instantiation instantiation, List<TypeDesc> seenTypes = null)
+            {
+                foreach (TypeDesc arg in instantiation)
+                {
+                    if (IsDeepPossiblyCyclicInstantiation(arg, seenTypes))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            public bool IsDeepPossiblyCyclicInstantiation(MethodDesc method)
+            {
+                return IsDeepPossiblyCyclicInstantiation(method.Instantiation) || IsDeepPossiblyCyclicInstantiation(method.OwningType);
+            }
+
             public void DetectCycle(TypeSystemEntity owner, TypeSystemEntity referent)
             {
                 // Not clear if generic recursion through fields is a thing
@@ -196,7 +195,7 @@ namespace ILCompiler
                 {
                     // Just the presence of a cycle is not a problem, but once we start getting too deep,
                     // we need to cut our losses.
-                    if (cycleInfo.IsDeepPossiblyCyclicInstantiation(referent))
+                    if (IsDeepPossiblyCyclicInstantiation(referent))
                     {
                         _actualProblems.TryAdd(new EntityPair(owner, referent), cycleInfo);
 
@@ -235,14 +234,9 @@ namespace ILCompiler
                     if (!reportedProblems.Add(new EntityPair(ownerDefinition, referentDefinition)))
                         continue;
 
-                    string message = $"Generic expansion to '{actualProblem.Key.Referent.GetDisplayName()}' was aborted " +
-                        "due to generic recursion. An exception will be thrown at runtime if this codepath is ever reached. " +
-                        "Generic recursion also negatively affects compilation speed and the size of the compilation output. " +
-                        "It is advisable to remove the source of the generic recursion by restructuring the program around " +
-                        "the source of recursion. The source of generic recursion might include: ";
-
                     ModuleCycleInfo cycleInfo = actualProblem.Value;
                     bool first = true;
+                    string message = "";
                     foreach (TypeSystemEntity cycleEntity in cycleInfo.EntitiesInCycles)
                     {
                         if (!first)
@@ -253,7 +247,7 @@ namespace ILCompiler
                         message += $"'{cycleEntity.GetDisplayName()}'";
                     }
 
-                    logger.LogWarning(message, 3054, actualProblem.Key.Owner, MessageSubCategory.AotAnalysis);
+                    logger.LogWarning(actualProblem.Key.Owner, DiagnosticId.GenericRecursionCycle, actualProblem.Key.Referent.GetDisplayName(), message);
                 }
             }
         }

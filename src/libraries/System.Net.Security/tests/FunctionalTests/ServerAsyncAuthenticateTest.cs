@@ -46,8 +46,8 @@ namespace System.Net.Security.Tests
         [Theory]
         [MemberData(nameof(ProtocolMismatchData))]
         public async Task ServerAsyncAuthenticate_MismatchProtocols_Fails(
-            SslProtocols serverProtocol,
             SslProtocols clientProtocol,
+            SslProtocols serverProtocol,
             Type expectedException)
         {
             Exception e = await Record.ExceptionAsync(
@@ -236,7 +236,7 @@ namespace System.Net.Security.Tests
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             var client = new SslStream(clientStream);
-            var server = new SslStream(serverStream, false, (sender, certificate, chain, sslPolicyErrors) => { validationCallbackCalled = true; return true;});
+            var server = new SslStream(serverStream, false, (sender, certificate, chain, sslPolicyErrors) => { validationCallbackCalled = true; return true; });
 
             using (client)
             using (server)
@@ -285,39 +285,56 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ServerAsyncAuthenticate_InvalidHello_Throws(bool close)
+        {
+            (NetworkStream client, NetworkStream server) = TestHelper.GetConnectedTcpStreams();
+            using (client)
+            using (SslStream ssl = new SslStream(server))
+            {
+                byte[] buffer = new byte[182];
+                buffer[0] = 178;
+                buffer[1] = 0;
+                buffer[2] = 0;
+                buffer[3] = 1;
+                buffer[4] = 133;
+                buffer[5] = 166;
+
+                Task t1 = ssl.AuthenticateAsServerAsync(_serverCertificate, false, false);
+                Task t2 = client.WriteAsync(buffer).AsTask();
+                if (close)
+                {
+                    await t2.WaitAsync(TestConfiguration.PassingTestTimeout);
+                    client.Socket.Shutdown(SocketShutdown.Send);
+                }
+                else
+                {
+                    // Write enough data to full frame size
+                    buffer = new byte[13000];
+                    t2 = client.WriteAsync(buffer).AsTask();
+                    await t2.WaitAsync(TestConfiguration.PassingTestTimeout);
+                }
+
+                await Assert.ThrowsAsync<AuthenticationException>(() => t1);
+            }
+        }
+
         public static IEnumerable<object[]> ProtocolMismatchData()
         {
-            if (PlatformDetection.SupportsSsl3)
+            var supportedProtocols = new SslProtocolSupport.SupportedSslProtocolsTestData();
+
+            foreach (var serverProtocols in supportedProtocols)
+            foreach (var clientProtocols in supportedProtocols)
             {
-#pragma warning disable 0618
-                yield return new object[] { SslProtocols.Ssl3, SslProtocols.Tls12, typeof(Exception) };
-                if (PlatformDetection.SupportsSsl2)
+                SslProtocols serverProtocol = (SslProtocols)serverProtocols[0];
+                SslProtocols clientProtocol = (SslProtocols)clientProtocols[0];
+
+                if (clientProtocol != serverProtocol)
                 {
-                    yield return new object[] { SslProtocols.Ssl2, SslProtocols.Ssl3, typeof(Exception) };
-                    yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls12, typeof(Exception) };
+                    yield return new object[] { clientProtocol, serverProtocol, typeof(AuthenticationException) };
                 }
-#pragma warning restore 0618
-            }
-
-            // It is OK if server does not support given protocol. It should still fail.
-            // But if client does not support it, it will simply fail without sending out any data.
-
-            if (PlatformDetection.SupportsTls10)
-            {
-                yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, typeof(AuthenticationException) };
-                yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, typeof(AuthenticationException) };
-            }
-
-            if (PlatformDetection.SupportsTls11)
-            {
-                yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, typeof(AuthenticationException) };
-                yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, typeof(AuthenticationException) };
-            }
-
-            if (PlatformDetection.SupportsTls12)
-            {
-                yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, typeof(AuthenticationException) };
-                yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, typeof(AuthenticationException) };
             }
         }
 
@@ -387,7 +404,7 @@ namespace System.Net.Security.Tests
                     await clientAuthentication.WaitAsync(TestConfiguration.PassingTestTimeout);
                     _logVerbose.WriteLine("ServerAsyncAuthenticateTest.clientAuthentication complete.");
                 }
-                catch (Exception ex)
+                catch (AuthenticationException ex)
                 {
                     // Ignore client-side errors: we're only interested in server-side behavior.
                     _log.WriteLine("Client exception : " + ex);

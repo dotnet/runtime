@@ -13,7 +13,7 @@ using Internal.Reflection.Augments;
 namespace System
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct RuntimeMethodHandle : ISerializable
+    public struct RuntimeMethodHandle : IEquatable<RuntimeMethodHandle>, ISerializable
     {
         private IntPtr _value;
 
@@ -105,9 +105,7 @@ namespace System
         public IntPtr GetFunctionPointer()
         {
             RuntimeTypeHandle declaringType;
-            MethodNameAndSignature nameAndSignature;
-            RuntimeTypeHandle[] genericArgs;
-            RuntimeAugments.TypeLoaderCallbacks.GetRuntimeMethodHandleComponents(this, out declaringType, out nameAndSignature, out genericArgs);
+            RuntimeAugments.TypeLoaderCallbacks.GetRuntimeMethodHandleComponents(this, out declaringType, out _, out _);
 
             return ReflectionAugments.ReflectionCoreCallbacks.GetFunctionPointer(this, declaringType);
         }

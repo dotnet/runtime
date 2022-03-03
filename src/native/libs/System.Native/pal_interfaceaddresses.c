@@ -11,7 +11,13 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <assert.h>
+#if HAVE_IFADDRS || HAVE_GETIFADDRS
 #include <ifaddrs.h>
+#endif
+#if !HAVE_GETIFADDRS && TARGET_ANDROID
+#include <dlfcn.h>
+#include <pthread.h>
+#endif
 #include <net/if.h>
 #include <netinet/in.h>
 #include <string.h>
@@ -55,7 +61,6 @@
 #endif
 #endif
 
-#if HAVE_GETIFADDRS
 // Convert mask to prefix length e.g. 255.255.255.0 -> 24
 // mask parameter is pointer to buffer where address starts and length is
 // buffer length e.g. 4 for IPv4 and 16 for IPv6.
@@ -95,6 +100,50 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
 
     return len;
 }
+
+#if !HAVE_IFADDRS && TARGET_ANDROID
+// This structure is exactly the same as struct ifaddrs defined in ifaddrs.h but since the header
+// might not be available (e.g., in bionics used in Android before API 24) we need to mirror it here
+// so that we can dynamically load the getifaddrs function and use it.
+struct ifaddrs
+{
+	struct ifaddrs *ifa_next;
+	char *ifa_name;
+	unsigned int ifa_flags;
+	struct sockaddr *ifa_addr;
+	struct sockaddr *ifa_netmask;
+	union
+	{
+		struct sockaddr *ifu_broadaddr;
+		struct sockaddr *ifu_dstaddr;
+	} ifa_ifu;
+	void *ifa_data;
+};
+#endif
+
+#if !HAVE_GETIFADDRS && TARGET_ANDROID
+// Try to load the getifaddrs and freeifaddrs functions manually.
+// This workaround is necessary on Android prior to API 24 and it can be removed once
+// we drop support for earlier Android versions.
+static int (*getifaddrs)(struct ifaddrs**) = NULL;
+static void (*freeifaddrs)(struct ifaddrs*) = NULL;
+
+static void try_loading_getifaddrs()
+{
+    void *libc = dlopen("libc.so", RTLD_NOW);
+    if (libc)
+    {
+        getifaddrs = (int (*)(struct ifaddrs**)) dlsym(libc, "getifaddrs");
+        freeifaddrs = (void (*)(struct ifaddrs*)) dlsym(libc, "freeifaddrs");
+    }
+}
+
+static bool ensure_getifaddrs_is_loaded()
+{
+    static pthread_once_t getifaddrs_is_loaded = PTHREAD_ONCE_INIT;
+    pthread_once(&getifaddrs_is_loaded, try_loading_getifaddrs);
+    return getifaddrs != NULL && freeifaddrs != NULL;
+}
 #endif
 
 int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
@@ -102,7 +151,16 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
                                                IPv6AddressFound onIpv6Found,
                                                LinkLayerAddressFound onLinkLayerFound)
 {
-#if HAVE_GETIFADDRS
+#if !HAVE_GETIFADDRS && TARGET_ANDROID
+    // Workaround for Android API < 24
+    if (!ensure_getifaddrs_is_loaded())
+    {
+        errno = ENOTSUP;
+        return -1;
+    }
+#endif
+
+#if HAVE_GETIFADDRS || TARGET_ANDROID
     struct ifaddrs* headAddr;
     if (getifaddrs(&headAddr) == -1)
     {
@@ -235,7 +293,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
     freeifaddrs(headAddr);
     return 0;
 #else
-    // Not supported on e.g. Android. Also, prevent a compiler error because parameters are unused
+    // Not supported. Also, prevent a compiler error because parameters are unused
     (void)context;
     (void)onIpv4Found;
     (void)onIpv6Found;
@@ -247,7 +305,16 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
 
 int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo **interfaceList, int32_t * addressCount, IpAddressInfo **addressList )
 {
-#if HAVE_GETIFADDRS
+#if !HAVE_GETIFADDRS && TARGET_ANDROID
+    // Workaround for Android API < 24
+    if (!ensure_getifaddrs_is_loaded())
+    {
+        errno = ENOTSUP;
+        return -1;
+    }
+#endif
+
+#if HAVE_GETIFADDRS || TARGET_ANDROID
     struct ifaddrs* head;   // Pointer to block allocated by getifaddrs().
     struct ifaddrs* ifaddrsEntry;
     IpAddressInfo *ai;
@@ -454,7 +521,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
 
     return 0;
 #else
-    // Not supported on e.g. Android. Also, prevent a compiler error because parameters are unused
+    // Not supported. Also, prevent a compiler error because parameters are unused
     (void)interfaceCount;
     (void)interfaceList;
     (void)addressCount;

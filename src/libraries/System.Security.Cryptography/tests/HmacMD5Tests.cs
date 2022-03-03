@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Test.Cryptography;
 using Xunit;
 
@@ -39,7 +42,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         protected override int BlockSize => 64;
-        protected override int MacSize => 16;
+        protected override int MacSize => HMACMD5.HashSizeInBytes;
 
         protected override HMAC Create() => new HMACMD5();
         protected override HashAlgorithm CreateHashAlgorithm() => MD5.Create();
@@ -54,6 +57,31 @@ namespace System.Security.Cryptography.Tests
 
         protected override bool TryHashDataOneShot(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, out int written) =>
             HMACMD5.TryHashData(key, source, destination, out written);
+
+        protected override byte[] HashDataOneShot(ReadOnlySpan<byte> key, Stream source) =>
+            HMACMD5.HashData(key, source);
+
+        protected override byte[] HashDataOneShot(byte[] key, Stream source) =>
+            HMACMD5.HashData(key, source);
+
+        protected override int HashDataOneShot(ReadOnlySpan<byte> key, Stream source, Span<byte> destination) =>
+            HMACMD5.HashData(key, source, destination);
+
+        protected override ValueTask<int> HashDataOneShotAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            Memory<byte> destination,
+            CancellationToken cancellationToken) => HMACMD5.HashDataAsync(key, source, destination, cancellationToken);
+
+        protected override ValueTask<byte[]> HashDataOneShotAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            CancellationToken cancellationToken) => HMACMD5.HashDataAsync(key, source, cancellationToken);
+
+        protected override ValueTask<byte[]> HashDataOneShotAsync(
+            byte[] key,
+            Stream source,
+            CancellationToken cancellationToken) => HMACMD5.HashDataAsync(key, source, cancellationToken);
 
         [Fact]
         public void HmacMD5_Rfc2202_1()
@@ -107,6 +135,78 @@ namespace System.Security.Cryptography.Tests
         public void HMacMD5_ThrowsArgumentNullForNullConstructorKey()
         {
             AssertExtensions.Throws<ArgumentNullException>("key", () => new HMACMD5(null));
+        }
+
+        [Fact]
+        public void HmacMD5_Stream_MultipleOf4096()
+        {
+            // Verfied with:
+            // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl md5 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
+            VerifyRepeating(
+                input: "0102030405060708",
+                1024,
+                hexKey: "000102030405060708090A0B0C0D0E0F",
+                output: "1287EF250C2026A0C0CBA832C599AE50");
+        }
+
+        [Fact]
+        public void HmacMD5_Stream_NotMultipleOf4096()
+        {
+            // Verfied with:
+            // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl md5 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
+            VerifyRepeating(
+                input: "0102030405060708",
+                1025,
+                hexKey: "000102030405060708090A0B0C0D0E0F",
+                output: "D10B835D95FCC9EECDF1D4BCDAB81897");
+        }
+
+        [Fact]
+        public void HmacMD5_Stream_Empty()
+        {
+            // Verfied with:
+            // echo -n "" | openssl md5 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
+            VerifyRepeating(
+                input: "",
+                0,
+                hexKey: "000102030405060708090A0B0C0D0E0F",
+                output: "C91E40247251F39BDFE6A7B72A5857F9");
+        }
+
+        [Fact]
+        public async Task HmacMD5_Stream_MultipleOf4096_Async()
+        {
+            // Verfied with:
+            // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl md5 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
+            await VerifyRepeatingAsync(
+                input: "0102030405060708",
+                1024,
+                hexKey: "000102030405060708090A0B0C0D0E0F",
+                output: "1287EF250C2026A0C0CBA832C599AE50");
+        }
+
+        [Fact]
+        public async Task HmacMD5_Stream_NotMultipleOf4096_Async()
+        {
+            // Verfied with:
+            // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl md5 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
+            await VerifyRepeatingAsync(
+                input: "0102030405060708",
+                1025,
+                hexKey: "000102030405060708090A0B0C0D0E0F",
+                output: "D10B835D95FCC9EECDF1D4BCDAB81897");
+        }
+
+        [Fact]
+        public async Task HmacMD5_Stream_Empty_Async()
+        {
+            // Verfied with:
+            // echo -n "" | openssl md5 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
+            await VerifyRepeatingAsync(
+                input: "",
+                0,
+                hexKey: "000102030405060708090A0B0C0D0E0F",
+                output: "C91E40247251F39BDFE6A7B72A5857F9");
         }
     }
 }

@@ -197,7 +197,11 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro EMIT_BREAKPOINT
+#ifdef __armv6__
+        .inst 0xe7f001f0
+#else
         .inst.w 0xde01
+#endif
 .endm
 
 .macro PROLOG_PUSH RegList

@@ -1036,10 +1036,7 @@ namespace System.Xml
         {
             try
             {
-                if (buffer == null)
-                {
-                    throw new ArgumentNullException(nameof(buffer));
-                }
+                ArgumentNullException.ThrowIfNull(buffer);
                 if (index < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index));
@@ -1074,10 +1071,7 @@ namespace System.Xml
         {
             try
             {
-                if (buffer == null)
-                {
-                    throw new ArgumentNullException(nameof(buffer));
-                }
+                ArgumentNullException.ThrowIfNull(buffer);
                 if (index < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index));
@@ -1138,10 +1132,7 @@ namespace System.Xml
         {
             try
             {
-                if (buffer == null)
-                {
-                    throw new ArgumentNullException(nameof(buffer));
-                }
+                ArgumentNullException.ThrowIfNull(buffer);
                 if (index < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index));

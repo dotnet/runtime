@@ -260,7 +260,7 @@ namespace DebuggerTests
 
                for (int i = 0; i < ret_len; i++)
                {
-                   var act_i = CheckValueType(obj_own_val, i.ToString(), "Math.SimpleStruct");
+                   var act_i = await CheckValueType(obj_own_val, i.ToString(), "Math.SimpleStruct");
 
                    // Valuetypes can get sent as part of the container's getProperties, so ensure that we can access it
                    var act_i_props = await GetProperties(act_i["value"]["objectId"]?.Value<string>());
@@ -534,7 +534,6 @@ namespace DebuggerTests
             // doesn't get reported, and the execution is NOT paused even with setPauseOnException=true
             result = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
             Assert.False(result.IsOk, "result.IsOk");
-            Assert.True(result.IsErr, "result.IsErr");
 
             var hasErrorMessage = result.Error["exceptionDetails"]?["exception"]?["description"]?.Value<string>()?.Contains(error_msg);
             Assert.True((hasErrorMessage ?? false), "Exception message not found");
@@ -785,7 +784,7 @@ namespace DebuggerTests
                });
 
                var res = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
-               Assert.True(res.IsErr);
+               Assert.False(res.IsOk);
            });
 
         [Theory]
@@ -811,7 +810,7 @@ namespace DebuggerTests
             });
 
             var res = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
-            Assert.True(res.IsErr);
+            Assert.False(res.IsOk);
         }
 
         [Theory]

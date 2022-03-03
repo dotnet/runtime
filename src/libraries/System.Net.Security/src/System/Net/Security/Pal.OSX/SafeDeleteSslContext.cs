@@ -92,6 +92,44 @@ namespace System.Net
                 Dispose();
                 throw;
             }
+
+            if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !sslAuthenticationOptions.IsServer)
+            {
+                Interop.AppleCrypto.SslSetTargetName(_sslContext, sslAuthenticationOptions.TargetHost);
+            }
+
+            if (sslAuthenticationOptions.CertificateContext == null && sslAuthenticationOptions.CertSelectionDelegate != null)
+            {
+                // certificate was not provided but there is user callback. We can break handshake if server asks for certificate
+                // and we can try to get it based on remote certificate and trusted issuers.
+                Interop.AppleCrypto.SslBreakOnCertRequested(_sslContext, true);
+            }
+
+            if (sslAuthenticationOptions.IsServer)
+            {
+                if (sslAuthenticationOptions.RemoteCertRequired)
+                {
+                    Interop.AppleCrypto.SslSetAcceptClientCert(_sslContext);
+                }
+
+                if (sslAuthenticationOptions.CertificateContext?.Trust?._sendTrustInHandshake == true)
+                {
+                    SslCertificateTrust trust = sslAuthenticationOptions.CertificateContext!.Trust!;
+                    X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
+
+                    Debug.Assert(certList != null, "certList != null");
+                    Span<IntPtr> handles = certList.Count <= 256
+                        ? stackalloc IntPtr[256]
+                        : new IntPtr[certList.Count];
+
+                    for (int i = 0; i < certList.Count; i++)
+                    {
+                        handles[i] = certList[i].Handle;
+                    }
+
+                    Interop.AppleCrypto.SslSetCertificateAuthorities(_sslContext, handles.Slice(0, certList.Count), true);
+                }
+            }
         }
 
         private static SafeSslHandle CreateSslContext(SafeFreeSslCredentials credential, bool isServer)
@@ -130,6 +168,7 @@ namespace System.Net
                     SetCertificate(sslContext, credential.CertificateContext);
                 }
 
+                Interop.AppleCrypto.SslBreakOnCertRequested(sslContext, true);
                 Interop.AppleCrypto.SslBreakOnServerAuth(sslContext, true);
                 Interop.AppleCrypto.SslBreakOnClientAuth(sslContext, true);
             }
@@ -316,7 +355,7 @@ namespace System.Net
             Interop.AppleCrypto.SslSetMaxProtocolVersion(sslContext, maxProtocolId);
         }
 
-        private static void SetCertificate(SafeSslHandle sslContext, SslStreamCertificateContext context)
+        internal static void SetCertificate(SafeSslHandle sslContext, SslStreamCertificateContext context)
         {
             Debug.Assert(sslContext != null, "sslContext != null");
 

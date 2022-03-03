@@ -35,11 +35,27 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        public override string DiagnosticName
+        {
+            get
+            {
+                return "_InlineArray__" + ElementType.DiagnosticName + "__" + Length;
+            }
+        }
+
         public override string Namespace
         {
             get
             {
                 return "Internal.CompilerGenerated";
+            }
+        }
+
+        public override string DiagnosticNamespace
+        {
+            get
+            {
+                return Namespace;
             }
         }
 
@@ -317,6 +333,14 @@ namespace Internal.TypeSystem.Interop
                     {
                         return "set_Item";
                     }
+                }
+            }
+
+            public override string DiagnosticName
+            {
+                get
+                {
+                    return Name;
                 }
             }
 

@@ -20,32 +20,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 bool Compiler::tiCompatibleWith(const typeInfo& child, const typeInfo& parent, bool normalisedForStack) const
 {
-#ifdef DEBUG
-#if VERBOSE_VERIFY
-    if (VERBOSE && tiVerificationNeeded)
-    {
-        printf("\n");
-        printf(TI_DUMP_PADDING);
-        printf("Verifying compatibility against types: ");
-        child.Dump();
-        printf(" and ");
-        parent.Dump();
-    }
-#endif // VERBOSE_VERIFY
-#endif // DEBUG
-
-    bool compatible = typeInfo::tiCompatibleWith(info.compCompHnd, child, parent, normalisedForStack);
-
-#ifdef DEBUG
-#if VERBOSE_VERIFY
-    if (VERBOSE && tiVerificationNeeded)
-    {
-        printf(compatible ? " [YES]" : " [NO]");
-    }
-#endif // VERBOSE_VERIFY
-#endif // DEBUG
-
-    return compatible;
+    return typeInfo::tiCompatibleWith(info.compCompHnd, child, parent, normalisedForStack);
 }
 
 bool Compiler::tiMergeCompatibleWith(const typeInfo& child, const typeInfo& parent, bool normalisedForStack) const
@@ -55,41 +30,7 @@ bool Compiler::tiMergeCompatibleWith(const typeInfo& child, const typeInfo& pare
 
 bool Compiler::tiMergeToCommonParent(typeInfo* pDest, const typeInfo* pSrc, bool* changed) const
 {
-#ifdef DEBUG
-#if VERBOSE_VERIFY
-    if (VERBOSE && tiVerificationNeeded)
-    {
-        printf("\n");
-        printf(TI_DUMP_PADDING);
-        printf("Attempting to merge types: ");
-        pDest->Dump();
-        printf(" and ");
-        pSrc->Dump();
-        printf("\n");
-    }
-#endif // VERBOSE_VERIFY
-#endif // DEBUG
-
-    bool mergeable = typeInfo::tiMergeToCommonParent(info.compCompHnd, pDest, pSrc, changed);
-
-#ifdef DEBUG
-#if VERBOSE_VERIFY
-    if (VERBOSE && tiVerificationNeeded)
-    {
-        printf(TI_DUMP_PADDING);
-        printf(mergeable ? "Merge successful" : "Couldn't merge types");
-        if (*changed)
-        {
-            assert(mergeable);
-            printf(", destination type changed to: ");
-            pDest->Dump();
-        }
-        printf("\n");
-    }
-#endif // VERBOSE_VERIFY
-#endif // DEBUG
-
-    return mergeable;
+    return typeInfo::tiMergeToCommonParent(info.compCompHnd, pDest, pSrc, changed);
 }
 
 static bool tiCompatibleWithByRef(COMP_HANDLE CompHnd, const typeInfo& child, const typeInfo& parent)

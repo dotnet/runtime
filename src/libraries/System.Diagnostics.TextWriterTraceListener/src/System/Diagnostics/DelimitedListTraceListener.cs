@@ -63,11 +63,7 @@ namespace System.Diagnostics
             }
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(Delimiter));
-
-                if (value.Length == 0)
-                    throw new ArgumentException(SR.Format(SR.Generic_ArgCantBeEmptyString, nameof(Delimiter)));
+                ArgumentException.ThrowIfNullOrEmpty(value, nameof(Delimiter));
 
                 lock (this)
                 {

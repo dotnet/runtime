@@ -35,8 +35,8 @@ main ()
 	++cur_out_reg;
 	sparc_ld_imm (p, sparc_i3, arg_pos+4, cur_out_reg);
 	++cur_out_reg;
-	/* 
-	 * Insert call to function 
+	/*
+	 * Insert call to function
 	 */
 	sparc_jmpl (p, sparc_i0, 0, sparc_callsite);
 	sparc_nop (p);
