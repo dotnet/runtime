@@ -160,7 +160,7 @@ namespace System.Reflection.Emit
             FieldAttributes attributes);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetMethodIL")]
-        private static partial void SetMethodIL(QCallModule module, int tk, bool isInitLocals,
+        private static partial void SetMethodIL(QCallModule module, int tk, [MarshalAs(UnmanagedType.Bool)] bool isInitLocals,
             byte[]? body, int bodyLength,
             byte[] LocalSig, int sigLength,
             int maxStackSize,

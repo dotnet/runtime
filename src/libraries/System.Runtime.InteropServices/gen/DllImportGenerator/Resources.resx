@@ -208,24 +208,6 @@
   <data name="CustomTypeMarshallingNativeToManagedUnsupported" xml:space="preserve">
     <value>The specified parameter needs to be marshalled from native to managed, but the native type '{0}' does not support it.</value>
   </data>
-  <data name="GeneratedDllImportContainingTypeMissingModifiersDescription" xml:space="preserve">
-    <value>Types that contain methods marked with 'GeneratedDllImportAttribute' must be 'partial'. P/Invoke source generation will ignore methods contained within non-partial types.</value>
-  </data>
-  <data name="GeneratedDllImportContainingTypeMissingModifiersMessage" xml:space="preserve">
-    <value>Type '{0}' contains methods marked with 'GeneratedDllImportAttribute' and should be 'partial'. P/Invoke source generation will ignore methods contained within non-partial types.</value>
-  </data>
-  <data name="GeneratedDllImportContainingTypeMissingModifiersTitle" xml:space="preserve">
-    <value>Types that contain methods marked with 'GeneratedDllImportAttribute' must be 'partial'.</value>
-  </data>
-  <data name="GeneratedDllImportMissingModifiersDescription" xml:space="preserve">
-    <value>Methods marked with 'GeneratedDllImportAttribute' should be 'static' and 'partial'. P/Invoke source generation will ignore methods that are not 'static' and 'partial'.</value>
-  </data>
-  <data name="GeneratedDllImportMissingModifiersMessage" xml:space="preserve">
-    <value>Method '{0}' should be 'static' and 'partial' when marked with 'GeneratedDllImportAttribute'. P/Invoke source generation will ignore methods that are not 'static' and 'partial'.</value>
-  </data>
-  <data name="GeneratedDllImportMissingModifiersTitle" xml:space="preserve">
-    <value>Method marked with 'GeneratedDllImportAttribute' should be 'static' and 'partial'</value>
-  </data>
   <data name="GetPinnableReferenceReturnTypeBlittableDescription" xml:space="preserve">
     <value>The return type of 'GetPinnableReference' (after accounting for 'ref') must be blittable.</value>
   </data>
@@ -237,6 +219,15 @@
   </data>
   <data name="GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage" xml:space="preserve">
     <value>Type '{0}' has a 'GetPinnableReference' method but its native type does not support marshalling in scenarios where pinning is impossible</value>
+  </data>
+  <data name="InvalidAttributedMethodContainingTypeMissingModifiersMessage" xml:space="preserve">
+    <value>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</value>
+  </data>
+  <data name="InvalidAttributedMethodDescription" xml:space="preserve">
+    <value>Methods marked with 'GeneratedDllImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</value>
+  </data>
+  <data name="InvalidAttributedMethodSignatureMessage" xml:space="preserve">
+    <value>Method '{0}' should be 'static', 'partial', and non-generic when marked with 'GeneratedDllImportAttribute'. P/Invoke source generation will ignore method '{0}'.</value>
   </data>
   <data name="InvalidLibraryImportAttributeUsageTitle" xml:space="preserve">
     <value>Invalid 'LibraryImportAttribute' usage</value>

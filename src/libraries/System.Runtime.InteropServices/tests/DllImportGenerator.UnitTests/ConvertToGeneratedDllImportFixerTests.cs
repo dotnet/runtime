@@ -444,16 +444,16 @@ using System.Runtime.InteropServices;
 partial class Test
 {
     [DllImport(""DoesNotExist"", PreserveSig = false)]
-    public static extern void [|VoidMethod|](bool param);
+    public static extern void [|VoidMethod|](int param);
     [DllImport(""DoesNotExist"", PreserveSig = false)]
-    public static extern long [|Method|](bool param);
+    public static extern long [|Method|](int param);
 
     public static void Code()
     {
-        Test.VoidMethod(true);
-        Test.Method(true);
-        long value = Test.Method(true);
-        value = Test.Method(true);
+        Test.VoidMethod(1);
+        Test.Method(1);
+        long value = Test.Method(1);
+        value = Test.Method(1);
     }
 }";
             // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
@@ -462,18 +462,42 @@ using System.Runtime.InteropServices;
 partial class Test
 {
     [GeneratedDllImport(""DoesNotExist"")]
-    public static partial int {|CS8795:VoidMethod|}(bool param);
+    public static partial int {|CS8795:VoidMethod|}(int param);
     [GeneratedDllImport(""DoesNotExist"")]
-    public static partial int {|CS8795:Method|}(bool param, out long @return);
+    public static partial int {|CS8795:Method|}(int param, out long @return);
 
     public static void Code()
     {
-        Marshal.ThrowExceptionForHR(Test.VoidMethod(true));
-        Marshal.ThrowExceptionForHR(Test.Method(true, out _));
-        Marshal.ThrowExceptionForHR(Test.Method(true, out long value));
-        Marshal.ThrowExceptionForHR(Test.Method(true, out value));
+        Marshal.ThrowExceptionForHR(Test.VoidMethod(1));
+        Marshal.ThrowExceptionForHR(Test.Method(1, out _));
+        Marshal.ThrowExceptionForHR(Test.Method(1, out long value));
+        Marshal.ThrowExceptionForHR(Test.Method(1, out value));
     }
 }";
+            await VerifyCS.VerifyCodeFixAsync(
+                source,
+                fixedSource);
+        }
+
+        [ConditionalFact]
+        public async Task BooleanMarshalAsAdded()
+        {
+            string source = @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [DllImport(""DoesNotExist"")]
+    public static extern bool [|Method|](bool b);
+}}";
+            // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
+            string fixedSource = @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool {{|CS8795:Method|}}([MarshalAs(UnmanagedType.Bool)] bool b);
+}}";
             await VerifyCS.VerifyCodeFixAsync(
                 source,
                 fixedSource);

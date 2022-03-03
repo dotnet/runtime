@@ -70,7 +70,7 @@ namespace DllImportGenerator.UnitTests
         /// the expected failure diagnostics.
         /// </summary>
         /// <param name="comp"></param>
-        public static void AssertPreSourceGeneratorCompilation(Compilation comp)
+        public static void AssertPreSourceGeneratorCompilation(Compilation comp, params string[] additionalAllowedDiagnostics)
         {
             var allowedDiagnostics = new HashSet<string>()
             {
@@ -79,6 +79,12 @@ namespace DllImportGenerator.UnitTests
                 "CS0246", // Missing type or namespace - GeneratedDllImportAttribute
                 "CS8019", // Unnecessary using
             };
+
+            foreach (string diagnostic in additionalAllowedDiagnostics)
+            {
+                allowedDiagnostics.Add(diagnostic);
+            }
+
             var compDiags = comp.GetDiagnostics();
             Assert.All(compDiags, diag =>
             {
@@ -207,11 +213,12 @@ namespace DllImportGenerator.UnitTests
             return d;
         }
 
-        public static GeneratorDriver CreateDriver(Compilation c, AnalyzerConfigOptionsProvider? options, IIncrementalGenerator[] generators)
+        public static GeneratorDriver CreateDriver(Compilation c, AnalyzerConfigOptionsProvider? options, IIncrementalGenerator[] generators, GeneratorDriverOptions driverOptions = default)
             => CSharpGeneratorDriver.Create(
                 ImmutableArray.Create(generators.Select(gen => gen.AsSourceGenerator()).ToArray()),
                 parseOptions: (CSharpParseOptions)c.SyntaxTrees.First().Options,
-                optionsProvider: options);
+                optionsProvider: options,
+                driverOptions: driverOptions);
 
         // The non-configurable test-packages folder may be incomplete/corrupt.
         // - https://github.com/dotnet/roslyn-sdk/issues/487

@@ -129,6 +129,8 @@ typedef struct {
 	gpointer        ex_obj;
 	MonoLMF *lmf;
 	int first_filter_idx, filter_idx;
+	/* MonoMethodILState */
+	gpointer il_state;
 } ResumeState;
 
 typedef void (*MonoAbortFunction)(MonoObject*);

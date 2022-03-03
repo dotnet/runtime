@@ -44,30 +44,13 @@ namespace Microsoft.Interop
             }
         }
 
-        public class IncrementalityTracker
+        public static class StepNames
         {
-            public enum StepName
-            {
-                CalculateStubInformation,
-                GenerateSingleStub,
-                NormalizeWhitespace,
-                ConcatenateStubs,
-                OutputSourceFile
-            }
-
-            public record ExecutedStepInfo(StepName Step, object Input);
-
-            private readonly List<ExecutedStepInfo> _executedSteps = new();
-            public IEnumerable<ExecutedStepInfo> ExecutedSteps => _executedSteps;
-
-            internal void RecordExecutedStep(ExecutedStepInfo step) => _executedSteps.Add(step);
+            public const string CalculateStubInformation = nameof(CalculateStubInformation);
+            public const string GenerateSingleStub = nameof(GenerateSingleStub);
+            public const string NormalizeWhitespace = nameof(NormalizeWhitespace);
+            public const string ConcatenateStubs = nameof(ConcatenateStubs);
         }
-
-        /// <summary>
-        /// This property provides a test-only hook to enable testing the incrementality of the source generator.
-        /// This will be removed when https://github.com/dotnet/roslyn/issues/54832 is implemented and can be consumed.
-        /// </summary>
-        public IncrementalityTracker? IncrementalTracker { get; set; }
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -75,23 +58,31 @@ namespace Microsoft.Interop
                 .CreateSyntaxProvider(
                     static (node, ct) => ShouldVisitNode(node),
                     static (context, ct) =>
-                        new
+                    {
+                        MethodDeclarationSyntax syntax = (MethodDeclarationSyntax)context.Node;
+                        if (context.SemanticModel.GetDeclaredSymbol(syntax, ct) is IMethodSymbol methodSymbol
+                            && methodSymbol.GetAttributes().Any(static attribute => attribute.AttributeClass?.ToDisplayString() == TypeNames.GeneratedDllImportAttribute))
                         {
-                            Syntax = (MethodDeclarationSyntax)context.Node,
-                            Symbol = (IMethodSymbol)context.SemanticModel.GetDeclaredSymbol(context.Node, ct)!
-                        })
+                            return new { Syntax = syntax, Symbol = methodSymbol };
+                        }
+
+                        return null;
+                    })
                 .Where(
-                    static modelData => modelData.Symbol.IsStatic && modelData.Symbol.GetAttributes().Any(
-                        static attribute => attribute.AttributeClass?.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
-                );
+                    static modelData => modelData is not null);
 
-            var methodsToGenerate = attributedMethods.Where(static data => !data.Symbol.ReturnsByRef && !data.Symbol.ReturnsByRefReadonly);
-
-            var refReturnMethods = attributedMethods.Where(static data => data.Symbol.ReturnsByRef || data.Symbol.ReturnsByRefReadonly);
-
-            context.RegisterSourceOutput(refReturnMethods, static (context, refReturnMethod) =>
+            var methodsWithDiagnostics = attributedMethods.Select(static (data, ct) =>
             {
-                context.ReportDiagnostic(Diagnostic.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, refReturnMethod.Syntax.GetLocation(), "ref return", refReturnMethod.Symbol.ToDisplayString()));
+                Diagnostic? diagnostic = GetDiagnosticIfInvalidMethodForGeneration(data.Syntax, data.Symbol);
+                return new { Syntax = data.Syntax, Symbol = data.Symbol, Diagnostic = diagnostic };
+            });
+
+            var methodsToGenerate = methodsWithDiagnostics.Where(static data => data.Diagnostic is null);
+            var invalidMethodDiagnostics = methodsWithDiagnostics.Where(static data => data.Diagnostic is not null);
+
+            context.RegisterSourceOutput(invalidMethodDiagnostics, static (context, invalidMethod) =>
+            {
+                context.ReportDiagnostic(invalidMethod.Diagnostic);
             });
 
             IncrementalValueProvider<(Compilation compilation, TargetFramework targetFramework, Version targetFrameworkVersion)> compilationAndTargetFramework = context.CompilationProvider
@@ -120,7 +111,7 @@ namespace Microsoft.Interop
                 });
 
             IncrementalValueProvider<DllImportGeneratorOptions> stubOptions = context.AnalyzerConfigOptionsProvider
-                .Select((options, ct) => new DllImportGeneratorOptions(options.GlobalOptions));
+                .Select(static (options, ct) => new DllImportGeneratorOptions(options.GlobalOptions));
 
             IncrementalValueProvider<StubEnvironment> stubEnvironment = compilationAndTargetFramework
                 .Combine(stubOptions)
@@ -143,34 +134,24 @@ namespace Microsoft.Interop
                     Environment = data.Right
                 })
                 .Select(
-                    (data, ct) =>
-                    {
-                        IncrementalTracker?.RecordExecutedStep(new IncrementalityTracker.ExecutedStepInfo(IncrementalityTracker.StepName.CalculateStubInformation, data));
-                        return (data.Syntax, StubContext: CalculateStubInformation(data.Symbol, data.Environment, ct));
-                    }
+                    static (data, ct) => (data.Syntax, StubContext: CalculateStubInformation(data.Symbol, data.Environment, ct))
                 )
                 .WithComparer(Comparers.CalculatedContextWithSyntax)
+                .WithTrackingName(StepNames.CalculateStubInformation)
                 .Combine(stubOptions)
                 .Select(
-                    (data, ct) =>
-                    {
-                        IncrementalTracker?.RecordExecutedStep(new IncrementalityTracker.ExecutedStepInfo(IncrementalityTracker.StepName.GenerateSingleStub, data));
-                        return GenerateSource(data.Left.StubContext, data.Left.Syntax, data.Right);
-                    }
+                    static (data, ct) => GenerateSource(data.Left.StubContext, data.Left.Syntax, data.Right)
                 )
                 .WithComparer(Comparers.GeneratedSyntax)
+                .WithTrackingName(StepNames.GenerateSingleStub)
                 // Handle NormalizeWhitespace as a separate stage for incremental runs since it is an expensive operation.
                 .Select(
-                    (data, ct) =>
-                    {
-                        IncrementalTracker?.RecordExecutedStep(new IncrementalityTracker.ExecutedStepInfo(IncrementalityTracker.StepName.NormalizeWhitespace, data));
-                        return (data.Item1.NormalizeWhitespace().ToFullString(), data.Item2);
-                    })
+                    static (data, ct) => (data.Item1.NormalizeWhitespace().ToFullString(), data.Item2))
+                .WithTrackingName(StepNames.NormalizeWhitespace)
                 .Collect()
                 .WithComparer(Comparers.GeneratedSourceSet)
-                .Select((generatedSources, ct) =>
+                .Select(static (generatedSources, ct) =>
                 {
-                    IncrementalTracker?.RecordExecutedStep(new IncrementalityTracker.ExecutedStepInfo(IncrementalityTracker.StepName.ConcatenateStubs, generatedSources));
                     StringBuilder source = new();
                     // Mark in source that the file is auto-generated.
                     source.AppendLine("// <auto-generated/>");
@@ -182,12 +163,12 @@ namespace Microsoft.Interop
                     }
                     return (source: source.ToString(), diagnostics: diagnostics.ToImmutable());
                 })
-                .WithComparer(Comparers.GeneratedSource);
+                .WithComparer(Comparers.GeneratedSource)
+                .WithTrackingName(StepNames.ConcatenateStubs);
 
             context.RegisterSourceOutput(methodSourceAndDiagnostics,
-                (context, data) =>
+                static (context, data) =>
                 {
-                    IncrementalTracker?.RecordExecutedStep(new IncrementalityTracker.ExecutedStepInfo(IncrementalityTracker.StepName.OutputSourceFile, data));
                     foreach (Diagnostic diagnostic in data.Item2)
                     {
                         context.ReportDiagnostic(diagnostic);
@@ -502,7 +483,7 @@ namespace Microsoft.Interop
             return new IncrementalStubGenerationContext(environment, dllImportStub, additionalAttributes.ToImmutableArray(), stubDllImportData, generatorDiagnostics.Diagnostics.ToImmutableArray());
         }
 
-        private (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateSource(
+        private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateSource(
             IncrementalStubGenerationContext dllImportStub,
             MethodDeclarationSyntax originalSyntax,
             DllImportGeneratorOptions options)
@@ -559,7 +540,7 @@ namespace Microsoft.Interop
             return (PrintGeneratedSource(originalSyntax, dllImportStub.StubContext, code), dllImportStub.Diagnostics.AddRange(diagnostics.Diagnostics));
         }
 
-        private MemberDeclarationSyntax PrintForwarderStub(MethodDeclarationSyntax userDeclaredMethod, IncrementalStubGenerationContext stub, GeneratorDiagnostics diagnostics)
+        private static MemberDeclarationSyntax PrintForwarderStub(MethodDeclarationSyntax userDeclaredMethod, IncrementalStubGenerationContext stub, GeneratorDiagnostics diagnostics)
         {
             GeneratedDllImportData targetDllImportData = GetTargetDllImportDataFromStubData(
                 stub.DllImportData,
@@ -739,8 +720,12 @@ namespace Microsoft.Interop
                 return false;
             }
 
-            var methodSyntax = (MethodDeclarationSyntax)syntaxNode;
+            // Filter out methods with no attributes early.
+            return ((MethodDeclarationSyntax)syntaxNode).AttributeLists.Count > 0;
+        }
 
+        private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
+        {
             // Verify the method has no generic types or defined implementation
             // and is marked static and partial.
             if (methodSyntax.TypeParameterList is not null
@@ -748,7 +733,7 @@ namespace Microsoft.Interop
                 || !methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)
                 || !methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
             {
-                return false;
+                return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedMethodSignature, methodSyntax.Identifier.GetLocation(), method.Name);
             }
 
             // Verify that the types the method is declared in are marked partial.
@@ -756,17 +741,17 @@ namespace Microsoft.Interop
             {
                 if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
                 {
-                    return false;
+                    return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers, methodSyntax.Identifier.GetLocation(), method.Name, typeDecl.Identifier);
                 }
             }
 
-            // Filter out methods with no attributes early.
-            if (methodSyntax.AttributeLists.Count == 0)
+            // Verify the method does not have a ref return
+            if (method.ReturnsByRef || method.ReturnsByRefReadonly)
             {
-                return false;
+                return Diagnostic.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, methodSyntax.Identifier.GetLocation(), "ref return", method.ToDisplayString());
             }
 
-            return true;
+            return null;
         }
     }
 }

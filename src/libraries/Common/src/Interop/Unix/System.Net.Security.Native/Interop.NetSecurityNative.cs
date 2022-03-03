@@ -61,7 +61,7 @@ internal static partial class Interop
         [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitiateCredWithPassword", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial Status InitiateCredWithPassword(
             out Status minorStatus,
-            bool isNtlm,
+            [MarshalAs(UnmanagedType.Bool)] bool isNtlm,
             SafeGssNameHandle desiredName,
             string password,
             int passwordLen,
@@ -77,21 +77,21 @@ internal static partial class Interop
             out Status minorStatus,
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
-            bool isNtlmOnly,
+            [MarshalAs(UnmanagedType.Bool)] bool isNtlmOnly,
             SafeGssNameHandle? targetName,
             uint reqFlags,
             byte[]? inputBytes,
             int inputLength,
             ref GssBuffer token,
             out uint retFlags,
-            out bool isNtlmUsed);
+            [MarshalAs(UnmanagedType.Bool)] out bool isNtlmUsed);
 
         [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitSecContextEx")]
         internal static partial Status InitSecContext(
             out Status minorStatus,
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
-            bool isNtlmOnly,
+            [MarshalAs(UnmanagedType.Bool)] bool isNtlmOnly,
             IntPtr cbt,
             int cbtSize,
             SafeGssNameHandle? targetName,
@@ -100,7 +100,7 @@ internal static partial class Interop
             int inputLength,
             ref GssBuffer token,
             out uint retFlags,
-            out bool isNtlmUsed);
+            [MarshalAs(UnmanagedType.Bool)] out bool isNtlmUsed);
 
         [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_AcceptSecContext")]
         internal static partial Status AcceptSecContext(
@@ -111,7 +111,7 @@ internal static partial class Interop
             int inputLength,
             ref GssBuffer token,
             out uint retFlags,
-            out bool isNtlmUsed);
+            [MarshalAs(UnmanagedType.Bool)] out bool isNtlmUsed);
 
         [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_DeleteSecContext")]
         internal static partial Status DeleteSecContext(
@@ -128,7 +128,7 @@ internal static partial class Interop
         private static unsafe partial Status Wrap(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
-            bool isEncrypt,
+            [MarshalAs(UnmanagedType.Bool)] bool isEncrypt,
             byte* inputBytes,
             int count,
             ref GssBuffer outBuffer);

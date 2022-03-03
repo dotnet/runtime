@@ -1,8 +1,8 @@
 <Project>
   <PropertyGroup>
     <SlnGenSolutionFolder Condition="'$(IsGeneratorProject)' == 'true'">gen</SlnGenSolutionFolder>
-    <SlnGenSolutionFolder Condition="'$(IsReferenceAssembly)' == 'true'">ref</SlnGenSolutionFolder>
-    <SlnGenSolutionFolder Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">tests</SlnGenSolutionFolder>
+    <SlnGenSolutionFolder Condition="'$(IsReferenceAssemblyProject)' == 'true'">ref</SlnGenSolutionFolder>
+    <SlnGenSolutionFolder Condition="'$(IsTestProject)' == 'true' or '$(IsTrimmingTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">tests</SlnGenSolutionFolder>
     <SlnGenSolutionFolder Condition="'$(SlnGenSolutionFolder)' == ''">src</SlnGenSolutionFolder>
 
     <!-- Don't include reference projects which compose the microsoft.netcore.app targeting pack (except the current leaf's reference project) as those are referenced by the source project via named references

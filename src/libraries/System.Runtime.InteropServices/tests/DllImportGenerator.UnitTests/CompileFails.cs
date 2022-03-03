@@ -23,8 +23,12 @@ namespace DllImportGenerator.UnitTests
             // No explicit marshalling for char or string
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<char>(), 5, 0 };
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<string>(), 5, 0 };
-            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<char[]>(), 5, 0 };
-            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<string[]>(), 5, 0 };
+            yield return new object[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<char>(), 5, 0 };
+            yield return new object[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<string>(), 5, 0 };
+
+            // No explicit marshaling for bool
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<bool>(), 5, 0 };
+            yield return new object[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<bool>(), 5, 0 };
 
             // Unsupported StringMarshalling configuration
             yield return new object[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<char>(StringMarshalling.Utf8), 6, 0 };
@@ -65,23 +69,25 @@ namespace DllImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<sbyte[]>(CodeSnippets.DisableRuntimeMarshalling), 3, 0 };
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<short[]>(CodeSnippets.DisableRuntimeMarshalling), 3, 0 };
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<ushort[]>(CodeSnippets.DisableRuntimeMarshalling), 3, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<char[]>(CodeSnippets.DisableRuntimeMarshalling), 3, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<string[]>(CodeSnippets.DisableRuntimeMarshalling), 5, 0 };
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<int[]>(CodeSnippets.DisableRuntimeMarshalling), 3, 0 };
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<uint[]>(CodeSnippets.DisableRuntimeMarshalling), 3, 0 };
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<long[]>(CodeSnippets.DisableRuntimeMarshalling), 3, 0 };
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<ulong[]>(CodeSnippets.DisableRuntimeMarshalling), 3, 0 };
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<float[]>(CodeSnippets.DisableRuntimeMarshalling), 3, 0 };
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<double[]>(CodeSnippets.DisableRuntimeMarshalling), 3, 0 };
-            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<bool[]>(CodeSnippets.DisableRuntimeMarshalling), 3, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<bool[]>(CodeSnippets.DisableRuntimeMarshalling), 5, 0 };
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<IntPtr[]>(CodeSnippets.DisableRuntimeMarshalling), 3, 0 };
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<UIntPtr[]>(CodeSnippets.DisableRuntimeMarshalling), 3, 0 };
 
             // Collection with non-integer size param
             yield return new object[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<float>(isByRef: false), 1, 0 };
             yield return new object[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<double>(isByRef: false), 1, 0 };
-            yield return new object[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<bool>(isByRef: false), 1, 0 };
+            yield return new object[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<bool>(isByRef: false), 2, 0 };
             yield return new object[] { CodeSnippets.MarshalUsingArrayParameterWithSizeParam<float>(isByRef: false), 1, 0 };
             yield return new object[] { CodeSnippets.MarshalUsingArrayParameterWithSizeParam<double>(isByRef: false), 1, 0 };
-            yield return new object[] { CodeSnippets.MarshalUsingArrayParameterWithSizeParam<bool>(isByRef: false), 1, 0 };
+            yield return new object[] { CodeSnippets.MarshalUsingArrayParameterWithSizeParam<bool>(isByRef: false), 2, 0 };
 
 
             // Custom type marshalling with invalid members

@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class @libc
     {
-        [GeneratedDllImport(Libraries.Libc, EntryPoint = "getppid")]
+        [GeneratedDllImport(Libraries.libc, EntryPoint = "getppid")]
         internal static partial int GetParentPid();
     }
 }

@@ -139,9 +139,10 @@ namespace Microsoft.Interop.Analyzers
             CancellationToken cancellationToken)
         {
             DocumentEditor editor = await DocumentEditor.CreateAsync(doc, cancellationToken).ConfigureAwait(false);
+
             SyntaxGenerator generator = editor.Generator;
 
-            var dllImportSyntax = (AttributeSyntax)dllImportAttr!.ApplicationSyntaxReference!.GetSyntax(cancellationToken);
+            var dllImportSyntax = (AttributeSyntax)await dllImportAttr!.ApplicationSyntaxReference!.GetSyntaxAsync(cancellationToken).ConfigureAwait(false);
 
             // Create GeneratedDllImport attribute based on the DllImport attribute
             SyntaxNode generatedDllImportSyntax = GetGeneratedDllImportAttribute(
@@ -176,6 +177,25 @@ namespace Microsoft.Interop.Analyzers
                 generator.GetModifiers(methodSyntax)
                     .WithIsExtern(false)
                     .WithPartial(true));
+
+            foreach (IParameterSymbol parameter in methodSymbol.Parameters)
+            {
+                if (parameter.Type.SpecialType == SpecialType.System_Boolean
+                    && !parameter.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
+                {
+                    MethodDeclarationSyntax generatedDeclarationSyntax = (MethodDeclarationSyntax)generatedDeclaration;
+                    ParameterSyntax generatedParameterSyntax = generatedDeclarationSyntax.ParameterList.Parameters[parameter.Ordinal];
+                    generatedDeclaration = generator.ReplaceNode(generatedDeclaration, generatedParameterSyntax, generator.AddAttributes(generatedParameterSyntax,
+                                    GenerateMarshalAsUnmanagedTypeBoolAttribute(generator)));
+                }
+            }
+
+            if (methodSymbol.ReturnType.SpecialType == SpecialType.System_Boolean
+                && !methodSymbol.GetReturnTypeAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
+            {
+                generatedDeclaration = generator.AddReturnAttributes(generatedDeclaration,
+                    GenerateMarshalAsUnmanagedTypeBoolAttribute(generator));
+            }
 
             // Replace the original method with the updated one
             editor.ReplaceNode(methodSyntax, generatedDeclaration);
@@ -351,6 +371,13 @@ namespace Microsoft.Interop.Analyzers
                             node);
             }
         }
+
+        private static SyntaxNode GenerateMarshalAsUnmanagedTypeBoolAttribute(SyntaxGenerator generator)
+            => generator.Attribute(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute,
+                generator.AttributeArgument(
+                    generator.MemberAccessExpression(
+                        generator.DottedName(TypeNames.System_Runtime_InteropServices_UnmanagedType),
+                        generator.IdentifierName("Bool"))));
 
         private SyntaxNode GetGeneratedDllImportAttribute(
             DocumentEditor editor,

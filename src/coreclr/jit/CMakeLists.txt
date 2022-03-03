@@ -115,6 +115,7 @@ set( JIT_SOURCES
   hostallocator.cpp
   indirectcalltransformer.cpp
   importer.cpp
+  importer_vectorization.cpp
   inline.cpp
   inlinepolicy.cpp
   instr.cpp
