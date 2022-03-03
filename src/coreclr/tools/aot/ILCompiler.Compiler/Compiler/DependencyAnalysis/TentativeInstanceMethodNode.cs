@@ -33,6 +33,26 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!methodNode.Method.OwningType.IsValueType);
         }
 
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
+            => base.ShouldSkipEmittingObjectNode(factory) || factory.TentativeMethodEntrypoint(Method).Marked;
+
+        public override ISymbolNode NodeForLinkage(NodeFactory factory)
+        {
+            ISymbolNode result = base.NodeForLinkage(factory);
+            if (result != this)
+                return result;
+
+            // Tentative instance methods optimization could conflict with tentative method optimization,
+            // with both throwing stubs claiming the method symbol. Yield if the tentative method
+            // optimization node is marked.
+
+            ISymbolNode tentativeResult = factory.TentativeMethodEntrypoint(Method);
+            if (tentativeResult.Marked)
+                return tentativeResult;
+
+            return this;
+        }
+
         public override bool HasConditionalStaticDependencies => true;
 
         protected override ISymbolNode GetTarget(NodeFactory factory)
@@ -57,7 +77,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 new CombinedDependencyListEntry(
                     RealBody,
-                    factory.ConstructedTypeSymbol(owningType),
+                    factory.TypeWithInstanceMethods(owningType),
                     "Instance method on a constructed type"),
             };
         }
@@ -68,5 +88,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override int ClassCode => 0x8905207;
+
+        public override string ToString() => Method.ToString();
     }
 }

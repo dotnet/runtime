@@ -269,6 +269,8 @@ namespace ILCompiler.DependencyAnalysis
                     tentative.RealBody : (IMethodBodyNode)entrypoint);
             });
 
+            _typesWithInstanceMethods = new NodeCache<TypeDesc, TypeWithInstanceMethodsNode>(t => new TypeWithInstanceMethodsNode(t));
+
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
 
             _methodAssociatedData = new NodeCache<IMethodNode, MethodAssociatedDataNode>(methodNode =>
@@ -818,6 +820,12 @@ namespace ILCompiler.DependencyAnalysis
             // Didn't implement unboxing stubs for now. Would need to pass down the flag.
             Debug.Assert(!unboxingStub);
             return _tentativeMethodEntrypoints.GetOrAdd(method);
+        }
+
+        private NodeCache<TypeDesc, TypeWithInstanceMethodsNode> _typesWithInstanceMethods;
+        public IDependencyNode TypeWithInstanceMethods(TypeDesc type)
+        {
+            return _typesWithInstanceMethods.GetOrAdd(type);
         }
 
         public MethodAssociatedDataNode MethodAssociatedData(IMethodNode methodNode)
