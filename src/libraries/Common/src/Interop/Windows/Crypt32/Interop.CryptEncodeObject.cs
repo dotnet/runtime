@@ -14,6 +14,7 @@ internal static partial class Interop
         }
 
         [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool CryptEncodeObject(
             MsgEncodingType dwCertEncodingType,
             nint lpszStructType,

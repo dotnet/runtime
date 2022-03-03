@@ -213,7 +213,7 @@ partial class Test
     public static partial void Method1([MarshalAs(UnmanagedType.BStr)] int i1, int i2);
 
     [GeneratedDllImport(""DoesNotExist"")]
-    public static partial void Method2(bool b1, [MarshalAs(UnmanagedType.FunctionPtr)] bool b2);
+    public static partial void Method2(int i1, [MarshalAs(UnmanagedType.FunctionPtr)] bool b2);
 }
 ";
             Compilation comp = await TestUtils.CreateCompilation(source);
@@ -226,7 +226,7 @@ partial class Test
                     .WithSpan(6, 76, 6, 78)
                     .WithArguments(nameof(MarshalAsAttribute), "i1"),
                 (new DiagnosticResult(GeneratorDiagnostics.ParameterConfigurationNotSupported))
-                    .WithSpan(9, 93, 9, 95)
+                    .WithSpan(9, 92, 9, 94)
                     .WithArguments(nameof(MarshalAsAttribute), "b2"),
             };
             VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
@@ -248,7 +248,7 @@ partial class Test
 
     [GeneratedDllImport(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.FunctionPtr)]
-    public static partial bool Method2(bool b);
+    public static partial bool Method2(int i);
 }
 ";
             Compilation comp = await TestUtils.CreateCompilation(source);
@@ -282,7 +282,7 @@ partial class Test
     public static partial int Method1(int i);
 
     [GeneratedDllImport(""DoesNotExist"")]
-    public static partial bool Method2([MarshalAs((short)0)] bool b);
+    public static partial int Method2([MarshalAs((short)0)] bool b);
 }
 ";
             Compilation comp = await TestUtils.CreateCompilation(source);
@@ -298,10 +298,10 @@ partial class Test
                     .WithSpan(7, 31, 7, 38)
                     .WithArguments(nameof(MarshalAsAttribute), "Method1"),
                 (new DiagnosticResult(GeneratorDiagnostics.ConfigurationValueNotSupported))
-                    .WithSpan(10, 41, 10, 60)
+                    .WithSpan(10, 40, 10, 59)
                     .WithArguments(0, nameof(UnmanagedType)),
                 (new DiagnosticResult(GeneratorDiagnostics.ParameterConfigurationNotSupported))
-                    .WithSpan(10, 67, 10, 68)
+                    .WithSpan(10, 66, 10, 67)
                     .WithArguments(nameof(MarshalAsAttribute), "b"),
             };
             VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
@@ -322,7 +322,7 @@ partial class Test
     public static partial int Method1(int i);
 
     [GeneratedDllImport(""DoesNotExist"")]
-    public static partial bool Method2([MarshalAs(UnmanagedType.I1, IidParameterIndex = 1)] bool b);
+    public static partial int Method2([MarshalAs(UnmanagedType.I1, IidParameterIndex = 1)] bool b);
 }
 ";
             Compilation comp = await TestUtils.CreateCompilation(source);
@@ -335,7 +335,7 @@ partial class Test
                     .WithSpan(6, 14, 6, 73)
                     .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.SafeArraySubType)}"),
                 (new DiagnosticResult(GeneratorDiagnostics.ConfigurationNotSupported))
-                    .WithSpan(10, 41, 10, 91)
+                    .WithSpan(10, 40, 10, 90)
                     .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.IidParameterIndex)}"),
             };
             VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));

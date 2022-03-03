@@ -86,7 +86,7 @@ internal static partial class Interop
         public static partial IntPtr ldap_get_dn(ConnectionHandle ldapHandle, IntPtr result);
 
         [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option")]
-        public static partial int ldap_get_option_bool(ConnectionHandle ldapHandle, LdapOption option, ref bool outValue);
+        public static partial int ldap_get_option_bool(ConnectionHandle ldapHandle, LdapOption option, [MarshalAs(UnmanagedType.Bool)] ref bool outValue);
 
         [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option")]
         public static unsafe partial int ldap_get_option_secInfo(ConnectionHandle ldapHandle, LdapOption option, void* outValue);
@@ -119,7 +119,7 @@ internal static partial class Interop
             int scope,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string filter,
             IntPtr attributes,
-            bool attributeOnly,
+            [MarshalAs(UnmanagedType.Bool)] bool attributeOnly,
             IntPtr servercontrol,
             IntPtr clientcontrol,
             int timelimit,
@@ -127,7 +127,7 @@ internal static partial class Interop
             ref int messageNumber);
 
         [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", SetLastError = true)]
-        public static partial int ldap_set_option_bool(ConnectionHandle ld, LdapOption option, bool value);
+        public static partial int ldap_set_option_bool(ConnectionHandle ld, LdapOption option, [MarshalAs(UnmanagedType.Bool)] bool value);
 
         [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
         public static partial int ldap_set_option_clientcert(ConnectionHandle ldapHandle, LdapOption option, QUERYCLIENTCERT outValue);
@@ -168,7 +168,7 @@ internal static partial class Interop
             ConnectionHandle ld,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string dn,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string mechanism,
-            in BerVal cred,
+            BerVal cred,
             IntPtr serverctrls,
             IntPtr clientctrls,
             IntPtr servercredp);
@@ -188,7 +188,7 @@ internal static partial class Interop
         public static partial IntPtr ldap_err2string(int err);
 
         [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_extended_operation")]
-        public static partial int ldap_extended_operation(ConnectionHandle ldapHandle, [MarshalAs(UnmanagedType.LPUTF8Str)] string oid, in BerVal data, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        public static partial int ldap_extended_operation(ConnectionHandle ldapHandle, [MarshalAs(UnmanagedType.LPUTF8Str)] string oid, BerVal data, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
         [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_first_attribute")]
         public static partial IntPtr ldap_first_attribute(ConnectionHandle ldapHandle, IntPtr result, ref IntPtr address);
@@ -257,7 +257,7 @@ internal static partial class Interop
             ConnectionHandle ldapHandle,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string dn,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string attributeName,
-            in BerVal binaryValue,
+            BerVal binaryValue,
             IntPtr servercontrol,
             IntPtr clientcontrol,
             ref int messageNumber);

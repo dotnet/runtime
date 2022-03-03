@@ -9,6 +9,7 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool GetConsoleMode(IntPtr handle, out int mode);
 
         internal static bool IsGetConsoleModeCallSuccessful(IntPtr handle)
@@ -17,6 +18,7 @@ internal static partial class Interop
         }
 
         [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetConsoleMode(IntPtr handle, int mode);
 
         internal const int ENABLE_PROCESSED_INPUT = 0x0001;

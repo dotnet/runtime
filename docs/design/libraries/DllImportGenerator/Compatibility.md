@@ -58,6 +58,12 @@ When marshalling as [ANSI](https://docs.microsoft.com/windows/win32/intl/code-pa
 
 The p/invoke source generator does not provide an equivalent to using `CharSet.Auto` in the built-in system. If platform-dependent behaviour is desired, it is left to the user to define different p/invokes with different marshalling configurations.
 
+### `bool` marshalling
+
+We have decided to use `System.Runtime.CompilerServices.DisableRuntimeMarshalling` to enable our custom value type marshalling support. As a result, when a value type that has a `bool` field is passed to native code through source-generated marshalling, the `bool` field is treated as a 1-byte value and is not normalized. Since this default is a little odd and unlikely to be the majority use case, we're going to generally take a stance that all `bool` marshalling must be explicitly specified via `MarshalAs` or other mechanisms.
+
+To aid in conversion from `DllImport` to source-generated marshalling, the code-fix will automatically apply a `[MarshalAs(UnmangedType.Bool)]` attribute to `bool` parameters and return values to ensure the marshalling rules are not changed by the code fix.
+
 ### Custom marshaller support
 
 Using a custom marshaller (i.e. [`ICustomMarshaler`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.icustommarshaler)) with the `UnmanagedType.CustomMarshaler` value on `MarshalAsAttribute` is not supported. This also implies `MarshalAsAttribute` fields: [`MarshalTypeRef`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.marshaltyperef), [`MarshalType`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.marshaltype), and [`MarshalCookie`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.marshalcookie) are unsupported.
