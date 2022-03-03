@@ -11430,6 +11430,7 @@ void gc_heap::init_heap_segment (heap_segment* seg, gc_heap* hp
     heap_segment_plan_allocated (seg) = heap_segment_mem (seg);
     heap_segment_allocated (seg) = heap_segment_mem (seg);
     heap_segment_saved_allocated (seg) = heap_segment_mem (seg);
+    heap_segment_decommit_target (seg) = heap_segment_reserved (seg);
 #ifdef BACKGROUND_GC
     heap_segment_background_allocated (seg) = 0;
     heap_segment_saved_bg_allocated (seg) = 0;
@@ -39729,6 +39730,10 @@ bool gc_heap::decommit_step ()
                 return true;
             }
         }
+    }
+    if (use_large_pages_p)
+    {
+        return (decommit_size != 0);
     }
 #endif //USE_REGIONS
 #ifdef MULTIPLE_HEAPS
