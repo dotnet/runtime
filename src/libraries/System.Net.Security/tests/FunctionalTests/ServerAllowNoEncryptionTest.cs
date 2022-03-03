@@ -73,11 +73,12 @@ namespace System.Net.Security.Tests
                 using (var client = new SslStream(clientStream, false, TestHelper.AllowAnyServerCertificate, null, EncryptionPolicy.NoEncryption))
                 using (var server = new SslStream(serverStream, false, TestHelper.AllowAnyServerCertificate, null, EncryptionPolicy.AllowNoEncryption))
                 {
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                     await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                         // null encryption is not permitted with Tls13
                         client.AuthenticateAsClientAsync("localhost", null, SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12, false),
                         server.AuthenticateAsServerAsync(TestConfiguration.ServerCertificate));
-
+#pragma warning restore SYSLIB0039
                     _log.WriteLine("Client authenticated to server({0}) with encryption cipher: {1} {2}-bit strength",
                         clientStream.Socket.RemoteEndPoint, client.CipherAlgorithm, client.CipherStrength);
 

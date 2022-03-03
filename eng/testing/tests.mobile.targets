@@ -233,5 +233,5 @@
           DependsOnTargets="InstallWorkloadUsingArtifacts"
           Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
-  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(SkipImportRepoLinkerTargets)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true'" />
 </Project>

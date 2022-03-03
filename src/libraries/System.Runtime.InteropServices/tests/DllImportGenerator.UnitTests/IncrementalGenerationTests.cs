@@ -174,7 +174,7 @@ namespace DllImportGenerator.UnitTests
         [ConditionalFact]
         public async Task ChangingMarshallingAttributes_SameStrategy_DoesNotRegenerate()
         {
-            string source = CodeSnippets.BasicParametersAndModifiers<bool>();
+            string source = CodeSnippets.BasicParametersAndModifiers<int>();
 
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview));
 
@@ -187,7 +187,7 @@ namespace DllImportGenerator.UnitTests
 
             SyntaxTree newTree = syntaxTree.WithRootAndOptions(
                 SyntaxFactory.ParseCompilationUnit(
-                    CodeSnippets.MarshalAsParametersAndModifiers<bool>(System.Runtime.InteropServices.UnmanagedType.Bool)),
+                    CodeSnippets.MarshalAsParametersAndModifiers<int>(System.Runtime.InteropServices.UnmanagedType.I4)),
                 syntaxTree.Options);
 
             Compilation comp2 = comp1.ReplaceSyntaxTree(comp1.SyntaxTrees.First(), newTree);

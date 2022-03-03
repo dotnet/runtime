@@ -125,6 +125,9 @@ namespace System.Text.RegularExpressions.Tests
                         yield return (Case("(?>a*)123"), "aa1234", options, 0, 5, true, "aa123");
                         yield return (Case("(?>(?>a*))123"), "aa1234", options, 0, 5, true, "aa123");
                         yield return (Case("(?>a{2,})b"), "aaab", options, 0, 4, true, "aaab");
+                        yield return (Case("[a-z]{0,4}(?>[x-z]*.)(?=xyz1)"), "abcdxyz1", options, 0, 8, true, "abcd");
+                        yield return (Case("[a-z]{0,4}(?=[x-z]*.)(?=cd)"), "abcdxyz1", options, 0, 8, true, "ab");
+                        yield return (Case("[a-z]{0,4}(?![x-z]*[wx])(?=cd)"), "abcdxyz1", options, 0, 8, true, "ab");
 
                         // Atomic lazy
                         yield return (Case("(?>[0-9]+?)abc"), "abc12345abc", options, 3, 8, true, "5abc");

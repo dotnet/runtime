@@ -75,8 +75,10 @@ namespace System.Net.Security.Tests
                 using (var server = new SslStream(serverStream))
                 {
                     Task serverTask = server.AuthenticateAsServerAsync(TestConfiguration.ServerCertificate);
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete                    
                     await Assert.ThrowsAsync(TestConfiguration.SupportsHandshakeAlerts ? typeof(AuthenticationException) : typeof(IOException), () =>
                             client.AuthenticateAsClientAsync("localhost", null, SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12, false));
+#pragma warning restore SYSLIB0039                            
                     try
                     {
                         await serverTask.WaitAsync(TestConfiguration.PassingTestTimeout);
