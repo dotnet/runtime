@@ -519,7 +519,7 @@ namespace System
         internal static extern IRuntimeMethodInfo GetDeclaringMethod(RuntimeType type);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeByName", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void GetTypeByName(string name, bool throwOnError, bool ignoreCase, StackCrawlMarkHandle stackMark,
+        private static partial void GetTypeByName(string name, [MarshalAs(UnmanagedType.Bool)] bool throwOnError, [MarshalAs(UnmanagedType.Bool)] bool ignoreCase, StackCrawlMarkHandle stackMark,
             ObjectHandleOnStack assemblyLoadContext,
             ObjectHandleOnStack type, ObjectHandleOnStack keepalive);
 

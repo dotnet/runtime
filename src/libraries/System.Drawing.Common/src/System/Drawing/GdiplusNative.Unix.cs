@@ -288,7 +288,7 @@ namespace System.Drawing
             internal static partial int GdipAddPathPolygon(IntPtr path, PointF[] points, int count);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipAddPathPath(IntPtr path, IntPtr addingPath, bool connect);
+            internal static partial int GdipAddPathPath(IntPtr path, IntPtr addingPath, [MarshalAs(UnmanagedType.Bool)] bool connect);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipAddPathLineI(IntPtr path, int x1, int y1, int x2, int y2);
@@ -330,16 +330,16 @@ namespace System.Drawing
             internal static partial int GdipGetPathWorldBoundsI(IntPtr path, out Rectangle bounds, IntPtr matrix, IntPtr pen);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipIsVisiblePathPoint(IntPtr path, float x, float y, IntPtr graphics, out bool result);
+            internal static partial int GdipIsVisiblePathPoint(IntPtr path, float x, float y, IntPtr graphics, [MarshalAs(UnmanagedType.Bool)] out bool result);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipIsVisiblePathPointI(IntPtr path, int x, int y, IntPtr graphics, out bool result);
+            internal static partial int GdipIsVisiblePathPointI(IntPtr path, int x, int y, IntPtr graphics, [MarshalAs(UnmanagedType.Bool)] out bool result);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipIsOutlineVisiblePathPoint(IntPtr path, float x, float y, IntPtr pen, IntPtr graphics, out bool result);
+            internal static partial int GdipIsOutlineVisiblePathPoint(IntPtr path, float x, float y, IntPtr pen, IntPtr graphics, [MarshalAs(UnmanagedType.Bool)] out bool result);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipIsOutlineVisiblePathPointI(IntPtr path, int x, int y, IntPtr pen, IntPtr graphics, out bool result);
+            internal static partial int GdipIsOutlineVisiblePathPointI(IntPtr path, int x, int y, IntPtr pen, IntPtr graphics, [MarshalAs(UnmanagedType.Bool)] out bool result);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipCreateFontFromLogfont(IntPtr hdc, ref Interop.User32.LOGFONT lf, out IntPtr ptr);

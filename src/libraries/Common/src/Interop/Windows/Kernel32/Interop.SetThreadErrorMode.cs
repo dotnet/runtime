@@ -9,6 +9,7 @@ internal static partial class Interop
     {
         [SuppressGCTransition]
         [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetThreadErrorMode(
             uint dwNewMode,
             out uint lpOldMode);

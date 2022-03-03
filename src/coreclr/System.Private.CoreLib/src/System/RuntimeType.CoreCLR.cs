@@ -3987,6 +3987,7 @@ namespace System
     internal readonly unsafe partial struct MdUtf8String
     {
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_HashCaseInsensitive")]
