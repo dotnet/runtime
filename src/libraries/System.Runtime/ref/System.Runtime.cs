@@ -793,11 +793,11 @@ namespace System
         static System.Byte System.Numerics.IUnaryPlusOperators<System.Byte,System.Byte>.operator +(System.Byte value) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public static System.Byte TrailingZeroCount(System.Byte value) { throw null; }
         public static bool TryCreate<TOther>(TOther value, out System.Byte result) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Byte result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Byte result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Byte result) { throw null; }
@@ -1912,8 +1912,8 @@ namespace System
         public static float ToSingle(System.Decimal d) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ushort ToUInt16(System.Decimal value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -1922,7 +1922,7 @@ namespace System
         public static ulong ToUInt64(System.Decimal d) { throw null; }
         public static System.Decimal Truncate(System.Decimal d) { throw null; }
         public static bool TryCreate<TOther>(TOther value, out System.Decimal result) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryGetBits(System.Decimal d, System.Span<int> destination, out int valuesWritten) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Decimal result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Decimal result) { throw null; }
@@ -2109,11 +2109,11 @@ namespace System
         public static System.Double Tanh(System.Double x) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public static System.Double Truncate(System.Double x) { throw null; }
         public static bool TryCreate<TOther>(TOther value, out System.Double result) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Double result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Double result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Double result) { throw null; }
@@ -2668,11 +2668,11 @@ namespace System
         public static System.Half Tanh(System.Half x) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public static System.Half Truncate(System.Half x) { throw null; }
         public static bool TryCreate<TOther>(TOther value, out System.Half result) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Half result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Half result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Half result) { throw null; }
@@ -2886,11 +2886,11 @@ namespace System
         static System.Int16 System.Numerics.IUnaryPlusOperators<System.Int16,System.Int16>.operator +(System.Int16 value) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public static System.Int16 TrailingZeroCount(System.Int16 value) { throw null; }
         public static bool TryCreate<TOther>(TOther value, out System.Int16 result) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Int16 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Int16 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Int16 result) { throw null; }
@@ -2979,11 +2979,11 @@ namespace System
         static System.Int32 System.Numerics.IUnaryPlusOperators<System.Int32,System.Int32>.operator +(System.Int32 value) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public static System.Int32 TrailingZeroCount(System.Int32 value) { throw null; }
         public static bool TryCreate<TOther>(TOther value, out System.Int32 result) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public bool TryFormat(System.Span<char> destination, out System.Int32 charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out System.Int32 charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Int32 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Int32 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Int32 result) { throw null; }
@@ -3072,11 +3072,11 @@ namespace System
         static System.Int64 System.Numerics.IUnaryPlusOperators<System.Int64,System.Int64>.operator +(System.Int64 value) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public static System.Int64 TrailingZeroCount(System.Int64 value) { throw null; }
         public static bool TryCreate<TOther>(TOther value, out System.Int64 result) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Int64 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Int64 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Int64 result) { throw null; }
@@ -3174,9 +3174,9 @@ namespace System
         public unsafe void* ToPointer() { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.IntPtr result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.IntPtr result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.IntPtr result) { throw null; }
@@ -4064,11 +4064,11 @@ namespace System
         static System.SByte System.Numerics.IUnaryPlusOperators<System.SByte,System.SByte>.operator +(System.SByte value) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public static System.SByte TrailingZeroCount(System.SByte value) { throw null; }
         public static bool TryCreate<TOther>(TOther value, out System.SByte result) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.SByte result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.SByte result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.SByte result) { throw null; }
@@ -4213,11 +4213,11 @@ namespace System
         public static System.Single Tanh(System.Single x) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public static System.Single Truncate(System.Single x) { throw null; }
         public static bool TryCreate<TOther>(TOther value, out System.Single result) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Single result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Single result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Single result) { throw null; }
@@ -5466,11 +5466,11 @@ namespace System
         static System.UInt16 System.Numerics.IUnaryPlusOperators<System.UInt16,System.UInt16>.operator +(System.UInt16 value) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public static System.UInt16 TrailingZeroCount(System.UInt16 value) { throw null; }
         public static bool TryCreate<TOther>(TOther value, out System.UInt16 result) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UInt16 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.UInt16 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.UInt16 result) { throw null; }
@@ -5559,11 +5559,11 @@ namespace System
         static System.UInt32 System.Numerics.IUnaryPlusOperators<System.UInt32,System.UInt32>.operator +(System.UInt32 value) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public static System.UInt32 TrailingZeroCount(System.UInt32 value) { throw null; }
         public static bool TryCreate<TOther>(TOther value, out System.UInt32 result) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UInt32 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.UInt32 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.UInt32 result) { throw null; }
@@ -5652,11 +5652,11 @@ namespace System
         static System.UInt64 System.Numerics.IUnaryPlusOperators<System.UInt64,System.UInt64>.operator +(System.UInt64 value) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public static System.UInt64 TrailingZeroCount(System.UInt64 value) { throw null; }
         public static bool TryCreate<TOther>(TOther value, out System.UInt64 result) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UInt64 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.UInt64 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.UInt64 result) { throw null; }
@@ -5748,11 +5748,11 @@ namespace System
         public unsafe void* ToPointer() { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public uint ToUInt32() { throw null; }
         public ulong ToUInt64() { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UIntPtr result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.UIntPtr result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.UIntPtr result) { throw null; }
@@ -7278,6 +7278,7 @@ namespace System.Diagnostics.CodeAnalysis
         public const string DateFormat = "DateFormat";
         public const string DateTimeFormat = "DateTimeFormat";
         public const string Json = "Json";
+        public const string NumericFormat = "NumericFormat";
         public const string Regex = "Regex";
         public const string TimeFormat = "TimeFormat";
     }

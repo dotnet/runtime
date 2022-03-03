@@ -46,6 +46,9 @@ namespace System.Diagnostics.CodeAnalysis
         /// <summary>The syntax identifier for strings containing JavaScript Object Notation (JSON).</summary>
         public const string Json = nameof(Json);
 
+        /// <summary>The syntax identifier for strings containing numeric format specifiers.</summary>
+        public const string NumericFormat = nameof(NumericFormat);
+
         /// <summary>The syntax identifier for strings containing regular expressions.</summary>
         public const string Regex = nameof(Regex);
 
