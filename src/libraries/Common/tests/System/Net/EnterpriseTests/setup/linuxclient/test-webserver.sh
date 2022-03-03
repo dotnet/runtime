@@ -9,5 +9,8 @@ nslookup github.com
 if [ $? -ne 0 ]; then
   # try to fix-up DNS by adding public server
   echo nameserver 8.8.8.8 >> /etc/resolv.conf
+
+  nslookup github.com
+  curl --verbose http://apacheweb.linux.contoso.com
 fi
-nslookup github.com
+
