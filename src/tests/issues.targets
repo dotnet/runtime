@@ -2921,6 +2921,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
+	<ExcludeList Include = "$(XunitTestBinBase)/Interop/MonoAPI/MonoMono/Thunks/**">
+	    <Issue>Test not expected to work with AOT</Issue>
+	</ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot') and '$(TargetArchitecture)' == 'arm64'">
