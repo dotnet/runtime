@@ -46,6 +46,9 @@ namespace System.Diagnostics.CodeAnalysis
         /// <summary>The syntax identifier for strings containing <see cref="Enum"/> format specifiers.</summary>
         public const string EnumFormat = nameof(EnumFormat);
 
+        /// <summary>The syntax identifier for strings containing <see cref="Guid"/> format specifiers.</summary>
+        public const string GuidFormat = nameof(GuidFormat);
+
         /// <summary>The syntax identifier for strings containing JavaScript Object Notation (JSON).</summary>
         public const string Json = nameof(Json);
 
