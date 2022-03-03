@@ -6825,13 +6825,17 @@ void LinearScan::resolveRegisters()
                     Interval* localVarInterval = interval->relatedInterval;
                     if ((localVarInterval->physReg != REG_NA) && !localVarInterval->isPartiallySpilled)
                     {
-                        // If the localVar is in a register, it must be in a register that is not trashed by
-                        // the current node (otherwise it would have already been spilled).
-                        assert((genRegMask(localVarInterval->physReg) & getKillSetForNode(treeNode)) == RBM_NONE);
-                        // If we have allocated a register to spill it to, we will use that; otherwise, we will spill it
-                        // to the stack.  We can use as a temp register any non-arg caller-save register.
-                        currentRefPosition->referent->recentRefPosition = currentRefPosition;
-                        insertUpperVectorSave(treeNode, currentRefPosition, currentRefPosition->getInterval(), block);
+                        if (!currentRefPosition->skipSaveRestore)
+                        {
+                            // If the localVar is in a register, it must be in a register that is not trashed by
+                            // the current node (otherwise it would have already been spilled).
+                            assert((genRegMask(localVarInterval->physReg) & getKillSetForNode(treeNode)) == RBM_NONE);
+                            // If we have allocated a register to spill it to, we will use that; otherwise, we will
+                            // spill it to the stack.  We can use as a temp register any non-arg caller-save register.
+                            currentRefPosition->referent->recentRefPosition = currentRefPosition;
+                            insertUpperVectorSave(treeNode, currentRefPosition, currentRefPosition->getInterval(),
+                                                  block);
+                        }
                         localVarInterval->isPartiallySpilled = true;
                     }
                 }
@@ -6855,7 +6859,10 @@ void LinearScan::resolveRegisters()
                     assert((localVarInterval->assignedReg != nullptr) &&
                            (localVarInterval->assignedReg->regNum == localVarInterval->physReg) &&
                            (localVarInterval->assignedReg->assignedInterval == localVarInterval));
-                    insertUpperVectorRestore(treeNode, currentRefPosition, interval, block);
+                    if (!currentRefPosition->skipSaveRestore)
+                    {
+                        insertUpperVectorRestore(treeNode, currentRefPosition, interval, block);
+                    }
                 }
                 localVarInterval->isPartiallySpilled = false;
             }
