@@ -148,12 +148,12 @@ namespace System.Net.Security.Tests
                             ServerCertificate = TestConfiguration.ServerCertificate,
                             CertificateRevocationCheckMode = X509RevocationMode.NoCheck });
 
-                        await clientTask.WaitAsync(TestConfiguration.PassingTestTimeout);
+                    await clientTask.WaitAsync(TestConfiguration.PassingTestTimeout);
 
-                        _log.WriteLine("Client authenticated to server with encryption cipher: {0} {1}-bit strength",
+                    _log.WriteLine("Client authenticated to server with encryption cipher: {0} {1}-bit strength",
                             client.CipherAlgorithm, client.CipherStrength);
-                        Assert.True(client.CipherAlgorithm != CipherAlgorithmType.Null, "Cipher algorithm should not be NULL");
-                        Assert.True(client.CipherStrength > 0, "Cipher strength should be greater than 0");
+                    Assert.True(client.CipherAlgorithm != CipherAlgorithmType.Null, "Cipher algorithm should not be NULL");
+                    Assert.True(client.CipherStrength > 0, "Cipher strength should be greater than 0");
                 }
                 finally
                 {
@@ -165,7 +165,7 @@ namespace System.Net.Security.Tests
                     }
                     catch (Exception ex)
                     {
-                        // log exception in case test will fail.
+                        // We generally don't care about server but can log exception to help diagnose test failures
                         _log.WriteLine(ex.ToString());
                     }
                 }

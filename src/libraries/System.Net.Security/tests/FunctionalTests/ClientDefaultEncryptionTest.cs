@@ -83,7 +83,8 @@ namespace System.Net.Security.Tests
                     }
                     catch (Exception ex)
                     {
-                        // serverTask will fail. Log server error in case the test fails.
+                        // serverTask will fail.
+                        // We generally don't care but can log exception to help diagnose test failures
                         _log.WriteLine(ex.ToString());
                     }
                 }
