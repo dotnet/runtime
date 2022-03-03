@@ -238,7 +238,7 @@ steps:
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
-        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidPodcasts.apk
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidPodcast.apk
         includeRootFolder: true
         displayName: Maui Android Podcast
         artifactName: MauiAndroidPodcast
