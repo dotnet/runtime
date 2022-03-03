@@ -213,11 +213,12 @@ namespace DllImportGenerator.UnitTests
             return d;
         }
 
-        public static GeneratorDriver CreateDriver(Compilation c, AnalyzerConfigOptionsProvider? options, IIncrementalGenerator[] generators)
+        public static GeneratorDriver CreateDriver(Compilation c, AnalyzerConfigOptionsProvider? options, IIncrementalGenerator[] generators, GeneratorDriverOptions driverOptions = default)
             => CSharpGeneratorDriver.Create(
                 ImmutableArray.Create(generators.Select(gen => gen.AsSourceGenerator()).ToArray()),
                 parseOptions: (CSharpParseOptions)c.SyntaxTrees.First().Options,
-                optionsProvider: options);
+                optionsProvider: options,
+                driverOptions: driverOptions);
 
         // The non-configurable test-packages folder may be incomplete/corrupt.
         // - https://github.com/dotnet/roslyn-sdk/issues/487
