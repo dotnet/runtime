@@ -15,6 +15,7 @@ class Program
         TestInstanceMethodOptimization.Run();
         TestAbstractTypeVirtualsOptimization.Run();
         TestAbstractTypeNeverDerivedVirtualsOptimization.Run();
+        TestAbstractNeverDerivedWithDevirtualizedCall.Run();
 
         return 100;
     }
@@ -148,6 +149,35 @@ class Program
             }
 
             ThrowIfPresent(typeof(TestAbstractTypeNeverDerivedVirtualsOptimization), nameof(UnreferencedType1));
+        }
+    }
+
+    class TestAbstractNeverDerivedWithDevirtualizedCall
+    {
+        static void DoIt(Derived d) => d?.DoSomething();
+
+        abstract class Base
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public virtual void DoSomething() => new UnreferencedType1().ToString();
+        }
+
+        sealed class Derived : Base { }
+
+        class UnreferencedType1 { }
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing abstract classes that might have methods reachable through devirtualization");
+
+            // Force a vtable for Base
+            typeof(Base).ToString();
+
+            // Do a devirtualizable virtual call to something that was never allocated
+            // and uses a virtual method implementation from Base.
+            DoIt(null);
+
+            ThrowIfPresent(typeof(TestAbstractNeverDerivedWithDevirtualizedCall), nameof(UnreferencedType1));
         }
     }
 
