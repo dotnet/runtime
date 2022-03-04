@@ -877,13 +877,13 @@ namespace System.Globalization
             false, /*0x24,  $*/
             false, /*0x25,  %*/
             false, /*0x26,  &*/
-            true,  /*0x27, '*/
+            false,  /*0x27, '*/
             false, /*0x28, (*/
             false, /*0x29, )*/
             false, /*0x2A **/
             false, /*0x2B, +*/
             false, /*0x2C, ,*/
-            true,  /*0x2D, -*/
+            false,  /*0x2D, -*/
             false, /*0x2E, .*/
             false, /*0x2F, /*/
             false, /*0x30, 0*/
