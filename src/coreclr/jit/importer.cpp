@@ -6691,7 +6691,6 @@ typeInfo Compiler::verVerifySTIND(const typeInfo& tiTo, const typeInfo& value, c
     if (!tiCompatibleWith(value, normPtrVal, true))
     {
         Verify(tiCompatibleWith(value, normPtrVal, true), "type mismatch");
-        compUnsafeCastUsed = true;
     }
     return ptrVal;
 }
@@ -6707,18 +6706,15 @@ typeInfo Compiler::verVerifyLDIND(const typeInfo& ptr, const typeInfo& instrType
         if (instrType.IsObjRef() && !ptrVal.IsObjRef())
         {
             Verify(false, "bad pointer");
-            compUnsafeCastUsed = true;
         }
         else if (!instrType.IsObjRef() && !typeInfo::AreEquivalent(instrType, ptrVal))
         {
             Verify(false, "pointer not consistent with instr");
-            compUnsafeCastUsed = true;
         }
     }
     else
     {
         Verify(false, "pointer not byref");
-        compUnsafeCastUsed = true;
     }
 
     return ptrVal;
@@ -14230,9 +14226,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 lclTyp = TYP_DOUBLE;
                 goto STIND;
             STIND:
-                compUnsafeCastUsed = true; // Have to go conservative
-
-            STIND_POST_VERIFY:
 
                 op2 = impPopStack().val; // value to store
                 op1 = impPopStack().val; // address to store to
@@ -14356,9 +14349,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 lclTyp = TYP_USHORT;
                 goto LDIND;
             LDIND:
-                compUnsafeCastUsed = true; // Have to go conservative
-
-            LDIND_POST_VERIFY:
 
                 op1 = impPopStack().val; // address to load from
                 impBashVarAddrsToI(op1);
@@ -16601,7 +16591,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     impPushOnStack(op1, typeInfo());
                     opcode = CEE_STIND_REF;
                     lclTyp = TYP_REF;
-                    goto STIND_POST_VERIFY;
+                    goto STIND;
                 }
 
                 op2 = impPopStack().val; // Src
@@ -16626,19 +16616,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     lclTyp = TYP_REF;
                 }
 
-                compUnsafeCastUsed = true;
-
                 if (lclTyp == TYP_REF)
                 {
                     opcode = CEE_STIND_REF;
-                    goto STIND_POST_VERIFY;
+                    goto STIND;
                 }
 
                 CorInfoType jitTyp = info.compCompHnd->asCorInfoType(resolvedToken.hClass);
                 if (impIsPrimitive(jitTyp))
                 {
                     lclTyp = JITtype2varType(jitTyp);
-                    goto STIND_POST_VERIFY;
+                    goto STIND;
                 }
 
                 op2 = impPopStack().val; // Value
@@ -16707,8 +16695,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 tiRetVal = verMakeTypeInfo(resolvedToken.hClass);
 
-                compUnsafeCastUsed = true;
-
                 if (eeIsValueClass(resolvedToken.hClass))
                 {
                     lclTyp = TYP_STRUCT;
@@ -16717,7 +16703,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     lclTyp = TYP_REF;
                     opcode = CEE_LDIND_REF;
-                    goto LDIND_POST_VERIFY;
+                    goto LDIND;
                 }
 
                 op1 = impPopStack().val;
