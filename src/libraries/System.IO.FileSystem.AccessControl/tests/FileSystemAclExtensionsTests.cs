@@ -635,7 +635,7 @@ namespace System.IO
         {
             var security = new FileSecurity();
             var info = new FileInfo(PathGenerator.GenerateTestFileName());
-            info.Create(mode, rights, FileShare.None, DefaultBufferSize, FileOptions.None, security).Dispose();
+            info.Create(mode, rights, FileShare.None, DefaultBufferSize, FileOptions.DeleteOnClose, security).Dispose();
         }
 
         private void Verify_FileSecurity_CreateFile(FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity expectedSecurity)
