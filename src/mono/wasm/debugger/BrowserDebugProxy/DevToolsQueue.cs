@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,16 +14,14 @@ using System.Threading.Tasks;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    internal class DevToolsQueue
+    internal class DevToolsQueueBase
     {
-        private Task? current_send;
-        private ConcurrentQueue<byte[]> pending;
+        protected Task? current_send;
+        protected ConcurrentQueue<byte[]> pending;
 
-        public WebSocket Ws { get; private set; }
         public Task? CurrentSend { get { return current_send; } }
-        public DevToolsQueue(WebSocket sock)
+        public DevToolsQueueBase()
         {
-            this.Ws = sock;
             pending = new ConcurrentQueue<byte[]>();
         }
 
@@ -36,7 +35,24 @@ namespace Microsoft.WebAssembly.Diagnostics
             return sendTask;
         }
 
-        public bool TryPumpIfCurrentCompleted(CancellationToken token, [NotNullWhen(true)] out Task? sendTask)
+        public virtual bool TryPumpIfCurrentCompleted(CancellationToken token, [NotNullWhen(true)] out Task? sendTask)
+        {
+            sendTask = null;
+            return false;
+        }
+    }
+
+    internal class DevToolsQueue : DevToolsQueueBase
+    {
+        public WebSocket Ws { get; private set; }
+
+        public DevToolsQueue(WebSocket sock)
+        {
+            this.Ws = sock;
+            pending = new ConcurrentQueue<byte[]>();
+        }
+
+        public override bool TryPumpIfCurrentCompleted(CancellationToken token, [NotNullWhen(true)] out Task? sendTask)
         {
             sendTask = null;
 
@@ -47,6 +63,35 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (pending.TryDequeue(out byte[]? bytes))
             {
                 current_send = Ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, token);
+                sendTask = current_send;
+            }
+
+            return sendTask != null;
+        }
+    }
+
+    internal class DevToolsQueueFirefox : DevToolsQueueBase
+    {
+        public TcpClient Tc { get; private set; }
+
+        public DevToolsQueueFirefox(TcpClient tc)
+        {
+            this.Tc = tc;
+        }
+
+        public override bool TryPumpIfCurrentCompleted(CancellationToken token, [NotNullWhen(true)] out Task? sendTask)
+        {
+            sendTask = null;
+
+            if (current_send?.IsCompleted == false)
+                return false;
+
+            current_send = null;
+            if (pending.TryDequeue(out byte[]? bytes))
+            {
+                NetworkStream toStream = Tc.GetStream();
+
+                current_send = toStream.WriteAsync(bytes, token).AsTask();
                 sendTask = current_send;
             }
 
