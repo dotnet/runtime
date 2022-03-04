@@ -899,6 +899,12 @@ namespace System.Text.RegularExpressions.Symbolic
                     _transitionRegex = TransitionRegex<S>.Union(_left.CreateDerivative(), _right.CreateDerivative());
                     break;
 
+                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                    Debug.Assert(_left is not null);
+                    // The derivative to TransitionRegex does not support backtracking simulation, so ignore this node
+                    _transitionRegex = _left.CreateDerivative();
+                    break;
+
                 case SymbolicRegexNodeKind.And:
                     Debug.Assert(_alts is not null);
                     _transitionRegex = TransitionRegex<S>.Leaf(_builder._anyStar);
@@ -934,7 +940,17 @@ namespace System.Text.RegularExpressions.Symbolic
         internal SymbolicRegexNode<S> CreateDerivative(S elem, uint context)
         {
             List<(SymbolicRegexNode<S> Node, DerivativeEffect[])> transitions = new();
-            AddTransitions(elem, context, transitions, new List<SymbolicRegexNode<S>>(), null);
+            if (_kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation)
+            {
+                // Since this node disables backtracking simulation, unwrap the node and pass the corresponding flag as
+                // false to AddTransitions.
+                Debug.Assert(_left is not null);
+                _left.AddTransitions(elem, context, transitions, new List<SymbolicRegexNode<S>>(), null, simulateBacktracking: false);
+            }
+            else
+            {
+                AddTransitions(elem, context, transitions, new List<SymbolicRegexNode<S>>(), null, simulateBacktracking: true);
+            }
             SymbolicRegexNode<S> derivative = _builder._nothing;
             // Iterate backwards to avoid quadratic rebuilding of the Or nodes, which are always simplified to
             // right associative form. Concretely:
@@ -943,8 +959,13 @@ namespace System.Text.RegularExpressions.Symbolic
             // The first case performs linear work for each element, leading to a quadratic blowup.
             for (int i = transitions.Count - 1; i >= 0; --i)
             {
-                derivative = _builder.OrderedOr(transitions[i].Node, derivative);
+                SymbolicRegexNode<S> node = transitions[i].Node;
+                Debug.Assert(node._kind != SymbolicRegexNodeKind.DisableBacktrackingSimulation);
+                derivative = _builder.OrderedOr(node, derivative);
             }
+            if (_kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation)
+                // Make future derivatives disable backtracking simulation too
+                derivative = _builder.CreateDisableBacktrackingSimulation(derivative);
             return derivative;
         }
 
@@ -967,7 +988,24 @@ namespace System.Text.RegularExpressions.Symbolic
         internal List<(SymbolicRegexNode<S>, DerivativeEffect[])> CreateNfaDerivativeWithEffects(S elem, uint context)
         {
             List<(SymbolicRegexNode<S>, DerivativeEffect[])> transitions = new();
-            AddTransitions(elem, context, transitions, new List<SymbolicRegexNode<S>>(), new Stack<DerivativeEffect>());
+            if (_kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation)
+            {
+                // Since this node disables backtracking simulation, unwrap the node and pass the corresponding flag as
+                // false to AddTransitions.
+                Debug.Assert(_left is not null);
+                _left.AddTransitions(elem, context, transitions, new List<SymbolicRegexNode<S>>(), new Stack<DerivativeEffect>(), simulateBacktracking: false);
+                // Make future derivatives disable backtracking simulation too
+                for (int i = 0; i < transitions.Count; ++i)
+                {
+                    var (node, effects) = transitions[i];
+                    Debug.Assert(node._kind != SymbolicRegexNodeKind.DisableBacktrackingSimulation);
+                    transitions[i] = (_builder.CreateDisableBacktrackingSimulation(node), effects);
+                }
+            }
+            else
+            {
+                AddTransitions(elem, context, transitions, new List<SymbolicRegexNode<S>>(), new Stack<DerivativeEffect>(), simulateBacktracking: true);
+            }
             return transitions;
         }
 
@@ -983,9 +1021,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="continuation">a list used in recursive calls to track nodes to concatenate, should be an empty list at the root call</param>
         /// <param name="effects">a stack used in recursive calls to track effects, should be an empty stack at the root call</param>
         /// <param name="simulateBacktracking">whether the derivative should only consider paths that backtracking would take, true by default</param>
-        /// <returns>true if an unconditionally nullable transition has been generated, which means that backtracking would not consider any further paths</returns>
-        private bool AddTransitions(S elem, uint context, List<(SymbolicRegexNode<S>, DerivativeEffect[])> transitions,
-            List<SymbolicRegexNode<S>> continuation, Stack<DerivativeEffect>? effects, bool simulateBacktracking = true)
+        private void AddTransitions(S elem, uint context, List<(SymbolicRegexNode<S>, DerivativeEffect[])> transitions,
+            List<SymbolicRegexNode<S>> continuation, Stack<DerivativeEffect>? effects, bool simulateBacktracking)
         {
             // Helper function for concatenating a head node and a list of continuation nodes. The continuation nodes
             // are added in reverse order and the function below uses the list as a stack, so the nodes added to the
@@ -1000,29 +1037,40 @@ namespace System.Text.RegularExpressions.Symbolic
                 return head._builder.CreateConcat(head, leaf);
             }
 
+            // Helper function for detecting when an unconditionally nullable pattern is in the transitions and no
+            // more transitions need to be considered. If the derivative simulates backtracking, then in the next
+            // step nothing after an unconditionally nullable state would be considered.
+            // For example, d_a( a|ab ) under backtracking simulation transitions to just epsilon, while without
+            // backtracking simulation it would transition to epsilon|b.
+            // All parts of the function below should consider IsDone and return early when it is true.
+            static bool IsDone(List<(SymbolicRegexNode<S> Node, DerivativeEffect[])> transitions, bool simulateBacktracking) =>
+                simulateBacktracking && transitions.Count > 0 && transitions[transitions.Count - 1].Node.IsNullable;
+
             // Nothing and epsilon can't consume a character so they generate no transition
             if (IsNothing || IsEpsilon)
             {
-                return false;
+                return;
             }
 
             // For both .* and .+ the derivative is .* for any character
             if (IsAnyStar || IsAnyPlus)
             {
+                Debug.Assert(!IsDone(transitions, simulateBacktracking));
                 SymbolicRegexNode<S> leaf = BuildLeaf(_builder._anyStar, continuation);
                 transitions.Add((leaf, effects?.ToArray() ?? Array.Empty<DerivativeEffect>()));
                 // Signal early exit if the leaf is unconditionally nullable
-                return leaf.IsNullable;
+                return;
             }
 
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                return StackHelper.CallOnEmptyStack(AddTransitions, elem, context, transitions, continuation, effects, simulateBacktracking);
+                StackHelper.CallOnEmptyStack(AddTransitions, elem, context, transitions, continuation, effects, simulateBacktracking);
             }
 
             switch (_kind)
             {
                 case SymbolicRegexNodeKind.Singleton:
+                    Debug.Assert(!IsDone(transitions, simulateBacktracking));
                     Debug.Assert(_set is not null);
                     // The following check assumes that either (1) the element and predicate are minterms, in which case
                     // the element is exactly the predicate if the intersection is satisfiable, or (2) the element is a singleton
@@ -1032,7 +1080,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         SymbolicRegexNode<S> leaf = BuildLeaf(_builder.Epsilon, continuation);
                         transitions.Add((leaf, effects?.ToArray() ?? Array.Empty<DerivativeEffect>()));
                         // Signal early exit if the leaf is unconditionally nullable
-                        return leaf.IsNullable;
+                        return;
                     }
                     break;
 
@@ -1044,9 +1092,8 @@ namespace System.Text.RegularExpressions.Symbolic
                         // If the left side can't be nullable then the character must be consumed there.
                         // For example, d(ab) = d(a)b.
                         continuation.Add(_right);
-                        bool done = _left.AddTransitions(elem, context, transitions, continuation, effects, simulateBacktracking);
+                        _left.AddTransitions(elem, context, transitions, continuation, effects, simulateBacktracking);
                         continuation.RemoveAt(continuation.Count - 1);
-                        return done;
                     }
                     else if (_left._kind == SymbolicRegexNodeKind.OrderedOr)
                     {
@@ -1067,21 +1114,19 @@ namespace System.Text.RegularExpressions.Symbolic
                         // alternative. When the path through the first alternative is not nullable or the derivative is not
                         // backtracking-simulating, then all paths through it are considered.
                         bool leftLeftSimulateBacktracking = simulateBacktracking && leftLeftPath.IsNullableFor(context);
-                        if (leftLeftPath.AddTransitions(elem, context, transitions, continuation, effects, leftLeftSimulateBacktracking))
-                            return true;
+                        leftLeftPath.AddTransitions(elem, context, transitions, continuation, effects, leftLeftSimulateBacktracking);
                         // Include the path through the right side only if the left side is not nullable or the derivative
                         // is not simulating backtracking.
                         // For example, d( (a|b)c* ) = d(ac) | d(bc), while on the other hand d( (a?|b)c* ) = d(a?c*).
                         // In the latter case the second alternative is omitted because the backtracking matcher would rather
                         // accept an empty string for a?c* than anything for bc*.
-                        if (!leftLeftSimulateBacktracking)
-                            return _builder.CreateConcat(_left._right, _right).AddTransitions(elem, context, transitions, continuation, effects, simulateBacktracking);
-                        break;
+                        if (!IsDone(transitions, simulateBacktracking) && !leftLeftSimulateBacktracking)
+                            _builder.CreateConcat(_left._right, _right).AddTransitions(elem, context, transitions, continuation, effects, simulateBacktracking);
                     }
                     else
                     {
                         // Helper function for the case where the right side consumes the character
-                        static bool RightTransition(SymbolicRegexNode<S> node, S elem, uint context, List<(SymbolicRegexNode<S>, DerivativeEffect[])> transitions,
+                        static void RightTransition(SymbolicRegexNode<S> node, S elem, uint context, List<(SymbolicRegexNode<S>, DerivativeEffect[])> transitions,
                             List<SymbolicRegexNode<S>> continuation, Stack<DerivativeEffect>? effects, bool simulateBacktracking)
                         {
                             Debug.Assert(node._left is not null && node._right is not null);
@@ -1092,18 +1137,17 @@ namespace System.Text.RegularExpressions.Symbolic
                                 // Push all effects onto the effects stack
                                 node._left.ApplyEffects((effect, stack) => stack.Push(effect), context, effects);
                             }
-                            bool done = node._right.AddTransitions(elem, context, transitions, continuation, effects, simulateBacktracking);
-                            if (!done && effects is not null)
+                            node._right.AddTransitions(elem, context, transitions, continuation, effects, simulateBacktracking);
+                            if (effects is not null)
                             {
                                 // Pop all effects that were added here
                                 while (effects.Count > oldEffectsCount)
                                     effects.Pop();
                             }
-                            return done;
                         }
 
                         // Helper function for the case where the left side consumes the character
-                        static bool LeftTransition(SymbolicRegexNode<S> node, S elem, uint context, List<(SymbolicRegexNode<S>, DerivativeEffect[])> transitions,
+                        static void LeftTransition(SymbolicRegexNode<S> node, S elem, uint context, List<(SymbolicRegexNode<S>, DerivativeEffect[])> transitions,
                             List<SymbolicRegexNode<S>> continuation, Stack<DerivativeEffect>? effects, bool simulateBacktracking)
                         {
                             Debug.Assert(node._left is not null && node._right is not null);
@@ -1113,9 +1157,8 @@ namespace System.Text.RegularExpressions.Symbolic
                             // string here even when it hits a nullable path for the left side, so all paths through the left side
                             // need to be considered.
                             bool leftSimulateBacktracking = simulateBacktracking && node._right.IsNullableFor(context);
-                            bool done = node._left.AddTransitions(elem, context, transitions, continuation, effects, leftSimulateBacktracking);
+                            node._left.AddTransitions(elem, context, transitions, continuation, effects, leftSimulateBacktracking);
                             continuation.RemoveAt(continuation.Count - 1);
-                            return done;
                         }
 
                         // Order the transitions. If the left side is a lazy loop that is nullable due to its lower bound then prefer the right side.
@@ -1124,17 +1167,18 @@ namespace System.Text.RegularExpressions.Symbolic
                         // For example, d(a*?b) = d(b) | d(a*?)b while without the lazy loop d(a*b) = d(a*)b | d(b).
                         if (_left._kind == SymbolicRegexNodeKind.Loop && _left.IsLazy && _left._lower == 0)
                         {
-                            if (RightTransition(this, elem, context, transitions, continuation, effects, simulateBacktracking))
-                                return true;
-                            return LeftTransition(this, elem, context, transitions, continuation, effects, simulateBacktracking);
+                            RightTransition(this, elem, context, transitions, continuation, effects, simulateBacktracking);
+                            if (!IsDone(transitions, simulateBacktracking))
+                                LeftTransition(this, elem, context, transitions, continuation, effects, simulateBacktracking);
                         }
                         else
                         {
-                            if (LeftTransition(this, elem, context, transitions, continuation, effects, simulateBacktracking))
-                                return true;
-                            return RightTransition(this, elem, context, transitions, continuation, effects, simulateBacktracking);
+                            LeftTransition(this, elem, context, transitions, continuation, effects, simulateBacktracking);
+                            if (!IsDone(transitions, simulateBacktracking))
+                                RightTransition(this, elem, context, transitions, continuation, effects, simulateBacktracking);
                         }
                     }
+                    break;
 
                 case SymbolicRegexNodeKind.Loop:
                     Debug.Assert(_left is not null);
@@ -1151,9 +1195,8 @@ namespace System.Text.RegularExpressions.Symbolic
                         SymbolicRegexNode<S> rest = _builder.CreateLoop(_left, IsLazy, newlower, newupper);
 
                         continuation.Add(rest);
-                        bool done = _left.AddTransitions(elem, context, transitions, continuation, effects, simulateBacktracking);
+                        _left.AddTransitions(elem, context, transitions, continuation, effects, simulateBacktracking);
                         continuation.RemoveAt(continuation.Count - 1);
-                        return done;
                     }
                     break;
 
@@ -1165,36 +1208,23 @@ namespace System.Text.RegularExpressions.Symbolic
                     // the path through the left side is not nullable or the derivative doesn't simulate backtracking,
                     // then all paths through it are considered.
                     bool leftSimulateBacktracking = simulateBacktracking && _left.IsNullableFor(context);
-                    if (_left.AddTransitions(elem, context, transitions, continuation, effects, simulateBacktracking && _left.IsNullableFor(context)))
-                        return true;
+                    _left.AddTransitions(elem, context, transitions, continuation, effects, simulateBacktracking && _left.IsNullableFor(context));
                     // Include the path through the right side only if the left side is not nullable or the derivative
                     // is not simulating backtracking.
                     // For example, d(a|b) = d(a) | d(b) while d(a*|b) = d(a*).
-                    if (!leftSimulateBacktracking)
-                        return _right.AddTransitions(elem, context, transitions, continuation, effects, simulateBacktracking);
+                    if (!IsDone(transitions, simulateBacktracking) && !leftSimulateBacktracking)
+                        _right.AddTransitions(elem, context, transitions, continuation, effects, simulateBacktracking);
                     break;
 
                 case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
-                    {
-                        Debug.Assert(_left is not null);
-                        int oldTransitionsCount = transitions.Count;
-                        // Disable backtracking simulation inside this node
-                        bool done = _left.AddTransitions(elem, context, transitions, continuation, effects, simulateBacktracking: false);
-                        // For any transitions added, wrap them again in a DisableBacktrackingSimulation node
-                        for (int i = oldTransitionsCount; i < transitions.Count; ++i)
-                        {
-                            var (node, nodeEffects) = transitions[i];
-                            transitions[i] = (_builder.CreateDisableBacktrackingSimulation(node), nodeEffects);
-                        }
-                        return done;
-                    }
+                    Debug.Fail($"{nameof(AddTransitions)}: DisableBacktrackingSimulation should have been handled outside this function.");
+                    break;
 
                 case SymbolicRegexNodeKind.Or:
                     Debug.Assert(_alts is not null);
                     foreach (SymbolicRegexNode<S> alt in _alts)
                     {
-                        if (alt.AddTransitions(elem, context, transitions, continuation, effects, simulateBacktracking))
-                            return true;
+                        alt.AddTransitions(elem, context, transitions, continuation, effects, simulateBacktracking);
                     }
                     break;
 
@@ -1203,7 +1233,6 @@ namespace System.Text.RegularExpressions.Symbolic
                     Debug.Fail($"{nameof(AddTransitions)}:{_kind}");
                     break;
             }
-            return false;
         }
 
         /// <summary>
@@ -1819,87 +1848,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexNodeKind.Singleton:
                 case SymbolicRegexNodeKind.BoundaryAnchor:
                 case SymbolicRegexNodeKind.NonBoundaryAnchor:
-                default:
-                    return this;
-            }
-        }
-
-        /// <summary>
-        /// Transform OrderdOr to Or nodes and any lazy loops to eager ones.
-        /// </summary>
-        /// <remarks>
-        /// This transformation allows the second reverse pass to use the same derivative function as the third pass,
-        /// which must respect the backtracking engines alternation and lazyness semantics.
-        /// </remarks>
-        public SymbolicRegexNode<S> IgnoreOrOrderAndLazyness()
-        {
-            // Guard against stack overflow due to deep recursion
-            if (!StackHelper.TryEnsureSufficientExecutionStack())
-            {
-                return StackHelper.CallOnEmptyStack(IgnoreOrOrderAndLazyness);
-            }
-
-            switch (_kind)
-            {
-                case SymbolicRegexNodeKind.Loop:
-                    {
-                        Debug.Assert(_left is not null);
-                        SymbolicRegexNode<S> body = _left.IgnoreOrOrderAndLazyness();
-                        return body == _left && !IsLazy ?
-                            this :
-                            CreateLoop(_builder, body, _lower, _upper, isLazy: false);
-                    }
-
-                case SymbolicRegexNodeKind.Concat:
-                    {
-                        Debug.Assert(_left is not null && _right is not null);
-                        SymbolicRegexNode<S> left1 = _left.IgnoreOrOrderAndLazyness();
-                        SymbolicRegexNode<S> right1 = _right.IgnoreOrOrderAndLazyness();
-
-                        Debug.Assert(left1 is not null && right1 is not null);
-                        return left1 == _left && right1 == _right ?
-                            this :
-                            CreateConcat(_builder, left1, right1);
-                    }
-
-                case SymbolicRegexNodeKind.Or:
-                case SymbolicRegexNodeKind.And:
-                    {
-                        Debug.Assert(_alts != null);
-                        var elements = new SymbolicRegexNode<S>[_alts.Count];
-                        int i = 0;
-                        bool someChanged = false;
-                        foreach (SymbolicRegexNode<S> alt in _alts)
-                        {
-                            elements[i] = alt.IgnoreOrOrderAndLazyness();
-                            someChanged |= alt != elements[i];
-                            i += 1;
-                        }
-                        Debug.Assert(i == elements.Length);
-                        return !someChanged ? this :
-                            _kind == SymbolicRegexNodeKind.Or ? Or(_builder, elements) :
-                            And(_builder, elements);
-                    }
-
-                case SymbolicRegexNodeKind.Not:
-                    {
-                        Debug.Assert(_left is not null);
-                        SymbolicRegexNode<S> body = _left.IgnoreOrOrderAndLazyness();
-                        return body == _left ?
-                            this :
-                            Not(_builder, body);
-                    }
-
-                case SymbolicRegexNodeKind.OrderedOr:
-                    {
-                        Debug.Assert(_left is not null && _right is not null);
-                        return Or(_builder, _left.IgnoreOrOrderAndLazyness(), _right.IgnoreOrOrderAndLazyness());
-                    }
-
-                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
-                    Debug.Assert(_left is not null);
-                    return _builder.CreateDisableBacktrackingSimulation(_left.IgnoreOrOrderAndLazyness());
-
                 default:
                     return this;
             }

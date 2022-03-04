@@ -188,8 +188,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Create the dot-star pattern (a concatenation of any* with the original pattern)
             // and all of its initial states.
-            SymbolicRegexNode<TSetType> unorderedPattern = _pattern.IgnoreOrOrderAndLazyness();
-            _dotStarredPattern = _builder.CreateConcat(_builder._anyStar, unorderedPattern);
+            _dotStarredPattern = _builder.CreateConcat(_builder._anyStar, _pattern);
             var dotstarredInitialStates = new DfaMatchingState<TSetType>[statesCount];
             for (uint i = 0; i < dotstarredInitialStates.Length; i++)
             {
@@ -207,7 +206,7 @@ namespace System.Text.RegularExpressions.Symbolic
             // initial states. Also disable backtracking simulation to ensure the reverse path from
             // the final state that was found is followed. Not doing so might cause the earliest
             // starting point to not be found.
-            _reversePattern = _builder.CreateDisableBacktrackingSimulation(unorderedPattern.Reverse());
+            _reversePattern = _builder.CreateDisableBacktrackingSimulation(_pattern.Reverse());
             var reverseInitialStates = new DfaMatchingState<TSetType>[statesCount];
             for (uint i = 0; i < reverseInitialStates.Length; i++)
             {

@@ -364,7 +364,12 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal SymbolicRegexNode<TElement> CreateCaptureEnd(int captureNum) => SymbolicRegexNode<TElement>.CreateCaptureEnd(this, captureNum);
 
-        internal SymbolicRegexNode<TElement> CreateDisableBacktrackingSimulation(SymbolicRegexNode<TElement> child) => SymbolicRegexNode<TElement>.CreateDisableBacktrackingSimulation(this, child);
+        internal SymbolicRegexNode<TElement> CreateDisableBacktrackingSimulation(SymbolicRegexNode<TElement> child)
+        {
+            if (child == _nothing)
+                return _nothing;
+            return SymbolicRegexNode<TElement>.CreateDisableBacktrackingSimulation(this, child);
+        }
 
         internal SymbolicRegexNode<T> Transform<T>(SymbolicRegexNode<TElement> sr, SymbolicRegexBuilder<T> builder, Func<TElement, T> predicateTransformer) where T : notnull
         {
