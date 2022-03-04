@@ -1792,7 +1792,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
 
     case ELEMENT_TYPE_R8:
 #if defined(TARGET_LOONGARCH64)
-        flags |= STRUCT_FIRST_FIELD_DOUBLE << RETURN_FP_SIZE_SHIFT;
+        flags |= (STRUCT_FLOAT_FIELD_ONLY_ONE | STRUCT_FIRST_FIELD_SIZE_IS8) << RETURN_FP_SIZE_SHIFT;
 #else
 #ifndef ARM_SOFTFP
         flags |= sizeof(double) << RETURN_FP_SIZE_SHIFT;

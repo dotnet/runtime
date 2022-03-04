@@ -74,7 +74,6 @@ LOCAL_LABEL(NoFloatingPoint):
     jirl $ra, $t4, 0
 
     ld.w  $a3, $s0, CallDescrData__fpReturnSize
-    // TODO: maybe redesign all these in the furture.
 
     // Int return case
     beq  $a3, $zero, LOCAL_LABEL(IntReturn)

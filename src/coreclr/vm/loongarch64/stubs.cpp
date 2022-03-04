@@ -1542,30 +1542,8 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
                 ShuffleEntry* tmp_entry = pShuffleEntryArray + delay_index[0];
                 while (index)
                 {
-                    int tmp_offs = tmp_entry->srcofs;
-                    int tmp_ins;
-                    if (8 == tmp_entry->stackofs)
-                    {
-                        tmp_offs = (tmp_offs+1) << 3;
-                        tmp_ins = 0xae;
-                    }
-                    else if (4 == tmp_entry->stackofs)
-                    {
-                        tmp_offs = (tmp_offs+1) << 2;
-                        tmp_ins = 0xac;
-                    }
-                    else if (3 == tmp_entry->stackofs)
-                    {
-                        tmp_offs = tmp_offs << 2;
-                        tmp_ins = 0xac;
-                    }
-                    else
-                    {
-                        tmp_offs = tmp_offs << 3;
-                        tmp_ins = 0xae;
-                    }
                     // fld.d/s(Ft, sp, offset);
-                    Emit32(emitIns_O_R_R_I(tmp_ins, tmp_reg++, 3/*sp*/, tmp_offs));
+                    Emit32(emitIns_O_R_R_I(0xae, tmp_reg++, 3/*sp*/, tmp_entry->srcofs << 3));
 
                     index--;
                     tmp_entry++;
@@ -1617,31 +1595,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
             else
             {
                 assert(pEntry->dstofs & ShuffleEntry::REGMASK);
-                if (pEntry->stackofs == 1)
-                {
-                    // ld.w(regNum, sp, offset);
-                    Emit32(emitIns_O_R_R_I(0xa2, (pEntry->dstofs & ShuffleEntry::OFSMASK) + 4, RegSp, pEntry->srcofs * sizeof(int)));
-                }
-                else if (pEntry->stackofs == 4)
-                {
-                    // ld.w(regNum, sp, offset);
-                    Emit32(emitIns_O_R_R_I(0xa2, (pEntry->dstofs & ShuffleEntry::OFSMASK) + 4, RegSp, (pEntry->srcofs - 1) * sizeof(int)));
-                }
-                else if (pEntry->stackofs == 8)
-                {
-                    // ld.d(regNum, sp, offset);
-                    Emit32(emitIns_O_R_R_I(0xa3, (pEntry->dstofs & ShuffleEntry::OFSMASK) + 4, RegSp, (pEntry->srcofs-1) * sizeof(long)));
-                }
-                else if (pEntry->stackofs == 7)
-                {
-                    // ld.d(regNum, sp, offset);
-                    Emit32(emitIns_O_R_R_I(0xa3, (pEntry->dstofs & ShuffleEntry::OFSMASK) + 4, RegSp, pEntry->srcofs * sizeof(long)));
-                }
-                else
-                {
-                    assert(!pEntry->stackofs);
-                    EmitLoadStoreRegImm(eLOAD, IntReg((pEntry->dstofs & ShuffleEntry::OFSMASK) + 4), RegSp, pEntry->srcofs * sizeof(void*));
-                }
+                EmitLoadStoreRegImm(eLOAD, IntReg((pEntry->dstofs & ShuffleEntry::OFSMASK) + 4), RegSp, pEntry->srcofs * sizeof(void*));
             }
         }
         else
