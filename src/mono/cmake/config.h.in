@@ -367,9 +367,6 @@
 /* Define to 1 if you have the `clock_nanosleep' function. */
 #cmakedefine HAVE_CLOCK_NANOSLEEP 1
 
-/* Does dlsym require leading underscore. */
-#cmakedefine MONO_DL_NEED_USCORE 1
-
 /* Define to 1 if you have the <execinfo.h> header file. */
 #cmakedefine HAVE_EXECINFO_H 1
 
