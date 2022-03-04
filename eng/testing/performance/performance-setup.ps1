@@ -125,7 +125,7 @@ if ($RunFromPerformanceRepo) {
     robocopy $SourceDirectory $PerformanceDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
 }
 else {
-    git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
+    git clone --branch EnableiOSIPASizeMeasurement --depth 1 --quiet https://github.com/LoopedBard3/performance $PerformanceDirectory
 }
 
 if($MonoDotnet -ne "")
