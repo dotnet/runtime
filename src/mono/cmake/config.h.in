@@ -460,9 +460,6 @@
 /* Define to 1 if you have the `strerror_r' function. */
 #cmakedefine HAVE_STRERROR_R 1
 
-/* Have GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY */
-#cmakedefine GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY 1
-
 /* GLIBC has CPU_COUNT macro in sched.h */
 #cmakedefine HAVE_GNU_CPU_COUNT
 
