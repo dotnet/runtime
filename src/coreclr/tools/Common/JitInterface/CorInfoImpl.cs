@@ -670,7 +670,7 @@ namespace Internal.JitInterface
                     if (region.Kind == ILExceptionRegionKind.Catch)
                     {
                         TypeDesc catchType = (TypeDesc)methodIL.GetObject(region.ClassToken);
-                        if (catchType.IsRuntimeDeterminedSubtype)
+                        if (catchType.IsCanonicalSubtype(CanonicalFormKind.Any))
                         {
                             methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_KEEP_ALIVE;
                             break;
