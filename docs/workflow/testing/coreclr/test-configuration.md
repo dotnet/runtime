@@ -88,6 +88,6 @@ should simply `throw new PlatformNotSupportedException()` in its dummy method im
 
 1. Add any other projects as a dependency, if needed.
     * Managed reference: `<ProjectReference Include="../ManagedDll.csproj" />`
-    * Native reference: `<ProjectReference Include="../NativeDll/CMakeLists.txt" />`
+    * CMake reference: `<CMakeProjectReference Include="../NativeDll/CMakeLists.txt" />`
 1. Build the test.
 1. Follow the steps to re-run a failed test to validate the new test.
