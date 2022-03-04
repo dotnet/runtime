@@ -168,7 +168,6 @@ namespace System.Text.Json.Serialization
                 if (state.Current.ObjectState < StackFrameObjectState.CreatedObject)
                 {
                     CreateCollection(ref reader, ref state, options);
-                    state.Current.JsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
                 }
 
