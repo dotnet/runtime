@@ -213,8 +213,8 @@ steps:
     parameters:
         rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiiOSDefault.ipa
         includeRootFolder: true
-        displayName: Maui iOS App
-        artifactName: MauiiOSDefault
+        displayName: Maui iOS IPA
+        artifactName: MauiiOSDefaultIPA
         archiveExtension: '.tar.gz'
         archiveType: tar
         tarCompression: gz
