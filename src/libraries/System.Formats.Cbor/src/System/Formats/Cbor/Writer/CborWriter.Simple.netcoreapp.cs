@@ -12,11 +12,11 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a half-precision floating point number (major type 7).</summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
-        /// -or-
-        /// The major type of the encoded value is not permitted in the parent data item.
-        /// -or-
-        /// The written data is not accepted under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><p>Writing a new value exceeds the definite length of the parent data item.</p>
+        /// <p>-or-</p>
+        /// <p>The major type of the encoded value is not permitted in the parent data item.</p>
+        /// <p>-or-</p>
+        /// <p>The written data is not accepted under the current conformance mode.</p></exception>
         public void WriteHalf(Half value)
         {
             EnsureWriteCapacity(1 + sizeof(short));
