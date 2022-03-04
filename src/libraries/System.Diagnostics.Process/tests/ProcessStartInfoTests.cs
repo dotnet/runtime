@@ -490,7 +490,22 @@ namespace System.Diagnostics.Tests
                 p.StartInfo.UserName = username;
                 p.StartInfo.PasswordInClearText = password;
 
-                hasStarted = p.Start();
+                int tryCount = 0;
+                while (true)
+                {
+                    try
+                    {
+                        hasStarted = p.Start();
+                        break;
+                    }
+                    catch (Win32Exception ex) when (ex.NativeErrorCode == ERROR_SHARING_VIOLATION && ++tryCount < 10)
+                    {
+                        // for some reason the dotnet.exe is sometimes locked by some other process
+                        // that has opened it for writing with exclusive file access
+                        // https://github.com/dotnet/runtime/issues/65820
+                        Thread.Sleep(TimeSpan.FromMilliseconds(50));
+                    }
+                }
 
                 if (Interop.OpenProcessToken(p.SafeHandle, 0x8u, out handle))
                 {
@@ -1210,6 +1225,7 @@ namespace System.Diagnostics.Tests
         private const int ERROR_SUCCESS = 0x0;
         private const int ERROR_FILE_NOT_FOUND = 0x2;
         private const int ERROR_BAD_EXE_FORMAT = 0xC1;
+        private const int ERROR_SHARING_VIOLATION = 0x20;
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
