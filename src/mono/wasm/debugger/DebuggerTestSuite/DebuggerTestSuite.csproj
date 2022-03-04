@@ -92,8 +92,8 @@
       <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
     </DownloadFile>
     <Exec Command="tar -xf $(_DownloadedFile) -C $(FirefoxDir)"/>
-    <Exec Command='echo "user_pref(\"devtools.chrome.enabled\", true);\nuser_pref(\"devtools.debugger.remote-enabled\", true);\nuser_pref(\"devtools.debugger.prompt-connection\", false);" > $(FirefoxDir)/test_profile.js'/>
-    <Exec Command='$(FirefoxDir)firefox/firefox -headless -CreateProfile test_profile $(FirefoxDir)test_profile.js'/>
+    <Exec Command='echo "user_pref(\"devtools.chrome.enabled\", true);\nuser_pref(\"devtools.debugger.remote-enabled\", true);\nuser_pref(\"devtools.debugger.prompt-connection\", false);" > $(FirefoxDir)/prefs.js'/>
+    
 
     <PropertyGroup>
       <_FirefoxBinaryPath>$([MSBuild]::NormalizePath($(FirefoxDir), $(FirefoxBinaryName)))</_FirefoxBinaryPath>

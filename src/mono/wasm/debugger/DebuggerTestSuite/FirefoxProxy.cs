@@ -64,12 +64,13 @@ public class DebuggerTestFirefox : DebuggerTestBase
 
     internal override string InitParms()
     {
-        return "-P test_profile -headless -private -start-debugger-server ";
+        string baseDir = Path.Combine(Path.GetDirectoryName(typeof(DebuggerTestBase).Assembly.Location), "..", "..", BrowserName());
+        return $"-profile \"{baseDir}\" -headless -private -start-debugger-server ";
     }
 
     internal override string UrlToRemoteDebugging()
     {
-        return "http://localhost:9600";
+        return "http://localhost:6000";
     }
 
     internal override async Task<string> ExtractConnUrl (string str, ILogger<TestHarnessProxy> logger)
