@@ -293,7 +293,7 @@ namespace Microsoft.Extensions.Hosting
                     configureServicesAction(_hostApplicationBuilder._hostBuilderContext, _hostApplicationBuilder.Services);
                 }
 
-                if (_configureAppConfigActions.Count > 0)
+                if (_configureContainerActions.Count > 0)
                 {
                     Action<object> previousConfigureContainer = _hostApplicationBuilder._configureContainer;
 

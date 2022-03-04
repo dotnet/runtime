@@ -112,6 +112,38 @@ namespace Microsoft.Extensions.Hosting.Tests
             });
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void CanConfigureContainerWithDiagnosticListener()
+        {
+            using var _ = RemoteExecutor.Invoke(() =>
+            {
+                var listener = new HostingListener((pair) =>
+                {
+                    if (pair.Key != "HostBuilding")
+                    {
+                        return;
+                    }
+
+                    var hostBuilder = (IHostBuilder)pair.Value;
+
+                    hostBuilder.UseServiceProviderFactory(new FakeServiceProviderFactory());
+
+                    hostBuilder.ConfigureContainer<FakeServiceCollection>(fakeServices =>
+                    {
+                        fakeServices.State = "Hi!";
+                    });
+                });
+
+                using var _ = DiagnosticListener.AllListeners.Subscribe(listener);
+
+                HostApplicationBuilder builder = CreateEmptyBuilder();
+
+                using IHost host = builder.Build();
+                var fakeServices = host.Services.GetRequiredService<FakeServiceCollection>();
+                Assert.Equal("Hi!", fakeServices.State);
+            });
+        }
+
         [Fact]
         public void CanConfigureAppConfigurationAndRetrieveFromDI()
         {
