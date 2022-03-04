@@ -8795,6 +8795,52 @@ private:
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     */
 
+    bool IsBaselineSimdIsa(CORINFO_InstructionSet isa)
+    {
+#ifdef FEATURE_SIMD
+        switch (isa)
+        {
+#if defined(TARGET_XARCH)
+            case InstructionSet_X86Base:
+            case InstructionSet_SSE:
+            case InstructionSet_SSE2:
+            case InstructionSet_Vector128:
+            {
+                return true;
+            }
+#endif // TARGET_XARCH
+
+#if defined(TARGET_AMD64)
+            case InstructionSet_X86Base_X64:
+            case InstructionSet_SSE_X64:
+            case InstructionSet_SSE2_X64:
+            {
+                return true;
+            }
+#endif // TARGET_AMD64
+
+#if defined(TARGET_ARM64)
+            case InstructionSet_ArmBase:
+            case InstructionSet_AdvSimd:
+            case InstructionSet_Vector64:
+            case InstructionSet_Vector128:
+            case InstructionSet_ArmBase_Arm64:
+            case InstructionSet_AdvSimd_Arm64:
+            {
+                return true;
+            }
+#endif // TARGET_AMD64
+
+            default:
+            {
+                return false;
+            }
+        }
+#else
+        return false;
+#endif
+    }
+
     bool IsBaselineSimdIsaSupported()
     {
 #ifdef FEATURE_SIMD
