@@ -216,7 +216,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                         psi.FileName = options.BrowserPath;
                         psi.RedirectStandardError = true;
                         psi.RedirectStandardOutput = true;
-                        Console.WriteLine(psi.FileName + " " + psi.Arguments);                        
                         await LaunchAndServe(psi, context, options.ExtractConnUrl, devToolsUrl, test_id, message_prefix).ConfigureAwait(false);
                     }
                     catch (Exception ex)
