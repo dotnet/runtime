@@ -306,6 +306,37 @@ namespace System.Reflection.Metadata
             });
         }
 
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestAddInstanceField()
+        {
+            // Test that adding a new static field to an existing class is supported
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField).Assembly;
+
+                var x = new System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField();
+
+                x.TestMethod();
+
+                Assert.Equal ("abcd", x.GetField);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                x.TestMethod();
+
+                string result = x.GetField;
+                Assert.Equal("4567", result);
+
+		ApplyUpdateUtil.ApplyUpdate(assm);
+
+		x.TestMethod();
+
+		Assert.Equal("7890", x.GetField);
+
+		Assert.Equal(123, x.GetIntField);
+            });
+        }
+
         [ActiveIssue("https://github.com/dotnet/runtime/issues/63643", TestRuntimes.Mono)]
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
         public static void TestAddNestedClass()
