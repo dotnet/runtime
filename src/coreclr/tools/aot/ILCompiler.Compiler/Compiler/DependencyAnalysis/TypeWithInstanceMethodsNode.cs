@@ -17,9 +17,11 @@ namespace ILCompiler.DependencyAnalysis
     /// being that abstract types that are not seen as derived by another non-abstract
     /// <see cref="ConstructedEETypeNode"/> will not be represented by this node.
     /// </summary>
-    internal class TypeWithInstanceMethodsNode : DependencyNodeCore<NodeFactory>
+    internal sealed class TypeWithInstanceMethodsNode : DependencyNodeCore<NodeFactory>
     {
         private readonly TypeDesc _type;
+
+        public TypeDesc Type => _type;
 
         public TypeWithInstanceMethodsNode(TypeDesc type)
         {
