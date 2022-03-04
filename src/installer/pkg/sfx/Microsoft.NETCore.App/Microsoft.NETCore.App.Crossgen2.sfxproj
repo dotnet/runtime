@@ -23,7 +23,9 @@
           BeforeTargets="GetFilesToPackage">
 
     <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
-             Properties="RunningPublish=true;RuntimeIdentifier=$(RuntimeIdentifier)"
+             Properties="RunningPublish=true
+              ;RuntimeIdentifier=$(RuntimeIdentifier)
+              ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)"
              Targets="Restore;Publish;PublishItemsOutputGroup">
       <Output TaskParameter="TargetOutputs"
               ItemName="_RawCrossgenPublishFiles" />
