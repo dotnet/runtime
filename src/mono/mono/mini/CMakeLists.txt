@@ -126,7 +126,6 @@ set(mini_common_sources
     mini-generic-sharing.c
     simd-methods.h
     simd-intrinsics.c
-    mini-native-types.c
     mini-unwind.h
     unwind.c
     image-writer.h
