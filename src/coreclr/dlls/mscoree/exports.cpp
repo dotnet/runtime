@@ -3,9 +3,9 @@
 
 
 //*****************************************************************************
-// unixinterface.cpp
+// exports.cpp
 //
-// Implementation for the interface exposed by libcoreclr.so
+// Implementation for the interface exposed by coreclr
 //
 
 //*****************************************************************************
@@ -137,7 +137,7 @@ static void ConvertConfigPropertiesToUnicode(
 
         if (strcmp(propertyKeys[propertyIndex], "BUNDLE_PROBE") == 0)
         {
-            // If this application is a single-file bundle, the bundle-probe callback 
+            // If this application is a single-file bundle, the bundle-probe callback
             // is passed in as the value of "BUNDLE_PROBE" property (encoded as a string).
             *bundleProbe = (BundleProbeFn*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
         }
@@ -253,23 +253,7 @@ int coreclr_initialize(
 
     hr = host->CreateAppDomainWithManager(
         appDomainFriendlyNameW,
-        // Flags:
-        // APPDOMAIN_ENABLE_PLATFORM_SPECIFIC_APPS
-        // - By default CoreCLR only allows platform neutral assembly to be run. To allow
-        //   assemblies marked as platform specific, include this flag
-        //
-        // APPDOMAIN_ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP
-        // - Allows sandboxed applications to make P/Invoke calls and use COM interop
-        //
-        // APPDOMAIN_SECURITY_SANDBOXED
-        // - Enables sandboxing. If not set, the app is considered full trust
-        //
-        // APPDOMAIN_IGNORE_UNHANDLED_EXCEPTION
-        // - Prevents the application from being torn down if a managed exception is unhandled
-        //
-        APPDOMAIN_ENABLE_PLATFORM_SPECIFIC_APPS |
-        APPDOMAIN_ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP |
-        APPDOMAIN_DISABLE_TRANSPARENCY_ENFORCEMENT,
+        APPDOMAIN_SECURITY_DEFAULT,
         NULL,                    // Name of the assembly that contains the AppDomainManager implementation
         NULL,                    // The AppDomainManager implementation type name
         propertyCount,
