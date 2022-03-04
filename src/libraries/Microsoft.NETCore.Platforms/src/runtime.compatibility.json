@@ -3760,6 +3760,38 @@
     "any",
     "base"
   ],
+  "linux-bionic": [
+    "linux-bionic",
+    "android",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "linux-bionic-arm64": [
+    "linux-bionic-arm64",
+    "linux-bionic",
+    "android-arm64",
+    "android",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "linux-bionic-x64": [
+    "linux-bionic-x64",
+    "linux-bionic",
+    "android-x64",
+    "android",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
   "linux-loongarch64": [
     "linux-loongarch64",
     "linux",
