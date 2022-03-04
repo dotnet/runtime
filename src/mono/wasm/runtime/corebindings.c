@@ -25,11 +25,11 @@ extern MonoObject* mono_wasm_typed_array_copy_from (int js_handle, int ptr, int 
 extern MonoString* mono_wasm_add_event_listener (int jsObjHandle, MonoString *name, int weakDelegateHandle, int optionsObjHandle);
 extern MonoString* mono_wasm_remove_event_listener (int jsObjHandle, MonoString *name, int weakDelegateHandle, int capture);
 extern MonoString* mono_wasm_cancel_promise (int thenable_js_handle, int *is_exception);
-extern MonoObject* mono_wasm_web_socket_open (MonoString *uri, MonoArray *subProtocols, MonoDelegate *on_close, int *web_socket_js_handle, int *thenable_js_handle, int *is_exception);
-extern MonoObject* mono_wasm_web_socket_send (int webSocket_js_handle, void* buffer_ptr, int offset, int length, int message_type, int end_of_message, int *thenable_js_handle, int *is_exception);
-extern MonoObject* mono_wasm_web_socket_receive (int webSocket_js_handle, void* buffer_ptr, int offset, int length, void* response_ptr, int *thenable_js_handle, int *is_exception);
-extern MonoObject* mono_wasm_web_socket_close (int webSocket_js_handle, int code, MonoString * reason, int wait_for_close_received, int *thenable_js_handle, int *is_exception);
-extern MonoString* mono_wasm_web_socket_abort (int webSocket_js_handle, int *is_exception);
+extern void mono_wasm_web_socket_open (MonoString *uri, MonoArray *subProtocols, MonoDelegate *on_close, int *web_socket_js_handle, int *thenable_js_handle, int *is_exception, MonoObject **result);
+extern void mono_wasm_web_socket_send (int webSocket_js_handle, void* buffer_ptr, int offset, int length, int message_type, int end_of_message, int *thenable_js_handle, int *is_exception, MonoObject **result);
+extern void mono_wasm_web_socket_receive (int webSocket_js_handle, void* buffer_ptr, int offset, int length, void* response_ptr, int *thenable_js_handle, int *is_exception, MonoObject **result);
+extern void mono_wasm_web_socket_close (int webSocket_js_handle, int code, MonoString * reason, int wait_for_close_received, int *thenable_js_handle, int *is_exception, MonoObject **result);
+extern void mono_wasm_web_socket_abort (int webSocket_js_handle, int *is_exception, MonoString **result);
 extern MonoObject* mono_wasm_compile_function (MonoString *str, int *is_exception);
 
 void core_initialize_internals ()
@@ -118,7 +118,7 @@ mono_wasm_unbox_enum (MonoObject *obj)
 {
 	if (!obj)
 		return 0;
-	
+
 	MonoType *type = mono_class_get_type (mono_object_get_class(obj));
 
 	void *ptr = mono_object_unbox (obj);

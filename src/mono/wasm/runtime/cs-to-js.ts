@@ -304,7 +304,7 @@ function _unbox_task_root_as_promise(root: WasmRoot<MonoObject>) {
         result = promise;
 
         // register C# side of the continuation
-        corebindings._setup_js_cont(root.value, promise_control);
+        corebindings._setup_js_cont_ref(root.address, promise_control);
 
         // register for GC of the Task after the JS side is done with the promise
         if (_use_finalization_registry) {

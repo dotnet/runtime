@@ -28,8 +28,7 @@ export function _js_to_mono_uri_root(should_add_in_flight: boolean, js_obj: any,
             return;
         case typeof js_obj === "symbol":
         case typeof js_obj === "string":
-            // FIXME
-            result.value = corebindings._create_uri(js_obj);
+            corebindings._create_uri_ref(js_obj, result.address);
             return;
         default:
             _extract_mono_obj_root(should_add_in_flight, js_obj, result);
@@ -98,16 +97,12 @@ export function _js_to_mono_obj_root(should_add_in_flight: boolean, js_obj: any,
             result.value = _box_js_bool(js_obj);
             return;
         case isThenable(js_obj) === true: {
-            // FIXME: ref/rooted
-            const { task_ptr } = _wrap_js_thenable_as_task(js_obj);
-            // task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
-            result.value = task_ptr;
+            _wrap_js_thenable_as_task_root(js_obj, result);
             return;
         }
         case js_obj.constructor.name === "Date":
             // getTime() is always UTC
-            // FIXME: ref/rooted
-            result.value = corebindings._create_date_time(js_obj.getTime());
+            corebindings._create_date_time_ref(js_obj.getTime(), result.address);
             return;
         default:
             _extract_mono_obj_root(should_add_in_flight, js_obj, result);
@@ -219,14 +214,13 @@ export function js_array_to_mono_array(js_array: any[], asString: boolean, shoul
     }
 }
 
-export function _wrap_js_thenable_as_task(thenable: Promise<any>): {
-    task_ptr: MonoObject,
+export function _wrap_js_thenable_as_task_root(thenable: Promise<any>, resultRoot: WasmRoot<MonoObject>): {
     then_js_handle: JSHandle,
-
 } {
-
-    if (!thenable)
+    if (!thenable) {
+        resultRoot.clear();
         return <any>null;
+    }
 
     // hold strong JS reference to thenable while in flight
     // ideally, this should be hold alive by lifespan of the resulting C# Task, but this is good cheap aproximation
@@ -261,9 +255,10 @@ export function _wrap_js_thenable_as_task(thenable: Promise<any>): {
         _js_owned_object_registry.register(thenable, tcs_gc_handle);
     }
 
+    corebindings._get_tcs_task_ref(tcs_gc_handle, resultRoot.address);
+
     // returns raw pointer to tcs.Task
     return {
-        task_ptr: corebindings._get_tcs_task(tcs_gc_handle),
         then_js_handle: thenable_js_handle,
     };
 }

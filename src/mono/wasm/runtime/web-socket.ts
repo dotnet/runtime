@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_wasm_new_root, WasmRoot } from "./roots";
+import { mono_wasm_new_root, WasmRoot, mono_wasm_new_external_root } from "./roots";
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
 import { PromiseControl, _create_cancelable_promise } from "./cancelable-promise";
 import { _mono_array_root_to_js_array, _wrap_delegate_root_as_function } from "./cs-to-js";
 import { mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle } from "./gc-handles";
-import { _wrap_js_thenable_as_task } from "./js-to-cs";
-import { wrap_error } from "./method-calls";
+import { _wrap_js_thenable_as_task_root } from "./js-to-cs";
+import { wrap_error, wrap_error_root } from "./method-calls";
 import { conv_string_root } from "./strings";
-import { JSHandle, MonoArray, MonoObject, MonoObjectNull, MonoString } from "./types";
+import { JSHandle, MonoArray, MonoObject, MonoObjectNull, MonoString, MonoObjectRef } from "./types";
 import { Module } from "./imports";
 import { Int32Ptr } from "./types/emscripten";
 
@@ -29,14 +29,16 @@ let _text_encoder_utf8: TextEncoder | undefined = undefined;
 const ws_send_buffer_blocking_threshold = 65536;
 const emptyBuffer = new Uint8Array();
 
-export function mono_wasm_web_socket_open(uri: MonoString, subProtocols: MonoArray, on_close: MonoObject, web_socket_js_handle: Int32Ptr, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr): MonoObject {
+export function mono_wasm_web_socket_open(uri: MonoString, subProtocols: MonoArray, on_close: MonoObject, web_socket_js_handle: Int32Ptr, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    const result_root = mono_wasm_new_external_root<MonoObject>(result_address);
     const uri_root = mono_wasm_new_root(uri);
     const sub_root = mono_wasm_new_root(subProtocols);
     const on_close_root = mono_wasm_new_root(on_close);
     try {
         const js_uri = conv_string_root(uri_root);
         if (!js_uri) {
-            return wrap_error(is_exception, "ERR12: Invalid uri '" + uri_root.value + "'");
+            wrap_error_root(is_exception, "ERR12: Invalid uri '" + uri_root.value + "'", result_root);
+            return;
         }
 
         const js_subs = _mono_array_root_to_js_array(sub_root);
@@ -91,23 +93,23 @@ export function mono_wasm_web_socket_open(uri: MonoString, subProtocols: MonoArr
         const ws_js_handle = mono_wasm_get_js_handle(ws);
         Module.setValue(web_socket_js_handle, <any>ws_js_handle, "i32");
 
-        const { task_ptr, then_js_handle } = _wrap_js_thenable_as_task(promise);
+        const { then_js_handle } = _wrap_js_thenable_as_task_root(promise, result_root);
         // task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
         Module.setValue(thenable_js_handle, <any>then_js_handle, "i32");
-
-        return task_ptr;
     }
     catch (ex) {
-        return wrap_error(is_exception, ex);
+        wrap_error_root(is_exception, ex, result_root);
     }
     finally {
+        result_root.release();
         uri_root.release();
         sub_root.release();
         on_close_root.release();
     }
 }
 
-export function mono_wasm_web_socket_send(webSocket_js_handle: JSHandle, buffer_ptr: MonoObject, offset: number, length: number, message_type: number, end_of_message: boolean, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr): MonoObject {
+export function mono_wasm_web_socket_send(webSocket_js_handle: JSHandle, buffer_ptr: MonoObject, offset: number, length: number, message_type: number, end_of_message: boolean, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    const result_root = mono_wasm_new_external_root<MonoObject>(result_address);
     const buffer_root = mono_wasm_new_root(buffer_ptr);
     try {
         const ws = mono_wasm_get_jsobj_from_js_handle(webSocket_js_handle);
@@ -121,19 +123,22 @@ export function mono_wasm_web_socket_send(webSocket_js_handle: JSHandle, buffer_
         const whole_buffer = _mono_wasm_web_socket_send_buffering(ws, buffer_root, offset, length, message_type, end_of_message);
 
         if (!end_of_message || !whole_buffer) {
-            return MonoObjectNull; // we are done buffering synchronously, no promise
+            result_root.clear(); // we are done buffering synchronously, no promise
+            return;
         }
-        return _mono_wasm_web_socket_send_and_wait(ws, whole_buffer, thenable_js_handle);
+        _mono_wasm_web_socket_send_and_wait(ws, whole_buffer, thenable_js_handle, result_address);
     }
     catch (ex) {
-        return wrap_error(is_exception, ex);
+        wrap_error_root(is_exception, ex, result_root);
     }
     finally {
+        result_root.release();
         buffer_root.release();
     }
 }
 
-export function mono_wasm_web_socket_receive(webSocket_js_handle: JSHandle, buffer_ptr: MonoObject, offset: number, length: number, response_ptr: MonoObject, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr): MonoObject {
+export function mono_wasm_web_socket_receive(webSocket_js_handle: JSHandle, buffer_ptr: MonoObject, offset: number, length: number, response_ptr: MonoObject, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    const result_root = mono_wasm_new_external_root<MonoObject>(result_address);
     const buffer_root = mono_wasm_new_root(buffer_ptr);
     const response_root = mono_wasm_new_root(response_ptr);
     const release_buffer = () => {
@@ -162,7 +167,8 @@ export function mono_wasm_web_socket_receive(webSocket_js_handle: JSHandle, buff
             release_buffer();
 
             Module.setValue(thenable_js_handle, 0, "i32");
-            return MonoObjectNull;
+            result_root.clear();
+            return;
         }
         const { promise, promise_control } = _create_cancelable_promise(release_buffer, release_buffer);
         const receive_promise_control = promise_control as ReceivePromiseControl;
@@ -172,17 +178,20 @@ export function mono_wasm_web_socket_receive(webSocket_js_handle: JSHandle, buff
         receive_promise_control.response_root = response_root;
         receive_promise_queue.enqueue(receive_promise_control);
 
-        const { task_ptr, then_js_handle } = _wrap_js_thenable_as_task(promise);
+        const { then_js_handle } = _wrap_js_thenable_as_task_root(promise, result_root);
         // task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
         Module.setValue(thenable_js_handle, <any>then_js_handle, "i32");
-        return task_ptr;
     }
     catch (ex) {
-        return wrap_error(is_exception, ex);
+        wrap_error_root(is_exception, ex, result_root);
+    }
+    finally {
+        result_root.release();
     }
 }
 
-export function mono_wasm_web_socket_close(webSocket_js_handle: JSHandle, code: number, reason: MonoString, wait_for_close_received: boolean, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr): MonoObject {
+export function mono_wasm_web_socket_close(webSocket_js_handle: JSHandle, code: number, reason: MonoString, wait_for_close_received: boolean, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    const result_root = mono_wasm_new_external_root<MonoObject>(result_address);
     const reason_root = mono_wasm_new_root(reason);
     try {
         const ws = mono_wasm_get_jsobj_from_js_handle(webSocket_js_handle);
@@ -190,7 +199,8 @@ export function mono_wasm_web_socket_close(webSocket_js_handle: JSHandle, code: 
             throw new Error("ERR19: Invalid JS object handle " + webSocket_js_handle);
 
         if (ws.readyState == WebSocket.CLOSED) {
-            return MonoObjectNull;// no promise
+            result_root.clear();
+            return;
         }
 
         const js_reason = conv_string_root(reason_root);
@@ -205,11 +215,11 @@ export function mono_wasm_web_socket_close(webSocket_js_handle: JSHandle, code: 
                 ws.close(code);
             }
 
-            const { task_ptr, then_js_handle } = _wrap_js_thenable_as_task(promise);
+            const { then_js_handle } = _wrap_js_thenable_as_task_root(promise, result_root);
             // task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
             Module.setValue(thenable_js_handle, <any>then_js_handle, "i32");
 
-            return task_ptr;
+            return;
         }
         else {
             if (!mono_wasm_web_socket_close_warning) {
@@ -222,18 +232,21 @@ export function mono_wasm_web_socket_close(webSocket_js_handle: JSHandle, code: 
                 ws.close(code);
             }
             Module.setValue(thenable_js_handle, 0, "i32");
-            return MonoObjectNull;// no promise
+            result_root.clear();
+            return;
         }
     }
     catch (ex) {
-        return wrap_error(is_exception, ex);
+        wrap_error_root(is_exception, ex, result_root);
     }
     finally {
+        result_root.release();
         reason_root.release();
     }
 }
 
-export function mono_wasm_web_socket_abort(webSocket_js_handle: JSHandle, is_exception: Int32Ptr): MonoObject {
+export function mono_wasm_web_socket_abort(webSocket_js_handle: JSHandle, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    const result_root = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
         const ws = mono_wasm_get_jsobj_from_js_handle(webSocket_js_handle) as WebSocketExtension;
         if (!ws)
@@ -258,61 +271,68 @@ export function mono_wasm_web_socket_abort(webSocket_js_handle: JSHandle, is_exc
         // this is different from Managed implementation
         ws.close(1000, "Connection was aborted.");
 
-        return MonoObjectNull;
+        result_root.clear();
     }
     catch (ex) {
-        return wrap_error(is_exception, ex);
+        wrap_error_root(is_exception, ex, result_root);
+    }
+    finally {
+        result_root.release();
     }
 }
 
-function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer: Uint8Array | string, thenable_js_handle: Int32Ptr): MonoObject {
-    // send and return promise
-    ws.send(buffer);
-    ws[wasm_ws_pending_send_buffer] = null;
+function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer: Uint8Array | string, thenable_js_handle: Int32Ptr, result_address: MonoObjectRef): void {
+    const result_root = mono_wasm_new_external_root<MonoObject>(result_address);
+    try {
+        // send and return promise
+        ws.send(buffer);
+        ws[wasm_ws_pending_send_buffer] = null;
 
-    // if the remaining send buffer is small, we don't block so that the throughput doesn't suffer.
-    // Otherwise we block so that we apply some backpresure to the application sending large data.
-    // this is different from Managed implementation
-    if (ws.bufferedAmount < ws_send_buffer_blocking_threshold) {
-        return MonoObjectNull; // no promise
-    }
-
-    // block the promise/task until the browser passed the buffer to OS
-    const { promise, promise_control } = _create_cancelable_promise();
-    const pending = ws[wasm_ws_pending_send_promises];
-    pending.push(promise_control);
-
-    let nextDelay = 1;
-    const polling_check = () => {
-        // was it all sent yet ?
-        if (ws.bufferedAmount === 0) {
-            promise_control.resolve(null);
-        }
-        else if (ws.readyState != WebSocket.OPEN) {
-            // only reject if the data were not sent
-            // bufferedAmount does not reset to zero once the connection closes
-            promise_control.reject("InvalidState: The WebSocket is not connected.");
-        }
-        else if (!promise_control.isDone) {
-            globalThis.setTimeout(polling_check, nextDelay);
-            // exponentially longer delays, up to 1000ms
-            nextDelay = Math.min(nextDelay * 1.5, 1000);
+        // if the remaining send buffer is small, we don't block so that the throughput doesn't suffer.
+        // Otherwise we block so that we apply some backpresure to the application sending large data.
+        // this is different from Managed implementation
+        if (ws.bufferedAmount < ws_send_buffer_blocking_threshold) {
+            result_root.clear();
             return;
         }
-        // remove from pending
-        const index = pending.indexOf(promise_control);
-        if (index > -1) {
-            pending.splice(index, 1);
-        }
-    };
 
-    globalThis.setTimeout(polling_check, 0);
+        // block the promise/task until the browser passed the buffer to OS
+        const { promise, promise_control } = _create_cancelable_promise();
+        const pending = ws[wasm_ws_pending_send_promises];
+        pending.push(promise_control);
 
-    const { task_ptr, then_js_handle } = _wrap_js_thenable_as_task(promise);
-    // task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
-    Module.setValue(thenable_js_handle, <any>then_js_handle, "i32");
+        let nextDelay = 1;
+        const polling_check = () => {
+            // was it all sent yet ?
+            if (ws.bufferedAmount === 0) {
+                promise_control.resolve(null);
+            }
+            else if (ws.readyState != WebSocket.OPEN) {
+                // only reject if the data were not sent
+                // bufferedAmount does not reset to zero once the connection closes
+                promise_control.reject("InvalidState: The WebSocket is not connected.");
+            }
+            else if (!promise_control.isDone) {
+                globalThis.setTimeout(polling_check, nextDelay);
+                // exponentially longer delays, up to 1000ms
+                nextDelay = Math.min(nextDelay * 1.5, 1000);
+                return;
+            }
+            // remove from pending
+            const index = pending.indexOf(promise_control);
+            if (index > -1) {
+                pending.splice(index, 1);
+            }
+        };
 
-    return task_ptr;
+        globalThis.setTimeout(polling_check, 0);
+
+        const { then_js_handle } = _wrap_js_thenable_as_task_root(promise, result_root);
+        // task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
+        Module.setValue(thenable_js_handle, <any>then_js_handle, "i32");
+    } finally {
+        result_root.release();
+    }
 }
 
 function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: MessageEvent) {

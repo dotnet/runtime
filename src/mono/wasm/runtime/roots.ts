@@ -58,7 +58,7 @@ export function mono_wasm_new_root_buffer_from_pointer(offset: VoidPtr, capacity
  * Allocates a WasmRoot pointing to a root provided and controlled by external code. Typicaly on managed stack.
  * Releasing this root will not de-allocate the root space. You still need to call .release().
  */
-export function mono_wasm_new_external_root<T extends ManagedPointer | NativePointer>(address: VoidPtr): WasmRoot<T> {
+export function mono_wasm_new_external_root<T extends ManagedPointer | NativePointer>(address: VoidPtr | MonoObjectRef): WasmRoot<T> {
     let result: WasmExternalRoot<T>;
 
     if (!address)

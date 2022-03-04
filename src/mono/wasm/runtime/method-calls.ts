@@ -479,6 +479,11 @@ export function wrap_error(is_exception: Int32Ptr | null, ex: any): MonoString {
     return js_string_to_mono_string(res)!;
 }
 
+export function wrap_error_root(is_exception: Int32Ptr | null, ex: any, result: WasmRoot<MonoObject>): void {
+    // FIXME
+    result.value = wrap_error(is_exception, ex);
+}
+
 export function mono_method_get_call_signature(method: MonoMethod, mono_obj?: MonoObject): string/*ArgsMarshalString*/ {
     const instanceRoot = mono_wasm_new_root(mono_obj);
     try {

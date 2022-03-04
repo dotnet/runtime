@@ -77,20 +77,20 @@ namespace System.Runtime.InteropServices.JavaScript
             tcs.SetException(new JSException(reason));
         }
 
-        public static object GetTaskSourceTask(int tcsGCHandle)
+        public static void GetTaskSourceTaskRef(int tcsGCHandle, out object result)
         {
             GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
             // this is JS owned Normal handle. We always have a Target
             TaskCompletionSource<object> tcs = (TaskCompletionSource<object>)handle.Target!;
-            return tcs.Task;
+            result = tcs.Task;
         }
 
-        public static object TaskFromResult(object? obj)
+        public static void TaskFromResultRef(object? obj, out object result)
         {
-            return Task.FromResult(obj);
+            result = Task.FromResult(obj);
         }
 
-        public static void SetupJSContinuation(Task task, JSObject continuationObj)
+        public static void SetupJSContinuationRef(in Task task, JSObject continuationObj)
         {
             if (task.IsCompleted)
                 Complete();

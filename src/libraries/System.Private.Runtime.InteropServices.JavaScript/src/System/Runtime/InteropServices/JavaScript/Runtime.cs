@@ -314,15 +314,17 @@ namespace System.Runtime.InteropServices.JavaScript
             return new DateTimeOffset(dt).ToUnixTimeMilliseconds();
         }
 
-        public static DateTime CreateDateTime(double ticks)
+        // HACK: We need to implicitly box by using an 'object' out-param.
+        // Note that the return value would have been boxed on the C#->JS transition anyway.
+        public static void CreateDateTimeRef(double ticks, out object result)
         {
             DateTimeOffset unixTime = DateTimeOffset.FromUnixTimeMilliseconds((long)ticks);
-            return unixTime.DateTime;
+            result = unixTime.DateTime;
         }
 
-        public static Uri CreateUri(string uri)
+        public static void CreateUriRef(string uri, out Uri result)
         {
-            return new Uri(uri);
+            result = new Uri(uri);
         }
 
         public static void CancelPromise(int promiseJSHandle)

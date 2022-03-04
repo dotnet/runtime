@@ -18,14 +18,14 @@ const fn_signatures: [jsname: string, csname: string, signature: string/*ArgsMar
     ["_create_tcs", "CreateTaskSource", ""],
     ["_set_tcs_result", "SetTaskSourceResult", "io"],
     ["_set_tcs_failure", "SetTaskSourceFailure", "is"],
-    ["_get_tcs_task", "GetTaskSourceTask", "i!"],
-    ["_task_from_result", "TaskFromResult", "o!"],
-    ["_setup_js_cont", "SetupJSContinuation", "mo"],
+    ["_get_tcs_task_ref", "GetTaskSourceTaskRef", "im"],
+    ["_task_from_result_ref", "TaskFromResultRef", "om"],
+    ["_setup_js_cont_ref", "SetupJSContinuationRef", "mo"],
 
     ["_object_to_string_ref", "ObjectToStringRef", "m"],
     ["_get_date_value_ref", "GetDateValueRef", "m"],
-    ["_create_date_time", "CreateDateTime", "d!"],
-    ["_create_uri", "CreateUri", "s!"],
+    ["_create_date_time_ref", "CreateDateTimeRef", "d!"],
+    ["_create_uri_ref", "CreateUriRef", "s!"],
     ["_is_simple_array_ref", "IsSimpleArrayRef", "m"],
 ];
 
@@ -44,14 +44,16 @@ export interface t_CSwraps {
     // FIXME: We currently rely on marshaling to convert result types
     _set_tcs_result(gcHandle: GCHandle, result: any): void
     _set_tcs_failure(gcHandle: GCHandle, result: string): void
-    _get_tcs_task(gcHandle: GCHandle): MonoObject;
-    _task_from_result(result: MonoObject): MonoObject
-    _setup_js_cont(task: MonoObject, continuation: PromiseControl): MonoObject
+    _get_tcs_task_ref(gcHandle: GCHandle, result: MonoObjectRef): void;
+    // FIXME: We rely on marshaling for the value to be converted
+    _task_from_result_ref(value: MonoObject, result: MonoObjectRef): void;
+    // FIXME: PromiseControl is a JS object so we can't pass an address directly
+    _setup_js_cont_ref(task: MonoObjectRef, continuation: PromiseControl): void;
 
     _object_to_string_ref(obj: MonoObjectRef): string;
     _get_date_value_ref(obj: MonoObjectRef): number;
-    _create_date_time(ticks: number): MonoObject;
-    _create_uri(uri: string): MonoObject;
+    _create_date_time_ref(ticks: number, result: MonoObjectRef): void;
+    _create_uri_ref(uri: string, result: MonoObjectRef): void;
     _is_simple_array_ref(obj: MonoObjectRef): boolean;
 }
 
