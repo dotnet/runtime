@@ -347,19 +347,23 @@ namespace System.Text.RegularExpressions
                 // we've already outlined is problematic.
                 {
                     RegexNode node = rootNode.Child(0); // skip implicit root capture node
+                    bool atomicByAncestry = true; // the root is implicitly atomic because nothing comes after it (same for the implicit root capture)
                     while (true)
                     {
                         switch (node.Kind)
                         {
                             case RegexNodeKind.Atomic:
+                                node = node.Child(0);
+                                continue;
+
                             case RegexNodeKind.Concatenate:
+                                atomicByAncestry = false;
                                 node = node.Child(0);
                                 continue;
 
                             case RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when node.N == int.MaxValue:
-                            case RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy when node.N == int.MaxValue && !node.IsAtomicByParent():
-                                RegexNode? parent = node.Parent;
-                                if (parent != null && parent.Kind == RegexNodeKind.Concatenate)
+                            case RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy when node.N == int.MaxValue && !atomicByAncestry:
+                                if (node.Parent is { Kind: RegexNodeKind.Concatenate } parent)
                                 {
                                     parent.InsertChild(1, new RegexNode(RegexNodeKind.UpdateBumpalong, node.Options));
                                 }
@@ -490,60 +494,32 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>Whether this node may be considered to be atomic based on its parent.</summary>
-        /// <remarks>
-        /// This may have false negatives, meaning the node may actually be atomic even if this returns false.
-        /// But any true result may be relied on to mean the node will actually be considered to be atomic.
-        /// </remarks>
-        public bool IsAtomicByParent()
-        {
-            // Walk up the parent hierarchy.
-            RegexNode child = this;
-            for (RegexNode? parent = child.Parent; parent is not null; child = parent, parent = child.Parent)
-            {
-                switch (parent.Kind)
-                {
-                    case RegexNodeKind.Atomic:
-                    case RegexNodeKind.NegativeLookaround:
-                    case RegexNodeKind.PositiveLookaround:
-                        // If the parent is atomic, so is the child.  That's the whole purpose
-                        // of the Atomic node, and lookarounds are also implicitly atomic.
-                        return true;
-
-                    case RegexNodeKind.Alternate:
-                    case RegexNodeKind.BackreferenceConditional:
-                        // Skip alternations.  Each branch is considered independently,
-                        // so any atomicity applied to the alternation also applies to
-                        // each individual branch.  This is true as well for conditional
-                        // backreferences, where each of the yes/no branches are independent.
-                    case RegexNodeKind.ExpressionConditional when parent.Child(0) != child:
-                        // As with alternations, each yes/no branch of an expression conditional
-                        // are independent from each other, but the conditional expression itself
-                        // can be backtracked into from each of the branches, so we can't make
-                        // it atomic just because the whole conditional is.
-                    case RegexNodeKind.Capture:
-                        // Skip captures. They don't affect atomicity.
-                    case RegexNodeKind.Concatenate when parent.Child(parent.ChildCount() - 1) == child:
-                        // If the parent is a concatenation and this is the last node,
-                        // any atomicity applying to the concatenation applies to this
-                        // node, too.
-                        continue;
-
-                    default:
-                        // For any other parent type, give up on trying to prove atomicity.
-                        return false;
-                }
-            }
-
-            // The parent was null, so nothing can backtrack in.
-            return true;
-        }
-
         /// <summary>
         /// Removes redundant nodes from the subtree, and returns an optimized subtree.
         /// </summary>
-        internal RegexNode Reduce() =>
-            Kind switch
+        internal RegexNode Reduce()
+        {
+            // TODO: https://github.com/dotnet/runtime/issues/61048
+            // As part of overhauling IgnoreCase handling, the parser shouldn't produce any nodes other than Backreference
+            // that ever have IgnoreCase set on them.  For now, though, remove IgnoreCase from any nodes for which it
+            // has no behavioral effect.
+            switch (Kind)
+            {
+                default:
+                    // No effect
+                    Options &= ~RegexOptions.IgnoreCase;
+                    break;
+
+                case RegexNodeKind.One or RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic:
+                case RegexNodeKind.Notone or RegexNodeKind.Notonelazy or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic:
+                case RegexNodeKind.Set or RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic:
+                case RegexNodeKind.Multi:
+                case RegexNodeKind.Backreference:
+                    // Still meaningful
+                    break;
+            }
+
+            return Kind switch
             {
                 RegexNodeKind.Alternate => ReduceAlternation(),
                 RegexNodeKind.Atomic => ReduceAtomic(),
@@ -557,6 +533,7 @@ namespace System.Text.RegularExpressions
                 RegexNodeKind.BackreferenceConditional => ReduceTestref(),
                 _ => this,
             };
+        }
 
         /// <summary>Remove an unnecessary Concatenation or Alternation node</summary>
         /// <remarks>
@@ -747,7 +724,7 @@ namespace System.Text.RegularExpressions
                             start = endExclusive;
                         }
 
-                        // If anything we reordered, there may be new optimization opportunities inside
+                        // If anything was reordered, there may be new optimization opportunities inside
                         // of the alternation, so reduce it again.
                         if (reordered)
                         {
@@ -1246,7 +1223,7 @@ namespace System.Text.RegularExpressions
 
                     // Now compare the rest of the branches against it.
                     int endingIndex = startingIndex + 1;
-                    for ( ; endingIndex < children.Count; endingIndex++)
+                    for (; endingIndex < children.Count; endingIndex++)
                     {
                         // Get the starting node of the next branch.
                         startingNode = children[endingIndex].FindBranchOneOrMultiStart();
@@ -2589,18 +2566,27 @@ namespace System.Text.RegularExpressions
         }
 
         // Determines whether the node supports a compilation / code generation strategy based on walking the node tree.
-        internal bool SupportsCompilation()
+        // Also returns a human-readable string to explain the reason (it will be emitted by the source generator, hence
+        // there's no need to localize).
+        internal bool SupportsCompilation([NotNullWhen(false)] out string? reason)
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                // If we can't recur further, code generation isn't supported as the tree is too deep.
+                reason = "run-time limits were exceeded";
                 return false;
             }
 
-            if ((Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) != 0)
+            // NonBacktracking isn't supported, nor RightToLeft.  The latter applies to both the top-level
+            // options as well as when used to specify positive and negative lookbehinds.
+            if ((Options & RegexOptions.NonBacktracking) != 0)
             {
-                // NonBacktracking isn't supported, nor RightToLeft.  The latter applies to both the top-level
-                // options as well as when used to specify positive and negative lookbehinds.
+                reason = "RegexOptions.NonBacktracking was specified";
+                return false;
+            }
+
+            if ((Options & RegexOptions.RightToLeft) != 0)
+            {
+                reason = "RegexOptions.RightToLeft or a positive/negative lookbehind was used";
                 return false;
             }
 
@@ -2608,25 +2594,14 @@ namespace System.Text.RegularExpressions
             for (int i = 0; i < childCount; i++)
             {
                 // The node isn't supported if any of its children aren't supported.
-                if (!Child(i).SupportsCompilation())
+                if (!Child(i).SupportsCompilation(out reason))
                 {
                     return false;
                 }
             }
 
-            // TODO: This should be moved somewhere else, to a pass somewhere where we explicitly
-            // annotate the tree, potentially as part of the final optimization pass.  It doesn't
-            // belong in this check.
-            if (Kind == RegexNodeKind.Capture)
-            {
-                // If we've found a supported capture, mark all of the nodes in its parent hierarchy as containing a capture.
-                for (RegexNode? parent = this; parent != null && (parent.Options & HasCapturesFlag) == 0; parent = parent.Parent)
-                {
-                    parent.Options |= HasCapturesFlag;
-                }
-            }
-
             // Supported.
+            reason = null;
             return true;
         }
 

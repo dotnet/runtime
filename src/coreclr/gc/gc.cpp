@@ -8034,8 +8034,9 @@ uint8_t* gc_heap::brick_address (size_t brick)
 
 void gc_heap::clear_brick_table (uint8_t* from, uint8_t* end)
 {
-    for (size_t i = brick_of (from);i < brick_of (end); i++)
-        brick_table[i] = 0;
+    size_t from_brick = brick_of (from);
+    size_t end_brick = brick_of (end);
+    memset (&brick_table[from_brick], 0, sizeof(brick_table[from_brick])*(end_brick-from_brick));
 }
 
 //codes for the brick entries:

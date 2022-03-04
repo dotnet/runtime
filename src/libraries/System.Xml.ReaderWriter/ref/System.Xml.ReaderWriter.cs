@@ -1609,7 +1609,7 @@ namespace System.Xml.Schema
         [System.Xml.Serialization.XmlElementAttribute("sequence", typeof(System.Xml.Schema.XmlSchemaSequence))]
         public override System.Xml.Schema.XmlSchemaObjectCollection Items { get { throw null; } }
     }
-    [System.ObsoleteAttribute("XmlSchemaCollection has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation.")]
+    [System.ObsoleteAttribute("XmlSchemaCollection has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation instead.")]
     public sealed partial class XmlSchemaCollection : System.Collections.ICollection, System.Collections.IEnumerable
     {
         public XmlSchemaCollection() { }

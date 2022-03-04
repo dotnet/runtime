@@ -146,6 +146,7 @@ namespace System
         private const int PRODUCT_HOME_PREMIUM_N = 0x0000001A;
 
         [GeneratedDllImport("kernel32.dll", SetLastError = false)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool GetProductInfo(
             int dwOSMajorVersion,
             int dwOSMinorVersion,

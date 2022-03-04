@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Ping", "src\Syst
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Ping.Functional.Tests", "tests\FunctionalTests\System.Net.Ping.Functional.Tests.csproj", "{E2A63467-3D66-448C-BF81-5DF684E02AD3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DllImportGenerator", "..\System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj", "{2A7F8D83-147A-4F8F-897A-4C5DB5E68698}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{26E69A05-FCF8-4D01-A93A-F97FE4B92D74}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{B59DB44D-8E1E-4F62-A223-E3AC71BB0370}"
 EndProject
@@ -41,10 +41,10 @@ Global
 		{E2A63467-3D66-448C-BF81-5DF684E02AD3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E2A63467-3D66-448C-BF81-5DF684E02AD3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E2A63467-3D66-448C-BF81-5DF684E02AD3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2A7F8D83-147A-4F8F-897A-4C5DB5E68698}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2A7F8D83-147A-4F8F-897A-4C5DB5E68698}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2A7F8D83-147A-4F8F-897A-4C5DB5E68698}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2A7F8D83-147A-4F8F-897A-4C5DB5E68698}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26E69A05-FCF8-4D01-A93A-F97FE4B92D74}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26E69A05-FCF8-4D01-A93A-F97FE4B92D74}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26E69A05-FCF8-4D01-A93A-F97FE4B92D74}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26E69A05-FCF8-4D01-A93A-F97FE4B92D74}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B59DB44D-8E1E-4F62-A223-E3AC71BB0370}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B59DB44D-8E1E-4F62-A223-E3AC71BB0370}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B59DB44D-8E1E-4F62-A223-E3AC71BB0370}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -58,7 +58,7 @@ Global
 		{E2A63467-3D66-448C-BF81-5DF684E02AD3} = {FABDD2DA-5365-4FD2-8C67-4C643E618CE9}
 		{A16A6C85-DF86-44A1-9032-238C223A0AE0} = {AAB0D01D-C3A4-4E09-9BFD-CBC737A3CA73}
 		{65B08958-069E-4F8B-A996-2A987ACCAA49} = {A687595D-ACCE-4380-95B8-628F598C7229}
-		{2A7F8D83-147A-4F8F-897A-4C5DB5E68698} = {D26792B6-6D00-4CC0-B60B-7028F377BD4F}
+		{26E69A05-FCF8-4D01-A93A-F97FE4B92D74} = {D26792B6-6D00-4CC0-B60B-7028F377BD4F}
 		{B59DB44D-8E1E-4F62-A223-E3AC71BB0370} = {D26792B6-6D00-4CC0-B60B-7028F377BD4F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution

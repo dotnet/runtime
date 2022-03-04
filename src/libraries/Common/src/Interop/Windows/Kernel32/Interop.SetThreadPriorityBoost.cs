@@ -9,6 +9,7 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static partial bool SetThreadPriorityBoost(SafeThreadHandle handle, bool disabled);
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool SetThreadPriorityBoost(SafeThreadHandle handle, [MarshalAs(UnmanagedType.Bool)] bool disabled);
     }
 }

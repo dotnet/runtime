@@ -9,6 +9,7 @@ internal static partial class Interop
     internal static partial class Crypt32
     {
         [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CertSaveStore(
             SafeCertStoreHandle hCertStore,
             CertEncodingType dwMsgAndCertEncodingType,

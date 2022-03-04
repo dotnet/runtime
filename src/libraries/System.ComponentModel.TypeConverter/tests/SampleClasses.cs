@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.Tests
 {
@@ -112,7 +113,7 @@ namespace System.ComponentModel.Tests
             }
             return base.CanConvertFrom(context, sourceType);
         }
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext context, [NotNullWhen(true)] Type? destinationType)
         {
             if (destinationType == typeof(int))
             {
@@ -189,7 +190,7 @@ namespace System.ComponentModel.Tests
             }
             return base.CanConvertFrom(context, sourceType);
         }
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext context, [NotNullWhen(true)] Type? destinationType)
         {
             if (destinationType == typeof(int))
             {
@@ -255,7 +256,7 @@ namespace System.ComponentModel.Tests
 
     public class IBaseConverter : TypeConverter
     {
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext context, [NotNullWhen(true)] Type? destinationType)
         {
             if (destinationType == typeof(string) || destinationType == typeof(int))
             {
