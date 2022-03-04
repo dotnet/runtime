@@ -578,6 +578,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public static partial int ADsEncodeBinaryData(byte[] data, int length, ref IntPtr result);
 
         [GeneratedDllImport(global::Interop.Libraries.Activeds, EntryPoint = "FreeADsMem")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool FreeADsMem(IntPtr pVoid);
 
         [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetSiteNameW", StringMarshalling = StringMarshalling.Utf16)]
@@ -614,7 +615,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public static partial uint LsaCreateTrustedDomainEx(SafeLsaPolicyHandle handle, in TRUSTED_DOMAIN_INFORMATION_EX domainEx, in TRUSTED_DOMAIN_AUTH_INFORMATION authInfo, int classInfo, out IntPtr domainHandle);
 
         [GeneratedDllImport(global::Interop.Libraries.Kernel32, EntryPoint = "OpenThread", SetLastError = true)]
-        public static partial IntPtr OpenThread(uint desiredAccess, bool inheirted, int threadID);
+        public static partial IntPtr OpenThread(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheirted, int threadID);
 
         [GeneratedDllImport(global::Interop.Libraries.Advapi32, EntryPoint = "ImpersonateAnonymousToken", SetLastError = true)]
         public static partial int ImpersonateAnonymousToken(IntPtr token);

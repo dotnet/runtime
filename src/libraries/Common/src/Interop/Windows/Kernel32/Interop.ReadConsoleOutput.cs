@@ -16,6 +16,7 @@ internal static partial class Interop
         }
 
         [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "ReadConsoleOutputW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool ReadConsoleOutput(IntPtr hConsoleOutput, CHAR_INFO* pBuffer, COORD bufferSize, COORD bufferCoord, ref SMALL_RECT readRegion);
     }
 }

@@ -2926,14 +2926,6 @@ MonoInst*   mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, 
 void        mono_simd_intrinsics_init (void);
 #endif
 
-gboolean    mono_class_is_magic_int (MonoClass *klass);
-gboolean    mono_class_is_magic_float (MonoClass *klass);
-MonoInst*   mono_emit_native_types_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
-gsize       mini_magic_type_size (MonoCompile *cfg, MonoType *type);
-gboolean    mini_magic_is_int_type (MonoType *t);
-gboolean    mini_magic_is_float_type (MonoType *t);
-MonoType* mini_native_type_replace_type (MonoType *type);
-
 MonoMethod*
 mini_method_to_shared (MonoMethod *method); // null if not shared
 

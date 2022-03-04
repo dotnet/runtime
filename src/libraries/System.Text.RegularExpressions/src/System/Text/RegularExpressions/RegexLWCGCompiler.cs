@@ -32,7 +32,7 @@ namespace System.Text.RegularExpressions
         /// <summary>The top-level driver. Initializes everything then calls the Generate* methods.</summary>
         public RegexRunnerFactory? FactoryInstanceFromCode(string pattern, RegexTree regexTree, RegexOptions options, bool hasTimeout)
         {
-            if (!regexTree.Root.SupportsCompilation())
+            if (!regexTree.Root.SupportsCompilation(out _))
             {
                 return null;
             }

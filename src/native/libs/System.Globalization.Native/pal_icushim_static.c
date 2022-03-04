@@ -459,13 +459,13 @@ GlobalizationNative_LoadICUData(const char* path)
     if (icu_data == NULL)
     {
         log_shim_error("Failed to load ICU data.");
-        return -1;
+        return 0;
     }
 
     if (load_icu_data(icu_data) == 0)
     {
         log_shim_error("ICU BAD EXIT.");
-        return -1;
+        return 0;
     }
 
     return GlobalizationNative_LoadICU();

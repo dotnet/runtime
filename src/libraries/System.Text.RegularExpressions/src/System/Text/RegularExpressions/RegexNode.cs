@@ -1223,7 +1223,7 @@ namespace System.Text.RegularExpressions
 
                     // Now compare the rest of the branches against it.
                     int endingIndex = startingIndex + 1;
-                    for ( ; endingIndex < children.Count; endingIndex++)
+                    for (; endingIndex < children.Count; endingIndex++)
                     {
                         // Get the starting node of the next branch.
                         startingNode = children[endingIndex].FindBranchOneOrMultiStart();
@@ -2566,18 +2566,27 @@ namespace System.Text.RegularExpressions
         }
 
         // Determines whether the node supports a compilation / code generation strategy based on walking the node tree.
-        internal bool SupportsCompilation()
+        // Also returns a human-readable string to explain the reason (it will be emitted by the source generator, hence
+        // there's no need to localize).
+        internal bool SupportsCompilation([NotNullWhen(false)] out string? reason)
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                // If we can't recur further, code generation isn't supported as the tree is too deep.
+                reason = "run-time limits were exceeded";
                 return false;
             }
 
-            if ((Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) != 0)
+            // NonBacktracking isn't supported, nor RightToLeft.  The latter applies to both the top-level
+            // options as well as when used to specify positive and negative lookbehinds.
+            if ((Options & RegexOptions.NonBacktracking) != 0)
             {
-                // NonBacktracking isn't supported, nor RightToLeft.  The latter applies to both the top-level
-                // options as well as when used to specify positive and negative lookbehinds.
+                reason = "RegexOptions.NonBacktracking was specified";
+                return false;
+            }
+
+            if ((Options & RegexOptions.RightToLeft) != 0)
+            {
+                reason = "RegexOptions.RightToLeft or a positive/negative lookbehind was used";
                 return false;
             }
 
@@ -2585,13 +2594,14 @@ namespace System.Text.RegularExpressions
             for (int i = 0; i < childCount; i++)
             {
                 // The node isn't supported if any of its children aren't supported.
-                if (!Child(i).SupportsCompilation())
+                if (!Child(i).SupportsCompilation(out reason))
                 {
                     return false;
                 }
             }
 
             // Supported.
+            reason = null;
             return true;
         }
 

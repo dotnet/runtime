@@ -28,7 +28,7 @@ internal static partial class Interop
         internal static partial int AppleCryptoNative_X509ChainEvaluate(
             SafeX509ChainHandle chain,
             SafeCFDateHandle cfEvaluationTime,
-            bool allowNetwork,
+            [MarshalAs(UnmanagedType.Bool)] bool allowNetwork,
             out int pOSStatus);
 
         [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X509ChainGetChainSize")]

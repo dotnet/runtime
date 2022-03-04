@@ -13,6 +13,7 @@ namespace System.Reflection.Metadata
         private static unsafe partial void ApplyUpdate(QCallAssembly assembly, byte* metadataDelta, int metadataDeltaLength, byte* ilDelta, int ilDeltaLength, byte* pdbDelta, int pdbDeltaLength);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_IsApplyUpdateSupported")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool IsApplyUpdateSupported();
 
         /// <summary>

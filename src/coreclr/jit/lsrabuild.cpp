@@ -618,6 +618,10 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
     newRP->setMultiRegIdx(multiRegIdx);
     newRP->setRegOptional(false);
 
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+    newRP->skipSaveRestore = false;
+#endif
+
     associateRefPosWithInterval(newRP);
 
     if (RefTypeIsDef(newRP->refType))
@@ -1475,7 +1479,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
 {
     if ((tree != nullptr) && tree->IsCall())
     {
-        if (tree->AsCall()->IsNoReturn())
+        if (tree->AsCall()->IsNoReturn() || compiler->fgIsThrow(tree))
         {
             // No point in having vector save/restore if the call will not return.
             return;
@@ -1492,7 +1496,9 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
         // We only need to save the upper half of any large vector vars that are currently live.
         VARSET_TP       liveLargeVectors(VarSetOps::Intersection(compiler, currentLiveVars, largeVectorVars));
         VarSetOps::Iter iter(compiler, liveLargeVectors);
-        unsigned        varIndex = 0;
+        unsigned        varIndex     = 0;
+        bool            isThrowBlock = compiler->compCurBB->KindIs(BBJ_THROW);
+
         while (iter.NextElem(&varIndex))
         {
             Interval* varInterval = getIntervalForLocalVar(varIndex);
@@ -1502,6 +1508,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
                 RefPosition* pos =
                     newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorSave, tree, RBM_FLT_CALLEE_SAVED);
                 varInterval->isPartiallySpilled = true;
+                pos->skipSaveRestore            = isThrowBlock;
 #ifdef TARGET_XARCH
                 pos->regOptional = true;
 #endif
@@ -1570,17 +1577,37 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
 //    currentLoc     - The current location for which we're building RefPositions
 //    node           - The node, if any, that the restore would be inserted before.
 //                     If null, the restore will be inserted at the end of the block.
+//    isUse          - If the refPosition that is about to be created represents a use or not.
+//                   - If not, it would be the one at the end of the block.
 //
-void LinearScan::buildUpperVectorRestoreRefPosition(Interval* lclVarInterval, LsraLocation currentLoc, GenTree* node)
+void LinearScan::buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
+                                                    LsraLocation currentLoc,
+                                                    GenTree*     node,
+                                                    bool         isUse)
 {
     if (lclVarInterval->isPartiallySpilled)
     {
         unsigned     varIndex            = lclVarInterval->getVarIndex(compiler);
         Interval*    upperVectorInterval = getUpperVectorInterval(varIndex);
-        RefPosition* pos = newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorRestore, node, RBM_NONE);
+        RefPosition* savePos             = upperVectorInterval->recentRefPosition;
+        RefPosition* restorePos =
+            newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorRestore, node, RBM_NONE);
         lclVarInterval->isPartiallySpilled = false;
+
+        if (isUse)
+        {
+            // If there was a use of the restore before end of the block restore,
+            // then it is needed and cannot be eliminated
+            savePos->skipSaveRestore = false;
+        }
+        else
+        {
+            // otherwise, just do the whatever was decided for save position
+            restorePos->skipSaveRestore = savePos->skipSaveRestore;
+        }
+
 #ifdef TARGET_XARCH
-        pos->regOptional = true;
+        restorePos->regOptional = true;
 #endif
     }
 }
@@ -2254,6 +2281,7 @@ void LinearScan::buildIntervals()
     for (block = startBlockSequence(); block != nullptr; block = moveToNextBlock())
     {
         JITDUMP("\nNEW BLOCK " FMT_BB "\n", block->bbNum);
+        compiler->compCurBB = block;
 
         bool predBlockIsAllocated = false;
         predBlock                 = findPredBlockForLiveIn(block, prevBlock DEBUGARG(&predBlockIsAllocated));
@@ -2411,7 +2439,7 @@ void LinearScan::buildIntervals()
             while (largeVectorVarsIter.NextElem(&largeVectorVarIndex))
             {
                 Interval* lclVarInterval = getIntervalForLocalVar(largeVectorVarIndex);
-                buildUpperVectorRestoreRefPosition(lclVarInterval, currentLoc, nullptr);
+                buildUpperVectorRestoreRefPosition(lclVarInterval, currentLoc, nullptr, false);
             }
         }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -2964,7 +2992,7 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
             VarSetOps::RemoveElemD(compiler, currentLiveVars, varIndex);
         }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        buildUpperVectorRestoreRefPosition(interval, currentLoc, operand);
+        buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true);
 #endif
     }
     else if (operand->IsMultiRegLclVar())
@@ -2978,7 +3006,7 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
             VarSetOps::RemoveElemD(compiler, currentLiveVars, fieldVarDsc->lvVarIndex);
         }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        buildUpperVectorRestoreRefPosition(interval, currentLoc, operand);
+        buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true);
 #endif
     }
     else
