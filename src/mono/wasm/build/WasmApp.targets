@@ -51,7 +51,8 @@
       - $(EmccFlags)                        - Emcc flags used for both compiling native files, and linking
       - $(EmccExtraLDFlags)                 - Extra emcc flags for linking
       - $(EmccExtraCFlags)                  - Extra emcc flags for compiling native files
-      - $(EmccTotalMemory)                  - Total memory specified with `emcc`. Default value: 536870912
+      - $(EmccInitialMemory)                - Initial memory specified with `emcc`. Default value: 536870912
+                                              (previously named EmccTotalMemory, which is still kept as an alias)
 
       - $(WasmBuildAppAfterThisTarget)      - This target is used as `AfterTargets` for `WasmBuildApp. this
                                               is what triggers the wasm app building. Defaults to `Build`.

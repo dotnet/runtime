@@ -4356,6 +4356,78 @@
     "any",
     "base"
   ],
+  "miraclelinux": [
+    "miraclelinux",
+    "rhel",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "miraclelinux-x64": [
+    "miraclelinux-x64",
+    "miraclelinux",
+    "rhel-x64",
+    "rhel",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "miraclelinux.8": [
+    "miraclelinux.8",
+    "miraclelinux",
+    "rhel.8",
+    "rhel",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "miraclelinux.8-x64": [
+    "miraclelinux.8-x64",
+    "miraclelinux.8",
+    "miraclelinux-x64",
+    "rhel.8-x64",
+    "miraclelinux",
+    "rhel.8",
+    "rhel-x64",
+    "rhel",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "miraclelinux.9": [
+    "miraclelinux.9",
+    "miraclelinux",
+    "rhel.9",
+    "rhel",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "miraclelinux.9-x64": [
+    "miraclelinux.9-x64",
+    "miraclelinux.9",
+    "miraclelinux-x64",
+    "rhel.9-x64",
+    "miraclelinux",
+    "rhel.9",
+    "rhel-x64",
+    "rhel",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
   "ol": [
     "ol",
     "rhel",

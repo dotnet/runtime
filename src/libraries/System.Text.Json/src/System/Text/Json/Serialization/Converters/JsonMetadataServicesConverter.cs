@@ -76,7 +76,7 @@ namespace System.Text.Json.Serialization.Converters
             if (!state.SupportContinuation &&
                 jsonTypeInfo is JsonTypeInfo<T> info &&
                 info.SerializeHandler != null &&
-                info.Options._serializerContext?.CanUseSerializationLogic == true)
+                info.Options.JsonSerializerContext?.CanUseSerializationLogic == true)
             {
                 info.SerializeHandler(writer, value);
                 return true;
