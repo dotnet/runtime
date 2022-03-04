@@ -120,31 +120,9 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    JsonTypeInfo jsonTypeInfo;
+                    JsonTypeInfo jsonTypeInfo = Current.JsonPropertyInfo?.JsonTypeInfo ?? Current.CtorArgumentState!.JsonParameterInfo!.JsonTypeInfo;
                     JsonNumberHandling? numberHandling = Current.NumberHandling;
                     ConverterStrategy converterStrategy = Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy;
-
-                    if (converterStrategy == ConverterStrategy.Object)
-                    {
-                        if (Current.JsonPropertyInfo != null)
-                        {
-                            jsonTypeInfo = Current.JsonPropertyInfo.JsonTypeInfo;
-                        }
-                        else
-                        {
-                            jsonTypeInfo = Current.CtorArgumentState!.JsonParameterInfo!.JsonTypeInfo;
-                        }
-                    }
-                    else if (converterStrategy == ConverterStrategy.Value)
-                    {
-                        // Although ConverterStrategy.Value doesn't push, a custom custom converter may re-enter serialization.
-                        jsonTypeInfo = Current.JsonPropertyInfo!.JsonTypeInfo;
-                    }
-                    else
-                    {
-                        Debug.Assert(((ConverterStrategy.Enumerable | ConverterStrategy.Dictionary) & converterStrategy) != 0);
-                        jsonTypeInfo = Current.JsonTypeInfo.ElementTypeInfo!;
-                    }
 
                     EnsurePushCapacity();
                     _stack[_count - 1] = Current;
