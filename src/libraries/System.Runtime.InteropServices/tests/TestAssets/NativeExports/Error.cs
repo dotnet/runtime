@@ -17,7 +17,7 @@ namespace NativeExports
             public static extern int GetLastError();
         }
 
-        private class Libc
+        private class @libc
         {
             [DllImport("libc")]
             internal static unsafe extern int* __errno_location();
@@ -54,11 +54,11 @@ namespace NativeExports
             }
             else if (OperatingSystem.IsMacOS())
             {
-                *Libc.__error() = error;
+                *libc.__error() = error;
             }
             else if (OperatingSystem.IsLinux())
             {
-                *Libc.__errno_location() = error;
+                *libc.__errno_location() = error;
             }
             else
             {

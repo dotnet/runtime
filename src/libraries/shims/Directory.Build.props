@@ -35,10 +35,6 @@
              Condition="Exists('$(MSBuildThisFileDirectory)$(MSBuildProjectName).forwards.cs')" />
   </ItemGroup>
 
-  <!-- Include any props setting files needed by both ref and src projects.-->
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildProjectName).props"
-          Condition="Exists('$(MSBuildThisFileDirectory)$(MSBuildProjectName).props')" />
-
   <ItemGroup>
     <ProjectReference Include="$(MSBuildThisFileDirectory)..\sfx-src.proj" Condition="'$(RefOnly)' != 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)..\sfx-ref.proj" Condition="'$(RefOnly)' == 'true'" />

@@ -9,6 +9,7 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [GeneratedDllImport(Libraries.Kernel32,  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial bool GetProcessPriorityBoost(SafeProcessHandle handle, out bool disabled);
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool GetProcessPriorityBoost(SafeProcessHandle handle, [MarshalAs(UnmanagedType.Bool)] out bool disabled);
     }
 }

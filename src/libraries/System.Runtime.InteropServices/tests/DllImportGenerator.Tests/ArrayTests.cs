@@ -69,7 +69,7 @@ namespace DllImportGenerator.IntegrationTests
             public static partial bool FillRangeArray([Out] IntStructWrapper[] array, int length, int start);
 
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "double_values")]
-            public static partial bool DoubleValues([In, Out] IntStructWrapper[] array, int length);
+            public static partial void DoubleValues([In, Out] IntStructWrapper[] array, int length);
 
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "and_all_members")]
             [return:MarshalAs(UnmanagedType.U1)]

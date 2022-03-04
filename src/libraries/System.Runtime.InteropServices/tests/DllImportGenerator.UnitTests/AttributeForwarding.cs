@@ -299,6 +299,7 @@ using System.Runtime.InteropServices;
 partial class C
 {
     [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool Method1([In, Out] int[] a);
 }
 " + CodeSnippets.GeneratedDllImportAttributeDeclaration;
@@ -341,6 +342,7 @@ using System.Runtime.InteropServices;
 partial class C
 {
     [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool Method1([MarshalAs(UnmanagedType.I2)] int a);
 }
 " + CodeSnippets.GeneratedDllImportAttributeDeclaration;
@@ -369,6 +371,7 @@ using System.Runtime.InteropServices;
 partial class C
 {
     [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool Method1([MarshalAs(UnmanagedType.LPArray, SizeConst = 10, SizeParamIndex = 1, ArraySubType = UnmanagedType.I4)] int[] a, int b);
 }
 " + CodeSnippets.GeneratedDllImportAttributeDeclaration;

@@ -17,7 +17,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>The culture to use for IgnoreCase comparisons.</summary>
         private readonly CultureInfo _culture;
         /// <summary>Capture information.</summary>
-        private readonly Hashtable? _caps;
+        private readonly Hashtable? _captureSparseMapping;
         /// <summary>The builder to use to create the <see cref="SymbolicRegexNode{S}"/> nodes.</summary>
         internal readonly SymbolicRegexBuilder<BDD> _builder;
 
@@ -26,10 +26,10 @@ namespace System.Text.RegularExpressions.Symbolic
         private Dictionary<(bool IgnoreCase, string Set), BDD>? _setBddCache;
 
         /// <summary>Constructs a regex to symbolic finite automata converter</summary>
-        public RegexNodeConverter(CultureInfo culture, Hashtable? caps)
+        public RegexNodeConverter(CultureInfo culture, Hashtable? captureSparseMapping)
         {
             _culture = culture;
-            _caps = caps;
+            _captureSparseMapping = captureSparseMapping;
             _builder = new SymbolicRegexBuilder<BDD>(CharSetSolver.Instance);
         }
 
@@ -133,11 +133,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Other constructs
 
                 case RegexNodeKind.Capture when node.N == -1: // N == -1 because balancing groups aren't supported
-                    int captureNum;
-                    if (_caps == null || !_caps.TryGetValue(node.M, out captureNum))
-                    {
-                        captureNum = node.M;
-                    }
+                    int captureNum = RegexParser.MapCaptureNumber(node.M, _captureSparseMapping);
                     return _builder.CreateCapture(ConvertToSymbolicRegexNode(node.Child(0), tryCreateFixedLengthMarker), captureNum);
 
                 case RegexNodeKind.Empty:
