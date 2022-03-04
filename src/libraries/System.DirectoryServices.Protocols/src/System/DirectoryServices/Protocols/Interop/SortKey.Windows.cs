@@ -12,7 +12,39 @@ using System.Runtime.Versioning;
 namespace System.DirectoryServices.Protocols
 {
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public partial class SortKey
+    internal class SortKeyInterop
     {
+        private string _name;
+        private string _rule;
+        private bool _order;
+
+        public SortKeyInterop()
+        {
+        }
+
+        public SortKeyInterop(string attributeName, string matchingRule, bool reverseOrder)
+        {
+            AttributeName = attributeName;
+            _rule = matchingRule;
+            _order = reverseOrder;
+        }
+
+        public string AttributeName
+        {
+            get => _name;
+            set => _name = value ?? throw new ArgumentNullException(nameof(value));
+        }
+
+        public string MatchingRule
+        {
+            get => _rule;
+            set => _rule = value;
+        }
+
+        public bool ReverseOrder
+        {
+            get => _order;
+            set => _order = value;
+        }
     }
 }

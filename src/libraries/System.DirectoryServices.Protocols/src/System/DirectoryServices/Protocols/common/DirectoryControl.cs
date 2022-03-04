@@ -50,9 +50,7 @@ namespace System.DirectoryServices.Protocols
         public static ConnectionHandle GetHandle() => s_handle;
     }
 
-    // This class is marked partial to allow customization of the
-    // marshalling attribute on different platforms
-    public partial class SortKey
+    public class SortKey
     {
         private string _name;
         private string _rule;
@@ -704,9 +702,16 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
+            SortKeyInterop[] nativeSortKeys = new SortKeyInterop[_keys.Length];
+            for (int i = 0; i < _keys.Length; ++i)
+            {
+                nativeSortKeys[i] = new SortKeyInterop(_keys[i].AttributeName,
+                    _keys[i].MatchingRule, _keys[i].ReverseOrder);
+            }
+
             IntPtr control = IntPtr.Zero;
-            int structSize = Marshal.SizeOf(typeof(SortKey));
-            int keyCount = _keys.Length;
+            int structSize = Marshal.SizeOf(typeof(SortKeyInterop));
+            int keyCount = nativeSortKeys.Length;
             IntPtr memHandle = Utility.AllocHGlobalIntPtrArray(keyCount + 1);
 
             try
@@ -717,7 +722,7 @@ namespace System.DirectoryServices.Protocols
                 for (i = 0; i < keyCount; i++)
                 {
                     sortPtr = Marshal.AllocHGlobal(structSize);
-                    Marshal.StructureToPtr(_keys[i], sortPtr, false);
+                    Marshal.StructureToPtr(nativeSortKeys[i], sortPtr, false);
                     tempPtr = (IntPtr)((long)memHandle + IntPtr.Size * i);
                     Marshal.WriteIntPtr(tempPtr, sortPtr);
                 }
