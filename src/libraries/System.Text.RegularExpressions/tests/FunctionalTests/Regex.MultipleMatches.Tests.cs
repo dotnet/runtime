@@ -244,6 +244,16 @@ namespace System.Text.RegularExpressions.Tests
                     }
                 };
 
+                yield return new object[]
+                {
+                    engine,
+                     @"^[^a]a", "bar\n", RegexOptions.Multiline,
+                     new[]
+                     {
+                         new CaptureData("ba", 0, 2)
+                     }
+                };
+
                 if (!PlatformDetection.IsNetFramework)
                 {
                     // .NET Framework missing fix in https://github.com/dotnet/runtime/pull/1075
