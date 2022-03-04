@@ -329,6 +329,12 @@ emit_xzero (MonoCompile *cfg, MonoClass *klass)
 	return emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
 }
 
+static MonoInst*
+emit_xones (MonoCompile *cfg, MonoClass *klass)
+{
+	return emit_simd_ins (cfg, klass, OP_XONES, -1, -1);
+}
+
 static gboolean
 is_intrinsics_vector_type (MonoType *vector_type)
 {
@@ -1083,8 +1089,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		return emit_xzero (cfg, klass);
 	}
 	case SN_get_AllBitsSet: {
-		MonoInst *ins = emit_xzero (cfg, klass);
-		return emit_xcompare (cfg, klass, etype->type, ins, ins);
+		return emit_xones (cfg, klass);
 	}
 	case SN_Equals: {
 		if (fsig->param_count == 1 && fsig->ret->type == MONO_TYPE_BOOLEAN && mono_metadata_type_equal (fsig->params [0], type)) {
@@ -1276,9 +1281,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		return emit_simd_ins (cfg, klass, expand_opcode, one->dreg, -1);
 	}
 	case SN_get_AllBitsSet: {
-		/* Compare a zero vector with itself */
-		ins = emit_xzero (cfg, klass);
-		return emit_xcompare (cfg, klass, etype->type, ins, ins);
+		return emit_xones (cfg, klass);
 	}
 	case SN_get_Item: {
 		if (!COMPILE_LLVM (cfg))
