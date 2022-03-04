@@ -291,8 +291,10 @@ function set_exit_code(exit_code, reason) {
         };
         stop_when_ws_buffer_empty();
 
-    } else if (App && App.INTERNAL) {
-        App.INTERNAL.mono_wasm_exit(exit_code);
+    } else {
+        console.log("WASM EXIT " + exit_code);
+        if (App && App.INTERNAL)
+            App.INTERNAL.mono_wasm_exit(exit_code);
     }
 }
 
