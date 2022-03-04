@@ -1508,7 +1508,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
                 RefPosition* pos =
                     newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorSave, tree, RBM_FLT_CALLEE_SAVED);
                 varInterval->isPartiallySpilled = true;
-                pos->skipSaveRestore = isThrowBlock;
+                pos->skipSaveRestore            = isThrowBlock;
 #ifdef TARGET_XARCH
                 pos->regOptional = true;
 #endif
@@ -1580,14 +1580,18 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
 //    isUse          - If the refPosition that is about to be created represents a use or not.
 //                   - If not, it would be the one at the end of the block.
 //
-void LinearScan::buildUpperVectorRestoreRefPosition(Interval* lclVarInterval, LsraLocation currentLoc, GenTree* node, bool isUse)
+void LinearScan::buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
+                                                    LsraLocation currentLoc,
+                                                    GenTree*     node,
+                                                    bool         isUse)
 {
     if (lclVarInterval->isPartiallySpilled)
     {
         unsigned     varIndex            = lclVarInterval->getVarIndex(compiler);
         Interval*    upperVectorInterval = getUpperVectorInterval(varIndex);
-        RefPosition*  savePos            = upperVectorInterval->recentRefPosition;
-        RefPosition* restorePos = newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorRestore, node, RBM_NONE);
+        RefPosition* savePos             = upperVectorInterval->recentRefPosition;
+        RefPosition* restorePos =
+            newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorRestore, node, RBM_NONE);
         lclVarInterval->isPartiallySpilled = false;
 
         if (isUse)

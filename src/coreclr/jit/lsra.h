@@ -2275,7 +2275,7 @@ public:
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     // If upper vector save/restore can be avoided.
-    unsigned char skipSaveRestore: 1;
+    unsigned char skipSaveRestore : 1;
 #endif
 
 #ifdef DEBUG
