@@ -66,8 +66,6 @@
 
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
 
-  <Target Name="PublishToDisk" DependsOnTargets="GetFilesToPublish" />
-
   <Target Name="GetFilesToPublish">
     <MSBuild Projects="$(MSBuildProjectFullPath)"
           Targets="_GetAllSharedFrameworkFiles"
