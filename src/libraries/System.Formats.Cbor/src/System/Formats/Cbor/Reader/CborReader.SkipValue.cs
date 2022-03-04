@@ -10,11 +10,11 @@ namespace System.Formats.Cbor
         /// <summary>Reads the contents of the next value, discarding the result and advancing the reader.</summary>
         /// <param name="disableConformanceModeChecks"><see langword="true" /> to disable conformance mode validation for the skipped values, equivalent to using <see cref="CborConformanceMode.Lax" />; otherwise, <see langword="false" />.</param>
         /// <exception cref="InvalidOperationException">The reader is not at the start of new value.</exception>
-        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
-        /// -or-
-        /// There was an unexpected end of CBOR encoding data.
-        /// -or-
-        /// The next value uses a CBOR encoding that is not valid under the current conformance mode.</exception>
+        /// <exception cref="CborContentException"><p>The next value has an invalid CBOR encoding.</p>
+        /// <p>-or-</p>
+        /// <p>There was an unexpected end of CBOR encoding data.</p>
+        /// <p>-or-</p>
+        /// <p>The next value uses a CBOR encoding that is not valid under the current conformance mode.</p></exception>
         public void SkipValue(bool disableConformanceModeChecks = false)
         {
             SkipToAncestor(0, disableConformanceModeChecks);
@@ -23,11 +23,11 @@ namespace System.Formats.Cbor
         /// <summary>Reads the remaining contents of the current value context, discarding results and advancing the reader to the next value in the parent context.</summary>
         /// <param name="disableConformanceModeChecks"><see langword="true" /> to disable conformance mode validation for the skipped values, equivalent to using <see cref="CborConformanceMode.Lax" />; otherwise, <see langword="false" />.</param>
         /// <exception cref="InvalidOperationException">The reader is at the root context</exception>
-        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
-        /// -or-
-        /// There was an unexpected end of CBOR encoding data.
-        /// -or-
-        /// The next value uses a CBOR encoding that is not valid under the current conformance mode.</exception>
+        /// <exception cref="CborContentException"><p>The next value has an invalid CBOR encoding.</p>
+        /// <p>-or-</p>
+        /// <p>There was an unexpected end of CBOR encoding data.</p>
+        /// <p>-or-</p>
+        /// <p>The next value uses a CBOR encoding that is not valid under the current conformance mode.</p></exception>
         public void SkipToParent(bool disableConformanceModeChecks = false)
         {
             if (_currentMajorType is null)
