@@ -60,7 +60,7 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a unix time in seconds as a tagged date/time value, as described in RFC7049 section 2.4.1.</summary>
         /// <param name="seconds">The value to write.</param>
-        /// <exception cref="ArgumentException">The <paramref name="seconds" /> parameter cannot be infinite or NaN</exception>
+        /// <exception cref="ArgumentException">The <paramref name="seconds" /> parameter cannot be infinite or NaN.</exception>
         /// <exception cref="InvalidOperationException"><p>Writing a new value exceeds the definite length of the parent data item.</p>
         /// <p>-or-</p>
         /// <p>The major type of the encoded value is not permitted in the parent data item.</p>
