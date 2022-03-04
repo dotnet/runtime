@@ -53,7 +53,7 @@ internal static partial class Interop
             IntPtr bytes,
             CFIndex numBytes,
             CFStringBuiltInEncodings encoding,
-            bool isExternalRepresentation);
+            [MarshalAs(UnmanagedType.Bool)] bool isExternalRepresentation);
 
         /// <summary>
         /// Creates a CFStringRef from a 8-bit String object. Follows the "Create Rule" where if you create it, you delete it.

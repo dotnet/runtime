@@ -6,8 +6,8 @@
     <RootNamespace>System.Runtime.InteropServices</RootNamespace>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Description>APIs required for usage of the DllImportGenerator and related tools.</Description>
-    <DefineConstants>$(DefineConstants);DLLIMPORT_GENERATOR_TEST</DefineConstants>
+    <Description>APIs required for usage of the LibraryImportGenerator and related tools.</Description>
+    <DefineConstants>$(DefineConstants);LIBRARYIMPORT_GENERATOR_TEST</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

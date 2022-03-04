@@ -3827,7 +3827,7 @@ mini_get_basic_type_from_generic (MonoType *type)
 			return m_class_get_byval_arg (klass);
 		}
 	} else {
-		return mini_native_type_replace_type (mono_type_get_basic_type_from_generic (type));
+		return mono_type_get_basic_type_from_generic (type);
 	}
 }
 
@@ -3840,8 +3840,6 @@ mini_get_basic_type_from_generic (MonoType *type)
 MonoType*
 mini_type_get_underlying_type (MonoType *type)
 {
-	type = mini_native_type_replace_type (type);
-
 	if (m_type_is_byref (type))
 		return mono_get_int_type ();
 	if (!m_type_is_byref (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type (type))

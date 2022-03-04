@@ -30,7 +30,7 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_X509StoreRemoveCertificate(
             SafeHandle certOrIdentity,
-            bool isReadOnlyMode);
+            [MarshalAs(UnmanagedType.Bool)] bool isReadOnlyMode);
 
         internal static SafeCFArrayHandle KeychainEnumerateCerts()
         {

@@ -5,7 +5,7 @@
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
     <DefineConstants>UNITTEST</DefineConstants>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>

@@ -339,8 +339,10 @@ namespace System.Net
             SslProtocols.Ssl2,
             SslProtocols.Ssl3,
 #pragma warning restore 0618
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             SslProtocols.Tls,
             SslProtocols.Tls11,
+#pragma warning restore SYSLIB0039
             SslProtocols.Tls12
         };
 

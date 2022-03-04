@@ -71,5 +71,7 @@ namespace Microsoft.Interop
         public const string DefaultDllImportSearchPathsAttribute = "System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute";
 
         public const string DllImportSearchPath = "System.Runtime.InteropServices.DllImportSearchPath";
+
+        public const string System_CodeDom_Compiler_GeneratedCodeAttribute = "System.CodeDom.Compiler.GeneratedCodeAttribute";
     }
 }

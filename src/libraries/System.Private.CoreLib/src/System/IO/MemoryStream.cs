@@ -114,21 +114,13 @@ namespace System.IO
 
         protected override void Dispose(bool disposing)
         {
-            try
+            if (disposing)
             {
-                if (disposing)
-                {
-                    _isOpen = false;
-                    _writable = false;
-                    _expandable = false;
-                    // Don't set buffer to null - allow TryGetBuffer, GetBuffer & ToArray to work.
-                    _lastReadTask = default;
-                }
-            }
-            finally
-            {
-                // Call base.Close() to cleanup async IO resources
-                base.Dispose(disposing);
+                _isOpen = false;
+                _writable = false;
+                _expandable = false;
+                // Don't set buffer to null - allow TryGetBuffer, GetBuffer & ToArray to work.
+                _lastReadTask = default;
             }
         }
 

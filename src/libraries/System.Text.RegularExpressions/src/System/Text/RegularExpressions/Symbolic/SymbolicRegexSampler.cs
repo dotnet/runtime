@@ -177,7 +177,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        private BDD ToBDD(S pred) => _solver.ConvertToCharSet(CharSetSolver.Instance, pred);
+        private BDD ToBDD(S pred) => _solver.ConvertToCharSet(pred);
 
         private T Choose<T>(IList<T> elems) => elems[_random.Next(elems.Count)];
 
@@ -194,7 +194,7 @@ namespace System.Text.RegularExpressions.Symbolic
         private bool ChooseRandomlyTrueOrFalse() => _random.Next(100) < 50;
         /// <summary>Returns true if some state is unconditionally final</summary>
 
-        private bool IsFinal(IEnumerable<SymbolicRegexNode<S>> states)
+        private bool IsFinal(List<SymbolicRegexNode<S>> states)
         {
             foreach (SymbolicRegexNode<S> state in states)
             {
@@ -206,12 +206,12 @@ namespace System.Text.RegularExpressions.Symbolic
             return false;
         }
 
-        /// <summary>Returns true if some state can be final</summary>
-        private bool CanBeFinal(IEnumerable<SymbolicRegexNode<S>> states)
+        /// <summary>Returns true if some state is final in the given context</summary>
+        private bool IsFinal(List<SymbolicRegexNode<S>> states, uint context)
         {
             foreach (SymbolicRegexNode<S> state in states)
             {
-                if (state.CanBeNullable)
+                if (state.IsNullableFor(context))
                 {
                     return true;
                 }
@@ -219,12 +219,12 @@ namespace System.Text.RegularExpressions.Symbolic
             return false;
         }
 
-        /// <summary>Returns true if some state is final in the given context</summary>
-        private bool IsFinal(IEnumerable<SymbolicRegexNode<S>> states, uint context)
+        /// <summary>Returns true if some state can be final</summary>
+        private bool CanBeFinal(List<SymbolicRegexNode<S>> states)
         {
             foreach (SymbolicRegexNode<S> state in states)
             {
-                if (state.IsNullableFor(context))
+                if (state.CanBeNullable)
                 {
                     return true;
                 }

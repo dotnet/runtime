@@ -137,6 +137,7 @@ internal static partial class Interop
         private static partial IntPtr GetOpenSslCipherSuiteName(SafeSslHandle ssl, int cipherSuite, out int isTls12OrLower);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetCiphers")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool SslSetCiphers(SafeSslHandle ssl, byte* cipherList, byte* cipherSuites);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetVerifyPeer")]
@@ -219,9 +220,11 @@ internal static partial class Interop
         }
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslAddExtraChainCert")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SslAddExtraChainCert(SafeSslHandle ssl, SafeX509Handle x509);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslAddClientCAs")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool SslAddClientCAs(SafeSslHandle ssl, IntPtr* x509s, int count);
 
         internal static unsafe bool SslAddClientCAs(SafeSslHandle ssl, Span<IntPtr> x509handles)

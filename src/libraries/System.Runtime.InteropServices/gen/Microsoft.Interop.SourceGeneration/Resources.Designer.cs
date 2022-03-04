@@ -223,6 +223,15 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Marshalling bool without explicit marshalling information is not supported. Specify either &apos;MarshalUsingAttribute&apos; or &apos;MarshalAsAttribute&apos;..
+        /// </summary>
+        internal static string MarshallingBoolAsUndefinedNotSupported {
+            get {
+                return ResourceManager.GetString("MarshallingBoolAsUndefinedNotSupported", resourceCulture);
+            }
+        }     
+           
+        /// <summary>
         ///   Looks up a localized string similar to Marshalling char with &apos;CharSet.{0}&apos; is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke..
         /// </summary>
         internal static string MarshallingCharAsSpecifiedCharSetNotSupported {

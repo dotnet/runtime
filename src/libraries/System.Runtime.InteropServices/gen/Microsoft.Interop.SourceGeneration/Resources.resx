@@ -150,6 +150,9 @@
   <data name="InOutAttributeMarshalerNotSupported" xml:space="preserve">
     <value>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</value>
   </data>
+  <data name="MarshallingBoolAsUndefinedNotSupported" xml:space="preserve">
+    <value>Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</value>
+  </data>
   <data name="MarshallingCharAsSpecifiedCharSetNotSupported" xml:space="preserve">
     <value>Marshalling char with 'CharSet.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</value>
   </data>

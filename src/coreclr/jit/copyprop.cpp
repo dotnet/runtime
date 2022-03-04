@@ -43,11 +43,13 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap*
                 }
 
                 CopyPropSsaDefStack* stack = nullptr;
-                curSsaName->Lookup(lclNum, &stack);
-                stack->Pop();
-                if (stack->Empty())
+                if (curSsaName->Lookup(lclNum, &stack))
                 {
-                    curSsaName->Remove(lclNum);
+                    stack->Pop();
+                    if (stack->Empty())
+                    {
+                        curSsaName->Remove(lclNum);
+                    }
                 }
             }
         }
@@ -309,26 +311,24 @@ void Compiler::optCopyPropPushDef(GenTreeOp*           asg,
     else
     {
         assert((lclNode->gtFlags & GTF_VAR_DEF) != 0);
-        ssaDefNum = GetSsaNumForLocalVarDef(lclNode);
 
-        // This will be "RESERVED_SSA_NUM" for promoted struct fields assigned using the parent struct.
-        // TODO-CQ: fix this.
-        assert((ssaDefNum != SsaConfig::RESERVED_SSA_NUM) || lvaGetDesc(lclNode)->CanBeReplacedWithItsField(this));
+        // Quirk: do not collect defs from PHIs. Preserves previous behavior.
+        if (!asg->IsPhiDefn())
+        {
+            ssaDefNum = GetSsaNumForLocalVarDef(lclNode);
+
+            // This will be "RESERVED_SSA_NUM" for promoted struct fields assigned using the parent struct.
+            // TODO-CQ: fix this.
+            assert((ssaDefNum != SsaConfig::RESERVED_SSA_NUM) || lvaGetDesc(lclNode)->CanBeReplacedWithItsField(this));
+        }
     }
 
     // The default is "not available".
     LclSsaVarDsc* ssaDef = nullptr;
+
     if (ssaDefNum != SsaConfig::RESERVED_SSA_NUM)
     {
-        // This code preserves previous behavior. In principle, "ssaDefVN" should
-        // always be obtained directly from the SSA def descriptor and be valid.
-        ValueNum ssaDefVN = GetUseAsgDefVNOrTreeVN(lclNode);
-        assert(ssaDefVN != ValueNumStore::NoVN);
-
-        if (ssaDefVN != ValueNumStore::VNForVoid())
-        {
-            ssaDef = lvaGetDesc(lclNum)->GetPerSsaData(ssaDefNum);
-        }
+        ssaDef = lvaGetDesc(lclNum)->GetPerSsaData(ssaDefNum);
     }
 
     CopyPropSsaDefStack* defStack;

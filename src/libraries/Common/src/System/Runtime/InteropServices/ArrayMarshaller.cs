@@ -16,7 +16,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
     // Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
     // blow the stack since this is a new optimization in the code-generated interop.
     [CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder[]), CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200)]
-#if DLLIMPORT_GENERATOR_TEST
+#if LIBRARYIMPORT_GENERATOR_TEST
     public
 #else
     internal
@@ -94,7 +94,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
     // Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
     // blow the stack since this is a new optimization in the code-generated interop.
     [CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder*[]), CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200)]
-#if DLLIMPORT_GENERATOR_TEST
+#if LIBRARYIMPORT_GENERATOR_TEST
     public
 #else
     internal
