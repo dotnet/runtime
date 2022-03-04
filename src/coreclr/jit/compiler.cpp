@@ -937,7 +937,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     {
         uint32_t floatFieldFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(clsHnd);
 
-        if (floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE)
+        if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
         {
             howToReturnStruct = SPK_PrimitiveType;
             useType           = (structSize > 4) ? TYP_DOUBLE : TYP_FLOAT;

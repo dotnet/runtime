@@ -891,7 +891,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         {
             assert(varTypeIsStruct(argType));
             int floatNum = 0;
-            if (floatFlags == STRUCT_FLOAT_FIELD_ONLY_ONE)
+            if ((floatFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
             {
                 assert(argSize <= 8);
                 assert(varDsc->lvExactSize <= argSize);

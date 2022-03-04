@@ -11389,7 +11389,7 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
                     fUnsigned ? (uint32_t)op1->AsIntCon()->gtIconVal : op1->AsIntCon()->gtIconVal;
                 op1->gtType = TYP_LONG;
             }
-            else if (op1->gtOper == GT_CNS_INT)
+            else
                 *pOp1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
 #else
             op1 = *pOp1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);

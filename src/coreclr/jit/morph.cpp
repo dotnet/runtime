@@ -3518,7 +3518,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                         else
                             intArgRegNum += size;
                     }
-                    else if (floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE)
+                    else if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                     {
                         structBaseType = structSize == 8 ? TYP_DOUBLE : TYP_FLOAT;
                         fltArgRegNum += 1;
