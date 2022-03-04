@@ -110,9 +110,7 @@ steps:
   #      overwriteExistingFiles: true
   #      cleanDestinationFolder: false
 
-  # Get the current maui nuget config so all things can be found, and add the Emscription version to the rollback file
-  # Add emscription line using sed based on https://stackoverflow.com/questions/6739258/how-do-i-add-a-line-of-text-to-the-middle-of-a-file-using-bash.
-  # This is a workaround as the current
+  # Get the current maui nuget config so all things can be found and darc based package sources are kept up to date.
   - script: |
       curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/main/NuGet.config'
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
