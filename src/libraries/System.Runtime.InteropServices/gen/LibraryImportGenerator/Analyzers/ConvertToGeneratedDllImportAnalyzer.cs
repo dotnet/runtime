@@ -36,8 +36,8 @@ namespace Microsoft.Interop.Analyzers
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(ConvertToGeneratedDllImport);
 
-        public const string CharSetPropertyKey = "CharSet";
-        public const string ExactSpellingPropertyKey = "ExactSpelling";
+        public const string CharSet = nameof(CharSet);
+        public const string ExactSpelling = nameof(ExactSpelling);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -106,8 +106,8 @@ namespace Microsoft.Interop.Analyzers
 
             ImmutableDictionary<string, string>.Builder properties = ImmutableDictionary.CreateBuilder<string, string>();
 
-            properties.Add(CharSetPropertyKey, dllImportData.CharacterSet.ToString());
-            properties.Add(ExactSpellingPropertyKey, dllImportData.ExactSpelling.ToString());
+            properties.Add(CharSet, dllImportData.CharacterSet.ToString());
+            properties.Add(ExactSpelling, dllImportData.ExactSpelling.ToString());
 
             context.ReportDiagnostic(method.CreateDiagnostic(ConvertToGeneratedDllImport, properties.ToImmutable(), method.Name));
         }

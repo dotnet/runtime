@@ -70,9 +70,9 @@ namespace Microsoft.Interop.Analyzers
 
             foreach (Diagnostic diagnostic in context.Diagnostics)
             {
-                if (!bool.Parse(diagnostic.Properties[ConvertToGeneratedDllImportAnalyzer.ExactSpellingPropertyKey]))
+                if (!bool.Parse(diagnostic.Properties[ConvertToGeneratedDllImportAnalyzer.ExactSpelling]))
                 {
-                    CharSet charSet = (CharSet)Enum.Parse(typeof(CharSet), diagnostic.Properties[ConvertToGeneratedDllImportAnalyzer.CharSetPropertyKey]);
+                    CharSet charSet = (CharSet)Enum.Parse(typeof(CharSet), diagnostic.Properties[ConvertToGeneratedDllImportAnalyzer.CharSet]);
                     // CharSet.Auto traditionally maps to either an A or W suffix
                     // depending on the default CharSet of the platform.
                     // We will offer both suffix options when CharSet.Auto is provided
@@ -128,7 +128,7 @@ namespace Microsoft.Interop.Analyzers
                     if (editor.SemanticModel.GetDeclaredSymbol(methodSyntax, fixAllContext.CancellationToken) is not IMethodSymbol methodSymbol)
                         continue;
 
-                    SyntaxNode generatedDeclaration = ConvertMethodDeclarationToGeneratedDllImport(methodSyntax, editor, generator, methodSymbol, GetSuffixFromEquivalenceKey(fixAllContext.CodeActionEquivalenceKey), fixAllContext.CancellationToken);
+                    SyntaxNode generatedDeclaration = await ConvertMethodDeclarationToGeneratedDllImport(methodSyntax, editor, generator, methodSymbol, GetSuffixFromEquivalenceKey(fixAllContext.CodeActionEquivalenceKey), fixAllContext.CancellationToken);
 
                     if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
                     {
@@ -169,7 +169,7 @@ namespace Microsoft.Interop.Analyzers
             if (editor.SemanticModel.GetDeclaredSymbol(methodSyntax, cancellationToken) is not IMethodSymbol methodSymbol)
                 return doc;
 
-            SyntaxNode generatedDeclaration = ConvertMethodDeclarationToGeneratedDllImport(methodSyntax, editor, generator, methodSymbol, entryPointSuffix, cancellationToken);
+            SyntaxNode generatedDeclaration = await ConvertMethodDeclarationToGeneratedDllImport(methodSyntax, editor, generator, methodSymbol, entryPointSuffix, cancellationToken);
 
             if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
             {
@@ -188,7 +188,7 @@ namespace Microsoft.Interop.Analyzers
             return editor.GetChangedDocument();
         }
 
-        private static SyntaxNode ConvertMethodDeclarationToGeneratedDllImport(
+        private async static Task<SyntaxNode> ConvertMethodDeclarationToGeneratedDllImport(
             MethodDeclarationSyntax methodSyntax,
             DocumentEditor editor,
             SyntaxGenerator generator,
@@ -257,7 +257,7 @@ namespace Microsoft.Interop.Analyzers
 
         private static void MakeEnclosingTypesPartial(DocumentEditor editor, MethodDeclarationSyntax method)
         {
-            for (TypeDeclarationSyntax typeDecl = method.FirstAncestorOrSelf<TypeDeclarationSyntax>(); typeDecl is not null; typeDecl = typeDecl.Parent.FirstAncestorOrSelf<TypeDeclarationSyntax>())
+            for (TypeDeclarationSyntax? typeDecl = method.FirstAncestorOrSelf<TypeDeclarationSyntax>(); typeDecl is not null; typeDecl = typeDecl.Parent.FirstAncestorOrSelf<TypeDeclarationSyntax>())
             {
                 editor.ReplaceNode(typeDecl, (node, generator) => generator.WithModifiers(node, generator.GetModifiers(node).WithPartial(true)));
             }
