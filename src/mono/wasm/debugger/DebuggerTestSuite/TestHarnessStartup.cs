@@ -154,7 +154,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 await proxy.Run(browserUri, ideSocket).ConfigureAwait(false);
 #else
                 var ideSocket = await context.WebSockets.AcceptWebSocketAsync();
-                var proxyFirefox = new FirefoxProxyServer(proxyLoggerFactory, 6000);
+                var proxyFirefox = new FirefoxProxyServer(proxyLoggerFactory, 9600);
                 await proxyFirefox.RunForTests(9500, ideSocket);
 #endif
             }

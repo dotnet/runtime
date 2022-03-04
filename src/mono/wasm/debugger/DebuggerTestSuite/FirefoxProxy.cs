@@ -28,6 +28,27 @@ public class DebuggerTestFirefox : DebuggerTestBase
         client = insp.Client as FirefoxInspectorClient;
     }
 
+    protected override string BrowserName()
+    {
+        return "firefox";
+    }
+    protected override string BrowserPathLinux()
+    {
+        return "firefox";
+    }
+    protected override string BrowserExecutableLinux()
+    {
+        return "firefox";
+    }
+    protected override string BrowserPathWin()
+    {
+        return "firefox";
+    }
+    protected override string BrowserExecutableWin()
+    {
+        return "firefox.exe";
+    }
+
     internal override string[] ProbeList()
     {
         string [] ret = {
@@ -43,12 +64,12 @@ public class DebuggerTestFirefox : DebuggerTestBase
 
     internal override string InitParms()
     {
-        return "-headless -private -start-debugger-server ";
+        return "-P test_profile -headless -private -start-debugger-server ";
     }
 
     internal override string UrlToRemoteDebugging()
     {
-        return "http://localhost:6000";
+        return "http://localhost:9600";
     }
 
     internal override async Task<string> ExtractConnUrl (string str, ILogger<TestHarnessProxy> logger)
