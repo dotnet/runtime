@@ -490,21 +490,13 @@ namespace System.Diagnostics.Tests
                 p.StartInfo.UserName = username;
                 p.StartInfo.PasswordInClearText = password;
 
-                int tryCount = 0;
-                while (true)
+                try
                 {
-                    try
-                    {
-                        hasStarted = p.Start();
-                        break;
-                    }
-                    catch (Win32Exception ex) when (ex.NativeErrorCode == ERROR_SHARING_VIOLATION && ++tryCount < 10)
-                    {
-                        // for some reason the dotnet.exe is sometimes locked by some other process
-                        // that has opened it for writing with exclusive file access
-                        // https://github.com/dotnet/runtime/issues/65820
-                        Thread.Sleep(TimeSpan.FromMilliseconds(50));
-                    }
+                    hasStarted = p.Start();
+                }
+                catch (Win32Exception ex) when (ex.NativeErrorCode == ERROR_SHARING_VIOLATION)
+                {
+                    throw new SkipTestException($"{p.StartInfo.FileName} has been locked by some other process");
                 }
 
                 if (Interop.OpenProcessToken(p.SafeHandle, 0x8u, out handle))
