@@ -9,16 +9,16 @@ namespace System.Formats.Cbor
     {
         /// <summary>Reads the next data item as a half-precision floating point number (major type 7).</summary>
         /// <returns>The decoded value.</returns>
-        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
-        /// -or-
-        /// The next simple value is not a floating-point number encoding.
-        /// -or-
-        /// The encoded value is a double-precision float.</exception>
-        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
-        /// -or-
-        /// There was an unexpected end of CBOR encoding data.
-        /// -or-
-        /// The next value uses a CBOR encoding that is not valid under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><p>The next data item does not have the correct major type.</p>
+        /// <p>-or-</p>
+        /// <p>The next simple value is not a floating-point number encoding.</p>
+        /// <p>-or-</p>
+        /// <p>The encoded value is a double-precision float.</p></exception>
+        /// <exception cref="CborContentException"><p>The next value has an invalid CBOR encoding.</p>
+        /// <p>-or-</p>
+        /// <p>There was an unexpected end of CBOR encoding data.</p>
+        /// <p>-or-</p>
+        /// <p>The next value uses a CBOR encoding that is not valid under the current conformance mode.</p></exception>
         public Half ReadHalf()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
