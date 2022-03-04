@@ -195,11 +195,11 @@ namespace Microsoft.Extensions.Hosting
         {
             _createServiceProvider = () =>
             {
-                TContainerBuilder containterBuilder = factory.CreateBuilder(Services);
+                TContainerBuilder containerBuilder = factory.CreateBuilder(Services);
                 // Call _configureContainer in case anyone adds more callbacks via HostBuilderAdapter.ConfigureContainer<TContainerBuilder>() during build.
                 // Otherwise, this is equivalent to configure?.Invoke(containerBuilder).
-                _configureContainer(containterBuilder);
-                return factory.CreateServiceProvider(containterBuilder);
+                _configureContainer(containerBuilder);
+                return factory.CreateServiceProvider(containerBuilder);
             };
 
             // Store _configureContainer separately so it can replaced individually by the HostBuilderAdapter.
@@ -297,13 +297,13 @@ namespace Microsoft.Extensions.Hosting
                 {
                     Action<object> previousConfigureContainer = _hostApplicationBuilder._configureContainer;
 
-                    _hostApplicationBuilder._configureContainer = containterBuilder =>
+                    _hostApplicationBuilder._configureContainer = containerBuilder =>
                     {
-                        previousConfigureContainer(containterBuilder);
+                        previousConfigureContainer(containerBuilder);
 
                         foreach (IConfigureContainerAdapter containerAction in _configureContainerActions)
                         {
-                            containerAction.ConfigureContainer(_hostApplicationBuilder._hostBuilderContext, containterBuilder);
+                            containerAction.ConfigureContainer(_hostApplicationBuilder._hostBuilderContext, containerBuilder);
                         }
                     };
                 }
