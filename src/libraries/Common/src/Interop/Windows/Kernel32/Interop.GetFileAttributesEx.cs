@@ -12,6 +12,7 @@ internal static partial class Interop
         /// WARNING: This method does not implicitly handle long paths. Use GetFileAttributesEx.
         /// </summary>
         [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "GetFileAttributesExW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool GetFileAttributesExPrivate(
             string? name,
             GET_FILEEX_INFO_LEVELS fileInfoLevel,

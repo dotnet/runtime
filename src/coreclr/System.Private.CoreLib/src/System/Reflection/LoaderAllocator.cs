@@ -26,6 +26,7 @@ namespace System.Reflection
         internal IntPtr m_nativeLoaderAllocator;
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "LoaderAllocator_Destroy")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool Destroy(IntPtr nativeLoaderAllocator);
 
         ~LoaderAllocatorScout()

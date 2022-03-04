@@ -42,7 +42,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return Replace(input, replacement, -1, UseOptionR() ? input.Length : 0);
+            return Replace(input, replacement, -1, RightToLeft ? input.Length : 0);
         }
 
         /// <summary>
@@ -57,7 +57,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return Replace(input, replacement, count, UseOptionR() ? input.Length : 0);
+            return Replace(input, replacement, count, RightToLeft ? input.Length : 0);
         }
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return Replace(evaluator, this, input, -1, UseOptionR() ? input.Length : 0);
+            return Replace(evaluator, this, input, -1, RightToLeft ? input.Length : 0);
         }
 
         /// <summary>
@@ -125,7 +125,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return Replace(evaluator, this, input, count, UseOptionR() ? input.Length : 0);
+            return Replace(evaluator, this, input, count, RightToLeft ? input.Length : 0);
         }
 
         /// <summary>

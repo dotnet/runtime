@@ -19,6 +19,7 @@ internal static partial class Interop
             HandleRef hInst, IntPtr iconId);
 
         [GeneratedDllImport(Libraries.User32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool DestroyIcon(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -33,6 +34,7 @@ internal static partial class Interop
             HandleRef hImage, int uType, int cxDesired, int cyDesired, int fuFlags);
 
         [GeneratedDllImport(Libraries.User32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool GetIconInfo(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -43,6 +45,7 @@ internal static partial class Interop
         public static partial int GetSystemMetrics(int nIndex);
 
         [GeneratedDllImport(Libraries.User32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool DrawIconEx(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -58,7 +61,7 @@ internal static partial class Interop
             HandleRef hBrushFlickerFree, int diFlags);
 
         [GeneratedDllImport(Libraries.User32, SetLastError = true)]
-        internal static unsafe partial IntPtr CreateIconFromResourceEx(byte* pbIconBits, uint cbIconBits, bool fIcon, int dwVersion, int csDesired, int cyDesired, int flags);
+        internal static unsafe partial IntPtr CreateIconFromResourceEx(byte* pbIconBits, uint cbIconBits, [MarshalAs(UnmanagedType.Bool)] bool fIcon, int dwVersion, int csDesired, int cyDesired, int flags);
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct ICONINFO
