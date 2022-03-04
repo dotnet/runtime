@@ -149,7 +149,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Constructs matcher for given symbolic regex.</summary>
         internal SymbolicRegexMatcher(SymbolicRegexNode<TSetType> sr, RegexTree regexTree, BDD[] minterms, TimeSpan matchTimeout)
         {
-            Debug.Assert(sr._builder._solver is BV64Algebra or BVAlgebra or CharSetSolver, $"Unsupported algebra: {sr._builder._solver}");
+            Debug.Assert(sr._builder._solver is BitVector64Algebra or BitVectorAlgebra or CharSetSolver, $"Unsupported algebra: {sr._builder._solver}");
 
             _pattern = sr;
             _builder = sr._builder;
@@ -157,8 +157,8 @@ namespace System.Text.RegularExpressions.Symbolic
             _timeout = (int)(matchTimeout.TotalMilliseconds + 0.5); // Round up, so it will be at least 1ms
             _mintermClassifier = _builder._solver switch
             {
-                BV64Algebra bv64 => bv64._classifier,
-                BVAlgebra bv => bv._classifier,
+                BitVector64Algebra bv64 => bv64._classifier,
+                BitVectorAlgebra bv => bv._classifier,
                 _ => new MintermClassifier((CharSetSolver)(object)_builder._solver, minterms),
             };
             _capsize = regexTree.CaptureCount;

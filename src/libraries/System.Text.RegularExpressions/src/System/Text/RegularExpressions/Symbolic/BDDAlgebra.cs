@@ -8,17 +8,6 @@ using System.Diagnostics;
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>
-    /// Boolean operations over BDDs.
-    /// </summary>
-    internal enum BoolOp
-    {
-        Or,
-        And,
-        Xor,
-        Not
-    }
-
-    /// <summary>
     /// Boolean algebra for Binary Decision Diagrams. Boolean operations on BDDs are cached for efficiency. The
     /// IBooleanAlgebra interface implemented by this class is thread safe.
     /// TBD: policy for clearing/reducing the caches when they grow too large.
@@ -26,6 +15,15 @@ namespace System.Text.RegularExpressions.Symbolic
     /// </summary>
     internal abstract class BDDAlgebra : IBooleanAlgebra<BDD>
     {
+        /// <summary>Boolean operations over BDDs.</summary>
+        private enum BoolOp
+        {
+            Or,
+            And,
+            Xor,
+            Not
+        }
+
         /// <summary>
         /// Operation cache for Boolean operations over BDDs.
         /// </summary>
@@ -74,10 +72,11 @@ namespace System.Text.RegularExpressions.Symbolic
         public BDD Not(BDD a) =>
             a == False ? True :
             a == True ? False :
-            _opCache.GetOrAdd((BoolOp.Not, a, null), static (key, algebra) => key.a.IsLeaf ?
-                algebra.GetOrCreateBDD(algebra.CombineTerminals(BoolOp.Not, key.a.Ordinal, 0), null, null) : // multi-terminal case
-                algebra.GetOrCreateBDD(key.a.Ordinal, algebra.Not(key.a.One), algebra.Not(key.a.Zero)),
-                this);
+            _opCache.GetOrAdd((BoolOp.Not, a, null), static (key, algebra) =>
+            {
+                Debug.Assert(!key.a.IsLeaf, "Did not expect multi-terminal");
+                return algebra.GetOrCreateBDD(key.a.Ordinal, algebra.Not(key.a.One), algebra.Not(key.a.Zero));
+            }, this);
 
         /// <summary>
         /// Applies the binary Boolean operation op and constructs the BDD recursively from a and b.
@@ -145,12 +144,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 Debug.Assert(key.b is not null, "Validated it was non-null prior to calling GetOrAdd");
 
-                if (key.a.IsLeaf && key.b.IsLeaf)
-                {
-                    // Multi-terminal case, we know here that a is neither True nor False
-                    int ord = algebra.CombineTerminals(key.op, key.a.Ordinal, key.b.Ordinal);
-                    return algebra.GetOrCreateBDD(ord, null, null);
-                }
+                Debug.Assert(!key.a.IsLeaf || !key.b.IsLeaf, "Did not expect multi-terminal case");
 
                 if (key.a.IsLeaf || key.b!.Ordinal > key.a.Ordinal)
                 {
@@ -181,7 +175,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Intersect all sets in the enumeration
         /// </summary>
-        public BDD And(IEnumerable<BDD> sets)
+        public BDD And(ReadOnlySpan<BDD> sets)
         {
             BDD res = True;
             foreach (BDD bdd in sets)
@@ -194,7 +188,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Take the union of all sets in the enumeration
         /// </summary>
-        public BDD Or(IEnumerable<BDD> sets)
+        public BDD Or(ReadOnlySpan<BDD> sets)
         {
             BDD res = False;
             foreach (BDD bdd in sets)
@@ -288,15 +282,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         /// <param name="sets">the BDDs to create the minterms for</param>
         /// <returns>BDDs for the minterm</returns>
-        public List<BDD> GenerateMinterms(IEnumerable<BDD> sets) => _mintermGen.GenerateMinterms(sets);
-
-        /// <summary>
-        /// Make a set containing all integers whose bits up to maxBit equal n.
-        /// </summary>
-        /// <param name="n">the given integer</param>
-        /// <param name="maxBit">bits above maxBit are unspecified</param>
-        /// <returns></returns>
-        public BDD CreateSetFrom(uint n, int maxBit) => CreateSetFromRange(n, n, maxBit);
+        public List<BDD> GenerateMinterms(HashSet<BDD> sets) => _mintermGen.GenerateMinterms(sets);
 
         /// <summary>
         /// Make the set containing all values greater than or equal to m and less than or equal to n when considering bits between 0 and maxBit.
@@ -366,116 +352,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 return GetOrCreateBDD(maxBit, one, zero);
             }
         }
-
-        /// <summary>
-        /// Convert the set into an equivalent array of uint ranges.
-        /// Bits above maxBit are ignored.
-        /// The ranges are nonoverlapping and ordered.
-        /// </summary>
-        public static (uint, uint)[] ToRanges(BDD set, int maxBit) => BDDRangeConverter.ToRanges(set, maxBit);
-
-        #region domain size and min computation
-
-        /// <summary>
-        /// Calculate the number of elements in the set. Returns 0 when set is full and maxBit is 63.
-        /// </summary>
-        /// <param name="set">the given set</param>
-        /// <param name="maxBit">bits above maxBit are ignored</param>
-        /// <returns>the cardinality of the set</returns>
-        public virtual ulong ComputeDomainSize(BDD set, int maxBit)
-        {
-            if (maxBit < set.Ordinal)
-                throw new ArgumentOutOfRangeException(nameof(maxBit));
-
-            if (set == False)
-                return 0UL;
-
-            if (set == True)
-                return 1UL << maxBit << 1; // e.g. if maxBit is 15 then the return value is 1 << 16, i.e., 2^16
-
-            if (set.IsLeaf)
-                throw new NotSupportedException(); // multi-terminal case is not supported
-
-            ulong res = ComputeDomainSizeImpl(new Dictionary<BDD, ulong>(), set);
-            if (maxBit > set.Ordinal)
-            {
-                res = (1UL << (maxBit - set.Ordinal)) * res;
-            }
-
-            return res;
-        }
-
-        /// <summary>
-        /// Caches previously calculated values in sizeCache so that computations are not repeated inside a BDD for the same sub-BDD.
-        /// Thus the number of internal calls is propotional to the number of nodes of the BDD, that could otherwise be exponential in the worst case.
-        /// </summary>
-        /// <param name="sizeCache">previously computed sizes</param>
-        /// <param name="set">given set to compute size of</param>
-        /// <returns></returns>
-        private ulong ComputeDomainSizeImpl(Dictionary<BDD, ulong> sizeCache, BDD set)
-        {
-            if (!sizeCache.TryGetValue(set, out ulong size))
-            {
-                if (set.IsLeaf)
-                    throw new NotSupportedException(); //multi-terminal case is not supported
-
-                ulong sizeL;
-                ulong sizeR;
-                if (set.Zero.IsEmpty)
-                {
-                    sizeL = 0;
-                    sizeR = set.One.IsFull ?
-                        (uint)1 << set.Ordinal :
-                        ((uint)1 << (set.Ordinal - 1 - set.One.Ordinal)) * ComputeDomainSizeImpl(sizeCache, set.One);
-                }
-                else if (set.Zero.IsFull)
-                {
-                    sizeL = 1UL << set.Ordinal;
-                    sizeR = set.One.IsEmpty ?
-                        0UL :
-                        (1UL << (set.Ordinal - 1 - set.One.Ordinal)) * ComputeDomainSizeImpl(sizeCache, set.One);
-                }
-                else
-                {
-                    sizeL = (1UL << (set.Ordinal - 1 - set.Zero.Ordinal)) * ComputeDomainSizeImpl(sizeCache, set.Zero);
-                    sizeR =
-                        set.One == False ? 0UL :
-                        set.One == True ? 1UL << set.Ordinal :
-                        (1UL << (set.Ordinal - 1 - set.One.Ordinal)) * ComputeDomainSizeImpl(sizeCache, set.One);
-                }
-
-                size = sizeL + sizeR;
-                sizeCache[set] = size;
-            }
-            return size;
-        }
-
-        /// <summary>
-        /// Get the lexicographically minimum bitvector in the set as a ulong.
-        /// Assumes that the set is nonempty and that the ordinal of the BDD is at most 63.
-        /// </summary>
-        /// <param name="set">the given nonempty set</param>
-        /// <returns>the lexicographically smallest bitvector in the set</returns>
-        public ulong GetMin(BDD set) => set.GetMin();
-
-        #endregion
-
-        /// <summary>
-        /// Any two BDDs that are equivalent are isomorphic and have the same hashcode.
-        /// </summary>
-        public bool HashCodesRespectEquivalence => true;
-
-        /// <summary>
-        /// Two equivalent BDDs need not be identical
-        /// </summary>
-        public bool IsExtensional => false;
-
-        /// <summary>
-        /// The returned integer must be nonegative
-        /// and will act as the combined terminal in a multi-terminal BDD.
-        /// May throw NotSupportedException.
-        /// </summary>
-        public abstract int CombineTerminals(BoolOp op, int terminal1, int terminal2);
 
         /// <summary>
         /// Replace the True node in the BDD by a non-Boolean terminal.

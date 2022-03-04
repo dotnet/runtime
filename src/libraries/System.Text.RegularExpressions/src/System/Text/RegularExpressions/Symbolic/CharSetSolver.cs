@@ -30,8 +30,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Singleton instance of <see cref="CharSetSolver"/>.</summary>
         public static CharSetSolver Instance { get; } = new CharSetSolver();
 
-        public BDD ApplyIgnoreCase(BDD set, string? culture = null) => _ignoreCase.Apply(set, culture);
-
         /// <summary>
         /// Make a character predicate for the given character c.
         /// </summary>
@@ -70,20 +68,6 @@ namespace System.Text.RegularExpressions.Symbolic
             CreateSetFromRange(m, n, 15);
 
         /// <summary>
-        /// Make a character set that is the union of the character sets of the given ranges.
-        /// </summary>
-        public BDD CreateCharSetFromRanges(IEnumerable<(uint, uint)> ranges)
-        {
-            BDD res = False;
-            foreach ((uint, uint) range in ranges)
-            {
-                res = Or(res, CreateSetFromRange(range.Item1, range.Item2, 15));
-            }
-
-            return res;
-        }
-
-        /// <summary>
         /// Make a character set of all the characters in the interval from c to d.
         /// If ignoreCase is true ignore cases for upper and lower case characters by including both versions.
         /// </summary>
@@ -103,10 +87,11 @@ namespace System.Text.RegularExpressions.Symbolic
             return res;
         }
 
+#if DEBUG
         /// <summary>
         /// Make a BDD encoding of k least significant bits of all the integers in the ranges
         /// </summary>
-        internal BDD CreateBddForIntRanges(IEnumerable<int[]> ranges)
+        internal BDD CreateBddForIntRanges(List<int[]> ranges)
         {
             BDD bdd = False;
             foreach (int[] range in ranges)
@@ -116,6 +101,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             return bdd;
         }
+#endif
 
         /// <summary>
         /// Identity function, returns s.
@@ -123,41 +109,11 @@ namespace System.Text.RegularExpressions.Symbolic
         public BDD ConvertFromCharSet(BDDAlgebra _, BDD s) => s;
 
         /// <summary>
-        /// Returns this character set solver.
-        /// </summary>
-        public CharSetSolver CharSetProvider => this;
-
-        /// <summary>Calculate the number of elements in the set.</summary>
-        /// <param name="set">the given set</param>
-        /// <returns>the cardinality of the set</returns>
-        public ulong ComputeDomainSize(BDD set) => ComputeDomainSize(set, 15);
-
-        /// <summary>Calculate the number of elements in multiple sets.</summary>
-        /// <param name="sets">The sets</param>
-        /// <returns>An array of the cardinality of the sets.</returns>
-        public ulong[] ComputeDomainSizes(BDD[] sets)
-        {
-            var results = new ulong[sets.Length];
-            for (int i = 0; i < sets.Length; i++)
-            {
-                results[i] = ComputeDomainSize(sets[i]);
-            }
-            return results;
-        }
-
-        /// <summary>
-        /// Returns true iff the set contains exactly one element.
-        /// </summary>
-        /// <param name="set">the given set</param>
-        /// <returns>true iff the set is a singleton</returns>
-        public bool IsSingleton(BDD set) => ComputeDomainSize(set, 15) == 1;
-
-        /// <summary>
         /// Convert the set into an equivalent array of ranges. The ranges are nonoverlapping and ordered.
         /// </summary>
-        public (uint, uint)[] ToRanges(BDD set) => ToRanges(set, 15);
+        public (uint, uint)[] ToRanges(BDD set) => BDDRangeConverter.ToRanges(set, 15);
 
-        public BDD ConvertToCharSet(ICharAlgebra<BDD> _, BDD pred) => pred;
+        public BDD ConvertToCharSet(BDD pred) => pred;
 
         public BDD[]? GetMinterms() => null;
 
@@ -385,7 +341,5 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         private static bool IsSingletonRange((uint, uint)[] ranges) => ranges.Length == 1 && ranges[0].Item1 == ranges[0].Item2;
-
-        public override int CombineTerminals(BoolOp op, int terminal1, int terminal2) => throw new NotSupportedException();
     }
 }

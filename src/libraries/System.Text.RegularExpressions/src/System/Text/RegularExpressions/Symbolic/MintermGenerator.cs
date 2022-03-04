@@ -23,9 +23,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="algebra">given Boolean Algebra</param>
         public MintermGenerator(IBooleanAlgebra<TPredicate> algebra)
         {
-            // check that we can rely on equivalent predicates having the same hashcode, which EquivClass assumes
-            Debug.Assert(algebra.HashCodesRespectEquivalence);
-
             _algebra = algebra;
         }
 
@@ -38,7 +35,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         /// <param name="preds">array of predicates</param>
         /// <returns>all minterms of the given predicate sequence</returns>
-        public List<TPredicate> GenerateMinterms(IEnumerable<TPredicate> preds)
+        public List<TPredicate> GenerateMinterms(HashSet<TPredicate> preds)
         {
             var tree = new PartitionTree(_algebra.True);
             foreach (TPredicate pred in preds)
@@ -46,6 +43,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Push each predicate into the partition tree
                 tree.Refine(_algebra, pred);
             }
+
             // Return all minterms as the leaves of the partition tree
             return tree.GetLeafPredicates();
         }

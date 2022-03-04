@@ -10,13 +10,6 @@ namespace System.Text.RegularExpressions.Symbolic
     internal interface ICharAlgebra<T> : IBooleanAlgebra<T>
     {
         /// <summary>
-        /// Make a constraint describing the set of all characters between a (inclusive) and b (inclusive).
-        /// Add both uppercase and lowercase elelements if caseInsensitive is true using the given culture
-        /// or the current culture when the given culture is null.
-        /// </summary>
-        T RangeConstraint(char lower, char upper, bool caseInsensitive = false, string? culture = null);
-
-        /// <summary>
         /// Make a constraint describing a singleton set containing the character c, or
         /// a set containing also the upper and lowercase versions of c if caseInsensitive is true.
         /// </summary>
@@ -31,19 +24,9 @@ namespace System.Text.RegularExpressions.Symbolic
         T ConvertFromCharSet(BDDAlgebra bddAlg, BDD set);
 
         /// <summary>
-        /// Compute the number of elements in the set
-        /// </summary>
-        ulong ComputeDomainSize(T set);
-
-        /// <summary>
         /// Convert a predicate into a set of characters.
         /// </summary>
-        BDD ConvertToCharSet(ICharAlgebra<BDD> bddalg, T pred);
-
-        /// <summary>
-        /// Gets the underlying character set solver.
-        /// </summary>
-        CharSetSolver CharSetProvider { get; }
+        BDD ConvertToCharSet(T pred);
 
         /// <summary>
         /// Returns the minterms (a partition of the full domain).
