@@ -49,7 +49,7 @@ namespace System.Formats.Cbor
         /// <p>-or-</p>
         /// <p>The semantic date/time encoding is invalid.</p>
         /// <p>-or-</p>
-        /// The next value uses a CBOR encoding that is not valid under the current conformance mode.</p></exception>
+        /// <p>The next value uses a CBOR encoding that is not valid under the current conformance mode.</p></exception>
         public DateTimeOffset ReadDateTimeOffset()
         {
             // implements https://tools.ietf.org/html/rfc7049#section-2.4.1
