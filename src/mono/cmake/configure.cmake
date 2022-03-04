@@ -75,7 +75,7 @@ ac_check_headers (
   /usr/include/malloc.h)
 
 ac_check_funcs (
-  sigaction kill clock_nanosleep kqueue backtrace_symbols mkstemp mmap
+  sigaction kill clock_nanosleep backtrace_symbols mkstemp mmap
   getrusage dladdr sysconf getrlimit prctl nl_langinfo
   sched_getaffinity sched_setaffinity getpwuid_r readlink chmod lstat getdtablesize ftruncate msync
   getpeername utime utimes openlog closelog atexit popen strerror_r inet_pton inet_aton

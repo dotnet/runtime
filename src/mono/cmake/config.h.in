@@ -385,9 +385,6 @@
 /* Define to 1 if you have the <sys/resource.h> header file. */
 #cmakedefine HAVE_SYS_RESOURCE_H 1
 
-/* kqueue */
-#cmakedefine HAVE_KQUEUE 1
-
 /* Define to 1 if you have the `backtrace_symbols' function. */
 #cmakedefine HAVE_BACKTRACE_SYMBOLS 1
 
@@ -559,9 +556,6 @@
 
 /* Define to 1 if you have the `poll' function. */
 #cmakedefine HAVE_POLL 1
-
-/* epoll_create1 */
-#cmakedefine HAVE_EPOLL 1
 
 /* Define to 1 if you have the <sys/ioctl.h> header file. */
 #cmakedefine HAVE_SYS_IOCTL_H 1

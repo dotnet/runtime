@@ -1700,14 +1700,6 @@ mono_get_version_info (void)
 	g_string_append_printf (output, "\tSIGSEGV:       normal\n");
 #endif
 
-#ifdef HAVE_EPOLL
-	g_string_append_printf (output, "\tNotifications: epoll\n");
-#elif defined(HAVE_KQUEUE)
-	g_string_append_printf (output, "\tNotification:  kqueue\n");
-#else
-	g_string_append_printf (output, "\tNotification:  Thread + polling\n");
-#endif
-
 	g_string_append_printf (output, "\tArchitecture:  %s\n", MONO_ARCHITECTURE);
 	g_string_append_printf (output, "\tDisabled:      %s\n", DISABLED_FEATURES);
 
