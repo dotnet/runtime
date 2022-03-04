@@ -14,11 +14,11 @@ namespace System.Formats.Cbor
         /// <summary>Reads the next data item as the start of a map (major type 5).</summary>
         /// <returns>The number of key-value pairs in a definite-length map, or <see langword="null" /> if the map is indefinite-length.</returns>
         /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.</exception>
-        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
-        /// -or-
-        /// There was an unexpected end of CBOR encoding data.
-        /// -or-
-        /// The next value uses a CBOR encoding that is not valid under the current conformance mode.</exception>
+        /// <exception cref="CborContentException"><p>The next value has an invalid CBOR encoding.</p>
+        /// <p>-or-</p>
+        /// <p>There was an unexpected end of CBOR encoding data.</p>
+        /// <p>-or-</p>
+        /// <p>The next value uses a CBOR encoding that is not valid under the current conformance mode.</p></exception>
         /// <remarks>
         /// Map contents are consumed as if they were arrays twice the length of the map's declared size.
         /// For instance, a map of size 1 containing a key of type <see cref="int" /> with a value of type <see cref="string" />
@@ -64,14 +64,14 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Reads the end of a map (major type 5).</summary>
-        /// <exception cref="InvalidOperationException">The current context is not a map.
-        /// -or-
-        /// The reader is not at the end of the map.</exception>
-        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
-        /// -or-
-        /// There was an unexpected end of CBOR encoding data.
-        /// -or-
-        /// The next value uses a CBOR encoding that is not valid under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><p>The current context is not a map.</p>
+        /// <p>-or-</p>
+        /// <p>The reader is not at the end of the map.</p></exception>
+        /// <exception cref="CborContentException"><p>The next value has an invalid CBOR encoding.</p>
+        /// <p>-or-</p>
+        /// <p>There was an unexpected end of CBOR encoding data.</p>
+        /// <p>-or-</p>
+        /// <p>The next value uses a CBOR encoding that is not valid under the current conformance mode.</p></exception>
         public void ReadEndMap()
         {
             if (_definiteLength is null)
