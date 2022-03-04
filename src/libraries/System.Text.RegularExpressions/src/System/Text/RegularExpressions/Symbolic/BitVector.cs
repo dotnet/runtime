@@ -29,6 +29,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Initializes the <see cref="BitVector"/> to be of the specified length and contain all false bits.</summary>
         private BitVector(int length)
         {
+            Debug.Assert(length > 0);
             Length = length;
             _blocks = new ulong[((length - 1) / 64) + 1];
             _hashcode = null;
@@ -38,6 +39,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <remarks>The provided array is stored directly without copy.</remarks>
         private BitVector(int length, ulong[] blocks)
         {
+            Debug.Assert(length > 0);
             Length = length;
             _blocks = blocks;
             _hashcode = null;
