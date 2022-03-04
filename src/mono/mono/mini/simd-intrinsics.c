@@ -271,6 +271,7 @@ emit_xcompare_for_intrinsic (MonoCompile *cfg, MonoClass *klass, int intrinsic_i
 	case MONO_TYPE_U2:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_U8:
+	case MONO_TYPE_U:
 		is_unsigned = TRUE;
 		break;
 	default:
