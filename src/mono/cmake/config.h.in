@@ -551,9 +551,6 @@
 /* Define to 1 if you have the <net/if.h> header file. */
 #cmakedefine HAVE_NET_IF_H 1
 
-/* Can get interface list */
-#cmakedefine HAVE_SIOCGIFCONF 1
-
 /* sockaddr_in has sin_len */
 #cmakedefine HAVE_SOCKADDR_IN_SIN_LEN 1
 
@@ -690,9 +687,6 @@
 
 /* Define to 1 if you have the `getentropy' function. */
 #cmakedefine HAVE_GETENTROPY 1
-
-/* Qp2getifaddrs */
-#cmakedefine HAVE_QP2GETIFADDRS 1
 
 /* Define to 1 if you have the `strlcpy' function. */
 #cmakedefine HAVE_STRLCPY 1
