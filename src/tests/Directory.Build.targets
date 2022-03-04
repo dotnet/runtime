@@ -208,7 +208,6 @@
           BeforeTargets="ConsolidateNativeProjectReference;BeforeResolveReferences;BeforeClean" >
      <ItemGroup>
         <NativeProjectReference Include="%(CMakeProjectReference.Identity)" Condition="$([System.String]::Copy(%(CMakeProjectReference.FileName)).ToUpper()) == 'CMAKELISTS'" />
-        <CMakeProjectReference Remove="%(NativeProjectReference.Identity)" />
         <NativeProjectReferenceNormalized Include="@(NativeProjectReference -> '%(FullPath)')" />
      </ItemGroup>
   </Target>
