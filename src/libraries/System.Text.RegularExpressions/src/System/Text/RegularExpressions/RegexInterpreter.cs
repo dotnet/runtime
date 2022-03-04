@@ -8,12 +8,26 @@ using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions
 {
+    /// <summary>A <see cref="RegexRunnerFactory"/> for creating <see cref="RegexInterpreter"/>s.</summary>
+    internal sealed class RegexInterpreterFactory : RegexRunnerFactory
+    {
+        private readonly RegexInterpreterCode _code;
+
+        public RegexInterpreterFactory(RegexTree tree, CultureInfo culture) =>
+            // Generate and store the RegexInterpretedCode for the RegexTree and the specified culture
+            _code = RegexWriter.Write(tree, culture);
+
+        protected internal override RegexRunner CreateInstance() =>
+            // Create a new interpreter instance.
+            new RegexInterpreter(_code, RegexParser.GetTargetCulture(_code.Options));
+    }
+
     /// <summary>Executes a block of regular expression codes while consuming input.</summary>
     internal sealed class RegexInterpreter : RegexRunner
     {
         private const int LoopTimeoutCheckCount = 2048; // conservative value to provide reasonably-accurate timeout handling.
 
-        private readonly RegexCode _code;
+        private readonly RegexInterpreterCode _code;
         private readonly TextInfo _textInfo;
 
         private RegexOpcode _operator;
@@ -21,7 +35,7 @@ namespace System.Text.RegularExpressions
         private bool _rightToLeft;
         private bool _caseInsensitive;
 
-        public RegexInterpreter(RegexCode code, CultureInfo culture)
+        public RegexInterpreter(RegexInterpreterCode code, CultureInfo culture)
         {
             Debug.Assert(code != null, "code must not be null.");
             Debug.Assert(culture != null, "culture must not be null.");

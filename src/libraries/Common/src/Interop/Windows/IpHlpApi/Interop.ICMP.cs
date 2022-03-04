@@ -96,6 +96,7 @@ internal static partial class Interop
         internal static partial SafeCloseIcmpHandle Icmp6CreateFile();
 
         [GeneratedDllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool IcmpCloseHandle(IntPtr handle);
 
         [GeneratedDllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]

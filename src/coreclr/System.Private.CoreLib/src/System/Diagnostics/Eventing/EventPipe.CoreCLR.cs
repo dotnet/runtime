@@ -50,9 +50,11 @@ namespace System.Diagnostics.Tracing
         // These PInvokes are used as part of the EventPipeEventDispatcher.
         //
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetSessionInfo")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool GetSessionInfo(ulong sessionID, EventPipeSessionInfo* pSessionInfo);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetNextEvent")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool GetNextEvent(ulong sessionID, EventPipeEventInstanceData* pInstance);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetWaitHandle")]

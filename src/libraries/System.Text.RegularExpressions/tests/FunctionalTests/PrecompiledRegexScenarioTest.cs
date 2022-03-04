@@ -15,10 +15,11 @@ namespace System.Text.RegularExpressions.Tests
     public class PrecompiledRegexScenarioTest
     {
         const string text = "asdf134success1245something";
-        const string textWithMultipleMatches = @"asdf134success1245something
+        const string textWithMultipleMatchesCompiled = @"asdf134success1245something
 bsdf135success1245somethingelse
 csdf136success2245somethingnew
 dsdf137success3245somethingold";
+        static string textWithMultipleMatches = LineEndingsHelper.Normalize(textWithMultipleMatchesCompiled);
 
         [Fact]
         public void PrecompiledRegex_MatchesTest()

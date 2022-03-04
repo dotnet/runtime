@@ -14,10 +14,9 @@
 import argparse
 import re
 import sys
-
 import stat
-from os import path
-from os.path import isfile, realpath
+import os
+
 from shutil import copyfile
 from coreclr_arguments import *
 from jitutil import run_command, ChangeDir, TempDir
@@ -133,11 +132,11 @@ def build_and_run(coreclr_args, output_mch_name):
 
     artifacts_directory = os.path.join(performance_directory, "artifacts")
     artifacts_packages_directory = os.path.join(artifacts_directory, "packages")
-    project_file = path.join(performance_directory, "src", "benchmarks", "micro", "MicroBenchmarks.csproj")
-    benchmarks_dll = path.join(artifacts_directory, "MicroBenchmarks.dll")
+    project_file = os.path.join(performance_directory, "src", "benchmarks", "micro", "MicroBenchmarks.csproj")
+    benchmarks_dll = os.path.join(artifacts_directory, "MicroBenchmarks.dll")
 
     # Workaround https://github.com/dotnet/sdk/issues/23430
-    project_file = realpath(project_file)
+    project_file = os.path.realpath(project_file)
 
     if is_windows:
         shim_name = "%JitName%"
@@ -150,9 +149,17 @@ def build_and_run(coreclr_args, output_mch_name):
 
     make_executable(dotnet_exe)
 
+    env_copy = os.environ.copy()
+    if is_windows:
+        # Try to work around problem with random NuGet failures in "dotnet restore":
+        #   error NU3037: Package 'System.Runtime 4.1.0' from source 'https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json':
+        #     The repository primary signature validity period has expired. [C:\h\w\A3B008C0\w\B581097F\u\performance\src\benchmarks\micro\MicroBenchmarks.csproj]
+        # Using environment variable specified in https://github.com/NuGet/NuGet.Client/pull/4259.
+        env_copy["NUGET_EXPERIMENTAL_CHAIN_BUILD_RETRY_POLICY"] = "3,1000"
+
     run_command(
         [dotnet_exe, "restore", project_file, "--packages",
-         artifacts_packages_directory], _exit_on_fail=True)
+         artifacts_packages_directory], _exit_on_fail=True, _env=env_copy)
 
     run_command(
         [dotnet_exe, "build", project_file, "--configuration", "Release",
@@ -160,14 +167,14 @@ def build_and_run(coreclr_args, output_mch_name):
          "-o", artifacts_directory], _exit_on_fail=True)
 
     # Disable ReadyToRun so we always JIT R2R methods and collect them
-    collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter \"*\" --corerun {path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
+    collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter \"*\" --corerun {os.path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
                          f"--partition-index {partition_index} --envVars COMPlus_JitName:{shim_name} " \
                          " COMPlus_ZapDisable:1  COMPlus_ReadyToRun:0 " \
                          "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart"
 
     # Generate the execution script in Temp location
     with TempDir() as temp_location:
-        script_name = path.join(temp_location, script_name)
+        script_name = os.path.join(temp_location, script_name)
 
         contents = []
         # Unset the JitName so dotnet process will not fail
@@ -193,7 +200,7 @@ def build_and_run(coreclr_args, output_mch_name):
         make_executable(script_name)
 
         run_command([
-            python_path, path.join(superpmi_directory, "superpmi.py"), "collect", "-core_root", core_root,
+            python_path, os.path.join(superpmi_directory, "superpmi.py"), "collect", "-core_root", core_root,
             "-output_mch_path", output_mch_name, "-log_file", log_file, "-log_level", "debug",
             script_name], _exit_on_fail=True)
 
@@ -209,9 +216,9 @@ def strip_unrelated_mc(coreclr_args, old_mch_filename, new_mch_filename):
     """
     performance_directory = coreclr_args.performance_directory
     core_root = coreclr_args.core_root
-    methods_to_strip_list = path.join(performance_directory, "methods_to_strip.mcl")
+    methods_to_strip_list = os.path.join(performance_directory, "methods_to_strip.mcl")
 
-    mcs_exe = path.join(core_root, "mcs")
+    mcs_exe = os.path.join(core_root, "mcs")
     mcs_command = [mcs_exe, "-dumpMap", old_mch_filename]
 
     # Gather method list to strip
@@ -258,7 +265,7 @@ def main(main_args):
     """
     coreclr_args = setup_args(main_args)
 
-    all_output_mch_name = path.join(coreclr_args.output_mch_path + "_all.mch")
+    all_output_mch_name = os.path.join(coreclr_args.output_mch_path + "_all.mch")
     build_and_run(coreclr_args, all_output_mch_name)
     if os.path.isfile(all_output_mch_name):
         pass

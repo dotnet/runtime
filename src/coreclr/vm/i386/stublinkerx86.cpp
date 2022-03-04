@@ -3060,6 +3060,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
     }
 
     EmitTailJumpToMethod(pSharedMD);
+    SetTargetMethod(pSharedMD);
 }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE) && defined(TARGET_AMD64)
 

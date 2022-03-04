@@ -10,6 +10,7 @@ internal static partial class Interop
     internal static partial class Crypt32
     {
         [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CryptMsgGetParam(
             SafeCryptMsgHandle hCryptMsg,
             CryptMsgParamType dwParamType,
@@ -18,6 +19,7 @@ internal static partial class Interop
             ref int pcbData);
 
         [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CryptMsgGetParam(
             SafeCryptMsgHandle hCryptMsg,
             CryptMsgParamType dwParamType,
@@ -26,6 +28,7 @@ internal static partial class Interop
             ref int pcbData);
 
         [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CryptMsgGetParam(
             SafeCryptMsgHandle hCryptMsg,
             CryptMsgParamType dwParamType,
@@ -34,6 +37,7 @@ internal static partial class Interop
             ref int pcbData);
 
         [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CryptMsgGetParam(
             SafeCryptMsgHandle hCryptMsg,
             CryptMsgParamType dwParamType,
