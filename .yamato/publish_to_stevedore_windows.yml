@@ -1,4 +1,4 @@
-name: Publish To Stevedore Windows x86
+name: Publish To Stevedore Windows
 
 agent:
   type: Unity::VM
@@ -6,7 +6,8 @@ agent:
   flavor: b1.xlarge
 
 dependencies:
-  - path: .yamato/build_windows.yml
+  - path: .yamato/build_windows_x86.yml
+  - path: .yamato/build_windows_x64.yml
 
 variables:
   STEVEDORE_REPO: testing

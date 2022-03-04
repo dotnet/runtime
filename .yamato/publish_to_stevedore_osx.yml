@@ -1,10 +1,11 @@
-name: Publish To Stevedore OSX x64+ARM64
+name: Publish To Stevedore OSX
 
 agent:
   type: Unity::VM::osx
   image: platform-foundation/mac-bokken:latest
   flavor: m1.mac
 
+# build_osx_x64arm64.yml will end up with artifacts for x64, ARM64, and x64+ARM64
 dependencies:
   - path: .yamato/build_osx_x64arm64.yml
 

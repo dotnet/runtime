@@ -1,4 +1,4 @@
-name: Publish To Stevedore Linux x64
+name: Publish To Stevedore Linux
 
 agent:
   type: Unity::VM
