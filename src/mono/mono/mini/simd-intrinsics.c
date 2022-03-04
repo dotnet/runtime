@@ -1030,7 +1030,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return NULL;
 		MonoInst *ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, args [1]->dreg);
 		ins->inst_c1 = etype->type;
-        if (etype->type == MONO_TYPE_R4 || etype->type == MONO_TYPE_R8)
+		if (etype->type == MONO_TYPE_R4 || etype->type == MONO_TYPE_R8)
 			ins->inst_c0 = id == SN_op_Addition ? OP_FADD : OP_FSUB;
 		else
 			ins->inst_c0 = id == SN_op_Addition ? OP_IADD : OP_ISUB;
