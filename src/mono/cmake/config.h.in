@@ -321,9 +321,6 @@
 /* Disable support code for the LLDB plugin. */
 #cmakedefine DISABLE_LLDB 1
 
-/* Disable support for .mdb symbol files. */
-#cmakedefine DISABLE_MDB 1
-
 /* Disable assertion messages. */
 #cmakedefine DISABLE_ASSERT_MESSAGES 1
 

@@ -12,6 +12,7 @@
     <ProjectReference Include="tests_r.ilproj" Aliases="tests_r" />
     <ProjectReference Include="attribute.csproj" />
     <ProjectReference Include="../../../../tracing/eventpipe/common/common.csproj" />
+    <ProjectReference Include="../../../../tracing/eventpipe/common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
 </Project>

@@ -4,6 +4,7 @@
     <WasmMainJSPath>$(MonoProjectRoot)\wasm\test-main.js</WasmMainJSPath>
     <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <WasmNativeStrip>false</WasmNativeStrip>
   </PropertyGroup>
 
   <PropertyGroup>

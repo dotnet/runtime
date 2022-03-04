@@ -239,7 +239,7 @@ namespace System.Threading
             _overlappedData.AsyncResult = ar;
         }
 
-        [Obsolete("This constructor is not 64-bit compatible.  Use the constructor that takes an IntPtr for the event handle.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This constructor is not 64-bit compatible and has been deprecated. Use the constructor that accepts an IntPtr for the event handle instead.")]
         public Overlapped(int offsetLo, int offsetHi, int hEvent, IAsyncResult ar) : this(offsetLo, offsetHi, new IntPtr(hEvent), ar)
         {
         }
@@ -280,7 +280,7 @@ namespace System.Threading
         *  Roots the iocb and stores it in the ReservedCOR field of native Overlapped
         *  Pins the native Overlapped struct and returns the pinned index.
         ====================================================================*/
-        [Obsolete("This method is not safe.  Use Pack (iocb, userData) instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This overload is not safe and has been deprecated. Use Pack(IOCompletionCallback?, object?) instead.")]
         [CLSCompliant(false)]
         public unsafe NativeOverlapped* Pack(IOCompletionCallback iocb)
         {
@@ -293,7 +293,7 @@ namespace System.Threading
             return _overlappedData.Pack(iocb, userData);
         }
 
-        [Obsolete("This method is not safe.  Use UnsafePack (iocb, userData) instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This overload is not safe and has been deprecated. Use UnsafePack(IOCompletionCallback?, object?) instead.")]
         [CLSCompliant(false)]
         public unsafe NativeOverlapped* UnsafePack(IOCompletionCallback iocb)
         {

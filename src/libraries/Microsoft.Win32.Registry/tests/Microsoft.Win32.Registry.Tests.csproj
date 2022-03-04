@@ -2,7 +2,7 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);REGISTRY_ASSEMBLY</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>

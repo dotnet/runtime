@@ -602,23 +602,25 @@ void GenTree::CopyReg(GenTree* from)
 }
 
 //------------------------------------------------------------------
-// gtHasReg: Whether node beeen assigned a register by LSRA
+// gtHasReg: Whether node been assigned a register by LSRA
 //
 // Arguments:
-//    None
+//    comp - Compiler instance. Required for multi-reg lcl var; ignored otherwise.
 //
 // Return Value:
 //    Returns true if the node was assigned a register.
 //
-//    In case of multi-reg call nodes, it is considered
-//    having a reg if regs are allocated for all its
+//    In case of multi-reg call nodes, it is considered having a reg if regs are allocated for ALL its
 //    return values.
+//    REVIEW: why is this ALL and the other cases are ANY? Explain.
 //
-//    In case of GT_COPY or GT_RELOAD of a multi-reg call,
-//    GT_COPY/GT_RELOAD is considered having a reg if it
-//    has a reg assigned to any of its positions.
+//    In case of GT_COPY or GT_RELOAD of a multi-reg call, GT_COPY/GT_RELOAD is considered having a reg if it
+//    has a reg assigned to ANY of its positions.
 //
-bool GenTree::gtHasReg() const
+//    In case of multi-reg local vars, it is considered having a reg if it has a reg assigned for ANY
+//    of its positions.
+//
+bool GenTree::gtHasReg(Compiler* comp) const
 {
     bool hasReg = false;
 
@@ -649,6 +651,22 @@ bool GenTree::gtHasReg() const
         for (unsigned i = 0; i < regCount; ++i)
         {
             hasReg = (copyOrReload->GetRegNumByIdx(i) != REG_NA);
+            if (hasReg)
+            {
+                break;
+            }
+        }
+    }
+    else if (IsMultiRegLclVar())
+    {
+        assert(comp != nullptr);
+        const GenTreeLclVar* lclNode  = AsLclVar();
+        const unsigned       regCount = GetMultiRegCount(comp);
+        // A Multi-reg local vars is said to have regs,
+        // if it has valid regs in any of the positions.
+        for (unsigned i = 0; i < regCount; i++)
+        {
+            hasReg = (lclNode->GetRegNumByIdx(i) != REG_NA);
             if (hasReg)
             {
                 break;
@@ -794,12 +812,12 @@ bool GenTree::IsMultiRegNode() const
 // GetMultiRegCount: Return the register count for a multi-reg node.
 //
 // Arguments:
-//     None
+//     comp - Compiler instance. Required for MultiRegLclVar, unused otherwise.
 //
 // Return Value:
 //     Returns the number of registers defined by this node.
 //
-unsigned GenTree::GetMultiRegCount() const
+unsigned GenTree::GetMultiRegCount(Compiler* comp) const
 {
 #if FEATURE_MULTIREG_RET
     if (IsMultiRegCall())
@@ -834,17 +852,12 @@ unsigned GenTree::GetMultiRegCount() const
     }
 #endif // FEATURE_HW_INTRINSICS
 
-    if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
+    if (IsMultiRegLclVar())
     {
-        assert((gtFlags & GTF_VAR_MULTIREG) != 0);
-        // The register count for a multireg lclVar requires looking at the LclVarDsc,
-        // which requires a Compiler instance. The caller must handle this separately.
-        // The register count for a multireg lclVar requires looking at the LclVarDsc,
-        // which requires a Compiler instance. The caller must use the GetFieldCount
-        // method on GenTreeLclVar.
-
-        assert(!"MultiRegCount for LclVar");
+        assert(comp != nullptr);
+        return AsLclVar()->GetFieldCount(comp);
     }
+
     assert(!"GetMultiRegCount called with non-multireg node");
     return 1;
 }
@@ -5722,6 +5735,11 @@ GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, 
     return node;
 }
 
+GenTreeColon* Compiler::gtNewColonNode(var_types type, GenTree* elseNode, GenTree* thenNode)
+{
+    return new (this, GT_COLON) GenTreeColon(TYP_INT, elseNode, thenNode);
+}
+
 GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon)
 {
     compQmarkUsed        = true;
@@ -5738,6 +5756,21 @@ GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeCol
 GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
 {
     return new (this, GT_CNS_INT) GenTreeIntCon(type, value);
+}
+
+GenTreeIntCon* Compiler::gtNewNull()
+{
+    return gtNewIconNode(0, TYP_REF);
+}
+
+GenTreeIntCon* Compiler::gtNewTrue()
+{
+    return gtNewIconNode(1, TYP_INT);
+}
+
+GenTreeIntCon* Compiler::gtNewFalse()
+{
+    return gtNewIconNode(0, TYP_INT);
 }
 
 GenTreeIntCon* Compiler::gtNewIconNode(unsigned fieldOffset, FieldSeqNode* fieldSeq)
@@ -9792,10 +9825,10 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
 
 #if FEATURE_MULTIREG_RET
 //----------------------------------------------------------------------------------
-// gtDispRegCount: determine how many registers to print for a multi-reg node
+// gtDispMultiRegCount: determine how many registers to print for a multi-reg node
 //
 // Arguments:
-//    tree  -  Gentree node whose registers we want to print
+//    tree  -  GenTree node whose registers we want to print
 //
 // Return Value:
 //    The number of registers to print
@@ -9806,13 +9839,13 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
 //    and for CALL, it will return 0 if the ReturnTypeDesc hasn't yet been initialized.
 //    But we want to print all register positions.
 //
-unsigned Compiler::gtDispRegCount(GenTree* tree)
+unsigned Compiler::gtDispMultiRegCount(GenTree* tree)
 {
     if (tree->IsCopyOrReload())
     {
         // GetRegCount() will return only the number of valid regs for COPY or RELOAD,
         // but we want to print all positions, so we get the reg count for op1.
-        return gtDispRegCount(tree->gtGetOp1());
+        return gtDispMultiRegCount(tree->gtGetOp1());
     }
     else if (!tree->IsMultiRegNode())
     {
@@ -9820,10 +9853,6 @@ unsigned Compiler::gtDispRegCount(GenTree* tree)
         // even if its op1 is not multireg.
         // Note that this method won't be called for non-register-producing nodes.
         return 1;
-    }
-    else if (tree->IsMultiRegLclVar())
-    {
-        return tree->AsLclVar()->GetFieldCount(this);
     }
     else if (tree->OperIs(GT_CALL))
     {
@@ -9837,7 +9866,7 @@ unsigned Compiler::gtDispRegCount(GenTree* tree)
     }
     else
     {
-        return tree->GetMultiRegCount();
+        return tree->GetMultiRegCount(this);
     }
 }
 #endif // FEATURE_MULTIREG_RET
@@ -9868,7 +9897,7 @@ void Compiler::gtDispRegVal(GenTree* tree)
     {
         // 0th reg is GetRegNum(), which is already printed above.
         // Print the remaining regs of a multi-reg node.
-        unsigned regCount = gtDispRegCount(tree);
+        unsigned regCount = gtDispMultiRegCount(tree);
 
         // For some nodes, e.g. COPY, RELOAD or CALL, we may not have valid regs for all positions.
         for (unsigned i = 1; i < regCount; ++i)
@@ -15794,7 +15823,12 @@ bool GenTree::canBeContained() const
 {
     assert(OperIsLIR());
 
-    if (gtHasReg())
+    if (IsMultiRegLclVar())
+    {
+        return false;
+    }
+
+    if (gtHasReg(nullptr))
     {
         return false;
     }
@@ -16061,10 +16095,11 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
 //------------------------------------------------------------------------
 // IsFieldAddr: Is "this" a static or class field address?
 //
-// Recognizes the following three patterns:
-//    this: [Zero FldSeq]
-//    this: ADD(baseAddr, CONST FldSeq)
-//    this: ADD(CONST FldSeq, baseAddr)
+// Recognizes the following patterns:
+//    this: ADD(baseAddr, CONST [FldSeq])
+//    this: ADD(CONST [FldSeq], baseAddr)
+//    this: CONST [FldSeq]
+//    this: Zero [FldSeq]
 //
 // Arguments:
 //    comp      - the Compiler object
@@ -16089,7 +16124,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
     *pFldSeq   = FieldSeqStore::NotAField();
 
     GenTree*      baseAddr = nullptr;
-    FieldSeqNode* fldSeq   = nullptr;
+    FieldSeqNode* fldSeq   = FieldSeqStore::NotAField();
 
     if (OperIs(GT_ADD))
     {
@@ -16113,25 +16148,27 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
             assert(!baseAddr->TypeIs(TYP_REF) || !comp->GetZeroOffsetFieldMap()->Lookup(baseAddr));
         }
     }
+    else if (IsCnsIntOrI() && IsIconHandle(GTF_ICON_STATIC_HDL))
+    {
+        assert(!comp->GetZeroOffsetFieldMap()->Lookup(this) && (AsIntCon()->gtFieldSeq != nullptr));
+        fldSeq   = AsIntCon()->gtFieldSeq;
+        baseAddr = nullptr;
+    }
     else if (comp->GetZeroOffsetFieldMap()->Lookup(this, &fldSeq))
     {
         baseAddr = this;
     }
     else
     {
-        // TODO-VNTypes-CQ: recognize the simple GTF_ICON_STATIC_HDL case here. It
-        // is not recognized right now to preserve previous behavior of this method.
         return false;
     }
 
-    // If we don't have a valid sequence, bail. Note that above we have overloaded an empty
-    // ("nullptr") sequence as "NotAField", as that's the way it is treated on tree nodes.
-    if ((fldSeq == nullptr) || (fldSeq == FieldSeqStore::NotAField()) || fldSeq->IsPseudoField())
+    assert(fldSeq != nullptr);
+
+    if ((fldSeq == FieldSeqStore::NotAField()) || fldSeq->IsPseudoField())
     {
         return false;
     }
-
-    assert(baseAddr != nullptr);
 
     // The above screens out obviously invalid cases, but we have more checks to perform. The
     // sequence returned from this method *must* start with either a class (NOT struct) field
@@ -21950,14 +21987,14 @@ void ReturnTypeDesc::InitializeLongReturnType()
 }
 
 //-------------------------------------------------------------------
-// GetABIReturnReg:  Return ith return register as per target ABI
+// GetABIReturnReg:  Return i'th return register as per target ABI
 //
 // Arguments:
 //     idx   -   Index of the return register.
 //               The first return register has an index of 0 and so on.
 //
 // Return Value:
-//     Returns ith return register as per target ABI.
+//     Returns i'th return register as per target ABI.
 //
 // Notes:
 //     x86 and ARM return long in multiple registers.

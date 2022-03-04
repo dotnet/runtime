@@ -8,9 +8,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using Microsoft.Diagnostics.Tools.RuntimeClient;
 using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
+using Microsoft.Diagnostics.NETCore.Client;
 
 namespace Tracing.Tests.ProviderValidation
 {
@@ -29,15 +29,13 @@ namespace Tracing.Tests.ProviderValidation
             // and that providers turned on that generate events are being written to
             // the stream.
 
-            var providers = new List<Provider>()
+            var providers = new List<EventPipeProvider>()
             {
-                new Provider("MyEventSource"),
-                new Provider("Microsoft-DotNETCore-SampleProfiler")
+                new EventPipeProvider("MyEventSource", EventLevel.Verbose),
+                new EventPipeProvider("Microsoft-DotNETCore-SampleProfiler", EventLevel.Verbose)
             };
 
-            var config = new SessionConfiguration(circularBufferSizeMB: (uint)Math.Pow(2, 10), format: EventPipeSerializationFormat.NetTrace,  providers: providers);
-
-            var ret = IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, config);
+            var ret = IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024);
             if (ret < 0)
                 return ret;
             else

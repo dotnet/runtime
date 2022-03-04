@@ -3912,6 +3912,39 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 retNode = impArrayAccessIntrinsic(clsHnd, sig, memberRef, readonlyCall, ni);
                 break;
 
+            case NI_System_String_Equals:
+            {
+                retNode = impStringEqualsOrStartsWith(/*startsWith:*/ false, sig, methodFlags);
+                break;
+            }
+
+            case NI_System_MemoryExtensions_Equals:
+            case NI_System_MemoryExtensions_SequenceEqual:
+            {
+                retNode = impSpanEqualsOrStartsWith(/*startsWith:*/ false, sig, methodFlags);
+                break;
+            }
+
+            case NI_System_String_StartsWith:
+            {
+                retNode = impStringEqualsOrStartsWith(/*startsWith:*/ true, sig, methodFlags);
+                break;
+            }
+
+            case NI_System_MemoryExtensions_StartsWith:
+            {
+                retNode = impSpanEqualsOrStartsWith(/*startsWith:*/ true, sig, methodFlags);
+                break;
+            }
+
+            case NI_System_MemoryExtensions_AsSpan:
+            case NI_System_String_op_Implicit:
+            {
+                assert(sig->numArgs == 1);
+                isSpecial = impStackTop().val->OperIs(GT_CNS_STR);
+                break;
+            }
+
             case NI_System_String_get_Chars:
             {
                 GenTree* op2 = impPopStack().val;
@@ -5243,13 +5276,44 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         }
         else if (strcmp(className, "String") == 0)
         {
-            if (strcmp(methodName, "get_Chars") == 0)
+            if (strcmp(methodName, "Equals") == 0)
+            {
+                result = NI_System_String_Equals;
+            }
+            else if (strcmp(methodName, "get_Chars") == 0)
             {
                 result = NI_System_String_get_Chars;
             }
             else if (strcmp(methodName, "get_Length") == 0)
             {
                 result = NI_System_String_get_Length;
+            }
+            else if (strcmp(methodName, "op_Implicit") == 0)
+            {
+                result = NI_System_String_op_Implicit;
+            }
+            else if (strcmp(methodName, "StartsWith") == 0)
+            {
+                result = NI_System_String_StartsWith;
+            }
+        }
+        else if (strcmp(className, "MemoryExtensions") == 0)
+        {
+            if (strcmp(methodName, "AsSpan") == 0)
+            {
+                result = NI_System_MemoryExtensions_AsSpan;
+            }
+            if (strcmp(methodName, "SequenceEqual") == 0)
+            {
+                result = NI_System_MemoryExtensions_SequenceEqual;
+            }
+            else if (strcmp(methodName, "Equals") == 0)
+            {
+                result = NI_System_MemoryExtensions_Equals;
+            }
+            else if (strcmp(methodName, "StartsWith") == 0)
+            {
+                result = NI_System_MemoryExtensions_StartsWith;
             }
         }
         else if (strcmp(className, "Span`1") == 0)

@@ -12,16 +12,17 @@ namespace System.Runtime.InteropServices
     /// Indicates that method will be generated at compile time and invoke into an unmanaged library entry point
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-#if DLLIMPORT_GENERATOR_TEST
+#if LIBRARYIMPORT_GENERATOR_TEST
     public
 #else
     internal
 #endif
     sealed class GeneratedDllImportAttribute : Attribute
     {
-        public CharSet CharSet { get; set; }
         public string? EntryPoint { get; set; }
         public bool SetLastError { get; set; }
+        public StringMarshalling StringMarshalling { get; set; }
+        public Type? StringMarshallingCustomType { get; set; }
 
         public GeneratedDllImportAttribute(string dllName)
         {

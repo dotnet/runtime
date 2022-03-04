@@ -662,10 +662,6 @@ class ILStubManager : public StubManager
     virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
 
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_COMINTEROP
-    static PCODE GetCOMTarget(Object *pThis, ComPlusCallInfo *pComPlusCallInfo);
-#endif // FEATURE_COMINTEROP
-
     virtual BOOL TraceManager(Thread *thread,
                               TraceDestination *trace,
                               T_CONTEXT *pContext,

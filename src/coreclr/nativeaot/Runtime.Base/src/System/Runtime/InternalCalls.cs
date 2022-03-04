@@ -323,7 +323,7 @@ namespace System.Runtime
         // memory available to satisfy the caller's request.
         [GeneratedDllImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static partial int RhpStartNoGCRegion(long totalSize, bool hasLohSize, long lohSize, bool disallowFullBlockingGC);
+        internal static partial int RhpStartNoGCRegion(long totalSize, [MarshalAs(UnmanagedType.Bool)] bool hasLohSize, long lohSize, [MarshalAs(UnmanagedType.Bool)] bool disallowFullBlockingGC);
 
         // Exits a no GC region, possibly doing a GC to clean up the garbage that
         // the caller allocated.

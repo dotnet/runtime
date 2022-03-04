@@ -17,7 +17,7 @@ internal static partial class Interop
 
         internal const int NS_ALL = 0;
 
-        [GeneratedDllImport(Libraries.Ws2_32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Ws2_32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int GetAddrInfoExW(
             string pName,
             string? pServiceName,

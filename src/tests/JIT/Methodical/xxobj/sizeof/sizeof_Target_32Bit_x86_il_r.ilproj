@@ -9,5 +9,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="sizeof_Target_32Bit_x86.il" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

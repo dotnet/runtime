@@ -10,6 +10,6 @@ internal static partial class Interop
     {
         [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
         internal static partial SafeProcessHandle OpenProcess(
-            int access, bool inherit, int processId);
+            int access, [MarshalAs(UnmanagedType.Bool)] bool inherit, int processId);
     }
 }
