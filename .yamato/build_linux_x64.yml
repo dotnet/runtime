@@ -25,6 +25,7 @@ commands:
   - cp unity/unitygc/release/libunitygc.so artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64/native
   - cp artifacts/bin/unity-embed-host/Release/net6.0/unity-embed-host.dll artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64/lib/net7.0
   - cp artifacts/bin/unity-embed-host/Release/net6.0/unity-embed-host.dll artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64/lib/net7.0
+  - cp LICENSE.md artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64/.
   - artifacts/7za-linux-x64/7za a artifacts/unity/$ARTIFACT_FILENAME ./artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64/*
 
 artifacts:

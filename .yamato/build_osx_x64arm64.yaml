@@ -19,6 +19,7 @@ commands:
   - unzip artifacts/7za-mac-x64.zip -d artifacts/7za-mac-x64
   - mkdir -p ./artifacts/bin/microsoft.netcore.app.runtime.osx-x64arm64/Release/runtimes/osx-x64arm64
   - perl .yamato/scripts/the_liponator.pl ./artifacts/bin/microsoft.netcore.app.runtime.osx-x64/Release/runtimes/osx-x64 ./artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Release/runtimes/osx-arm64 ./artifacts/bin/microsoft.netcore.app.runtime.osx-x64arm64/Release/runtimes/osx-x64arm64
+  - cp LICENSE.md artifacts/bin/microsoft.netcore.app.runtime.osx-x64arm64/Release/runtimes/osx-x64arm64/.
   - artifacts/7za-mac-x64/7za a artifacts/unity/$ARTIFACT_FILENAME ./artifacts/bin/microsoft.netcore.app.runtime.osx-x64arm64/Release/runtimes/osx-x64arm64/*
 
 triggers:
