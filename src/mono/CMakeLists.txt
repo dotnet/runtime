@@ -220,7 +220,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
   # The normal check fails because it uses --isystem <ndk root>/sysroot/usr/include
   set(HAVE_USR_INCLUDE_MALLOC_H 1)
   set(HOST_ANDROID 1)
-  set(ANDROID_UNIFIED_HEADERS 1)
   set(ENABLE_MONODROID 1)
   set(DISABLE_EXECUTABLES 1)
   # Force some defines

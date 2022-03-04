@@ -225,12 +225,6 @@
    */
 #cmakedefine HAVE_ANDROID_LEGACY_SIGNAL_INLINES_H 1
 
-/* Define to 1 if you have the <android/ndk-version.h> header file. */
-#cmakedefine HAVE_ANDROID_NDK_VERSION_H 1
-
-/* Whether Android NDK unified headers are used */
-#cmakedefine ANDROID_UNIFIED_HEADERS 1
-
 /* The size of `void *', as computed by sizeof. */
 #define SIZEOF_VOID_P @SIZEOF_VOID_P@
 
