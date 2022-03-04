@@ -11,28 +11,26 @@ using System.Runtime.Versioning;
 
 namespace System.DirectoryServices.Protocols
 {
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-    internal class SortKeyInterop
+    internal partial struct SortKeyInterop
     {
         private string _name;
         private string _rule;
         private bool _order;
 
-        public SortKeyInterop()
+        public SortKeyInterop(SortKey sortKey)
         {
-        }
+            if (sortKey == null)
+                throw new ArgumentNullException(nameof(sortKey));
 
-        public SortKeyInterop(string attributeName, string matchingRule, bool reverseOrder)
-        {
-            AttributeName = attributeName;
-            _rule = matchingRule;
-            _order = reverseOrder;
+            _name = sortKey.AttributeName;
+            _rule = sortKey.MatchingRule;
+            _order = sortKey.ReverseOrder;
         }
 
         public string AttributeName
         {
             get => _name;
-            set => _name = value ?? throw new ArgumentNullException(nameof(value));
+            set => _name = value;
         }
 
         public string MatchingRule

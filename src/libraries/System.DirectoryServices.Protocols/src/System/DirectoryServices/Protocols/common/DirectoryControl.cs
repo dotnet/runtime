@@ -705,8 +705,7 @@ namespace System.DirectoryServices.Protocols
             SortKeyInterop[] nativeSortKeys = new SortKeyInterop[_keys.Length];
             for (int i = 0; i < _keys.Length; ++i)
             {
-                nativeSortKeys[i] = new SortKeyInterop(_keys[i].AttributeName,
-                    _keys[i].MatchingRule, _keys[i].ReverseOrder);
+                nativeSortKeys[i] = new SortKeyInterop(_keys[i]);
             }
 
             IntPtr control = IntPtr.Zero;
