@@ -95,9 +95,9 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a single CBOR data item which has already been encoded.</summary>
         /// <param name="encodedValue">The encoded value to write.</param>
-        /// <exception cref="ArgumentException"><paramref name="encodedValue" /> is not a well-formed CBOR encoding.
-        /// -or-
-        /// <paramref name="encodedValue" /> is not valid under the current conformance mode.</exception>
+        /// <exception cref="ArgumentException"><p><paramref name="encodedValue" /> is not a well-formed CBOR encoding.</p>
+        /// <p>-or-</p>
+        /// <p><paramref name="encodedValue" /> is not valid under the current conformance mode.</p></exception>
         public void WriteEncodedValue(ReadOnlySpan<byte> encodedValue)
         {
             ValidateEncoding(encodedValue, ConformanceMode);
