@@ -4703,6 +4703,14 @@ void Module::RunEagerFixupsUnlocked()
             }
         }
     }
+
+    TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
+
+    ExecutionManager::AddCodeRange(
+        base, base + (TADDR)pNativeImage->GetVirtualSize(),
+        ExecutionManager::GetReadyToRunJitManager(),
+        RangeSection::RANGE_SECTION_READYTORUN,
+        this /* pHeapListOrZapModule */);
 }
 #endif // !DACCESS_COMPILE
 
