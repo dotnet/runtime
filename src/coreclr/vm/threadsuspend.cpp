@@ -773,16 +773,8 @@ StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data)
         // Does the current and latched frame represent the same call?
         if (pCf->pFrame == pData->LatchedCF.pFrame)
         {
-            if (pData->LatchedCF.GetFunction()->AsDynamicMethodDesc()->IsUnbreakable())
-            {
-                // Report only the latched IL stub frame which is a CER root.
-                frameAction = DiscardCurrentFrame;
-            }
-            else
-            {
-                // Report the interop method (current frame) which may be annotated, then the IL stub.
-                frameAction = ProcessLatchedReversed;
-            }
+            // Report the interop method (current frame) which may be annotated, then the IL stub.
+            frameAction = ProcessLatchedReversed;
         }
         else
         {
@@ -805,20 +797,7 @@ StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data)
     // However, we still want to discard the interop method frame if the call is unbreakable by convention.
     if (pData->fHaveLatchedCF)
     {
-        MethodDesc *pMD = pCf->GetFunction();
-        if (pMD != NULL && pMD->IsILStub() &&
-            pData->LatchedCF.GetFrame()->GetReturnAddress() == GetControlPC(pCf->GetRegisterSet()) &&
-            pMD->AsDynamicMethodDesc()->IsUnbreakable())
-        {
-            // The current and latched frame represent the same call and the IL stub is marked as unbreakable.
-            // We will discard the interop method and report only the IL stub which is a CER root.
-            frameAction = DiscardLatchedFrame;
-        }
-        else
-        {
-            // Otherwise process the two frames in order.
-            frameAction = ProcessLatchedInOrder;
-        }
+        frameAction = ProcessLatchedInOrder;
         pData->fHaveLatchedCF = FALSE;
     }
     else
@@ -2901,9 +2880,9 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     // Scenarios like GC stress may indirectly disable XState features in the pCtx
     // depending on the state at the time of GC stress interrupt.
-    // 
+    //
     // Make sure that AVX feature mask is set, if supported.
-    // 
+    //
     // This should not normally fail.
     // The system silently ignores any feature specified in the FeatureMask
     // which is not enabled on the processor.
