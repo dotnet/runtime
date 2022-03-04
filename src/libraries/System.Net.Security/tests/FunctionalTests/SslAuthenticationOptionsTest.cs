@@ -40,7 +40,9 @@ namespace System.Net.Security.Tests
                 List<SslApplicationProtocol> serverAppProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 };
                 X509RevocationMode serverRevocation = X509RevocationMode.NoCheck;
                 bool serverCertRequired = false;
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                 SslProtocols serverSslProtocols = SslProtocols.Tls11 | SslProtocols.Tls12;
+#pragma warning restore SYSLIB0039
                 EncryptionPolicy serverEncryption = EncryptionPolicy.AllowNoEncryption;
                 RemoteCertificateValidationCallback serverRemoteCallback = new RemoteCertificateValidationCallback(delegate { return true; });
                 SslStreamCertificateContext certificateContext = SslStreamCertificateContext.Create(serverCert, null, false);

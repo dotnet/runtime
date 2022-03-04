@@ -18,5 +18,6 @@
     <ProjectReference Include="../common/profiler_common.csproj" />
     <ProjectReference Include="$(TestSourceDir)tracing/eventpipe/common/common.csproj" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)/../native/CMakeLists.txt" />
+    <ProjectReference Include="$(TestSourceDir)tracing/eventpipe/common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
   </ItemGroup>
 </Project>

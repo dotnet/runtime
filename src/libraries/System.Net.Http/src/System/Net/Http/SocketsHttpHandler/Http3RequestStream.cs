@@ -283,7 +283,7 @@ namespace System.Net.Http
                 if (cancellationToken.IsCancellationRequested)
                 {
                     _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
-                    throw new OperationCanceledException(ex.Message, ex, cancellationToken);
+                    throw new TaskCanceledException(ex.Message, ex, cancellationToken);
                 }
                 else
                 {
@@ -321,6 +321,8 @@ namespace System.Net.Http
         /// </summary>
         private async Task ReadResponseAsync(CancellationToken cancellationToken)
         {
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStart();
+
             Debug.Assert(_response == null);
             do
             {
@@ -343,6 +345,8 @@ namespace System.Net.Http
             while ((int)_response.StatusCode < 200);
 
             _headerState = HeaderState.TrailingHeaders;
+
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
         }
 
         private async Task SendContentAsync(HttpContent content, CancellationToken cancellationToken)
@@ -376,12 +380,19 @@ namespace System.Net.Http
                 }
             }
 
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStart();
+
             // If we have a Content-Length, keep track of it so we don't over-send and so we can send in a single DATA frame.
             _requestContentLengthRemaining = content.Headers.ContentLength ?? -1;
 
-            using (var writeStream = new Http3WriteStream(this))
+            var writeStream = new Http3WriteStream(this);
+            try
             {
                 await content.CopyToAsync(writeStream, null, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                writeStream.Dispose();
             }
 
             if (_requestContentLengthRemaining > 0)
@@ -406,6 +417,8 @@ namespace System.Net.Http
             {
                 _stream.Shutdown();
             }
+
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(writeStream.BytesWritten);
         }
 
         private async ValueTask WriteRequestContentAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -530,6 +543,8 @@ namespace System.Net.Http
 
         private void BufferHeaders(HttpRequestMessage request)
         {
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
+
             // Reserve space for the header frame envelope.
             // The envelope needs to be written after headers are serialized, as we need to know the payload length first.
             const int PreHeadersReserveSpace = Http3Frame.MaximumEncodedFrameEnvelopeLength;
@@ -617,6 +632,8 @@ namespace System.Net.Http
             _sendBuffer.ActiveSpan[0] = (byte)Http3FrameType.Headers;
             int actualHeadersLengthEncodedSize = VariableLengthIntegerHelper.WriteInteger(_sendBuffer.ActiveSpan.Slice(1, headersLengthEncodedSize), headersLength);
             Debug.Assert(actualHeadersLengthEncodedSize == headersLengthEncodedSize);
+
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStop();
         }
 
         // TODO: special-case Content-Type for static table values values?
@@ -1344,24 +1361,28 @@ namespace System.Net.Http
 
             public override int Read(Span<byte> buffer)
             {
-                if (_stream == null)
+                Http3RequestStream? stream = _stream;
+
+                if (stream is null)
                 {
                     throw new ObjectDisposedException(nameof(Http3RequestStream));
                 }
 
                 Debug.Assert(_response != null);
-                return _stream.ReadResponseContent(_response, buffer);
+                return stream.ReadResponseContent(_response, buffer);
             }
 
             public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
             {
-                if (_stream == null)
+                Http3RequestStream? stream = _stream;
+
+                if (stream is null)
                 {
                     return ValueTask.FromException<int>(new ObjectDisposedException(nameof(Http3RequestStream)));
                 }
 
                 Debug.Assert(_response != null);
-                return _stream.ReadResponseContentAsync(_response, buffer, cancellationToken);
+                return stream.ReadResponseContentAsync(_response, buffer, cancellationToken);
             }
 
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -1374,6 +1395,8 @@ namespace System.Net.Http
         private sealed class Http3WriteStream : HttpBaseStream
         {
             private Http3RequestStream? _stream;
+
+            public long BytesWritten { get; private set; }
 
             public override bool CanRead => false;
 
@@ -1402,22 +1425,28 @@ namespace System.Net.Http
 
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             {
-                if (_stream == null)
+                BytesWritten += buffer.Length;
+
+                Http3RequestStream? stream = _stream;
+
+                if (stream is null)
                 {
                     return ValueTask.FromException(new ObjectDisposedException(nameof(Http3WriteStream)));
                 }
 
-                return _stream.WriteRequestContentAsync(buffer, cancellationToken);
+                return stream.WriteRequestContentAsync(buffer, cancellationToken);
             }
 
             public override Task FlushAsync(CancellationToken cancellationToken)
             {
-                if (_stream == null)
+                Http3RequestStream? stream = _stream;
+
+                if (stream is null)
                 {
                     return Task.FromException(new ObjectDisposedException(nameof(Http3WriteStream)));
                 }
 
-                return _stream.FlushSendBufferAsync(endStream: false, cancellationToken).AsTask();
+                return stream.FlushSendBufferAsync(endStream: false, cancellationToken).AsTask();
             }
         }
 

@@ -21,34 +21,42 @@ namespace System.Text.RegularExpressions.Generator
         private const string RegexName = "System.Text.RegularExpressions.Regex";
         private const string RegexGeneratorAttributeName = "System.Text.RegularExpressions.RegexGeneratorAttribute";
 
-        private static bool IsSyntaxTargetForGeneration(SyntaxNode node) =>
+        private static bool IsSyntaxTargetForGeneration(SyntaxNode node, CancellationToken cancellationToken) =>
             // We don't have a semantic model here, so the best we can do is say whether there are any attributes.
             node is MethodDeclarationSyntax { AttributeLists: { Count: > 0 } };
 
-        private static MethodDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
+        private static bool IsSemanticTargetForGeneration(SemanticModel semanticModel, MethodDeclarationSyntax methodDeclarationSyntax, CancellationToken cancellationToken)
         {
-            var methodDeclarationSyntax = (MethodDeclarationSyntax)context.Node;
-
             foreach (AttributeListSyntax attributeListSyntax in methodDeclarationSyntax.AttributeLists)
             {
                 foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
                 {
-                    if (context.SemanticModel.GetSymbolInfo(attributeSyntax).Symbol is IMethodSymbol attributeSymbol &&
+                    if (semanticModel.GetSymbolInfo(attributeSyntax, cancellationToken).Symbol is IMethodSymbol attributeSymbol &&
                         attributeSymbol.ContainingType.ToDisplayString() == RegexGeneratorAttributeName)
                     {
-                        return methodDeclarationSyntax;
+                        return true;
                     }
                 }
             }
 
-            return null;
+            return false;
         }
 
         // Returns null if nothing to do, Diagnostic if there's an error to report, or RegexType if the type was analyzed successfully.
-        private static object? GetRegexTypeToEmit(Compilation compilation, MethodDeclarationSyntax methodSyntax, CancellationToken cancellationToken)
+        private static object? GetSemanticTargetForGeneration(GeneratorSyntaxContext context, CancellationToken cancellationToken)
         {
+            var methodSyntax = (MethodDeclarationSyntax)context.Node;
+            SemanticModel sm = context.SemanticModel;
+
+            if (!IsSemanticTargetForGeneration(sm, methodSyntax, cancellationToken))
+            {
+                return null;
+            }
+
+            Compilation compilation = sm.Compilation;
             INamedTypeSymbol? regexSymbol = compilation.GetBestTypeByMetadataName(RegexName);
             INamedTypeSymbol? regexGeneratorAttributeSymbol = compilation.GetBestTypeByMetadataName(RegexGeneratorAttributeName);
+
             if (regexSymbol is null || regexGeneratorAttributeSymbol is null)
             {
                 // Required types aren't available
@@ -60,8 +68,6 @@ namespace System.Text.RegularExpressions.Generator
             {
                 return null;
             }
-
-            SemanticModel sm = compilation.GetSemanticModel(methodSyntax.SyntaxTree);
 
             IMethodSymbol? regexMethodSymbol = sm.GetDeclaredSymbol(methodSyntax, cancellationToken) as IMethodSymbol;
             if (regexMethodSymbol is null)
@@ -132,7 +138,7 @@ namespace System.Text.RegularExpressions.Generator
                 return Diagnostic.Create(DiagnosticDescriptors.RegexMethodMustHaveValidSignature, methodSyntax.GetLocation());
             }
 
-            if (typeDec.SyntaxTree.Options is CSharpParseOptions { LanguageVersion: < LanguageVersion.CSharp10 })
+            if (typeDec.SyntaxTree.Options is CSharpParseOptions { LanguageVersion: <= LanguageVersion.CSharp10 })
             {
                 return Diagnostic.Create(DiagnosticDescriptors.InvalidLangVersion, methodSyntax.GetLocation());
             }
@@ -172,10 +178,10 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Parse the input pattern
-            RegexCode code;
+            RegexTree tree;
             try
             {
-                code = RegexWriter.Write(RegexParser.Parse(pattern, regexOptions, culture), culture);
+                tree = RegexParser.Parse(pattern, regexOptions, culture);
             }
             catch (Exception e)
             {
@@ -193,7 +199,7 @@ namespace System.Text.RegularExpressions.Generator
                 pattern,
                 regexOptions,
                 matchTimeout ?? Timeout.Infinite,
-                code);
+                tree);
 
             var regexType = new RegexType(
                 regexMethod,
@@ -227,7 +233,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>A regex method.</summary>
-        internal sealed record RegexMethod(MethodDeclarationSyntax MethodSyntax, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int MatchTimeout, RegexCode Code);
+        internal sealed record RegexMethod(MethodDeclarationSyntax MethodSyntax, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int MatchTimeout, RegexTree Tree);
 
         /// <summary>A type holding a regex method.</summary>
         internal sealed record RegexType(RegexMethod? Method, string Keyword, string Namespace, string Name)

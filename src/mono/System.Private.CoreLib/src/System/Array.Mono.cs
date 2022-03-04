@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -283,6 +282,7 @@ namespace System
             return false;
         }
 
+        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
         public static unsafe Array CreateInstance(Type elementType, int length)
         {
             if (elementType is null)
@@ -342,6 +342,7 @@ namespace System
             return array;
         }
 
+        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
         public static unsafe Array CreateInstance(Type elementType, params int[] lengths)
         {
             if (elementType is null)
@@ -366,6 +367,7 @@ namespace System
             return array;
         }
 
+        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
         public static unsafe Array CreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
         {
             if (elementType == null)

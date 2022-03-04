@@ -4,7 +4,7 @@
     <!-- Setting a custom TargetFrameworkAttribute in AssemblyAttributes.cs -->
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <TestRuntime>true</TestRuntime>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />

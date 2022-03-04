@@ -37,8 +37,8 @@ namespace System
     internal sealed partial class TypeNameParser : IDisposable
     {
         #region QCalls
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_CreateTypeNameParser", CharSet = CharSet.Unicode)]
-        private static partial void _CreateTypeNameParser(string typeName, ObjectHandleOnStack retHandle, bool throwOnError);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_CreateTypeNameParser", StringMarshalling = StringMarshalling.Utf16)]
+        private static partial void _CreateTypeNameParser(string typeName, ObjectHandleOnStack retHandle, [MarshalAs(UnmanagedType.Bool)] bool throwOnError);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetNames")]
         private static partial void _GetNames(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
