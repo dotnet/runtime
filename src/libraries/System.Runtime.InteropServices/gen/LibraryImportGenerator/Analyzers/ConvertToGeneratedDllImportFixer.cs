@@ -128,7 +128,7 @@ namespace Microsoft.Interop.Analyzers
                     if (editor.SemanticModel.GetDeclaredSymbol(methodSyntax, fixAllContext.CancellationToken) is not IMethodSymbol methodSymbol)
                         continue;
 
-                    SyntaxNode generatedDeclaration = await ConvertMethodDeclarationToGeneratedDllImport(methodSyntax, editor, generator, methodSymbol, GetSuffixFromEquivalenceKey(fixAllContext.CodeActionEquivalenceKey), fixAllContext.CancellationToken);
+                    SyntaxNode generatedDeclaration = await ConvertMethodDeclarationToGeneratedDllImport(methodSyntax, editor, generator, methodSymbol, GetSuffixFromEquivalenceKey(fixAllContext.CodeActionEquivalenceKey), fixAllContext.CancellationToken).ConfigureAwait(false);
 
                     if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
                     {
@@ -169,7 +169,7 @@ namespace Microsoft.Interop.Analyzers
             if (editor.SemanticModel.GetDeclaredSymbol(methodSyntax, cancellationToken) is not IMethodSymbol methodSymbol)
                 return doc;
 
-            SyntaxNode generatedDeclaration = await ConvertMethodDeclarationToGeneratedDllImport(methodSyntax, editor, generator, methodSymbol, entryPointSuffix, cancellationToken);
+            SyntaxNode generatedDeclaration = await ConvertMethodDeclarationToGeneratedDllImport(methodSyntax, editor, generator, methodSymbol, entryPointSuffix, cancellationToken).ConfigureAwait(false);
 
             if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
             {
@@ -188,7 +188,7 @@ namespace Microsoft.Interop.Analyzers
             return editor.GetChangedDocument();
         }
 
-        private async static Task<SyntaxNode> ConvertMethodDeclarationToGeneratedDllImport(
+        private static async Task<SyntaxNode> ConvertMethodDeclarationToGeneratedDllImport(
             MethodDeclarationSyntax methodSyntax,
             DocumentEditor editor,
             SyntaxGenerator generator,
