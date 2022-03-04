@@ -274,6 +274,11 @@ namespace System.Text.RegularExpressions.Symbolic
                         is_nullable = true;
                         break;
 
+                    case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                        Debug.Assert(_left is not null);
+                        is_nullable = _left.IsNullableFor(context);
+                        break;
+
                     default:
                         // SymbolicRegexNodeKind.EndAnchorZReverse:
                         // EndAnchorZRev (rev(\Z)) anchor is nullable when the prev character is either the first Newline or Start
@@ -437,6 +442,9 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal static SymbolicRegexNode<S> CreateCaptureEnd(SymbolicRegexBuilder<S> builder, int captureNum) =>
             Create(builder, SymbolicRegexNodeKind.CaptureEnd, null, null, captureNum, -1, default, null, SymbolicRegexInfo.Create(isAlwaysNullable: true));
+
+        internal static SymbolicRegexNode<S> CreateDisableBacktrackingSimulation(SymbolicRegexBuilder<S> builder, SymbolicRegexNode<S> child) =>
+            Create(builder, SymbolicRegexNodeKind.DisableBacktrackingSimulation, child, null, -1, -1, default, null, child._info);
 
         private static SymbolicRegexNode<S> CreateCollection(SymbolicRegexBuilder<S> builder, SymbolicRegexNodeKind kind, SymbolicRegexSet<S> alts, SymbolicRegexInfo info) =>
             alts.IsNothing ? builder._nothing :
@@ -789,6 +797,10 @@ namespace System.Text.RegularExpressions.Symbolic
                         }
                         break;
                     }
+
+                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                    Debug.Assert(_left is not null);
+                    return _left.GetFixedLength();
             }
 
             return -1;
@@ -1162,6 +1174,21 @@ namespace System.Text.RegularExpressions.Symbolic
                         return _right.AddTransitions(elem, context, transitions, continuation, effects, simulateBacktracking);
                     break;
 
+                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                    {
+                        Debug.Assert(_left is not null);
+                        int oldTransitionsCount = transitions.Count;
+                        // Disable backtracking simulation inside this node
+                        bool done = _left.AddTransitions(elem, context, transitions, continuation, effects, simulateBacktracking: false);
+                        // For any transitions added, wrap them again in a DisableBacktrackingSimulation node
+                        for (int i = oldTransitionsCount; i < transitions.Count; ++i)
+                        {
+                            var (node, nodeEffects) = transitions[i];
+                            transitions[i] = (_builder.CreateDisableBacktrackingSimulation(node), nodeEffects);
+                        }
+                        return done;
+                    }
+
                 case SymbolicRegexNodeKind.Or:
                     Debug.Assert(_alts is not null);
                     foreach (SymbolicRegexNode<S> alt in _alts)
@@ -1239,6 +1266,11 @@ namespace System.Text.RegularExpressions.Symbolic
                     apply(new DerivativeEffect(DerivativeEffectKind.CaptureEnd, _lower), arg);
                     break;
 
+                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                    Debug.Assert(_left is not null);
+                    _left.ApplyEffects(apply, context, arg);
+                    break;
+
                 case SymbolicRegexNodeKind.Or:
                     Debug.Assert(_alts is not null);
                     foreach (SymbolicRegexNode<S> elem in _alts)
@@ -1268,7 +1300,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// being reached then the InComplete property of the constructed NFA is true.
         /// </summary>
         internal SymbolicNFA<S> Explore(int bound) => SymbolicNFA<S>.Explore(this, bound);
-#endif
 
         /// <summary>Extracts the nullability test as a Boolean combination of anchors</summary>
         public SymbolicRegexNode<S> ExtractNullabilityTest()
@@ -1331,6 +1362,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     return _builder.Not(_left.ExtractNullabilityTest());
             }
         }
+#endif
 
         public override int GetHashCode()
         {
@@ -1366,6 +1398,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexNodeKind.Concat:
                 case SymbolicRegexNodeKind.OrderedOr:
                     return HashCode.Combine(_left, _right, _info);
+
+                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                    return HashCode.Combine(_left, _info);
 
                 case SymbolicRegexNodeKind.Singleton:
                     return HashCode.Combine(_kind, _set);
@@ -1566,6 +1601,11 @@ namespace System.Text.RegularExpressions.Symbolic
                     sb.Append(')');
                     return;
 
+                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                    Debug.Assert(_left is not null);
+                    _left.ToString(sb);
+                    return;
+
                 default:
                     // Using the operator ~ for complement
                     Debug.Assert(_kind == SymbolicRegexNodeKind.Not);
@@ -1651,6 +1691,11 @@ namespace System.Text.RegularExpressions.Symbolic
                         conc = conc._right;
                     }
                     conc.CollectPredicates_helper(predicates);
+                    return;
+
+                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                    Debug.Assert(_left is not null);
+                    _left.CollectPredicates_helper(predicates);
                     return;
 
                 case SymbolicRegexNodeKind.Not:
@@ -1765,6 +1810,10 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexNodeKind.CaptureEnd:
                     return CreateCaptureStart(_builder, _lower);
 
+                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                    Debug.Assert(_left is not null);
+                    return _builder.CreateDisableBacktrackingSimulation(_left.Reverse());
+
                 // Remaining cases map to themselves:
                 case SymbolicRegexNodeKind.Epsilon:
                 case SymbolicRegexNodeKind.Singleton:
@@ -1847,6 +1896,10 @@ namespace System.Text.RegularExpressions.Symbolic
                         return Or(_builder, _left.IgnoreOrOrderAndLazyness(), _right.IgnoreOrOrderAndLazyness());
                     }
 
+                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                    Debug.Assert(_left is not null);
+                    return _builder.CreateDisableBacktrackingSimulation(_left.IgnoreOrOrderAndLazyness());
+
                 default:
                     return this;
             }
@@ -1875,6 +1928,10 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexNodeKind.OrderedOr:
                     Debug.Assert(_left is not null && _right is not null);
                     return _left.StartsWithLoop(upperBoundLowestValue) || _right.StartsWithLoop(upperBoundLowestValue);
+
+                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                    Debug.Assert(_left is not null);
+                    return _left.StartsWithLoop(upperBoundLowestValue);
 
                 default:
                     return false;
@@ -1947,6 +2004,10 @@ namespace System.Text.RegularExpressions.Symbolic
                         }
                         return startSet;
                     }
+
+                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                    Debug.Assert(_left is not null);
+                    return _left._startSet;
 
                 default:
                     Debug.Assert(_kind == SymbolicRegexNodeKind.Not);
@@ -2045,6 +2106,13 @@ namespace System.Text.RegularExpressions.Symbolic
                             this :
                             OrderedOr(_builder, left1, right1);
                     }
+
+                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                    Debug.Assert(_left is not null);
+                    SymbolicRegexNode<S> child = _left.PruneAnchors(prevKind, contWithWL, contWithNWL);
+                    return child == _left ?
+                        this :
+                        _builder.CreateDisableBacktrackingSimulation(child);
 
                 default:
                     return this;

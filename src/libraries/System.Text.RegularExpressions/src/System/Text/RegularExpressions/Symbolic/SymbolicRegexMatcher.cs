@@ -204,8 +204,10 @@ namespace System.Text.RegularExpressions.Symbolic
             _dotstarredInitialStates = dotstarredInitialStates;
 
             // Create the reverse pattern (the original pattern in reverse order) and all of its
-            // initial states.
-            _reversePattern = unorderedPattern.Reverse();
+            // initial states. Also disable backtracking simulation to ensure the reverse path from
+            // the final state that was found is followed. Not doing so might cause the earliest
+            // starting point to not be found.
+            _reversePattern = _builder.CreateDisableBacktrackingSimulation(unorderedPattern.Reverse());
             var reverseInitialStates = new DfaMatchingState<TSetType>[statesCount];
             for (uint i = 0; i < reverseInitialStates.Length; i++)
             {
