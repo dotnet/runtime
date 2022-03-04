@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+//
 //
 // pinvoke-detach-1.cs:
 //
@@ -7,14 +10,33 @@ using System;
 using System.Threading;
 using System.Runtime.InteropServices;
 
+namespace MonoAPI.Tests.MonoMono.PInvokeDetach;
+
 public class MonoPInvokeCallbackAttribute : Attribute {
 	public MonoPInvokeCallbackAttribute (Type delegateType) { }
 }
 
-public class Tests {
+public class PInvokeDetach {
+	const string TestNamespace = "MonoAPI.Tests.MonoMono.PInvokeDetach";
+	const string TestName = nameof (PInvokeDetach);
+
 	public static int Main ()
 	{
-		return TestDriver.RunTests (typeof (Tests));
+		MonoAPI.Tests.MonoAPISupport.Setup();
+		int result;
+		result = test_0_attach_invoke_foreign_thread ();
+		if (result != 0)
+			return 100 + result;
+		result = test_0_attach_invoke_foreign_thread_delegate ();
+		if (result != 0)
+			return 100 + result;
+		result = test_0_attach_invoke_block_foreign_thread ();
+		if (result != 0)
+			return 100 + result;
+		result = test_0_attach_invoke_block_foreign_thread_delegate ();
+		if (result != 0)
+			return 100 + result;
+		return 100;
 	}
 
 	public delegate void VoidVoidDelegate ();
@@ -27,13 +49,13 @@ public class Tests {
 		was_called++;
 	}
 
-	[DllImport ("libtest", EntryPoint="mono_test_attach_invoke_foreign_thread")]
+	[DllImport (MonoAPISupport.TestLibName, EntryPoint="mono_test_attach_invoke_foreign_thread")]
 	public static extern bool mono_test_attach_invoke_foreign_thread (string assm_name, string name_space, string class_name, string method_name, VoidVoidDelegate del);
 
 	public static int test_0_attach_invoke_foreign_thread ()
 	{
 		was_called = 0;
-		bool skipped = mono_test_attach_invoke_foreign_thread (typeof (Tests).Assembly.Location, "", "Tests", "MethodInvokedFromNative", null);
+		bool skipped = mono_test_attach_invoke_foreign_thread (typeof (PInvokeDetach).Assembly.Location, TestNamespace, TestName, nameof(MethodInvokedFromNative), null);
 		GC.Collect (); // should not hang waiting for the foreign thread
 		return skipped || was_called == 5 ? 0 : 1;
 	}
@@ -60,12 +82,12 @@ public class Tests {
 	{
 	}
 
-	[DllImport ("libtest", EntryPoint="mono_test_attach_invoke_block_foreign_thread")]
+	[DllImport (MonoAPISupport.TestLibName, EntryPoint="mono_test_attach_invoke_block_foreign_thread")]
 	public static extern bool mono_test_attach_invoke_block_foreign_thread (string assm_name, string name_space, string class_name, string method_name, VoidVoidDelegate del);
 
 	public static int test_0_attach_invoke_block_foreign_thread ()
 	{
-		bool skipped = mono_test_attach_invoke_block_foreign_thread (typeof (Tests).Assembly.Location, "", "Tests", "MethodInvokedFromNative2", null);
+		bool skipped = mono_test_attach_invoke_block_foreign_thread (typeof (PInvokeDetach).Assembly.Location, TestNamespace, TestName, nameof(MethodInvokedFromNative2), null);
 		GC.Collect (); // should not hang waiting for the foreign thread
 		return 0; // really we succeed if the app can shut down without hanging
 	}

@@ -1,20 +1,25 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+//
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+
+namespace MonoAPI.Tests.MonoMono.InstallEHCallback;
 
 public class MonoPInvokeCallbackAttribute : Attribute {
 	public MonoPInvokeCallbackAttribute (Type delegateType) { }
 }
 
-public class Tests {
+public class InstallEHCallback {
 
-	[DllImport ("libtest")]
+	[DllImport (MonoAPISupport.TestLibName)]
 	public static extern void mono_test_setjmp_and_call (VoidVoidDelegate del, out IntPtr handle);
 
-	[DllImport ("libtest")]
+	[DllImport (MonoAPISupport.TestLibName)]
 	public static extern void mono_test_setup_ftnptr_eh_callback (VoidVoidDelegate del, VoidHandleHandleOutDelegate inside_eh_callback);
 
-	[DllImport ("libtest")]
+	[DllImport (MonoAPISupport.TestLibName)]
 	public static extern void mono_test_cleanup_ftptr_eh_callback ();
 	
 	public delegate void VoidVoidDelegate ();
@@ -168,6 +173,15 @@ public class Tests {
 
 	static int Main ()
 	{
-		return TestDriver.RunTests (typeof (Tests));
+		MonoAPI.Tests.MonoAPISupport.Setup();
+		int result;
+		result = test_0_setjmp_exn_handler ();
+		if (result != 0)
+			return 100 + result;
+		result = test_0_throw_and_raise_exception ();
+		if (result != 0)
+			return 100 + result;
+		return 100;
 	}
 }
+

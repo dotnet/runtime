@@ -1,10 +1,15 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+//
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-public class Test
+namespace MonoAPI.Tests.MonoMono.Thunks;
+
+public class Thunks
 {
-	[DllImport ("libtest")]
+	[DllImport (MonoAPISupport.TestLibName)]
 		public static extern int test_method_thunk (int test_id, IntPtr testMethodHandle,
 		IntPtr createObjectHandle);
 
@@ -31,14 +36,15 @@ public class Test
 
 	public static int Main ()
 	{
-		RunTests (0, typeof (Test));
+		MonoAPI.Tests.MonoAPISupport.Setup();
+		RunTests (0, typeof (Thunks));
 		RunTests (100, typeof (TestStruct));
-		return 0;
+		return 100;
 	}
 
 	public static object CreateObject ()
 	{
-		return new Test ();
+		return new Thunks ();
 	}
 
 	public static void Test0 ()
@@ -102,9 +108,9 @@ public class Test
 		throw new NotImplementedException ();
 	}
 
-	public static void Test10 (ref Test obj)
+	public static void Test10 (ref Thunks obj)
 	{
-		obj = new Test ();
+		obj = new Thunks ();
 	}
 }
 
