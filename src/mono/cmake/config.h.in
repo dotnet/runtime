@@ -742,9 +742,6 @@
 /* ... */
 #cmakedefine TARGET_PS4 1
 
-/* ... */
-#cmakedefine DISABLE_HW_TRAPS 1
-
 /* Target is RISC-V */
 #cmakedefine TARGET_RISCV 1
 

@@ -2492,7 +2492,7 @@ mono_main (int argc, char* argv[])
 		}
 	}
 
-#if defined(DISABLE_HW_TRAPS) || defined(MONO_ARCH_DISABLE_HW_TRAPS)
+#if defined(MONO_ARCH_DISABLE_HW_TRAPS)
 	// Signal handlers not available
 	{
 		MonoDebugOptions *opt = mini_get_debug_options ();
