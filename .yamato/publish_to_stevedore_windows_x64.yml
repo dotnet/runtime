@@ -1,5 +1,3 @@
-{% metadata_file .yamato/Globals.metafile %}
----
 name: Publish To Stevedore Windows x64
 
 agent:
@@ -11,7 +9,7 @@ dependencies:
   - path: .yamato/build_windows_x64.yml
 
 variables:
-  STEVEDORE_REPO: {{globals.stevedore_publish_location}}
+  STEVEDORE_REPO: testing
 
 commands:
 # upload to stevedore

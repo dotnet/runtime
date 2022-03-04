@@ -1,6 +1,6 @@
 {% metadata_file .yamato/Globals.metafile %}
 ---
-name: Generate OSX x64Arm64
+name: Generate OSX x64+ARM64
 
 agent:
   type: Unity::VM::osx
@@ -32,3 +32,6 @@ artifacts:
   osx-x64arm64-7z:
     paths:
       - artifacts/unity/**
+  osx-x64arm64:
+    paths:
+      - artifacts/bin/**

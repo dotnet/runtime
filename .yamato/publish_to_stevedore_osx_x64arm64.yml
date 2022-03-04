@@ -1,6 +1,4 @@
-{% metadata_file .yamato/Globals.metafile %}
----
-name: Publish To Stevedore OSX x64arm64
+name: Publish To Stevedore OSX x64+ARM64
 
 agent:
   type: Unity::VM::osx
@@ -11,7 +9,7 @@ dependencies:
   - path: .yamato/build_osx_x64arm64.yml
 
 variables:
-  STEVEDORE_REPO: {{globals.stevedore_publish_location}}
+  STEVEDORE_REPO: testing
 
 commands:
 # upload to stevedore
