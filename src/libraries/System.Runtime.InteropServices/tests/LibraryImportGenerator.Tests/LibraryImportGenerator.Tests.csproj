@@ -4,9 +4,9 @@
     <IsPackable>false</IsPackable>
     <LangVersion>Preview</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <!-- These tests pull the attributes from Ancillary.Interop, so we don't need to include the attribute sources in this assembly. -->
-    <IncludeDllImportGeneratorSources>false</IncludeDllImportGeneratorSources>
+    <IncludeLibraryImportGeneratorSources>false</IncludeLibraryImportGeneratorSources>
   </PropertyGroup>
 
   <ItemGroup>

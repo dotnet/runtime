@@ -15,8 +15,8 @@ namespace Microsoft.Interop
 
     public static class OptionsHelper
     {
-        public const string UseMarshalTypeOption = "build_property.DllImportGenerator_UseMarshalType";
-        public const string GenerateForwardersOption = "build_property.DllImportGenerator_GenerateForwarders";
+        public const string UseMarshalTypeOption = "build_property.LibraryImportGenerator_UseMarshalType";
+        public const string GenerateForwardersOption = "build_property.LibraryImportGenerator_GenerateForwarders";
         private static bool GetBoolOption(this AnalyzerConfigOptions options, string key)
         {
             return options.TryGetValue(key, out string? value)
