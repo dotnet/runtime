@@ -57,11 +57,9 @@ namespace SharedTypes
 
         public double ToManaged() => MemoryMarshal.Cast<long, double>(MemoryMarshal.CreateSpan(ref l, 1))[0];
 
-        public long Value
-        {
-            get => l;
-            set => l = value;
-        }
+        public long ToNativeValue() => l;
+
+        public void FromNativeValue(long value) => l = value;
     }
 
     [NativeMarshalling(typeof(BoolStructNative))]
@@ -113,7 +111,10 @@ namespace SharedTypes
             *Value = managed.i;
         }
 
-        public int* Value { get; set; }
+        private int* Value { get; set; }
+
+        public int* ToNativeValue() => Value;
+        public void FromNativeValue(int* value) => Value = value;
 
         public IntWrapper ToManaged() => new IntWrapper { i = *Value };
 
@@ -123,7 +124,7 @@ namespace SharedTypes
         }
     }
 
-    [CustomTypeMarshaller(typeof(string), BufferSize = 0x100, RequiresStackBuffer = true)]
+    [CustomTypeMarshaller(typeof(string), BufferSize = 0x100)]
     public unsafe ref struct Utf16StringMarshaller
     {
         private ushort* allocated;
@@ -165,24 +166,19 @@ namespace SharedTypes
             return ref span.GetPinnableReference();
         }
 
-        public ushort* Value
-        {
-            get
-            {
-                return (ushort*)Unsafe.AsPointer(ref GetPinnableReference());
-            }
-            set
-            {
-                allocated = value;
-                span = new Span<ushort>(value, value == null ? 0 : FindStringLength(value));
-                isNullString = value == null;
+        public ushort* ToNativeValue() => (ushort*)Unsafe.AsPointer(ref GetPinnableReference());
 
-                static int FindStringLength(ushort* ptr)
-                {
-                    // Implemented similarly to string.wcslen as we can't access that outside of CoreLib
-                    var searchSpace = new Span<ushort>(ptr, int.MaxValue);
-                    return searchSpace.IndexOf((ushort)0);
-                }
+        public void FromNativeValue(ushort* value)
+        {
+            allocated = value;
+            span = new Span<ushort>(value, value == null ? 0 : FindStringLength(value));
+            isNullString = value == null;
+
+            static int FindStringLength(ushort* ptr)
+            {
+                // Implemented similarly to string.wcslen as we can't access that outside of CoreLib
+                var searchSpace = new Span<ushort>(ptr, int.MaxValue);
+                return searchSpace.IndexOf((ushort)0);
             }
         }
 
@@ -197,7 +193,7 @@ namespace SharedTypes
         }
     }
     
-    [CustomTypeMarshaller(typeof(string), BufferSize = 0x100, RequiresStackBuffer = true)]
+    [CustomTypeMarshaller(typeof(string), BufferSize = 0x100)]
     public unsafe ref struct Utf8StringMarshaller
     {
         private byte* allocated;
@@ -226,19 +222,11 @@ namespace SharedTypes
             }
         }
 
-        public byte* Value
-        {
-            get
-            {
-                return allocated != null ? allocated : (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
-            }
-            set
-            {
-                allocated = value;
-            }
-        }
+        public byte* ToNativeValue() => allocated != null ? allocated : (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
 
-        public string? ToManaged() => Marshal.PtrToStringUTF8((IntPtr)Value);
+        public void FromNativeValue(byte* value) => allocated = value;
+
+        public string? ToManaged() => Marshal.PtrToStringUTF8((IntPtr)allocated);
 
         public void FreeNative() => Marshal.FreeCoTaskMem((IntPtr)allocated);
     }
@@ -261,7 +249,7 @@ namespace SharedTypes
         public IntStructWrapper ToManaged() => new IntStructWrapper { Value = value };
     }
 
-    [CustomTypeMarshaller(typeof(List<>), CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200, RequiresStackBuffer = true)]
+    [CustomTypeMarshaller(typeof(List<>), CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200)]
     public unsafe ref struct ListMarshaller<T>
     {
         private List<T> managedList;
@@ -303,40 +291,39 @@ namespace SharedTypes
             }
         }
 
-        public Span<T> ManagedValues => CollectionsMarshal.AsSpan(managedList);
+        public ReadOnlySpan<T> GetManagedValuesSource() => CollectionsMarshal.AsSpan(managedList);
 
-        public Span<byte> NativeValueStorage { get; private set; }
-
-        public ref byte GetPinnableReference() => ref NativeValueStorage.GetPinnableReference();
-
-        public void SetUnmarshalledCollectionLength(int length)
+        public Span<T> GetManagedValuesDestination(int length)
         {
+            if (allocatedMemory == IntPtr.Zero)
+            {
+                managedList = null;
+                return default;
+            }
             managedList = new List<T>(length);
             for (int i = 0; i < length; i++)
             {
                 managedList.Add(default);
             }
+            return CollectionsMarshal.AsSpan(managedList);
         }
 
-        public byte* Value
+        private Span<byte> NativeValueStorage { get; set; }
+
+        public Span<byte> GetNativeValuesDestination() => NativeValueStorage;
+
+        public ReadOnlySpan<byte> GetNativeValuesSource(int length)
         {
-            get
-            {
-                return (byte*)Unsafe.AsPointer(ref GetPinnableReference());
-            }
-            set
-            {
-                if (value == null)
-                {
-                    managedList = null;
-                    NativeValueStorage = default;
-                }
-                else
-                {
-                    allocatedMemory = (IntPtr)value;
-                    NativeValueStorage = new Span<byte>(value, (managedList?.Count ?? 0) * sizeOfNativeElement);
-                }
-            }
+            return allocatedMemory == IntPtr.Zero ? default : new Span<byte>((void*)allocatedMemory, length * sizeOfNativeElement);
+        }
+
+        public ref byte GetPinnableReference() => ref NativeValueStorage.GetPinnableReference();
+
+        public byte* ToNativeValue() => (byte*)Unsafe.AsPointer(ref GetPinnableReference());
+
+        public void FromNativeValue(byte* value)
+        {
+            allocatedMemory = (IntPtr)value;
         }
 
         public List<T> ToManaged() => managedList;

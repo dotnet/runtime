@@ -5,27 +5,38 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    public enum CustomTypeMarshallerKind
+    public readonly record struct CustomTypeMarshallerData(CustomTypeMarshallerKind Kind, int? BufferSize);
+
+    public static class ShapeMemberNames
     {
-        Value,
-        LinearCollection
+        public abstract class Value
+        {
+            public const string ToNativeValue = nameof(ToNativeValue);
+            public const string FromNativeValue = nameof(FromNativeValue);
+            public const string GetPinnableReference = nameof(GetPinnableReference);
+            public const string FreeNative = nameof(FreeNative);
+            public const string ToManaged = nameof(ToManaged);
+        }
+
+        public abstract class LinearCollection : Value
+        {
+            public const string GetManagedValuesDestination = nameof(GetManagedValuesDestination);
+            public const string GetManagedValuesSource = nameof(GetManagedValuesSource);
+            public const string GetNativeValuesDestination = nameof(GetNativeValuesDestination);
+            public const string GetNativeValuesSource = nameof(GetNativeValuesSource);
+        }
     }
-    public readonly record struct CustomTypeMarshallerData(CustomTypeMarshallerKind Kind, int? BufferSize, bool RequiresStackBuffer);
     public static class ManualTypeMarshallingHelper
     {
-        public const string ValuePropertyName = "Value";
-        public const string GetPinnableReferenceName = "GetPinnableReference";
-        public const string BufferSizeFieldName = "BufferSize";
-        public const string RequiresStackBufferFieldName = "RequiresStackBuffer";
-        public const string ToManagedMethodName = "ToManaged";
-        public const string FreeNativeMethodName = "FreeNative";
-        public const string ManagedValuesPropertyName = "ManagedValues";
-        public const string NativeValueStoragePropertyName = "NativeValueStorage";
-        public const string SetUnmarshalledCollectionLengthMethodName = "SetUnmarshalledCollectionLength";
+        public static class CustomMarshallerAttributeFields
+        {
+            public const string BufferSize = nameof(BufferSize);
+        }
 
         public static class MarshalUsingProperties
         {
@@ -57,16 +68,11 @@ namespace Microsoft.Interop
             }
             var namedArguments = attr.NamedArguments.ToImmutableDictionary();
             int? bufferSize = null;
-            if (namedArguments.TryGetValue(BufferSizeFieldName, out TypedConstant bufferSizeConstant))
+            if (namedArguments.TryGetValue(CustomMarshallerAttributeFields.BufferSize, out TypedConstant bufferSizeConstant))
             {
                 bufferSize = bufferSizeConstant.Value as int?;
             }
-            bool requiresStackBuffer = false;
-            if (namedArguments.TryGetValue(RequiresStackBufferFieldName, out TypedConstant requiresStackBufferConstant))
-            {
-                requiresStackBuffer = bufferSizeConstant.Value as bool? ?? false;
-            }
-            return (true, managedType, new CustomTypeMarshallerData(kind, bufferSize, requiresStackBuffer));
+            return (true, managedType, new CustomTypeMarshallerData(kind, bufferSize));
         }
 
         /// <summary>
@@ -161,7 +167,7 @@ namespace Microsoft.Interop
 
         public static bool HasToManagedMethod(ITypeSymbol nativeType, ITypeSymbol managedType)
         {
-            return nativeType.GetMembers(ToManagedMethodName)
+            return nativeType.GetMembers(ShapeMemberNames.Value.ToManaged)
                     .OfType<IMethodSymbol>()
                     .Any(m => m.Parameters.IsEmpty
                         && !m.ReturnsByRef
@@ -209,66 +215,81 @@ namespace Microsoft.Interop
             // fixed statement. We aren't supporting a GetPinnableReference extension method
             // (which is apparently supported in the compiler).
             // https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-7.3/pattern-based-fixed
-            return type.GetMembers(GetPinnableReferenceName)
+            return type.GetMembers(ShapeMemberNames.Value.GetPinnableReference)
                 .OfType<IMethodSymbol>()
-                .FirstOrDefault(m => m is { Parameters: { Length: 0 } } and
+                .FirstOrDefault(m => m is { Parameters.Length: 0 } and
                     ({ ReturnsByRef: true } or { ReturnsByRefReadonly: true }));
-        }
-
-        public static IPropertySymbol? FindValueProperty(ITypeSymbol type)
-        {
-            return type.GetMembers(ValuePropertyName)
-                .OfType<IPropertySymbol>()
-                .FirstOrDefault(p => !p.IsStatic);
         }
 
         public static bool HasFreeNativeMethod(ITypeSymbol type)
         {
-            return type.GetMembers(FreeNativeMethodName)
+            return type.GetMembers(ShapeMemberNames.Value.FreeNative)
                 .OfType<IMethodSymbol>()
-                .Any(m => m is { IsStatic: false, Parameters: { Length: 0 }, ReturnType: { SpecialType: SpecialType.System_Void } });
+                .Any(m => m is { IsStatic: false, Parameters.Length: 0, ReturnType.SpecialType: SpecialType.System_Void });
         }
 
-        public static bool TryGetManagedValuesProperty(ITypeSymbol type, out IPropertySymbol managedValuesProperty)
+        public static IMethodSymbol? FindToNativeValueMethod(ITypeSymbol type)
         {
-            managedValuesProperty = type
-                .GetMembers(ManagedValuesPropertyName)
-                .OfType<IPropertySymbol>()
-                .FirstOrDefault(p => p is { IsStatic: false, GetMethod: not null, ReturnsByRef: false, ReturnsByRefReadonly: false });
-            return managedValuesProperty is not null;
+            return type.GetMembers(ShapeMemberNames.Value.ToNativeValue)
+                .OfType<IMethodSymbol>()
+                .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 0 });
         }
 
-        public static bool TryGetElementTypeFromLinearCollectionMarshaller(ITypeSymbol type, out ITypeSymbol elementType)
+        public static IMethodSymbol? FindFromNativeValueMethod(ITypeSymbol type)
         {
-            if (!TryGetManagedValuesProperty(type, out IPropertySymbol managedValuesProperty))
+            return type.GetMembers(ShapeMemberNames.Value.FromNativeValue)
+                .OfType<IMethodSymbol>()
+                .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 1, ReturnType.SpecialType: SpecialType.System_Void });
+        }
+
+        public static bool TryGetElementTypeFromLinearCollectionMarshaller(ITypeSymbol type, ITypeSymbol readOnlySpanOfT, out ITypeSymbol elementType)
+        {
+            if (FindGetManagedValuesSourceMethod(type, readOnlySpanOfT) is not IMethodSymbol managedValuesSourceMethod)
             {
                 elementType = null!;
                 return false;
             }
 
-            elementType = ((INamedTypeSymbol)managedValuesProperty.Type).TypeArguments[0];
+            elementType = ((INamedTypeSymbol)managedValuesSourceMethod.ReturnType).TypeArguments[0];
             return true;
         }
 
-        public static bool HasSetUnmarshalledCollectionLengthMethod(ITypeSymbol type)
-        {
-            return type.GetMembers(SetUnmarshalledCollectionLengthMethodName)
-                .OfType<IMethodSymbol>()
-                .Any(m => m is
-                {
-                    IsStatic: false,
-                    Parameters: { Length: 1 },
-                    ReturnType: { SpecialType: SpecialType.System_Void }
-                } && m.Parameters[0].Type.SpecialType == SpecialType.System_Int32);
-        }
-
-        public static bool HasNativeValueStorageProperty(ITypeSymbol type, ITypeSymbol spanOfByte)
+        public static IMethodSymbol? FindGetManagedValuesSourceMethod(ITypeSymbol type, ITypeSymbol readOnlySpanOfT)
         {
             return type
-                .GetMembers(NativeValueStoragePropertyName)
-                .OfType<IPropertySymbol>()
-                .Any(p => p is { IsStatic: false, GetMethod: not null, ReturnsByRef: false, ReturnsByRefReadonly: false }
-                    && SymbolEqualityComparer.Default.Equals(p.Type, spanOfByte));
+                .GetMembers(ShapeMemberNames.LinearCollection.GetManagedValuesSource)
+                .OfType<IMethodSymbol>()
+                .FirstOrDefault(m => m is { IsStatic: false, ReturnsByRef: false, ReturnsByRefReadonly: false, Parameters.Length: 0, ReturnType: INamedTypeSymbol { ConstructedFrom: INamedTypeSymbol returnType } }
+                    && SymbolEqualityComparer.Default.Equals(returnType, readOnlySpanOfT));
+        }
+
+        public static IMethodSymbol? FindGetManagedValuesDestinationMethod(ITypeSymbol type, ITypeSymbol spanOfT)
+        {
+            return type
+                .GetMembers(ShapeMemberNames.LinearCollection.GetManagedValuesDestination)
+                .OfType<IMethodSymbol>()
+                .FirstOrDefault(m => m is { IsStatic: false, ReturnsByRef: false, ReturnsByRefReadonly: false, Parameters.Length: 1, ReturnType: INamedTypeSymbol { ConstructedFrom: INamedTypeSymbol returnType } }
+                    && m.Parameters[0].Type.SpecialType == SpecialType.System_Int32
+                    && SymbolEqualityComparer.Default.Equals(returnType, spanOfT));
+        }
+
+        public static IMethodSymbol? FindGetNativeValuesDestinationMethod(ITypeSymbol type, ITypeSymbol spanOfByte)
+        {
+            return type
+                .GetMembers(ShapeMemberNames.LinearCollection.GetNativeValuesDestination)
+                .OfType<IMethodSymbol>()
+                .FirstOrDefault(m => m is { IsStatic: false, ReturnsByRef: false, ReturnsByRefReadonly: false, Parameters.Length: 0, ReturnType: INamedTypeSymbol returnType }
+                    && SymbolEqualityComparer.Default.Equals(returnType, spanOfByte));
+        }
+
+        public static IMethodSymbol? FindGetNativeValuesSourceMethod(ITypeSymbol type, ITypeSymbol readOnlySpanOfByte)
+        {
+            return type
+                .GetMembers(ShapeMemberNames.LinearCollection.GetNativeValuesSource)
+                .OfType<IMethodSymbol>()
+                .FirstOrDefault(m => m is { IsStatic: false, ReturnsByRef: false, ReturnsByRefReadonly: false, Parameters.Length: 1, ReturnType: INamedTypeSymbol returnType }
+                    && m.Parameters[0].Type.SpecialType == SpecialType.System_Int32
+                    && SymbolEqualityComparer.Default.Equals(returnType, readOnlySpanOfByte));
         }
     }
 }

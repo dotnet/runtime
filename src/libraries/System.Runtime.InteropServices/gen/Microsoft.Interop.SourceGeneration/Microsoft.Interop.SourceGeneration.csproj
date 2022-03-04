@@ -1,10 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Interop</RootNamespace>
     <RunAnalyzers>true</RunAnalyzers>
+    <DefineConstants>DLLIMPORT_GENERATOR_TEST</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,6 +13,8 @@
              DependentUpon="Resources.resx"
              DesignTime="True"
              AutoGen="True" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\CustomTypeMarshallerKind.cs"
+             Link="Common\System\Runtime\InteropServices\CustomTypeMarshallerKind.cs" />
   </ItemGroup>
 
   <ItemGroup>

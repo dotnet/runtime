@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Linq;
-
+using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -207,11 +207,14 @@ namespace Microsoft.Interop.Analyzers
 
         private void PrepareForAnalysis(CompilationStartAnalysisContext context)
         {
-            INamedTypeSymbol? spanOfByte = context.Compilation.GetTypeByMetadataName(TypeNames.System_Span_Metadata)!.Construct(context.Compilation.GetSpecialType(SpecialType.System_Byte));
+            INamedTypeSymbol? spanOfT = context.Compilation.GetTypeByMetadataName(TypeNames.System_Span_Metadata);
+            INamedTypeSymbol? spanOfByte = spanOfT?.Construct(context.Compilation.GetSpecialType(SpecialType.System_Byte));
+            INamedTypeSymbol? readOnlySpanOfT = context.Compilation.GetTypeByMetadataName(TypeNames.System_ReadOnlySpan_Metadata);
+            INamedTypeSymbol? readOnlySpanOfByte = spanOfT?.Construct(context.Compilation.GetSpecialType(SpecialType.System_Byte));
 
-            if (spanOfByte is not null)
+            if (spanOfT is not null && readOnlySpanOfT is not null)
             {
-                var perCompilationAnalyzer = new PerCompilationAnalyzer(spanOfByte);
+                var perCompilationAnalyzer = new PerCompilationAnalyzer(spanOfT, spanOfByte, readOnlySpanOfT, readOnlySpanOfByte);
 
                 // Analyze NativeMarshalling/MarshalUsing for correctness
                 context.RegisterSymbolAction(perCompilationAnalyzer.AnalyzeTypeDefinition, SymbolKind.NamedType);
@@ -225,11 +228,17 @@ namespace Microsoft.Interop.Analyzers
 
         private class PerCompilationAnalyzer
         {
+            private readonly INamedTypeSymbol _spanOfT;
+            private readonly INamedTypeSymbol _readOnlySpanOfT;
             private readonly INamedTypeSymbol _spanOfByte;
+            private readonly INamedTypeSymbol _readOnlySpanOfByte;
 
-            public PerCompilationAnalyzer(INamedTypeSymbol spanOfByte)
+            public PerCompilationAnalyzer(INamedTypeSymbol spanOfT, INamedTypeSymbol? spanOfByte, INamedTypeSymbol readOnlySpanOfT, INamedTypeSymbol? readOnlySpanOfByte)
             {
+                _spanOfT = spanOfT;
                 _spanOfByte = spanOfByte;
+                _readOnlySpanOfT = readOnlySpanOfT;
+                _readOnlySpanOfByte = readOnlySpanOfByte;
             }
 
             public void AnalyzeTypeDefinition(SymbolAnalysisContext context)
@@ -410,22 +419,43 @@ namespace Microsoft.Interop.Analyzers
                     }
                 }
 
+                bool hasToManaged = ManualTypeMarshallingHelper.HasToManagedMethod(marshallerType, type);
+
                 if (marshallerData.Value.Kind == CustomTypeMarshallerKind.LinearCollection)
                 {
                     requiredShapeRule = CollectionNativeTypeMustHaveRequiredShapeRule;
-                    if (!ManualTypeMarshallingHelper.TryGetManagedValuesProperty(marshallerType, out _)
-                        || !ManualTypeMarshallingHelper.HasNativeValueStorageProperty(marshallerType, _spanOfByte))
+                    IMethodSymbol? getManagedValuesSourceMethod = ManualTypeMarshallingHelper.FindGetManagedValuesSourceMethod(marshallerType, _readOnlySpanOfT);
+                    IMethodSymbol? getManagedValuesDestinationMethod = ManualTypeMarshallingHelper.FindGetManagedValuesDestinationMethod(marshallerType, _spanOfT);
+                    IMethodSymbol? getNativeValuesSourceMethod = ManualTypeMarshallingHelper.FindGetNativeValuesSourceMethod(marshallerType, _readOnlySpanOfByte);
+                    IMethodSymbol? getNativeValuesDestinationMethod = ManualTypeMarshallingHelper.FindGetNativeValuesDestinationMethod(marshallerType, _spanOfByte);
+                    if ((hasConstructor || hasCallerAllocSpanConstructor) && (getManagedValuesSourceMethod is null || getNativeValuesDestinationMethod is null))
                     {
                         context.ReportDiagnostic(
                             marshallerType.CreateDiagnostic(
                                 requiredShapeRule,
                                 marshallerType.ToDisplayString(),
                                 type.ToDisplayString()));
-                        return;
+                    }
+
+                    if (hasToManaged && (getNativeValuesSourceMethod is null || getManagedValuesDestinationMethod is null))
+                    {
+                        context.ReportDiagnostic(
+                            marshallerType.CreateDiagnostic(
+                                requiredShapeRule,
+                                marshallerType.ToDisplayString(),
+                                type.ToDisplayString()));
+                    }
+
+                    if (getManagedValuesSourceMethod is not null
+                        && getManagedValuesDestinationMethod is not null
+                        && !SymbolEqualityComparer.Default.Equals(
+                            ((INamedTypeSymbol)getManagedValuesSourceMethod.ReturnType).TypeArguments[0],
+                            ((INamedTypeSymbol)getManagedValuesDestinationMethod.ReturnType).TypeArguments[0]))
+                    {
+                        // TODO: Diagnostic for mismatched element collection type
                     }
                 }
 
-                bool hasToManaged = ManualTypeMarshallingHelper.HasToManagedMethod(marshallerType, type);
 
                 // Validate that the native type has at least one marshalling method (either managed to native or native to managed)
                 if (!hasConstructor && !hasCallerAllocSpanConstructor && !hasToManaged)
@@ -446,39 +476,25 @@ namespace Microsoft.Interop.Analyzers
                             marshallerType.ToDisplayString()));
                 }
 
-                IPropertySymbol? valueProperty = ManualTypeMarshallingHelper.FindValueProperty(marshallerType);
-                bool valuePropertyIsRefReturn = valueProperty is { ReturnsByRef: true } or { ReturnsByRefReadonly: true };
+                IMethodSymbol? toNativeValueMethod = ManualTypeMarshallingHelper.FindToNativeValueMethod(marshallerType);
+                IMethodSymbol? fromNativeValueMethod = ManualTypeMarshallingHelper.FindFromNativeValueMethod(marshallerType);
+                bool toNativeValueMethodIsRefReturn = toNativeValueMethod is { ReturnsByRef: true } or { ReturnsByRefReadonly: true };
                 ITypeSymbol nativeType = marshallerType;
-                if (valueProperty is not null)
+
+                // If either ToNativeValue or FromNativeValue is provided, validate the scenarios where they are required.
+                ValidateTwoStageMarshalling();
+
+                if (toNativeValueMethod is not null)
                 {
-                    if (valuePropertyIsRefReturn)
+                    if (toNativeValueMethodIsRefReturn)
                     {
                         context.ReportDiagnostic(
-                            valueProperty.CreateDiagnostic(
+                            toNativeValueMethod.CreateDiagnostic(
                                 RefValuePropertyUnsupportedRule,
                                 marshallerType.ToDisplayString()));
                     }
 
-                    nativeType = valueProperty.Type;
-
-                    // Validate that we don't have partial implementations.
-                    // We error if either of the conditions below are partially met but not fully met:
-                    //  - a constructor and a Value property getter
-                    //  - a ToManaged method and a Value property setter
-                    if ((hasConstructor || hasCallerAllocSpanConstructor) && valueProperty.GetMethod is null)
-                    {
-                        context.ReportDiagnostic(
-                            valueProperty.CreateDiagnostic(
-                                ValuePropertyMustHaveGetterRule,
-                                marshallerType.ToDisplayString()));
-                    }
-                    if (hasToManaged && valueProperty.SetMethod is null)
-                    {
-                        context.ReportDiagnostic(
-                            valueProperty.CreateDiagnostic(
-                                ValuePropertyMustHaveSetterRule,
-                                marshallerType.ToDisplayString()));
-                    }
+                    nativeType = toNativeValueMethod.ReturnType;
                 }
                 else if (ManualTypeMarshallingHelper.FindGetPinnableReference(marshallerType) is IMethodSymbol marshallerGetPinnableReferenceMethod)
                 {
@@ -495,7 +511,7 @@ namespace Microsoft.Interop.Analyzers
                 if (!nativeType.IsConsideredBlittable())
                 {
                     context.ReportDiagnostic(
-                        (valueProperty ?? (ISymbol)marshallerType).CreateDiagnostic(
+                        (toNativeValueMethod ?? (ISymbol)marshallerType).CreateDiagnostic(
                             NativeTypeMustBeBlittableRule,
                             nativeType.ToDisplayString(),
                             type.ToDisplayString()));
@@ -509,7 +525,7 @@ namespace Microsoft.Interop.Analyzers
                         context.ReportDiagnostic(managedGetPinnableReferenceMethod.CreateDiagnostic(GetPinnableReferenceReturnTypeBlittableRule));
                     }
                     // Validate that our marshaler supports scenarios where GetPinnableReference cannot be used.
-                    if (!hasConstructor || valueProperty is { GetMethod: null })
+                    if (!hasConstructor || toNativeValueMethod is null)
                     {
                         context.ReportDiagnostic(
                             type.CreateDiagnostic(
@@ -519,17 +535,52 @@ namespace Microsoft.Interop.Analyzers
 
                     // If the managed type has a GetPinnableReference method, make sure that the Value getter is also a pointer-sized primitive.
                     // This ensures that marshalling via pinning the managed value and marshalling via the default marshaller will have the same ABI.
-                    if (!valuePropertyIsRefReturn // Ref returns are already reported above as invalid, so don't issue another warning here about them
+                    if (toNativeValueMethod is not null
+                        && !toNativeValueMethodIsRefReturn // Ref returns are already reported above as invalid, so don't issue another warning here about them
                         && nativeType is not (
                         IPointerTypeSymbol or
                         { SpecialType: SpecialType.System_IntPtr } or
                         { SpecialType: SpecialType.System_UIntPtr }))
                     {
                         context.ReportDiagnostic(
-                            valueProperty.CreateDiagnostic(
+                            toNativeValueMethod.CreateDiagnostic(
                                 NativeTypeMustBePointerSizedRule,
                                 nativeType.ToDisplayString(),
                                 managedGetPinnableReferenceMethod.ContainingType.ToDisplayString()));
+                    }
+                }
+
+                void ValidateTwoStageMarshalling()
+                {
+                    bool hasTwoStageMarshalling = false;
+                    if ((hasConstructor || hasCallerAllocSpanConstructor) && toNativeValueMethod is not null)
+                    {
+                        hasTwoStageMarshalling = true;
+                    }
+
+                    if (hasToManaged && fromNativeValueMethod is not null)
+                    {
+                        hasTwoStageMarshalling = true;
+                    }
+
+                    if (hasTwoStageMarshalling)
+                    {
+                        if ((hasConstructor || hasCallerAllocSpanConstructor) && toNativeValueMethod is null)
+                        {
+                            context.ReportDiagnostic(marshallerType.CreateDiagnostic(ValuePropertyMustHaveGetterRule, marshallerType.ToDisplayString()));
+                        }
+                        if (hasToManaged && fromNativeValueMethod is null)
+                        {
+                            context.ReportDiagnostic(marshallerType.CreateDiagnostic(ValuePropertyMustHaveSetterRule, marshallerType.ToDisplayString()));
+                        }
+                    }
+
+                    // ToNativeValue and FromNativeValue must be provided with the same type.
+                    if (toNativeValueMethod is not null
+                        && fromNativeValueMethod is not null
+                        && !SymbolEqualityComparer.Default.Equals(toNativeValueMethod.ReturnType, fromNativeValueMethod.Parameters[0].Type))
+                    {
+                        // TODO: Add diagnostic.
                     }
                 }
             }

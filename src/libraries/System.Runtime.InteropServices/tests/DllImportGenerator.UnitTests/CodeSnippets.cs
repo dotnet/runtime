@@ -381,6 +381,7 @@ partial class Test
         {
             string typeName = typeof(T).ToString();
             return BasicParametersAndModifiersWithStringMarshallingCustomType(typeName, "Native", DisableRuntimeMarshalling) + @$"
+[CustomTypeMarshaller(typeof({typeName}))]
 struct Native
 {{
     public Native({typeName} s) {{ }}
@@ -694,7 +695,7 @@ struct S
     public bool b;
 }
 
-[CustomTypeMarshaller(typeof(S), BufferSize = 1, RequiresStackBuffer = false)]
+[CustomTypeMarshaller(typeof(S), BufferSize = 1)]
 struct Native
 {
     private int i;
@@ -713,7 +714,7 @@ struct S
     public bool b;
 }
 
-[CustomTypeMarshaller(typeof(S), BufferSize = 1, RequiresStackBuffer = true)]
+[CustomTypeMarshaller(typeof(S), BufferSize = 1)]
 struct Native
 {
     private int i;
@@ -742,12 +743,12 @@ struct Native
 {
     public Native(S s, System.Span<byte> b)
     {
-        Value = s.b ? 1 : 0;
     }
 
-    public S ToManaged() => new S { b = Value != 0 };
+    public S ToManaged() => new S { b = true };
 
-    public int Value { get; set; }
+    public int ToNativeValue() => throw null;
+    public void FromNativeValue(int value) => throw null;
 }
 ";
         public static string CustomStructMarshallingValuePropertyParametersAndModifiers = BasicParametersAndModifiers("S", DisableRuntimeMarshalling) + @"
@@ -762,12 +763,12 @@ struct Native
 {
     public Native(S s)
     {
-        Value = s.b ? 1 : 0;
     }
 
-    public S ToManaged() => new S { b = Value != 0 };
+    public S ToManaged() => new S { b = true };
 
-    public int Value { get; set; }
+    public int ToNativeValue() => throw null;
+    public void FromNativeValue(int value) => throw null;
 }
 ";
         public static string CustomStructMarshallingPinnableParametersAndModifiers = BasicParametersAndModifiers("S", DisableRuntimeMarshalling) + @"
@@ -791,15 +792,14 @@ unsafe struct Native
 
     public S ToManaged() => new S { i = *ptr };
 
-    public nint Value
-    {
-        get => (nint)ptr;
-        set => ptr = (int*)value;
-    }
+    public nint ToNativeValue() => (nint)ptr;
+
+    public void FromNativeValue(nint value) => ptr = (int*)value;
 }
 ";
 
         public static string CustomStructMarshallingNativeTypePinnable = @"
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System;
 
@@ -821,6 +821,7 @@ unsafe ref struct Native
     {
         ptr = (byte*)Marshal.AllocCoTaskMem(sizeof(byte));
         *ptr = s.c;
+        stackBuffer = new Span<byte>(ptr, 1);
     }
 
     public Native(S s, Span<byte> buffer) : this()
@@ -829,18 +830,16 @@ unsafe ref struct Native
         stackBuffer[0] = s.c;
     }
 
-    public ref byte GetPinnableReference() => ref (ptr != null ? ref *ptr : ref stackBuffer.GetPinnableReference());
+    public ref byte GetPinnableReference() => ref stackBuffer.GetPinnableReference();
 
     public S ToManaged()
     {
         return new S { c = *ptr };
     }
 
-    public byte* Value
-    {
-        get => ptr != null ? ptr : throw new InvalidOperationException();
-        set => ptr = value;
-    }
+    public byte* ToNativeValue() => (byte*)Unsafe.AsPointer(ref GetPinnableReference());
+
+    public void FromNativeValue(byte* value) => ptr = value;
 
     public void FreeNative()
     {
@@ -877,7 +876,7 @@ unsafe struct Native
         value = s;
     }
 
-    public ref byte Value { get => ref value.c; }
+    public ref byte ToNativeValue() => ref value.c;
 }
 ";
 
@@ -975,12 +974,12 @@ public struct IntStructWrapperNative
 {
     public IntStructWrapperNative(IntStructWrapper managed)
     {
-        Value = managed.Value;
     }
 
-    public int Value { get; set; }
+    public int ToNativeValue() => throw null;
+    public void FromNativeValue(int value) => throw null;
 
-    public IntStructWrapper ToManaged() => new IntStructWrapper { Value = Value };
+    public IntStructWrapper ToManaged() => new IntStructWrapper { Value = 1 };
 }
 ";
 
@@ -1120,10 +1119,15 @@ class TestCollection<T> {}
 [CustomTypeMarshaller(typeof(TestCollection<>), CustomTypeMarshallerKind.LinearCollection)]
 ref struct Marshaller<T>
 {
+    public Marshaller(int nativeElementSize) : this() {}
     public Marshaller(TestCollection<T> managed, int nativeElementSize) : this() {}
-    public System.Span<T> ManagedValues { get; }
-    public System.Span<byte> NativeValueStorage { get; }
-    public System.IntPtr Value { get; }
+    public System.ReadOnlySpan<T> GetManagedValuesSource() => throw null;
+    public System.Span<T> GetManagedValuesDestination(int length) => throw null;
+    public System.ReadOnlySpan<byte> GetNativeValuesSource(int length) => throw null;
+    public System.Span<byte> GetNativeValuesDestination() => throw null;
+    public System.IntPtr ToNativeValue() => throw null;
+    public void FromNativeValue(System.IntPtr value) => throw null;
+    public TestCollection<T> ToManaged() => throw null;
 }
 ";
 
@@ -1156,10 +1160,12 @@ ref struct Marshaller<T>
 {
     public Marshaller(int nativeElementSize) : this() {}
     public Marshaller(TestCollection<T> managed, int nativeElementSize) : this() {}
-    public System.Span<T> ManagedValues { get; }
-    public System.Span<byte> NativeValueStorage { get; }
-    public System.IntPtr Value { get; set; }
-    public void SetUnmarshalledCollectionLength(int length) {}
+    public System.ReadOnlySpan<T> GetManagedValuesSource() => throw null;
+    public System.Span<T> GetManagedValuesDestination(int length) => throw null;
+    public System.ReadOnlySpan<byte> GetNativeValuesSource(int length) => throw null;
+    public System.Span<byte> GetNativeValuesDestination() => throw null;
+    public System.IntPtr ToNativeValue() => throw null;
+    public void FromNativeValue(System.IntPtr value) => throw null;
     public TestCollection<T> ToManaged() => throw null;
 }";
         }
@@ -1252,9 +1258,14 @@ class TestCollection<T> {}
 ref struct Marshaller<T, U>
 {
     public Marshaller(TestCollection<T> managed, int nativeElementSize) : this() {}
-    public System.Span<T> ManagedValues { get; }
-    public System.Span<byte> NativeValueStorage { get; }
-    public System.IntPtr Value { get; }
+
+    public System.ReadOnlySpan<T> GetManagedValuesSource() => throw null;
+    public System.Span<T> GetManagedValuesDestination(int length) => throw null;
+    public System.ReadOnlySpan<byte> GetNativeValuesSource(int length) => throw null;
+    public System.Span<byte> GetNativeValuesDestination() => throw null;
+    public System.IntPtr ToNativeValue() => throw null;
+    public void FromNativeValue(System.IntPtr value) => throw null;
+
     public TestCollection<T> ToManaged() => throw null;
 }";
 
@@ -1406,7 +1417,7 @@ partial class Test
         [MarshalUsing(CountElementName=""arr6"", ElementIndirectionDepth = 6)]
         [MarshalUsing(CountElementName=""arr7"", ElementIndirectionDepth = 7)]
         [MarshalUsing(CountElementName=""arr8"", ElementIndirectionDepth = 8)]
-        [MarshalUsing(CountElementName=""arr9"", ElementIndirectionDepth = 9)]ref int[][][][][][][][][][] arr10,
+        [MarshalUsing(CountElementName=""arr9"", ElementIndirectionDepth = 9)]ref int[][][][][][][][][][][] arr10,
         [MarshalUsing(CountElementName=""arr0"", ElementIndirectionDepth = 0)]
         [MarshalUsing(CountElementName=""arr1"", ElementIndirectionDepth = 1)]
         [MarshalUsing(CountElementName=""arr2"", ElementIndirectionDepth = 2)]
@@ -1415,7 +1426,7 @@ partial class Test
         [MarshalUsing(CountElementName=""arr5"", ElementIndirectionDepth = 5)]
         [MarshalUsing(CountElementName=""arr6"", ElementIndirectionDepth = 6)]
         [MarshalUsing(CountElementName=""arr7"", ElementIndirectionDepth = 7)]
-        [MarshalUsing(CountElementName=""arr8"", ElementIndirectionDepth = 8)]ref int[][][][][][][][][] arr9,
+        [MarshalUsing(CountElementName=""arr8"", ElementIndirectionDepth = 8)]ref int[][][][][][][][][][] arr9,
         [MarshalUsing(CountElementName=""arr0"", ElementIndirectionDepth = 0)]
         [MarshalUsing(CountElementName=""arr1"", ElementIndirectionDepth = 1)]
         [MarshalUsing(CountElementName=""arr2"", ElementIndirectionDepth = 2)]

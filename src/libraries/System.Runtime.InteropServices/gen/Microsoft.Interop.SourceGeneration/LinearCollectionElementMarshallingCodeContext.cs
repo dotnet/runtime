@@ -5,6 +5,7 @@ namespace Microsoft.Interop
 {
     internal sealed class LinearCollectionElementMarshallingCodeContext : StubCodeContext
     {
+        private readonly string _managedSpanIdentifier;
         private readonly string _nativeSpanIdentifier;
 
         public override bool SingleFrameSpansNativeContext => false;
@@ -22,11 +23,13 @@ namespace Microsoft.Interop
         /// <param name="parentContext">The parent context.</param>
         public LinearCollectionElementMarshallingCodeContext(
             Stage currentStage,
+            string managedSpanIdentifier,
             string nativeSpanIdentifier,
             StubCodeContext parentContext)
         {
             CurrentStage = currentStage;
             IndexerIdentifier = CalculateIndexerIdentifierBasedOnParentContext(parentContext);
+            _managedSpanIdentifier = managedSpanIdentifier;
             _nativeSpanIdentifier = nativeSpanIdentifier;
             ParentContext = parentContext;
         }
@@ -38,9 +41,8 @@ namespace Microsoft.Interop
         /// <returns>Managed and native identifiers</returns>
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {
-            (string _, string native) = ParentContext!.GetIdentifiers(info);
             return (
-                $"{native}.ManagedValues[{IndexerIdentifier}]",
+                $"{_managedSpanIdentifier}[{IndexerIdentifier}]",
                 $"{_nativeSpanIdentifier}[{IndexerIdentifier}]"
             );
         }
