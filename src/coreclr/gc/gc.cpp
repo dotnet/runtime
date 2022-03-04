@@ -39601,6 +39601,12 @@ void gc_heap::decommit_ephemeral_segment_pages()
             decommit_target += target_decrease * 2 / 3;
         }
 
+//#define STRESS_DECOMMIT 1
+#ifdef STRESS_DECOMMIT
+        // our decommit logic should work for a random decommit target within tail_region - make sure it does
+        decommit_target = heap_segment_mem (tail_region) + gc_rand::get_rand (heap_segment_reserved (tail_region) - heap_segment_mem (tail_region));
+#endif //STRESS_DECOMMIT
+
         heap_segment_decommit_target (tail_region) = decommit_target;
 
         if (decommit_target < heap_segment_committed (tail_region))
@@ -39770,8 +39776,13 @@ size_t gc_heap::decommit_ephemeral_segment_pages_step ()
         uint8_t* decommit_target = heap_segment_decommit_target (seg);
         size_t EXTRA_SPACE = 2 * OS_PAGE_SIZE;
         decommit_target += EXTRA_SPACE;
+#ifdef STRESS_DECOMMIT
+        // our decommit logic should work for a random decommit target within tail_region - make sure it does
+        // tail region now may be different from what decommit_ephemeral_segment_pages saw
+        decommit_target = heap_segment_mem (seg) + gc_rand::get_rand (heap_segment_reserved (seg) - heap_segment_mem (seg));
+#endif //STRESS_DECOMMIT
         uint8_t* committed = heap_segment_committed (seg);
-        uint8_t* allocated = heap_segment_allocated (seg);
+        uint8_t* allocated = (seg == ephemeral_heap_segment) ? alloc_allocated : heap_segment_allocated (seg);
         if ((allocated <= decommit_target) && (decommit_target < committed))
         {
 #ifdef USE_REGIONS
@@ -39779,12 +39790,23 @@ size_t gc_heap::decommit_ephemeral_segment_pages_step ()
             {
                 // for gen 0, sync with the allocator by taking the more space lock
                 // and re-read the variables
-                enter_spin_lock (&more_space_lock_soh);
+                //
+                // we call try_enter_spin_lock here instead of enter_spin_lock because
+                // calling enter_spin_lock from this thread can deadlock at the start
+                // of a GC - if gc_started is already true, we call wait_for_gc_done(),
+                // but we are on GC thread 0, so GC cannot make progress
+                if (!try_enter_spin_lock (&more_space_lock_soh))
+                {
+                    continue;
+                }
                 add_saved_spinlock_info (false, me_acquire, mt_decommit_step);
+                seg = generation_tail_region (gen);
+#ifndef STRESS_DECOMMIT
                 decommit_target = heap_segment_decommit_target (seg);
                 decommit_target += EXTRA_SPACE;
+#endif
                 committed = heap_segment_committed (seg);
-                allocated = heap_segment_allocated (seg);
+                allocated = (seg == ephemeral_heap_segment) ? alloc_allocated : heap_segment_allocated (seg);
             }
             if ((allocated <= decommit_target) && (decommit_target < committed))
 #else // USE_REGIONS
