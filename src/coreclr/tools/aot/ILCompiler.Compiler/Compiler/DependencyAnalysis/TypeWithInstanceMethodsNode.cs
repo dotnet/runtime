@@ -29,13 +29,13 @@ namespace ILCompiler.DependencyAnalysis
             _type = type;
         }
 
-        protected override string GetName(NodeFactory factory) => $"TypeOnTheHeap {_type}";
+        protected override string GetName(NodeFactory factory) => $"TypeWithInstanceMethods {_type}";
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             TypeDesc baseType = _type.BaseType;
             if (baseType != null)
-                return new[] { new DependencyListEntry(factory.TypeWithInstanceMethods(baseType), "Base of a type on heap") };
+                return new[] { new DependencyListEntry(factory.TypeWithInstanceMethods(baseType), "Base of a type with instance methods") };
 
             return null;
         }

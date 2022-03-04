@@ -68,7 +68,7 @@ namespace ILCompiler.DependencyAnalysis
             return _methodNode.CompareToImpl(((TentativeMethodNode)other)._methodNode, comparer);
         }
 
-        public virtual ISymbolNode NodeForLinkage(NodeFactory factory)
+        public ISymbolNode NodeForLinkage(NodeFactory factory)
         {
             // If someone refers to this node but the real method was marked, emit relocs to this
             // as relocs to the real method.
