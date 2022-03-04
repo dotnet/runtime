@@ -90,8 +90,12 @@ namespace System.Runtime.InteropServices.JavaScript
             result = Task.FromResult(obj);
         }
 
-        public static void SetupJSContinuationRef(in Task task, JSObject continuationObj)
+        public static void SetupJSContinuationRef(in Task _task, JSObject continuationObj)
         {
+            // HACK: Attempting to use the in-param will produce CS1628, so we make a temporary copy
+            //  on the stack that can be captured by our local functions below
+            var task = _task;
+
             if (task.IsCompleted)
                 Complete();
             else
