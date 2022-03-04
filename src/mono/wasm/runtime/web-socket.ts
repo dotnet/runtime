@@ -8,9 +8,9 @@ import { PromiseControl, _create_cancelable_promise } from "./cancelable-promise
 import { _mono_array_root_to_js_array, _wrap_delegate_root_as_function } from "./cs-to-js";
 import { mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle } from "./gc-handles";
 import { _wrap_js_thenable_as_task_root } from "./js-to-cs";
-import { wrap_error, wrap_error_root } from "./method-calls";
+import { wrap_error_root } from "./method-calls";
 import { conv_string_root } from "./strings";
-import { JSHandle, MonoArray, MonoObject, MonoObjectNull, MonoString, MonoObjectRef } from "./types";
+import { JSHandle, MonoArray, MonoObject, MonoString, MonoObjectRef } from "./types";
 import { Module } from "./imports";
 import { Int32Ptr } from "./types/emscripten";
 

@@ -24,8 +24,8 @@ const fn_signatures: [jsname: string, csname: string, signature: string/*ArgsMar
 
     ["_object_to_string_ref", "ObjectToStringRef", "m"],
     ["_get_date_value_ref", "GetDateValueRef", "m"],
-    ["_create_date_time_ref", "CreateDateTimeRef", "d!"],
-    ["_create_uri_ref", "CreateUriRef", "s!"],
+    ["_create_date_time_ref", "CreateDateTimeRef", "dm"],
+    ["_create_uri_ref", "CreateUriRef", "sm"],
     ["_is_simple_array_ref", "IsSimpleArrayRef", "m"],
 ];
 
