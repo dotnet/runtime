@@ -11916,9 +11916,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     case 1:
                     {
-                        // Patchpoints at backedge targets (always ok)
+                        // Patchpoints at stackempty backedge targets.
+                        // Note if we have loops where the IL stack is not empty on the backedge we can't patchpoint
+                        // them.
                         //
-                        addPatchpoint = ((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) == BBF_BACKWARD_JUMP_TARGET);
+                        // We should not have allowed OSR if there were backedges in handlers.
+                        //
+                        assert(!block->hasHndIndex());
+                        addPatchpoint = ((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) == BBF_BACKWARD_JUMP_TARGET) &&
+                                        (verCurrentState.esStackDepth == 0);
                         break;
                     }
 
@@ -11934,7 +11940,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             // We don't know backedge count, so just use ref count.
                             //
-                            addPatchpoint = (block->bbRefs > 1);
+                            addPatchpoint = (block->bbRefs > 1) && (verCurrentState.esStackDepth == 0);
                         }
 
                         if (!addPatchpoint && ((block->bbFlags & BBF_BACKWARD_JUMP_SOURCE) == BBF_BACKWARD_JUMP_SOURCE))
@@ -11977,14 +11983,26 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                                 // We may already have decided to put a patchpoint in succBlock. If not, add one.
                                 //
-                                if ((succBlock->bbFlags & BBF_PATCHPOINT) == 0)
+                                if ((succBlock->bbFlags & BBF_PATCHPOINT) != 0)
                                 {
-                                    JITDUMP("\nCan't set source patchpoint at " FMT_BB ", using target " FMT_BB
-                                            " instead\n",
-                                            block->bbNum, succBlock->bbNum);
+                                    // In some cases the target may not be stack-empty at entry.
+                                    // If so, we will bypass patchpoints for this backedge.
+                                    //
+                                    if (succBlock->bbStackDepthOnEntry() > 0)
+                                    {
+                                        JITDUMP("\nCan't set source patchpoint at " FMT_BB ", can't use target " FMT_BB
+                                                " as it has non-empty stack on entry.\n",
+                                                block->bbNum, succBlock->bbNum);
+                                    }
+                                    else
+                                    {
+                                        JITDUMP("\nCan't set source patchpoint at " FMT_BB ", using target " FMT_BB
+                                                " instead\n",
+                                                block->bbNum, succBlock->bbNum);
 
-                                    assert(!succBlock->hasHndIndex());
-                                    succBlock->bbFlags |= BBF_PATCHPOINT;
+                                        assert(!succBlock->hasHndIndex());
+                                        succBlock->bbFlags |= BBF_PATCHPOINT;
+                                    }
                                 }
                             }
                         }
