@@ -7366,7 +7366,7 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
             {
                 weight_t loopEnteredCount = 0;
                 weight_t loopSkippedCount = 0;
-                bool     useEdgeWeights = fgHaveValidEdgeWeights;
+                bool     useEdgeWeights   = fgHaveValidEdgeWeights;
 
                 if (useEdgeWeights)
                 {
