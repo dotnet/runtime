@@ -374,34 +374,42 @@ namespace System.Runtime.Loader
         {
             ArgumentNullException.ThrowIfNull(assembly);
 
-            int iAssemblyStreamLength = (int)assembly.Length;
-
-            if (iAssemblyStreamLength <= 0)
+            if ((int)assembly.Length <= 0)
             {
                 throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
             }
 
-            // Allocate the byte[] to hold the assembly
-            byte[] arrAssembly = new byte[iAssemblyStreamLength];
+            ReadOnlySpan<byte> spanAssembly = ReadAllBytes(assembly);
 
-            // Copy the assembly to the byte array
-            assembly.Read(arrAssembly, 0, iAssemblyStreamLength);
-
-            // Get the symbol stream in byte[] if provided
-            byte[]? arrSymbols = null;
+            // Read the symbol stream if provided
+            ReadOnlySpan<byte> spanSymbols = default;
             if (assemblySymbols != null)
             {
-                int iSymbolLength = (int)assemblySymbols.Length;
-                arrSymbols = new byte[iSymbolLength];
-
-                assemblySymbols.Read(arrSymbols, 0, iSymbolLength);
+                spanSymbols = ReadAllBytes(assemblySymbols);
             }
 
             lock (_unloadLock)
             {
                 VerifyIsAlive();
 
-                return InternalLoad(arrAssembly, arrSymbols);
+                return InternalLoad(spanAssembly, spanSymbols);
+            }
+
+            static ReadOnlySpan<byte> ReadAllBytes(Stream stream)
+            {
+                if (stream.GetType() == typeof(MemoryStream) && ((MemoryStream)stream).TryGetBuffer(out ArraySegment<byte> memoryStreamBuffer))
+                {
+                    return memoryStreamBuffer;
+                }
+
+                int length = (int)stream.Length;
+
+                byte[] bytes = new byte[length];
+
+                // Copy the stream to the byte array
+                stream.Read(bytes, 0, length);
+
+                return bytes;
             }
         }
 
