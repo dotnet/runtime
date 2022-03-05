@@ -7001,16 +7001,9 @@ void Compiler::gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVa
 GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile, bool isCopyBlock)
 {
     assert(dst->OperIsBlk() || dst->OperIsLocal());
-    if (isCopyBlock)
+
+    if (!isCopyBlock) // InitBlk
     {
-        if (srcOrFillVal->OperIsIndir() && (srcOrFillVal->gtGetOp1()->gtOper == GT_ADDR))
-        {
-            srcOrFillVal = srcOrFillVal->gtGetOp1()->gtGetOp1();
-        }
-    }
-    else
-    {
-        // InitBlk
         assert(varTypeIsIntegral(srcOrFillVal));
         if (varTypeIsStruct(dst))
         {
@@ -22216,6 +22209,17 @@ uint16_t GenTreeLclVarCommon::GetLclOffs() const
     {
         return 0;
     }
+}
+
+//------------------------------------------------------------------------
+// GetFieldSeq: Get the field sequence for this local node.
+//
+// Return Value:
+//    The sequence of the node for local fields, empty ("nullptr") otherwise.
+//
+FieldSeqNode* GenTreeLclVarCommon::GetFieldSeq() const
+{
+    return OperIsLocalField() ? AsLclFld()->GetFieldSeq() : nullptr;
 }
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
