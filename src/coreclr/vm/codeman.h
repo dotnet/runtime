@@ -608,6 +608,40 @@ private:
 // address range to track the code heaps.
 
 typedef DPTR(struct RangeSection) PTR_RangeSection;
+typedef DPTR(struct RangeSectionHandle) PTR_RangeSectionHandle;
+typedef DPTR(struct RangeSectionHandleHeader) PTR_RangeSectionHandleHeader;
+
+struct RangeSectionHandle
+{
+    TADDR LowAddress;
+    PTR_RangeSection pRS;
+
+    RangeSectionHandle()
+    {
+        LIMITED_METHOD_CONTRACT;
+        LowAddress = 0;
+        pRS = NULL;
+    }
+};
+
+struct RangeSectionHandleHeader
+{
+    SIZE_T size;
+    SIZE_T capacity;
+    int count;
+    int last_used_index;
+    RangeSectionHandle *array;
+
+    RangeSectionHandleHeader():
+        size(0),
+        capacity(0),
+        count(0),
+        last_used_index(-1),
+        array(nullptr)
+    {
+        LIMITED_METHOD_CONTRACT
+    } 
+};
 
 struct RangeSection
 {
@@ -615,15 +649,6 @@ struct RangeSection
     TADDR               HighAddress;
 
     PTR_IJitManager     pjit;           // The owner of this address range
-
-#ifndef DACCESS_COMPILE
-    // Volatile because of the list can be walked lock-free
-    Volatile<RangeSection *> pnext;  // link rangesections in a sorted list
-#else
-    PTR_RangeSection    pnext;
-#endif
-
-    PTR_RangeSection    pLastUsed;      // for the head node only:  a link to rangesections that was used most recently
 
     enum RangeSectionFlags
     {
@@ -635,7 +660,11 @@ struct RangeSection
 #endif
     };
 
-    DWORD               flags;
+    union
+    {
+        DWORD               flags;
+	PTR_RangeSection pNextPendingDeletion;
+    };
 
     // union
     // {
@@ -1167,6 +1196,29 @@ class ExecutionManager
     friend class ClrDataAccess;
 #endif
 
+    enum
+    {
+#ifndef _DEBUG
+        RangeSectionHandleArrayInitialSize = 100,
+        RangeSectionHandleArrayExpansionFactor = 2
+#else
+        RangeSectionHandleArrayInitialSize = 8,
+	RangeSectionHandleArrayIncrement = 1
+#endif //(_DEBUG)
+    };
+
+    static int FindRangeSectionHandleHelper(RangeSectionHandleHeader *h, TADDR addr);
+
+    static int EncodeRangeSectionIndex(int index)
+    {
+        return -(index+1);
+    }
+
+    static int DecodeRangeSectionIndex(int codedIndex)
+    {
+        return -codedIndex - 1;
+    }
+
 public:
     static void Init();
 
@@ -1212,21 +1264,19 @@ public:
             SUPPORTS_DAC;
         } CONTRACTL_END;
 
-        RangeSection * pRange = FindCodeRange(currentPC, GetScanFlags());
+        RangeSection * pRange = FindCodeRange(currentPC);
         return (pRange != NULL) ? pRange->pjit : NULL;
     }
 
-    static RangeSection * FindCodeRange(PCODE currentPC, ScanFlag scanFlag);
+    static RangeSection * FindCodeRange(PCODE currentPC, HostCallPreference pref = AllowHostCalls);
 
     static BOOL IsCollectibleMethod(const METHODTOKEN& MethodToken);
 
-    class ReaderLockHolder
+    class ForbidDeletionHolder
     {
     public:
-        ReaderLockHolder(HostCallPreference hostCallPreference = AllowHostCalls);
-        ~ReaderLockHolder();
-
-        BOOL Acquired();
+        ForbidDeletionHolder();
+        ~ForbidDeletionHolder();
     };
 
 #ifdef TARGET_64BIT
@@ -1264,6 +1314,12 @@ public:
                                               SIZE_T Size,
                                               Module * pModule);
 
+#ifndef DACCESS_COMPILE
+    static void            AddRangeSection(RangeSection *pRS);
+
+    static void           DeleteRangeSection(RangeSectionHandleHeader *wh, RangeSectionHandleHeader *rh, int index);
+#endif //DACCESS_COMPILE
+
     static void           DeleteRange(TADDR StartRange);
 
     static void           CleanupCodeHeaps();
@@ -1280,11 +1336,9 @@ public:
     // FindZapModule flavor to be used during GC to find GCRefMap
     static PTR_Module FindModuleForGCRefMap(TADDR currentData);
 
-    static RangeSection*  GetRangeSectionAndPrev(RangeSection *pRS, TADDR addr, RangeSection **ppPrev);
 
 #ifdef DACCESS_COMPILE
-    static void EnumRangeList(RangeSection* list,
-                              CLRDataEnumMemoryFlags flags);
+    static void EnumRangeSectionReaderArray(CLRDataEnumMemoryFlags flags);
     static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
@@ -1298,12 +1352,10 @@ public:
 #endif
 
 private:
-    static RangeSection * FindCodeRangeWithLock(PCODE currentPC);
-
     static BOOL IsManagedCodeWithLock(PCODE currentPC);
-    static BOOL IsManagedCodeWorker(PCODE currentPC);
+    static BOOL IsManagedCodeWorker(PCODE currentPC, HostCallPreference pref);
 
-    static RangeSection* GetRangeSection(TADDR addr);
+    static RangeSection* GetRangeSection(TADDR addr, HostCallPreference pref = AllowHostCalls);
 
     SPTR_DECL(EECodeManager, m_pDefaultCodeMan);
 
@@ -1317,34 +1369,30 @@ private:
 
     // infrastructure to manage readers so we can lock them out and delete domain data
     // make ReaderCount volatile because we have order dependency in READER_INCREMENT
-    VOLATILE_SPTR_DECL(RangeSection,  m_CodeRangeList);
-    VOLATILE_SVAL_DECL(LONG, m_dwReaderCount);
-    VOLATILE_SVAL_DECL(LONG, m_dwWriterLock);
+    SVAL_DECL(LONG, m_dwForbidDeletionCounter);
+    SPTR_DECL(RangeSectionHandleHeader, m_RangeSectionHandleReaderHeader);
+    SPTR_DECL(RangeSectionHandleHeader, m_RangeSectionHandleWriterHeader);
+    VOLATILE_SPTR_DECL(RangeSection, m_RangeSectionPendingDeletion);
+
+    class ReaderLockHolder {
+     public:
+         ReaderLockHolder(HostCallPreference pref = AllowHostCalls);
+         ~ReaderLockHolder();
+         RangeSectionHandleHeader *h;
+         HostCallPreference m_pref;
+    };
 
 #ifndef DACCESS_COMPILE
     class WriterLockHolder
     {
     public:
-        WriterLockHolder();
+        //TODO enum
+        WriterLockHolder(int purpose = 0); //0 for add, 1 for delete
         ~WriterLockHolder();
+        RangeSectionHandleHeader *h;
+        int m_purpose;
     };
 #endif
-
-#if defined(_DEBUG)
-    // The LOCK_TAKEN/RELEASED macros need a "pointer" to the lock object to do
-    // comparisons between takes & releases (and to provide debugging info to the
-    // developer).  Since Inc/Dec Reader/Writer are static, there's no object to
-    // use.  So we just use the pointer to m_dwReaderCount.  Note that both
-    // readers & writers use this same pointer, which follows the general convention
-    // of other ReaderWriter locks in the EE code base: each reader/writer locking object
-    // instance protects only 1 piece of data or code.  Readers & writers both access the
-    // same locking object & shared resource, so conceptually they would share the same
-    // lock pointer.
-    static void * GetPtrForLockContract()
-    {
-        return (void *) &m_dwReaderCount;
-    }
-#endif // defined(_DEBUG)
 
     static void AddRangeHelper(TADDR StartRange,
                                TADDR EndRange,
@@ -1602,7 +1650,7 @@ public:
 
     // Explicit initialization
     void Init(PCODE codeAddress);
-    void Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag);
+    void Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag, HostCallPreference pref = AllowHostCalls);
 
     TADDR       GetSavedMethodCode();
 

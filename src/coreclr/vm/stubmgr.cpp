@@ -1547,7 +1547,7 @@ RangeSectionStubManager::GetStubKind(PCODE stubStartAddress)
     }
     CONTRACTL_END;
 
-    RangeSection * pRS = ExecutionManager::FindCodeRange(stubStartAddress, ExecutionManager::ScanReaderLock);
+    RangeSection * pRS = ExecutionManager::FindCodeRange(stubStartAddress);
     if (pRS == NULL)
         return STUB_CODE_BLOCK_UNKNOWN;
 

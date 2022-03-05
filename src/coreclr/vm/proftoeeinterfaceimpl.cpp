@@ -1927,17 +1927,16 @@ HRESULT GetFunctionInfoInternal(LPCBYTE ip, EECodeInfo * pCodeInfo)
 
     if (ShouldAvoidHostCalls())
     {
-        ExecutionManager::ReaderLockHolder rlh(NoHostCalls);
-        if (!rlh.Acquired())
-        {
-            // Couldn't get the info.  Try again later
-            return CORPROF_E_ASYNCHRONOUS_UNSAFE;
-        }
-
-        pCodeInfo->Init((PCODE)ip, ExecutionManager::ScanNoReaderLock);
+        ExecutionManager::ForbidDeletionHolder fdh;
+        pCodeInfo->Init((PCODE)ip, ExecutionManager::ScanNoReaderLock, NoHostCalls);
     }
     else
     {
+        //What an implied link make us confident a pRS
+	//passed in EECodeInfo::Init to JitCodeToMethodInfo
+	//could not be deleted by someone in a background?
+	//Why we care about making deletion impossible in
+	//the block above and do not care here?
         pCodeInfo->Init((PCODE)ip);
     }
 

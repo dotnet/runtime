@@ -75,10 +75,11 @@
 
 #define UNKNOWN_POINTER_TYPE SIZE_T
 
-DEFINE_DACVAR_VOLATILE(PTR_RangeSection, ExecutionManager__m_CodeRangeList, ExecutionManager::m_CodeRangeList)
+DEFINE_DACVAR(LONG, ExecutionManager__m_dwForbidDeletionCounter, ExecutionManager::m_dwForbidDeletionCounter)
+DEFINE_DACVAR(PTR_RangeSectionHandleHeader, ExecutionManager__m_RangeSectionHandleReaderHeader, ExecutionManager::m_RangeSectionHandleReaderHeader)
+DEFINE_DACVAR(PTR_RangeSectionHandleHeader, ExecutionManager__m_RangeSectionHandleWriterHeader, ExecutionManager::m_RangeSectionHandleWriterHeader)
+DEFINE_DACVAR_VOLATILE(PTR_RangeSection, ExecutionManager__m_RangeSectionPendingDeletion, ExecutionManager::m_RangeSectionPendingDeletion)
 DEFINE_DACVAR(PTR_EECodeManager, ExecutionManager__m_pDefaultCodeMan, ExecutionManager::m_pDefaultCodeMan)
-DEFINE_DACVAR_VOLATILE(LONG, ExecutionManager__m_dwReaderCount, ExecutionManager::m_dwReaderCount)
-DEFINE_DACVAR_VOLATILE(LONG, ExecutionManager__m_dwWriterLock, ExecutionManager::m_dwWriterLock)
 
 DEFINE_DACVAR(PTR_EEJitManager, ExecutionManager__m_pEEJitManager, ExecutionManager::m_pEEJitManager)
 #ifdef FEATURE_READYTORUN

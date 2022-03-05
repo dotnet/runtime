@@ -49,9 +49,10 @@ SPTR_IMPL(EEJitManager, ExecutionManager, m_pEEJitManager);
 SPTR_IMPL(ReadyToRunJitManager, ExecutionManager, m_pReadyToRunJitManager);
 #endif
 
-VOLATILE_SPTR_IMPL_INIT(RangeSection, ExecutionManager, m_CodeRangeList, NULL);
-VOLATILE_SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwReaderCount, 0);
-VOLATILE_SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwWriterLock, 0);
+SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwForbidDeletionCounter, 0);
+SPTR_IMPL_INIT(RangeSectionHandleHeader, ExecutionManager, m_RangeSectionHandleReaderHeader, nullptr);
+SPTR_IMPL_INIT(RangeSectionHandleHeader, ExecutionManager, m_RangeSectionHandleWriterHeader, nullptr);
+VOLATILE_SPTR_IMPL_INIT(RangeSection, ExecutionManager, m_RangeSectionPendingDeletion, nullptr);
 
 #ifndef DACCESS_COMPILE
 
@@ -386,7 +387,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
         return;
 
     TADDR entry = baseAddress + unwindInfo->BeginAddress;
-    RangeSection * pRS = ExecutionManager::FindCodeRange(entry, ExecutionManager::GetScanFlags());
+    RangeSection * pRS = ExecutionManager::FindCodeRange(entry);
     _ASSERTE(pRS != NULL);
     if (pRS != NULL)
     {
@@ -405,7 +406,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
     if (!s_publishingActive)
         return;
 
-    RangeSection * pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
+    RangeSection * pRS = ExecutionManager::FindCodeRange(entryPoint);
     _ASSERTE(pRS != NULL);
     if (pRS != NULL)
     {
@@ -451,7 +452,7 @@ extern CrstStatic g_StubUnwindInfoHeapSegmentsCrst;
             if(pMD)
             {
                 PCODE methodEntry =(PCODE) heapIterator.GetMethodCode();
-                RangeSection * pRS = ExecutionManager::FindCodeRange(methodEntry, ExecutionManager::GetScanFlags());
+                RangeSection * pRS = ExecutionManager::FindCodeRange(methodEntry);
                 _ASSERTE(pRS != NULL);
                 _ASSERTE(pRS->pjit->GetCodeType() == (miManaged | miIL));
                 if (pRS != NULL && pRS->pjit->GetCodeType() == (miManaged | miIL))
@@ -632,6 +633,49 @@ BOOL EEJitManager::CodeHeapIterator::Next()
 
 #ifndef DACCESS_COMPILE
 
+ExecutionManager::ForbidDeletionHolder::ForbidDeletionHolder()
+{
+    CONTRACTL {
+        NOTHROW;
+	HOST_NOCALLS;
+        GC_NOTRIGGER;
+        CAN_TAKE_LOCK;
+    } CONTRACTL_END;
+
+    while(true)
+    {
+        LONG c = VolatileLoad(&m_dwForbidDeletionCounter);
+        if (c >= 0)
+        {
+            if (c == InterlockedCompareExchangeT((LONG*)&m_dwForbidDeletionCounter, c+1, c))
+                break; //now we are blocking rh<-wh substitution performing by deleters
+                       //deleters are WriterLockHolder destructors for wlhs constructed
+                       //with deletion purpose (see WriterLockHolder constructor)
+        }
+    }
+}
+
+ExecutionManager::ForbidDeletionHolder::~ForbidDeletionHolder()
+{
+    CONTRACTL
+    {
+        HOST_NOCALLS;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    LONG c;
+    do
+    {
+        c = VolatileLoad(&m_dwForbidDeletionCounter); //VolatileLoad
+    } while (c != InterlockedCompareExchangeT((LONG*)&m_dwForbidDeletionCounter, c-1, c));
+    //once m_ForbidDeletionCounter appears to be 0 a deleter can store here -1
+    //just to perform rh<-wh substitution and instantly
+    //stores 0 back making FDH constructors wait just for a few cycles
+}
+
 //---------------------------------------------------------------------------------------
 //
 // ReaderLockHolder::ReaderLockHolder takes the reader lock, checks for the writer lock
@@ -643,34 +687,28 @@ BOOL EEJitManager::CodeHeapIterator::Next()
 // writer lock and check for any readers. If there are any, the WriterLockHolder functions
 // release the writer and yield to wait for the readers to be done.
 
-ExecutionManager::ReaderLockHolder::ReaderLockHolder(HostCallPreference hostCallPreference /*=AllowHostCalls*/)
+ExecutionManager::ReaderLockHolder::ReaderLockHolder(HostCallPreference pref): m_pref(pref)
 {
     CONTRACTL {
         NOTHROW;
-        if (hostCallPreference == AllowHostCalls) { HOST_CALLS; } else { HOST_NOCALLS; }
+	if(pref == AllowHostCalls) {HOST_CALLS;} else {HOST_NOCALLS;}
         GC_NOTRIGGER;
         CAN_TAKE_LOCK;
     } CONTRACTL_END;
 
     IncCantAllocCount();
 
-    FastInterlockIncrement(&m_dwReaderCount);
+    int count;
+BEGIN:
+    h = (RangeSectionHandleHeader*)VolatileLoad(&m_RangeSectionHandleReaderHeader);
+INCREMENT:
+    count = VolatileLoad(&(h->count));
+    if (count == 0)
+        goto BEGIN;
+    if (count != InterlockedCompareExchangeT((int*)(&(h->count)), count+1, count))
+        goto INCREMENT;
 
-    EE_LOCK_TAKEN(GetPtrForLockContract());
-
-    if (VolatileLoad(&m_dwWriterLock) != 0)
-    {
-        if (hostCallPreference != AllowHostCalls)
-        {
-            // Rats, writer lock is held. Gotta bail. Since the reader count was already
-            // incremented, we're technically still blocking writers at the moment. But
-            // the holder who called us is about to call DecrementReader in its
-            // destructor and unblock writers.
-            return;
-        }
-
-        YIELD_WHILE ((VolatileLoad(&m_dwWriterLock) != 0));
-    }
+    EE_LOCK_TAKEN((void*)h);
 }
 
 //---------------------------------------------------------------------------------------
@@ -681,29 +719,51 @@ ExecutionManager::ReaderLockHolder::~ReaderLockHolder()
 {
     CONTRACTL
     {
+	if(m_pref == AllowHostCalls) {HOST_CALLS;} else {HOST_NOCALLS;}
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
 
-    FastInterlockDecrement(&m_dwReaderCount);
+    int count;
+
+    do
+    {
+        count = VolatileLoad(&(h->count));
+    }
+    while (count != InterlockedCompareExchangeT((int*)&(h->count), count-1, count));
+
+    if (count == 1)// h->count == 0
+    {
+        //we are here in relatively rare case
+        //such code executes once per swap of arrays,
+        //so we should not worry about enormous amount
+        //of m_RangeSectionPendingDeletion accesses
+        if (m_pref == AllowHostCalls)
+        {
+            while((RangeSection*)m_RangeSectionPendingDeletion != NULL)
+            {
+                RangeSection* pNext = ((RangeSection*)m_RangeSectionPendingDeletion)->pNextPendingDeletion;
+#if defined(TARGET_AMD64)
+                if (((RangeSection*)m_RangeSectionPendingDeletion)->pUnwindInfoTable != 0)
+                    delete ((RangeSection*)m_RangeSectionPendingDeletion)->pUnwindInfoTable;
+#endif // defined(TARGET_AMD64)
+                delete (RangeSection*)m_RangeSectionPendingDeletion;
+                m_RangeSectionPendingDeletion = pNext;
+            }
+        }
+
+        VolatileStore(&m_RangeSectionHandleWriterHeader, h);
+    }
+
     DecCantAllocCount();
 
-    EE_LOCK_RELEASED(GetPtrForLockContract());
+    EE_LOCK_RELEASED((void*)h);
 }
 
-//---------------------------------------------------------------------------------------
-//
-// Returns whether the reader lock is acquired
 
-BOOL ExecutionManager::ReaderLockHolder::Acquired()
-{
-    LIMITED_METHOD_CONTRACT;
-    return VolatileLoad(&m_dwWriterLock) == 0;
-}
-
-ExecutionManager::WriterLockHolder::WriterLockHolder()
+ExecutionManager::WriterLockHolder::WriterLockHolder(int purpose): m_purpose(purpose)
 {
     CONTRACTL {
         NOTHROW;
@@ -711,39 +771,85 @@ ExecutionManager::WriterLockHolder::WriterLockHolder()
         CAN_TAKE_LOCK;
     } CONTRACTL_END;
 
-    _ASSERTE(m_dwWriterLock == 0);
-
     // Signal to a debugger that this thread cannot stop now
     IncCantStopCount();
 
     IncCantAllocCount();
 
     DWORD dwSwitchCount = 0;
-    while (TRUE)
+
+    while (true)
     {
-        // While this thread holds the writer lock, we must not try to suspend it
-        // or allow a profiler to walk its stack
         Thread::IncForbidSuspendThread();
+        h = VolatileLoad(&m_RangeSectionHandleWriterHeader);
 
-        FastInterlockIncrement(&m_dwWriterLock);
-        if (m_dwReaderCount == 0)
+        if (!((h == nullptr)||(VolatileLoad(&(h->count)) != 0)))
             break;
-        FastInterlockDecrement(&m_dwWriterLock);
 
-        // Before we loop and retry, it's safe to suspend or hijack and inspect
-        // this thread
         Thread::DecForbidSuspendThread();
-
         __SwitchToThread(0, ++dwSwitchCount);
     }
-    EE_LOCK_TAKEN(GetPtrForLockContract());
+
+    EE_LOCK_TAKEN((void*)h);
 }
 
 ExecutionManager::WriterLockHolder::~WriterLockHolder()
 {
     LIMITED_METHOD_CONTRACT;
 
-    FastInterlockDecrement(&m_dwWriterLock);
+    int count;
+    RangeSectionHandleHeader *old_rh = VolatileLoad(&m_RangeSectionHandleReaderHeader);
+    VolatileStore(&(h->count), (int)1); //EM's unit
+
+    if (m_purpose == 1)//deletion
+    {
+        DWORD dwSwitchCount = 0;
+        LONG fdc;
+        while (true)
+        {
+            fdc = VolatileLoad(&m_dwForbidDeletionCounter);
+            if (fdc == 0)
+            {
+                if (0 == InterlockedCompareExchangeT((LONG*)&(m_dwForbidDeletionCounter), (LONG) -1, (LONG)0))
+                {
+                    VolatileStore(&m_RangeSectionHandleReaderHeader, h);
+                    VolatileStore(&m_dwForbidDeletionCounter, (LONG)0);
+                    break;
+                }
+            }
+            __SwitchToThread(0, ++dwSwitchCount);
+        }
+     }
+     else
+     {
+         VolatileStore(&m_RangeSectionHandleReaderHeader, h);
+     }
+
+
+    //removing EM's unit from old reader's header, so now latest leaving
+    //user will attach the header to writer's slot
+    do
+    {
+        count = VolatileLoad(&(old_rh->count));
+    }
+    while (count != InterlockedCompareExchangeT((int*)&(old_rh->count), count-1, count));
+
+    if (count == 1)// h->count == 0, all readers left, we've just removed EM's unit,
+                   //now attach the header to writer's slot:
+    {
+        while((RangeSection*)m_RangeSectionPendingDeletion != NULL)
+        {
+            RangeSection* pNext = ((RangeSection*)m_RangeSectionPendingDeletion)->pNextPendingDeletion;
+#if defined(TARGET_AMD64)
+            if (((RangeSection*)m_RangeSectionPendingDeletion)->pUnwindInfoTable != 0)
+                delete ((RangeSection*)m_RangeSectionPendingDeletion)->pUnwindInfoTable;
+#endif // defined(TARGET_AMD64)
+            delete (RangeSection*)m_RangeSectionPendingDeletion;
+            m_RangeSectionPendingDeletion = pNext;
+        }
+
+        VolatileStore(&m_RangeSectionHandleWriterHeader, old_rh);
+    }
 
     // Writer lock released, so it's safe again for this thread to be
     // suspended or have its stack walked by a profiler
@@ -754,29 +860,48 @@ ExecutionManager::WriterLockHolder::~WriterLockHolder()
     // Signal to a debugger that it's again safe to stop this thread
     DecCantStopCount();
 
-    EE_LOCK_RELEASED(GetPtrForLockContract());
+    EE_LOCK_RELEASED((void*)h);
 }
-
 #else
 
-// For DAC builds, we only care whether the writer lock is held.
-// If it is, we will assume the locked data is in an inconsistent
-// state and throw. We never actually take the lock.
+// For DAC builds we never actually take the lock.
 // Note: Throws
-ExecutionManager::ReaderLockHolder::ReaderLockHolder(HostCallPreference hostCallPreference /*=AllowHostCalls*/)
+ExecutionManager::ReaderLockHolder::ReaderLockHolder(HostCallPreference pref)
 {
-    SUPPORTS_DAC;
+    CONTRACTL {
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
 
-    if (m_dwWriterLock != 0)
-    {
+    RangeSectionHandleHeader* h = m_RangeSectionHandleReaderHeader;
+    if ((!h) || (!h->count))
         ThrowHR(CORDBG_E_PROCESS_NOT_SYNCHRONIZED);
-    }
 }
 
 ExecutionManager::ReaderLockHolder::~ReaderLockHolder()
 {
+    CONTRACTL
+    {
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
 }
 
+ExecutionManager::ForbidDeletionHolder::ForbidDeletionHolder()
+{
+    CONTRACTL {
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    if (m_dwForbidDeletionCounter < 0)
+        ThrowHR(CORDBG_E_PROCESS_NOT_SYNCHRONIZED);
+}
+
+ExecutionManager::ForbidDeletionHolder::~ForbidDeletionHolder()
+{
+    CONTRACTL {
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+}
 #endif // DACCESS_COMPILE
 
 /*-----------------------------------------------------------------------------
@@ -4050,7 +4175,7 @@ TADDR EEJitManager::FindMethodCode(PCODE currentPC)
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    RangeSection * pRS = ExecutionManager::FindCodeRange(currentPC, ExecutionManager::GetScanFlags());
+    RangeSection * pRS = ExecutionManager::FindCodeRange(currentPC);
     if (pRS == NULL || (pRS->flags & RangeSection::RANGE_SECTION_CODEHEAP) == 0)
         return STUB_CODE_BLOCK_NOCODE;
     return dac_cast<PTR_EEJitManager>(pRS->pjit)->FindMethodCode(pRS, currentPC);
@@ -4494,7 +4619,7 @@ void ExecutionManager::Init()
 
 //**************************************************************************
 RangeSection *
-ExecutionManager::FindCodeRange(PCODE currentPC, ScanFlag scanFlag)
+ExecutionManager::FindCodeRange(PCODE currentPC, HostCallPreference pref /*defaulted to AllowHostCalls*/)
 {
     CONTRACTL {
         NOTHROW;
@@ -4505,27 +4630,8 @@ ExecutionManager::FindCodeRange(PCODE currentPC, ScanFlag scanFlag)
     if (currentPC == NULL)
         return NULL;
 
-    if (scanFlag == ScanReaderLock)
-        return FindCodeRangeWithLock(currentPC);
-
-    return GetRangeSection(currentPC);
+    return GetRangeSection(currentPC, pref);
 }
-
-//**************************************************************************
-NOINLINE // Make sure that the slow path with lock won't affect the fast path
-RangeSection *
-ExecutionManager::FindCodeRangeWithLock(PCODE currentPC)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    ReaderLockHolder rlh;
-    return GetRangeSection(currentPC);
-}
-
 
 //**************************************************************************
 PCODE ExecutionManager::GetCodeStartAddress(PCODE currentPC)
@@ -4585,7 +4691,7 @@ BOOL ExecutionManager::IsManagedCode(PCODE currentPC)
     if (GetScanFlags() == ScanReaderLock)
         return IsManagedCodeWithLock(currentPC);
 
-    return IsManagedCodeWorker(currentPC);
+    return IsManagedCodeWorker(currentPC, AllowHostCalls);
 }
 
 //**************************************************************************
@@ -4597,12 +4703,12 @@ BOOL ExecutionManager::IsManagedCodeWithLock(PCODE currentPC)
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    ReaderLockHolder rlh;
-    return IsManagedCodeWorker(currentPC);
+    ForbidDeletionHolder fdh;
+    return IsManagedCodeWorker(currentPC, AllowHostCalls);
 }
 
 //**************************************************************************
-BOOL ExecutionManager::IsManagedCode(PCODE currentPC, HostCallPreference hostCallPreference /*=AllowHostCalls*/, BOOL *pfFailedReaderLock /*=NULL*/)
+BOOL ExecutionManager::IsManagedCode(PCODE currentPC, HostCallPreference hostCallPreference, BOOL *pfFailedReaderLock)
 {
     CONTRACTL {
         NOTHROW;
@@ -4617,22 +4723,16 @@ BOOL ExecutionManager::IsManagedCode(PCODE currentPC, HostCallPreference hostCal
         return IsManagedCode(currentPC);
     }
 
-    ReaderLockHolder rlh(hostCallPreference);
-    if (!rlh.Acquired())
-    {
-        _ASSERTE(pfFailedReaderLock != NULL);
-        *pfFailedReaderLock = TRUE;
-        return FALSE;
-    }
+    ForbidDeletionHolder fdh;
 
-    return IsManagedCodeWorker(currentPC);
+    return IsManagedCodeWorker(currentPC, NoHostCalls);
 #endif
 }
 
 //**************************************************************************
 // Assumes that the ExecutionManager reader/writer lock is taken or that
-// it is safe not to take it.
-BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC)
+// it is safe not to take it. //TODO edit comment
+BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC, HostCallPreference pref)
 {
     CONTRACTL {
         NOTHROW;
@@ -4643,7 +4743,7 @@ BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC)
     // taken over the call to JitCodeToMethodInfo too so that nobody pulls out
     // the range section from underneath us.
 
-    RangeSection * pRS = GetRangeSection(currentPC);
+    RangeSection * pRS = GetRangeSection(currentPC, pref);
     if (pRS == NULL)
         return FALSE;
 
@@ -4718,7 +4818,95 @@ LPCWSTR ExecutionManager::GetJitName()
 }
 #endif // !FEATURE_MERGE_JIT_AND_ENGINE
 
-RangeSection* ExecutionManager::GetRangeSection(TADDR addr)
+RangeSection* ExecutionManager::GetRangeSection(TADDR              addr,
+                /*defaulted to AllowHostCalls*/ HostCallPreference pref)
+{
+    CONTRACTL {
+        NOTHROW;
+	if(pref == AllowHostCalls) {HOST_CALLS;} else {HOST_NOCALLS;}
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+#ifndef DACCESS_COMPILE
+    if (VolatileLoad(&m_RangeSectionHandleReaderHeader) == nullptr)
+#else
+    if (m_RangeSectionHandleReaderHeader == nullptr)
+#endif
+    {
+        return NULL;
+    }
+
+    ReaderLockHolder rlh(pref);
+    RangeSectionHandleHeader *rh = rlh.h;
+#ifndef DACCESS_COMPILE
+    int LastUsedRSIndex = VolatileLoad(&(rh->last_used_index));
+    if (LastUsedRSIndex != -1)
+    {
+        RangeSection* pRS = rh->array[LastUsedRSIndex].pRS;
+        TADDR LowAddress = pRS->LowAddress;
+        TADDR HighAddress = pRS->HighAddress;
+
+        //positive case
+        if ((addr >= LowAddress) && (addr < HighAddress))
+        {
+            return pRS;
+        }
+
+        //negative case
+        if ((addr < LowAddress) && (LastUsedRSIndex == 0))
+        {
+            return NULL;
+        }
+    }
+    if ((LastUsedRSIndex > 0)
+        && (addr < rh->array[LastUsedRSIndex].LowAddress)
+        && (addr >= rh->array[LastUsedRSIndex-1].pRS->HighAddress))
+    {
+            return NULL;
+    }
+#endif //DACCESS_COMPILE
+
+    int foundIndex = FindRangeSectionHandleHelper(rh, addr);
+
+#ifndef DACCESS_COMPILE
+    if (foundIndex >= 0)
+    {
+        LastUsedRSIndex = foundIndex;
+    }
+    else
+    {
+        LastUsedRSIndex = (int)(rh->size) - 1;
+    }
+
+    //Cache index as last_used_index in thre writer's header
+    //Unless we are on an MP system with many cpus
+    //where this sort of caching actually diminishes scaling during server GC
+    //due to many processors writing to a common location
+    if (g_SystemInfo.dwNumberOfProcessors < 4 || !GCHeapUtilities::IsServerHeap() || !GCHeapUtilities::IsGCInProgress())
+        VolatileStore(&(rh->last_used_index), LastUsedRSIndex);
+#endif //DACCESS_COMPILE
+
+    return (foundIndex>=0)?rh->array[foundIndex].pRS:NULL;
+}
+
+/*********************************************************************/
+// This function returns coded index: a number to be converted 
+// to an actual index of RangeSectionHandleArray. Coded index uses
+// non-negative values to store actual index of an element already
+// existed in the array or it uses negative values to code an index
+// to be used for placing a new element to the array. If value
+// returned from FindRangeSectionHandleHelper is not negative, it can
+// be immediately used to read an existing element like this:
+// pRS = RangeSectionHandleArray[non_negative].pRS;
+// If the value becomes negative then there is no element with
+// requested TADDR in the RangeSectionHandleArray, and the value
+// might be decoded to an actual index of RangeSectionHandleArray cell
+// to place new RangeSectionHandle (if intended).
+// The function to decode is DecodeRangeSectionIndex that takes
+// negative coded index and returns an actual index.
+//
+int ExecutionManager::FindRangeSectionHandleHelper(RangeSectionHandleHeader *h, TADDR addr)
 {
     CONTRACTL {
         NOTHROW;
@@ -4727,118 +4915,57 @@ RangeSection* ExecutionManager::GetRangeSection(TADDR addr)
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    RangeSection * pHead = m_CodeRangeList;
+    RangeSectionHandle *array = h->array;
 
-    if (pHead == NULL)
+    _ASSERTE(array != nullptr);
+    _ASSERTE(h->capacity != (SIZE_T)0);
+
+    if ((int)h->size == 0)
     {
-        return NULL;
+        return EncodeRangeSectionIndex(0);
     }
 
-    RangeSection *pCurr = pHead;
-    RangeSection *pLast = NULL;
+    int iLow = 0;
+    int iHigh = (int)h->size - 1;
+    int iMid = (iHigh + iLow)/2;
 
-#ifndef DACCESS_COMPILE
-    RangeSection *pLastUsedRS = (pCurr != NULL) ? pCurr->pLastUsed : NULL;
-
-    if (pLastUsedRS != NULL)
+    if(addr < array[0].LowAddress)
     {
-        // positive case
-        if ((addr >= pLastUsedRS->LowAddress) &&
-            (addr <  pLastUsedRS->HighAddress)   )
+        return EncodeRangeSectionIndex(0);
+    }
+
+    if (addr >= array[iHigh].pRS->HighAddress)
+    {
+        return EncodeRangeSectionIndex(iHigh + 1);
+    }
+
+    do
+    {
+        if (addr < array[iMid].LowAddress)
         {
-            return pLastUsedRS;
+            iHigh = iMid;
+            iMid = (iHigh + iLow)/2;
         }
-
-        RangeSection * pNextAfterLastUsedRS = pLastUsedRS->pnext;
-
-        // negative case
-        if ((addr <  pLastUsedRS->LowAddress) &&
-            (pNextAfterLastUsedRS == NULL || addr >= pNextAfterLastUsedRS->HighAddress))
+        else if (addr >= array[iMid+1].LowAddress)
         {
-            return NULL;
+            iLow = iMid + 1;
+            iMid = (iHigh + iLow)/2;
         }
-    }
-#endif
-
-    while (pCurr != NULL)
-    {
-        // See if addr is in [pCurr->LowAddress .. pCurr->HighAddress)
-        if (pCurr->LowAddress <= addr)
+        else
         {
-            // Since we are sorted, once pCurr->HighAddress is less than addr
-            // then all subsequence ones will also be lower, so we are done.
-            if (addr >= pCurr->HighAddress)
-            {
-                // we'll return NULL and put pLast into pLastUsed
-                pCurr = NULL;
-            }
-            else
-            {
-                // addr must be in [pCurr->LowAddress .. pCurr->HighAddress)
-                _ASSERTE((pCurr->LowAddress <= addr) && (addr < pCurr->HighAddress));
-
-                // Found the matching RangeSection
-                // we'll return pCurr and put it into pLastUsed
-                pLast = pCurr;
-            }
-
-            break;
+            iLow = iHigh = iMid;
         }
-        pLast = pCurr;
-        pCurr = pCurr->pnext;
-    }
+    } while(iHigh > iLow);
 
-#ifndef DACCESS_COMPILE
-    // Cache pCurr as pLastUsed in the head node
-    // Unless we are on an MP system with many cpus
-    // where this sort of caching actually diminishes scaling during server GC
-    // due to many processors writing to a common location
-    if (g_SystemInfo.dwNumberOfProcessors < 4 || !GCHeapUtilities::IsServerHeap() || !GCHeapUtilities::IsGCInProgress())
-        pHead->pLastUsed = pLast;
-#endif
-
-    return pCurr;
-}
-
-RangeSection* ExecutionManager::GetRangeSectionAndPrev(RangeSection *pHead, TADDR addr, RangeSection** ppPrev)
-{
-    WRAPPER_NO_CONTRACT;
-
-    RangeSection *pCurr;
-    RangeSection *pPrev;
-    RangeSection *result = NULL;
-
-    for (pPrev = NULL,  pCurr = pHead;
-         pCurr != NULL;
-         pPrev = pCurr, pCurr = pCurr->pnext)
+    if ((addr >= array[iHigh].LowAddress)
+            && (addr < array[iHigh].pRS->HighAddress))
     {
-        // See if addr is in [pCurr->LowAddress .. pCurr->HighAddress)
-        if (pCurr->LowAddress > addr)
-            continue;
-
-        if (addr >= pCurr->HighAddress)
-            break;
-
-        // addr must be in [pCurr->LowAddress .. pCurr->HighAddress)
-        _ASSERTE((pCurr->LowAddress <= addr) && (addr < pCurr->HighAddress));
-
-        // Found the matching RangeSection
-        result = pCurr;
-
-        // Write back pPrev to ppPrev if it is non-null
-        if (ppPrev != NULL)
-            *ppPrev = pPrev;
-
-        break;
+        return iHigh;
     }
-
-    // If we failed to find a match write NULL to ppPrev if it is non-null
-    if ((ppPrev != NULL) && (result == NULL))
+    else
     {
-        *ppPrev = NULL;
+        return EncodeRangeSectionIndex(iHigh + 1);
     }
-
-    return result;
 }
 
 /* static */
@@ -4854,7 +4981,7 @@ PTR_Module ExecutionManager::FindZapModule(TADDR currentData)
     }
     CONTRACTL_END;
 
-    ReaderLockHolder rlh;
+    ForbidDeletionHolder fdh;
 
     RangeSection * pRS = GetRangeSection(currentData);
     if (pRS == NULL)
@@ -4885,7 +5012,7 @@ PTR_Module ExecutionManager::FindReadyToRunModule(TADDR currentData)
     CONTRACTL_END;
 
 #ifdef FEATURE_READYTORUN
-    ReaderLockHolder rlh;
+    ForbidDeletionHolder fdh;
 
     RangeSection * pRS = GetRangeSection(currentData);
     if (pRS == NULL)
@@ -4915,7 +5042,7 @@ PTR_Module ExecutionManager::FindModuleForGCRefMap(TADDR currentData)
     }
     CONTRACTL_END;
 
-    RangeSection * pRS = FindCodeRange(currentData, ExecutionManager::GetScanFlags());
+    RangeSection * pRS = FindCodeRange(currentData, NoHostCalls);
     if (pRS == NULL)
         return NULL;
 
@@ -4953,6 +5080,7 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
                    dac_cast<TADDR>(pHp));
 }
 
+
 void ExecutionManager::AddRangeHelper(TADDR          pStartRange,
                                       TADDR          pEndRange,
                                       IJitManager *  pJit,
@@ -4974,59 +5102,146 @@ void ExecutionManager::AddRangeHelper(TADDR          pStartRange,
     pnewrange->LowAddress  = pStartRange;
     pnewrange->HighAddress = pEndRange;
     pnewrange->pjit        = pJit;
-    pnewrange->pnext       = NULL;
     pnewrange->flags       = flags;
-    pnewrange->pLastUsed   = NULL;
     pnewrange->pHeapListOrZapModule = pHeapListOrZapModule;
 #if defined(TARGET_AMD64)
     pnewrange->pUnwindInfoTable = NULL;
 #endif // defined(TARGET_AMD64)
+    AddRangeSection(pnewrange);
+}
+
+void ExecutionManager::AddRangeSection(RangeSection *pRS)
+{
+    CONTRACTL {
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    CrstHolder ch(&m_RangeCrst);
+    if (m_RangeSectionHandleReaderHeader == nullptr)
     {
-        CrstHolder ch(&m_RangeCrst); // Acquire the Crst before linking in a new RangeList
+        //initial call, create array pair and initialize their headers
+        RangeSectionHandleHeader *wh = new RangeSectionHandleHeader();
 
-        RangeSection * current  = m_CodeRangeList;
-        RangeSection * previous = NULL;
+        wh->capacity = RangeSectionHandleArrayInitialSize;
+        wh->array = new RangeSectionHandle[wh->capacity];
 
-        if (current != NULL)
+        wh->size = 1; 
+        wh->array[0].LowAddress = pRS->LowAddress;
+        wh->array[0].pRS = pRS; 
+        wh->count = 0;
+        wh->last_used_index = 0;
+
+        RangeSectionHandleHeader *rh =  new RangeSectionHandleHeader();
+        rh->capacity = wh->capacity; 
+        rh->size = wh->size;
+        rh->count = 1; //EM's unit
+        rh->last_used_index = wh->last_used_index;
+        rh->array = new RangeSectionHandle[rh->capacity];
+
+        rh->array[0] = wh->array[0];
+
+	VolatileStore(&m_RangeSectionHandleWriterHeader, wh);
+        VolatileStore(&m_RangeSectionHandleReaderHeader, rh);
+        return;
+    }
+
+    //rh and wh there are not null, so we can and should lock the wh
+    WriterLockHolder wlh;
+    RangeSectionHandleHeader *rh = VolatileLoad(&m_RangeSectionHandleReaderHeader);
+    RangeSectionHandleHeader *wh = wlh.h; 
+    if (wh->capacity < (rh->size+1)) //can't add to writer's array, expand
+    {
+        //reallocate array
+        delete[] wh->array;
+        if ((rh->size+1) > rh->capacity)
         {
-            while (true)
-            {
-                // Sort addresses top down so that more recently created ranges
-                // will populate the top of the list
-                if (pnewrange->LowAddress > current->LowAddress)
-                {
-                    // Asserts if ranges are overlapping
-                    _ASSERTE(pnewrange->LowAddress >= current->HighAddress);
-                    pnewrange->pnext = current;
-
-                    if (previous == NULL) // insert new head
-                    {
-                        m_CodeRangeList = pnewrange;
-                    }
-                    else
-                    { // insert in the middle
-                        previous->pnext  = pnewrange;
-                    }
-                    break;
-                }
-
-                RangeSection * next = current->pnext;
-                if (next == NULL) // insert at end of list
-                {
-                    current->pnext = pnewrange;
-                    break;
-                }
-
-                // Continue walking the RangeSection list
-                previous = current;
-                current  = next;
-            }
+#ifdef _DEBUG
+            wh->capacity = rh->capacity + RangeSectionHandleArrayIncrement;
+#else
+            wh->capacity = rh->capacity * RangeSectionHandleArrayExpansionFactor;
+#endif //_DEBUG
         }
         else
         {
-            m_CodeRangeList = pnewrange;
+            wh->capacity = rh->capacity;
         }
+        //some of readers can hold non-captured (with no corresponding increment of count)
+        //link to this header,
+        //can read count and even can try to ILCE if they occasionly
+        //read non-zero count before being suspended by OS
+        //so we have to maintain count = 0 until wlh destructor
+        //thoroughly do his job of interchanging header pointers
+        wh->array = new RangeSectionHandle[wh->capacity];
+        wh->size = rh->size;
+        wh->last_used_index = VolatileLoad(&(rh->last_used_index));
     }
+    else
+    {
+        wh->size = rh->size;
+        wh->last_used_index = -1;
+    }
+
+    //where to add?
+    SIZE_T size = wh->size;
+    if ((size == 0) || (pRS->LowAddress >= rh->array[size - 1].pRS->HighAddress))
+    {
+        if (size > 0)
+        {
+            memcpy((void*)(wh->array), (const void*)(rh->array), wh->size*sizeof(RangeSectionHandle));
+        }
+        wh->array[size].LowAddress = pRS->LowAddress;
+        wh->array[size].pRS = pRS;
+        wh->size = size + 1;
+        //last used index was not changed by this operation
+        return; //assume that ~WriterLockHolder() executes before ~CrstHolder()
+    }
+
+    int index = FindRangeSectionHandleHelper(rh, pRS->LowAddress);
+    if (index < 0)
+    {
+        index = DecodeRangeSectionIndex(index);
+        //shift and push
+        memcpy(wh->array, rh->array, index*sizeof(RangeSectionHandle));
+        memcpy(wh->array+index+1, rh->array+index, (size-index)*sizeof(RangeSectionHandle));
+        wh->array[index].LowAddress = pRS->LowAddress;
+        wh->array[index].pRS = pRS;
+        wh->size = size + 1;
+	int ri = VolatileLoad(&(rh->last_used_index));
+        if (ri >= index)
+            wh->last_used_index = ri + 1;
+        return;
+    }
+    return;
+}
+
+void ExecutionManager::DeleteRangeSection(RangeSectionHandleHeader *wh, RangeSectionHandleHeader *rh, int index)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    if (index < 0)
+    {
+        return;
+    }
+
+    //RangeSection storage guarantees we have reader's and writer's count differ at most 1
+    _ASSERTE(wh->size+1 >= rh->size);
+
+    wh->size = rh->size-1;
+
+    //copying header + elements until deleted
+    memcpy((void*)wh->array, (const void*)rh->array, index*sizeof(RangeSectionHandle));
+    memcpy((void*)(wh->array+index), (const void*)(rh->array+index+1), (rh->size-index-1)*sizeof(RangeSectionHandle));
+
+    int LastUsedRSIndex = VolatileLoad(&(rh->last_used_index));
+    if (LastUsedRSIndex > index)
+        LastUsedRSIndex--;
+    else if (LastUsedRSIndex == index)
+        LastUsedRSIndex = (int)wh->size - 1;
+    
+    VolatileStore(&(wh->last_used_index), LastUsedRSIndex);
 }
 
 // Deletes a single range starting at pStartRange
@@ -5037,7 +5252,6 @@ void ExecutionManager::DeleteRange(TADDR pStartRange)
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    RangeSection *pCurr = NULL;
     {
         // Acquire the Crst before unlinking a RangeList.
         // NOTE: The Crst must be acquired BEFORE we grab the writer lock, as the
@@ -5049,53 +5263,16 @@ void ExecutionManager::DeleteRange(TADDR pStartRange)
         // This also forces us to enter a forbid suspend thread region, to prevent
         // hijacking profilers from grabbing this thread and walking it (the walk may
         // require the reader lock, which would cause a deadlock).
-        WriterLockHolder wlh;
+        WriterLockHolder wlh(1); //1 for deletion purpose
+        RangeSectionHandleHeader *rh = VolatileLoad(&m_RangeSectionHandleReaderHeader);
+        int index = FindRangeSectionHandleHelper(rh, pStartRange);
 
-        RangeSection *pPrev = NULL;
-
-        pCurr = GetRangeSectionAndPrev(m_CodeRangeList, pStartRange, &pPrev);
-
-        // pCurr points at the Range that needs to be unlinked from the RangeList
-        if (pCurr != NULL)
+        if (index >= 0)
         {
-
-            // If pPrev is NULL the head of this list is to be deleted
-            if (pPrev == NULL)
-            {
-                m_CodeRangeList = pCurr->pnext;
-            }
-            else
-            {
-                _ASSERT(pPrev->pnext == pCurr);
-
-                pPrev->pnext = pCurr->pnext;
-            }
-
-            // Clear the cache pLastUsed in the head node (if any)
-            RangeSection * head = m_CodeRangeList;
-            if (head != NULL)
-            {
-                head->pLastUsed = NULL;
-            }
-
-            //
-            // Cannot delete pCurr here because we own the WriterLock and if this is
-            // a hosted scenario then the hosting api callback cannot occur in a forbid
-            // suspend region, which the writer lock is.
-            //
+            rh->array[index].pRS->pNextPendingDeletion = (RangeSection*)m_RangeSectionPendingDeletion;
+            m_RangeSectionPendingDeletion = rh->array[index].pRS;
+            DeleteRangeSection(wlh.h, rh, index);
         }
-    }
-
-    //
-    // Now delete the node
-    //
-    if (pCurr != NULL)
-    {
-#if defined(TARGET_AMD64)
-        if (pCurr->pUnwindInfoTable != 0)
-            delete pCurr->pUnwindInfoTable;
-#endif // defined(TARGET_AMD64)
-        delete pCurr;
     }
 }
 
@@ -5103,24 +5280,29 @@ void ExecutionManager::DeleteRange(TADDR pStartRange)
 
 #ifdef DACCESS_COMPILE
 
-void ExecutionManager::EnumRangeList(RangeSection* list,
-                                     CLRDataEnumMemoryFlags flags)
+void ExecutionManager::EnumRangeSectionReaderArray(CLRDataEnumMemoryFlags flags)
 {
-    while (list != NULL)
+    RangeSectionHandle *array = m_RangeSectionHandleReaderHeader->array;
+    SIZE_T size = m_RangeSectionHandleReaderHeader->size;
+    for (int i = 0; i < (int)size; ++i)
     {
         // If we can't read the target memory, stop immediately so we don't work
         // with broken data.
-        if (!DacEnumMemoryRegion(dac_cast<TADDR>(list), sizeof(*list)))
+        RangeSection *pRS = array[i].pRS;
+#if defined (_DEBUG)
+EnumRangeArray_REDO:
+#endif // (_DEBUG)
+        if (!DacEnumMemoryRegion(dac_cast<TADDR>(pRS), sizeof(*pRS)))
             break;
 
-        if (list->pjit.IsValid())
+        if (pRS->pjit.IsValid())
         {
-            list->pjit->EnumMemoryRegions(flags);
+            pRS->pjit->EnumMemoryRegions(flags);
         }
 
-        if (!(list->flags & RangeSection::RANGE_SECTION_CODEHEAP))
+        if (!(pRS->flags & RangeSection::RANGE_SECTION_CODEHEAP))
         {
-            PTR_Module pModule = dac_cast<PTR_Module>(list->pHeapListOrZapModule);
+            PTR_Module pModule = dac_cast<PTR_Module>(pRS->pHeapListOrZapModule);
 
             if (pModule.IsValid())
             {
@@ -5128,20 +5310,20 @@ void ExecutionManager::EnumRangeList(RangeSection* list,
             }
         }
 
-        list = list->pnext;
 #if defined (_DEBUG)
-        // Test hook: when testing on debug builds, we want an easy way to test that the while
+        // Test hook: when testing on debug builds, we want an easy way to test that the for loop
         // correctly terminates in the face of ridiculous stuff from the target.
         if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DumpGeneration_IntentionallyCorruptDataFromTarget) == 1)
         {
             // Force us to struggle on with something bad.
-            if (list == NULL)
+            if (i == (int)size - 1)
             {
-                list = (RangeSection *)&flags;
+                i++;
+                pRS = (RangeSection *)&flags;
+                goto EnumRangeArray_REDO;
             }
         }
 #endif // (_DEBUG)
-
     }
 }
 
@@ -5155,16 +5337,17 @@ void ExecutionManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     // Report the global data portions.
     //
 
-    m_CodeRangeList.EnumMem();
+    m_RangeSectionHandleReaderHeader.EnumMem();
+    m_RangeSectionHandleWriterHeader.EnumMem();
     m_pDefaultCodeMan.EnumMem();
 
     //
     // Walk structures and report.
     //
 
-    if (m_CodeRangeList.IsValid())
+    if (m_RangeSectionHandleReaderHeader.IsValid())
     {
-        EnumRangeList(m_CodeRangeList, flags);
+        EnumRangeSectionReaderArray(flags);
     }
 }
 #endif // #ifdef DACCESS_COMPILE

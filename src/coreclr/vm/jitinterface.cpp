@@ -14328,10 +14328,16 @@ void EECodeInfo::Init(PCODE codeAddress)
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    Init(codeAddress, ExecutionManager::GetScanFlags());
+    //optimization: NoReaderLock is a dummy argument ignored by the callee
+    Init(codeAddress, ExecutionManager::ScanNoReaderLock);
 }
 
-void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
+//scanFlag argument is ignored due to changed wiring model
+//it is still there due to spreading of the API through the codebase
+//it is safe to change all calls and eventually get rid of it
+void EECodeInfo::Init(PCODE                      codeAddress,
+                      ExecutionManager::ScanFlag scanFlag,
+                      HostCallPreference         pref /*defaulted to AllowHostCalls*/)
 {
     CONTRACTL {
         NOTHROW;
@@ -14340,7 +14346,7 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
 
     m_codeAddress = codeAddress;
 
-    RangeSection * pRS = ExecutionManager::FindCodeRange(codeAddress, scanFlag);
+    RangeSection * pRS = ExecutionManager::FindCodeRange(codeAddress, pref);
     if (pRS == NULL)
         goto Invalid;
 

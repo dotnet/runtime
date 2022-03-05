@@ -2107,7 +2107,7 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
     }
     CONTRACTL_END
 
-    RangeSection* pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
+    RangeSection* pRS = ExecutionManager::FindCodeRange(entryPoint);
     if (pRS == NULL)
     {
         TADDR pInstr = PCODEToPINSTR(entryPoint);
