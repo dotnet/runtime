@@ -490,7 +490,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             JsonConsoleFormatterOptions jsonOptions = new JsonConsoleFormatterOptions()
             {
                 JsonWriterOptions = new JsonWriterOptions()
-                {
+                { 
                     Indented = indented,
                     Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
                 }
@@ -519,7 +519,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
             Assert.Contains(rootException.Message, json);
             Assert.Contains(rootException.InnerException.Message, json);
-
+            
             Assert.Contains(GetContent(rootException, indented), json);
             Assert.Contains(GetContent(rootException.InnerException, indented), json);
         }
@@ -546,7 +546,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
             Assert.Contains(rootException.Message, json);
             rootException.InnerExceptions.ToList().ForEach((inner) => Assert.Contains(inner.Message, json));
-
+            
             Assert.Contains(GetContent(rootException, indented), json);
             rootException.InnerExceptions.ToList().ForEach((inner) => Assert.Contains(GetContent(inner, indented), json));
         }

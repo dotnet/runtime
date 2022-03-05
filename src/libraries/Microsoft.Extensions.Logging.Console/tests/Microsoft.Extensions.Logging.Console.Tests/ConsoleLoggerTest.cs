@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var defaultMonitor = new TestFormatterOptionsMonitor<SimpleConsoleFormatterOptions>(simpleOptions ?? new SimpleConsoleFormatterOptions());
             var systemdMonitor = new TestFormatterOptionsMonitor<ConsoleFormatterOptions>(systemdOptions ?? new ConsoleFormatterOptions());
             var jsonMonitor = new TestFormatterOptionsMonitor<JsonConsoleFormatterOptions>(jsonOptions ?? new JsonConsoleFormatterOptions());
-            var formatters = new List<ConsoleFormatter>() {
+            var formatters = new List<ConsoleFormatter>() { 
                 new SimpleConsoleFormatter(defaultMonitor),
                 new SystemdConsoleFormatter(systemdMonitor),
                 new JsonConsoleFormatter(jsonMonitor)
@@ -86,13 +86,13 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 Assert.Equal(formatter.FormatterOptions.IncludeScopes, logger.Options.IncludeScopes);
                 Assert.Equal(formatter.FormatterOptions.UseUtcTimestamp, logger.Options.UseUtcTimestamp);
                 Assert.Equal(formatter.FormatterOptions.TimestampFormat, logger.Options.TimestampFormat);
-                Assert.Equal(formatter.FormatterOptions.ColorBehavior,
-                    logger.Options.DisableColors ? LoggerColorBehavior.Disabled : LoggerColorBehavior.Enabled);
+                Assert.Equal(formatter.FormatterOptions.ColorBehavior, 
+                    logger.Options.DisableColors ? LoggerColorBehavior.Disabled : LoggerColorBehavior.Enabled);   
             }
             else
             {
                 var formatter = Assert.IsType<SystemdConsoleFormatter>(logger.Formatter);
-                Assert.Equal(formatter.FormatterOptions.IncludeScopes, logger.Options.IncludeScopes);
+                Assert.Equal(formatter.FormatterOptions.IncludeScopes, logger.Options.IncludeScopes);   
                 Assert.Equal(formatter.FormatterOptions.UseUtcTimestamp, logger.Options.UseUtcTimestamp);
                 Assert.Equal(formatter.FormatterOptions.TimestampFormat, logger.Options.TimestampFormat);
             }
@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             // kept for deprecated apis:
             if (formatter is SimpleConsoleFormatter defaultFormatter)
             {
-                defaultFormatter.FormatterOptions.ColorBehavior = deprecatedFromOptions.DisableColors ?
+                defaultFormatter.FormatterOptions.ColorBehavior = deprecatedFromOptions.DisableColors ? 
                     LoggerColorBehavior.Disabled : LoggerColorBehavior.Enabled;
                 defaultFormatter.FormatterOptions.IncludeScopes = deprecatedFromOptions.IncludeScopes;
                 defaultFormatter.FormatterOptions.TimestampFormat = deprecatedFromOptions.TimestampFormat;
@@ -254,21 +254,21 @@ namespace Microsoft.Extensions.Logging.Console.Test
             switch (format)
             {
                 case ConsoleLoggerFormat.Default:
-                    {
-                        Assert.Null(logger.Options.FormatterName);
-                        Assert.Equal(ConsoleFormatterNames.Simple, logger.Formatter.Name);
-                        var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
-                        Assert.Equal("HH:mm:ss ", formatter.FormatterOptions.TimestampFormat);
-                    }
-                    break;
+                {
+                    Assert.Null(logger.Options.FormatterName);
+                    Assert.Equal(ConsoleFormatterNames.Simple, logger.Formatter.Name);
+                    var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
+                    Assert.Equal("HH:mm:ss ", formatter.FormatterOptions.TimestampFormat);
+                }
+                break;
                 case ConsoleLoggerFormat.Systemd:
-                    {
-                        Assert.Null(logger.Options.FormatterName);
-                        Assert.Equal(ConsoleFormatterNames.Systemd, logger.Formatter.Name);
-                        var formatter = Assert.IsType<SystemdConsoleFormatter>(logger.Formatter);
-                        Assert.Equal("HH:mm:ss ", formatter.FormatterOptions.TimestampFormat);
-                    }
-                    break;
+                {
+                    Assert.Null(logger.Options.FormatterName);
+                    Assert.Equal(ConsoleFormatterNames.Systemd, logger.Formatter.Name);
+                    var formatter = Assert.IsType<SystemdConsoleFormatter>(logger.Formatter);
+                    Assert.Equal("HH:mm:ss ", formatter.FormatterOptions.TimestampFormat);
+                }
+                break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(format));
             }
@@ -499,24 +499,24 @@ namespace Microsoft.Extensions.Logging.Console.Test
             switch (format)
             {
                 case ConsoleLoggerFormat.Default:
-                    {
-                        Assert.Equal(3, sink.Writes.Count);
-                        Assert.StartsWith(levelPrefix, sink.Writes[1].Message);
-                        Assert.Matches(@"^\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\s$", sink.Writes[0].Message);
-                        var parsedDateTime = DateTimeOffset.Parse(sink.Writes[0].Message.Trim());
-                        Assert.Equal(DateTimeOffset.Now.Offset, parsedDateTime.Offset);
-                    }
-                    break;
+                {
+                    Assert.Equal(3, sink.Writes.Count);
+                    Assert.StartsWith(levelPrefix, sink.Writes[1].Message);
+                    Assert.Matches(@"^\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\s$", sink.Writes[0].Message);
+                    var parsedDateTime = DateTimeOffset.Parse(sink.Writes[0].Message.Trim());
+                    Assert.Equal(DateTimeOffset.Now.Offset, parsedDateTime.Offset);
+                }
+                break;
                 case ConsoleLoggerFormat.Systemd:
-                    {
-                        Assert.Single(sink.Writes);
-                        Assert.StartsWith(levelPrefix, sink.Writes[0].Message);
-                        var regexMatch = Regex.Match(sink.Writes[0].Message, @"^<\d>(\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2})\s[^\s]");
-                        Assert.True(regexMatch.Success);
-                        var parsedDateTime = DateTimeOffset.Parse(regexMatch.Groups[1].Value);
-                        Assert.Equal(DateTimeOffset.Now.Offset, parsedDateTime.Offset);
-                    }
-                    break;
+                {
+                    Assert.Single(sink.Writes);
+                    Assert.StartsWith(levelPrefix, sink.Writes[0].Message);
+                    var regexMatch = Regex.Match(sink.Writes[0].Message, @"^<\d>(\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2})\s[^\s]");
+                    Assert.True(regexMatch.Success);
+                    var parsedDateTime = DateTimeOffset.Parse(regexMatch.Groups[1].Value);
+                    Assert.Equal(DateTimeOffset.Now.Offset, parsedDateTime.Offset);
+                }
+                break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(format));
             }
@@ -540,24 +540,24 @@ namespace Microsoft.Extensions.Logging.Console.Test
             switch (format)
             {
                 case ConsoleLoggerFormat.Default:
-                    {
-                        Assert.Equal(3, sink.Writes.Count);
-                        Assert.StartsWith(levelPrefix, sink.Writes[1].Message);
-                        Assert.Matches(@"^\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\s$", sink.Writes[0].Message);
-                        var parsedDateTime = DateTimeOffset.Parse(sink.Writes[0].Message.Trim());
-                        Assert.Equal(DateTimeOffset.UtcNow.Offset, parsedDateTime.Offset);
-                    }
-                    break;
+                {
+                    Assert.Equal(3, sink.Writes.Count);
+                    Assert.StartsWith(levelPrefix, sink.Writes[1].Message);
+                    Assert.Matches(@"^\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\s$", sink.Writes[0].Message);
+                    var parsedDateTime = DateTimeOffset.Parse(sink.Writes[0].Message.Trim());
+                    Assert.Equal(DateTimeOffset.UtcNow.Offset, parsedDateTime.Offset);
+                }
+                break;
                 case ConsoleLoggerFormat.Systemd:
-                    {
-                        Assert.Single(sink.Writes);
-                        Assert.StartsWith(levelPrefix, sink.Writes[0].Message);
-                        var regexMatch = Regex.Match(sink.Writes[0].Message, @"^<\d>(\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2})\s[^\s]");
-                        Assert.True(regexMatch.Success);
-                        var parsedDateTime = DateTimeOffset.Parse(regexMatch.Groups[1].Value);
-                        Assert.Equal(DateTimeOffset.UtcNow.Offset, parsedDateTime.Offset);
-                    }
-                    break;
+                {
+                    Assert.Single(sink.Writes);
+                    Assert.StartsWith(levelPrefix, sink.Writes[0].Message);
+                    var regexMatch = Regex.Match(sink.Writes[0].Message, @"^<\d>(\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2})\s[^\s]");
+                    Assert.True(regexMatch.Success);
+                    var parsedDateTime = DateTimeOffset.Parse(regexMatch.Groups[1].Value);
+                    Assert.Equal(DateTimeOffset.UtcNow.Offset, parsedDateTime.Offset);
+                }
+                break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(format));
             }
@@ -581,27 +581,27 @@ namespace Microsoft.Extensions.Logging.Console.Test
             switch (format)
             {
                 case ConsoleLoggerFormat.Default:
-                    {
-                        Assert.Equal(2, sink.Writes.Count);
-                        Assert.Equal(
-                            levelPrefix + ": test[0]" + Environment.NewLine +
-                            _paddingString + "This is a test, and {curly braces} are just fine!" + Environment.NewLine +
-                            _paddingString + "System.Exception: Exception message" + Environment.NewLine +
-                            _paddingString + "with a second line" + Environment.NewLine,
-                            GetMessage(sink.Writes));
-                    }
-                    break;
+                {
+                    Assert.Equal(2, sink.Writes.Count);
+                    Assert.Equal(
+                        levelPrefix + ": test[0]" + Environment.NewLine +
+                        _paddingString + "This is a test, and {curly braces} are just fine!" + Environment.NewLine +
+                        _paddingString + "System.Exception: Exception message" + Environment.NewLine +
+                        _paddingString + "with a second line" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+                }
+                break;
                 case ConsoleLoggerFormat.Systemd:
-                    {
-                        Assert.Single(sink.Writes);
-                        Assert.Equal(
-                            levelPrefix + "test[0]" + " " +
-                            "This is a test, and {curly braces} are just fine!" + " " +
-                            "System.Exception: Exception message" + " " +
-                            "with a second line" + Environment.NewLine,
-                            GetMessage(sink.Writes));
-                    }
-                    break;
+                {
+                    Assert.Single(sink.Writes);
+                    Assert.Equal(
+                        levelPrefix + "test[0]" + " " +
+                        "This is a test, and {curly braces} are just fine!" + " " +
+                        "System.Exception: Exception message" + " " +
+                        "with a second line" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+                }
+                break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(format));
             }
@@ -678,28 +678,28 @@ namespace Microsoft.Extensions.Logging.Console.Test
             switch (format)
             {
                 case ConsoleLoggerFormat.Default:
-                    {
-                        // Assert
-                        Assert.Equal(2, sink.Writes.Count);
-                        // scope
-                        var write = sink.Writes[1];
-                        Assert.Equal(header + Environment.NewLine
-                                     + _paddingString + scope + Environment.NewLine
-                                     + _paddingString + message + Environment.NewLine, write.Message);
-                        Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
-                        Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
-                    }
-                    break;
+                {
+                    // Assert
+                    Assert.Equal(2, sink.Writes.Count);
+                    // scope
+                    var write = sink.Writes[1];
+                    Assert.Equal(header + Environment.NewLine
+                                 + _paddingString + scope + Environment.NewLine
+                                 + _paddingString + message + Environment.NewLine, write.Message);
+                    Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
+                    Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
+                }
+                break;
                 case ConsoleLoggerFormat.Systemd:
-                    {
-                        Assert.Single(sink.Writes);
-                        // scope
-                        var write = sink.Writes[0];
-                        Assert.Equal(levelPrefix + header + " " + scope + " " + message + Environment.NewLine, write.Message);
-                        Assert.Null(write.BackgroundColor);
-                        Assert.Null(write.ForegroundColor);
-                    }
-                    break;
+                {
+                    Assert.Single(sink.Writes);
+                    // scope
+                    var write = sink.Writes[0];
+                    Assert.Equal(levelPrefix + header + " " + scope + " " + message + Environment.NewLine, write.Message);
+                    Assert.Null(write.BackgroundColor);
+                    Assert.Null(write.ForegroundColor);
+                }
+                break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(format));
             }
@@ -732,23 +732,23 @@ namespace Microsoft.Extensions.Logging.Console.Test
             switch (format)
             {
                 case ConsoleLoggerFormat.Default:
-                    {
-                        Assert.Equal(2, sink.Writes.Count);
-                        // scope
-                        var write = sink.Writes[1];
-                        Assert.Equal(header + Environment.NewLine
-                                    + _paddingString + scope + Environment.NewLine
-                                    + _paddingString + message + Environment.NewLine, write.Message);
-                    }
-                    break;
+                {
+                    Assert.Equal(2, sink.Writes.Count);
+                    // scope
+                    var write = sink.Writes[1];
+                    Assert.Equal(header + Environment.NewLine
+                                + _paddingString + scope + Environment.NewLine
+                                + _paddingString + message + Environment.NewLine, write.Message);
+                }
+                break;
                 case ConsoleLoggerFormat.Systemd:
-                    {
-                        Assert.Single(sink.Writes);
-                        // scope
-                        var write = sink.Writes[0];
-                        Assert.Equal(levelPrefix + header + " " + scope + " " + message + Environment.NewLine, write.Message);
-                    }
-                    break;
+                {
+                    Assert.Single(sink.Writes);
+                    // scope
+                    var write = sink.Writes[0];
+                    Assert.Equal(levelPrefix + header + " " + scope + " " + message + Environment.NewLine, write.Message);
+                }
+                break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(format));
             }
@@ -780,33 +780,33 @@ namespace Microsoft.Extensions.Logging.Console.Test
             switch (format)
             {
                 case ConsoleLoggerFormat.Default:
-                    {
-                        // Assert
-                        Assert.Equal(2, sink.Writes.Count);
-                        var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
-                        Assert.True(formatter.FormatterOptions.IncludeScopes);
-                        // scope
-                        var write = sink.Writes[1];
-                        Assert.Equal(header + Environment.NewLine
-                                    + _paddingString + scope + Environment.NewLine
-                                    + _paddingString + message + Environment.NewLine, write.Message);
-                        Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
-                        Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
-                    }
-                    break;
+                {
+                    // Assert
+                    Assert.Equal(2, sink.Writes.Count);
+                    var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
+                    Assert.True(formatter.FormatterOptions.IncludeScopes);
+                    // scope
+                    var write = sink.Writes[1];
+                    Assert.Equal(header + Environment.NewLine
+                                + _paddingString + scope + Environment.NewLine
+                                + _paddingString + message + Environment.NewLine, write.Message);
+                    Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
+                    Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
+                }
+                break;
                 case ConsoleLoggerFormat.Systemd:
-                    {
-                        // Assert
-                        Assert.Single(sink.Writes);
-                        var formatter = Assert.IsType<SystemdConsoleFormatter>(logger.Formatter);
-                        Assert.True(formatter.FormatterOptions.IncludeScopes);
-                        // scope
-                        var write = sink.Writes[0];
-                        Assert.Equal(levelPrefix + header + " " + scope + " " + message + Environment.NewLine, write.Message);
-                        Assert.Null(write.BackgroundColor);
-                        Assert.Null(write.ForegroundColor);
-                    }
-                    break;
+                {
+                    // Assert
+                    Assert.Single(sink.Writes);
+                    var formatter = Assert.IsType<SystemdConsoleFormatter>(logger.Formatter);
+                    Assert.True(formatter.FormatterOptions.IncludeScopes);
+                    // scope
+                    var write = sink.Writes[0];
+                    Assert.Equal(levelPrefix + header + " " + scope + " " + message + Environment.NewLine, write.Message);
+                    Assert.Null(write.BackgroundColor);
+                    Assert.Null(write.ForegroundColor);
+                }
+                break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(format));
             }
@@ -845,37 +845,37 @@ namespace Microsoft.Extensions.Logging.Console.Test
             switch (format)
             {
                 case ConsoleLoggerFormat.Default:
-                    {
-                        Assert.Equal(4, sink.Writes.Count);
-                        // scope
-                        var write = sink.Writes[1];
-                        Assert.Equal(header + Environment.NewLine
-                                    + _paddingString + scope1 + Environment.NewLine
-                                    + _paddingString + message + Environment.NewLine, write.Message);
-                        Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
-                        Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
-                        write = sink.Writes[3];
-                        Assert.Equal(header + Environment.NewLine
-                                    + _paddingString + scope2 + Environment.NewLine
-                                    + _paddingString + message + Environment.NewLine, write.Message);
-                        Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
-                        Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
-                    }
-                    break;
+                {
+                    Assert.Equal(4, sink.Writes.Count);
+                    // scope
+                    var write = sink.Writes[1];
+                    Assert.Equal(header + Environment.NewLine
+                                + _paddingString + scope1 + Environment.NewLine
+                                + _paddingString + message + Environment.NewLine, write.Message);
+                    Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
+                    Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
+                    write = sink.Writes[3];
+                    Assert.Equal(header + Environment.NewLine
+                                + _paddingString + scope2 + Environment.NewLine
+                                + _paddingString + message + Environment.NewLine, write.Message);
+                    Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
+                    Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
+                }
+                break;
                 case ConsoleLoggerFormat.Systemd:
-                    {
-                        Assert.Equal(2, sink.Writes.Count);
-                        // scope
-                        var write = sink.Writes[0];
-                        Assert.Equal(levelPrefix + header + " " + scope1 + " " + message + Environment.NewLine, write.Message);
-                        Assert.Null(write.BackgroundColor);
-                        Assert.Null(write.ForegroundColor);
-                        write = sink.Writes[1];
-                        Assert.Equal(levelPrefix + header + " " + scope2 + " " + message + Environment.NewLine, write.Message);
-                        Assert.Null(write.BackgroundColor);
-                        Assert.Null(write.ForegroundColor);
-                    }
-                    break;
+                {
+                    Assert.Equal(2, sink.Writes.Count);
+                    // scope
+                    var write = sink.Writes[0];
+                    Assert.Equal(levelPrefix + header + " " + scope1 + " " + message + Environment.NewLine, write.Message);
+                    Assert.Null(write.BackgroundColor);
+                    Assert.Null(write.ForegroundColor);
+                    write = sink.Writes[1];
+                    Assert.Equal(levelPrefix + header + " " + scope2 + " " + message + Environment.NewLine, write.Message);
+                    Assert.Null(write.BackgroundColor);
+                    Assert.Null(write.ForegroundColor);
+                }
+                break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(format));
             }
@@ -932,33 +932,33 @@ namespace Microsoft.Extensions.Logging.Console.Test
             switch (format)
             {
                 case ConsoleLoggerFormat.Default:
-                    {
-                        Assert.Equal(2, sink.Writes.Count);
-                        Assert.Equal(
-                            "info: test[0]" + Environment.NewLine +
-                            _paddingString + "Info" + Environment.NewLine,
-                            GetMessage(sink.Writes));
+                {
+                    Assert.Equal(2, sink.Writes.Count);
+                    Assert.Equal(
+                        "info: test[0]" + Environment.NewLine +
+                        _paddingString + "Info" + Environment.NewLine,
+                        GetMessage(sink.Writes));
 
-                        Assert.Equal(2, errorSink.Writes.Count);
-                        Assert.Equal(
-                            "warn: test[0]" + Environment.NewLine +
-                            _paddingString + "Warn" + Environment.NewLine,
-                            GetMessage(errorSink.Writes));
-                    }
-                    break;
+                    Assert.Equal(2, errorSink.Writes.Count);
+                    Assert.Equal(
+                        "warn: test[0]" + Environment.NewLine +
+                        _paddingString + "Warn" + Environment.NewLine,
+                        GetMessage(errorSink.Writes));
+                }
+                break;
                 case ConsoleLoggerFormat.Systemd:
-                    {
-                        Assert.Single(sink.Writes);
-                        Assert.Equal(
-                            "<6>test[0] Info" + Environment.NewLine,
-                            GetMessage(sink.Writes));
+                {
+                    Assert.Single(sink.Writes);
+                    Assert.Equal(
+                        "<6>test[0] Info" + Environment.NewLine,
+                        GetMessage(sink.Writes));
 
-                        Assert.Single(errorSink.Writes);
-                        Assert.Equal(
-                            "<4>test[0] Warn" + Environment.NewLine,
-                            GetMessage(errorSink.Writes));
-                    }
-                    break;
+                    Assert.Single(errorSink.Writes);
+                    Assert.Equal(
+                        "<4>test[0] Warn" + Environment.NewLine,
+                        GetMessage(errorSink.Writes));
+                }
+                break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(format));
             }
@@ -984,25 +984,25 @@ namespace Microsoft.Extensions.Logging.Console.Test
             switch (format)
             {
                 case ConsoleLoggerFormat.Default:
-                    {
-                        Assert.Equal(2, sink.Writes.Count);
-                        Assert.Equal(
-                            levelPrefix + ": test[0]" + Environment.NewLine +
-                            _paddingString + "System.Exception: Exception message" + Environment.NewLine +
-                            _paddingString + "with a second line" + Environment.NewLine,
-                            GetMessage(sink.Writes));
-                    }
-                    break;
+                {
+                    Assert.Equal(2, sink.Writes.Count);
+                    Assert.Equal(
+                        levelPrefix + ": test[0]" + Environment.NewLine +
+                        _paddingString + "System.Exception: Exception message" + Environment.NewLine +
+                        _paddingString + "with a second line" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+                }
+                break;
                 case ConsoleLoggerFormat.Systemd:
-                    {
-                        Assert.Single(sink.Writes);
-                        Assert.Equal(
-                            levelPrefix + "test[0]" + " " +
-                            "System.Exception: Exception message" + " " +
-                            "with a second line" + Environment.NewLine,
-                            GetMessage(sink.Writes));
-                    }
-                    break;
+                {
+                    Assert.Single(sink.Writes);
+                    Assert.Equal(
+                        levelPrefix + "test[0]" + " " +
+                        "System.Exception: Exception message" + " " +
+                        "with a second line" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+                }
+                break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(format));
             }
@@ -1027,25 +1027,25 @@ namespace Microsoft.Extensions.Logging.Console.Test
             switch (format)
             {
                 case ConsoleLoggerFormat.Default:
-                    {
-                        Assert.Equal(2, sink.Writes.Count);
-                        Assert.Equal(
-                            levelPrefix + ": test[0]" + Environment.NewLine +
-                            _paddingString + "System.Exception: Exception message" + Environment.NewLine +
-                            _paddingString + "with a second line" + Environment.NewLine,
-                            GetMessage(sink.Writes));
-                    }
-                    break;
+                {
+                    Assert.Equal(2, sink.Writes.Count);
+                    Assert.Equal(
+                        levelPrefix + ": test[0]" + Environment.NewLine +
+                        _paddingString + "System.Exception: Exception message" + Environment.NewLine +
+                        _paddingString + "with a second line" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+                }
+                break;
                 case ConsoleLoggerFormat.Systemd:
-                    {
-                        Assert.Single(sink.Writes);
-                        Assert.Equal(
-                            levelPrefix + "test[0]" + " " +
-                            "System.Exception: Exception message" + " " +
-                            "with a second line" + Environment.NewLine,
-                            GetMessage(sink.Writes));
-                    }
-                    break;
+                {
+                    Assert.Single(sink.Writes);
+                    Assert.Equal(
+                        levelPrefix + "test[0]" + " " +
+                        "System.Exception: Exception message" + " " +
+                        "with a second line" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+                }
+                break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(format));
             }
@@ -1069,23 +1069,23 @@ namespace Microsoft.Extensions.Logging.Console.Test
             switch (format)
             {
                 case ConsoleLoggerFormat.Default:
-                    {
-                        Assert.Equal(2, sink.Writes.Count);
-                        Assert.Equal(
-                            levelPrefix + ": test[0]" + Environment.NewLine +
-                            _paddingString + "This is a test, and {curly braces} are just fine!" + Environment.NewLine,
-                            GetMessage(sink.Writes));
-                    }
-                    break;
+                {
+                    Assert.Equal(2, sink.Writes.Count);
+                    Assert.Equal(
+                        levelPrefix + ": test[0]" + Environment.NewLine +
+                        _paddingString + "This is a test, and {curly braces} are just fine!" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+                }
+                break;
                 case ConsoleLoggerFormat.Systemd:
-                    {
-                        Assert.Single(sink.Writes);
-                        Assert.Equal(
-                            levelPrefix + "test[0]" + " " +
-                            "This is a test, and {curly braces} are just fine!" + Environment.NewLine,
-                            GetMessage(sink.Writes));
-                    }
-                    break;
+                {
+                    Assert.Single(sink.Writes);
+                    Assert.Equal(
+                        levelPrefix + "test[0]" + " " +
+                        "This is a test, and {curly braces} are just fine!" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+                }
+                break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(format));
             }
