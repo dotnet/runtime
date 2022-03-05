@@ -127,7 +127,7 @@ mempool_init (struct mempool *pool, size_t obj_size, size_t reserve)
     }
 
   pool->obj_size = obj_size;
-  pool->reserve = reserve;
+  pool->reserve = (unsigned int)reserve;
   pool->chunk_size = UNW_ALIGN(2*reserve*obj_size, pg_size);
 
   expand (pool);
