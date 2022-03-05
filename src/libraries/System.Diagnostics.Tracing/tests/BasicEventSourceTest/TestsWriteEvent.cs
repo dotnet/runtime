@@ -331,19 +331,22 @@ namespace BasicEventSourceTests
                         },
                         delegate (List<Event> evts)
                         {
-                            Assert.NotEmpty(evts);
-                            Assert.All(evts, e => Assert.Equal(logger.Name, e.ProviderName));
+                            Assert.True(0 < evts.Count);
 
                             // We give an error message in EventListener case but not the ETW case.
-                            if (evts.Count > 1)
+                            if (1 < evts.Count)
                             {
                                 Assert.Equal(2, evts.Count);
+                                Assert.Equal(logger.Name, evts[0].ProviderName);
                                 Assert.Equal("EventSourceMessage", evts[0].EventName);
-                                Assert.Matches(EventCountErrorRegex(), evts[0].PayloadString(0, "message"));
+                                string errorMsg = evts[0].PayloadString(0, "message");
+                                Assert.Matches("called with 1.*defined with 3", errorMsg);
                             }
 
-                            Assert.Equal("EventWithIncorrectNumberOfParameters", evts[0].EventName);
-                            Assert.Equal("{TestPath:10}TestMessage", evts[0].PayloadString(0, "message"));
+                            int eventIdx = evts.Count - 1;
+                            Assert.Equal(logger.Name, evts[eventIdx].ProviderName);
+                            Assert.Equal("EventWithIncorrectNumberOfParameters", evts[eventIdx].EventName);
+                            Assert.Equal("{TestPath:10}TestMessage", evts[eventIdx].PayloadString(0, "message"));
                         }));
                 }
 
@@ -355,9 +358,6 @@ namespace BasicEventSourceTests
                 EventTestHarness.RunTests(tests, listener, logger);
             }
         }
-
-        [RegexGenerator("called with 1.*defined with 3")]
-        private static partial Regex EventCountErrorRegex();
 
         static partial void Test_WriteEvent_AddEtwTests(List<SubTest> tests, EventSourceTest logger);
 
