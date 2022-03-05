@@ -91,7 +91,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
 
             Debug.Assert(!target.IsEmpty);
-            Debug.Assert(_isAsciiEqualityOrdinal);
+            Debug.Assert(_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options));
 
             fixed (char* ap = &MemoryMarshal.GetReference(source))
             fixed (char* bp = &MemoryMarshal.GetReference(target))
@@ -195,7 +195,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
 
             Debug.Assert(!target.IsEmpty);
-            Debug.Assert(_isAsciiEqualityOrdinal);
+            Debug.Assert(_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options));
 
             fixed (char* ap = &MemoryMarshal.GetReference(source))
             fixed (char* bp = &MemoryMarshal.GetReference(target))
@@ -314,7 +314,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
 
             Debug.Assert(!prefix.IsEmpty);
-            Debug.Assert(_isAsciiEqualityOrdinal);
+            Debug.Assert(_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options));
 
             int length = Math.Min(source.Length, prefix.Length);
 
@@ -389,7 +389,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
 
             Debug.Assert(!prefix.IsEmpty);
-            Debug.Assert(_isAsciiEqualityOrdinal);
+            Debug.Assert(_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options));
 
             int length = Math.Min(source.Length, prefix.Length);
 
@@ -479,7 +479,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
 
             Debug.Assert(!suffix.IsEmpty);
-            Debug.Assert(_isAsciiEqualityOrdinal);
+            Debug.Assert(_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options));
 
             int length = Math.Min(source.Length, suffix.Length);
 
@@ -554,7 +554,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
 
             Debug.Assert(!suffix.IsEmpty);
-            Debug.Assert(_isAsciiEqualityOrdinal);
+            Debug.Assert(_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options));
 
             int length = Math.Min(source.Length, suffix.Length);
 
