@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.PortsTests;
-using System.Linq;
-using Legacy.Support;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace System.IO.Ports.Tests
@@ -15,16 +15,24 @@ namespace System.IO.Ports.Tests
         public void OpenDevices01()
         {
             DosDevices dosDevices = new DosDevices();
-            foreach (var (value, debugLine) in dosDevices.SelectMany(kv => new[] {
-                (kv.Key, $"Checking exception thrown with Key {kv.Key}"),
-                (kv.Value, $"Checking exception thrown with Value {kv.Value}")
-            }))
+            Regex comPortNameRegex = new Regex(@"com\d{1,3}", RegexOptions.IgnoreCase);
+
+            foreach (KeyValuePair<string, string> keyValuePair in dosDevices)
             {
-                if (!string.IsNullOrEmpty(value) && !PortHelper.ComPortRegex().IsMatch(value))
+                if (!string.IsNullOrEmpty(keyValuePair.Key) && !comPortNameRegex.IsMatch(keyValuePair.Key))
                 {
-                    using (SerialPort com1 = new SerialPort(value))
+                    using (SerialPort com1 = new SerialPort(keyValuePair.Key))
                     {
-                        Debug.WriteLine(debugLine);
+                        Debug.WriteLine($"Checking exception thrown with Key {keyValuePair.Key}");
+                        Assert.ThrowsAny<Exception>(() => com1.Open());
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(keyValuePair.Value) && !comPortNameRegex.IsMatch(keyValuePair.Key))
+                {
+                    using (SerialPort com1 = new SerialPort(keyValuePair.Value))
+                    {
+                        Debug.WriteLine($"Checking exception thrown with Value {keyValuePair.Value}");
                         Assert.ThrowsAny<Exception>(() => com1.Open());
                     }
                 }
