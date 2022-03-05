@@ -21,7 +21,19 @@ namespace System.Text.Json.Serialization
         /// <remarks>
         /// The instance cannot be mutated once it is bound with the context instance.
         /// </remarks>
-        public JsonSerializerOptions Options => _options ??= new JsonSerializerOptions { JsonSerializerContext = this };
+        public JsonSerializerOptions Options
+        {
+            get
+            {
+                if (_options == null)
+                {
+                    _options = new JsonSerializerOptions();
+                    _options._serializerContext = this;
+                }
+
+                return _options;
+            }
+        }
 
         /// <summary>
         /// Indicates whether pre-generated serialization logic for types in the context
@@ -83,8 +95,13 @@ namespace System.Text.Json.Serialization
         {
             if (options != null)
             {
-                options.JsonSerializerContext = this;
+                if (options._serializerContext != null)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_JsonSerializerOptionsAlreadyBoundToContext();
+                }
+
                 _options = options;
+                options._serializerContext = this;
             }
         }
 
