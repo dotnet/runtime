@@ -11946,7 +11946,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             //
                             if (!mustUseTargetPatchpoint)
                             {
-                                for (BasicBlock* const succBlock : Succs(this))
+                                for (BasicBlock* const succBlock : block->Succs(this))
+                                {
                                     if ((succBlock->bbNum <= block->bbNum) && (succBlock->bbRefs > 1))
                                     {
                                         mustUseTargetPatchpoint = true;
@@ -11966,7 +11967,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // We wanted a source patchpoint, but could not have one.
                         // So, add patchpoints to the backedge targets.
                         //
-                        for (BasicBlock* const succBlock : Succs(this))
+                        for (BasicBlock* const succBlock : block->Succs(this))
+                        {
                             if (succBlock->bbNum <= block->bbNum)
                             {
                                 // The succBlock had better agree it's a target.
