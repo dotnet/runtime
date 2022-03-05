@@ -4830,8 +4830,8 @@ struct GenTreeCall final : public GenTree
 
     GenTreeCall(var_types type) : GenTree(GT_CALL, type)
     {
-        fgArgInfo  = nullptr;
-        _retBufArg = nullptr;
+        fgArgInfo   = nullptr;
+        gtRetBufArg = nullptr;
     }
 #if DEBUGGABLE_GENTREE
     GenTreeCall() : GenTree()
@@ -4839,15 +4839,20 @@ struct GenTreeCall final : public GenTree
     }
 #endif
 
-    GenTreeLclVar* GetRetBufArg() const
+    GenTree* GetLclRetBufArgNode() const
     {
-        assert(_retBufArg == nullptr || HasRetBufArg());
-        return _retBufArg;
+        if (gtRetBufArg == nullptr)
+        {
+            return nullptr;
+        }
+
+        assert(HasRetBufArg());
+        return gtRetBufArg->GetNode()->OperIs(GT_ASG) ? gtRetBufArg->GetNode()->gtGetOp2() : gtRetBufArg->GetNode();
     }
 
-    void SetRetBufArg(GenTreeLclVar* retBufArg);
+    void SetRetBufArg(Use* retBufArg);
 
-    GenTreeLclVar* _retBufArg; // TODO: Rename to gt* something
+    Use* gtRetBufArg;
 };
 
 struct GenTreeCmpXchg : public GenTree

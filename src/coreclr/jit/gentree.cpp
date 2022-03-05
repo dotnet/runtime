@@ -1272,10 +1272,10 @@ bool GenTreeCall::AreArgsComplete() const
 // Return Value:
 //     Returns the "return buffer" argument
 //
-void GenTreeCall::SetRetBufArg(GenTreeLclVar* retBufArg)
+void GenTreeCall::SetRetBufArg(Use* retBufArg)
 {
     assert(HasRetBufArg());
-    _retBufArg = retBufArg;
+    gtRetBufArg = retBufArg;
 }
 
 //--------------------------------------------------------------------------
@@ -5392,7 +5392,7 @@ bool GenTree::OperRequiresAsgFlag()
     {
         // If the call has return buffer argument, it produced a definition and hence
         // should be marked with assignment.
-        return AsCall()->GetRetBufArg() != nullptr;
+        return AsCall()->GetLclRetBufArgNode() != nullptr;
     }
     return false;
 }
@@ -7958,7 +7958,6 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     }
 
     copy->gtCallMoreFlags = tree->gtCallMoreFlags;
-    copy->_retBufArg      = nullptr;
     copy->gtCallArgs      = nullptr;
     copy->gtCallLateArgs  = nullptr;
 
@@ -8010,32 +8009,6 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     {
         // Create and initialize the fgArgInfo for our copy of the call tree
         copy->fgArgInfo = new (this, CMK_Unknown) fgArgInfo(copy, tree);
-
-        // set the cloned "return buffer" node, if exist.
-        if (tree->_retBufArg != nullptr)
-        {
-            unsigned index = tree->gtCallThisArg == nullptr ? 0 : 1;
-            while (index < tree->fgArgInfo->ArgCount())
-            {
-                fgArgTabEntry* entry = tree->fgArgInfo->GetArgEntry(index);
-                if (entry->nonStandardArgKind == NonStandardArgKind::FixedRetBuffer ||
-                    entry->nonStandardArgKind == NonStandardArgKind::None)
-                {
-                    // found ret buffer
-                    GenTree* argNodeCopy = copy->fgArgInfo->GetArgEntry(index)->GetNode();
-                    if (argNodeCopy->OperIs(GT_ADDR))
-                    {
-                        GenTree* addrNodeCopy = argNodeCopy->AsOp()->gtGetOp1();
-                        assert(addrNodeCopy->OperIs(GT_LCL_VAR));
-
-                        copy->_retBufArg = addrNodeCopy->AsLclVar();
-                    }
-                    break;
-                }
-                index++;
-            }
-            assert(copy->_retBufArg != nullptr);
-        }
     }
     else
     {
@@ -15511,17 +15484,16 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
     }
     else if (OperIs(GT_CALL))
     {
-        GenTreeLclVar* retBufLclVar = AsCall()->GetRetBufArg();
-        if (retBufLclVar != nullptr)
+        GenTree* retBufArg = AsCall()->GetLclRetBufArgNode();
+        if (retBufArg == nullptr)
         {
-            *pLclVarTree = retBufLclVar;
-
-            if (pIsEntire != nullptr)
-            {
-                *pIsEntire = true;
-            }
-            return true;
+            return false;
         }
+
+        assert(retBufArg->OperIs(GT_ADDR));
+
+        unsigned size = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
+        return retBufArg->DefinesLocalAddr(comp, size, pLclVarTree, pIsEntire);
     }
     else if (OperIsBlk())
     {
@@ -15572,7 +15544,7 @@ bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarComm
             {
                 unsigned lclOffset = addrArgLcl->GetLclOffs();
 
-                if ((lclOffset != 0) || comp->lvaVarHiddenBufferStructArg(addrArgLcl->GetLclNum()))
+                if (lclOffset != 0)
                 {
                     // We aren't updating the bytes at [0..lclOffset-1] so *pIsEntire should be set to false
                     *pIsEntire = false;

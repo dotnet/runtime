@@ -74,7 +74,7 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeCall:
     call->gtCallMoreFlags       = GTF_CALL_M_EMPTY;
     call->gtInlineCandidateInfo = nullptr;
     call->gtControlExpr         = nullptr;
-    call->_retBufArg            = nullptr;
+    call->SetRetBufArg(nullptr);
 #ifdef UNIX_X86_ABI
     call->gtFlags |= GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
@@ -2144,6 +2144,11 @@ void fgArgInfo::EvalArgsToTemps()
 
         curArgTabEntry->lateUse = tmpRegArgNext;
         curArgTabEntry->SetLateArgInx(regArgInx++);
+
+        if ((setupArg != nullptr) && (setupArg->OperIs(GT_ARGPLACE)) && (callTree->gtRetBufArg == curArgTabEntry->use))
+        {
+            callTree->SetRetBufArg(tmpRegArgNext);
+        }
     }
 
 #ifdef DEBUG
@@ -9284,6 +9289,10 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     /* Assign DEF flags if it produces a definition from "return buffer" */
     fgAssignSetVarDef(call);
+    if (call->OperRequiresAsgFlag())
+    {
+        call->gtFlags |= GTF_ASG;
+    }
 
     // Should we expand this virtual method call target early here?
     //

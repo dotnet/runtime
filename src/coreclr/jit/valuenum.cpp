@@ -10062,11 +10062,9 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     // If the call generates a definition, because it uses "return buffer", then VN the local
     // as well.
     GenTreeLclVarCommon* lclVarTree;
-    bool                 isEntire;
-    if (call->DefinesLocal(this, &lclVarTree, &isEntire))
+    if (call->DefinesLocal(this, &lclVarTree))
     {
         assert(lclVarTree->gtFlags & GTF_VAR_DEF);
-        assert(isEntire);
 
         unsigned   hiddenArgLclNum = lclVarTree->GetLclNum();
         LclVarDsc* hiddenArgVarDsc = lvaGetDesc(hiddenArgLclNum);

@@ -1518,16 +1518,6 @@ bool Compiler::lvaVarAddrExposed(unsigned varNum) const
 }
 
 /*****************************************************************************
- * Returns true if variable "varNum" may be hidden return buffer for struct.
- */
-
-bool Compiler::lvaVarHiddenBufferStructArg(unsigned varNum) const
-{
-    const LclVarDsc* varDsc = lvaGetDesc(varNum);
-    return varDsc->IsHiddenBufferStructArg();
-}
-
-/*****************************************************************************
  * Returns true iff variable "varNum" should not be enregistered (or one of several reasons).
  */
 

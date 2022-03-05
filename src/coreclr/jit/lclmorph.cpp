@@ -697,23 +697,12 @@ private:
                     // Mark the local variable associated as being defined at this position.
                     assert(!exposeParentLcl);
                     assert(val.Node()->TypeIs(TYP_BYREF, TYP_I_IMPL));
-
-                    GenTree* addr = val.Node();
-                    assert(addr->OperIs(GT_ADDR));
-                    GenTree* hiddenArgOp = addr->AsOp()->gtGetOp1();
-
-                    if (hiddenArgOp->OperIs(GT_FIELD))
-                    {
-                        hiddenArgOp = hiddenArgOp->AsField()->gtGetOp1();
-                        assert(hiddenArgOp->OperIs(GT_ADDR));
-                        hiddenArgOp = hiddenArgOp->AsOp()->gtGetOp1();
-                    }
-                    assert(hiddenArgOp->OperIs(GT_LCL_VAR));
+                    assert(val.Node()->OperIs(GT_ADDR));
 
                     m_compiler->lvaSetHiddenBufferStructArg(val.LclNum());
                     hasHiddenStructArg = true;
 
-                    callTree->SetRetBufArg(hiddenArgOp->AsLclVar());
+                    callTree->SetRetBufArg(callTree->gtCallArgs);
                 }
             }
         }
