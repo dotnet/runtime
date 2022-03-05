@@ -172,8 +172,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestBaggageWithChainedActivities()
         {
-            RemoteExecutor.Invoke(() =>
-            {
+            RemoteExecutor.Invoke(() => {
                 Activity a1 = new Activity("a1");
                 a1.Start();
 
@@ -764,7 +763,7 @@ namespace System.Diagnostics.Tests
             {
                 Activity activity = new Activity("activity15");
                 activity.Start();
-                Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+                 Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
             }, new RemoteInvokeOptions() { StartInfo = psi }).Dispose();
         }
 
@@ -1612,7 +1611,7 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(tags[i].Value, tagObjects[i].Value);
             }
 
-            activity.AddTag("s4", (object)null);
+            activity.AddTag("s4", (object) null);
             Assert.Equal(4, activity.Tags.Count());
             Assert.Equal(4, activity.TagObjects.Count());
             tags = activity.Tags.ToArray();
@@ -1733,9 +1732,9 @@ namespace System.Diagnostics.Tests
 
 
         [Theory]
-        [InlineData("key1", null, true, 1)]
+        [InlineData("key1", null, true,  1)]
         [InlineData("key2", null, false, 0)]
-        [InlineData("key3", "v1", true, 1)]
+        [InlineData("key3", "v1", true,  1)]
         [InlineData("key4", "v2", false, 1)]
         public void TestInsertingFirstTag(string key, object value, bool add, int resultCount)
         {
@@ -1830,8 +1829,8 @@ namespace System.Diagnostics.Tests
             Assert.Equal(ActivityStatusCode.Error, a.Status);
             Assert.Equal("Another Error Code Description", a.StatusDescription);
 
-            a.SetStatus((ActivityStatusCode)100, "Another Error Code Description");
-            Assert.Equal((ActivityStatusCode)100, a.Status);
+            a.SetStatus((ActivityStatusCode) 100, "Another Error Code Description");
+            Assert.Equal((ActivityStatusCode) 100, a.Status);
             Assert.Null(a.StatusDescription);
         }
 
@@ -1892,7 +1891,7 @@ namespace System.Diagnostics.Tests
             RemoteExecutor.Invoke(() =>
             {
                 Random random = new Random();
-                byte[] traceIdBytes = new byte[16];
+                byte [] traceIdBytes = new byte[16];
 
                 Activity.TraceIdGenerator = () =>
                 {
