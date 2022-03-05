@@ -56,9 +56,6 @@
 #pragma warning(disable:4710)   // function not inlined
 #pragma warning(disable:4527)   // user-defined destructor required
 #pragma warning(disable:4513)   // destructor could not be generated
-
-    // <TODO>TODO we really probably need this one put back in!!!</TODO>
-//#pragma warning(disable:4701)   // local variable may be used without being initialized
 #endif // _MSC_VER
 
 #define _CRT_DEPENDENCY_   //this code depends on the crt file functions
