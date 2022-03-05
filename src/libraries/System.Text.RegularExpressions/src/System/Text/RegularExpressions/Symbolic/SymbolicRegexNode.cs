@@ -1065,6 +1065,7 @@ namespace System.Text.RegularExpressions.Symbolic
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
                 StackHelper.CallOnEmptyStack(AddTransitions, elem, context, transitions, continuation, effects, simulateBacktracking);
+                return;
             }
 
             switch (_kind)
