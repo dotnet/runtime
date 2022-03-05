@@ -532,8 +532,6 @@ namespace System.Text.Json.Serialization.Tests
             var optionsSingleton = JsonSerializerOptions.Default;
             Assert.Throws<InvalidOperationException>(() => optionsSingleton.IncludeFields = true);
             Assert.Throws<InvalidOperationException>(() => optionsSingleton.Converters.Add(new JsonStringEnumConverter()));
-            Assert.Throws<InvalidOperationException>(() => optionsSingleton.AddContext<JsonContext>());
-            Assert.Throws<InvalidOperationException>(() => new JsonContext(optionsSingleton));
         }
 
         [Fact]
