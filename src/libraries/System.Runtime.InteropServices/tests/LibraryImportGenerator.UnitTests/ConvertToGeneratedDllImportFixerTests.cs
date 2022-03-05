@@ -518,6 +518,7 @@ partial class Enclosing
                 fixedSource);
         }
 
+        [ConditionalFact]
         public async Task BooleanMarshalAsAdded()
         {
             string source = @$"
