@@ -17,11 +17,11 @@ namespace System.Formats.Cbor
         /// <summary>Writes the start of a definite or indefinite-length map (major type 5).</summary>
         /// <param name="definiteLength">The length of the definite-length map, or <see langword="null" /> for an indefinite-length map.</param>
         /// <exception cref="ArgumentOutOfRangeException">The <paramref name="definiteLength" /> parameter cannot be negative.</exception>
-        /// <exception cref="InvalidOperationException"><p>Writing a new value exceeds the definite length of the parent data item.</p>
-        /// <p>-or-</p>
-        /// <p>The major type of the encoded value is not permitted in the parent data item.</p>
-        /// <p>-or-</p>
-        /// <p>The written data is not accepted under the current conformance mode.</p></exception>
+        /// <exception cref="InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The major type of the encoded value is not permitted in the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         /// <remarks>
         /// In canonical conformance modes, the writer will reject indefinite-length writes unless
         /// the <see cref="ConvertIndefiniteLengthEncodings" /> flag is enabled.
@@ -45,11 +45,11 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Writes the end of a map (major type 5).</summary>
-        /// <exception cref="InvalidOperationException"><p>The written data is not accepted under the current conformance mode.</p>
-        /// <p>-or-</p>
-        /// <p>The definite-length map anticipates more data items.</p>
-        /// <p>-or-</p>
-        /// <p>The latest key/value pair is lacking a value.</p></exception>
+        /// <exception cref="InvalidOperationException"><para>The written data is not accepted under the current conformance mode.</para>
+        /// <para>-or-</para>
+        /// <para>The definite-length map anticipates more data items.</para>
+        /// <para>-or-</para>
+        /// <para>The latest key/value pair is lacking a value.</para></exception>
         public void WriteEndMap()
         {
             if (_itemsWritten % 2 == 1)
