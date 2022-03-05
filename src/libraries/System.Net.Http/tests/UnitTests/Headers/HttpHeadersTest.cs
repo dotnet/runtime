@@ -575,7 +575,7 @@ namespace System.Net.Http.Tests
 
             headers.Add(headers.Descriptor, rawPrefix + "1");
             // Can only add headers once.
-            Assert.Throws<FormatException>(() => {headers.Add(headers.Descriptor, rawPrefix + "2"); });
+            Assert.Throws<FormatException>(() => { headers.Add(headers.Descriptor, rawPrefix + "2"); });
 
             // Verify that the first header value is still there.
             Assert.Equal(1, headers.First().Value.Count());
@@ -693,7 +693,7 @@ namespace System.Net.Http.Tests
             MockHeaders headers = new MockHeaders(parser);
 
             headers.TryAddWithoutValidation(headers.Descriptor, rawPrefix + "1");
-            Assert.Throws<FormatException>(() => { headers.Add(headers.Descriptor, rawPrefix + "2"); });
+            Assert.Throws<FormatException>(() => {headers.Add(headers.Descriptor, rawPrefix + "2"); });
         }
 
         [Fact]
