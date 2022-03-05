@@ -6452,8 +6452,8 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     else
     {
         // Clear target reg in advance via "xor reg,reg" to avoid movzx after SETCC
-        if ((targetReg != REG_NA) && !varTypeIsByte(targetType) && (op1->GetReg() != targetReg) &&
-            (op2->GetReg() != targetReg))
+        if ((targetReg != REG_NA) && !varTypeIsByte(targetType) && (op1->GetRegNum() != targetReg) &&
+            (op2->GetRegNum() != targetReg))
         {
             instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
             targetType = TYP_BOOL; // just a tip for inst_SETCC that movzx is not needed
