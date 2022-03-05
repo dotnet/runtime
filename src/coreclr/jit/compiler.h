@@ -9956,7 +9956,7 @@ public:
         // If set, tries to hide alignment instructions behind unconditional jumps.
         bool compJitHideAlignBehindJmp;
 
-        // If set, eliminates the extra copy done after function call having hidden buffer struct arg
+        // If set, tracks the hidden return buffer for struct arg.
         bool compJitOptimizeStructHiddenBuffer;
 
 #ifdef LATE_DISASM

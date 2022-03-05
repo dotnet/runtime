@@ -1072,7 +1072,7 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block)
     {
         for (GenTree* const tree : stmt->TreeList())
         {
-            if (tree->OperIs(GT_ASG, GT_CALL))
+            if (tree->OperIsSsaDef())
             {
                 RenameDef(tree, block);
             }

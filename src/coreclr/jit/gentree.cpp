@@ -1267,10 +1267,7 @@ bool GenTreeCall::AreArgsComplete() const
 }
 
 //-------------------------------------------------------------------------
-// GetRetBufArg: Returns the "return buffer" argument.
-//
-// Return Value:
-//     Returns the "return buffer" argument
+// SetRetBufArg: Sets the "return buffer" argument use.
 //
 void GenTreeCall::SetRetBufArg(Use* retBufArg)
 {

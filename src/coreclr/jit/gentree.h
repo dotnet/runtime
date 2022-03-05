@@ -1587,6 +1587,11 @@ public:
         return OperIsMultiOp(OperGet());
     }
 
+    bool OperIsSsaDef() const
+    {
+        return OperIs(GT_ASG, GT_CALL);
+    }
+
     // This is here for cleaner FEATURE_SIMD #ifdefs.
     static bool OperIsSIMD(genTreeOps gtOper)
     {
@@ -4852,7 +4857,7 @@ struct GenTreeCall final : public GenTree
 
     void SetRetBufArg(Use* retBufArg);
 
-    Use* gtRetBufArg;
+    Use* gtRetBufArg; // The argument that holds return buffer argument
 };
 
 struct GenTreeCmpXchg : public GenTree
