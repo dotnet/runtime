@@ -288,10 +288,12 @@ internal static partial class Interop
             {
                 if (sslAuthenticationOptions.IsClient)
                 {
-                    // we don't want to try on emtpy TargetName since that is our key.
+                    // We don't support client resume on old OpenSSL versions.
+                    // We don't want to try on empty TargetName since that is our key.
                     // And we don't want to mess up with client authentication. It may be possible
                     // but it seems safe to get full new session.
-                    if (string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) ||
+                    if (!Interop.Ssl.Capabilities.Tls13Supported ||
+                       string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) ||
                        sslAuthenticationOptions.CertificateContext != null ||
                         sslAuthenticationOptions.CertSelectionDelegate != null)
                     {
