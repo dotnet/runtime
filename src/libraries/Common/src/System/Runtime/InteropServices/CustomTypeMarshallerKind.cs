@@ -8,7 +8,7 @@
 //
 namespace System.Runtime.InteropServices
 {
-#if DLLIMPORT_GENERATOR_TEST
+#if LIBRARYIMPORT_GENERATOR_TEST
     public
 #else
     internal

@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Interop</RootNamespace>
     <RunAnalyzers>true</RunAnalyzers>
-    <DefineConstants>DLLIMPORT_GENERATOR_TEST</DefineConstants>
+    <DefineConstants>$(DefineConstants);LIBRARYIMPORT_GENERATOR_TEST</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
