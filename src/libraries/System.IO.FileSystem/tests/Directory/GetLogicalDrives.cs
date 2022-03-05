@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.Tests
 {
-    public partial class Directory_GetLogicalDrives
+    public class Directory_GetLogicalDrives
     {
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Valid drive strings on Unix
@@ -23,13 +25,7 @@ namespace System.IO.Tests
         {
             string[] drives = Directory.GetLogicalDrives();
             Assert.NotEmpty(drives);
-            Assert.All(drives, d =>
-            {
-                const string driveRootSuffix = ":\\";
-                Assert.Equal(driveRootSuffix.Length + 1, d.Length);
-                Assert.InRange(d[0], 'A', 'Z');
-                Assert.EndsWith(driveRootSuffix, d);
-            });
+            Assert.All(drives, d => Assert.Matches(@"^[A-Z]:\\$", d));
         }
     }
 }
