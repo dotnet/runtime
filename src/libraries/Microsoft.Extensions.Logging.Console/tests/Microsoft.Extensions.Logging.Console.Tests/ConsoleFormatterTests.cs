@@ -16,7 +16,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Logging.Console.Test
 {
-    public partial class ConsoleFormatterTests
+    public class ConsoleFormatterTests
     {
         protected const string _loggerName = "test";
         protected const string _state = "This is a test, and {curly braces} are just fine!";
@@ -119,16 +119,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(0, sink.Writes.Count);
         }
 
-        // (?:\D\d{2}){6}
-        [RegexGenerator(@"^\d{4}(?:\D\d{2}){6}\s$")]
-        public static partial Regex FormatterSimpleRegex();
-
-        [RegexGenerator(@"^<\d>(\d{4}(?:\D\d{2}){6})\s[^\s]")]
-        public static partial Regex FormatterSystemdRegex();
-
-        [RegexGenerator(@"(\d{4}(?:\D\d{2}){6})")]
-        public static partial Regex FormatterJsonRegex();
-
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(FormatterNamesAndLevels))]
         public void Log_LogsCorrectTimestamp(string formatterName, LogLevel level)
@@ -164,7 +154,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     {
                         Assert.Equal(3, sink.Writes.Count);
                         Assert.StartsWith(levelPrefix, sink.Writes[1].Message);
-                        Assert.Matches(FormatterSimpleRegex(), sink.Writes[0].Message);
+                        Assert.Matches(@"^\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\s$", sink.Writes[0].Message);
                         var parsedDateTime = DateTimeOffset.Parse(sink.Writes[0].Message.Trim());
                         Assert.Equal(DateTimeOffset.Now.Offset, parsedDateTime.Offset);
                     }
@@ -173,7 +163,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     {
                         Assert.Single(sink.Writes);
                         Assert.StartsWith(levelPrefix, sink.Writes[0].Message);
-                        var regexMatch = FormatterSystemdRegex().Match(sink.Writes[0].Message);
+                        var regexMatch = Regex.Match(sink.Writes[0].Message, @"^<\d>(\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2})\s[^\s]");
                         Assert.True(regexMatch.Success);
                         var parsedDateTime = DateTimeOffset.Parse(regexMatch.Groups[1].Value);
                         Assert.Equal(DateTimeOffset.Now.Offset, parsedDateTime.Offset);
@@ -182,7 +172,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 case ConsoleFormatterNames.Json:
                     {
                         Assert.Single(sink.Writes);
-                        var regexMatch = FormatterJsonRegex().Match(sink.Writes[0].Message);
+                        var regexMatch = Regex.Match(sink.Writes[0].Message, @"(\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2})");
                         Assert.True(regexMatch.Success, sink.Writes[0].Message);
                         var parsedDateTime = DateTimeOffset.Parse(regexMatch.Groups[1].Value);
                         Assert.Equal(DateTimeOffset.Now.Offset, parsedDateTime.Offset);
