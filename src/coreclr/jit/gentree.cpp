@@ -15641,8 +15641,15 @@ bool GenTree::IsLocalAddrExpr(Compiler*             comp,
     {
         assert(!comp->compRationalIRForm);
         GenTree* addrArg = AsOp()->gtOp1;
+
         if (addrArg->IsLocal()) // Note that this covers "GT_LCL_FLD."
         {
+            FieldSeqNode* zeroOffsetFieldSeq = nullptr;
+            if (comp->GetZeroOffsetFieldMap()->Lookup(this, &zeroOffsetFieldSeq))
+            {
+                *pFldSeq = comp->GetFieldSeqStore()->Append(zeroOffsetFieldSeq, *pFldSeq);
+            }
+
             *pLclVarTree = addrArg->AsLclVarCommon();
             if (addrArg->OperGet() == GT_LCL_FLD)
             {
