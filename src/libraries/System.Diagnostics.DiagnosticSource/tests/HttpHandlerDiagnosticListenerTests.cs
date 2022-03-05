@@ -17,7 +17,7 @@ namespace System.Diagnostics.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public partial class HttpHandlerDiagnosticListenerTests
+    public class HttpHandlerDiagnosticListenerTests
     {
         /// <summary>
         /// A simple test to make sure the Http Diagnostic Source is added into the list of DiagnosticListeners.
@@ -145,9 +145,6 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [RegexGenerator(@"^[0-9a-f]{2}-[0-9a-f]{31}-[0-9a-f]{16}-[0-9a-f]{2}$")]
-        private static partial Regex TraceParentRegex();
-
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestW3CHeaders()
@@ -173,7 +170,7 @@ namespace System.Diagnostics.Tests
 
                     var traceparent = startRequest.Headers["traceparent"];
                     Assert.NotNull(traceparent);
-                    Assert.Matches(TraceParentRegex(), traceparent);
+                    Assert.Matches("^[0-9a-f][0-9a-f]-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f][0-9a-f]$", traceparent);
                     Assert.Null(startRequest.Headers["tracestate"]);
                     Assert.Null(startRequest.Headers["Request-Id"]);
 
@@ -224,7 +221,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("some=state", tracestate);
                     Assert.Equal("k=v", correlationContext);
                     Assert.StartsWith($"00-{parent.TraceId.ToHexString()}-", traceparent);
-                    Assert.Matches(TraceParentRegex(), traceparent);
+                    Assert.Matches("^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$", traceparent);
                     Assert.Null(startRequest.Headers["Request-Id"]);
                 }
             }).Dispose();

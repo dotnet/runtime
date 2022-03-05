@@ -2,7 +2,6 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
-    <EnableRegexGenerator>true</EnableRegexGenerator>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);MEMORYMARSHAL_SUPPORT</DefineConstants>

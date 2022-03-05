@@ -13,7 +13,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    public partial class ActivityTests : IDisposable
+    public class ActivityTests : IDisposable
     {
         /// <summary>
         /// Tests Activity constructor
@@ -473,9 +473,6 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [RegexGenerator("^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$")]
-        public static partial Regex W3CFormatRegex();
-
         public static bool IdIsW3CFormat(string id)
         {
             if (id.Length != 55)
@@ -486,15 +483,12 @@ namespace System.Diagnostics.Tests
                 return false;
             if (id[52] != '-')
                 return false;
-            return W3CFormatRegex().IsMatch(id);
+            return Regex.IsMatch(id, "^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$");
         }
-
-        [RegexGenerator("^[0-9a-f]+$")]
-        public static partial Regex LowerCaseHexRegex();
 
         public static bool IsLowerCaseHex(string s)
         {
-            return LowerCaseHexRegex().IsMatch(s);
+            return Regex.IsMatch(s, "^[0-9a-f]*$");
         }
 
         /****** ActivityTraceId tests *****/
