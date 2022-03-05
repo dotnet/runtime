@@ -6438,6 +6438,8 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     // Sign jump optimization should only be set the following check
     assert((tree->gtFlags & GTF_RELOP_SJUMP_OPT) == 0);
 
+    var_types targetType = tree->TypeGet();
+
     if (canReuseFlags && emit->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(type), tree->OperGet()))
     {
         JITDUMP("Not emitting compare due to flags being already set\n");
@@ -6449,13 +6451,20 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     }
     else
     {
+        // Clear target reg in advance via "xor reg,reg" to avoid movzx after SETCC
+        if ((targetReg != REG_NA) && !varTypeIsByte(targetType) && (op1->GetReg() != targetReg) &&
+            (op2->GetReg() != targetReg))
+        {
+            instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
+            targetType = TYP_BOOL; // just a tip for inst_SETCC that movzx is not needed
+        }
         emit->emitInsBinary(ins, emitTypeSize(type), op1, op2);
     }
 
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
     {
-        inst_SETCC(GenCondition::FromIntegralRelop(tree), tree->TypeGet(), targetReg);
+        inst_SETCC(GenCondition::FromIntegralRelop(tree), targetType, targetReg);
         genProduceReg(tree);
     }
 }
