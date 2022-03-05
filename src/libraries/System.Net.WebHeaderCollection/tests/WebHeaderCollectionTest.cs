@@ -706,7 +706,7 @@ namespace System.Net.Tests
             WebHeaderCollection w = new WebHeaderCollection();
             w.Add(HttpRequestHeader.ContentLength, "10");
             w.Add(HttpRequestHeader.ContentType, "text/html");
-            Assert.Equal(2, w.Count);
+            Assert.Equal(2,w.Count);
         }
 
         [Fact]
@@ -724,7 +724,7 @@ namespace System.Net.Tests
             WebHeaderCollection w = new WebHeaderCollection();
             char[] arr = new char[ushort.MaxValue + 1];
             string maxStr = new string(arr);
-            AssertExtensions.Throws<ArgumentException>("value", () => w.Add(HttpRequestHeader.ContentLength, maxStr));
+            AssertExtensions.Throws<ArgumentException>("value", () => w.Add(HttpRequestHeader.ContentLength,maxStr));
             AssertExtensions.Throws<ArgumentException>("value", () => w.Add("ContentLength", maxStr));
         }
 
