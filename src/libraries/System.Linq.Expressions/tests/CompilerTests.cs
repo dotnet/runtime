@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
-    public static partial class CompilerTests
+    public static class CompilerTests
     {
         [Theory]
         [ClassData(typeof(CompilationTypes))]
@@ -382,16 +382,15 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(nExpected, nActual);
         }
 
-        [RegexGenerator(@"lambda_method[0-9]*")]
-        private static partial Regex NormalizeRegex();
-
         private static string Normalize(string s)
         {
+            var normalizeRegex = new Regex(@"lambda_method[0-9]*");
+
             Collections.Generic.IEnumerable<string> lines =
                 s
                 .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Where(line => !line.StartsWith("//"))
-                .Select(beforeLambdaUniquifierRemoval => NormalizeRegex().Replace(beforeLambdaUniquifierRemoval, "lambda_method"));
+                .Select(beforeLambdaUniquifierRemoval => normalizeRegex.Replace(beforeLambdaUniquifierRemoval, "lambda_method"));
 
             return string.Join("\n", lines);
         }
