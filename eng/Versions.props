@@ -138,9 +138,8 @@
     <optimizationPGOCoreCLRVersion>1.0.0-prerelease.22121.2</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
     <MicrosoftDiaSymReaderNativeVersion>16.9.0-beta1.21055.5</MicrosoftDiaSymReaderNativeVersion>
-    <SystemCommandLineVersion>2.0.0-beta1.20253.1</SystemCommandLineVersion>
+    <SystemCommandLineVersion>2.0.0-beta3.22114.1</SystemCommandLineVersion>
     <TraceEventVersion>2.0.65</TraceEventVersion>
-    <CommandLineParserVersion>2.2.0</CommandLineParserVersion>
     <NETStandardLibraryRefVersion>2.1.0</NETStandardLibraryRefVersion>
     <NetStandardLibraryVersion>2.0.3</NetStandardLibraryVersion>
     <MicrosoftDiagnosticsToolsRuntimeClientVersion>1.0.4-preview6.19326.1</MicrosoftDiagnosticsToolsRuntimeClientVersion>
