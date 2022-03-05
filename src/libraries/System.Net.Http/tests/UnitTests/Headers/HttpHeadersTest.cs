@@ -693,7 +693,7 @@ namespace System.Net.Http.Tests
             MockHeaders headers = new MockHeaders(parser);
 
             headers.TryAddWithoutValidation(headers.Descriptor, rawPrefix + "1");
-            Assert.Throws<FormatException>(() => {headers.Add(headers.Descriptor, rawPrefix + "2"); });
+            Assert.Throws<FormatException>(() => { headers.Add(headers.Descriptor, rawPrefix + "2"); });
         }
 
         [Fact]
@@ -2359,6 +2359,13 @@ namespace System.Net.Http.Tests
             Assert.Equal(new[] { "newValue" }, valuesFor3);
         }
 
+        [Fact]
+        public void TryAddInvalidHeader_ShouldThrowFormatException()
+        {
+            MockHeaders headers = new MockHeaders();
+            AssertExtensions.Throws<FormatException>(() => headers.Remove("\u0080"), "The header name '\u0080' format is invalid.");
+        }
+
         public static IEnumerable<object[]> NumberOfHeadersUpToArrayThreshold_AddNonValidated_EnumerateNonValidated()
         {
             for (int i = 0; i <= HttpHeaders.ArrayThreshold; i++)
@@ -2398,11 +2405,11 @@ namespace System.Net.Http.Tests
         public static IEnumerable<object[]> HeaderValuesWithNewLines()
         {
             foreach (string pattern in new[] { "*", "*foo", "* foo", "foo*", "foo* ", "foo*bar", "foo* bar" })
-            foreach (string newLine in new[] { "\r", "\n", "\r\n" })
-            foreach (string prefix in new[] { "", "valid, " })
-            {
-                yield return new object[] { prefix + pattern.Replace("*", newLine) };
-            }
+                foreach (string newLine in new[] { "\r", "\n", "\r\n" })
+                    foreach (string prefix in new[] { "", "valid, " })
+                    {
+                        yield return new object[] { prefix + pattern.Replace("*", newLine) };
+                    }
         }
 
         #region Helper methods
@@ -2451,7 +2458,7 @@ namespace System.Net.Http.Tests
                 this.MockComparer = new MockComparer();
             }
 
-#region IHeaderParser Members
+            #region IHeaderParser Members
 
             public override IEqualityComparer Comparer
             {
@@ -2511,7 +2518,7 @@ namespace System.Net.Http.Tests
                 Assert.StartsWith(invalidHeaderValue, tempValue, StringComparison.Ordinal);
                 return false;
             }
-#endregion
+            #endregion
         }
 
         private class MockComparer : IEqualityComparer
@@ -2519,7 +2526,7 @@ namespace System.Net.Http.Tests
             public int GetHashCodeCount { get; private set; }
             public int EqualsCount { get; private set; }
 
-#region IEqualityComparer Members
+            #region IEqualityComparer Members
 
             public new bool Equals(object x, object y)
             {
@@ -2544,7 +2551,7 @@ namespace System.Net.Http.Tests
                 GetHashCodeCount++;
                 return obj.GetHashCode();
             }
-#endregion
+            #endregion
         }
 
         private class CustomTypeHeaders : HttpHeaders
@@ -2576,7 +2583,7 @@ namespace System.Net.Http.Tests
 
         private class CustomTypeComparer : IEqualityComparer
         {
-#region IEqualityComparer Members
+            #region IEqualityComparer Members
 
             public new bool Equals(object x, object y)
             {
@@ -2590,7 +2597,7 @@ namespace System.Net.Http.Tests
                 Assert.NotNull(obj);
                 return obj.GetHashCode();
             }
-#endregion
+            #endregion
         }
 
         private class NoComparerHeaderParser : HttpHeaderParser
@@ -2605,6 +2612,6 @@ namespace System.Net.Http.Tests
                 throw new NotImplementedException();
             }
         }
-#endregion
+        #endregion
     }
 }
