@@ -15,8 +15,12 @@
     <GenerateInstallers>false</GenerateInstallers>
     <HostJsonTargetPath>tools/</HostJsonTargetPath>
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
-    <NativeAotSupported>false</NativeAotSupported>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(NativeAotSupported)' != 'true'">
+    <!-- If we're publishing self-contained, we include all the binaries produced by publish, including facades -->
+    <ExcludeFromClosure Remove="@(ExcludeFromClosure)" />
+  </ItemGroup>
 
   <Import Project="ReadyToRun.targets" />
 
