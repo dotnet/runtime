@@ -11946,11 +11946,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             //
                             if (!mustUseTargetPatchpoint)
                             {
-                                const unsigned numSuccs = block->NumSucc(this);
-                                for (unsigned i = 0; i < numSuccs; i++)
-                                {
-                                    BasicBlock* const succBlock = block->GetSucc(i, this);
-
+                                for (BasicBlock* const succBlock : Succs(this))
                                     if ((succBlock->bbNum <= block->bbNum) && (succBlock->bbRefs > 1))
                                     {
                                         mustUseTargetPatchpoint = true;
@@ -11970,18 +11966,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // We wanted a source patchpoint, but could not have one.
                         // So, add patchpoints to the backedge targets.
                         //
-                        const unsigned numSuccs = block->NumSucc(this);
-                        for (unsigned i = 0; i < numSuccs; i++)
-                        {
-                            BasicBlock* const succBlock = block->GetSucc(i, this);
-
+                        for (BasicBlock* const succBlock : Succs(this))
                             if (succBlock->bbNum <= block->bbNum)
                             {
-                                // The succBlock had better agree it's as target.
+                                // The succBlock had better agree it's a target.
                                 //
                                 assert((succBlock->bbFlags & BBF_BACKWARD_JUMP_TARGET) == BBF_BACKWARD_JUMP_TARGET);
 
-                                // We may alread have decided to put a patchpoint in succBlock. If not, add one.
+                                // We may already have decided to put a patchpoint in succBlock. If not, add one.
                                 //
                                 if ((succBlock->bbFlags & BBF_PATCHPOINT) == 0)
                                 {
