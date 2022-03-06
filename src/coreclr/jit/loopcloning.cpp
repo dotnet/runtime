@@ -1823,8 +1823,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 
     // We're going to transform this loop:
     //
-    // H --> E    (or, H conditionally branches around the loop and has fall-through to F == T == E)
-    // F
+    // H --> E    (or, H conditionally branches around the loop and has fall-through to T == E)
     // T
     // E
     // B ?-> T
@@ -1833,14 +1832,12 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // to this pair of loops:
     //
     // H ?-> H3   (all loop failure conditions branch to new slow path loop head)
-    // H2--> E    (Optional; if E == T == F, let H fall through to F/T/E)
-    // F
+    // H2--> E    (Optional; if T == E, let H fall through to T/E)
     // T
     // E
     // B  ?-> T
     // X2--> X
-    // H3 --> E2  (aka slowHead. Or, H3 falls through to F2 == T2 == E2)
-    // F2
+    // H3 --> E2  (aka slowHead. Or, H3 falls through to T2 == E2)
     // T2
     // E2
     // B2 ?-> T2
@@ -1908,7 +1905,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     BasicBlock* slowHeadPrev = newPred;
 
     // Now we'll make "h2", after "h" to go to "e" -- unless the loop is a do-while,
-    // so that "h" already falls through to "e" (e == t == f).
+    // so that "h" already falls through to "e" (e == t).
     // It might look like this code is unreachable, since "h" must be a BBJ_ALWAYS, but
     // later we will change "h" to a BBJ_COND along with a set of loop conditions.
     // TODO: it still might be unreachable, since cloning currently is restricted to "do-while" loop forms.
@@ -2100,7 +2097,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 
     BasicBlock* condLast = optInsertLoopChoiceConditions(context, loopInd, slowHead, h);
 
-    // Add the fall-through path pred (either to F/T/E for fall-through from conditions to fast path,
+    // Add the fall-through path pred (either to T/E for fall-through from conditions to fast path,
     // or H2 if branch to E of fast path).
     assert(condLast->bbJumpKind == BBJ_COND);
     JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", condLast->bbNum, condLast->bbNext->bbNum);
