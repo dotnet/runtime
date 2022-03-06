@@ -138,7 +138,7 @@ exception occurs.
     1. Loop detection has completed and the loop table is populated.
 
     2. The loops that will be considered are the ones with the LPFLG_ITER flag:
-       "for (i = icon or lclVar; test_condition(); i++)"
+       "for ( ; test_condition(); i++)"
 
     Limitations
 

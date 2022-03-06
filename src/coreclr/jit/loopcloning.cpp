@@ -1038,17 +1038,18 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
         if (loop->lpFlags & LPFLG_CONST_INIT)
         {
             // Only allowing non-negative const init at this time.
-            // REVIEW: why?
+            // This is because the variable initialized with this constant will be used as an array index,
+            // and array indices must be non-negative.
             if (loop->lpConstInit < 0)
             {
                 JITDUMP("> Init %d is invalid\n", loop->lpConstInit);
                 return false;
             }
         }
-        else if (loop->lpFlags & LPFLG_VAR_INIT)
+        else
         {
-            // initVar >= 0
-            const unsigned initLcl = loop->lpVarInit;
+            // iterVar >= 0
+            const unsigned initLcl = loop->lpIterVar();
             if (!genActualTypeIsInt(lvaGetDesc(initLcl)))
             {
                 JITDUMP("> Init var V%02u not compatible with TYP_INT\n", initLcl);
@@ -1058,11 +1059,6 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
             LC_Condition geZero(GT_GE, LC_Expr(LC_Ident(initLcl, LC_Ident::Var)),
                                 LC_Expr(LC_Ident(0, LC_Ident::Const)));
             context->EnsureConditions(loopNum)->Push(geZero);
-        }
-        else
-        {
-            JITDUMP("> Not variable init\n");
-            return false;
         }
 
         // Limit Conditions
@@ -1096,7 +1092,7 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
             ArrIndex* index = new (getAllocator(CMK_LoopClone)) ArrIndex(getAllocator(CMK_LoopClone));
             if (!loop->lpArrLenLimit(this, index))
             {
-                JITDUMP("> ArrLen not matching");
+                JITDUMP("> ArrLen not matching\n");
                 return false;
             }
             ident = LC_Ident(LC_Array(LC_Array::Jagged, index, LC_Array::ArrLen));

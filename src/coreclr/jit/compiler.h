@@ -2498,13 +2498,13 @@ enum LoopFlags : unsigned short
 
     // LPFLG_UNUSED  = 0x0001,
     // LPFLG_UNUSED  = 0x0002,
-    LPFLG_ITER = 0x0004, // loop of form: for (i = icon or lclVar; test_condition(); i++)
+    LPFLG_ITER = 0x0004, // loop of form: for (i = icon or expression; test_condition(); i++)
     // LPFLG_UNUSED    = 0x0008,
 
     LPFLG_CONTAINS_CALL = 0x0010, // If executing the loop body *may* execute a call
-    LPFLG_VAR_INIT      = 0x0020, // iterator is initialized with a local var (var # found in lpVarInit)
-    LPFLG_CONST_INIT    = 0x0040, // iterator is initialized with a constant (found in lpConstInit)
-    LPFLG_SIMD_LIMIT    = 0x0080, // iterator is compared with vector element count (found in lpConstLimit)
+    // LPFLG_UNUSED     = 0x0020,
+    LPFLG_CONST_INIT = 0x0040, // iterator is initialized with a constant (found in lpConstInit)
+    LPFLG_SIMD_LIMIT = 0x0080, // iterator is compared with vector element count (found in lpConstLimit)
 
     LPFLG_VAR_LIMIT    = 0x0100, // iterator is compared with a local var (var # found in lpVarLimit)
     LPFLG_CONST_LIMIT  = 0x0200, // iterator is compared with a constant (found in lpConstLimit)
@@ -6929,16 +6929,11 @@ public:
 
         var_types lpIterOperType() const; // For overflow instructions
 
-        // Set to the block where we found the initialization for LPFLG_CONST_INIT or LPFLG_VAR_INIT loops.
+        // Set to the block where we found the initialization for LPFLG_CONST_INIT loops.
         // Initially, this will be 'head', but 'head' might change if we insert a loop pre-header block.
         BasicBlock* lpInitBlock;
 
-        union {
-            int lpConstInit;    // initial constant value of iterator
-                                // : Valid if LPFLG_CONST_INIT
-            unsigned lpVarInit; // initial local var number to which we initialize the iterator
-                                // : Valid if LPFLG_VAR_INIT
-        };
+        int lpConstInit; // initial constant value of iterator : Valid if LPFLG_CONST_INIT
 
         // The following is for LPFLG_ITER loops only (i.e. the loop condition is "i RELOP const or var")
 
@@ -12068,21 +12063,19 @@ extern Histogram bbOneBBSizeTable;
 
 #if COUNT_LOOPS
 
-extern unsigned totalLoopMethods;        // counts the total number of methods that have natural loops
-extern unsigned maxLoopsPerMethod;       // counts the maximum number of loops a method has
-extern unsigned totalLoopOverflows;      // # of methods that identified more loops than we can represent
-extern unsigned totalLoopCount;          // counts the total number of natural loops
-extern unsigned totalUnnatLoopCount;     // counts the total number of (not-necessarily natural) loops
-extern unsigned totalUnnatLoopOverflows; // # of methods that identified more unnatural loops than we can represent
-extern unsigned iterLoopCount;           // counts the # of loops with an iterator (for like)
-extern unsigned simpleTestLoopCount;     // counts the # of loops with an iterator and a simple loop condition (iter <
-                                         // const)
-extern unsigned  constIterLoopCount;     // counts the # of loops with a constant iterator (for like)
-extern bool      hasMethodLoops;         // flag to keep track if we already counted a method as having loops
-extern unsigned  loopsThisMethod;        // counts the number of loops in the current method
-extern bool      loopOverflowThisMethod; // True if we exceeded the max # of loops in the method.
-extern Histogram loopCountTable;         // Histogram of loop counts
-extern Histogram loopExitCountTable;     // Histogram of loop exit counts
+extern unsigned  totalLoopMethods;        // counts the total number of methods that have natural loops
+extern unsigned  maxLoopsPerMethod;       // counts the maximum number of loops a method has
+extern unsigned  totalLoopOverflows;      // # of methods that identified more loops than we can represent
+extern unsigned  totalLoopCount;          // counts the total number of natural loops
+extern unsigned  totalUnnatLoopCount;     // counts the total number of (not-necessarily natural) loops
+extern unsigned  totalUnnatLoopOverflows; // # of methods that identified more unnatural loops than we can represent
+extern unsigned  iterLoopCount;           // counts the # of loops with an iterator (for like)
+extern unsigned  constIterLoopCount;      // counts the # of loops with a constant iterator (for like)
+extern bool      hasMethodLoops;          // flag to keep track if we already counted a method as having loops
+extern unsigned  loopsThisMethod;         // counts the number of loops in the current method
+extern bool      loopOverflowThisMethod;  // True if we exceeded the max # of loops in the method.
+extern Histogram loopCountTable;          // Histogram of loop counts
+extern Histogram loopExitCountTable;      // Histogram of loop exit counts
 
 #endif // COUNT_LOOPS
 
