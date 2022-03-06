@@ -30,6 +30,7 @@ namespace Microsoft.Win32.RegistryTests
         }
 
         [GeneratedDllImport(Interop.Libraries.Kernel32, EntryPoint = "SetEnvironmentVariableW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetEnvironmentVariable(string lpName, string lpValue);
     }
 }

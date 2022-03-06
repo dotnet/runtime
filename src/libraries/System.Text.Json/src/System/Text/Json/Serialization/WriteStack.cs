@@ -12,9 +12,11 @@ using System.Threading.Tasks;
 
 namespace System.Text.Json
 {
-    [DebuggerDisplay("Path:{PropertyPath()} Current: ConverterStrategy.{ConverterStrategy.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy}, {Current.JsonTypeInfo.Type.Name}")]
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct WriteStack
     {
+        public int CurrentDepth => _count;
+
         /// <summary>
         /// Exposes the stackframe that is currently active.
         /// </summary>
@@ -77,9 +79,9 @@ namespace System.Text.Json
         public bool SupportContinuation;
 
         /// <summary>
-        /// Stores a reference id that has been calculated by a polymorphic converter handling a newly encountered boxed struct.
+        /// Stores a reference id that has been calculated for a newly serialized object.
         /// </summary>
-        public string? BoxedStructReferenceId;
+        public string? NewReferenceId;
 
         private void EnsurePushCapacity()
         {
@@ -99,7 +101,6 @@ namespace System.Text.Json
         public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
             JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(type);
-            Debug.Assert(options == jsonTypeInfo.Options);
             return Initialize(jsonTypeInfo, supportContinuation);
         }
 
@@ -127,12 +128,14 @@ namespace System.Text.Json
             {
                 if (_count == 0)
                 {
-                    // The first stack frame is held in Current.
+                    // Performance optimization: reuse the first stackframe on the first push operation.
+                    // NB need to be careful when making writes to Current _before_ the first `Push`
+                    // operation is performed.
                     _count = 1;
                 }
                 else
                 {
-                    JsonTypeInfo jsonTypeInfo = Current.GetPolymorphicJsonPropertyInfo().JsonTypeInfo;
+                    JsonTypeInfo jsonTypeInfo = Current.GetNestedJsonTypeInfo();
                     JsonNumberHandling? numberHandling = Current.NumberHandling;
 
                     EnsurePushCapacity();
@@ -375,5 +378,8 @@ namespace System.Text.Json
                 }
             }
         }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private string DebuggerDisplay => $"Path:{PropertyPath()} Current: ConverterStrategy.{Current.JsonPropertyInfo?.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
     }
 }

@@ -23,6 +23,7 @@ internal static partial class Interop
         }
 
         [GeneratedDllImport(Libraries.Advapi32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptSetProvParam(
             SafeHandle safeProvHandle,
             CryptProvParam dwParam,
@@ -30,6 +31,7 @@ internal static partial class Interop
             int dwFlags);
 
         [GeneratedDllImport(Libraries.Advapi32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptSetProvParam(
             SafeProvHandle hProv,
             CryptProvParam dwParam,
@@ -37,6 +39,7 @@ internal static partial class Interop
             int dwFlags);
 
         [GeneratedDllImport(Libraries.Advapi32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptGetProvParam(
             SafeHandle safeProvHandle,
             CryptProvParam dwParam,

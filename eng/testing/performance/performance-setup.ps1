@@ -25,7 +25,8 @@ Param(
     [switch] $NoPGO,
     [switch] $DynamicPGO,
     [switch] $FullPGO,
-    [switch] $iOSLlvmBuild
+    [switch] $iOSLlvmBuild,
+    [string] $MauiVersion
 )
 
 $RunFromPerformanceRepo = ($Repository -eq "dotnet/performance") -or ($Repository -eq "dotnet-performance")
@@ -141,6 +142,11 @@ if ($UseCoreRun) {
 if ($UseBaselineCoreRun) {
     $NewBaselineCoreRoot = (Join-Path $PayloadDirectory "Baseline_Core_Root")
     Move-Item -Path $BaselineCoreRootDirectory -Destination $NewBaselineCoreRoot
+}
+
+if($MauiVersion -ne "")
+{
+    $SetupArguments = "$SetupArguments --maui-version $MauiVersion"
 }
 
 if ($AndroidMono) {
