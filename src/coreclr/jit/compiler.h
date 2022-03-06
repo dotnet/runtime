@@ -4154,6 +4154,8 @@ public:
         void PromoteStructVar(unsigned lclNum);
         void SortStructFields();
 
+        bool CanConstructAndPromoteField(lvaStructPromotionInfo* structPromotionInfo);
+
         lvaStructFieldInfo GetFieldInfo(CORINFO_FIELD_HANDLE fieldHnd, BYTE ordinal);
         bool TryPromoteStructField(lvaStructFieldInfo& outerFieldInfo);
 
