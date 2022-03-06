@@ -57,7 +57,6 @@ CommonKey3:CommonKey4=IniValue6";
         private static readonly string _jsonConfigFileContent =
             @"{
   ""JsonKey1"": ""JsonValue1"",
-  ""JsonKey7"": """",
   ""Json.Key2"": {
     ""JsonKey3"": ""JsonValue2"",
     ""Json.Key4"": ""JsonValue3"",
@@ -69,15 +68,15 @@ CommonKey3:CommonKey4=IniValue6";
       ""CommonKey3:CommonKey4"": ""JsonValue6""
     }
   },
-  ""JsonKey8"": {
-    ""JsonKey8Nested1"": """"
+  ""JsonKey7"": {
+    ""JsonKey7Nested1"": """"
   }
 }";
 
         private static readonly string _jsonNestedConfigFileContent = 
             @"{
-  ""JsonKey9"": {
-    ""JsonKey9Nested1"": """"
+  ""JsonKey8"": {
+    ""JsonKey8Nested1"": """"
   }    
 }";
 
@@ -176,14 +175,14 @@ CommonKey3:CommonKey4=IniValue6";
 
         private class BindingTestClass
         {
-            public class Key9
-            {
-                public string JsonKey9Nested1 { get; set; }
-            }
-
             public class Key8
             {
                 public string JsonKey8Nested1 { get; set; }
+            }
+
+            public class Key7
+            {
+                public string JsonKey7Nested1 { get; set; }
             }
         }
 
@@ -244,14 +243,14 @@ CommonKey3:CommonKey4=IniValue6";
                 .AddJsonFile(_nestedJsonFile)
                 .Build();
 
-            var notNested = new BindingTestClass.Key8();
-            var nested = new BindingTestClass.Key9();
+            var notNested = new BindingTestClass.Key7();
+            var nested = new BindingTestClass.Key8();
 
-            config.GetSection("JsonKey8").Bind(notNested);
-            config.GetSection("JsonKey9").Bind(nested);
+            config.GetSection("JsonKey7").Bind(notNested);
+            config.GetSection("JsonKey8").Bind(nested);
 
-            Assert.Equal(string.Empty, notNested.JsonKey8Nested1);
-            Assert.Equal(string.Empty, nested.JsonKey9Nested1);
+            Assert.Equal(string.Empty, notNested.JsonKey7Nested1);
+            Assert.Equal(string.Empty, nested.JsonKey8Nested1);
         }
 
         [Fact]
