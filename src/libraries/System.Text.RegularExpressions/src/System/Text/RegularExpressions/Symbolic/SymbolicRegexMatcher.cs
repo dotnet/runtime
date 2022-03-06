@@ -147,9 +147,9 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Constructs matcher for given symbolic regex.</summary>
-        internal SymbolicRegexMatcher(SymbolicRegexNode<TSetType> sr, RegexCode code, BDD[] minterms, TimeSpan matchTimeout)
+        internal SymbolicRegexMatcher(SymbolicRegexNode<TSetType> sr, RegexTree regexTree, BDD[] minterms, TimeSpan matchTimeout)
         {
-            Debug.Assert(sr._builder._solver is BV64Algebra or BVAlgebra or CharSetSolver, $"Unsupported algebra: {sr._builder._solver}");
+            Debug.Assert(sr._builder._solver is BitVector64Algebra or BitVectorAlgebra or CharSetSolver, $"Unsupported algebra: {sr._builder._solver}");
 
             _pattern = sr;
             _builder = sr._builder;
@@ -157,21 +157,21 @@ namespace System.Text.RegularExpressions.Symbolic
             _timeout = (int)(matchTimeout.TotalMilliseconds + 0.5); // Round up, so it will be at least 1ms
             _mintermClassifier = _builder._solver switch
             {
-                BV64Algebra bv64 => bv64._classifier,
-                BVAlgebra bv => bv._classifier,
+                BitVector64Algebra bv64 => bv64._classifier,
+                BitVectorAlgebra bv => bv._classifier,
                 _ => new MintermClassifier((CharSetSolver)(object)_builder._solver, minterms),
             };
-            _capsize = code.CapSize;
+            _capsize = regexTree.CaptureCount;
 
-            if (code.Tree.MinRequiredLength == code.FindOptimizations.MaxPossibleLength)
+            if (regexTree.FindOptimizations.MinRequiredLength == regexTree.FindOptimizations.MaxPossibleLength)
             {
-                _fixedMatchLength = code.Tree.MinRequiredLength;
+                _fixedMatchLength = regexTree.FindOptimizations.MinRequiredLength;
             }
 
-            if (code.FindOptimizations.FindMode != FindNextStartingPositionMode.NoSearch &&
-                code.FindOptimizations.LeadingAnchor == 0) // If there are any anchors, we're better off letting the DFA quickly do its job of determining whether there's a match.
+            if (regexTree.FindOptimizations.FindMode != FindNextStartingPositionMode.NoSearch &&
+                regexTree.FindOptimizations.LeadingAnchor == 0) // If there are any anchors, we're better off letting the DFA quickly do its job of determining whether there's a match.
             {
-                _findOpts = code.FindOptimizations;
+                _findOpts = regexTree.FindOptimizations;
             }
 
             // Determine the number of initial states. If there's no anchor, only the default previous
@@ -765,7 +765,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         if (_findOpts is RegexFindOptimizations findOpts)
                         {
                             // Find the first position i that matches with some likely character.
-                            if (!findOpts.TryFindNextStartingPosition(input, ref i, 0, 0, input.Length))
+                            if (!findOpts.TryFindNextStartingPosition(input, ref i, 0))
                             {
                                 // no match was found
                                 return NoMatchExists;

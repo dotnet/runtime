@@ -63,7 +63,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         {
             try
             {
-                return (Verbosity)Enum.Parse(typeof(Verbosity), s);
+                return Enum.Parse<Verbosity>(s);
             }
             catch 
             {

@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.GeneratedMarshalling
 {
-#if DLLIMPORT_GENERATOR_TEST
+#if LIBRARYIMPORT_GENERATOR_TEST
     public
 #else
     internal
@@ -106,7 +106,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         }
     }
 
-#if DLLIMPORT_GENERATOR_TEST
+#if LIBRARYIMPORT_GENERATOR_TEST
     public
 #else
     internal

@@ -19,7 +19,7 @@
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../IjwNativeCallingManagedDll/CMakeLists.txt" />
-    <ProjectReference Include="../ijwhostmock/CMakeLists.txt" />
+    <CMakeProjectReference Include="../IjwNativeCallingManagedDll/CMakeLists.txt" />
+    <CMakeProjectReference Include="../ijwhostmock/CMakeLists.txt" />
   </ItemGroup>
 </Project>

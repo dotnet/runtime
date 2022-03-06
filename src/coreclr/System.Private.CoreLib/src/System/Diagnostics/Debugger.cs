@@ -52,6 +52,7 @@ namespace System.Diagnostics
         }
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Launch")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool LaunchInternal();
 
         // Returns whether or not a debugger is attached to the process.

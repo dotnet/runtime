@@ -39,6 +39,7 @@ namespace System.Diagnostics.Tracing
         }
 
         [GeneratedDllImport(RuntimeHelpers.QCall)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool IsEventSourceLoggingEnabled();
 
         [GeneratedDllImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]

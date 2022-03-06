@@ -10,6 +10,7 @@ internal static partial class Interop
     internal static partial class Crypt32
     {
         [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CryptQueryObject(
             CertQueryObjectType dwObjectType,
             void* pvObject,
@@ -25,6 +26,7 @@ internal static partial class Interop
             );
 
         [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CryptQueryObject(
             CertQueryObjectType dwObjectType,
             void* pvObject,
@@ -40,6 +42,7 @@ internal static partial class Interop
             );
 
         [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CryptQueryObject(
             CertQueryObjectType dwObjectType,
             void* pvObject,

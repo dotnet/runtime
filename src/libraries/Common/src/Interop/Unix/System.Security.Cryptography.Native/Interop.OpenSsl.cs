@@ -99,7 +99,9 @@ internal static partial class Interop
                     // we are using default settings but cipher suites policy says that TLS 1.3
                     // is not compatible with our settings (i.e. we requested no encryption or disabled
                     // all TLS 1.3 cipher suites)
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                     protocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
+#pragma warning restore SYSLIB0039
                 }
                 else
                 {

@@ -1705,7 +1705,6 @@
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.Windows.cs" />
     <Compile Include="System\Security\Cryptography\CngAlgorithmCore.cs" />
     <Compile Include="System\Security\Cryptography\CngAsnFormatter.cs" />
-    <Compile Include="System\Security\Cryptography\CngCommon.Hash.cs" />
     <Compile Include="System\Security\Cryptography\CngCommon.SignVerify.cs" />
     <Compile Include="System\Security\Cryptography\CngHelpers.cs" />
     <Compile Include="System\Security\Cryptography\CngKey.cs" />

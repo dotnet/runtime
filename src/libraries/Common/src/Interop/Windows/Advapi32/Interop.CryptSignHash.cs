@@ -25,6 +25,7 @@ internal static partial class Interop
         }
 
         [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "CryptSignHashW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptSignHash(
             SafeHashHandle hHash,
             KeySpec dwKeySpec,
@@ -34,6 +35,7 @@ internal static partial class Interop
             ref int pdwSigLen);
 
         [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "CryptVerifySignatureW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptVerifySignature(
             SafeHashHandle hHash,
             byte[] pbSignature,

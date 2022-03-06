@@ -269,7 +269,6 @@ CommonKey3:CommonKey4=IniValue6";
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void LoadAndCombineKeyValuePairsFromDifferentConfigurationProvidersWithAbsolutePath()
         {
             WriteTestFiles();
@@ -310,7 +309,6 @@ CommonKey3:CommonKey4=IniValue6";
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CanOverrideValuesWithNewConfigurationProvider()
         {
             WriteTestFiles();
@@ -383,7 +381,6 @@ CommonKey3:CommonKey4=IniValue6";
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60583", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void OnLoadErrorWillBeCalledOnJsonParseError()
         {
@@ -413,7 +410,6 @@ CommonKey3:CommonKey4=IniValue6";
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void OnLoadErrorWillBeCalledOnXmlParseError()
         {
             _fileSystem.WriteFile("error.xml", @"gobblygook");
@@ -441,7 +437,6 @@ CommonKey3:CommonKey4=IniValue6";
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void OnLoadErrorWillBeCalledOnIniLoadError()
         {
             _fileSystem.WriteFile("error.ini", @"IniKey1=IniValue1
@@ -470,7 +465,6 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void OnLoadErrorCanIgnoreErrors()
         {
             _fileSystem.WriteFile("error.json", @"{""JsonKey1"": ");
@@ -843,7 +837,6 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50866", TestPlatforms.Android)]
         public void LoadIncorrectJsonFile_ThrowException()
         {
@@ -861,7 +854,6 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void SetBasePathCalledMultipleTimesForEachSourceLastOneWins()
         {
             var builder = new ConfigurationBuilder();
@@ -895,7 +887,6 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60583", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void GetDefaultBasePathForSources()
         {
@@ -926,7 +917,6 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void CanEnumerateProviders()
         {
@@ -974,7 +964,6 @@ IniKey1=IniValue2");
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void BindingDoesNotThrowIfReloadedDuringBinding()
         {
             WriteTestFiles();

@@ -2350,6 +2350,7 @@ bool Compiler::fgNormalizeEHCase2()
 
                         BasicBlock* newTryStart = bbNewBasicBlock(BBJ_NONE);
                         fgInsertBBbefore(insertBeforeBlk, newTryStart);
+                        insertBeforeBlk->bbRefs++;
 
 #ifdef DEBUG
                         if (verbose)
@@ -2375,6 +2376,11 @@ bool Compiler::fgNormalizeEHCase2()
                         // Note that we don't need to clear any flags on the old try start, since it is still a 'try'
                         // start.
                         newTryStart->bbFlags |= (BBF_TRY_BEG | BBF_DONT_REMOVE | BBF_INTERNAL);
+
+                        if (insertBeforeBlk->bbFlags & BBF_BACKWARD_JUMP_TARGET)
+                        {
+                            newTryStart->bbFlags |= BBF_BACKWARD_JUMP_TARGET;
+                        }
 
                         // Now we need to split any flow edges targetting the old try begin block between the old
                         // and new block. Note that if we are handling a multiply-nested 'try', we may have already
