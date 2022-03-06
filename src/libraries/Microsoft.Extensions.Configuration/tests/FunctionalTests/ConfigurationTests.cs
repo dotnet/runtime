@@ -68,15 +68,15 @@ CommonKey3:CommonKey4=IniValue6";
       ""CommonKey3:CommonKey4"": ""JsonValue6""
     }
   },
-  ""JsonKey7"": {
-    ""JsonKey7Nested1"": """"
+  ""JsonKey8"": {
+    ""JsonKey8Nested1"": """"
   }
 }";
 
         private static readonly string _jsonNestedConfigFileContent = 
             @"{
-  ""JsonKey8"": {
-    ""JsonKey8Nested1"": """"
+  ""JsonKey9"": {
+    ""JsonKey9Nested1"": """"
   }    
 }";
 
@@ -175,14 +175,14 @@ CommonKey3:CommonKey4=IniValue6";
 
         private class BindingTestClass
         {
+            public class Key9
+            {
+                public string JsonKey9Nested1 { get; set; }
+            }
+
             public class Key8
             {
                 public string JsonKey8Nested1 { get; set; }
-            }
-
-            public class Key7
-            {
-                public string JsonKey7Nested1 { get; set; }
             }
         }
 
@@ -243,14 +243,14 @@ CommonKey3:CommonKey4=IniValue6";
                 .AddJsonFile(_nestedJsonFile)
                 .Build();
 
-            var notNested = new BindingTestClass.Key7();
-            var nested = new BindingTestClass.Key8();
+            var notNested = new BindingTestClass.Key8();
+            var nested = new BindingTestClass.Key9();
 
-            config.GetSection("JsonKey7").Bind(notNested);
-            config.GetSection("JsonKey8").Bind(nested);
+            config.GetSection("JsonKey8").Bind(notNested);
+            config.GetSection("JsonKey9").Bind(nested);
 
-            Assert.Equal(string.Empty, notNested.JsonKey7Nested1);
-            Assert.Equal(string.Empty, nested.JsonKey8Nested1);
+            Assert.Equal(string.Empty, notNested.JsonKey8Nested1);
+            Assert.Equal(string.Empty, nested.JsonKey9Nested1);
         }
 
         [Fact]
