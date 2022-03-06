@@ -68,12 +68,19 @@ CommonKey3:CommonKey4=IniValue6";
       ""JsonKey7"": ""JsonValue5"",
       ""CommonKey3:CommonKey4"": ""JsonValue6""
     }
+  },
+  ""JsonKey8"": {
+    ""JsonKey8Nested1"": """"
   }
 }";
-        private static readonly string _nestedJsonConfigFileContent =
+
+        private static readonly string _jsonNestedConfigFileContent = 
             @"{
-  ""JsonKey9"": """"
+  ""JsonKey9"": {
+    ""JsonKey9Nested1"": """"
+  }    
 }";
+
         private static readonly Dictionary<string, string> _memConfigContent = new Dictionary<string, string>
             {
                 { "MemKey1", "MemValue1" },
@@ -93,7 +100,7 @@ CommonKey3:CommonKey4=IniValue6";
             _iniFile = Path.GetRandomFileName();
             _xmlFile = Path.GetRandomFileName();
             _jsonFile = Path.GetRandomFileName();
-            _nestedJsonFile = "appsettings.NotIncludedByDefault.json";
+            _nestedJsonFile = $"{Path.GetRandomFileName()}.json";
         }
 
         [Fact]
@@ -167,12 +174,25 @@ CommonKey3:CommonKey4=IniValue6";
             public IChangeToken Watch(string filter) => null;
         }
 
+        private class BindingTestClass
+        {
+            public class Key9
+            {
+                public string JsonKey9Nested1 { get; set; }
+            }
+
+            public class Key8
+            {
+                public string JsonKey8Nested1 { get; set; }
+            }
+        }
+
         private void WriteTestFiles()
         {
             _fileSystem.WriteFile(_iniFile, _iniConfigFileContent);
             _fileSystem.WriteFile(_xmlFile, _xmlConfigFileContent);
             _fileSystem.WriteFile(_jsonFile, _jsonConfigFileContent);
-            _fileSystem.WriteFile(_nestedJsonFile, _nestedJsonConfigFileContent);
+            _fileSystem.WriteFile(_nestedJsonFile, _jsonNestedConfigFileContent);
         }
 
         private IConfigurationBuilder CreateBuilder()
@@ -224,8 +244,14 @@ CommonKey3:CommonKey4=IniValue6";
                 .AddJsonFile(_nestedJsonFile)
                 .Build();
 
-            Assert.Equal(string.Empty, config["JsonKey7"]);
-            Assert.Equal(string.Empty, config["JsonKey8"]);
+            var notNested = new BindingTestClass.Key8();
+            var nested = new BindingTestClass.Key9();
+
+            config.GetSection("JsonKey8").Bind(notNested);
+            config.GetSection("JsonKey9").Bind(nested);
+
+            Assert.Equal(string.Empty, notNested.JsonKey8Nested1);
+            Assert.Equal(string.Empty, nested.JsonKey9Nested1);
         }
 
         [Fact]
