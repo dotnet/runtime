@@ -6294,6 +6294,21 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
     ins     = (op1Type == TYP_FLOAT) ? INS_ucomiss : INS_ucomisd;
     cmpAttr = emitTypeSize(op1Type);
 
+    var_types targetType = treeNode->TypeGet();
+
+    // Clear target reg in advance via "xor reg,reg" to avoid movzx after SETCC
+    if ((targetReg != REG_NA) && (op1->GetRegNum() != targetReg) && (op2->GetRegNum() != targetReg) &&
+        !varTypeIsByte(targetType))
+    {
+        // memory loads might still use target reg here so we can't clear it
+        if ((op1->isUsedFromReg() || op1->isContainedFltOrDblImmed()) &&
+            (op2->isUsedFromReg() || op2->isContainedFltOrDblImmed()))
+        {
+            instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
+            targetType = TYP_BOOL; // just a tip for inst_SETCC that movzx is not needed
+        }
+    }
+
     GetEmitter()->emitInsBinary(ins, cmpAttr, op1, op2);
 
     // Are we evaluating this into a register?
@@ -6309,7 +6324,7 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
             condition = GenCondition(GenCondition::P);
         }
 
-        inst_SETCC(condition, treeNode->TypeGet(), targetReg);
+        inst_SETCC(condition, targetType, targetReg);
         genProduceReg(tree);
     }
 }
