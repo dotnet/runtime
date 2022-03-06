@@ -28,6 +28,7 @@ namespace Microsoft.Extensions.Configuration.Test
         private readonly string _iniFile;
         private readonly string _xmlFile;
         private readonly string _jsonFile;
+        private readonly string _nestedJsonFile;
         private static readonly string _iniConfigFileContent =
             @"IniKey1=IniValue1
 [IniKey2]
@@ -56,6 +57,7 @@ CommonKey3:CommonKey4=IniValue6";
         private static readonly string _jsonConfigFileContent =
             @"{
   ""JsonKey1"": ""JsonValue1"",
+  ""JsonKey7"": """",
   ""Json.Key2"": {
     ""JsonKey3"": ""JsonValue2"",
     ""Json.Key4"": ""JsonValue3"",
@@ -67,6 +69,10 @@ CommonKey3:CommonKey4=IniValue6";
       ""CommonKey3:CommonKey4"": ""JsonValue6""
     }
   }
+}";
+        private static readonly string _nestedJsonConfigFileContent =
+            @"{
+  ""JsonKey9"": """"
 }";
         private static readonly Dictionary<string, string> _memConfigContent = new Dictionary<string, string>
             {
@@ -87,6 +93,7 @@ CommonKey3:CommonKey4=IniValue6";
             _iniFile = Path.GetRandomFileName();
             _xmlFile = Path.GetRandomFileName();
             _jsonFile = Path.GetRandomFileName();
+            _nestedJsonFile = "appsettings.NotIncludedByDefault.json";
         }
 
         [Fact]
@@ -165,6 +172,7 @@ CommonKey3:CommonKey4=IniValue6";
             _fileSystem.WriteFile(_iniFile, _iniConfigFileContent);
             _fileSystem.WriteFile(_xmlFile, _xmlConfigFileContent);
             _fileSystem.WriteFile(_jsonFile, _jsonConfigFileContent);
+            _fileSystem.WriteFile(_nestedJsonFile, _nestedJsonConfigFileContent);
         }
 
         private IConfigurationBuilder CreateBuilder()
@@ -204,6 +212,20 @@ CommonKey3:CommonKey4=IniValue6";
             error = Assert.Throws<FileNotFoundException>(
                 () => new ConfigurationBuilder().AddXmlFile(provider, "missing.xml", optional: false, reloadOnChange: false).Build());
             Assert.False(error.Message.Contains(_basePath), error.Message);
+        }
+
+        [Fact]
+        public void BindsEmptyStringFromNestedConfiguration()
+        {
+            WriteTestFiles();
+
+            var config = CreateBuilder()
+                .AddJsonFile(_jsonFile)
+                .AddJsonFile(_nestedJsonFile)
+                .Build();
+
+            Assert.Equal(string.Empty, config["JsonKey7"]);
+            Assert.Equal(string.Empty, config["JsonKey8"]);
         }
 
         [Fact]
