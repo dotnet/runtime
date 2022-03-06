@@ -11,6 +11,6 @@
     <Compile Include="Object-Pin.il" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="CMakelists.txt" />
+    <CMakeProjectReference Include="CMakelists.txt" />
   </ItemGroup>
 </Project>

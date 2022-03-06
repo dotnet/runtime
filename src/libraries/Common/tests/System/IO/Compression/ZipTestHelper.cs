@@ -388,6 +388,7 @@ namespace System.IO.Compression.Tests
         protected const string Utf8LowerCaseOUmlautChar = "\u00F6";
         protected const string Utf8CopyrightChar = "\u00A9";
         protected const string AsciiFileName = "file.txt";
+        protected const string UnicodeFileName = "\u4f60\u597D.txt";
         // The o with umlaut is a character that exists in both latin1 and utf8
         protected const string Utf8AndLatin1FileName = $"{Utf8LowerCaseOUmlautChar}.txt";
         // emojis only make sense in utf8

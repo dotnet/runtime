@@ -111,6 +111,10 @@ namespace ILCompiler.DependencyAnalysis
 
                 foreach (MethodDesc slotMethod in slots)
                 {
+                    // Static interface methods don't go in the dispatch map
+                    if (slotMethod.Signature.IsStatic)
+                        continue;
+
                     MethodDesc declMethod = slotMethod;
 
                     Debug.Assert(!declMethod.Signature.IsStatic && declMethod.IsVirtual);

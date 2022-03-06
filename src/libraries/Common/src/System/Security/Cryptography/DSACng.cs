@@ -47,13 +47,13 @@ namespace System.Security.Cryptography
 
         // Need to override since base methods throw a "override me" exception: makes SignData/VerifyData function.
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-            CngCommon.HashData(data, offset, count, hashAlgorithm);
+            HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
 
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-            CngCommon.HashData(data, hashAlgorithm);
+            HashOneShotHelpers.HashData(hashAlgorithm, data);
 
         protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-            CngCommon.TryHashData(source, destination, hashAlgorithm, out bytesWritten);
+            HashOneShotHelpers.TryHashData(hashAlgorithm, source, destination, out bytesWritten);
 
         private void ForceSetKeySize(int newKeySize)
         {

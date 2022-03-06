@@ -2057,6 +2057,7 @@ typedef struct {
 	MonoMethod *method;
 	LLVMValueRef load;
 	LLVMTypeRef type;
+	LLVMValueRef lmethod;
 } CallSite;
 
 static LLVMValueRef
@@ -2153,6 +2154,7 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 			 */
 			LLVMValueRef load = get_dummy_aotconst (ctx, llvm_type);
 			info->load = load;
+			info->lmethod = ctx->lmethod;
 
 			g_ptr_array_add (ctx->callsite_list, info);
 
@@ -11631,7 +11633,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				LLVMBasicBlockRef *bblocks = g_new0 (LLVMBasicBlockRef, nbbs);
 				LLVMGetBasicBlocks (ctx->lmethod, bblocks);
 				for (int i = 0; i < nbbs; ++i)
-					LLVMDeleteBasicBlock (bblocks [i]);
+					LLVMRemoveBasicBlockFromParent (bblocks [i]);
 
 				LLVMBasicBlockRef entry_bb = LLVMAppendBasicBlock (ctx->lmethod, "ENTRY");
 				builder = create_builder (ctx);
@@ -11642,6 +11644,13 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				LLVMValueRef callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mini_llvmonly_throw_nullref_exception));
 				LLVMBuildCall (builder, callee, NULL, 0, "");
 				LLVMBuildUnreachable (builder);
+
+				/* Clean references to instructions inside the method */
+				for (int i = 0; i < ctx->callsite_list->len; ++i) {
+					CallSite *callsite = (CallSite*)g_ptr_array_index (ctx->callsite_list, i);
+					if (callsite->lmethod == ctx->lmethod)
+						callsite->load = NULL;
+				}
 			} else {
 				LLVMDeleteFunction (ctx->lmethod);
 			}
@@ -12900,6 +12909,10 @@ mono_llvm_fixup_aot_module (void)
 		LLVMValueRef lmethod = (LLVMValueRef)g_hash_table_lookup (module->method_to_lmethod, method);
 		LLVMValueRef placeholder = (LLVMValueRef)site->load;
 		LLVMValueRef load;
+
+		if (placeholder == NULL)
+			/* Method failed LLVM compilation */
+			continue;
 
 		gboolean can_direct_call = FALSE;
 

@@ -24,7 +24,7 @@ internal static partial class Interop
         internal static partial void SetThreadpoolWait(IntPtr pwa, IntPtr h, IntPtr pftTimeout);
 
         [GeneratedDllImport(Libraries.Kernel32)]
-        internal static partial void WaitForThreadpoolWaitCallbacks(IntPtr pwa, bool fCancelPendingCallbacks);
+        internal static partial void WaitForThreadpoolWaitCallbacks(IntPtr pwa, [MarshalAs(UnmanagedType.Bool)] bool fCancelPendingCallbacks);
 
         [GeneratedDllImport(Libraries.Kernel32)]
         internal static partial void CloseThreadpoolWait(IntPtr pwa);

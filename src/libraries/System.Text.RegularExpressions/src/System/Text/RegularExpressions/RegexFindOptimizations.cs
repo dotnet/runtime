@@ -239,26 +239,24 @@ namespace System.Text.RegularExpressions
         /// <summary>Try to advance to the next starting position that might be a location for a match.</summary>
         /// <param name="textSpan">The text to search.</param>
         /// <param name="pos">The position in <paramref name="textSpan"/>.  This is updated with the found position.</param>
-        /// <param name="beginning">The index in <paramref name="textSpan"/> to consider the beginning for beginning anchor purposes.</param>
         /// <param name="start">The index in <paramref name="textSpan"/> to consider the start for start anchor purposes.</param>
-        /// <param name="end">The index in <paramref name="textSpan"/> to consider the non-inclusive end of the string.</param>
         /// <returns>true if a position to attempt a match was found; false if none was found.</returns>
-        public bool TryFindNextStartingPosition(ReadOnlySpan<char> textSpan, ref int pos, int beginning, int start, int end)
+        public bool TryFindNextStartingPosition(ReadOnlySpan<char> textSpan, ref int pos, int start)
         {
             // Return early if we know there's not enough input left to match.
             if (!_rightToLeft)
             {
-                if (pos > end - MinRequiredLength)
+                if (pos > textSpan.Length - MinRequiredLength)
                 {
-                    pos = end;
+                    pos = textSpan.Length;
                     return false;
                 }
             }
             else
             {
-                if (pos - MinRequiredLength < beginning)
+                if (pos < MinRequiredLength)
                 {
-                    pos = beginning;
+                    pos = 0;
                     return false;
                 }
             }
@@ -273,12 +271,13 @@ namespace System.Text.RegularExpressions
                 // the beginning of the string or just after a line feed), find the next
                 // newline and position just after it.
                 Debug.Assert(!_rightToLeft);
-                if (pos > beginning && textSpan[pos - 1] != '\n')
+                int posm1 = pos - 1;
+                if ((uint)posm1 < (uint)textSpan.Length && textSpan[posm1] != '\n')
                 {
                     int newline = textSpan.Slice(pos).IndexOf('\n');
-                    if (newline == -1 || newline + 1 + pos > end)
+                    if ((uint)newline > textSpan.Length - 1 - pos)
                     {
-                        pos = end;
+                        pos = textSpan.Length;
                         return false;
                     }
 
@@ -292,9 +291,9 @@ namespace System.Text.RegularExpressions
                 // For others, we can jump to the relevant location.
 
                 case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
-                    if (pos > beginning)
+                    if (pos > 0)
                     {
-                        pos = end;
+                        pos = textSpan.Length;
                         return false;
                     }
                     return true;
@@ -302,67 +301,67 @@ namespace System.Text.RegularExpressions
                 case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start:
                     if (pos > start)
                     {
-                        pos = end;
+                        pos = textSpan.Length;
                         return false;
                     }
                     return true;
 
                 case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
-                    if (pos < end - 1)
+                    if (pos < textSpan.Length - 1)
                     {
-                        pos = end - 1;
+                        pos = textSpan.Length - 1;
                     }
                     return true;
 
                 case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
-                    if (pos < end)
+                    if (pos < textSpan.Length)
                     {
-                        pos = end;
+                        pos = textSpan.Length;
                     }
                     return true;
 
                 case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning:
-                    if (pos > beginning)
+                    if (pos > 0)
                     {
-                        pos = beginning;
+                        pos = 0;
                     }
                     return true;
 
                 case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Start:
                     if (pos < start)
                     {
-                        pos = beginning;
+                        pos = 0;
                         return false;
                     }
                     return true;
 
                 case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_EndZ:
-                    if (pos < end - 1 || (pos == end - 1 && textSpan[pos] != '\n'))
+                    if (pos < textSpan.Length - 1 || ((uint)pos < (uint)textSpan.Length && textSpan[pos] != '\n'))
                     {
-                        pos = beginning;
+                        pos = 0;
                         return false;
                     }
                     return true;
 
                 case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_End:
-                    if (pos < end)
+                    if (pos < textSpan.Length)
                     {
-                        pos = beginning;
+                        pos = 0;
                         return false;
                     }
                     return true;
 
                 case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ:
-                    if (pos < end - MinRequiredLength - 1)
+                    if (pos < textSpan.Length - MinRequiredLength - 1)
                     {
-                        pos = end - MinRequiredLength - 1;
+                        pos = textSpan.Length - MinRequiredLength - 1;
                     }
                     return true;
 
                 case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End:
-                    if (pos < end - MinRequiredLength)
+                    if (pos < textSpan.Length - MinRequiredLength)
                     {
-                        pos = end - MinRequiredLength;
+                        pos = textSpan.Length - MinRequiredLength;
                     }
                     return true;
 
@@ -370,27 +369,27 @@ namespace System.Text.RegularExpressions
 
                 case FindNextStartingPositionMode.LeadingPrefix_LeftToRight_CaseSensitive:
                     {
-                        int i = textSpan.Slice(pos, end - pos).IndexOf(LeadingCaseSensitivePrefix.AsSpan());
+                        int i = textSpan.Slice(pos).IndexOf(LeadingCaseSensitivePrefix.AsSpan());
                         if (i >= 0)
                         {
                             pos += i;
                             return true;
                         }
 
-                        pos = end;
+                        pos = textSpan.Length;
                         return false;
                     }
 
                 case FindNextStartingPositionMode.LeadingPrefix_RightToLeft_CaseSensitive:
                     {
-                        int i = textSpan.Slice(beginning, pos - beginning).LastIndexOf(LeadingCaseSensitivePrefix.AsSpan());
+                        int i = textSpan.Slice(0, pos).LastIndexOf(LeadingCaseSensitivePrefix.AsSpan());
                         if (i >= 0)
                         {
-                            pos = beginning + i + LeadingCaseSensitivePrefix.Length;
+                            pos = i + LeadingCaseSensitivePrefix.Length;
                             return true;
                         }
 
-                        pos = beginning;
+                        pos = 0;
                         return false;
                     }
 
@@ -398,14 +397,14 @@ namespace System.Text.RegularExpressions
 
                 case FindNextStartingPositionMode.LeadingLiteral_RightToLeft_CaseSensitive:
                     {
-                        int i = textSpan.Slice(beginning, pos - beginning).LastIndexOf(FixedDistanceLiteral.Literal);
+                        int i = textSpan.Slice(0, pos).LastIndexOf(FixedDistanceLiteral.Literal);
                         if (i >= 0)
                         {
-                            pos = beginning + i + 1;
+                            pos = i + 1;
                             return true;
                         }
 
-                        pos = beginning;
+                        pos = 0;
                         return false;
                     }
 
@@ -414,17 +413,17 @@ namespace System.Text.RegularExpressions
                         char ch = FixedDistanceLiteral.Literal;
                         TextInfo ti = _textInfo;
 
-                        ReadOnlySpan<char> span = textSpan.Slice(beginning, pos - beginning);
+                        ReadOnlySpan<char> span = textSpan.Slice(0, pos);
                         for (int i = span.Length - 1; i >= 0; i--)
                         {
                             if (ti.ToLower(span[i]) == ch)
                             {
-                                pos = beginning + i + 1;
+                                pos = i + 1;
                                 return true;
                             }
                         }
 
-                        pos = beginning;
+                        pos = 0;
                         return false;
                     }
 
@@ -434,7 +433,7 @@ namespace System.Text.RegularExpressions
                     {
                         (char[]? chars, string set, _, _) = FixedDistanceSets![0];
 
-                        ReadOnlySpan<char> span = textSpan.Slice(pos, end - pos);
+                        ReadOnlySpan<char> span = textSpan.Slice(pos);
                         if (chars is not null)
                         {
                             int i = span.IndexOfAny(chars);
@@ -457,7 +456,7 @@ namespace System.Text.RegularExpressions
                             }
                         }
 
-                        pos = end;
+                        pos = textSpan.Length;
                         return false;
                     }
 
@@ -467,7 +466,7 @@ namespace System.Text.RegularExpressions
                         string set = FixedDistanceSets![0].Set;
                         TextInfo ti = _textInfo;
 
-                        ReadOnlySpan<char> span = textSpan.Slice(pos, end - pos);
+                        ReadOnlySpan<char> span = textSpan.Slice(pos);
                         for (int i = 0; i < span.Length; i++)
                         {
                             if (RegexCharClass.CharInClass(ti.ToLower(span[i]), set, ref startingAsciiLookup))
@@ -477,7 +476,7 @@ namespace System.Text.RegularExpressions
                             }
                         }
 
-                        pos = end;
+                        pos = textSpan.Length;
                         return false;
                     }
 
@@ -486,17 +485,17 @@ namespace System.Text.RegularExpressions
                         ref uint[]? startingAsciiLookup = ref _asciiLookups![0];
                         string set = FixedDistanceSets![0].Set;
 
-                        ReadOnlySpan<char> span = textSpan.Slice(beginning, pos - beginning);
+                        ReadOnlySpan<char> span = textSpan.Slice(0, pos);
                         for (int i = span.Length - 1; i >= 0; i--)
                         {
                             if (RegexCharClass.CharInClass(span[i], set, ref startingAsciiLookup))
                             {
-                                pos = beginning + i + 1;
+                                pos = i + 1;
                                 return true;
                             }
                         }
 
-                        pos = beginning;
+                        pos = 0;
                         return false;
                     }
 
@@ -506,17 +505,17 @@ namespace System.Text.RegularExpressions
                         string set = FixedDistanceSets![0].Set;
                         TextInfo ti = _textInfo;
 
-                        ReadOnlySpan<char> span = textSpan.Slice(beginning, pos - beginning);
+                        ReadOnlySpan<char> span = textSpan.Slice(0, pos);
                         for (int i = span.Length - 1; i >= 0; i--)
                         {
                             if (RegexCharClass.CharInClass(ti.ToLower(span[i]), set, ref startingAsciiLookup))
                             {
-                                pos = beginning + i + 1;
+                                pos = i + 1;
                                 return true;
                             }
                         }
 
-                        pos = beginning;
+                        pos = 0;
                         return false;
                     }
 
@@ -526,14 +525,14 @@ namespace System.Text.RegularExpressions
                     {
                         Debug.Assert(FixedDistanceLiteral.Distance <= MinRequiredLength);
 
-                        int i = textSpan.Slice(pos + FixedDistanceLiteral.Distance, end - pos - FixedDistanceLiteral.Distance).IndexOf(FixedDistanceLiteral.Literal);
+                        int i = textSpan.Slice(pos + FixedDistanceLiteral.Distance).IndexOf(FixedDistanceLiteral.Literal);
                         if (i >= 0)
                         {
                             pos += i;
                             return true;
                         }
 
-                        pos = end;
+                        pos = textSpan.Length;
                         return false;
                     }
 
@@ -544,7 +543,7 @@ namespace System.Text.RegularExpressions
                         char ch = FixedDistanceLiteral.Literal;
                         TextInfo ti = _textInfo;
 
-                        ReadOnlySpan<char> span = textSpan.Slice(pos + FixedDistanceLiteral.Distance, end - pos - FixedDistanceLiteral.Distance);
+                        ReadOnlySpan<char> span = textSpan.Slice(pos + FixedDistanceLiteral.Distance);
                         for (int i = 0; i < span.Length; i++)
                         {
                             if (ti.ToLower(span[i]) == ch)
@@ -554,7 +553,7 @@ namespace System.Text.RegularExpressions
                             }
                         }
 
-                        pos = end;
+                        pos = textSpan.Length;
                         return false;
                     }
 
@@ -564,14 +563,14 @@ namespace System.Text.RegularExpressions
                     {
                         List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)> sets = FixedDistanceSets!;
                         (char[]? primaryChars, string primarySet, int primaryDistance, _) = sets[0];
-                        int endMinusRequiredLength = end - Math.Max(1, MinRequiredLength);
+                        int endMinusRequiredLength = textSpan.Length - Math.Max(1, MinRequiredLength);
 
                         if (primaryChars is not null)
                         {
                             for (int inputPosition = pos; inputPosition <= endMinusRequiredLength; inputPosition++)
                             {
                                 int offset = inputPosition + primaryDistance;
-                                int index = textSpan.Slice(offset, end - offset).IndexOfAny(primaryChars);
+                                int index = textSpan.Slice(offset).IndexOfAny(primaryChars);
                                 if (index < 0)
                                 {
                                     break;
@@ -630,7 +629,7 @@ namespace System.Text.RegularExpressions
                             }
                         }
 
-                        pos = end;
+                        pos = textSpan.Length;
                         return false;
                     }
 
@@ -639,7 +638,7 @@ namespace System.Text.RegularExpressions
                         List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)> sets = FixedDistanceSets!;
                         (_, string primarySet, int primaryDistance, _) = sets[0];
 
-                        int endMinusRequiredLength = end - Math.Max(1, MinRequiredLength);
+                        int endMinusRequiredLength = textSpan.Length - Math.Max(1, MinRequiredLength);
                         TextInfo ti = _textInfo;
                         ref uint[]? startingAsciiLookup = ref _asciiLookups![0];
 
@@ -667,7 +666,7 @@ namespace System.Text.RegularExpressions
                         Bumpalong:;
                         }
 
-                        pos = end;
+                        pos = textSpan.Length;
                         return false;
                     }
 
@@ -683,7 +682,7 @@ namespace System.Text.RegularExpressions
                         int startingPos = pos;
                         while (true)
                         {
-                            ReadOnlySpan<char> slice = textSpan.Slice(startingPos, end - startingPos);
+                            ReadOnlySpan<char> slice = textSpan.Slice(startingPos);
 
                             // Find the literal.  If we can't find it, we're done searching.
                             int i = literal.String is not null ? slice.IndexOf(literal.String.AsSpan()) :
@@ -715,7 +714,7 @@ namespace System.Text.RegularExpressions
                             return true;
                         }
 
-                        pos = end;
+                        pos = textSpan.Length;
                         return false;
                     }
 
