@@ -16,18 +16,6 @@ namespace System.Runtime.ExceptionServices.Tests
             AssertExtensions.Throws<ArgumentNullException>("source", () => ExceptionDispatchInfo.Throw(null));
         }
 
-        private static int CountContains(string original, string search)
-        {
-            int count = -1;
-            int foundIndex = -1;
-            do
-            {
-                count++;
-                foundIndex = original.IndexOf(search, foundIndex + 1);
-            } while (foundIndex != -1);
-            return count;
-        }
-
         [Fact]
         public static void StaticThrow_UpdatesStackTraceAppropriately()
         {
@@ -36,7 +24,7 @@ namespace System.Runtime.ExceptionServices.Tests
             for (int i = 0; i < 3; i++)
             {
                 Assert.Same(e, Assert.Throws<FormatException>(() => ExceptionDispatchInfo.Throw(e)));
-                Assert.Equal(i, CountContains(e.StackTrace, RethrowMessageSubstring));
+                Assert.Equal(i, Regex.Count(e.StackTrace, RethrowMessageSubstring));
             }
         }
 

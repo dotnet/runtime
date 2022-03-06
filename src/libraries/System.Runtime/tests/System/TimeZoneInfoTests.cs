@@ -2584,9 +2584,6 @@ namespace System.Tests
             }
         }
 
-        [RegexGenerator(@"^\(UTC(?<sign>\+|-)(?<amount>[0-9]{2}:[0-9]{2})\) \S.*")]
-        private static partial Regex UtcOffsetRegex();
-
         [Theory]
         [MemberData(nameof(SystemTimeZonesTestData))]
         public static void TimeZoneInfo_DisplayNameStartsWithOffset(TimeZoneInfo tzi)
@@ -2603,7 +2600,7 @@ namespace System.Tests
             else
             {
                 Assert.False(string.IsNullOrWhiteSpace(tzi.StandardName));
-                Match match = UtcOffsetRegex().Match(tzi.DisplayName);
+                Match match = Regex.Match(tzi.DisplayName, @"^\(UTC(?<sign>\+|-)(?<amount>[0-9]{2}:[0-9]{2})\) \S.*", RegexOptions.ExplicitCapture);
                 Assert.True(match.Success);
 
                 // see https://github.com/dotnet/corefx/pull/33204#issuecomment-438782500

@@ -12,7 +12,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static partial class ExceptionTests
+    public static class ExceptionTests
     {
         private const int COR_E_EXCEPTION = unchecked((int)0x80131500);
 
@@ -173,19 +173,21 @@ namespace System.Tests
             throw new Exception("Boom!");
         }
 
-        [RegexGenerator(@"\s+at\s.+\.(?<memberName>[^(.]+)\([^)]*\)\sin\s(?<filePath>.*)\:line\s(?<lineNumber>[\d]+)")]
-        private static partial Regex FrameParserLineNumbersSupportedRegex();
-
-        [RegexGenerator(@"\s+at\s.+\.(?<memberName>[^(.]+)")]
-        private static partial Regex FrameParserRegex();
-
         private static void VerifyCallStack(
             (string CallerMemberName, string SourceFilePath, int SourceLineNumber) expectedStackFrame,
             string reportedCallStack, int skipFrames)
         {
             try
             {
-                var frameParserRegex = PlatformDetection.IsLineNumbersSupported ? FrameParserLineNumbersSupportedRegex() : FrameParserRegex();
+                string frameParserRegex;
+                if (PlatformDetection.IsLineNumbersSupported)
+                {
+                    frameParserRegex = @"\s+at\s.+\.(?<memberName>[^(.]+)\([^)]*\)\sin\s(?<filePath>.*)\:line\s(?<lineNumber>[\d]+)";
+                }
+                else
+                {
+                    frameParserRegex = @"\s+at\s.+\.(?<memberName>[^(.]+)";
+                }
 
                 using (var sr = new StringReader(reportedCallStack))
                 {
@@ -193,7 +195,7 @@ namespace System.Tests
                         sr.ReadLine();
                     string frame = sr.ReadLine();
                     Assert.NotNull(frame);
-                    var match = frameParserRegex.Match(frame);
+                    var match = Regex.Match(frame, frameParserRegex);
                     Assert.True(match.Success);
                     Assert.Equal(expectedStackFrame.CallerMemberName, match.Groups["memberName"].Value);
 

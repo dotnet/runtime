@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Text.Unicode.Tests
 {
-    public partial class Utf8Tests
+    public class Utf8Tests
     {
         private const string X_UTF8 = "58"; // U+0058 LATIN CAPITAL LETTER X, 1 byte
         private const string X_UTF16 = "X";
@@ -60,12 +60,9 @@ namespace System.Text.Unicode.Tests
          * COMMON UTILITIES FOR UNIT TESTS
          */
 
-        [RegexGenerator(@"^([0-9a-fA-F]{2})*$")]
-        private static partial Regex HexPairedCharactersRegex();
-
         public static byte[] DecodeHex(ReadOnlySpan<char> inputHex)
         {
-            Assert.True(HexPairedCharactersRegex().IsMatch(inputHex.ToString()), "Input must be an even number of hex characters.");
+            Assert.Matches(@"^([0-9a-fA-F]{2})*$", inputHex.ToString());
 
             return Convert.FromHexString(inputHex);
         }
