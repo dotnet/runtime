@@ -21640,6 +21640,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
                 case NI_AVX2_ConvertToVector256Int16:
                 case NI_AVX2_ConvertToVector256Int32:
                 case NI_AVX2_ConvertToVector256Int64:
+                case NI_AVX2_ConvertToVector256NInt:
                 {
                     CorInfoType auxiliaryType = GetAuxiliaryJitType();
 

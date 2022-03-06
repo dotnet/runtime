@@ -1048,6 +1048,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_AVX2_ConvertToVector256Int16:
                     case NI_AVX2_ConvertToVector256Int32:
                     case NI_AVX2_ConvertToVector256Int64:
+                    case NI_AVX2_ConvertToVector256NInt:
                     {
                         // These intrinsics have both pointer and vector overloads
                         // We want to be able to differentiate between them so lets

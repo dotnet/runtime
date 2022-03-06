@@ -5455,6 +5455,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                 case NI_AVX2_ConvertToVector256Int16:
                 case NI_AVX2_ConvertToVector256Int32:
                 case NI_AVX2_ConvertToVector256Int64:
+                case NI_AVX2_ConvertToVector256NInt:
                 {
                     assert(!supportsSIMDScalarLoads);
 
@@ -6059,6 +6060,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     case NI_AVX2_ConvertToVector256Int16:
                     case NI_AVX2_ConvertToVector256Int32:
                     case NI_AVX2_ConvertToVector256Int64:
+                    case NI_AVX2_ConvertToVector256NInt:
                         if (!varTypeIsSIMD(op1))
                         {
                             ContainCheckHWIntrinsicAddr(node, op1);
@@ -6086,7 +6088,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                            (intrinsicId == NI_AVX2_BroadcastScalarToVector256) ||
                            (intrinsicId == NI_AVX2_ConvertToVector256Int16) ||
                            (intrinsicId == NI_AVX2_ConvertToVector256Int32) ||
-                           (intrinsicId == NI_AVX2_ConvertToVector256Int64));
+                           (intrinsicId == NI_AVX2_ConvertToVector256Int64) ||
+                           (intrinsicId == NI_AVX2_ConvertToVector256NInt));
 
                     ContainCheckHWIntrinsicAddr(node, op1);
                 }

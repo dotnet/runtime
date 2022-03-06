@@ -1510,6 +1510,7 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
         case NI_AVX2_ConvertToVector256Int16:
         case NI_AVX2_ConvertToVector256Int32:
         case NI_AVX2_ConvertToVector256Int64:
+        case NI_AVX2_ConvertToVector256NInt:
         {
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
 
