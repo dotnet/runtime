@@ -159,6 +159,7 @@ mono_try_trunc_u1 (double val, guint8 *out)
 	if (val > -1.0 && val < +256.0) {
 		// -1.0 and +256.0 are exactly representable
 		// Note that the above condition also works properly for val = NaN case
+		*out = (guint8)val;
 		return TRUE;
 	}
 	return FALSE;
