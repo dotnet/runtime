@@ -152,7 +152,7 @@ namespace System.Net.Tests
         {
             WebHeaderCollection w = new WebHeaderCollection();
             ArgumentException exception = AssertExtensions.Throws<ArgumentException>("name", () => w[name] = "test");
-            Assert.Equal($"Specified value '{name}' has invalid HTTP Header characters. (Parameter 'name')", exception.Message);
+            Assert.Contains(name, exception.Message);
         }
 
         public static object[][] InvalidValues = {
@@ -236,7 +236,7 @@ namespace System.Net.Tests
         {
             var headers = new WebHeaderCollection();
             ArgumentException exception = AssertExtensions.Throws<ArgumentException>("name", () => headers.Remove(name));
-            Assert.Equal($"Specified value '{name}' has invalid HTTP Header characters. (Parameter 'name')", exception.Message);
+            Assert.Contains(name, exception.Message);
         }
 
         [Fact]
@@ -487,7 +487,7 @@ namespace System.Net.Tests
 
             if (!string.IsNullOrEmpty(name))
             {
-                Assert.Equal($"Specified value '{name}' has invalid HTTP Header characters. (Parameter 'name')", exception.Message);
+                Assert.Contains(name, exception.Message);
             }
         }
 

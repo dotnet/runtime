@@ -2363,7 +2363,7 @@ namespace System.Net.Http.Tests
         public void TryAddInvalidHeader_ShouldThrowFormatException()
         {
             MockHeaders headers = new MockHeaders();
-            AssertExtensions.Throws<FormatException>(() => headers.Remove("\u0080"), "The header name '\u0080' format is invalid.");
+            AssertExtensions.ThrowsContains<FormatException>(() => headers.Remove("\u0080"), "\u0080");
         }
 
         public static IEnumerable<object[]> NumberOfHeadersUpToArrayThreshold_AddNonValidated_EnumerateNonValidated()
