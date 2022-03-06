@@ -801,6 +801,11 @@ endif()
 if(HOST_LINUX AND HAVE_SYS_MMAN_H AND HAVE_ELF_H AND HAVE_SYS_SYSCALL_H)
   set(ENABLE_JIT_DUMP 1)
 endif()
+
+if(ENABLE_SMALL_CONFIG)
+  set(MONO_SMALL_CONFIG 1)
+endif()
+
 ### End of other checks
 
 ######################################
