@@ -3235,11 +3235,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 
 		if (op == MINT_LDLEN) {
-#ifdef MONO_BIG_ARRAYS
-			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I8);
-#else
 			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
-#endif
 		}
 	} else if (!calli && !is_delegate_invoke && !is_virtual && mono_interp_jit_call_supported (target_method, csignature)) {
 		interp_add_ins (td, MINT_JIT_CALL);
@@ -6118,11 +6114,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			td->sp--;
 			interp_add_ins (td, MINT_LDLEN);
 			interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-#ifdef MONO_BIG_ARRAYS
-			push_simple_type (td, STACK_TYPE_I8);
-#else
 			push_simple_type (td, STACK_TYPE_I4);
-#endif
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 			++td->ip;
 			break;

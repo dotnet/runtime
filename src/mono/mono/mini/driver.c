@@ -1708,10 +1708,6 @@ mono_get_version_info (void)
 	g_string_append_printf (output, "smallconfig ");
 #endif
 
-#ifdef MONO_BIG_ARRAYS
-	g_string_append_printf (output, "bigarrays ");
-#endif
-
 #if !defined(DISABLE_SDB)
 	g_string_append_printf (output, "softdebug ");
 #endif

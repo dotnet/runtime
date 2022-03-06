@@ -148,17 +148,10 @@ mono_array_new_cached_handle_function (MonoClass *aclass, int size, MonoError *e
 #define mono_array_new_cached_handle(eclass, size, error) \
 	mono_array_new_cached_handle_function (mono_array_class_get_cached (eclass), (size), (error))
 
-#ifdef MONO_BIG_ARRAYS
-typedef uint64_t mono_array_size_t;
-typedef int64_t mono_array_lower_bound_t;
-#define MONO_ARRAY_MAX_INDEX G_MAXINT64
-#define MONO_ARRAY_MAX_SIZE  G_MAXUINT64
-#else
 typedef uint32_t mono_array_size_t;
 typedef int32_t mono_array_lower_bound_t;
 #define MONO_ARRAY_MAX_INDEX ((int32_t) 0x7fffffff)
 #define MONO_ARRAY_MAX_SIZE  ((uint32_t) 0xffffffff)
-#endif
 
 typedef struct {
 	mono_array_size_t length;

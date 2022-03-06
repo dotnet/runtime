@@ -703,9 +703,6 @@
 /* Name of /dev/random */
 #define NAME_DEV_RANDOM @NAME_DEV_RANDOM@
 
-/* Enable the allocation and indexing of arrays greater than Int32.MaxValue */
-#cmakedefine MONO_BIG_ARRAYS 1
-
 /* Enable DTrace probes */
 #cmakedefine ENABLE_DTRACE 1
 
