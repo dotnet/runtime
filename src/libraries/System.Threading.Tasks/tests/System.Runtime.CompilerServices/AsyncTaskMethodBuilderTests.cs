@@ -8,14 +8,13 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Sdk;
 
 namespace System.Threading.Tasks.Tests
 {
-    public partial class AsyncTaskMethodBuilderTests
+    public class AsyncTaskMethodBuilderTests
     {
         // Test captured sync context with successful completion (SetResult)
         [Fact]
@@ -550,8 +549,7 @@ namespace System.Threading.Tasks.Tests
                 var al = new AsyncLocal<object>() { Value = state }; // ensure the object is stored in ExecutionContext
                 t = YieldOnceAsync(state); // ensure the object is stored in the state machine
                 al.Value = null;
-            })
-            { IsBackground = true };
+            }) { IsBackground = true };
 
             runner.Start();
             runner.Join();
@@ -689,14 +687,11 @@ namespace System.Threading.Tasks.Tests
             ValidateException(e);
         }
 
-        [RegexGenerator(@"---.+ ---")]
-        private static partial Regex DashDelimitedRegex();
-
         private static void ValidateException(Exception e)
         {
             Assert.NotNull(e);
             Assert.NotNull(e.StackTrace);
-            Assert.Matches(DashDelimitedRegex(), e.StackTrace);
+            Assert.Matches(@"---.+---", e.StackTrace);
         }
 
         private class TrackOperationsSynchronizationContext : SynchronizationContext
