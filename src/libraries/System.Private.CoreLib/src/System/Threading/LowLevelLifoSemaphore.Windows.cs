@@ -26,9 +26,9 @@ namespace System.Threading
                 Interop.Kernel32.CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, UIntPtr.Zero, maximumSignalCount);
             if (_completionPort == IntPtr.Zero)
             {
-                int error = Marshal.GetLastPInvokeError();
+                int hr = Marshal.GetHRForLastWin32Error();
                 var exception = new OutOfMemoryException();
-                exception.HResult = error;
+                exception.HResult = hr;
                 throw exception;
             }
         }

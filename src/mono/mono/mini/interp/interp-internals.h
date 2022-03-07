@@ -277,9 +277,8 @@ void
 mono_interp_error_cleanup (MonoError *error);
 
 static inline int
-mint_type(MonoType *type_)
+mint_type(MonoType *type)
 {
-	MonoType *type = mini_native_type_replace_type (type_);
 	if (m_type_is_byref (type))
 		return MINT_TYPE_I;
 enum_type:

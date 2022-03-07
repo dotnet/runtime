@@ -4276,28 +4276,24 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 case GT_IND:
                 case GT_BLK:
                 case GT_OBJ:
-
-                    // In an indirection, the destination address is evaluated prior to the source.
-                    // If we have any side effects on the target indirection,
-                    // we have to evaluate op1 first.
-                    // However, if the LHS is a lclVar address, SSA relies on using evaluation order for its
-                    // renaming, and therefore the RHS must be evaluated first.
-                    // If we have an assignment involving a lclVar address, the LHS may be marked as having
-                    // side-effects.
-                    // However the side-effects won't require that we evaluate the LHS address first:
-                    // - The GTF_GLOB_REF might have been conservatively set on a FIELD of a local.
-                    // - The local might be address-exposed, but that side-effect happens at the actual assignment (not
-                    //   when its address is "evaluated") so it doesn't change the side effect to "evaluate" the address
-                    //   after the RHS (note that in this case it won't be renamed by SSA anyway, but the reordering is
-                    //   safe).
+                {
+                    // In an ASG(IND(addr), ...), the "IND" is a pure syntactical element,
+                    // the actual indirection will only be realized at the point of the ASG
+                    // itself. As such, we can disard any side effects "induced" by it in
+                    // this logic.
                     //
-                    if (op1Val->AsIndir()->Addr()->IsLocalAddrExpr())
+                    // Note that for local "addr"s, liveness depends on seeing the defs and
+                    // uses in correct order, and so we MUST reverse the ASG in that case.
+                    //
+                    GenTree* op1Addr = op1->AsIndir()->Addr();
+
+                    if (op1Addr->IsLocalAddrExpr() || op1Addr->IsInvariant())
                     {
                         bReverseInAssignment = true;
                         tree->gtFlags |= GTF_REVERSE_OPS;
                         break;
                     }
-                    if (op1Val->AsIndir()->Addr()->gtFlags & GTF_ALL_EFFECT)
+                    if (op1Addr->gtFlags & GTF_ALL_EFFECT)
                     {
                         break;
                     }
@@ -4314,7 +4310,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     {
                         break;
                     }
-
+                }
                     // fall through and set GTF_REVERSE_OPS
                     FALLTHROUGH;
 
