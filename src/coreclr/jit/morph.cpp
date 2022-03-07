@@ -12632,14 +12632,9 @@ DONE_MORPHING_CHILDREN:
             // out-of-bounds w.r.t. the local).
             if ((temp != nullptr) && !foldAndReturnTemp)
             {
-                assert(temp->OperIsLocal());
+                assert(temp->OperIsLocalRead());
 
-                const unsigned   lclNum = temp->AsLclVarCommon()->GetLclNum();
-                LclVarDsc* const varDsc = lvaGetDesc(lclNum);
-
-                const var_types tempTyp = temp->TypeGet();
-                const bool useExactSize = varTypeIsStruct(tempTyp) || (tempTyp == TYP_BLK) || (tempTyp == TYP_LCLBLK);
-                const unsigned varSize  = useExactSize ? varDsc->lvExactSize : genTypeSize(temp);
+                unsigned lclNum = temp->AsLclVarCommon()->GetLclNum();
 
                 // Make sure we do not enregister this lclVar.
                 lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
@@ -12647,7 +12642,7 @@ DONE_MORPHING_CHILDREN:
                 // If the size of the load is greater than the size of the lclVar, we cannot fold this access into
                 // a lclFld: the access represented by an lclFld node must begin at or after the start of the
                 // lclVar and must not extend beyond the end of the lclVar.
-                if ((ival1 >= 0) && ((ival1 + genTypeSize(typ)) <= varSize))
+                if ((ival1 >= 0) && ((ival1 + genTypeSize(typ)) <= lvaLclExactSize(lclNum)))
                 {
                     GenTreeLclFld* lclFld;
 
