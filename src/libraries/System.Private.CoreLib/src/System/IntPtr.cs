@@ -22,7 +22,7 @@ namespace System
 {
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct IntPtr
         : IEquatable<nint>,
           IComparable,
@@ -176,12 +176,14 @@ namespace System
         [NonVersionable]
         public unsafe void* ToPointer() => _value;
 
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static IntPtr MaxValue
         {
             [NonVersionable]
             get => (IntPtr)nint_t.MaxValue;
         }
 
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static IntPtr MinValue
         {
             [NonVersionable]
@@ -222,12 +224,19 @@ namespace System
         public static IntPtr Parse(string s, NumberStyles style) => (IntPtr)nint_t.Parse(s, style);
         public static IntPtr Parse(string s, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, provider);
         public static IntPtr Parse(string s, NumberStyles style, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, style, provider);
+        public static IntPtr Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, provider);
         public static IntPtr Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null) => (IntPtr)nint_t.Parse(s, style, provider);
 
         public static bool TryParse([NotNullWhen(true)] string? s, out IntPtr result)
         {
             Unsafe.SkipInit(out result);
             return nint_t.TryParse(s, out Unsafe.As<IntPtr, nint_t>(ref result));
+        }
+
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out IntPtr result)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(s, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
         }
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
@@ -242,6 +251,12 @@ namespace System
             return nint_t.TryParse(s, out Unsafe.As<IntPtr, nint_t>(ref result));
         }
 
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out IntPtr result)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(s, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
+        }
+
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
         {
             Unsafe.SkipInit(out result);
@@ -252,22 +267,24 @@ namespace System
         // IAdditionOperators
         //
 
-        static nint IAdditionOperators<nint, nint, nint>.operator +(nint left, nint right)
-            => left + right;
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        static nint IAdditionOperators<nint, nint, nint>.operator +(nint left, nint right) => left + right;
 
-        // static checked nint IAdditionOperators<nint, nint, nint>.operator +(nint left, nint right)
-        //     => checked(left + right);
+        // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        // static nint IAdditionOperators<nint, nint, nint>.operator checked +(nint left, nint right) => checked(left + right);
 
         //
         // IAdditiveIdentity
         //
 
+        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
         static nint IAdditiveIdentity<nint, nint>.AdditiveIdentity => 0;
 
         //
         // IBinaryInteger
         //
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         static nint IBinaryInteger<nint>.LeadingZeroCount(nint value)
         {
             if (Environment.Is64BitProcess)
@@ -280,6 +297,7 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         static nint IBinaryInteger<nint>.PopCount(nint value)
         {
             if (Environment.Is64BitProcess)
@@ -292,6 +310,7 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
         static nint IBinaryInteger<nint>.RotateLeft(nint value, int rotateAmount)
         {
             if (Environment.Is64BitProcess)
@@ -304,8 +323,8 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
         static nint IBinaryInteger<nint>.RotateRight(nint value, int rotateAmount)
-
         {
             if (Environment.Is64BitProcess)
             {
@@ -317,6 +336,7 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
         static nint IBinaryInteger<nint>.TrailingZeroCount(nint value)
         {
             if (Environment.Is64BitProcess)
@@ -333,9 +353,10 @@ namespace System
         // IBinaryNumber
         //
 
-        static bool IBinaryNumber<nint>.IsPow2(nint value)
-            => BitOperations.IsPow2(value);
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
+        static bool IBinaryNumber<nint>.IsPow2(nint value) => BitOperations.IsPow2(value);
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
         static nint IBinaryNumber<nint>.Log2(nint value)
         {
             if (value < 0)
@@ -357,122 +378,115 @@ namespace System
         // IBitwiseOperators
         //
 
-        static nint IBitwiseOperators<nint, nint, nint>.operator &(nint left, nint right)
-            => left & right;
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_BitwiseAnd(TSelf, TOther)" />
+        static nint IBitwiseOperators<nint, nint, nint>.operator &(nint left, nint right) => left & right;
 
-        static nint IBitwiseOperators<nint, nint, nint>.operator |(nint left, nint right)
-            => left | right;
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_BitwiseOr(TSelf, TOther)" />
+        static nint IBitwiseOperators<nint, nint, nint>.operator |(nint left, nint right) => left | right;
 
-        static nint IBitwiseOperators<nint, nint, nint>.operator ^(nint left, nint right)
-            => left ^ right;
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_ExclusiveOr(TSelf, TOther)" />
+        static nint IBitwiseOperators<nint, nint, nint>.operator ^(nint left, nint right) => left ^ right;
 
-        static nint IBitwiseOperators<nint, nint, nint>.operator ~(nint value)
-            => ~value;
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_OnesComplement(TSelf)" />
+        static nint IBitwiseOperators<nint, nint, nint>.operator ~(nint value) => ~value;
 
         //
         // IComparisonOperators
         //
 
-        static bool IComparisonOperators<nint, nint>.operator <(nint left, nint right)
-            => left < right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        static bool IComparisonOperators<nint, nint>.operator <(nint left, nint right) => left < right;
 
-        static bool IComparisonOperators<nint, nint>.operator <=(nint left, nint right)
-            => left <= right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        static bool IComparisonOperators<nint, nint>.operator <=(nint left, nint right) => left <= right;
 
-        static bool IComparisonOperators<nint, nint>.operator >(nint left, nint right)
-            => left > right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        static bool IComparisonOperators<nint, nint>.operator >(nint left, nint right) => left > right;
 
-        static bool IComparisonOperators<nint, nint>.operator >=(nint left, nint right)
-            => left >= right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        static bool IComparisonOperators<nint, nint>.operator >=(nint left, nint right) => left >= right;
 
         //
         // IDecrementOperators
         //
 
-        static nint IDecrementOperators<nint>.operator --(nint value)
-            => --value;
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        static nint IDecrementOperators<nint>.operator --(nint value) => --value;
 
-        // static checked nint IDecrementOperators<nint>.operator --(nint value)
-        //     => checked(--value);
+        // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        // static nint IDecrementOperators<nint>.operator checked --(nint value) => checked(--value);
 
         //
         // IDivisionOperators
         //
 
-        static nint IDivisionOperators<nint, nint, nint>.operator /(nint left, nint right)
-            => left / right;
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
+        static nint IDivisionOperators<nint, nint, nint>.operator /(nint left, nint right) => left / right;
 
-        // static checked nint IDivisionOperators<nint, nint, nint>.operator /(nint left, nint right)
-        //     => checked(left / right);
-
-        //
-        // IEqualityOperators
-        //
-
-        static bool IEqualityOperators<nint, nint>.operator ==(nint left, nint right)
-            => left == right;
-
-        static bool IEqualityOperators<nint, nint>.operator !=(nint left, nint right)
-            => left != right;
+        // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        // static nint IDivisionOperators<nint, nint, nint>.operator checked /(nint left, nint right) => checked(left / right);
 
         //
         // IIncrementOperators
         //
 
-        static nint IIncrementOperators<nint>.operator ++(nint value)
-            => ++value;
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
+        static nint IIncrementOperators<nint>.operator ++(nint value) => ++value;
 
-        // static checked nint IIncrementOperators<nint>.operator ++(nint value)
-        //     => checked(++value);
+        // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
+        // static nint IIncrementOperators<nint>.operator checked ++(nint value) => checked(++value);
 
         //
         // IMinMaxValue
         //
 
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
         static nint IMinMaxValue<nint>.MinValue => MinValue;
 
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         static nint IMinMaxValue<nint>.MaxValue => MaxValue;
 
         //
         // IModulusOperators
         //
 
-        static nint IModulusOperators<nint, nint, nint>.operator %(nint left, nint right)
-            => left % right;
-
-        // static checked nint IModulusOperators<nint, nint, nint>.operator %(nint left, nint right)
-        //     => checked(left % right);
+        /// <inheritdoc cref="IModulusOperators{TSelf, TOther, TResult}.op_Modulus(TSelf, TOther)" />
+        static nint IModulusOperators<nint, nint, nint>.operator %(nint left, nint right) => left % right;
 
         //
         // IMultiplicativeIdentity
         //
 
+        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
         static nint IMultiplicativeIdentity<nint, nint>.MultiplicativeIdentity => 1;
 
         //
         // IMultiplyOperators
         //
 
-        static nint IMultiplyOperators<nint, nint, nint>.operator *(nint left, nint right)
-            => left * right;
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
+        static nint IMultiplyOperators<nint, nint, nint>.operator *(nint left, nint right) => left * right;
 
-        // static checked nint IMultiplyOperators<nint, nint, nint>.operator *(nint left, nint right)
-        //     => checked(left * right);
+        // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        // static nint IMultiplyOperators<nint, nint, nint>.operator checked *(nint left, nint right) => checked(left * right);
 
         //
         // INumber
         //
 
+        /// <inheritdoc cref="INumber{TSelf}.One" />
         static nint INumber<nint>.One => 1;
 
+        /// <inheritdoc cref="INumber{TSelf}.Zero" />
         static nint INumber<nint>.Zero => 0;
 
-        static nint INumber<nint>.Abs(nint value)
-            => Math.Abs(value);
+        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
+        static nint INumber<nint>.Abs(nint value) => Math.Abs(value);
 
-        static nint INumber<nint>.Clamp(nint value, nint min, nint max)
-            => Math.Clamp(value, min, max);
+        /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
+        static nint INumber<nint>.Clamp(nint value, nint min, nint max) => Math.Clamp(value, min, max);
 
+        /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static nint INumber<nint>.Create<TOther>(TOther value)
         {
@@ -539,6 +553,7 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static nint INumber<nint>.CreateSaturating<TOther>(TOther value)
         {
@@ -616,6 +631,7 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static nint INumber<nint>.CreateTruncating<TOther>(TOther value)
         {
@@ -682,24 +698,19 @@ namespace System
             }
         }
 
-        static (nint Quotient, nint Remainder) INumber<nint>.DivRem(nint left, nint right)
-            => Math.DivRem(left, right);
+        /// <inheritdoc cref="INumber{TSelf}.DivRem(TSelf, TSelf)" />
+        static (nint Quotient, nint Remainder) INumber<nint>.DivRem(nint left, nint right) => Math.DivRem(left, right);
 
-        static nint INumber<nint>.Max(nint x, nint y)
-            => Math.Max(x, y);
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        static nint INumber<nint>.Max(nint x, nint y) => Math.Max(x, y);
 
-        static nint INumber<nint>.Min(nint x, nint y)
-            => Math.Min(x, y);
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        static nint INumber<nint>.Min(nint x, nint y) => Math.Min(x, y);
 
-        static nint INumber<nint>.Parse(string s, NumberStyles style, IFormatProvider? provider)
-            => Parse(s, style, provider);
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        static nint INumber<nint>.Sign(nint value) => Math.Sign(value);
 
-        static nint INumber<nint>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
-            => Parse(s, style, provider);
-
-        static nint INumber<nint>.Sign(nint value)
-            => Math.Sign(value);
-
+        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumber<nint>.TryCreate<TOther>(TOther value, out nint result)
         {
@@ -837,79 +848,54 @@ namespace System
             }
         }
 
-        static bool INumber<nint>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out nint result)
-            => TryParse(s, style, provider, out result);
-
-        static bool INumber<nint>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out nint result)
-            => TryParse(s, style, provider, out result);
-
-        //
-        // IParseable
-        //
-
-        static nint IParseable<nint>.Parse(string s, IFormatProvider? provider)
-            => Parse(s, provider);
-
-        static bool IParseable<nint>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out nint result)
-            => TryParse(s, NumberStyles.Integer, provider, out result);
-
         //
         // IShiftOperators
         //
 
-        static nint IShiftOperators<nint, nint>.operator <<(nint value, int shiftAmount)
-            => value << (int)shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
+        static nint IShiftOperators<nint, nint>.operator <<(nint value, int shiftAmount) => value << (int)shiftAmount;
 
-        static nint IShiftOperators<nint, nint>.operator >>(nint value, int shiftAmount)
-            => value >> (int)shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
+        static nint IShiftOperators<nint, nint>.operator >>(nint value, int shiftAmount) => value >> (int)shiftAmount;
 
-        // static nint IShiftOperators<nint, nint>.operator >>>(nint value, int shiftAmount)
-        //     => (nint)((nuint)value >> (int)shiftAmount);
+        // /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        // static nint IShiftOperators<nint, nint>.operator >>>(nint value, int shiftAmount) => (nint)((nuint)value >> (int)shiftAmount);
 
         //
         // ISignedNumber
         //
 
+        /// <inheritdoc cref="ISignedNumber{TSelf}.NegativeOne" />
         static nint ISignedNumber<nint>.NegativeOne => -1;
-
-        //
-        // ISpanParseable
-        //
-
-        static nint ISpanParseable<nint>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s, NumberStyles.Integer, provider);
-
-        static bool ISpanParseable<nint>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out nint result)
-            => TryParse(s, NumberStyles.Integer, provider, out result);
 
         //
         // ISubtractionOperators
         //
 
-        static nint ISubtractionOperators<nint, nint, nint>.operator -(nint left, nint right)
-            => left - right;
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
+        static nint ISubtractionOperators<nint, nint, nint>.operator -(nint left, nint right) => left - right;
 
-        // static checked nint ISubtractionOperators<nint, nint, nint>.operator -(nint left, nint right)
-        //     => checked(left - right);
+        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        // static nint ISubtractionOperators<nint, nint, nint>.operator checked -(nint left, nint right) => checked(left - right);
 
         //
         // IUnaryNegationOperators
         //
 
-        static nint IUnaryNegationOperators<nint, nint>.operator -(nint value)
-            => -value;
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
+        static nint IUnaryNegationOperators<nint, nint>.operator -(nint value) => -value;
 
-        // static checked nint IUnaryNegationOperators<nint, nint>.operator -(nint value)
-        //     => checked(-value);
+        // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        // static nint IUnaryNegationOperators<nint, nint>.operator checked -(nint value) => checked(-value);
 
         //
         // IUnaryPlusOperators
         //
 
-        static nint IUnaryPlusOperators<nint, nint>.operator +(nint value)
-            => +value;
+        /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
+        static nint IUnaryPlusOperators<nint, nint>.operator +(nint value) => +value;
 
-        // static checked nint IUnaryPlusOperators<nint, nint>.operator +(nint value)
-        //     => checked(+value);
+        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
+        // static nint IUnaryPlusOperators<nint, nint>.operator checked +(nint value) => checked(+value);
     }
 }
