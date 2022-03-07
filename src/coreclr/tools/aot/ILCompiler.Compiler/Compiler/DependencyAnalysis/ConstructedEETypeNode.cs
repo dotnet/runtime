@@ -33,9 +33,6 @@ namespace ILCompiler.DependencyAnalysis
             // relocs to nodes we emit.
             dependencyList.Add(factory.NecessaryTypeSymbol(_type), "NecessaryType for constructed type");
 
-            if (_type.IsArray || _type.IsInterface || (_type is MetadataType mt && !mt.IsAbstract))
-                dependencyList.Add(factory.TypeWithInstanceMethods(_type), "Potentially allocated type");
-
             if (_type is MetadataType mdType
                 && mdType.Module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
             {

@@ -262,8 +262,6 @@ namespace ILCompiler.DependencyAnalysis
 
             _methodEntrypoints = new NodeCache<MethodDesc, IMethodNode>(CreateMethodEntrypointNode);
 
-            _typesWithInstanceMethods = new NodeCache<TypeDesc, TypeWithInstanceMethodsNode>(t => new TypeWithInstanceMethodsNode(t));
-
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
 
             _methodAssociatedData = new NodeCache<IMethodNode, MethodAssociatedDataNode>(methodNode =>
@@ -804,12 +802,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return _methodEntrypoints.GetOrAdd(method);
-        }
-
-        private NodeCache<TypeDesc, TypeWithInstanceMethodsNode> _typesWithInstanceMethods;
-        public IDependencyNode TypeWithInstanceMethods(TypeDesc type)
-        {
-            return _typesWithInstanceMethods.GetOrAdd(type);
         }
 
         public MethodAssociatedDataNode MethodAssociatedData(IMethodNode methodNode)

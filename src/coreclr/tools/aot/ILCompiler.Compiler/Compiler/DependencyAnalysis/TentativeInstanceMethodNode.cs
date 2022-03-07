@@ -57,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 new CombinedDependencyListEntry(
                     RealBody,
-                    factory.TypeWithInstanceMethods(owningType),
+                    factory.ConstructedTypeSymbol(owningType),
                     "Instance method on a constructed type"),
             };
         }

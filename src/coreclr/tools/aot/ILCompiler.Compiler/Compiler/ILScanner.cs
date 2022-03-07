@@ -476,7 +476,7 @@ namespace ILCompiler
 
                 foreach (var node in markedNodes)
                 {
-                    if (node is TypeWithInstanceMethodsNode eetypeNode)
+                    if (node is ConstructedEETypeNode eetypeNode)
                     {
                         TypeDesc type = eetypeNode.Type;
                         _constructedTypes.Add(type);

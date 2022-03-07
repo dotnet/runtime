@@ -42,9 +42,6 @@ namespace ILCompiler.DependencyAnalysis
             // relocs to nodes we emit.
             dependencyList.Add(factory.NecessaryTypeSymbol(_type), "Necessary type symbol related to CanonicalEETypeNode");
 
-            if (_type.IsArray || _type.IsInterface || (_type is MetadataType mt && !mt.IsAbstract))
-                dependencyList.Add(factory.TypeWithInstanceMethods(_type), "Potentially allocated type");
-
             DefType closestDefType = _type.GetClosestDefType();
 
             if (MightHaveInterfaceDispatchMap(factory))
