@@ -1318,7 +1318,7 @@ DWORD MethodDesc::GetAttrs() const
     if (IsArray())
         return dac_cast<PTR_ArrayMethodDesc>(this)->GetAttrs();
     else if (IsNoMetadata())
-        return dac_cast<PTR_DynamicMethodDesc>(this)->GetAttrs();;
+        return dac_cast<PTR_DynamicMethodDesc>(this)->GetAttrs();
 
     DWORD dwAttributes;
     if (FAILED(GetMDImport()->GetMethodDefProps(GetMemberDef(), &dwAttributes)))
@@ -1662,7 +1662,7 @@ UINT MethodDesc::CbStackPop()
     {
         msig.ClearHasThis();
     }
-    
+
     return argit.CbStackPop();
 }
 #endif // TARGET_X86
@@ -3606,7 +3606,9 @@ BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
 
     if (IsILStub())
     {
-        return AsDynamicMethodDesc()->IsUnmanagedCallersOnlyStub();
+        // Stubs generated for being called from native code are equivalent to
+        // managed methods marked with UnmanagedCallersOnly.
+        return AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubNativeToCLRInterop;
     }
 
     HRESULT hr = GetCustomAttribute(
