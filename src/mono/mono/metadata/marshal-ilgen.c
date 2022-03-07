@@ -155,13 +155,18 @@ mono_mb_emit_exception_marshal_directive (MonoMethodBuilder *mb, char *msg)
 static int
 offset_of_first_nonstatic_field (MonoClass *klass)
 {
-	int i;
-	int fcount = mono_class_get_field_count (klass);
 	mono_class_setup_fields (klass);
-	MonoClassField *klass_fields = m_class_get_fields (klass);
-	for (i = 0; i < fcount; i++) {
-		if (!(klass_fields[i].type->attrs & FIELD_ATTRIBUTE_STATIC) && !mono_field_is_deleted (&klass_fields[i]))
-			return klass_fields[i].offset - MONO_ABI_SIZEOF (MonoObject);
+	gpointer iter;
+	MonoClassField *field;
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC) && !mono_field_is_deleted (field)) {
+			/*
+			 * metadata-update: adding fields to existing structs isn't supported.  In
+			 * newly-added structs, the "from update" field won't be set.
+			 */
+			g_assert (!m_field_is_from_update (field));
+			return field->offset - MONO_ABI_SIZEOF (MonoObject);
+		}
 	}
 
 	return 0;

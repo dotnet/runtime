@@ -2993,6 +2993,7 @@ mono_get_field_token (MonoClassField *field)
 	MonoClass *klass = m_field_get_parent (field);
 	int i;
 
+	g_assert (!m_field_is_from_update (field));
 	int fcount = mono_class_get_field_count (klass);
 	MonoClassField *klass_fields = m_class_get_fields (klass);
 	for (i = 0; i < fcount; ++i) {
