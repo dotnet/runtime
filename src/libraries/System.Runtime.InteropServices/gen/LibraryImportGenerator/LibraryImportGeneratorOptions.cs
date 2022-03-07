@@ -5,9 +5,9 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Microsoft.Interop
 {
-    internal record DllImportGeneratorOptions(bool GenerateForwarders, bool UseMarshalType)
+    internal record LibraryImportGeneratorOptions(bool GenerateForwarders, bool UseMarshalType)
     {
-        public DllImportGeneratorOptions(AnalyzerConfigOptions options)
+        public LibraryImportGeneratorOptions(AnalyzerConfigOptions options)
             : this(options.GenerateForwarders(), options.UseMarshalType())
         {
         }

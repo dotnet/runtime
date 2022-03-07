@@ -13,7 +13,7 @@ using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
 namespace Microsoft.Interop.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class ConvertToGeneratedDllImportAnalyzer : DiagnosticAnalyzer
+    public class ConvertToLibraryImportAnalyzer : DiagnosticAnalyzer
     {
         private const string Category = "Interoperability";
 
@@ -24,17 +24,17 @@ namespace Microsoft.Interop.Analyzers
             "System.Text.StringBuilder"
         };
 
-        public static readonly DiagnosticDescriptor ConvertToGeneratedDllImport =
+        public static readonly DiagnosticDescriptor ConvertToLibraryImport =
             new DiagnosticDescriptor(
-                Ids.ConvertToGeneratedDllImport,
-                GetResourceString(nameof(Resources.ConvertToGeneratedDllImportTitle)),
-                GetResourceString(nameof(Resources.ConvertToGeneratedDllImportMessage)),
+                Ids.ConvertToLibraryImport,
+                GetResourceString(nameof(Resources.ConvertToLibraryImportTitle)),
+                GetResourceString(nameof(Resources.ConvertToLibraryImportMessage)),
                 Category,
                 DiagnosticSeverity.Info,
                 isEnabledByDefault: false,
-                description: GetResourceString(nameof(Resources.ConvertToGeneratedDllImportDescription)));
+                description: GetResourceString(nameof(Resources.ConvertToLibraryImportDescription)));
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(ConvertToGeneratedDllImport);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(ConvertToLibraryImport);
 
         public const string CharSet = nameof(CharSet);
         public const string ExactSpelling = nameof(ExactSpelling);
@@ -109,7 +109,7 @@ namespace Microsoft.Interop.Analyzers
             properties.Add(CharSet, dllImportData.CharacterSet.ToString());
             properties.Add(ExactSpelling, dllImportData.ExactSpelling.ToString());
 
-            context.ReportDiagnostic(method.CreateDiagnostic(ConvertToGeneratedDllImport, properties.ToImmutable(), method.Name));
+            context.ReportDiagnostic(method.CreateDiagnostic(ConvertToLibraryImport, properties.ToImmutable(), method.Name));
         }
 
         private static bool HasUnsupportedUnmanagedTypeValue(ImmutableArray<AttributeData> attributes, INamedTypeSymbol? marshalAsAttrType)

@@ -958,8 +958,10 @@ static guint16 vector64_vector128_t_methods [] = {
 	SN_get_Count,
 	SN_get_IsSupported,
 	SN_get_Zero,
+	SN_op_Addition,
 	SN_op_Equality,
 	SN_op_Inequality,
+	SN_op_Subtraction,
 };
 
 static MonoInst*
@@ -1021,6 +1023,18 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
 		}
 		break;
+	}
+	case SN_op_Addition:
+	case SN_op_Subtraction: {	
+		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
+			return NULL;
+		MonoInst *ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, args [1]->dreg);
+		ins->inst_c1 = etype->type;
+		if (etype->type == MONO_TYPE_R4 || etype->type == MONO_TYPE_R8)
+			ins->inst_c0 = id == SN_op_Addition ? OP_FADD : OP_FSUB;
+		else
+			ins->inst_c0 = id == SN_op_Addition ? OP_IADD : OP_ISUB;
+		return ins;
 	}
 	case SN_op_Equality:
 	case SN_op_Inequality:

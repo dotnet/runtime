@@ -6,17 +6,19 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
-using static Microsoft.Interop.Analyzers.ConvertToGeneratedDllImportFixer;
+using static Microsoft.Interop.Analyzers.ConvertToLibraryImportFixer;
 
-using VerifyCS = DllImportGenerator.UnitTests.Verifiers.CSharpCodeFixVerifier<
-    Microsoft.Interop.Analyzers.ConvertToGeneratedDllImportAnalyzer,
-    Microsoft.Interop.Analyzers.ConvertToGeneratedDllImportFixer>;
+using VerifyCS = LibraryImportGenerator.UnitTests.Verifiers.CSharpCodeFixVerifier<
+    Microsoft.Interop.Analyzers.ConvertToLibraryImportAnalyzer,
+    Microsoft.Interop.Analyzers.ConvertToLibraryImportFixer>;
 
-namespace DllImportGenerator.UnitTests
+namespace LibraryImportGenerator.UnitTests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
-    public class ConvertToGeneratedDllImportFixerTests
+    public class ConvertToLibraryImportFixerTests
     {
+        private const string ConvertToLibraryImportKey = "ConvertToLibraryImport";
+
         [ConditionalFact]
         public async Task Basic()
         {
@@ -277,7 +279,7 @@ partial class Test
     [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceNoSuffix, "ConvertToGeneratedDllImport");
+            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceNoSuffix, ConvertToLibraryImportKey);
             string fixedSourceWithSuffix = $@"
 using System.Runtime.InteropServices;
 partial class Test
@@ -285,7 +287,7 @@ partial class Test
     [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry{suffix}"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithSuffix, $"ConvertToGeneratedDllImport{suffix}");
+            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithSuffix, $"{ConvertToLibraryImportKey}{suffix}");
         }
 
         [ConditionalFact]
@@ -305,7 +307,7 @@ partial class Test
     [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceNoSuffix, "ConvertToGeneratedDllImport");
+            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceNoSuffix, ConvertToLibraryImportKey);
             string fixedSourceWithASuffix = $@"
 using System.Runtime.InteropServices;
 partial class Test
@@ -313,7 +315,7 @@ partial class Test
     [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""EntryA"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, "ConvertToGeneratedDllImportA");
+            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A");
             string fixedSourceWithWSuffix = $@"
 using System.Runtime.InteropServices;
 partial class Test
@@ -321,7 +323,7 @@ partial class Test
     [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""EntryW"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithWSuffix, "ConvertToGeneratedDllImportW");
+            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithWSuffix, $"{ConvertToLibraryImportKey}W");
         }
 
         [ConditionalFact]
@@ -341,7 +343,7 @@ partial class Test
     [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceNoSuffix, "ConvertToGeneratedDllImport");
+            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceNoSuffix, ConvertToLibraryImportKey);
             string fixedSourceWithASuffix = $@"
 using System.Runtime.InteropServices;
 partial class Test
@@ -349,7 +351,7 @@ partial class Test
     [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""EntryA"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, "ConvertToGeneratedDllImportA");
+            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A");
         }
 
         [ConditionalFact]
@@ -371,7 +373,7 @@ partial class Test
     [GeneratedDllImport(""DoesNotExist"", EntryPoint = EntryPoint + ""A"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, "ConvertToGeneratedDllImportA");
+            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A");
         }
 
         [ConditionalFact]
@@ -391,7 +393,7 @@ partial class Test
     [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""MethodA"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, "ConvertToGeneratedDllImportA");
+            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A");
         }
 
         [ConditionalFact]
@@ -413,7 +415,7 @@ partial class Test
     [GeneratedDllImport(""DoesNotExist"", EntryPoint = nameof(Foo) + ""A"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, "ConvertToGeneratedDllImportA");
+            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A");
         }
 
         [ConditionalFact]
@@ -433,7 +435,7 @@ partial class Test
     [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""MethodA"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, "ConvertToGeneratedDllImportA");
+            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A");
         }
 
         [ConditionalFact]

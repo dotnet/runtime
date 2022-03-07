@@ -535,6 +535,17 @@ namespace System.Text.RegularExpressions.Generator
                                 Goto(NoStartingPositionFound);
                             }
                             writer.WriteLine("pos = newlinePos + pos + 1;");
+
+                            // We've updated the position.  Make sure there's still enough room in the input for a possible match.
+                            using (EmitBlock(writer, minRequiredLength switch
+                            {
+                                0 => "if (pos > inputSpan.Length)",
+                                1 => "if (pos >= inputSpan.Length)",
+                                _ => $"if (pos > inputSpan.Length - {minRequiredLength})"
+                            }))
+                            {
+                                Goto(NoStartingPositionFound);
+                            }
                         }
                         writer.WriteLine();
                         break;
@@ -2384,6 +2395,13 @@ namespace System.Text.RegularExpressions.Generator
             void EmitSingleCharLoop(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop, $"Unexpected type: {node.Kind}");
+
+                // If this is actually atomic based on its parent, emit it as atomic instead; no backtracking necessary.
+                if (analysis.IsAtomicByAncestor(node))
+                {
+                    EmitSingleCharAtomicLoop(node);
+                    return;
+                }
 
                 // If this is actually a repeater, emit that instead; no backtracking necessary.
                 if (node.M == node.N)

@@ -3,7 +3,7 @@
     <NoWarn>$(NoWarn);0436</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
     <DefineConstants>UNITTEST</DefineConstants>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <Nullable>annotations</Nullable>

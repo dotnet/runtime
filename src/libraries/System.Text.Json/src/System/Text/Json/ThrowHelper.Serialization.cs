@@ -579,6 +579,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonSerializerOptionsAlreadyBoundToContext()
+        {
+            throw new InvalidOperationException(SR.Format(SR.OptionsAlreadyBoundToContext));
+        }
+
+        [DoesNotReturn]
         public static void ThrowNotSupportedException_BuiltInConvertersNotRooted(Type type)
         {
             throw new NotSupportedException(SR.Format(SR.BuiltInConvertersNotRooted, type));

@@ -6,15 +6,15 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.Interop;
 
-namespace DllImportGenerator.UnitTests
+namespace LibraryImportGenerator.UnitTests
 {
     /// <summary>
     /// An implementation of <see cref="AnalyzerConfigOptionsProvider"/> that provides configuration in code
     /// of the options supported by the DllImportGenerator source generator. Used for testing various configurations.
     /// </summary>
-    internal class DllImportGeneratorOptionsProvider : AnalyzerConfigOptionsProvider
+    internal class LibraryImportGeneratorOptionsProvider : AnalyzerConfigOptionsProvider
     {
-        public DllImportGeneratorOptionsProvider(bool useMarshalType, bool generateForwarders)
+        public LibraryImportGeneratorOptionsProvider(bool useMarshalType, bool generateForwarders)
         {
             GlobalOptions = new GlobalGeneratorOptions(useMarshalType, generateForwarders);
         }
@@ -48,11 +48,11 @@ namespace DllImportGenerator.UnitTests
                     case OptionsHelper.UseMarshalTypeOption:
                         value = _useMarshalType.ToString();
                         return true;
-                    
+
                     case OptionsHelper.GenerateForwardersOption:
                         value = _generateForwarders.ToString();
                         return true;
-                    
+
                     default:
                         value = null;
                         return false;
