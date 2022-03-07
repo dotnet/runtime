@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -112,15 +113,6 @@ namespace System.Reflection.Emit.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => type.DefineField("Name", typeof(void), FieldAttributes.Public));
         }
 
-        [Fact]
-        public void DefineField_ByRefFieldType_ThrowsCOMExceptionOnCreation()
-        {
-            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            type.DefineField("Name", typeof(int).MakeByRefType(), FieldAttributes.Public);
-
-            Assert.Throws<COMException>(() => type.CreateTypeInfo());
-        }
-
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [InlineData((FieldAttributes)(-1), (FieldAttributes)(-38145))]
@@ -150,6 +142,69 @@ namespace System.Reflection.Emit.Tests
 
             Type createdFieldType = fieldType.CreateTypeInfo().AsType();
             Assert.Equal(createdFieldType, field.FieldType);
+        }
+
+        [Fact]
+        public void DefineByRefField_Class_ThrowsTypeLoadExceptionOnCreation()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            type.DefineField("Name", typeof(int).MakeByRefType(), FieldAttributes.Public);
+
+            Assert.Throws<TypeLoadException>(() => type.CreateTypeInfo());
+        }
+
+        [Fact]
+        public void DefineByRefField_ValueType_NonByRefLike_ThrowsTypeLoadExceptionOnCreation()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public, baseType: typeof(ValueType));
+            type.DefineField("Name", typeof(int).MakeByRefType(), FieldAttributes.Public);
+
+            Assert.Throws<TypeLoadException>(() => type.CreateTypeInfo());
+        }
+
+        [Fact]
+        public void DefineByRefField_ValueType_ByRefLike()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public, baseType: typeof(ValueType));
+
+            // Define type to be ByRefLike
+            CustomAttributeBuilder ca = new(typeof(IsByRefLikeAttribute).GetConstructors()[0], new object[] { });
+            type.SetCustomAttribute(ca);
+
+            type.DefineField("Name", typeof(int).MakeByRefType(), FieldAttributes.Public);
+
+            Type createdType = type.CreateTypeInfo().AsType();
+            FieldInfo[] fields = createdType.GetFields();
+            Assert.Equal(1, fields.Length);
+            Assert.True(fields[0].FieldType.IsByRef);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45152")]
+        public void Instantiate_ValueType_With_ByRefField()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public, baseType: typeof(ValueType));
+
+            // Define type to be ByRefLike
+            CustomAttributeBuilder ca = new(typeof(IsByRefLikeAttribute).GetConstructors()[0], new object[] { });
+            type.SetCustomAttribute(ca);
+
+            var field = type.DefineField("Name", typeof(int).MakeByRefType(), FieldAttributes.Public);
+
+            var ctor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new Type[] { typeof(string) });
+            {
+                ILGenerator il = ctor.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldarga_S, 1);
+                il.Emit(OpCodes.Stfld, field);
+                il.Emit(OpCodes.Ret);
+            }
+
+            Type createdType = type.CreateTypeInfo().AsType();
+
+            var ctorToCall = createdType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, new[] { typeof(string) });
+            var str = "12345";
+            ctorToCall.Invoke(new[] { str });
         }
 
         [Fact]

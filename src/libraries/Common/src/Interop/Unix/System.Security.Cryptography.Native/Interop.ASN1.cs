@@ -12,13 +12,13 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ObjTxt2Obj", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ObjTxt2Obj", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial SafeAsn1ObjectHandle ObjTxt2Obj(string s);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ObjObj2Txt")]
         private static unsafe partial int ObjObj2Txt(byte* buf, int buf_len, IntPtr a);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetObjectDefinitionByName", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetObjectDefinitionByName", StringMarshalling = StringMarshalling.Utf8)]
         private static partial IntPtr CryptoNative_GetObjectDefinitionByName(string friendlyName);
         internal static IntPtr GetObjectDefinitionByName(string friendlyName)
         {
@@ -53,9 +53,6 @@ internal static partial class Interop
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Asn1OctetStringFree")]
         internal static partial void Asn1OctetStringFree(IntPtr o);
-
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Asn1StringFree")]
-        internal static partial void Asn1StringFree(IntPtr o);
 
         internal static unsafe string GetOidValue(IntPtr asn1ObjectPtr)
         {

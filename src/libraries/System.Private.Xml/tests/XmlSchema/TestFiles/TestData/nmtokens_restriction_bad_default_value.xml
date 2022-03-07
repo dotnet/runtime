@@ -1,0 +1,6 @@
+<?xml version = "1.0" encoding = "utf-8"?>
+<sample xmlns="http://demo.org/sample" 
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://demo.org/sample nmtokens_restriction_no_default_value.xsd"
+        testatr="bad">
+</sample>

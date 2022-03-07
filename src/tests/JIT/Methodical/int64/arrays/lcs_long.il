@@ -17,7 +17,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module 'lcs_long.exe'
 // MVID: {856A09FD-A814-4ED7-B594-E4AFD3850D67}
 .namespace JitTest
 {

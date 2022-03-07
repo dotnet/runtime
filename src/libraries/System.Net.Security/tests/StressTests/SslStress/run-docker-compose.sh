@@ -22,7 +22,6 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
 imagename="dotnet-sdk-libs-current"
 configuration="Release"
-privateaspnetcore=0
 buildcurrentlibraries=0
 buildonly=0
 clientstressargs=""
@@ -38,10 +37,6 @@ while [[ $# > 0 ]]; do
     -configuration|-c)
       configuration=$2
       shift 2
-      ;;
-    -privateaspnetcore|-pa)
-      privateaspnetcore=1
-      shift 1
       ;;
     -buildcurrentlibraries|-b)
       buildcurrentlibraries=1
@@ -67,23 +62,16 @@ done
 
 repo_root=$(git rev-parse --show-toplevel)
 
-if [[ buildcurrentlibraries -eq 1 ]]; then
+if [[ "$buildcurrentlibraries" -eq 1 ]]; then
     libraries_args=" -t $imagename -c $configuration"
-    if [[ $privateaspnetcore -eq 1 ]]; then
-        libraries_args="$libraries_args -pa"
-    fi
 
-    if ! $repo_root/eng/docker/build-docker-sdk.sh $libraries_args; then
+    if ! "$repo_root"/eng/docker/build-docker-sdk.sh $libraries_args; then
         exit 1
     fi
-
-elif [[ $privateaspnetcore -eq 1 ]]; then
-    echo "Using a private Asp.Net Core package (-pa) requires using privately built libraries. Please, enable it with -b switch."
-    exit 1
 fi
 
 build_args=""
-if [[ "$imagename" != "" ]]; then
+if [[ -z "$imagename" ]]; then
     build_args=" --build-arg SDK_BASE_IMAGE=$imagename"
 fi
 

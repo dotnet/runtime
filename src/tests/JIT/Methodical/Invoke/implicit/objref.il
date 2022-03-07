@@ -20,7 +20,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'objref.exe'
 // MVID: {4F6CDA4F-13A9-40C8-ADF8-98FBBEF21260}
 .namespace JitTest
 {

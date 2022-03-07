@@ -9,7 +9,7 @@
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
     <WasmExtraFilesToDeploy Include="appstart-frame.html" />
-    <WasmExtraFilesToDeploy Include="appstart.js" />
+    <WasmExtraFilesToDeploy Include="frame-main.js" />
     <WasmExtraFilesToDeploy Include="style.css" />
     <Compile Remove="Console/Console.cs" />
   </ItemGroup>

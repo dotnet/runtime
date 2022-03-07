@@ -18,7 +18,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'refarg_box_val.exe'
 // MVID: {27E0B251-2BC1-4652-9A1C-3EFA7F79CFC4}
 .namespace Test
 {

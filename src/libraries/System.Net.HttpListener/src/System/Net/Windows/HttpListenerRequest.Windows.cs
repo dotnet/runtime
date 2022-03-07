@@ -252,14 +252,9 @@ namespace System.Net
             _clientCertificateError = clientCertificateError;
         }
 
-        public X509Certificate2? EndGetClientCertificate(IAsyncResult asyncResult)
+        public X509Certificate2? EndGetClientCertificate(IAsyncResult asyncResult!!)
         {
             X509Certificate2? clientCertificate = null;
-
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
             ListenerClientCertAsyncResult? clientCertAsyncResult = asyncResult as ListenerClientCertAsyncResult;
             if (clientCertAsyncResult == null || clientCertAsyncResult.AsyncObject != this)
             {
@@ -350,7 +345,7 @@ namespace System.Net
             //demand a client cert at a later point
             //
             //The fix here is to demand the client cert when the channel is NOT INSECURE
-            //which means whether the client certs are requried at the beginning or not,
+            //which means whether the client certs are required at the beginning or not,
             //if this is an SSL connection, Call HttpReceiveClientCertificate, thus
             //starting the cert negotiation at that point
             //
@@ -447,7 +442,7 @@ namespace System.Net
             //demand a client cert at a later point
             //
             //The fix here is to demand the client cert when the channel is NOT INSECURE
-            //which means whether the client certs are requried at the beginning or not,
+            //which means whether the client certs are required at the beginning or not,
             //if this is an SSL connection, Call HttpReceiveClientCertificate, thus
             //starting the cert negotiation at that point
             //

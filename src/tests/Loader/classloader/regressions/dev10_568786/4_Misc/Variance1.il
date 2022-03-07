@@ -23,7 +23,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module Variance1.exe
 // MVID: {DC3FB067-F52C-4120-BD62-DFA180241B4B}
 .imagebase 0x00400000
 .file alignment 0x00000200

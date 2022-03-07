@@ -315,7 +315,7 @@ retry_state_change:
 			goto retry_state_change;
 		trace_state_change ("SUSPEND_INIT_REQUESTED", info, raw_state, cur_state, no_safepoints, 1);
 		return ReqSuspendAlreadySuspendedBlocking;
-		
+
 /*
 
 [1] It's questionable on what to do if we hit the beginning of a self suspend.
@@ -435,7 +435,7 @@ Try to resume a suspended thread.
 Returns one of the following values:
 - Sucess: The thread was resumed.
 - Error: The thread was not suspended in the first place. [2]
-- InitSelfResume: The thread is blocked on self suspend and should be resumed 
+- InitSelfResume: The thread is blocked on self suspend and should be resumed
 - InitAsyncResume: The thread is blocked on async suspend and should be resumed
 - ResumeInitBlockingResume: The thread was suspended on the exit path of blocking state and should be resumed
       FIXME: ResumeInitBlockingResume is just InitSelfResume by a different name.

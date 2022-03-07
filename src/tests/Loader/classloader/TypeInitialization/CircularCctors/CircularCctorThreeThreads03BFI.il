@@ -10,13 +10,12 @@
 // Metadata version: v2.0.50103
 .assembly extern mscorlib { auto }
 
-.assembly CircularCctorThreeThreads03
+.assembly 'CircularCctorThreeThreads03BFI'
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module CircularCctorThreeThreads03.exe
 // MVID: {11FF80B2-E180-44EE-815F-912DD3D6227D}
 .imagebase 0x00400000
 .file alignment 0x00000200

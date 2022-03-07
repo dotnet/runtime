@@ -17,14 +17,13 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'test'
+.assembly 'i4u1'
 {
 
   
   
 }
 .assembly extern xunit.core {}
-.module 'test.exe'
 .namespace TestCase
 {
   .class private auto ansi Test

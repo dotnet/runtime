@@ -18,7 +18,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'refloc_i1.exe'
 // MVID: {3752C643-F767-47EB-BDBF-8588A1A0B6B3}
 .namespace Test
 {

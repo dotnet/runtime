@@ -13,7 +13,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly nativeuinttest
+.assembly 'nativeuint'
 {
   // --- The following custom attribute is added automatically, do not uncomment -------
   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -21,7 +21,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module nativeuint.exe
 // MVID: {DA4EAAAA-684F-4AB1-AC9B-90B895DBBD60}
 .imagebase 0x00400000
 .subsystem 0x00000003

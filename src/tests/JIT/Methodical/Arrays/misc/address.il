@@ -16,11 +16,10 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'test'
+.assembly 'address'
 {
 }
 .assembly extern xunit.core {}
-.module 'test.exe'
 .namespace JitTest
 {
   .class private auto ansi Test

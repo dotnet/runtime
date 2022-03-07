@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json
 {
@@ -30,7 +31,7 @@ namespace System.Text.Json
         ///
         /// The <see cref="JsonWriterOptions.Indented"/> and <see cref="JsonWriterOptions.Encoder"/> values for the writer instance are not applied when using this method.
         /// </remarks>
-        public void WriteRawValue(string json, bool skipInputValidation = false)
+        public void WriteRawValue([StringSyntax(StringSyntaxAttribute.Json)] string json, bool skipInputValidation = false)
         {
             if (!_options.SkipValidation)
             {
@@ -66,7 +67,7 @@ namespace System.Text.Json
         ///
         /// The <see cref="JsonWriterOptions.Indented"/> and <see cref="JsonWriterOptions.Encoder"/> values for the writer instance are not applied when using this method.
         /// </remarks>
-        public void WriteRawValue(ReadOnlySpan<char> json, bool skipInputValidation = false)
+        public void WriteRawValue([StringSyntax(StringSyntaxAttribute.Json)] ReadOnlySpan<char> json, bool skipInputValidation = false)
         {
             if (!_options.SkipValidation)
             {

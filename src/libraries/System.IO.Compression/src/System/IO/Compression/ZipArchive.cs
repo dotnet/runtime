@@ -7,6 +7,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.IO.Compression
@@ -27,8 +28,8 @@ namespace System.IO.Compression
         private uint _numberOfThisDisk; //only valid after ReadCentralDirectory
         private long _expectedNumberOfEntries;
         private Stream? _backingStream;
-        private byte[]? _archiveComment;
-        private Encoding? _entryNameEncoding;
+        private byte[] _archiveComment;
+        private Encoding? _entryNameAndCommentEncoding;
 
 #if DEBUG_FORCE_ZIP64
         public bool _forceZip64;
@@ -116,12 +117,9 @@ namespace System.IO.Compression
         ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
         /// </param>
         /// <exception cref="ArgumentException">If a Unicode encoding other than UTF-8 is specified for the <code>entryNameEncoding</code>.</exception>
-        public ZipArchive(Stream stream, ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding)
+        public ZipArchive(Stream stream!!, ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
-            EntryNameEncoding = entryNameEncoding;
+            EntryNameAndCommentEncoding = entryNameEncoding;
             Stream? extraTempStream = null;
 
             try
@@ -173,7 +171,7 @@ namespace System.IO.Compression
                 _centralDirectoryStart = 0; // invalid until ReadCentralDirectory
                 _isDisposed = false;
                 _numberOfThisDisk = 0; // invalid until ReadCentralDirectory
-                _archiveComment = null;
+                _archiveComment = Array.Empty<byte>();
 
                 switch (mode)
                 {
@@ -209,6 +207,20 @@ namespace System.IO.Compression
 
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Gets or sets the optional archive comment.
+        /// </summary>
+        /// <remarks>
+        /// The comment encoding is determined by the <c>entryNameEncoding</c> parameter of the <see cref="ZipArchive(Stream,ZipArchiveMode,bool,Encoding?)"/> constructor.
+        /// If the comment byte length is larger than <see cref="ushort.MaxValue"/>, it will be truncated when disposing the archive.
+        /// </remarks>
+        [AllowNull]
+        public string Comment
+        {
+            get => (EntryNameAndCommentEncoding ?? Encoding.UTF8).GetString(_archiveComment);
+            set => _archiveComment = ZipHelper.GetEncodedTruncatedBytesFromString(value, EntryNameAndCommentEncoding, ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength, out _);
         }
 
         /// <summary>
@@ -326,11 +338,8 @@ namespace System.IO.Compression
         /// <exception cref="InvalidDataException">The Zip archive is corrupt and the entries cannot be retrieved.</exception>
         /// <param name="entryName">A path relative to the root of the archive, identifying the desired entry.</param>
         /// <returns>A wrapper for the file entry in the archive. If no entry in the archive exists with the specified name, null will be returned.</returns>
-        public ZipArchiveEntry? GetEntry(string entryName)
+        public ZipArchiveEntry? GetEntry(string entryName!!)
         {
-            if (entryName == null)
-                throw new ArgumentNullException(nameof(entryName));
-
             if (_mode == ZipArchiveMode.Create)
                 throw new NotSupportedException(SR.EntriesInCreateMode);
 
@@ -345,9 +354,9 @@ namespace System.IO.Compression
 
         internal uint NumberOfThisDisk => _numberOfThisDisk;
 
-        internal Encoding? EntryNameEncoding
+        internal Encoding? EntryNameAndCommentEncoding
         {
-            get { return _entryNameEncoding; }
+            get => _entryNameAndCommentEncoding;
 
             private set
             {
@@ -370,23 +379,25 @@ namespace System.IO.Compression
                         (value.Equals(Encoding.BigEndianUnicode)
                         || value.Equals(Encoding.Unicode)))
                 {
-                    throw new ArgumentException(SR.EntryNameEncodingNotSupported, nameof(EntryNameEncoding));
+                    throw new ArgumentException(SR.EntryNameAndCommentEncodingNotSupported, nameof(EntryNameAndCommentEncoding));
                 }
 
-                _entryNameEncoding = value;
+                _entryNameAndCommentEncoding = value;
             }
         }
 
-        private ZipArchiveEntry DoCreateEntry(string entryName, CompressionLevel? compressionLevel)
+        private ZipArchiveEntry DoCreateEntry(string entryName!!, CompressionLevel? compressionLevel)
         {
-            if (entryName == null)
-                throw new ArgumentNullException(nameof(entryName));
-
             if (string.IsNullOrEmpty(entryName))
                 throw new ArgumentException(SR.CannotBeEmpty, nameof(entryName));
 
             if (_mode == ZipArchiveMode.Read)
                 throw new NotSupportedException(SR.CreateInReadMode);
+
+            if (_entriesDictionary.ContainsKey(entryName))
+            {
+                throw new InvalidOperationException(string.Format(SR.EntryNameAlreadyExists, entryName));
+            }
 
             ThrowIfDisposed();
 
@@ -421,12 +432,7 @@ namespace System.IO.Compression
         private void AddEntry(ZipArchiveEntry entry)
         {
             _entries.Add(entry);
-
-            string entryName = entry.FullName;
-            if (!_entriesDictionary.ContainsKey(entryName))
-            {
-                _entriesDictionary.Add(entryName, entry);
-            }
+            _entriesDictionary.TryAdd(entry.FullName, entry);
         }
 
         [Conditional("DEBUG")]
@@ -547,9 +553,7 @@ namespace System.IO.Compression
 
                 _expectedNumberOfEntries = eocd.NumberOfEntriesInTheCentralDirectory;
 
-                // only bother saving the comment if we are in update mode
-                if (_mode == ZipArchiveMode.Update)
-                    _archiveComment = eocd.ArchiveComment;
+                _archiveComment = eocd.ArchiveComment;
 
                 TryReadZip64EndOfCentralDirectory(eocd, eocdStart);
 

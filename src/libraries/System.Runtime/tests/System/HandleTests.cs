@@ -27,6 +27,7 @@ public static class HandleTests
         Assert.True(default(RuntimeFieldHandle).Equals(default(RuntimeFieldHandle)));
 
         Assert.True(h.Equals((object)h));
+        Assert.True(((IEquatable<RuntimeFieldHandle>)h).Equals(h));
         Assert.False(h.Equals(new object()));
         Assert.False(h.Equals(null));
 
@@ -52,6 +53,7 @@ public static class HandleTests
         Assert.True(default(RuntimeMethodHandle).Equals(default(RuntimeMethodHandle)));
 
         Assert.True(h.Equals((object)h));
+        Assert.True(((IEquatable<RuntimeMethodHandle>)h).Equals(h));
         Assert.False(h.Equals(new object()));
         Assert.False(h.Equals(null));
 
@@ -85,6 +87,7 @@ public static class HandleTests
         Assert.True(default(RuntimeTypeHandle).Equals(default(RuntimeTypeHandle)));
 
         Assert.True(h.Equals((object)h));
+        Assert.True(((IEquatable<RuntimeTypeHandle>)h).Equals(h));
         Assert.False(h.Equals(typeof(int)));
         Assert.False(h.Equals(new object()));
         Assert.False(h.Equals(null));

@@ -17,12 +17,15 @@ namespace System.Diagnostics
     {
         private static readonly object s_createProcessLock = new object();
 
+        private string? _processName;
+
         /// <summary>
         /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
         /// remote computer. These process resources share the specified process name.
         /// </summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             if (processName == null)
@@ -93,6 +96,7 @@ namespace System.Diagnostics
         /// <summary>Terminates the associated process immediately.</summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public void Kill()
         {
             using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_TERMINATE | Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, throwIfExited: false))
@@ -125,6 +129,7 @@ namespace System.Diagnostics
             _haveMainWindow = false;
             _mainWindowTitle = null;
             _haveResponding = false;
+            _processName = null;
         }
 
         /// <summary>Additional logic invoked when the Process is closed.</summary>
@@ -215,46 +220,14 @@ namespace System.Diagnostics
                 if (handle.IsInvalid)
                 {
                     _exited = true;
+                    return;
                 }
-                else
-                {
-                    int localExitCode;
 
-                    // Although this is the wrong way to check whether the process has exited,
-                    // it was historically the way we checked for it, and a lot of code then took a dependency on
-                    // the fact that this would always be set before the pipes were closed, so they would read
-                    // the exit code out after calling ReadToEnd() or standard output or standard error. In order
-                    // to allow 259 to function as a valid exit code and to break as few people as possible that
-                    // took the ReadToEnd dependency, we check for an exit code before doing the more correct
-                    // check to see if we have been signaled.
-                    if (Interop.Kernel32.GetExitCodeProcess(handle, out localExitCode) && localExitCode != Interop.Kernel32.HandleOptions.STILL_ACTIVE)
-                    {
-                        _exitCode = localExitCode;
-                        _exited = true;
-                    }
-                    else
-                    {
-                        // The best check for exit is that the kernel process object handle is invalid,
-                        // or that it is valid and signaled.  Checking if the exit code != STILL_ACTIVE
-                        // does not guarantee the process is closed,
-                        // since some process could return an actual STILL_ACTIVE exit code (259).
-                        if (!_signaled) // if we just came from WaitForExit, don't repeat
-                        {
-                            using (var wh = new Interop.Kernel32.ProcessWaitHandle(handle))
-                            {
-                                _signaled = wh.WaitOne(0);
-                            }
-                        }
-                        if (_signaled)
-                        {
-                            if (!Interop.Kernel32.GetExitCodeProcess(handle, out localExitCode))
-                                throw new Win32Exception();
+                if (!ProcessManager.HasExited(handle, ref _signaled, out int localExitCode))
+                    return;
 
-                            _exitCode = localExitCode;
-                            _exited = true;
-                        }
-                    }
-                }
+                _exited = true;
+                _exitCode = localExitCode;
             }
         }
 
@@ -887,5 +860,35 @@ namespace System.Diagnostics
         }
 
         private static string GetErrorMessage(int error) => Interop.Kernel32.GetMessage(error);
+
+        /// <summary>Gets the friendly name of the process.</summary>
+        public string ProcessName
+        {
+            get
+            {
+                if (_processName == null)
+                {
+                    EnsureState(State.HaveNonExitedId);
+                    // If we already have the name via a populated ProcessInfo
+                    // then use that one.
+                    if (_processInfo?.ProcessName != null)
+                    {
+                        _processName = _processInfo!.ProcessName;
+                    }
+                    else
+                    {
+                        // If we don't have a populated ProcessInfo, then get and cache the process name.
+                        _processName = ProcessManager.GetProcessName(_processId, _machineName);
+
+                        if (_processName == null)
+                        {
+                            throw new InvalidOperationException(SR.NoProcessInfo);
+                        }
+                    }
+                }
+
+                return _processName;
+            }
+        }
     }
 }

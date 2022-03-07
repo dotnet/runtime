@@ -447,7 +447,7 @@ namespace System.Threading
                 double w = 2 * Math.PI / period;
                 double cos = Math.Cos(w);
                 double coeff = 2 * cos;
-                double q0 = 0, q1 = 0, q2 = 0;
+                double q0, q1 = 0, q2 = 0;
                 for (int i = 0; i < numSamples; ++i)
                 {
                     q0 = coeff * q1 - q2 + samples[(_totalSamples - numSamples + i) % _samplesToMeasure];

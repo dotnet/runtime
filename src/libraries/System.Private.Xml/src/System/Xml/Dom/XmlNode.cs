@@ -1051,7 +1051,7 @@ namespace System.Xml
         public virtual void RemoveAll()
         {
             XmlNode? child = FirstChild;
-            XmlNode? sibling = null;
+            XmlNode? sibling;
 
             while (child != null)
             {
@@ -1351,7 +1351,7 @@ namespace System.Xml
             get
             {
                 XmlNode? node = this;
-                XmlElement? elem = null;
+                XmlElement? elem;
                 do
                 {
                     elem = node as XmlElement;
@@ -1381,7 +1381,7 @@ namespace System.Xml
             get
             {
                 XmlNode? node = this;
-                XmlElement? elem = null;
+                XmlElement? elem;
                 do
                 {
                     elem = node as XmlElement;

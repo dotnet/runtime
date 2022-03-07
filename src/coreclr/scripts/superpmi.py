@@ -210,6 +210,10 @@ Specify the failure `limit` after which replay and asmdiffs will exit if it sees
 more than `limit` failures.
 """
 
+compile_help = """\
+Compile only specified method contexts, e.g., `-compile 20,25`. This is passed directly to the superpmi.exe `-compile` argument. See `superpmi.exe -?` for full documentation about allowed formats.
+"""
+
 # Start of parser object creation.
 
 parser = argparse.ArgumentParser(description=description)
@@ -272,6 +276,7 @@ collect_parser.add_argument("--crossgen2", action="store_true", help="Run crossg
 collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI or crossgen2. Required if --pmi or --crossgen2 is specified.")
 collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
+collect_parser.add_argument("-pmi_path", metavar="PMIPATH_DIR", nargs='*', help="Specify a \"load path\" where assemblies can be found during pmi.dll run. Optional; the argument values are translated to PMIPATH environment variable.")
 collect_parser.add_argument("-output_mch_path", help="Location to place the final MCH file.")
 collect_parser.add_argument("--merge_mch_files", action="store_true", help="Merge multiple MCH files. Use the -mch_files flag to pass a list of MCH files to merge.")
 collect_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help="Pass a sequence of MCH files which will be merged. Required by --merge_mch_files.")
@@ -297,6 +302,7 @@ replay_common_parser.add_argument("-product_location", help=product_location_hel
 replay_common_parser.add_argument("--force_download", action="store_true", help=force_download_help)
 replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 replay_common_parser.add_argument("-private_store", action="append", help=private_store_help)
+replay_common_parser.add_argument("-compile", "-c", help=compile_help)
 
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
@@ -319,6 +325,7 @@ asm_diff_parser.add_argument("-diff_jit_option", action="append", help="Option t
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, or pass comma-separated values.")
 asm_diff_parser.add_argument("-retainOnlyTopFiles", action="store_true", help="Retain only top .dasm files with largest improvements or regressions and delete remaining files.")
+asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
@@ -826,7 +833,14 @@ class SuperPMICollect:
                 pmi_command_env = env_copy.copy()
                 pmi_complus_env = complus_env.copy()
                 pmi_complus_env["JitName"] = self.collection_shim_name
-                set_and_report_env(pmi_command_env, root_env, pmi_complus_env)
+
+                if self.coreclr_args.pmi_path is not None:
+                    pmi_root_env = root_env.copy()
+                    pmi_root_env["PMIPATH"] = ";".join(self.coreclr_args.pmi_path)
+                else:
+                    pmi_root_env = root_env
+
+                set_and_report_env(pmi_command_env, pmi_root_env, pmi_complus_env)
 
                 old_env = os.environ.copy()
                 os.environ.update(pmi_command_env)
@@ -1212,7 +1226,7 @@ class SuperPMIReplay:
             if self.coreclr_args.arch != self.coreclr_args.target_arch:
                 repro_flags += [ "-target", self.coreclr_args.target_arch ]
 
-            if not self.coreclr_args.sequential:
+            if not self.coreclr_args.sequential and not self.coreclr_args.compile:
                 common_flags += [ "-p" ]
 
             if self.coreclr_args.break_on_assert:
@@ -1220,6 +1234,9 @@ class SuperPMIReplay:
 
             if self.coreclr_args.break_on_error:
                 common_flags += [ "-boe" ]
+
+            if self.coreclr_args.compile:
+                common_flags += [ "-c", self.coreclr_args.compile ]
 
             if self.coreclr_args.spmi_log_file is not None:
                 common_flags += [ "-w", self.coreclr_args.spmi_log_file ]
@@ -1452,7 +1469,7 @@ class SuperPMIReplayAsmDiffs:
                 flags += base_option_flags
                 flags += diff_option_flags
 
-                if not self.coreclr_args.sequential:
+                if not self.coreclr_args.sequential and not self.coreclr_args.compile:
                     flags += [ "-p" ]
 
                 if self.coreclr_args.break_on_assert:
@@ -1460,6 +1477,9 @@ class SuperPMIReplayAsmDiffs:
 
                 if self.coreclr_args.break_on_error:
                     flags += [ "-boe" ]
+
+                if self.coreclr_args.compile:
+                    flags += [ "-c", self.coreclr_args.compile ]
 
                 if self.coreclr_args.spmi_log_file is not None:
                     flags += [ "-w", self.coreclr_args.spmi_log_file ]
@@ -1473,6 +1493,7 @@ class SuperPMIReplayAsmDiffs:
                 with ChangeDir(self.coreclr_args.core_root):
                     command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
+                    logging.debug("return_code: %s", return_code)
 
                 base_metrics = read_csv_metrics(base_metrics_summary_file)
                 diff_metrics = read_csv_metrics(diff_metrics_summary_file)
@@ -1482,32 +1503,31 @@ class SuperPMIReplayAsmDiffs:
 
                 if return_code != 0:
 
-                    # Don't report as replay failure asm diffs (return code 2) or missing data (return code 3).
+                    # Don't report as replay failure asm diffs (return code 2) if not checking diffs with Release build or missing data (return code 3).
                     # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
                     # reported as a replay failure.
-                    if return_code != 2 and return_code != 3:
+                    if (return_code != 2 or self.coreclr_args.diff_with_release) and return_code != 3:
                         result = False
                         files_with_replay_failures.append(mch_file)
 
                         if is_nonzero_length_file(fail_mcl_file):
                             # Unclean replay. Examine the contents of the fail.mcl file to dig into failures.
-                            if return_code == 0:
-                                logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
                             print_fail_mcl_file_method_numbers(fail_mcl_file)
                             repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(altjit_asm_diffs_flags), self.diff_jit_path)
                             save_repro_mc_files(temp_location, self.coreclr_args, artifacts_base_name, repro_base_command_line)
 
+                # This file had asm diffs; keep track of that.
+                if is_nonzero_length_file(diff_mcl_file):
+                    files_with_asm_diffs.append(mch_file)
+
                 # There were diffs. Go through each method that created diffs and
                 # create a base/diff asm file with diffable asm. In addition, create
                 # a standalone .mc for easy iteration.
-                if is_nonzero_length_file(diff_mcl_file):
+                if is_nonzero_length_file(diff_mcl_file) and not self.coreclr_args.diff_with_release:
                     # AsmDiffs. Save the contents of the fail.mcl file to dig into failures.
 
                     if return_code == 0:
                         logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
-
-                    # This file had asm diffs; keep track of that.
-                    files_with_asm_diffs.append(mch_file)
 
                     self.diff_mcl_contents = None
                     with open(diff_mcl_file) as file_handle:
@@ -1692,7 +1712,7 @@ class SuperPMIReplayAsmDiffs:
 
         # Construct an overall Markdown summary file.
 
-        if len(all_md_summary_files) > 0:
+        if len(all_md_summary_files) > 0 and not self.coreclr_args.diff_with_release:
             overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_summary", "md")
             if not os.path.isdir(self.coreclr_args.spmi_location):
                 os.makedirs(self.coreclr_args.spmi_location)
@@ -2971,6 +2991,11 @@ def setup_args(args):
                             "Unable to set mch_files")
 
         coreclr_args.verify(args,
+                            "compile",
+                            lambda unused: True,
+                            "Method context not valid")
+
+        coreclr_args.verify(args,
                             "private_store",
                             lambda item: True,
                             "Specify private_store or set environment variable SUPERPMI_PRIVATE_STORE to use a private store.",
@@ -2995,6 +3020,11 @@ def setup_args(args):
                             "jitoption",  # The replay code checks this, so make sure it's set
                             lambda unused: True,
                             "Unable to set jitoption")
+
+        coreclr_args.verify(args,
+                            "compile",  # The replay code checks this, so make sure it's set
+                            lambda unused: True,
+                            "Method context not valid")
 
         coreclr_args.verify(args,
                             "collection_command",
@@ -3084,6 +3114,11 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set tiered_compilation")
 
+        coreclr_args.verify(args,
+                            "pmi_path",
+                            lambda unused: True,
+                            "Unable to set pmi_path")
+
         if (args.collection_command is None) and (args.pmi is False) and (args.crossgen2 is False):
             print("Either a collection command or `--pmi` or `--crossgen2` must be specified")
             sys.exit(1)
@@ -3099,6 +3134,12 @@ def setup_args(args):
         if ((args.pmi is True) or (args.crossgen2 is True)) and (len(args.assemblies) == 0):
             print("Specify `-assemblies` if `--pmi` or `--crossgen2` is given")
             sys.exit(1)
+
+        if not args.pmi:
+            if args.pmi_path is not None:
+                logging.warning("Warning: -pmi_path is set but --pmi is not.")
+            if args.pmi_location is not None:
+                logging.warning("Warning: -pmi_location is set but --pmi is not.")
 
         if args.collection_command is None and args.merge_mch_files is not True:
             assert args.collection_args is None
@@ -3269,6 +3310,11 @@ def setup_args(args):
                             "retainOnlyTopFiles",
                             lambda unused: True,
                             "Unable to set retainOnlyTopFiles.")
+
+        coreclr_args.verify(args,
+                            "diff_with_release",
+                            lambda unused: True,
+                            "Unable to set diff_with_release.")
 
         process_base_jit_path_arg(coreclr_args)
 
@@ -3515,6 +3561,8 @@ def main(args):
         base_jit_path = coreclr_args.base_jit_path
         diff_jit_path = coreclr_args.diff_jit_path
 
+        if coreclr_args.diff_with_release:
+            logging.info("Diff between Checked and Release.")
         logging.info("Base JIT Path: %s", base_jit_path)
         logging.info("Diff JIT Path: %s", diff_jit_path)
 

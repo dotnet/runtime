@@ -41,7 +41,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
 	MonoMemoryManager *mem_manager = m_method_get_mem_manager (m);
-	    
+
 	start = code = mono_mem_manager_code_reserve (mem_manager, 20);
 
 	mips_load (code, mips_t9, addr);
@@ -81,7 +81,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 
 	On entry, 'code' points just after one of the above sequences.
 	*/
-	
+
 	/* The jal case */
 	if ((code[-2] >> 26) == 0x03) {
 		//g_print ("direct patching\n");
@@ -107,7 +107,7 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guin
 	g_assert_not_reached ();
 }
 
-/* Stack size for trampoline function 
+/* Stack size for trampoline function
  * MIPS_MINIMAL_STACK_SIZE + 16 (args + alignment to mips_magic_trampoline)
  * + MonoLMF + 14 fp regs + 13 gregs + alignment
  * #define STACK (MIPS_MINIMAL_STACK_SIZE + 4 * sizeof (gulong) + sizeof (MonoLMF) + 14 * sizeof (double) + 13 * (sizeof (gulong)))
@@ -219,13 +219,13 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	/* Arg 4: Trampoline */
 	mips_move (code, mips_a3, mips_zero);
-		
+
 	/* Now go to the trampoline */
 	tramp = (guint8*)mono_get_trampoline_func (tramp_type);
 	mips_load (code, mips_t9, (guint32)tramp);
 	mips_jalr (code, mips_t9, mips_ra);
 	mips_nop (code);
-		
+
 	/* Code address is now in v0, move it to at */
 	mips_move (code, mips_at, mips_v0);
 
@@ -290,7 +290,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	 * mono_arch_create_trampoline_code() knows we're putting this in t8
 	 */
 	mips_load (code, mips_t8, arg1);
-	
+
 	/* Now jump to the generic trampoline code */
 	mips_load (code, mips_at, tramp);
 	mips_jr (code, mips_at);

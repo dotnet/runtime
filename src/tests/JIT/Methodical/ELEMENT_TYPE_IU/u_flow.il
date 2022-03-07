@@ -13,11 +13,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'qsort'// as "qsort"
+.assembly 'u_flow'// as "qsort"
 {
 }
 .assembly extern xunit.core {}
-.module 'qsort.exe'
 // MVID: {3433C0F8-3BEA-4168-AB0C-C275EF054928}
 .namespace Test
 {

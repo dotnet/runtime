@@ -174,12 +174,14 @@ public class WasmAppBuilder : Task
             if (!FileCopyChecked(item.ItemSpec, dest, "NativeAssets"))
                 return false;
         }
-        FileCopyChecked(MainJS!, Path.Combine(AppDir, "main.js"), string.Empty);
+        var mainFileName=Path.GetFileName(MainJS);
+        Log.LogMessage(MessageImportance.Low, $"MainJS path: '{MainJS}', fileName : '{mainFileName}', destination: '{Path.Combine(AppDir, mainFileName)}'");
+        FileCopyChecked(MainJS!, Path.Combine(AppDir, mainFileName), string.Empty);
 
         string indexHtmlPath = Path.Combine(AppDir, "index.html");
         if (!File.Exists(indexHtmlPath))
         {
-            var html = @"<html><body><script type=""text/javascript"" src=""main.js""></script></body></html>";
+            var html = @"<html><body><script type=""text/javascript"" src=""" + mainFileName + @"""></script></body></html>";
             File.WriteAllText(indexHtmlPath, html);
         }
 
@@ -297,12 +299,21 @@ public class WasmAppBuilder : Task
             foreach (ITaskItem item in ExtraFilesToDeploy!)
             {
                 string src = item.ItemSpec;
+                string dst;
 
-                string dstDir = Path.Combine(AppDir!, item.GetMetadata("TargetPath"));
-                if (!Directory.Exists(dstDir))
-                    Directory.CreateDirectory(dstDir);
+                string tgtPath = item.GetMetadata("TargetPath");
+                if (!string.IsNullOrEmpty(tgtPath))
+                {
+                    dst = Path.Combine(AppDir!, tgtPath);
+                    string? dstDir = Path.GetDirectoryName(dst);
+                    if (!string.IsNullOrEmpty(dstDir) && !Directory.Exists(dstDir))
+                        Directory.CreateDirectory(dstDir!);
+                }
+                else
+                {
+                    dst = Path.Combine(AppDir!, Path.GetFileName(src));
+                }
 
-                string dst = Path.Combine(dstDir, Path.GetFileName(src));
                 if (!FileCopyChecked(src, dst, "ExtraFilesToDeploy"))
                     return false;
             }
@@ -372,9 +383,9 @@ public class WasmAppBuilder : Task
 
             return true;
         }
-        catch (IOException ioex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            throw new LogAsErrorException($"{label} Failed to copy {src} to {dst} because {ioex.Message}");
+            throw new LogAsErrorException($"{label} Failed to copy {src} to {dst} because {ex.Message}");
         }
     }
 }

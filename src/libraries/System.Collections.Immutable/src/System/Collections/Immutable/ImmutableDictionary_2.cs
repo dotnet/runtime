@@ -876,8 +876,7 @@ namespace System.Collections.Immutable
             HashBucket bucket;
             if (origin.Root.TryGetValue(hashCode, out bucket))
             {
-                TValue value;
-                return bucket.TryGetValue(key, origin.Comparers, out value!);
+                return bucket.TryGetValue(key, origin.Comparers, out _);
             }
 
             return false;
@@ -1000,15 +999,13 @@ namespace System.Collections.Immutable
         /// </summary>
         private static SortedInt32KeyNode<HashBucket> UpdateRoot(SortedInt32KeyNode<HashBucket> root, int hashCode, HashBucket newBucket, IEqualityComparer<HashBucket> hashBucketComparer)
         {
-            bool mutated;
             if (newBucket.IsEmpty)
             {
-                return root.Remove(hashCode, out mutated);
+                return root.Remove(hashCode, out _);
             }
             else
             {
-                bool replacedExistingValue;
-                return root.SetItem(hashCode, newBucket, hashBucketComparer, out replacedExistingValue, out mutated);
+                return root.SetItem(hashCode, newBucket, hashBucketComparer, out _, out _);
             }
         }
 

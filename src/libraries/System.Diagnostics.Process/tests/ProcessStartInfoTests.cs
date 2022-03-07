@@ -1318,7 +1318,7 @@ namespace System.Diagnostics.Tests
             string expected = Path.GetFileNameWithoutExtension(filename);
 
             process.WaitForInputIdle(); // Give the file a chance to load
-            Assert.Equal("notepad", process.ProcessName);
+            Assert.Equal("notepad", process.ProcessName.ToLower());
 
             // Notepad calls CreateWindowEx with pWindowName of empty string, then calls SetWindowTextW
             // with "Untitled - Notepad" then finally if you're opening a file, calls SetWindowTextW

@@ -6,11 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using System.IO.Pipes;
-using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class File_ReadWriteAllBytesAsync : FileSystemTest
     {
         [Fact]
@@ -68,36 +66,6 @@ namespace System.IO.Tests
             Assert.True(File.WriteAllBytesAsync(path, new byte[0], token).IsCanceled);
             return Assert.ThrowsAsync<TaskCanceledException>(
                 async () => await File.WriteAllBytesAsync(path, new byte[0], token));
-        }
-
-        [Fact]
-        [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
-        public async Task ReadFileOver2GBAsync()
-        {
-            string path = GetTestFilePath();
-            using (FileStream fs = File.Create(path))
-            {
-                fs.SetLength(int.MaxValue + 1L);
-            }
-
-            // File is too large for ReadAllBytesAsync at once
-            await Assert.ThrowsAsync<IOException>(async () => await File.ReadAllBytesAsync(path));
-        }
-
-        [Fact]
-        [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
-        public async Task ReadFileOverMaxArrayLengthAsync()
-        {
-            string path = GetTestFilePath();
-            using (FileStream fs = File.Create(path))
-            {
-                fs.SetLength(Array.MaxLength + 1L);
-            }
-
-            // File is too large for ReadAllBytesAsync at once
-            await Assert.ThrowsAsync<IOException>(async () => await File.ReadAllBytesAsync(path));
         }
 
         [Fact]
@@ -208,7 +176,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // DOS device paths (\\.\ and \\?\) are a Windows concept
         public async Task ReadAllBytesAsync_NonSeekableFileStream_InWindows()
         {
-            string pipeName = FileSystemTest.GetNamedPipeServerStreamName();
+            string pipeName = GetNamedPipeServerStreamName();
             string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
 
             var namedPipeWriterStream = new NamedPipeServerStream(pipeName, PipeDirection.Out);

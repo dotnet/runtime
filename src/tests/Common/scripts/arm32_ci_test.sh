@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -x
 
@@ -20,7 +20,7 @@ function exit_with_error {
     local printUsage=$2
 
     echo "ERROR: $errorMessage"
-    if [ "$printUsage" == "true" ]; then
+    if [[ "$printUsage" == "true" ]]; then
         echo ''
         usage
     fi
@@ -80,7 +80,7 @@ else
     __ROOTFS_DIR=${ROOTFS_DIR}
 fi
 
-if [ "$__abi" == "armel" ]; then
+if [[ "$__abi" == "armel" ]]; then
     # Prepare armel emulation environment
     pushd ${CORECLR_DIR}/eng/common/cross/armel/tizen
     apt-get update

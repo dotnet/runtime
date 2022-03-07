@@ -16,13 +16,8 @@ namespace System.Speech.Recognition
 #pragma warning disable 6507
 
         // Constructor for recognized 'word'
-        public RecognizedWordUnit(string text, float confidence, string pronunciation, string lexicalForm, DisplayAttributes displayAttributes, TimeSpan audioPosition, TimeSpan audioDuration)
+        public RecognizedWordUnit(string text, float confidence, string pronunciation, string lexicalForm!!, DisplayAttributes displayAttributes, TimeSpan audioPosition, TimeSpan audioDuration)
         {
-            if (lexicalForm == null)
-            {
-                throw new ArgumentNullException(nameof(lexicalForm));
-            }
-
             if (confidence < 0.0f || confidence > 1.0f)
             {
                 throw new ArgumentOutOfRangeException(SR.Get(SRID.InvalidConfidence));

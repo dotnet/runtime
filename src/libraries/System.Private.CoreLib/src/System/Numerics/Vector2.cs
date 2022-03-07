@@ -7,7 +7,6 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
@@ -105,8 +104,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            var result = vector;
-            return GetElementUnsafe(ref result, index);
+            return GetElementUnsafe(ref vector, index);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -129,9 +127,9 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            var newVector = vector;
-            SetElementUnsafe(ref newVector, index, value);
-            return newVector;
+            Vector2 result = vector;
+            SetElementUnsafe(ref result, index, value);
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1024,6 +1024,43 @@ namespace System.Tests
             Assert.Equal(expected, DateTime.Parse(expectedString, cultureInfo));
         }
 
+        private static bool IsNotOSXOrBrowser => !PlatformDetection.IsOSXLike && !PlatformDetection.IsBrowser;
+
+        [ConditionalTheory(nameof(IsNotOSXOrBrowser))]
+        [InlineData("ar")]
+        [InlineData("ar-EG")]
+        [InlineData("ar-IQ")]
+        [InlineData("ar-SA")]
+        [InlineData("ar-YE")]
+        public static void DateTimeParsingWithBiDiCultureTest(string cultureName)
+        {
+            DateTime dt = new DateTime(2021, 11, 30, 14, 30, 40);
+            CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
+            string formatted = dt.ToString("d", ci);
+            Assert.Equal(dt.Date, DateTime.Parse(formatted, ci));
+            formatted = dt.ToString("g", ci);
+            DateTime parsed = DateTime.Parse(formatted, ci);
+            Assert.Equal(dt.Date, parsed.Date);
+            Assert.Equal(dt.Hour, parsed.Hour);
+            Assert.Equal(dt.Minute, parsed.Minute);
+        }
+
+        [Fact]
+        public static void DateTimeParsingWithSpaceTimeSeparators()
+        {
+            DateTime dt = new DateTime(2021, 11, 30, 14, 30, 40);
+            CultureInfo ci = CultureInfo.GetCultureInfo("en-US");
+            // It is possible we find some cultures use such formats. dz-BT is example of that
+            string formatted = dt.ToString("yyyy/MM/dd hh mm tt", ci);
+            DateTime parsed = DateTime.Parse(formatted, ci);
+            Assert.Equal(dt.Hour, parsed.Hour);
+            Assert.Equal(dt.Minute, parsed.Minute);
+
+            formatted = dt.ToString("yyyy/MM/dd hh mm ss tt", ci);
+            parsed = DateTime.Parse(formatted, ci);
+            Assert.Equal(dt, parsed);
+        }
+
         [Fact]
         public static void Parse_InvalidArguments_Throws()
         {

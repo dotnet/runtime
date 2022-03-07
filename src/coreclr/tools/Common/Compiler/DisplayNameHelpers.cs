@@ -82,6 +82,13 @@ namespace ILCompiler
                 .Append('.')
                 .Append(property.Name).ToString();
         }
+        
+        public static string GetDisplayName(this EventPseudoDesc @event)
+        {
+            return new StringBuilder(@event.OwningType.GetDisplayName())
+                .Append('.')
+                .Append(@event.Name).ToString();
+        }
 #endif
 
         public static string GetDisplayName(this TypeDesc type)

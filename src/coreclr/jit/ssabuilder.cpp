@@ -732,7 +732,7 @@ void SsaBuilder::RenameDef(GenTreeOp* asgNode, BasicBlock* block)
     // This is perhaps temporary -- maybe should be done elsewhere.  Label GT_INDs on LHS of assignments, so we
     // can skip these during (at least) value numbering.
     GenTree* lhs = asgNode->gtGetOp1()->gtEffectiveVal(/*commaOnly*/ true);
-    if (lhs->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_DYN_BLK))
+    if (lhs->OperIs(GT_IND, GT_OBJ, GT_BLK))
     {
         lhs->gtFlags |= GTF_IND_ASG_LHS;
     }
@@ -1268,7 +1268,7 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
                     // If the variable is live-out of "blk", and is therefore live on entry to the try-block-start
                     // "succ", then we make sure the current SSA name for the
                     // var is one of the args of the phi node.  If not, go on.
-                    LclVarDsc* lclVarDsc = &m_pCompiler->lvaTable[lclNum];
+                    const LclVarDsc* lclVarDsc = m_pCompiler->lvaGetDesc(lclNum);
                     if (!lclVarDsc->lvTracked ||
                         !VarSetOps::IsMember(m_pCompiler, block->bbLiveOut, lclVarDsc->lvVarIndex))
                     {
@@ -1361,7 +1361,7 @@ void SsaBuilder::RenameVariables()
             continue;
         }
 
-        LclVarDsc* varDsc = &m_pCompiler->lvaTable[lclNum];
+        LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lclNum);
         assert(varDsc->lvTracked);
 
         if (varDsc->lvIsParam || m_pCompiler->info.compInitMem || varDsc->lvMustInit ||
@@ -1515,7 +1515,7 @@ void SsaBuilder::Build()
     }
     else
     {
-        postOrder = (BasicBlock**)alloca(blockCount * sizeof(BasicBlock*));
+        postOrder = (BasicBlock**)_alloca(blockCount * sizeof(BasicBlock*));
     }
 
     m_visitedTraits = BitVecTraits(blockCount, m_pCompiler);
@@ -1628,7 +1628,7 @@ void SsaBuilder::SetupBBRoot()
 //
 bool SsaBuilder::IncludeInSsa(unsigned lclNum)
 {
-    LclVarDsc* varDsc = &m_pCompiler->lvaTable[lclNum];
+    LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lclNum);
 
     if (varDsc->IsAddressExposed())
     {

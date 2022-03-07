@@ -7,7 +7,7 @@ using Xunit;
 namespace System.ComponentModel.Tests
 {
     [SimpleUpdateTest]
-    [Collection("NoParallelTests")] // Clears the cache which disrupts concurrent tests
+    [Collection(nameof(DisableParallelization))] // Clears the cache which disrupts concurrent tests
     public class ReflectionCachesUpdateHandlerTests
     {
         [Fact]

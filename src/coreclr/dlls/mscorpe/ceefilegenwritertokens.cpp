@@ -54,7 +54,7 @@ HRESULT CeeFileGenWriter::MapTokens(
     while ((hr = pImport->EnumMethods(&hEnum, mdTokenNil, &md, 1, &count)) == S_OK)
     {
         hr = pImport->GetMethodProps(md, NULL,
-                    rcwName, lengthof(rcwName), NULL,
+                    rcwName, ARRAY_SIZE(rcwName), NULL,
                     &dwFlags, NULL, NULL,
                     &MethodRVA, &iFlags);
         _ASSERTE(SUCCEEDED(hr));
@@ -80,7 +80,7 @@ HRESULT CeeFileGenWriter::MapTokens(
         while ((hr = pImport->EnumMethods(&hEnum, td, &md, 1, &count)) == S_OK)
         {
             hr = pImport->GetMethodProps(md, NULL,
-                        rcwName, lengthof(rcwName), NULL,
+                        rcwName, ARRAY_SIZE(rcwName), NULL,
                         &dwFlags, NULL, NULL,
                         &MethodRVA, &iFlags);
             _ASSERTE(SUCCEEDED(hr));

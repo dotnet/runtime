@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <XUnitUseRandomizedTestOrderer>false</XUnitUseRandomizedTestOrderer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EndOfLineHandlingTests.cs" />
@@ -25,7 +26,7 @@
     <Compile Include="TCNewLineChars.cs" />
     <Compile Include="TCNewLineHandling.cs" />
     <Compile Include="TCNewLineOnAttributes.cs" />
-    <Compile Include="DisableParallelization.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelizationPerAssembly.cs" />
     <Compile Include="TCOmitXmlDecl.cs" />
     <Compile Include="TCStandAlone.cs" />
     <Compile Include="TCWriteAttributes.cs" />

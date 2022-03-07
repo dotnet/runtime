@@ -650,24 +650,6 @@ BOOL MethodTable::HasSameTypeDefAs(MethodTable *pMT)
     return (GetModule() == pMT->GetModule());
 }
 
-//==========================================================================================
-BOOL MethodTable::HasSameTypeDefAs_NoLogging(MethodTable *pMT)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (this == pMT)
-        return TRUE;
-
-    // optimize for the negative case where we expect RID mismatch
-    if (GetTypeDefRid_NoLogging() != pMT->GetTypeDefRid_NoLogging())
-        return FALSE;
-
-    if (GetCanonicalMethodTable() == pMT->GetCanonicalMethodTable())
-        return TRUE;
-
-    return (GetModule_NoLogging() == pMT->GetModule_NoLogging());
-}
-
 #ifndef DACCESS_COMPILE
 
 //==========================================================================================
@@ -7598,7 +7580,6 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                 {
                     canonicalEquivalentFound = true;
                     break;
-                    return NULL;
                 }
             }
         }
@@ -7661,6 +7642,12 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                     }
                 }
             }
+        }
+
+        // Default implementation logic, which only kicks in for default implementations when lookin up on an exact interface target
+        if (!pInterfaceMD->IsAbstract() && !(this == g_pCanonMethodTableClass) && !IsSharedByGenericInstantiations())
+        {
+            return pInterfaceMD->FindOrCreateAssociatedMethodDesc(pInterfaceMD, pInterfaceType, FALSE, pInterfaceMD->GetMethodInstantiation(), FALSE);
         }
     }
 
@@ -7836,7 +7823,7 @@ MethodTable::VerifyThatAllVirtualStaticMethodsAreImplemented()
                 MethodDesc *pMD = it.GetMethodDesc();
                 if (pMD->IsVirtual() &&
                     pMD->IsStatic() &&
-                    !ResolveVirtualStaticMethod(pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE, /* allowVariantMatches */ FALSE))
+                    (pMD->IsAbstract() && !ResolveVirtualStaticMethod(pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE, /* allowVariantMatches */ FALSE)))
                 {
                     IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
                     GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, GetCl(), pMD->GetName(), IDS_CLASSLOAD_STATICVIRTUAL_NOTIMPL);
@@ -8105,6 +8092,19 @@ NOINLINE BYTE *MethodTable::GetLoaderAllocatorObjectForGC()
     }
     BYTE * retVal = *(BYTE**)GetLoaderAllocatorObjectHandle();
     return retVal;
+}
+
+int MethodTable::GetFieldAlignmentRequirement()
+{
+    if (HasLayout())
+    {
+        return GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers;
+    }
+    else if (GetClass()->HasCustomFieldAlignment())
+    {
+        return GetClass()->GetOverriddenFieldAlignmentRequirement();
+    }
+    return min(GetNumInstanceFieldBytes(), TARGET_POINTER_SIZE);
 }
 
 UINT32 MethodTable::GetNativeSize()

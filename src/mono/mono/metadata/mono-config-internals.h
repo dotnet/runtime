@@ -7,7 +7,7 @@
 
 #include "mono/metadata/mono-config.h"
 
-void 
+void
 mono_config_for_assembly_internal (MonoImage *assembly);
 
 #endif /* __MONO_METADATA_CONFIG_INTERNALS_H__ */

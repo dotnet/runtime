@@ -20,7 +20,7 @@ using Xunit.Abstractions;
 namespace System.Net.Quic.Tests
 {
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(IsSupported))]
-    [Collection("NoParallelTests")]
+    [Collection(nameof(DisableParallelization))]
     public class MsQuicTests : QuicTestBase<MsQuicProviderFactory>
     {
         private static byte[] s_data = Encoding.UTF8.GetBytes("Hello world!");
@@ -105,6 +105,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64944", TestPlatforms.Windows)]
         public async Task UntrustedClientCertificateFails()
         {
             var listenerOptions = new QuicListenerOptions();
@@ -332,6 +333,7 @@ namespace System.Net.Quic.Tests
         [Theory]
         [InlineData(true)]
         // [InlineData(false)] [ActiveIssue("https://github.com/dotnet/runtime/issues/57308")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64944", TestPlatforms.Windows)]
         public async Task ConnectWithClientCertificate(bool sendCerttificate)
         {
             bool clientCertificateOK = false;

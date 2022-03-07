@@ -185,8 +185,8 @@ void EEPolicy::HandleExitProcess(ShutdownCompleteAction sca)
 //---------------------------------------------------------------------------------------
 // This class is responsible for displaying a stack trace. It uses a condensed way for
 // stack overflow stack traces where there are possibly many repeated frames.
-// It displays a count and a repeated sequence of frames at the top of the stack in 
-// such a case, instead of displaying possibly thousands of lines with the same 
+// It displays a count and a repeated sequence of frames at the top of the stack in
+// such a case, instead of displaying possibly thousands of lines with the same
 // method.
 //---------------------------------------------------------------------------------------
 class CallStackLogger
@@ -291,7 +291,7 @@ public:
         for (int i = m_largestCommonStartLength * m_largestCommonStartRepeat; i < m_frames.Count(); i++)
         {
             PrintFrame(i, pWordAt);
-        }    
+        }
     }
 };
 
@@ -412,7 +412,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
     {
     }
     EX_END_CATCH(SwallowAllExceptions)
-    
+
     InterlockedCompareExchangeT<Thread *>(&s_pCrashingThread, FatalErrorLoggingFinished, pThread);
 }
 
@@ -484,7 +484,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 InlineSString<80> ssMessage;
                 InlineSString<80> ssErrorFormat;
                 if(!ssErrorFormat.LoadResource(CCompRC::Optional, IDS_ER_UNMANAGEDFAILFASTMSG ))
-                    ssErrorFormat.Set(W("at IP %1 (%2) with exit code %3."));
+                    ssErrorFormat.Set(W("at IP 0x%x (0x%x) with exit code 0x%x."));
                 SmallStackSString addressString;
                 addressString.Printf(W("%p"), pExceptionInfo? (UINT_PTR)pExceptionInfo->ExceptionRecord->ExceptionAddress : address);
 

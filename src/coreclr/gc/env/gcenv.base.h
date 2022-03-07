@@ -6,6 +6,8 @@
 // Sets up basic environment for CLR GC
 //
 
+#include <minipal/utils.h>
+
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif // _MSC_VER
@@ -93,10 +95,6 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define INFINITE 0xFFFFFFFF
 
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
-
-#ifndef _countof
-#define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
-#endif
 
 #ifndef min
 #define min(a,b) (((a) < (b)) ? (a) : (b))
@@ -231,6 +229,11 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
  #define YieldProcessor() asm volatile ("yield")
  #define MemoryBarrier __sync_synchronize
 #endif // __arm__ || __aarch64__
+
+#ifdef __loongarch64
+ #define YieldProcessor() __asm__ volatile( "dbar 0; \n")
+ #define MemoryBarrier __sync_synchronize
+#endif // __loongarch64
 
 #endif // _MSC_VER
 

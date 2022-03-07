@@ -137,10 +137,11 @@ jobs:
       buildConfig: release
       container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       runtimeFlavor: mono
+      runtimeVariant: 'llvmaot'
       platforms:
       - Linux_arm64
       jobParameters:
-        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
         nameSuffix: AOT
         isOfficialBuild: false
         extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml

@@ -12,13 +12,12 @@
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
 }
-.assembly repro
+.assembly 'GCMaskForGSCookie'
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module repro.exe
 
 // =============== CLASS MEMBERS DECLARATION ===================
 

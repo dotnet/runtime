@@ -123,7 +123,7 @@ public:
     // Look up a string config value, passing it out through a pointer reference. Reports out of memory
     // errors (HRESULT E_OUTOFMEMORY).
     // You own the string that's returned.
-    static HRESULT GetConfigValue(const ConfigStringInfo & info, __deref_out_z LPWSTR * outVal);
+    static HRESULT GetConfigValue(const ConfigStringInfo & info, _Outptr_result_z_ LPWSTR * outVal);
 
     //
     // Check whether an option is specified (e.g. explicitly listed) in the CLRConfig.
@@ -131,7 +131,7 @@ public:
     static BOOL IsConfigOptionSpecified(LPCWSTR name);
 
     // Free a string returned by GetConfigValue
-    static void FreeConfigString(__in __in_z LPWSTR name);
+    static void FreeConfigString(_In_ _In_z_ LPWSTR name);
 
     // Initialize the configuration.
     static void Initialize();

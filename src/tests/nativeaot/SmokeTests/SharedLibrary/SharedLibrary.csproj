@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NativeLib>Shared</NativeLib>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+mkdir native 2>nul
+copy /y SharedLibraryDriver.exe native\SharedLibrary.exe
+]]></CLRTestBatchPreCommands>
+
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+mkdir -p native
+cp SharedLibraryDriver native/SharedLibrary
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="SharedLibrary.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <CMakeProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+</Project>

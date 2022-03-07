@@ -127,7 +127,7 @@ void
 g_dir_close (GDir *dir)
 {
 	g_return_if_fail (dir != NULL && dir->handle != 0);
-	
+
 	if (dir->current)
 		g_free (dir->current);
 	dir->current = NULL;

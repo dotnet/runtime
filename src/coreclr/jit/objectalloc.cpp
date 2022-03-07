@@ -283,7 +283,7 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
         changed = false;
         for (unsigned int lclNum = 0; lclNum < comp->lvaCount; ++lclNum)
         {
-            LclVarDsc* lclVarDsc = comp->lvaTable + lclNum;
+            LclVarDsc* lclVarDsc = comp->lvaGetDesc(lclNum);
             var_types  type      = lclVarDsc->TypeGet();
 
             if (type == TYP_REF || type == TYP_I_IMPL || type == TYP_BYREF)
@@ -883,7 +883,7 @@ void ObjectAllocator::RewriteUses()
 
             const unsigned int lclNum    = tree->AsLclVarCommon()->GetLclNum();
             unsigned int       newLclNum = BAD_VAR_NUM;
-            LclVarDsc*         lclVarDsc = m_compiler->lvaTable + lclNum;
+            LclVarDsc*         lclVarDsc = m_compiler->lvaGetDesc(lclNum);
 
             if ((lclNum < BitVecTraits::GetSize(&m_allocator->m_bitVecTraits)) &&
                 m_allocator->MayLclVarPointToStack(lclNum))

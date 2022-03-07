@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern legacy library mscorlib {}
-.assembly 'stobjfloat'
+.assembly 'b43694'
 {
   
 }

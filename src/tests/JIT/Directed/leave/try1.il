@@ -13,7 +13,6 @@
 .assembly try1
 {
 }
-.module try1.exe
 .class private sealed VT
        extends [mscorlib]System.ValueType
 {

@@ -128,6 +128,11 @@ namespace System.Net
 
             using (SafeCFArrayHandle dnArray = Interop.AppleCrypto.SslCopyCADistinguishedNames(sslContext))
             {
+                if (dnArray.IsInvalid)
+                {
+                    return Array.Empty<string>();
+                }
+
                 long size = Interop.CoreFoundation.CFArrayGetCount(dnArray);
 
                 if (size == 0)

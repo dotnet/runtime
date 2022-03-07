@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <IncludePlatformAttributes>false</IncludePlatformAttributes>
   </PropertyGroup>
 
   <ItemGroup>

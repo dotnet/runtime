@@ -16,7 +16,6 @@ using System.Text;
 using Internal.CorConstants;
 using Internal.Runtime;
 using Internal.ReadyToRunConstants;
-using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -180,33 +179,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         /// <summary>
-        /// Conversion of the PE machine ID to TargetArchitecture used by TargetDetails.
-        /// </summary>
-        public TargetArchitecture TargetArchitecture
-        {
-            get
-            {
-                switch (Machine)
-                {
-                    case Machine.I386:
-                        return TargetArchitecture.X86;
-
-                    case Machine.Amd64:
-                        return TargetArchitecture.X64;
-
-                    case Machine.ArmThumb2:
-                        return TargetArchitecture.ARM;
-
-                    case Machine.Arm64:
-                        return TargetArchitecture.ARM64;
-
-                    default:
-                        throw new NotImplementedException(_machine.ToString());
-                }
-            }
-        }
-
-        /// <summary>
         /// Targeting operating system for the R2R executable
         /// </summary>
         public OperatingSystem OperatingSystem
@@ -215,36 +187,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 EnsureHeader();
                 return _operatingSystem;
-            }
-        }
-
-        /// <summary>
-        /// Targeting operating system converted to the enumeration used by TargetDetails.
-        /// </summary>
-        public TargetOS TargetOperatingSystem
-        {
-            get
-            {
-                switch (OperatingSystem)
-                {
-                    case OperatingSystem.Windows:
-                        return TargetOS.Windows;
-
-                    case OperatingSystem.Linux:
-                        return TargetOS.Linux;
-
-                    case OperatingSystem.Apple:
-                        return TargetOS.OSX;
-
-                    case OperatingSystem.FreeBSD:
-                        return TargetOS.FreeBSD;
-
-                    case OperatingSystem.NetBSD:
-                        return TargetOS.FreeBSD;
-
-                    default:
-                        throw new NotImplementedException(OperatingSystem.ToString());
-                }
             }
         }
 
@@ -447,7 +389,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             if ((peReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) == 0)
             {
-                return TryLocateNativeReadyToRunHeader(peReader, out _);
+                return peReader.TryGetReadyToRunHeader(out _);
             }
             else
             {
@@ -565,16 +507,9 @@ namespace ILCompiler.Reflection.ReadyToRun
             return customMethods;
         }
 
-        private static bool TryLocateNativeReadyToRunHeader(PEReader reader, out int readyToRunHeaderRVA)
-        {
-            PEExportTable exportTable = reader.GetExportTable();
-
-            return exportTable.TryGetValue("RTR_HEADER", out readyToRunHeaderRVA);
-        }
-
         private bool TryLocateNativeReadyToRunHeader()
         {
-            _composite = TryLocateNativeReadyToRunHeader(CompositeReader, out _readyToRunHeaderRVA);
+            _composite = CompositeReader.TryGetReadyToRunHeader(out _readyToRunHeaderRVA);
 
             return _composite;
         }
@@ -1079,7 +1014,12 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 PgoInfoKey key = new PgoInfoKey(mdReader, owningType, methodHandle, methodTypeArgs);
                 PgoInfo info = new PgoInfo(key, this, pgoFormatVersion, Image, pgoOffset);
-                _pgoInfos.Add(key, info);
+
+                // Since we do non-assembly qualified name based matching for generic instantiations, we can have conflicts.
+                // This is rare, so the current strategy is to just ignore them. This will allow the tooling to work, although
+                // the text output for PGO will be slightly wrong.
+                if (!_pgoInfos.ContainsKey(key))
+                    _pgoInfos.Add(key, info);
                 curParser = allEntriesEnum.GetNext();
             }
 

@@ -17,7 +17,7 @@ var Module = {
         };
         */
     },
-    onDotNetReady: () => {
+    onDotnetReady: () => {
         App.init();
     },
 };

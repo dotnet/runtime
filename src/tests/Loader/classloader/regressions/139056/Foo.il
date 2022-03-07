@@ -27,7 +27,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module Foo.exe
 // MVID: {E2294DFD-8443-4AA7-9104-BC680C3B8133}
 .imagebase 0x00400000
 .file alignment 0x00000200

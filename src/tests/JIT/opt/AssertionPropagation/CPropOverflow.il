@@ -26,7 +26,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module CPropOverflow.exe
 // MVID: {68FF9260-9E27-4CCF-88D3-5AE07292CE94}
 .imagebase 0x00400000
 .file alignment 0x00000200

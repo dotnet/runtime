@@ -231,7 +231,7 @@ HRESULT DbgTransportPipeline::CreateProcessUnderDebugger(
                                               &m_hProcess);
         if (SUCCEEDED(hr))
         {
-            // Wait for the connection to become useable (or time out).
+            // Wait for the connection to become usable (or time out).
             if (!m_pTransport->WaitForSessionToOpen(10000))
             {
                 hr = CORDBG_E_TIMEOUT;
@@ -298,7 +298,7 @@ HRESULT DbgTransportPipeline::DebugActiveProcess(MachineInfo machineInfo, const 
     if (SUCCEEDED(hr))
     {
         // TODO: Pass this timeout as a parameter all the way from debugger
-        // Wait for the connection to become useable (or time out).
+        // Wait for the connection to become usable (or time out).
         if (!m_pTransport->WaitForSessionToOpen(10000))
         {
             hr = CORDBG_E_TIMEOUT;

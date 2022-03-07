@@ -485,7 +485,7 @@ namespace System.Xml.Schema
             XmlSchemaGroupBase? groupBase = particle as XmlSchemaGroupBase;
             if (groupBase != null)
             { //Choice or sequence
-                XmlSchemaGroupBase newGroupBase = groupBase;
+                XmlSchemaGroupBase newGroupBase;
 
                 XmlSchemaObjectCollection newGroupbaseParticles = CloneGroupBaseParticles(groupBase.Items, parentSchema);
                 newGroupBase = (XmlSchemaGroupBase)groupBase.Clone();

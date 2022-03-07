@@ -19,12 +19,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.Twondo
     {
     }
 
-    public interface imeta<out T>
+    public interface IMeta<out T>
     {
         int foo(IAction<T> a);
     }
 
-    public class Meta<T> : imeta<T> where T : new()
+    public class Meta<T> : IMeta<T> where T : new()
     {
         public int foo(IAction<T> a)
         {
@@ -59,7 +59,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.Twondo
             dynamic v2 = (IAction<Tiger>)v1;
             var x = v2.boo(new Tiger());
             dynamic m1 = new Meta<Tiger>();
-            dynamic m2 = (imeta<Animal>)m1;
+            dynamic m2 = (IMeta<Animal>)m1;
             var y = m2.foo(v1);
             return 0;
         }

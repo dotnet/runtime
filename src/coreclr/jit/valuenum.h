@@ -57,17 +57,9 @@
 //    taken from another map at a given index. As such, it must have a type that corresponds
 //    to the "index/selector", in practical terms - the field's type.
 //
-// Note that the above constraints on the types for maps are not followed currently to the
-// letter by the implementation - "opaque" maps can and do have TYP_REF assigned to them
-// in various situations such as when initializing the "primary" VNs for loop entries.
-//
-// Note as well that the meaning of "the type" for a map is overloaded, because maps are used
-// both to represent memory "of all fields B of all objects that have this field in the heap"
-// and "the field B of this particular object on the heap". Only the latter maps can be used
-// as VNs for actual nodes, while the former are used for "the first field" maps and "array
-// equivalence type" maps, and, of course, for the heap VNs, which always have the placeholder
-// types of TYP_REF or TYP_UNKNOWN. In principle, placeholder types could be given to all the
-// maps of the former type.
+// Note that we give "placeholder" types (TYP_UNDEF and TYP_UNKNOWN as TYP_MEM and TYP_HEAP)
+// to maps that do not represent values found in IR. This is just to avoid confusion and
+// facilitate more precise validating checks.
 //
 // Let's review the following snippet to demonstrate how the MapSelect/MapStore machinery works
 // together to deliver the results that it does. Say we have this snippet of (C#) code:
@@ -192,9 +184,22 @@ struct VNFuncApp
     }
 };
 
+// An instance of this struct represents the decoded information of a SIMD type from a value number.
+struct VNSimdTypeInfo
+{
+    unsigned int m_simdSize;
+    CorInfoType  m_simdBaseJitType;
+};
+
 // We use a unique prefix character when printing value numbers in dumps:  i.e.  $1c0
 // This define is used with string concatenation to put this in printf format strings
 #define FMT_VN "$%x"
+
+// We will use this placeholder type for memory maps that do not represent IR values ("field maps", etc).
+static const var_types TYP_MEM = TYP_UNDEF;
+
+// We will use this placeholder type for memory maps representing "the heap" (GcHeap/ByrefExposed).
+static const var_types TYP_HEAP = TYP_UNKNOWN;
 
 class ValueNumStore
 {
@@ -465,7 +470,7 @@ public:
 
 #ifdef FEATURE_SIMD
     // A helper function for constructing VNF_SimdType VNs.
-    ValueNum VNForSimdType(unsigned simdSize, var_types simdBaseType);
+    ValueNum VNForSimdType(unsigned simdSize, CorInfoType simdBaseJitType);
 #endif // FEATURE_SIMD
 
     // Create or return the existimg value number representing a singleton exception set
@@ -495,6 +500,8 @@ public:
     // in the vnFullSet.
     // Both arguments must be either VNForEmptyExcSet() or applications of VNF_ExcSetCons.
     bool VNExcIsSubset(ValueNum vnFullSet, ValueNum vnCandidateSet);
+
+    bool VNPExcIsSubset(ValueNumPair vnpFullSet, ValueNumPair vnpCandidateSet);
 
     // Returns "true" iff "vn" is an application of "VNF_ValWithExc".
     bool VNHasExc(ValueNum vn)
@@ -529,6 +536,12 @@ public:
     // Sets the liberal & conservative
     // Keeps any Exception set values
     ValueNumPair VNPMakeNormalUniquePair(ValueNumPair vnp);
+
+    // A new unique value with the given exception set.
+    ValueNum VNUniqueWithExc(var_types type, ValueNum vnExcSet);
+
+    // A new unique VN pair with the given exception set pair.
+    ValueNumPair VNPUniqueWithExc(var_types type, ValueNumPair vnpExcSet);
 
     // If "vn" is a "VNF_ValWithExc(norm, excSet)" value, returns the "norm" argument; otherwise,
     // just returns "vn".
@@ -708,17 +721,25 @@ public:
     // Returns true iff the VN represents a (non-handle) constant.
     bool IsVNConstant(ValueNum vn);
 
+    bool IsVNVectorZero(ValueNum vn);
+
+#ifdef FEATURE_SIMD
+    VNSimdTypeInfo GetSimdTypeOfVN(ValueNum vn);
+
+    VNSimdTypeInfo GetVectorZeroSimdTypeOfVN(ValueNum vn);
+#endif
+
     // Returns true iff the VN represents an integer constant.
     bool IsVNInt32Constant(ValueNum vn);
 
     typedef SmallHashTable<ValueNum, bool, 8U> CheckedBoundVNSet;
 
     // Returns true if the VN is known or likely to appear as the conservative value number
-    // of the length argument to a GT_ARR_BOUNDS_CHECK node.
+    // of the length argument to a GT_BOUNDS_CHECK node.
     bool IsVNCheckedBound(ValueNum vn);
 
     // Record that a VN is known to appear as the conservative value number of the length
-    // argument to a GT_ARR_BOUNDS_CHECK node.
+    // argument to a GT_BOUNDS_CHECK node.
     void SetVNIsCheckedBound(ValueNum vn);
 
     // Information about the individual components of a value number representing an unsigned
@@ -769,8 +790,9 @@ public:
         int      constVal;
         unsigned cmpOper;
         ValueNum cmpOpVN;
+        bool     isUnsigned;
 
-        ConstantBoundInfo() : constVal(0), cmpOper(GT_NONE), cmpOpVN(NoVN)
+        ConstantBoundInfo() : constVal(0), cmpOper(GT_NONE), cmpOpVN(NoVN), isUnsigned(false)
         {
         }
 
@@ -800,6 +822,9 @@ public:
 
     // Return true with any Relop except for == and !=  and one operand has to be a 32-bit integer constant.
     bool IsVNConstantBound(ValueNum vn);
+
+    // If "vn" is of the form "(uint)var relop cns" for any relop except for == and !=
+    bool IsVNConstantBoundUnsigned(ValueNum vn);
 
     // If "vn" is constant bound, then populate the "info" fields for constVal, cmpOp, cmpOper.
     void GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info);
@@ -1037,9 +1062,11 @@ public:
     // Used in the implementation of the above.
     static const char* VNFuncNameArr[];
 
+    // Returns a type name used for "maps", i. e. displays TYP_UNDEF and TYP_UNKNOWN as TYP_MEM and TYP_HEAP.
+    static const char* VNMapTypeName(var_types type);
+
     // Returns the string name of "vn" when it is a reserved value number, nullptr otherwise
     static const char* reservedName(ValueNum vn);
-
 #endif // DEBUG
 
     // Returns true if "vn" is a reserved value number

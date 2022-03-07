@@ -73,10 +73,10 @@ The "COMPlus_EnableDiagnostics" environment variable can be used to disable mana
 
     export COMPlus_EnableDiagnostics=0
 
-Debugging Crossgen2
+Debugging AOT compilers
 ==================================
 
-Debugging Crossgen2 is described in [this](debugging-crossgen2.md) document.
+Debugging AOT compilers is described in [this](debugging-aot-compilers.md) document.
 
 Using Visual Studio Code
 ========================

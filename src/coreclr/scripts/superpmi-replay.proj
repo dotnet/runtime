@@ -52,22 +52,34 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Architecture)' == 'x64'">
-    <SPMI_Partition Include="win-x64" Platform="windows" Architecture="x64" />
-    <SPMI_Partition Include="win-arm64" Platform="windows" Architecture="arm64" />
-    <SPMI_Partition Include="unix-x64" Platform="Linux" Architecture="x64" />
-    <SPMI_Partition Include="unix-arm64" Platform="Linux" Architecture="arm64" />
+    <!-- Use 2 partitions for each run on an x64 machine -->
+    <SPMI_Partition Include="win-x64-1" Platform="windows" Architecture="x64" Partition="1" PartitionCount="2"/>
+    <SPMI_Partition Include="win-x64-2" Platform="windows" Architecture="x64" Partition="2" PartitionCount="2"/>
+    <SPMI_Partition Include="win-arm64-1" Platform="windows" Architecture="arm64" Partition="1" PartitionCount="2"/>
+    <SPMI_Partition Include="win-arm64-2" Platform="windows" Architecture="arm64" Partition="2" PartitionCount="2"/>
+    <SPMI_Partition Include="unix-x64-1" Platform="Linux" Architecture="x64" Partition="1" PartitionCount="2"/>
+    <SPMI_Partition Include="unix-x64-2" Platform="Linux" Architecture="x64" Partition="2" PartitionCount="2"/>
+    <SPMI_Partition Include="linux-arm64-1" Platform="Linux" Architecture="arm64" Partition="1" PartitionCount="2"/>
+    <SPMI_Partition Include="linux-arm64-2" Platform="Linux" Architecture="arm64" Partition="2" PartitionCount="2"/>
+    <SPMI_Partition Include="osx-arm64-1" Platform="OSX" Architecture="arm64" Partition="1" PartitionCount="2"/>
+    <SPMI_Partition Include="osx-arm64-2" Platform="OSX" Architecture="arm64" Partition="2" PartitionCount="2"/>
   </ItemGroup>
 
   <ItemGroup Condition="'$(Architecture)' == 'x86'">
-    <SPMI_Partition Include="win-x86" Platform="windows" Architecture="x86" />
-    <SPMI_Partition Include="unix-arm" Platform="Linux" Architecture="arm" />
+    <!-- The x86 machine replays are slower than x64, so use 3 partitions for each run on x86 -->
+    <SPMI_Partition Include="win-x86-1" Platform="windows" Architecture="x86" Partition="1" PartitionCount="3"/>
+    <SPMI_Partition Include="win-x86-2" Platform="windows" Architecture="x86" Partition="2" PartitionCount="3"/>
+    <SPMI_Partition Include="win-x86-3" Platform="windows" Architecture="x86" Partition="3" PartitionCount="3"/>
+    <SPMI_Partition Include="unix-arm-1" Platform="Linux" Architecture="arm" Partition="1" PartitionCount="3"/>
+    <SPMI_Partition Include="unix-arm-2" Platform="Linux" Architecture="arm" Partition="2" PartitionCount="3"/>
+    <SPMI_Partition Include="unix-arm-3" Platform="Linux" Architecture="arm" Partition="3" PartitionCount="3"/>
   </ItemGroup>
 
   <ItemGroup>
     <HelixWorkItem Include="@(SPMI_Partition)">
-      <Command>$(WorkItemCommand) -arch %(HelixWorkItem.Architecture) -platform %(HelixWorkItem.Platform) -log_directory $(SuperpmiLogsLocation)</Command>
+      <Command>$(WorkItemCommand) -arch %(HelixWorkItem.Architecture) -platform %(HelixWorkItem.Platform) -partition %(HelixWorkItem.Partition) -partition_count %(HelixWorkItem.PartitionCount) -log_directory $(SuperpmiLogsLocation)</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>superpmi_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log</DownloadFilesFromResults>
+      <DownloadFilesFromResults>superpmi_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture)_%(HelixWorkItem.Partition).log</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
   </Project>

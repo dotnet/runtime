@@ -3,7 +3,7 @@
 
 .assembly extern mscorlib { auto }
 .assembly extern System.Console {auto}
-.assembly UnusedValueBug { }
+.assembly 'GitHub_18295' { }
 .assembly extern xunit.core {}
 
 // This bug was found on desktop CLR using ILGEN.

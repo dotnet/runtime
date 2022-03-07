@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using Xunit;
 
+[Collection(nameof(DisableParallelization))] // Console.Out is a static singleton, other tests should not be using it at the same time
 public class SetOut
 {
     [Fact]
@@ -28,7 +29,6 @@ public class SetOut
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/57935", TestPlatforms.AnyUnix)]
     public static void SetOutReadToEnd()
     {
         Helpers.SetAndReadHelper(tw => Console.SetOut(tw), () => Console.Out, sr => sr.ReadToEnd());

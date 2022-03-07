@@ -52,7 +52,7 @@ public:
     // Construct
     EventReporter(EventReporterType type);
     // Add extra info into description part of the log
-    void AddDescription(__in WCHAR *pString);
+    void AddDescription(_In_ WCHAR *pString);
     void AddDescription(SString& s);
     // Start callstack record
     void BeginStackTrace();

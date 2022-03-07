@@ -524,6 +524,8 @@ protected:
         IF_COUNT
     };
 
+#ifdef TARGET_XARCH
+
 #define AM_DISP_BITS ((sizeof(unsigned) * 8) - 2 * (REGNUM_BITS + 1) - 2)
 #define AM_DISP_BIG_VAL (-(1 << (AM_DISP_BITS - 1)))
 #define AM_DISP_MIN (-((1 << (AM_DISP_BITS - 1)) - 1))
@@ -536,6 +538,8 @@ protected:
         emitter::opSize amScale : 2;
         int             amDisp : AM_DISP_BITS;
     };
+
+#endif // TARGET_XARCH
 
 #ifdef DEBUG // This information is used in DEBUG builds to display the method name for call instructions
 
@@ -609,6 +613,15 @@ protected:
         {
             assert((ins != INS_invalid) && (ins < INS_count));
             _idIns = ins;
+        }
+        bool idInsIs(instruction ins) const
+        {
+            return idIns() == ins;
+        }
+        template <typename... T>
+        bool idInsIs(instruction ins, T... rest) const
+        {
+            return idInsIs(ins) || idInsIs(rest...);
         }
 
         insFormat idInsFmt() const
@@ -813,10 +826,12 @@ protected:
 #ifndef TARGET_ARM64
             emitLclVarAddr iiaLclVar;
 #endif
-            BasicBlock*  iiaBBlabel;
-            insGroup*    iiaIGlabel;
-            BYTE*        iiaAddr;
+            BasicBlock* iiaBBlabel;
+            insGroup*   iiaIGlabel;
+            BYTE*       iiaAddr;
+#ifdef TARGET_XARCH
             emitAddrMode iiaAddrMode;
+#endif // TARGET_XARCH
 
             CORINFO_FIELD_HANDLE iiaFieldHnd; // iiaFieldHandle is also used to encode
                                               // an offset into the JIT data constant area
@@ -1770,19 +1785,50 @@ private:
     void emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt, instruction ins);
     void spillIntArgRegsToShadowSlots();
 
-/************************************************************************/
-/*      The logic that creates and keeps track of instruction groups    */
-/************************************************************************/
+    /************************************************************************/
+    /*      The logic that creates and keeps track of instruction groups    */
+    /************************************************************************/
+
+    // SC_IG_BUFFER_SIZE defines the size, in bytes, of the single, global instruction group buffer.
+    // When a label is reached, or the buffer is filled, the precise amount of the buffer that was
+    // used is copied to a newly allocated, precisely sized buffer, and the global buffer is reset
+    // for use with the next set of instructions (see emitSavIG). If the buffer was filled before
+    // reaching a label, the next instruction group will be an "overflow", or "extension" group
+    // (marked with IGF_EXTEND). Thus, the size of the global buffer shouldn't matter (as long as it
+    // can hold at least one of the largest instruction descriptor forms), since we can always overflow
+    // to subsequent instruction groups.
+    //
+    // The only place where this fixed instruction group size is a problem is in the main function prolog,
+    // where we only support a single instruction group, and no extension groups. We should really fix that.
+    // Thus, the buffer size needs to be large enough to hold the maximum number of instructions that
+    // can possibly be generated into the prolog instruction group. That is difficult to statically determine.
+    //
+    // If we do generate an overflow prolog group, we will hit a NOWAY assert and fall back to MinOpts.
+    // This should reduce the number of instructions generated into the prolog.
+    //
+    // Note that OSR prologs require additional code not seen in normal prologs.
+    //
+    // Also, note that DEBUG and non-DEBUG builds have different instrDesc sizes, and there are multiple
+    // sizes of instruction descriptors, so the number of instructions that will fit in the largest
+    // instruction group depends on the instruction mix as well as DEBUG/non-DEBUG build type. See the
+    // EMITTER_STATS output for various statistics related to this.
+    //
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_ARMARCH
-// The only place where this limited instruction group size is a problem is
-// in the prolog, where we only support a single instruction group. We should really fix that.
 // ARM32 and ARM64 both can require a bigger prolog instruction group. One scenario is where
 // a function uses all the incoming integer and single-precision floating-point arguments,
 // and must store them all to the frame on entry. If the frame is very large, we generate
-// ugly code like "movw r10, 0x488; add r10, sp; vstr s0, [r10]" for each store, which
-// eats up our insGroup buffer.
-#define SC_IG_BUFFER_SIZE (100 * sizeof(emitter::instrDesc) + 14 * SMALL_IDSC_SIZE)
+// ugly code like:
+//     movw r10, 0x488
+//     add r10, sp
+//     vstr s0, [r10]
+// for each store, or, to load arguments into registers:
+//     movz    xip1, #0x6cd0
+//     movk    xip1, #2 LSL #16
+//     ldr     w8, [fp, xip1]        // [V10 arg10]
+// which eats up our insGroup buffer.
+#define SC_IG_BUFFER_SIZE (200 * sizeof(emitter::instrDesc))
 #else // !TARGET_ARMARCH
 #define SC_IG_BUFFER_SIZE (50 * sizeof(emitter::instrDesc) + 14 * SMALL_IDSC_SIZE)
 #endif // !TARGET_ARMARCH
@@ -2868,9 +2914,131 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 /* static */ emitAttr emitter::emitGetMemOpSize(instrDesc* id)
 {
     emitAttr defaultSize = id->idOpSize();
-    emitAttr newSize     = defaultSize;
+
     switch (id->idIns())
     {
+        case INS_pextrb:
+        case INS_pinsrb:
+        case INS_vpbroadcastb:
+        {
+            return EA_1BYTE;
+        }
+
+        case INS_pextrw:
+        case INS_pextrw_sse41:
+        case INS_pinsrw:
+        case INS_pmovsxbq:
+        case INS_pmovzxbq:
+        case INS_vpbroadcastw:
+        {
+            return EA_2BYTE;
+        }
+
+        case INS_addss:
+        case INS_cmpss:
+        case INS_comiss:
+        case INS_cvtss2sd:
+        case INS_cvtss2si:
+        case INS_cvttss2si:
+        case INS_divss:
+        case INS_extractps:
+        case INS_insertps:
+        case INS_maxss:
+        case INS_minss:
+        case INS_movss:
+        case INS_mulss:
+        case INS_pextrd:
+        case INS_pinsrd:
+        case INS_pmovsxbd:
+        case INS_pmovsxwq:
+        case INS_pmovzxbd:
+        case INS_pmovzxwq:
+        case INS_rcpss:
+        case INS_roundss:
+        case INS_rsqrtss:
+        case INS_sqrtss:
+        case INS_subss:
+        case INS_ucomiss:
+        case INS_vbroadcastss:
+        case INS_vfmadd132ss:
+        case INS_vfmadd213ss:
+        case INS_vfmadd231ss:
+        case INS_vfmsub132ss:
+        case INS_vfmsub213ss:
+        case INS_vfmsub231ss:
+        case INS_vfnmadd132ss:
+        case INS_vfnmadd213ss:
+        case INS_vfnmadd231ss:
+        case INS_vfnmsub132ss:
+        case INS_vfnmsub213ss:
+        case INS_vfnmsub231ss:
+        case INS_vpbroadcastd:
+        {
+            return EA_4BYTE;
+        }
+
+        case INS_addsd:
+        case INS_cmpsd:
+        case INS_comisd:
+        case INS_cvtsd2si:
+        case INS_cvtsd2ss:
+        case INS_cvttsd2si:
+        case INS_divsd:
+        case INS_maxsd:
+        case INS_minsd:
+        case INS_movhpd:
+        case INS_movhps:
+        case INS_movlpd:
+        case INS_movlps:
+        case INS_movq:
+        case INS_movsd:
+        case INS_mulsd:
+        case INS_pextrq:
+        case INS_pinsrq:
+        case INS_pmovsxbw:
+        case INS_pmovsxdq:
+        case INS_pmovsxwd:
+        case INS_pmovzxbw:
+        case INS_pmovzxdq:
+        case INS_pmovzxwd:
+        case INS_roundsd:
+        case INS_sqrtsd:
+        case INS_subsd:
+        case INS_ucomisd:
+        case INS_vbroadcastsd:
+        case INS_vfmadd132sd:
+        case INS_vfmadd213sd:
+        case INS_vfmadd231sd:
+        case INS_vfmsub132sd:
+        case INS_vfmsub213sd:
+        case INS_vfmsub231sd:
+        case INS_vfnmadd132sd:
+        case INS_vfnmadd213sd:
+        case INS_vfnmadd231sd:
+        case INS_vfnmsub132sd:
+        case INS_vfnmsub213sd:
+        case INS_vfnmsub231sd:
+        case INS_vpbroadcastq:
+        {
+            return EA_8BYTE;
+        }
+
+        case INS_cvtdq2pd:
+        case INS_cvtps2pd:
+        {
+            if (defaultSize == 32)
+            {
+                return EA_16BYTE;
+            }
+            else
+            {
+                assert(defaultSize == 16);
+                return EA_8BYTE;
+            }
+        }
+
+        case INS_vbroadcastf128:
+        case INS_vbroadcasti128:
         case INS_vextractf128:
         case INS_vextracti128:
         case INS_vinsertf128:
@@ -2879,36 +3047,22 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
             return EA_16BYTE;
         }
 
-        case INS_pextrb:
-        case INS_pinsrb:
+        case INS_movddup:
         {
-            return EA_1BYTE;
-        }
-
-        case INS_pextrw:
-        case INS_pextrw_sse41:
-        case INS_pinsrw:
-        {
-            return EA_2BYTE;
-        }
-
-        case INS_extractps:
-        case INS_insertps:
-        case INS_pextrd:
-        case INS_pinsrd:
-        {
-            return EA_4BYTE;
-        }
-
-        case INS_pextrq:
-        case INS_pinsrq:
-        {
-            return EA_8BYTE;
+            if (defaultSize == 32)
+            {
+                return EA_32BYTE;
+            }
+            else
+            {
+                assert(defaultSize == 16);
+                return EA_8BYTE;
+            }
         }
 
         default:
         {
-            return id->idOpSize();
+            return defaultSize;
         }
     }
 }

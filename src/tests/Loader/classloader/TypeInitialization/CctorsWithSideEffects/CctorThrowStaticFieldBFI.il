@@ -21,7 +21,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module CctorThrowStaticFieldBFI.exe
 // MVID: {A7BE6B3C-FF8D-43DB-B091-60CBA24AD082}
 .imagebase 0x00400000
 .file alignment 0x00000200

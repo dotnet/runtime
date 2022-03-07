@@ -14,9 +14,6 @@
 #include "win32threadpool.h"
 #include "clrversion.h"
 
-#undef EP_ARRAY_SIZE
-#define EP_ARRAY_SIZE(expr) (sizeof(expr) / sizeof ((expr) [0]))
-
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT INFINITE
 
@@ -2670,7 +2667,7 @@ ep_rt_diagnostics_command_line_get (void)
 	// The host initalizes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
 	// is different during each phase. We suspend during init where the runtime has populated the commandline with a
 	// mock value (the full path of the executing assembly) and the actual value isn't populated till the exec assembly phase.
-	// On Windows this does not apply as the value is retrieved directly from the OS any time it is requested. 
+	// On Windows this does not apply as the value is retrieved directly from the OS any time it is requested.
 	// As a result, we cannot actually cache this value. We need to return the _current_ value.
 	// This function needs to handle freeing the string in order to make it consistent with Mono's version.
 	// To that end, we'll "cache" it here so we free the previous string when we get it again.

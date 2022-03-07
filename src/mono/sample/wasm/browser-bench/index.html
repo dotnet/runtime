@@ -10,70 +10,11 @@
   <link rel="stylesheet" href="style.css">
 </head>
 
-<body onload="onLoad()">
+<body>
   <h3 id="header">Wasm Browser Sample - Simple Benchmark</h3>
   Output:<br><br> <span id="out"></span>
-  <script type='text/javascript'>
-    let tasks = '';
-    var onLoad = function () {
-      var url = new URL(decodeURI(window.location));
-      tasks = url.searchParams.getAll('task');
-    };
-
-    function set_exit_code(exit_code, reason) {
-      /* Set result in a tests_done element, to be read by xharness */
-      const tests_done_elem = document.createElement("label");
-      tests_done_elem.id = "tests_done";
-      tests_done_elem.innerHTML = exit_code.toString();
-      document.body.appendChild(tests_done_elem);
-
-      console.log(`WASM EXIT ${exit_code}`);
-    };
-
-    function yieldBench() {
-      const runBenchmark = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:RunBenchmark");
-      let promise = runBenchmark();
-      promise.then(ret => {
-        document.getElementById("out").innerHTML += ret;
-        if (ret.length > 0) {
-          setTimeout(function () { yieldBench(); }, 0);
-        } else {
-          document.getElementById("out").innerHTML += "Finished";
-        }
-      });
-    }
-
-    const App = {
-      init: function () {
-        if (tasks != '') {
-          const setTasks = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:SetTasks");
-          setTasks(tasks);
-        }
-        yieldBench();
-      },
-
-      PageShow: async function () {
-        AppStart.Construct();
-        try {
-          await AppStart.WaitForPageShow();
-        } finally {
-          AppStart.RemoveFrame();
-        }
-      },
-
-      ReachedManaged: async function () {
-        AppStart.Construct();
-        try {
-          await AppStart.WaitForReached();
-        } finally {
-          AppStart.RemoveFrame();
-        }
-      }
-    };
-  </script>
+  <script type="text/javascript" src="dotnet.js"></script>
   <script type="text/javascript" src="main.js"></script>
-  <script type="text/javascript" src="appstart.js"></script>
-  <script defer src="dotnet.js"></script>
 </body>
 
 </html>

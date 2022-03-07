@@ -15,7 +15,6 @@
 .assembly Dev10_884217_IL
 {
 }
-.module Dev10_884217_IL.exe
 .subsystem 0x0003       // WINDOWS_CUI
 .corflags 0x00000001    //  ILONLY
 // Image base: 0x0000000000170000

@@ -198,6 +198,8 @@ namespace SampleMetadata
         public void Foo4(short s = -34) { }
         public void Foo5(decimal d = 1234m) { }
         public void Foo6([DateTimeConstant(ticks: 8736726782)] DateTime dt) { }
+        public void Foo7(string s1 = "foo", string s2 = "", string s3 = null) { }
+        public void Foo8(Action a = null) { }
     }
 
     public class ParametersWithPseudoCustomtAttributes
@@ -550,5 +552,10 @@ namespace SampleMetadata
     public class ClassWithDefaultMember1<T> where T : ClassWithDefaultMember1<T>
     {
         public int Yes;
+    }
+
+    public class PublicClass
+    {
+        internal class InternalNestedClass { }
     }
 }

@@ -28,7 +28,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module diamondshape.exe
 // MVID: {25B467F3-D284-4DB6-BAD4-C7EAC75CF064}
 .imagebase 0x00400000
 .file alignment 0x00000200

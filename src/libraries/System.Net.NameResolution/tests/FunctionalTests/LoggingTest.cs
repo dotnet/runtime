@@ -13,7 +13,7 @@ namespace System.Net.NameResolution.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [Collection("NoParallelTests")]
+    [Collection(nameof(DisableParallelization))]
     public class LoggingTest
     {
         [Fact]

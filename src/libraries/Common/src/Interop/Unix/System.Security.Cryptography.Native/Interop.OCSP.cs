@@ -12,8 +12,8 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OcspRequestDestroy")]
-        internal static extern void OcspRequestDestroy(IntPtr ocspReq);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OcspRequestDestroy")]
+        internal static partial void OcspRequestDestroy(IntPtr ocspReq);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetOcspRequestDerSize")]
         internal static partial int GetOcspRequestDerSize(SafeOcspRequestHandle req);
@@ -31,10 +31,10 @@ internal static partial class Interop
                 buf.Length);
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OcspResponseDestroy")]
-        internal static extern void OcspResponseDestroy(IntPtr ocspReq);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OcspResponseDestroy")]
+        internal static partial void OcspResponseDestroy(IntPtr ocspReq);
 
-        [GeneratedDllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial int CryptoNative_X509ChainGetCachedOcspStatus(
             SafeX509StoreCtxHandle ctx,
             string cachePath,
@@ -53,7 +53,7 @@ internal static partial class Interop
             return response;
         }
 
-        [GeneratedDllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial int CryptoNative_X509ChainVerifyOcsp(
             SafeX509StoreCtxHandle ctx,
             SafeOcspRequestHandle req,

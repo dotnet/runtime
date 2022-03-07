@@ -348,7 +348,7 @@ namespace System.IO.Ports.Tests
                 byte shiftMask = 0xFF;
 
                 //Create a mask that when logicaly and'd with the transmitted byte will
-                //will result in the byte recievied due to the leading bits being chopped
+                //will result in the byte received due to the leading bits being chopped
                 //off due to Parity less then 8
                 if (8 > dataBits)
                     shiftMask >>= 8 - com1.DataBits;
@@ -394,7 +394,7 @@ namespace System.IO.Ports.Tests
                 com2.StopBits = StopBits.One;
 
                 //Create a mask that when logicaly and'd with the transmitted byte will
-                //will result in the byte recievied due to the leading bits being chopped
+                //will result in the byte received due to the leading bits being chopped
                 //off due to Parity less then 8
                 shiftMask >>= 8 - dataBits;
 
@@ -545,7 +545,7 @@ namespace System.IO.Ports.Tests
                         Debug.WriteLine("Bytes Sent:");
                         TCSupport.PrintBytes(xmitBytes);
 
-                        Debug.WriteLine("Bytes Recieved:");
+                        Debug.WriteLine("Bytes Received:");
                         TCSupport.PrintBytes(rcvBytes);
 
                         Debug.WriteLine("Expected Bytes:");

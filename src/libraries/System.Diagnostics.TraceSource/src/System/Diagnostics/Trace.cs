@@ -4,6 +4,7 @@
 #define TRACE
 using System;
 using System.Collections;
+using System.Threading;
 
 namespace System.Diagnostics
 {
@@ -19,18 +20,11 @@ namespace System.Diagnostics
         }
 
         private static CorrelationManager? s_correlationManager;
-        public static CorrelationManager CorrelationManager
-        {
-            get
-            {
-                if (s_correlationManager == null)
-                {
-                    s_correlationManager = new CorrelationManager();
-                }
 
-                return s_correlationManager;
-            }
-        }
+        public static CorrelationManager CorrelationManager =>
+            Volatile.Read(ref s_correlationManager) ??
+            Interlocked.CompareExchange(ref s_correlationManager, new CorrelationManager(), null) ??
+            s_correlationManager;
 
         /// <devdoc>
         ///    <para>Gets the collection of listeners that is monitoring the trace output.</para>

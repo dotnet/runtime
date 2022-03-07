@@ -205,7 +205,6 @@ namespace Internal.Cryptography.Pal.AnyOS
                 finally
                 {
                     CryptoPool.Return(encryptedContentArray, encryptedContentLength);
-                    encryptedContentArray = null;
                 }
             }
 

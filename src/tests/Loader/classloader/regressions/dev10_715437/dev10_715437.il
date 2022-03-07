@@ -12,7 +12,7 @@ function call DerivedDerived::Method() since the method is not defined on this t
 */
 
 .assembly extern mscorlib {}
-.assembly Generated26 {}
+.assembly 'dev10_715437' {}
 
 
 .class public DerivedDerived extends class Derived`2<string,int32>

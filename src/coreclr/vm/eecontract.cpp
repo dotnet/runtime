@@ -22,7 +22,7 @@ void EEContract::Disable()
     BaseContract::Disable();
 }
 
-void EEContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z const char *szFile, int lineNum)
+void EEContract::DoChecks(UINT testmask, _In_z_ const char *szFunction, _In_z_ const char *szFile, int lineNum)
 {
     SCAN_IGNORE_THROW;      // Tell the static contract analyzer to ignore contract violations
     SCAN_IGNORE_FAULT;      // due to the contract checking logic itself.

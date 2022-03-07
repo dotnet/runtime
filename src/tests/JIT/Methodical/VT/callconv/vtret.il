@@ -16,7 +16,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module vtret.exe
 // MVID: {DAD31C3D-EF49-47EA-945E-72055ACE0D58}
 .namespace MS
 {

@@ -18,7 +18,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'rotate_u2.exe'
 // MVID: {D13C2D0A-FC17-423E-926F-6A239416DD1C}
 .namespace Rotate
 {

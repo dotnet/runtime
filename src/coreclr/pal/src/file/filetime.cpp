@@ -251,7 +251,7 @@ Function
     FileTimeToSystemTime()
 
     Helper function for FileTimeToDosTime.
-    Converts the necessary file time attibutes to system time, for
+    Converts the necessary file time attributes to system time, for
     easier manipulation in FileTimeToDosTime.
 
 --*/

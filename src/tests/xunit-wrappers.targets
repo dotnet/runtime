@@ -1,6 +1,10 @@
 <Project>
   <Target Name="CreateAllWrappers" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
+    <MSBuild
+      Projects="$(MSBuildProjectFile)"
+      Targets="CreateXunitWrapper;BuildXunitWrapper"
+      Properties="_CMDDIR=%(TestDirectories.Identity)"
+      Condition="'@(TestDirectories)' != ''" />
   </Target>
 
   <Target Name="CreateXunitWrapper" DependsOnTargets="CreateXunitFacts">
@@ -91,7 +95,7 @@ $(_XunitEpilog)
 
   <Import Project="$(MSBuildThisFileDirectory)Common/testgrouping.proj" />
 
-  <Target Name="CreateXunitFacts">
+  <Target Name="CreateXunitFacts" DependsOnTargets="GetListOfTestCmds">
     <!-- NOTE! semicolons must be escaped with %3B boooo -->
 
     <PropertyGroup>
@@ -252,8 +256,13 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </PropertyGroup>
 
     <ItemGroup>
-      <AllCMDsPresent Include="$(_CMDDIR)\**\*.$(TestScriptExtension)" />
+      <AllCMDsPresent Include="$(_CMDDIR)\**\*.$(TestScriptExtension)" Exclude="$(_CMDDIR)\**\AppBundle\*.$(TestScriptExtension)" />
       <AllCMDsPresent Remove="$(_CMDDIR)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
+      <AllCMDsPresent Remove="@(MergedRunnableTestPaths)" />
+      <AllCMDsPresent Remove="@(OutOfProcessTestPaths)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'@(AllCMDsPresent)' != ''">
       <TestGroupingDistinctWithCase Include="@(TestGrouping->Metadata('FullPath')->DistinctWithCase())" />
       <TestGroupingNotRelevant Include="@(TestGroupingDistinctWithCase)" Exclude="@(AllCMDsPresent)" />
       <GroupedCMDs Include="@(TestGroupingDistinctWithCase)" Exclude="@(TestGroupingNotRelevant)" />

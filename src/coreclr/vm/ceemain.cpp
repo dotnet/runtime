@@ -185,7 +185,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
-#include "notifyexternals.h"
 #include "mngstdinterfaces.h"
 #include "interoplibinterface.h"
 #endif // FEATURE_COMINTEROP
@@ -221,7 +220,7 @@
 
 #include "genanalysis.h"
 
-static int GetThreadUICultureId(__out LocaleIDValue* pLocale);  // TODO: This shouldn't use the LCID.  We should rely on name instead
+static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale);  // TODO: This shouldn't use the LCID.  We should rely on name instead
 
 static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames);
 
@@ -949,7 +948,7 @@ void EEStartupHelper()
 #ifdef DEBUGGING_SUPPORTED
         // Make a call to publish the DefaultDomain for the debugger
         // This should be done before assemblies/modules are loaded into it (i.e. SystemDomain::Init)
-        // and after its OK to switch GC modes and syncronize for sending events to the debugger.
+        // and after its OK to switch GC modes and synchronize for sending events to the debugger.
         // @dbgtodo  synchronization: this can probably be simplified in V3
         LOG((LF_CORDB | LF_SYNC | LF_STARTUP, LL_INFO1000, "EEStartup: adding default domain 0x%x\n",
              SystemDomain::System()->DefaultDomain()));
@@ -1836,41 +1835,53 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 
 struct TlsDestructionMonitor
 {
+    bool m_activated = false;
+
+    void Activate()
+    {
+        m_activated = true;
+    }
+
     ~TlsDestructionMonitor()
     {
-        // Don't destroy threads here if we're in shutdown (shutdown will
-        // clean up for us instead).
-
-        Thread* thread = GetThreadNULLOk();
-        if (thread)
+        if (m_activated)
         {
-#ifdef FEATURE_COMINTEROP
-            // reset the CoInitialize state
-            // so we don't call CoUninitialize during thread detach
-            thread->ResetCoInitialized();
-#endif // FEATURE_COMINTEROP
-            // For case where thread calls ExitThread directly, we need to reset the
-            // frame pointer. Otherwise stackwalk would AV. We need to do it in cooperative mode.
-            // We need to set m_GCOnTransitionsOK so this thread won't trigger GC when toggle GC mode
-            if (thread->m_pFrame != FRAME_TOP)
+            Thread* thread = GetThreadNULLOk();
+            if (thread)
             {
+#ifdef FEATURE_COMINTEROP
+                // reset the CoInitialize state
+                // so we don't call CoUninitialize during thread detach
+                thread->ResetCoInitialized();
+#endif // FEATURE_COMINTEROP
+                // For case where thread calls ExitThread directly, we need to reset the
+                // frame pointer. Otherwise stackwalk would AV. We need to do it in cooperative mode.
+                // We need to set m_GCOnTransitionsOK so this thread won't trigger GC when toggle GC mode
+                if (thread->m_pFrame != FRAME_TOP)
+                {
 #ifdef _DEBUG
-                thread->m_GCOnTransitionsOK = FALSE;
+                    thread->m_GCOnTransitionsOK = FALSE;
 #endif
-                GCX_COOP_NO_DTOR();
-                thread->m_pFrame = FRAME_TOP;
-                GCX_COOP_NO_DTOR_END();
+                    GCX_COOP_NO_DTOR();
+                    thread->m_pFrame = FRAME_TOP;
+                    GCX_COOP_NO_DTOR_END();
+                }
+                thread->DetachThread(TRUE);
             }
-            thread->DetachThread(TRUE);
-        }
 
-        ThreadDetaching();
+            ThreadDetaching();
+        }
     }
 };
 
 // This thread local object is used to detect thread shutdown. Its destructor
 // is called when a thread is being shut down.
 thread_local TlsDestructionMonitor tls_destructionMonitor;
+
+void EnsureTlsDestructionMonitor()
+{
+    tls_destructionMonitor.Activate();
+}
 
 #ifdef DEBUGGING_SUPPORTED
 //
@@ -2136,7 +2147,7 @@ INT32 GetLatchedExitCode (void)
 // Impl for UtilLoadStringRC Callback: In VM, we let the thread decide culture
 // Return an int uniquely describing which language this thread is using for ui.
 // ---------------------------------------------------------------------------
-static int GetThreadUICultureId(__out LocaleIDValue* pLocale)
+static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale)
 {
     CONTRACTL{
         NOTHROW;

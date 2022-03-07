@@ -24,7 +24,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module 'try-fault-struct03.exe'
 // MVID: {64D27B72-3BAB-4B06-AC5B-6ECC5A9F3FB9}
 .imagebase 0x00400000
 .subsystem 0x00000003

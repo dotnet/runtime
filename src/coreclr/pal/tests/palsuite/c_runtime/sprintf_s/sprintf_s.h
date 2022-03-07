@@ -17,13 +17,13 @@ inline void DoStrTest_sprintf_s(const char *formatstr, char* param, const char *
 {
     char buf[256] = { 0 };
 
-    sprintf_s(buf, _countof(buf), formatstr, param);
+    sprintf_s(buf, ARRAY_SIZE(buf), formatstr, param);
     if (memcmp(buf, checkstr, strlen(checkstr) + 1) != 0)
     {
         Fail("ERROR: failed to insert string \"%s\" into \"%s\"\n"
              "Expected \"%s\" got \"%s\".\n",
              param, formatstr, checkstr, buf);
-    }    
+    }
 }
 #define DoStrTest DoStrTest_sprintf_s
 
@@ -31,22 +31,22 @@ inline void DoWStrTest_sprintf_s(const char *formatstr, WCHAR* param, const char
 {
     char buf[256] = { 0 };
 
-    sprintf_s(buf, _countof(buf), formatstr, param);
+    sprintf_s(buf, ARRAY_SIZE(buf), formatstr, param);
     if (memcmp(buf, checkstr, strlen(checkstr) + 1) != 0)
     {
         Fail("ERROR: failed to insert wide string \"%s\" into \"%s\"\n"
              "Expected \"%s\" got \"%s\".\n",
              convertC(param), formatstr, checkstr, buf);
-    }    
+    }
 }
 #define DoWStrTest DoWStrTest_sprintf_s
 
-inline void DoPointerTest_sprintf_s(const char *formatstr, void* param, char* paramstr, 
+inline void DoPointerTest_sprintf_s(const char *formatstr, void* param, char* paramstr,
                    const char *checkstr1)
 {
     char buf[256] = { 0 };
 
-    sprintf_s(buf, _countof(buf), formatstr, param);
+    sprintf_s(buf, ARRAY_SIZE(buf), formatstr, param);
     if (memcmp(buf, checkstr1, strlen(checkstr1) + 1) != 0)
     {
         Fail("ERROR: failed to insert %s into \"%s\"\n"
@@ -60,8 +60,8 @@ inline void DoCountTest_sprintf_s(const char *formatstr, int param, const char *
 {
     char buf[512] = { 0 };
     int n = -1;
-    
-    sprintf_s(buf, _countof(buf), formatstr, &n);
+
+    sprintf_s(buf, ARRAY_SIZE(buf), formatstr, &n);
 
     if (n != param)
     {
@@ -80,7 +80,7 @@ inline void DoShortCountTest_sprintf_s(const char *formatstr, int param, const c
     char buf[256] = { 0 };
     short int n = -1;
 
-    sprintf_s(buf, _countof(buf), formatstr, &n);
+    sprintf_s(buf, ARRAY_SIZE(buf), formatstr, &n);
 
     if (n != param)
     {
@@ -98,7 +98,7 @@ inline void DoCharTest_sprintf_s(const char *formatstr, char param, const char *
 {
     char buf[256] = { 0 };
 
-    sprintf_s(buf, _countof(buf), formatstr, param);
+    sprintf_s(buf, ARRAY_SIZE(buf), formatstr, param);
     if (memcmp(buf, checkstr, strlen(checkstr) + 1) != 0)
     {
         Fail("ERROR: failed to insert char \'%c\' (%d) into \"%s\"\n"
@@ -112,7 +112,7 @@ inline void DoWCharTest_sprintf_s(const char *formatstr, WCHAR param, const char
 {
     char buf[256] = { 0 };
 
-    sprintf_s(buf, _countof(buf), formatstr, param);
+    sprintf_s(buf, ARRAY_SIZE(buf), formatstr, param);
     if (memcmp(buf, checkstr, strlen(checkstr) + 1) != 0)
     {
         Fail("ERROR: failed to insert wide char \'%c\' (%d) into \"%s\"\n"
@@ -126,7 +126,7 @@ inline void DoNumTest_sprintf_s(const char *formatstr, int value, const char *ch
 {
     char buf[256] = { 0 };
 
-    sprintf_s(buf, _countof(buf), formatstr, value);
+    sprintf_s(buf, ARRAY_SIZE(buf), formatstr, value);
     if (memcmp(buf, checkstr, strlen(checkstr) + 1) != 0)
     {
         Fail("ERROR: failed to insert %#x into \"%s\"\n"
@@ -140,13 +140,13 @@ inline void DoI64Test_sprintf_s(const char *formatstr, INT64 value, char *values
 {
     char buf[256] = { 0 };
 
-    sprintf_s(buf, _countof(buf), formatstr, value);
+    sprintf_s(buf, ARRAY_SIZE(buf), formatstr, value);
     if (memcmp(buf, checkstr1, strlen(checkstr1) + 1) != 0)
     {
         Fail("ERROR: failed to insert %s into \"%s\"\n"
              "Expected \"%s\", got \"%s\".\n",
              valuestr, formatstr, checkstr1, buf);
-    }    
+    }
 }
 #define DoI64Test DoI64Test_sprintf_s
 
@@ -155,12 +155,12 @@ inline void DoDoubleTest_sprintf_s(const char *formatstr, double value, const ch
 {
     char buf[256] = { 0 };
 
-    sprintf_s(buf, _countof(buf), formatstr, value);
+    sprintf_s(buf, ARRAY_SIZE(buf), formatstr, value);
     if (memcmp(buf, checkstr1, strlen(checkstr1) + 1) != 0 &&
         memcmp(buf, checkstr2, strlen(checkstr2) + 1) != 0)
     {
         Fail("ERROR: failed to insert %f into \"%s\"\n"
-            "Expected \"%s\" or \"%s\", got \"%s\".\n", 
+            "Expected \"%s\" or \"%s\", got \"%s\".\n",
             value, formatstr, checkstr1, checkstr2, buf);
     }
 }
@@ -171,7 +171,7 @@ inline void DoArgumentPrecTest_sprintf_s(const char *formatstr, int precision, v
 {
     char buf[256];
 
-    sprintf_s(buf, _countof(buf), formatstr, precision, param);
+    sprintf_s(buf, ARRAY_SIZE(buf), formatstr, precision, param);
     if (memcmp(buf, checkstr1, strlen(checkstr1) + 1) != 0 &&
         memcmp(buf, checkstr2, strlen(checkstr2) + 1) != 0)
     {
@@ -188,7 +188,7 @@ inline void DoArgumentPrecDoubleTest_sprintf_s(const char *formatstr, int precis
 {
     char buf[256];
 
-    sprintf_s(buf, _countof(buf), formatstr, precision, param);
+    sprintf_s(buf, ARRAY_SIZE(buf), formatstr, precision, param);
     if (memcmp(buf, checkstr1, strlen(checkstr1) + 1) != 0 &&
         memcmp(buf, checkstr2, strlen(checkstr2) + 1) != 0)
     {

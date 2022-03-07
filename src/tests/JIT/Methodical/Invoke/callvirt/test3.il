@@ -20,7 +20,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'test3.exe'
 // MVID: {D9CB467A-BD94-4D87-BB6B-ABB1D4B12E50}
 .namespace Test
 {

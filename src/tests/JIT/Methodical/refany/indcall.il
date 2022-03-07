@@ -8,13 +8,12 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'bug'
+.assembly 'indcall'
 {
 
   
 }
 .assembly extern xunit.core {}
-.module 'bug.exe'
 .namespace JitTest
 {
   .class private auto ansi Test extends ['mscorlib']System.Object

@@ -228,8 +228,6 @@ def main(main_args):
             shutil.copy2(overall_md_summary_file, overall_md_summary_file_target)
         except PermissionError as pe_error:
             print('Ignoring PermissionError: {0}'.format(pe_error))
-
-        copy_dasm_files(spmi_location, log_directory, "{}_{}".format(platform_name, arch_name))
     else:
         # Write a basic summary file. Ideally, we should not generate a summary.md file. However, currently I'm seeing
         # errors where the Helix work item fails to upload this specified file if it doesn't exist. We should change the
@@ -238,6 +236,9 @@ def main(main_args):
             f.write("""\
 No diffs found
 """)
+
+    # Finally prepare files to upload from helix.
+    copy_dasm_files(spmi_location, log_directory, "{}_{}".format(platform_name, arch_name))
 
     if return_code != 0:
         print("Failure in {}".format(log_file))

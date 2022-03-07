@@ -86,7 +86,7 @@ static int
 calc_prime (int x)
 {
 	int i;
-	
+
 	for (i = (x & (~1))-1; i< G_MAXINT32; i += 2) {
 		if (test_prime (i))
 			return i;
@@ -98,7 +98,7 @@ guint
 g_spaced_primes_closest (guint x)
 {
 	int i;
-	
+
 	for (i = 0; i < G_N_ELEMENTS (prime_tbl); i++) {
 		if (x <= prime_tbl [i])
 			return prime_tbl [i];
@@ -123,7 +123,7 @@ g_hash_table_new (GHashFunc hash_func, GEqualFunc key_equal_func)
 	hash->table_size = g_spaced_primes_closest (1);
 	hash->table = g_new0 (Slot *, hash->table_size);
 	hash->last_rehash = hash->table_size;
-	
+
 	return hash;
 }
 
@@ -134,10 +134,10 @@ g_hash_table_new_full (GHashFunc hash_func, GEqualFunc key_equal_func,
 	GHashTable *hash = g_hash_table_new (hash_func, key_equal_func);
 	if (hash == NULL)
 		return NULL;
-	
+
 	hash->key_destroy_func = key_destroy_func;
 	hash->value_destroy_func = value_destroy_func;
-	
+
 	return hash;
 }
 
@@ -199,7 +199,7 @@ do_rehash (GHashTable *hash)
 	/* printf ("New size: %d\n", hash->table_size); */
 	table = hash->table;
 	hash->table = g_new0 (Slot *, hash->table_size);
-	
+
 	for (i = 0; i < current_size; i++){
 		Slot *s, *next;
 
@@ -234,7 +234,7 @@ g_hash_table_insert_replace (GHashTable *hash, gpointer key, gpointer value, gbo
 	guint hashcode;
 	Slot *s;
 	GEqualFunc equal;
-	
+
 	g_return_if_fail (hash != NULL);
 	sanity_check (hash);
 
@@ -301,7 +301,7 @@ guint
 g_hash_table_size (GHashTable *hash)
 {
 	g_return_val_if_fail (hash != NULL, 0);
-	
+
 	return hash->in_use;
 }
 
@@ -317,7 +317,7 @@ gpointer
 g_hash_table_lookup (GHashTable *hash, gconstpointer key)
 {
 	gpointer orig_key, value;
-	
+
 	if (g_hash_table_lookup_extended (hash, key, &orig_key, &value))
 		return value;
 	else
@@ -330,13 +330,13 @@ g_hash_table_lookup_extended (GHashTable *hash, gconstpointer key, gpointer *ori
 	GEqualFunc equal;
 	Slot *s;
 	guint hashcode;
-	
+
 	g_return_val_if_fail (hash != NULL, FALSE);
 	sanity_check (hash);
 	equal = hash->key_equal_func;
 
 	hashcode = ((*hash->hash_func) (key)) % hash->table_size;
-	
+
 	for (s = hash->table [hashcode]; s != NULL; s = s->next){
 		if ((*equal)(s->key, key)){
 			if (orig_key)
@@ -353,7 +353,7 @@ void
 g_hash_table_foreach (GHashTable *hash, GHFunc func, gpointer user_data)
 {
 	int i;
-	
+
 	g_return_if_fail (hash != NULL);
 	g_return_if_fail (func != NULL);
 
@@ -369,7 +369,7 @@ gpointer
 g_hash_table_find (GHashTable *hash, GHRFunc predicate, gpointer user_data)
 {
 	int i;
-	
+
 	g_return_val_if_fail (hash != NULL, NULL);
 	g_return_val_if_fail (predicate != NULL, NULL);
 
@@ -387,7 +387,7 @@ void
 g_hash_table_remove_all (GHashTable *hash)
 {
 	int i;
-	
+
 	g_return_if_fail (hash != NULL);
 
 	for (i = 0; i < hash->table_size; i++){
@@ -406,7 +406,7 @@ g_hash_table_remove (GHashTable *hash, gconstpointer key)
 	GEqualFunc equal;
 	Slot *s, *last;
 	guint hashcode;
-	
+
 	g_return_val_if_fail (hash != NULL, FALSE);
 	sanity_check (hash);
 	equal = hash->key_equal_func;
@@ -439,7 +439,7 @@ g_hash_table_foreach_remove (GHashTable *hash, GHRFunc func, gpointer user_data)
 {
 	int i;
 	int count = 0;
-	
+
 	g_return_val_if_fail (hash != NULL, 0);
 	g_return_val_if_fail (func != NULL, 0);
 
@@ -485,11 +485,11 @@ g_hash_table_steal (GHashTable *hash, gconstpointer key)
 	GEqualFunc equal;
 	Slot *s, *last;
 	guint hashcode;
-	
+
 	g_return_val_if_fail (hash != NULL, FALSE);
 	sanity_check (hash);
 	equal = hash->key_equal_func;
-	
+
 	hashcode = ((*hash->hash_func)(key)) % hash->table_size;
 	last = NULL;
 	for (s = hash->table [hashcode]; s != NULL; s = s->next){
@@ -507,7 +507,7 @@ g_hash_table_steal (GHashTable *hash, gconstpointer key)
 	}
 	sanity_check (hash);
 	return FALSE;
-	
+
 }
 
 guint
@@ -515,7 +515,7 @@ g_hash_table_foreach_steal (GHashTable *hash, GHRFunc func, gpointer user_data)
 {
 	int i;
 	int count = 0;
-	
+
 	g_return_val_if_fail (hash != NULL, 0);
 	g_return_val_if_fail (func != NULL, 0);
 
@@ -564,7 +564,7 @@ g_hash_table_destroy (GHashTable *hash)
 
 		for (s = hash->table [i]; s != NULL; s = next){
 			next = s->next;
-			
+
 			if (hash->key_destroy_func != NULL)
 				(*hash->key_destroy_func)(s->key);
 			if (hash->value_destroy_func != NULL)
@@ -573,7 +573,7 @@ g_hash_table_destroy (GHashTable *hash)
 		}
 	}
 	g_free (hash->table);
-	
+
 	g_free (hash);
 }
 

@@ -24,12 +24,11 @@
 {
   .ver 0:0:0:0
 }
-.assembly Test_Test
+.assembly 'Test'
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module M
 // MVID: {01EC94B1-004D-0000-A745-0383B194EC41}
 .imagebase 0x034f0000
 .file alignment 0x00000200

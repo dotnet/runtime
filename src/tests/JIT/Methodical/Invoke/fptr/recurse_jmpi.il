@@ -11,7 +11,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'recurse'// as "recurse"
+.assembly 'recurse_jmpi'// as "recurse"
 {
 
   //  .custom instance void ['mscorlib']System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -20,7 +20,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'recurse.exe'
 // MVID: {885F4995-E80A-480B-BB9B-30139BED90E1}
 .namespace TestCase
 {

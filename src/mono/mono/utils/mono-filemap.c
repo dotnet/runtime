@@ -44,7 +44,7 @@ mono_file_map_open (const char* name)
 #endif
 }
 
-guint64 
+guint64
 mono_file_map_size (MonoFileMap *fmap)
 {
 	struct stat stat_buf;
@@ -63,7 +63,7 @@ mono_file_map_fd (MonoFileMap *fmap)
 #endif
 }
 
-int 
+int
 mono_file_map_close (MonoFileMap *fmap)
 {
 #ifdef WIN32

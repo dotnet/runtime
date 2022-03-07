@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern mscorlib {}
-.assembly '20param1b' {}
+.assembly '25param2c' {}
 .assembly extern xunit.core {}
 .class private sequential ansi sealed beforefieldinit VT
        extends [mscorlib]System.ValueType

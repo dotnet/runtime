@@ -11,8 +11,7 @@
 .assembly extern xunit.core {}
 .assembly extern System.Console {}
 .assembly extern System.Runtime {}
-.assembly main {}
-.module main.exe
+.assembly 'mismatch32' {}
 
 .class public sealed F extends System.ValueType
 {

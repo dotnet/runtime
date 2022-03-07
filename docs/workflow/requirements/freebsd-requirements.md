@@ -1,12 +1,11 @@
-Requirements to build dotnet/runtime on FreeBSD
+Requirements to build and run dotnet/runtime on FreeBSD
 =====================
 
-This guide will walk you through the requirements needed to build dotnet/runtime on FreeBSD. We'll start by showing how to set up your environment from scratch.
+This guide will walk you through the requirements needed to build and run dotnet/runtime on FreeBSD. We'll start by showing how to set up your environment from scratch.
 Since there is no official build and FreeBSD package, native build on FreeBSD is not trivial. There are generally three options, sorted by ease of use:
 - cross-compile on Linux using Docker
 - cross-compile on Linux using Toolchain
 - build on FreeBSD
-
 
 Environment
 ===========
@@ -65,3 +64,46 @@ sudo pkg install --yes libunwind icu libinotify lttng-ust krb5 cmake openssl nin
 Additionally, working dotnet cli with SDK is needed. On other platforms this would be downloaded automatically during build but it is not currently available for FreeBSD.
 It needs to be built once on supported platform or obtained via community resources.
 
+Running on FreeBSD
+-------------------
+Install the following packages:
+- icu
+- libunwind
+- lttng-ust (optional, debug support)
+- krb5
+- openssl (optional, SSL support)
+- libinotify
+- terminfo-db (optional, terminal colors)
+
+The lines to install all the packages above using package manager.
+
+```sh
+sudo pkg install --yes libunwind icu libinotify lttng-ust krb5 openssl terminfo-db
+```
+
+Extract the SDK:
+The canonical location for the SDK is `/usr/share/dotnet`
+
+"VERSION" is the SDK version being unpacked.
+
+```sh
+sudo mkdir /usr/share/dotnet
+tar xf /tmp/dotnet-sdk-VERSION-freebsd-x64.tar.gz -C /usr/share/dotnet/
+```
+
+NuGet Packages:
+The canonical location for the NuGet packages is `/var/cache/nuget`
+
+"VERSION" is the same version as the SDK from above.
+
+- Microsoft.NETCore.App.Host.freebsd-x64.VERSION.nupkg
+- Microsoft.NETCore.App.Runtime.freebsd-x64.VERSION.nupkg
+- Microsoft.AspNetCore.App.Runtime.freebsd-x64.VERSION.nupkg
+
+Add the following line to any `NuGet.config` you are using under the `<packageSources>` section:
+
+```xml
+<add key="local" value="/var/cache/nuget" />
+```
+
+Finally, either add `/usr/share/dotnet` to your PATH or create a symbolic for `/usr/share/dotnet/dotnet`

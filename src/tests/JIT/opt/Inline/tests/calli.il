@@ -6,7 +6,7 @@
 .assembly extern legacy library mscorlib {}
 .assembly extern xunit.core {}
 
-.assembly legacy library calli_inline {}
+.assembly legacy library 'calli' {}
 .class private auto ansi beforefieldinit calli_test
        extends [mscorlib]System.Object
 {

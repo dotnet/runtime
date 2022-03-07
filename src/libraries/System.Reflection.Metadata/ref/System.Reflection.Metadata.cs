@@ -2533,6 +2533,7 @@ namespace System.Reflection.Metadata.Ecma335
         public void AddFaultRegion(System.Reflection.Metadata.Ecma335.LabelHandle tryStart, System.Reflection.Metadata.Ecma335.LabelHandle tryEnd, System.Reflection.Metadata.Ecma335.LabelHandle handlerStart, System.Reflection.Metadata.Ecma335.LabelHandle handlerEnd) { }
         public void AddFilterRegion(System.Reflection.Metadata.Ecma335.LabelHandle tryStart, System.Reflection.Metadata.Ecma335.LabelHandle tryEnd, System.Reflection.Metadata.Ecma335.LabelHandle handlerStart, System.Reflection.Metadata.Ecma335.LabelHandle handlerEnd, System.Reflection.Metadata.Ecma335.LabelHandle filterStart) { }
         public void AddFinallyRegion(System.Reflection.Metadata.Ecma335.LabelHandle tryStart, System.Reflection.Metadata.Ecma335.LabelHandle tryEnd, System.Reflection.Metadata.Ecma335.LabelHandle handlerStart, System.Reflection.Metadata.Ecma335.LabelHandle handlerEnd) { }
+        public void Clear() { }
     }
     public readonly partial struct CustomAttributeArrayTypeEncoder
     {
@@ -3270,6 +3271,8 @@ namespace System.Reflection.PortableExecutable
         Amd64 = (ushort)34404,
         M32R = (ushort)36929,
         Arm64 = (ushort)43620,
+        LoongArch32 = (ushort)25138,
+        LoongArch64 = (ushort)25188,
     }
     public partial class ManagedPEBuilder : System.Reflection.PortableExecutable.PEBuilder
     {

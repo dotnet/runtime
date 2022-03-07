@@ -46,7 +46,7 @@ namespace System.IO
         private long _offset;
         private FileAccess _access;
         private bool _isOpen;
-        private Task<int>? _lastReadTask; // The last successful task returned from ReadAsync
+        private CachedCompletedInt32Task _lastReadTask; // The last successful task returned from ReadAsync
 
         /// <summary>
         /// Creates a closed stream.
@@ -82,12 +82,8 @@ namespace System.IO
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <param name="access"></param>
-        protected void Initialize(SafeBuffer buffer, long offset, long length, FileAccess access)
+        protected void Initialize(SafeBuffer buffer!!, long offset, long length, FileAccess access)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -161,10 +157,8 @@ namespace System.IO
         /// Subclasses must call this method (or the other overload) to properly initialize all instance fields.
         /// </summary>
         [CLSCompliant(false)]
-        protected unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access)
+        protected unsafe void Initialize(byte* pointer!!, long length, long capacity, FileAccess access)
         {
-            if (pointer == null)
-                throw new ArgumentNullException(nameof(pointer));
             if (length < 0 || capacity < 0)
                 throw new ArgumentOutOfRangeException((length < 0) ? nameof(length) : nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (length > capacity)
@@ -437,12 +431,11 @@ namespace System.IO
             try
             {
                 int n = Read(buffer, offset, count);
-                Task<int>? t = _lastReadTask;
-                return (t != null && t.Result == n) ? t : (_lastReadTask = Task.FromResult<int>(n));
+                return _lastReadTask.GetTask(n);
             }
             catch (Exception ex)
             {
-                Debug.Assert(!(ex is OperationCanceledException));
+                Debug.Assert(ex is not OperationCanceledException);
                 return Task.FromException<int>(ex);
             }
         }

@@ -76,6 +76,49 @@ namespace System.IO
         }
 
         /// <summary>
+        /// Determines whether the specified file or directory exists.
+        /// </summary>
+        /// <remarks>
+        /// Unlike <see cref="File.Exists(string?)"/> it returns true for existing, non-regular files like pipes.
+        /// If the path targets an existing link, but the target of the link does not exist, it returns true.
+        /// </remarks>
+        /// <param name="path">The path to check</param>
+        /// <returns>
+        /// <see langword="true" /> if the caller has the required permissions and <paramref name="path" /> contains
+        /// the name of an existing file or directory; otherwise, <see langword="false" />.
+        /// This method also returns <see langword="false" /> if <paramref name="path" /> is <see langword="null" />,
+        /// an invalid path, or a zero-length string. If the caller does not have sufficient permissions to read the specified path,
+        /// no exception is thrown and the method returns <see langword="false" /> regardless of the existence of <paramref name="path" />.
+        /// </returns>
+        public static bool Exists([NotNullWhen(true)] string? path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return false;
+            }
+
+            string? fullPath;
+            try
+            {
+                fullPath = GetFullPath(path);
+            }
+            catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
+            {
+                return false;
+            }
+
+            bool result = ExistsCore(fullPath, out bool isDirectory);
+            if (result && PathInternal.IsDirectorySeparator(fullPath[fullPath.Length - 1]))
+            {
+                // Some sys-calls remove all trailing slashes and may give false positives for existing files.
+                // We want to make sure that if the path ends in a trailing slash, it's truly a directory.
+                return isDirectory;
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Returns the directory portion of a file path. This method effectively
         /// removes the last segment of the given file path, i.e. it returns a
         /// string consisting of all characters up to but not including the last
@@ -226,7 +269,7 @@ namespace System.IO
         {
             ReadOnlySpan<char> fileName = GetFileName(path);
             int lastPeriod = fileName.LastIndexOf('.');
-            return lastPeriod == -1 ?
+            return lastPeriod < 0 ?
                 fileName : // No extension was found
                 fileName.Slice(0, lastPeriod);
         }
@@ -260,11 +303,8 @@ namespace System.IO
         /// <exception cref="ArgumentNullException">
         /// Thrown if <paramref name="path"/> is null.
         /// </exception>
-        public static bool IsPathFullyQualified(string path)
+        public static bool IsPathFullyQualified(string path!!)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             return IsPathFullyQualified(path.AsSpan());
         }
 
@@ -301,37 +341,23 @@ namespace System.IO
             return false;
         }
 
-        public static string Combine(string path1, string path2)
+        public static string Combine(string path1!!, string path2!!)
         {
-            if (path1 == null || path2 == null)
-                throw new ArgumentNullException((path1 == null) ? nameof(path1) : nameof(path2));
-
             return CombineInternal(path1, path2);
         }
 
-        public static string Combine(string path1, string path2, string path3)
+        public static string Combine(string path1!!, string path2!!, string path3!!)
         {
-            if (path1 == null || path2 == null || path3 == null)
-                throw new ArgumentNullException((path1 == null) ? nameof(path1) : (path2 == null) ? nameof(path2) : nameof(path3));
-
             return CombineInternal(path1, path2, path3);
         }
 
-        public static string Combine(string path1, string path2, string path3, string path4)
+        public static string Combine(string path1!!, string path2!!, string path3!!, string path4!!)
         {
-            if (path1 == null || path2 == null || path3 == null || path4 == null)
-                throw new ArgumentNullException((path1 == null) ? nameof(path1) : (path2 == null) ? nameof(path2) : (path3 == null) ? nameof(path3) : nameof(path4));
-
             return CombineInternal(path1, path2, path3, path4);
         }
 
-        public static string Combine(params string[] paths)
+        public static string Combine(params string[] paths!!)
         {
-            if (paths == null)
-            {
-                throw new ArgumentNullException(nameof(paths));
-            }
-
             int maxSize = 0;
             int firstComponent = 0;
 
@@ -340,10 +366,7 @@ namespace System.IO
 
             for (int i = 0; i < paths.Length; i++)
             {
-                if (paths[i] == null)
-                {
-                    throw new ArgumentNullException(nameof(paths));
-                }
+                ArgumentNullException.ThrowIfNull(paths[i], nameof(paths));
 
                 if (paths[i].Length == 0)
                 {
@@ -453,13 +476,8 @@ namespace System.IO
             return Join(path1.AsSpan(), path2.AsSpan(), path3.AsSpan(), path4.AsSpan());
         }
 
-        public static string Join(params string?[] paths)
+        public static string Join(params string?[] paths!!)
         {
-            if (paths == null)
-            {
-                throw new ArgumentNullException(nameof(paths));
-            }
-
             if (paths.Length == 0)
             {
                 return string.Empty;
@@ -824,17 +842,10 @@ namespace System.IO
             return GetRelativePath(relativeTo, path, PathInternal.StringComparison);
         }
 
-        private static string GetRelativePath(string relativeTo, string path, StringComparison comparisonType)
+        private static string GetRelativePath(string relativeTo!!, string path!!, StringComparison comparisonType)
         {
-            if (relativeTo == null)
-                throw new ArgumentNullException(nameof(relativeTo));
-
             if (PathInternal.IsEffectivelyEmpty(relativeTo.AsSpan()))
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(relativeTo));
-
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 

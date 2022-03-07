@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Int32Ptr, JSHandle, MonoArray, MonoObject, MonoString, VoidPtr } from "./types";
+import { JSHandle, MonoArray, MonoObject, MonoString } from "./types";
 import { Module } from "./imports";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { wrap_error } from "./method-calls";
 import { _js_to_mono_obj } from "./js-to-cs";
+import { Int32Ptr, TypedArray, VoidPtr } from "./types/emscripten";
 
 // Creates a new typed array from pinned array address from pinned_array allocated on the heap to the typed array.
 // 	 adress of managed pinned array -> copy from heap -> typed array memory

@@ -55,7 +55,7 @@ namespace System.Drawing.Imaging
         /// </summary>
         public ImageAttributes()
         {
-            IntPtr newImageAttributes = IntPtr.Zero;
+            IntPtr newImageAttributes;
 
             int status = Gdip.GdipCreateImageAttributes(out newImageAttributes);
 
@@ -126,7 +126,7 @@ namespace System.Drawing.Imaging
         /// </summary>
         public object Clone()
         {
-            IntPtr clone = IntPtr.Zero;
+            IntPtr clone;
 
             int status = Gdip.GdipCloneImageAttributes(
                                     new HandleRef(this, nativeImageAttributes),
@@ -443,7 +443,7 @@ namespace System.Drawing.Imaging
 
         public void SetRemapTable(ColorMap[] map, ColorAdjustType type)
         {
-            int index = 0;
+            int index;
             int mapSize = map.Length;
             int size = 4; // Marshal.SizeOf(index.GetType());
             IntPtr memory = Marshal.AllocHGlobal(checked(mapSize * size * 2));

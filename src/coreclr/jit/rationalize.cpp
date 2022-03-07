@@ -77,8 +77,7 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
                 addr->gtGetOp2()->IsIntegralConst(0))
             {
                 GenTreeLclVarCommon* lclVarNode = addr->gtGetOp1()->AsLclVarCommon();
-                unsigned             lclNum     = lclVarNode->GetLclNum();
-                LclVarDsc*           varDsc     = comp->lvaTable + lclNum;
+                const LclVarDsc*     varDsc     = comp->lvaGetDesc(lclVarNode);
                 if (indir->TypeGet() == varDsc->TypeGet())
                 {
                     JITDUMP("Rewriting GT_IND(GT_ADD(LCL_VAR_ADDR,0)) to LCL_VAR\n");
@@ -417,13 +416,10 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                 }
                 GenTreeSIMD* simdTree =
                     comp->gtNewSIMDNode(simdType, initVal, SIMDIntrinsicInit, simdBaseJitType, genTypeSize(simdType));
-                assignment->AsOp()->gtOp2 = simdTree;
-                value                     = simdTree;
-                initVal->gtNext           = simdTree;
-                simdTree->gtPrev          = initVal;
+                assignment->gtOp2 = simdTree;
+                value             = simdTree;
 
-                simdTree->gtNext = location;
-                location->gtPrev = simdTree;
+                BlockRange().InsertAfter(initVal, simdTree);
             }
         }
 #endif // FEATURE_SIMD
@@ -457,11 +453,18 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
         case GT_CLS_VAR:
         {
+            bool isVolatile = (location->gtFlags & GTF_CLS_VAR_VOLATILE) != 0;
+
+            location->gtFlags &= ~GTF_CLS_VAR_VOLATILE;
             location->SetOper(GT_CLS_VAR_ADDR);
             location->gtType = TYP_BYREF;
 
             assignment->SetOper(GT_STOREIND);
             assignment->AsStoreInd()->SetRMWStatusDefault();
+            if (isVolatile)
+            {
+                assignment->gtFlags |= GTF_IND_VOLATILE;
+            }
 
             // TODO: JIT dump
         }
@@ -469,7 +472,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
         case GT_BLK:
         case GT_OBJ:
-        case GT_DYN_BLK:
         {
             assert(varTypeIsStruct(location));
             GenTreeBlk* storeBlk = location->AsBlk();
@@ -481,10 +483,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                     break;
                 case GT_OBJ:
                     storeOper = GT_STORE_OBJ;
-                    break;
-                case GT_DYN_BLK:
-                    storeOper                             = GT_STORE_DYN_BLK;
-                    storeBlk->AsDynBlk()->gtEvalSizeFirst = false;
                     break;
                 default:
                     unreached();
@@ -700,7 +698,12 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             if (!isLHSOfAssignment)
             {
                 GenTree* ind = comp->gtNewOperNode(GT_IND, node->TypeGet(), node);
+                if ((node->gtFlags & GTF_CLS_VAR_VOLATILE) != 0)
+                {
+                    ind->gtFlags |= GTF_IND_VOLATILE;
+                }
 
+                node->gtFlags &= ~GTF_CLS_VAR_VOLATILE;
                 node->SetOper(GT_CLS_VAR_ADDR);
                 node->gtType = TYP_BYREF;
 
@@ -812,8 +815,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 #endif // FEATURE_HW_INTRINSICS
 
         default:
-            // These nodes should not be present in HIR.
-            assert(!node->OperIs(GT_CMP, GT_SETCC, GT_JCC, GT_JCMP, GT_LOCKADD));
+            // Check that we don't have nodes not allowed in HIR here.
+            assert((node->DebugOperKind() & DBK_NOTHIR) == 0);
             break;
     }
 

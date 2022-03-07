@@ -71,7 +71,7 @@ ac_check_headers (
   strings.h stdint.h unistd.h signal.h setjmp.h syslog.h netdb.h utime.h semaphore.h libproc.h alloca.h ucontext.h pwd.h elf.h
   gnu/lib-names.h netinet/tcp.h netinet/in.h link.h arpa/inet.h unwind.h poll.h wchar.h linux/magic.h
   android/legacy_signal_inlines.h android/ndk-version.h execinfo.h pthread.h pthread_np.h net/if.h dirent.h
-  CommonCrypto/CommonDigest.h dlfcn.h getopt.h pwd.h iconv.h alloca.h
+  CommonCrypto/CommonDigest.h dlfcn.h getopt.h pwd.h alloca.h
   /usr/include/malloc.h)
 
 ac_check_funcs (
@@ -166,13 +166,6 @@ if (HOST_LINUX OR HOST_ANDROID)
   set(CMAKE_REQUIRED_DEFINITIONS)
 endif()
 
-# ICONV
-set(ICONV_LIB)
-find_library(LIBICONV_FOUND iconv)
-if(NOT LIBICONV_FOUND STREQUAL "LIBICONV_FOUND-NOTFOUND")
-  set(ICONV_LIB "iconv")
-endif()
-
 if(HOST_WIN32)
   # checking for this doesn't work for some reason, hardcode result
   set(HAVE_WINTERNL_H 1)
@@ -213,7 +206,33 @@ elseif(HOST_WASI)
   # Some headers exist, but don't compile (wasi sdk 12.0)
   set(HAVE_SYS_SOCKET_H 0)
   set(HAVE_SYS_UN_H 0)
-  set(HAVE_NETINET_IN_H 0)
   set(HAVE_NETINET_TCP_H 0)
   set(HAVE_ARPA_INET_H 0)
+  set(HAVE_GETPWUID_R 0)
+  set(HAVE_MKDTEMP 0)
+  set(HAVE_EXECVE 0)
+  set(HAVE_FORK 0)
+  set(HAVE_GETRLIMIT 0)
+  set(HAVE_GETDTABLESIZE 0)
+  set(HAVE_MKSTEMP 0)
+  set(HAVE_BACKTRACE_SYMBOLS 0)
+  set(HAVE_GETPID 0)
+  set(HAVE_MACH_ABSOLUTE_TIME 0)
+  set(HAVE_GETHRTIME 0)
+  set(HAVE_READ_REAL_TIME 0)
+  set(HAVE_SCHED_GETAFFINITY 0)
+  set(HAVE_SCHED_SETAFFINITY 0)
+  set(HAVE_GETIFADDRS 0)
+  set(HAVE_QP2GETIFADDRS 0)
+  set(HAVE_GETADDRINFO 0)
+  set(HAVE_GETHOSTBYNAME 0)
+  set(HAVE_GETHOSTBYNAME2 0)
+  set(HAVE_GETPROTOBYNAME 0)
+  set(HAVE_GETNAMEINFO 0)
+  set(HAVE_INET_NTOP 0)
+  set(HAVE_SYS_ICU 0)
+  set(HAVE_EXECVP 0)
+  set(HAVE_MMAP 1)
+  set(DISABLE_PROFILER 1)
+  set(ENABLE_INTERP_LIB 1)
 endif()

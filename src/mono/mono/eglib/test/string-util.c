@@ -12,7 +12,7 @@ test_strfreev (void)
 	array [1] = g_strdup ("two");
 	array [2] = g_strdup ("three");
 	array [3] = NULL;
-	
+
 	g_strfreev (array);
 	g_strfreev (NULL);
 
@@ -35,18 +35,18 @@ test_split (void)
 	const gchar *to_split = "Hello world, how are we doing today?";
 	gint i;
 	gchar **v;
-	
+
 	v= g_strsplit(to_split, " ", 0);
-	
+
 	if(v == NULL) {
 		return FAILED("split failed, got NULL vector (1)");
 	}
-	
+
 	for(i = 0; v[i] != NULL; i++);
 	if(i != 7) {
 		return FAILED("split failed, expected 7 tokens, got %d", i);
 	}
-	
+
 	g_strfreev(v);
 
 	v = g_strsplit(to_split, ":", -1);
@@ -78,22 +78,22 @@ test_split (void)
 	v = g_strsplit ("appdomain1, Version=0.0.0.0, Culture=neutral", ",", 4);
 	if (strcmp (v [0], "appdomain1") != 0)
 		return FAILED ("Invalid value");
-	
+
 	if (strcmp (v [1], " Version=0.0.0.0") != 0)
 		return FAILED ("Invalid value");
-	
+
 	if (strcmp (v [2], " Culture=neutral") != 0)
 		return FAILED ("Invalid value");
 
 	if (v [3] != NULL)
 		return FAILED ("Expected only 3 elements");
-	
+
 	g_strfreev (v);
 
 	v = g_strsplit ("abcXYdefXghiXYjklYmno", "XY", 4);
 	if (strcmp (v [0], "abc") != 0)
 		return FAILED ("Invalid value 0");
-	
+
 	if (strcmp (v [1], "defXghi") != 0)
 		return FAILED ("Invalid value 1");
 
@@ -102,25 +102,25 @@ test_split (void)
 
 	if (v [3] != NULL)
 		return FAILED ("Expected only 3 elements (1)");
-	
+
 	g_strfreev (v);
 
 	v = g_strsplit ("abcXYdefXghiXYjklYmno", "XY", 2);
 	if (strcmp (v [0], "abc") != 0)
 		return FAILED ("Invalid value 3");
-	
+
 	if (strcmp (v [1], "defXghiXYjklYmno") != 0)
 		return FAILED ("Invalid value 4");
 
 	if (v [2] != NULL)
 		return FAILED ("Expected only 2 elements (2)");
-	
+
 	g_strfreev (v);
 
 	v = g_strsplit ("abcXYdefXghiXYjklYmnoXY", "XY", 3);
 	if (strcmp (v [0], "abc") != 0)
 		return FAILED ("Invalid value 5");
-	
+
 	if (strcmp (v [1], "defXghi") != 0)
 		return FAILED ("Invalid value 6");
 
@@ -129,7 +129,7 @@ test_split (void)
 
 	if (v [3] != NULL)
 		return FAILED ("Expected only 3 elements (3)");
-	
+
 	g_strfreev (v);
 
 	v = g_strsplit ("abcXYXYXYdefXY", "XY", -1);
@@ -141,7 +141,7 @@ test_split (void)
 
 	if (strcmp (v [2], "") != 0)
 		return FAILED ("Invalid value 10");
-	
+
 	if (strcmp (v [3], "def") != 0)
 		return FAILED ("Invalid value 11");
 
@@ -150,28 +150,28 @@ test_split (void)
 
 	if (v [5] != NULL)
 		return FAILED ("Expected only 5 elements (4)");
-	
+
 	g_strfreev (v);
 
 	v = g_strsplit ("XYXYXYabcXYdef", "XY", -1);
 	if (strcmp (v [0], "") != 0)
 		return FAILED ("Invalid value 13");
-	
+
 	if (strcmp (v [1], "") != 0)
 		return FAILED ("Invalid value 14");
-	
+
 	if (strcmp (v [2], "") != 0)
 		return FAILED ("Invalid value 15");
-	
+
 	if (strcmp (v [3], "abc") != 0)
 		return FAILED ("Invalid value 16");
-	
+
 	if (strcmp (v [4], "def") != 0)
 		return FAILED ("Invalid value 17");
 
 	if (v [5] != NULL)
 		return FAILED ("Expected only 5 elements (5)");
-	
+
 	g_strfreev (v);
 
 	v = g_strsplit ("value=", "=", 2);
@@ -191,14 +191,14 @@ static RESULT
 test_split_set (void)
 {
 	gchar **v;
-	
+
 	v = g_strsplit_set ("abcXYdefXghiXYjklYmno", "XY", 6);
 	if (strcmp (v [0], "abc") != 0)
 		return FAILED ("Invalid value 0");
 
 	if (strcmp (v [1], "") != 0)
 		return FAILED ("Invalid value 1");
-	
+
 	if (strcmp (v [2], "def") != 0)
 		return FAILED ("Invalid value 2");
 
@@ -222,19 +222,19 @@ test_split_set (void)
 
 	if (strcmp (v [1], "") != 0)
 		return FAILED ("Invalid value 7");
-	
+
 	if (strcmp (v [2], "defXghiXYjklYmno") != 0)
 		return FAILED ("Invalid value 8");
 
 	if (v [3] != NULL)
 		return FAILED ("Expected only 3 elements (2)");
-	
+
 	g_strfreev (v);
 
 	v = g_strsplit_set ("abcXdefYghiXjklYmnoX", "XY", 5);
 	if (strcmp (v [0], "abc") != 0)
 		return FAILED ("Invalid value 9");
-	
+
 	if (strcmp (v [1], "def") != 0)
 		return FAILED ("Invalid value 10");
 
@@ -249,7 +249,7 @@ test_split_set (void)
 
 	if (v [5] != NULL)
 		return FAILED ("Expected only 5 elements (5)");
-	
+
 	g_strfreev (v);
 
 	v = g_strsplit_set ("abcXYXdefXY", "XY", -1);
@@ -261,7 +261,7 @@ test_split_set (void)
 
 	if (strcmp (v [2], "") != 0)
 		return FAILED ("Invalid value 16");
-	
+
 	if (strcmp (v [3], "def") != 0)
 		return FAILED ("Invalid value 17");
 
@@ -273,31 +273,31 @@ test_split_set (void)
 
 	if (v [6] != NULL)
 		return FAILED ("Expected only 6 elements (4)");
-	
+
 	g_strfreev (v);
 
 	v = g_strsplit_set ("XYXabcXYdef", "XY", -1);
 	if (strcmp (v [0], "") != 0)
 		return FAILED ("Invalid value 20");
-	
+
 	if (strcmp (v [1], "") != 0)
 		return FAILED ("Invalid value 21");
-	
+
 	if (strcmp (v [2], "") != 0)
 		return FAILED ("Invalid value 22");
-	
+
 	if (strcmp (v [3], "abc") != 0)
 		return FAILED ("Invalid value 23");
 
 	if (strcmp (v [4], "") != 0)
 		return FAILED ("Invalid value 24");
-	
+
 	if (strcmp (v [5], "def") != 0)
 		return FAILED ("Invalid value 25");
 
 	if (v [6] != NULL)
 		return FAILED ("Expected only 6 elements (5)");
-	
+
 	g_strfreev (v);
 
 	return OK;
@@ -343,7 +343,7 @@ static RESULT
 test_strjoin (void)
 {
 	char *s;
-	
+
 	s = g_strjoin (NULL, "a", "b", (const char*)NULL);
 	if (strcmp (s, "ab") != 0)
 		return FAILED ("Join of two strings with no separator fails");
@@ -414,66 +414,6 @@ test_strstrip (void)
 		return FAILED ("Failed.");
 	}
 	g_free (str);
-	return OK;
-}
-
-#define urit(so,j) do { s = g_filename_to_uri (so, NULL, NULL); if (strcmp (s, j) != 0) return FAILED("Got %s expected %s", s, j); g_free (s); } while (0);
-
-#define errit(so) do { s = g_filename_to_uri (so, NULL, NULL); if (s != NULL) return FAILED ("got %s, expected NULL", s); } while (0);
-
-static RESULT
-test_filename_to_uri (void)
-{
-#ifdef G_OS_WIN32
-#else
-	char *s;
-
-	urit ("/a", "file:///a");
-	urit ("/home/miguel", "file:///home/miguel");
-	urit ("/home/mig uel", "file:///home/mig%20uel");
-	urit ("/\303\241", "file:///%C3%A1");
-	urit ("/\303\241/octal", "file:///%C3%A1/octal");
-	urit ("/%", "file:///%25");
-	urit ("/\001\002\003\004\005\006\007\010\011\012\013\014\015\016\017\020\021\022\023\024\025\026\027\030\031\032\033\034\035\036\037\040", "file:///%01%02%03%04%05%06%07%08%09%0A%0B%0C%0D%0E%0F%10%11%12%13%14%15%16%17%18%19%1A%1B%1C%1D%1E%1F%20");
-	urit ("/!$&'()*+,-./", "file:///!$&'()*+,-./");
-	urit ("/\042\043\045", "file:///%22%23%25");
-	urit ("/0123456789:=", "file:///0123456789:=");
-	urit ("/\073\074\076\077", "file:///%3B%3C%3E%3F");
-	urit ("/\133\134\135\136_\140\173\174\175", "file:///%5B%5C%5D%5E_%60%7B%7C%7D");
-	urit ("/\173\174\175\176\177\200", "file:///%7B%7C%7D~%7F%80");
-	urit ("/@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", "file:///@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
-	errit ("a");
-	errit ("./hola");
-#endif
-	
-	return OK;
-}
-
-#define fileit(so,j) do { s = g_filename_from_uri (so, NULL, NULL); if (strcmp (s, j) != 0) return FAILED("Got %s expected %s", s, j); g_free (s); } while (0);
-
-#define ferrit(so) do { s = g_filename_from_uri (so, NULL, NULL); if (s != NULL) return FAILED ("got %s, expected NULL", s); } while (0);
-
-static RESULT
-test_filename_from_uri (void)
-{
-#ifndef G_OS_WIN32
-	char *s;
-
-	fileit ("file:///a", "/a");
-	fileit ("file:///%41", "/A");
-	fileit ("file:///home/miguel", "/home/miguel");
-	fileit ("file:///home/mig%20uel", "/home/mig uel");
-	fileit ("file:///home/c%2B%2B", "/home/c++");
-	fileit ("file:///home/c%2b%2b", "/home/c++");
-	ferrit ("/a");
-	ferrit ("a");
-	ferrit ("file://a");
-	ferrit ("file:a");
-	ferrit ("file:///%");
-	ferrit ("file:///%0");
-	ferrit ("file:///%jj");
-#endif
-	
 	return OK;
 }
 
@@ -585,32 +525,6 @@ test_strlcpy (void)
 		return FAILED ("Src and dest not equal 2");
 	g_free (dest);
 
-	/* This is a test for g_filename_from_utf8, even if it does not look like it */
-	dest = g_filename_from_utf8 (NUMBERS, strlen (NUMBERS), NULL, NULL, NULL);
-	if (0 != strcmp (dest, NUMBERS))
-		return FAILED ("problem [%s] and [%s]", dest, NUMBERS);
-	g_free (dest);
-	
-	return OK;
-}
-
-static RESULT
-test_strescape (void)
-{
-	gchar *str;
-
-	str = g_strescape ("abc", NULL);
-	if (strcmp ("abc", str))
-		return FAILED ("#1");
-	str = g_strescape ("\t\b\f\n\r\\\"abc", NULL);
-	if (strcmp ("\\t\\b\\f\\n\\r\\\\\\\"abc", str))
-		return FAILED ("#2 %s", str);
-	str = g_strescape ("\001abc", NULL);
-	if (strcmp ("\\001abc", str))
-		return FAILED ("#3 %s", str);
-	str = g_strescape ("\001abc", "\001");
-	if (strcmp ("\001abc", str))
-		return FAILED ("#3 %s", str);
 	return OK;
 }
 
@@ -622,7 +536,7 @@ test_ascii_strncasecmp (void)
 	n = g_ascii_strncasecmp ("123", "123", 1);
 	if (n != 0)
 		return FAILED ("Should have been 0");
-	
+
 	n = g_ascii_strncasecmp ("423", "123", 1);
 	if (n <= 0)
 		return FAILED ("Should have been > 0, got %d", n);
@@ -692,12 +606,9 @@ static Test strutil_tests [] = {
 	{"g_strchug", test_strchug},
 	{"g_strchomp", test_strchomp},
 	{"g_strstrip", test_strstrip},
-	{"g_filename_to_uri", test_filename_to_uri},
-	{"g_filename_from_uri", test_filename_from_uri},
 	{"g_ascii_xdigit_value", test_ascii_xdigit_value},
 	{"g_strdelimit", test_strdelimit},
 	{"g_strlcpy", test_strlcpy},
-	{"g_strescape", test_strescape},
 	{"g_ascii_strncasecmp", test_ascii_strncasecmp },
 	{"g_ascii_strdown", test_ascii_strdown },
 	{"g_strdupv", test_strdupv },

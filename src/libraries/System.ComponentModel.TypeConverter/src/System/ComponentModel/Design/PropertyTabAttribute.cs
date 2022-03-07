@@ -104,7 +104,7 @@ namespace System.ComponentModel
             for (int i = 0; i < _tabClassNames.Length; i++)
             {
                 int commaIndex = _tabClassNames[i].IndexOf(',');
-                string? className = null;
+                string? className;
                 string? assemblyName = null;
 
                 if (commaIndex != -1)

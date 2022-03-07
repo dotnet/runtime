@@ -25,7 +25,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module valuetypes.exe
 // MVID: {E191F723-B724-4D70-B3A8-CEA89FD033D3}
 .imagebase 0x00400000
 .file alignment 0x00000200

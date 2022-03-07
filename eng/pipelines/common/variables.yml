@@ -10,20 +10,24 @@ variables:
   value: 1000
 
 - name: isOfficialBuild
-  value: ${{ and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}
-- name: isFullMatrix
-  value: ${{ and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}
-- name: isNotFullMatrix
-  value: ${{ and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}
-- name: isNotManualAndIsPR
-  value: ${{ and(not(in(variables['Build.DefinitionName'], 'runtime-staging-manual', 'runtime-manual')), eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}
-- name: isManualOrIsNotPR
-  value: ${{ or(in(variables['Build.DefinitionName'], 'runtime-staging-manual', 'runtime-manual'), and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest'))) }}
+  value: ${{ and(eq(variables['System.TeamProject'], 'internal'), eq(variables['Build.DefinitionName'], 'dotnet-runtime-official')) }}
+- name: isRollingBuild
+  value: ${{ ne(variables['Build.Reason'], 'PullRequest') }}
+- name: isExtraPlatformsBuild
+  value: ${{ eq(variables['Build.DefinitionName'], 'runtime-extra-platforms') }}
+- name: isNotExtraPlatformsBuild
+  value: ${{ ne(variables['Build.DefinitionName'], 'runtime-extra-platforms') }}
+- name: isWasmOnlyBuild
+  value: ${{ eq(variables['Build.DefinitionName'], 'runtime-wasm') }}
+- name: isRunSmokeTestsOnly
+  value: ${{ and(ne(variables['Build.DefinitionName'], 'runtime-extra-platforms'), ne(variables['Build.DefinitionName'], 'runtime-wasm')) }}
+- name: isNotSpecificPlatformOnlyBuild
+  value: ${{ ne(variables['Build.DefinitionName'], 'runtime-wasm') }}
 
 # We only run evaluate paths on runtime, runtime-staging and runtime-community pipelines on PRs
 # keep in sync with /eng/pipelines/common/xplat-setup.yml
 - name: dependOnEvaluatePaths
-  value: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community')) }}
+  value: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms')) }}
 - name: debugOnPrReleaseOnRolling
   ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
     value: Release

@@ -8,12 +8,10 @@ using System.Threading;
 using Xunit;
 using Xunit.Sdk;
 using Xunit.Abstractions;
+using System.Linq;
 
 namespace System.IO.Tests
 {
-    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
-    public partial class NoParallelTests { }
-
     public abstract partial class FileSystemWatcherTest : FileCleanupTestBase
     {
         // Events are reported asynchronously by the OS, so allow an amount of time for
@@ -42,15 +40,24 @@ namespace System.IO.Tests
             FileSystemEventHandler changeHandler = (o, e) =>
             {
                 Assert.Equal(WatcherChangeTypes.Changed, e.ChangeType);
-                if (expectedPaths != null)
-                {
-                    Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
-                }
+                VerifyExpectedPaths(expectedPaths, e);
                 eventOccurred.Set();
             };
 
             watcher.Changed += changeHandler;
             return (eventOccurred, changeHandler);
+        }
+
+        private static void VerifyExpectedPaths(string[] expectedPaths, FileSystemEventArgs e)
+        {
+            string fullPath = Path.GetFullPath(e.FullPath);
+            if (expectedPaths is not null && !expectedPaths.Contains(fullPath))
+            {
+                // Assert.Contains does not print a full content of collection which makes it hard to diagnose issues like #65601
+                throw new XunitException($"Expected path(s):{Environment.NewLine}"
+                    + string.Join(Environment.NewLine, expectedPaths)
+                    + $"{Environment.NewLine}Actual path: {fullPath}");
+            }
         }
 
         /// <summary>
@@ -70,18 +77,7 @@ namespace System.IO.Tests
                 }
 
                 Assert.Equal(WatcherChangeTypes.Created, e.ChangeType);
-                if (expectedPaths != null)
-                {
-                    try
-                    {
-                        Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output?.WriteLine(ex.ToString());
-                        throw;
-                    }
-                }
+                VerifyExpectedPaths(expectedPaths, e);
 
                 eventOccurred.Set();
             };
@@ -105,18 +101,8 @@ namespace System.IO.Tests
                     Assert.Equal(WatcherChangeTypes.Deleted, e.ChangeType);
                 }
 
-                if (expectedPaths != null)
-                {
-                    try
-                    {
-                        Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output?.WriteLine(ex.ToString());
-                        throw;
-                    }
-                }
+                VerifyExpectedPaths(expectedPaths, e);
+
                 eventOccurred.Set();
             };
 
@@ -140,18 +126,8 @@ namespace System.IO.Tests
                     Assert.Equal(WatcherChangeTypes.Renamed, e.ChangeType);
                 }
 
-                if (expectedPaths != null)
-                {
-                    try
-                    {
-                        Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output?.WriteLine(ex.ToString());
-                        throw;
-                    }
-                }
+                VerifyExpectedPaths(expectedPaths, e);
+
                 eventOccurred.Set();
             };
 

@@ -20,7 +20,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'fr4.exe'
 // MVID: {B1A03CB5-0762-4E9F-BA39-E5C10C9A69AE}
 .namespace JitTest
 {

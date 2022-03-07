@@ -27,13 +27,12 @@ namespace System.Data.OleDb
 
             internal WrappedTransaction(UnsafeNativeMethods.ITransactionLocal transaction, int isolevel, out OleDbHResult hr) : base(transaction)
             {
-                int transactionLevel = 0;
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 { }
                 finally
                 {
-                    hr = transaction.StartTransaction(isolevel, 0, IntPtr.Zero, out transactionLevel);
+                    hr = transaction.StartTransaction(isolevel, 0, IntPtr.Zero, out _);
                     if (0 <= hr)
                     {
                         _mustComplete = true;

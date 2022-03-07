@@ -11,16 +11,11 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [CollectionDefinition(nameof(NonParallelTestCollection), DisableParallelization = true)]
-    public class NonParallelTestCollection
-    {
-    }
-
     // This test class contains tests which are strongly timing-dependent.
     // There are two mitigations avoid flaky behavior on CI:
     // - Parallel test execution is disabled
     // - Using extreme parameters, and checks which are very unlikely to fail, if the implementation is correct
-    [Collection(nameof(NonParallelTestCollection))]
+    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(SocketsHttpHandler_Http2FlowControl_Test), nameof(IsSupported))]
     public sealed class SocketsHttpHandler_Http2FlowControl_Test : HttpClientHandlerTestBase
     {

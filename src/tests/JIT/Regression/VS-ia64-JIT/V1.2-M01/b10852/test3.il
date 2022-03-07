@@ -21,7 +21,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module test3.exe
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000
 .subsystem 0x00000003

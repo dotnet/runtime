@@ -12,6 +12,7 @@ internal static partial class Interop
     internal static partial class Ssl
     {
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxAddExtraChainCert")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SslCtxAddExtraChainCert(SafeSslContextHandle ctx, SafeX509Handle x509);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxUseCertificate")]
@@ -26,13 +27,12 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetQuietShutdown")]
         internal static partial void SslCtxSetQuietShutdown(SafeSslContextHandle ctx);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetVerify")]
-        internal static unsafe partial void SslCtxSetVerify(SafeSslContextHandle ctx, delegate* unmanaged<int, IntPtr, int> callback);
-
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetCiphers")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool SslCtxSetCiphers(SafeSslContextHandle ctx, byte* cipherList, byte* cipherSuites);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetEncryptionPolicy")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetEncryptionPolicy(SafeSslContextHandle ctx, EncryptionPolicy policy);
     }
 }

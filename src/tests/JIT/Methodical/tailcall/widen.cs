@@ -1,13 +1,15 @@
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-public class Program
+public class Program_widen
 {
     // Random field we assign some bogus values to to trick the inliner below.
     // We cannot use NoInlining as the runtime disables tailcalls from such functions.
     private static int s_val;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntrypoint()
     {
         bool result = true;
         Console.Write("Test1U1S: ");

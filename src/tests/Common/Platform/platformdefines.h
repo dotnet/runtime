@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <cstdint>
+#include <minipal/utils.h>
 
 #ifndef _PLATFORMDEFINES__H
 #define _PLATFORMDEFINES__H
@@ -90,8 +91,6 @@ typedef unsigned int ULONG, *PULONG;
 #endif // HOST_64BIT
 
 #define UInt32x32To64(a, b) ((unsigned __int64)((ULONG)(a)) * (unsigned __int64)((ULONG)(b)))
-
-#define ARRAYSIZE(x) (sizeof(x)/sizeof(*x))
 
 #ifndef TRUE
 #define TRUE 1

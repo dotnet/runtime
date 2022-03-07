@@ -93,7 +93,7 @@
   </data>
   <!--
     other exceptions
-  -->  
+  -->
   <data name="Config_add_configurationsection_already_added" xml:space="preserve">
     <value>Cannot add a ConfigurationSection that already belongs to the Configuration.</value>
   </data>
@@ -363,9 +363,6 @@
   </data>
   <data name="Config_source_invalid_format" xml:space="preserve">
     <value>The configSource attribute must be a relative physical path.</value>
-  </data>
-  <data name="Config_source_invalid_chars" xml:space="preserve">
-    <value>The configSource attribute must be a relative physical path, so the '/' character is not allowed.</value>
   </data>
   <data name="Config_source_requires_file" xml:space="preserve">
     <value>The 'configSource' property may not be set in a configuration that has no associated file.</value>

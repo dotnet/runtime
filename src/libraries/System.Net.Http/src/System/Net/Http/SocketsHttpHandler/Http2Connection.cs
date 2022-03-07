@@ -603,7 +603,7 @@ namespace System.Net.Http
             int streamId = frameHeader.StreamId;
             Http2Stream? http2Stream = GetStream(streamId);
 
-            IHttpHeadersHandler headersHandler;
+            IHttpStreamHeadersHandler headersHandler;
             if (http2Stream != null)
             {
                 http2Stream.OnHeadersStart();
@@ -645,14 +645,15 @@ namespace System.Net.Http
             http2Stream?.OnHeadersComplete(endStream);
         }
 
-        /// <summary>Nop implementation of <see cref="IHttpHeadersHandler"/> used by <see cref="ProcessHeadersFrame"/>.</summary>
-        private sealed class NopHeadersHandler : IHttpHeadersHandler
+        /// <summary>Nop implementation of <see cref="IHttpStreamHeadersHandler"/> used by <see cref="ProcessHeadersFrame"/>.</summary>
+        private sealed class NopHeadersHandler : IHttpStreamHeadersHandler
         {
             public static readonly NopHeadersHandler Instance = new NopHeadersHandler();
-            void IHttpHeadersHandler.OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value) { }
-            void IHttpHeadersHandler.OnHeadersComplete(bool endStream) { }
-            void IHttpHeadersHandler.OnStaticIndexedHeader(int index) { }
-            void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value) { }
+            void IHttpStreamHeadersHandler.OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value) { }
+            void IHttpStreamHeadersHandler.OnHeadersComplete(bool endStream) { }
+            void IHttpStreamHeadersHandler.OnStaticIndexedHeader(int index) { }
+            void IHttpStreamHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value) { }
+            void IHttpStreamHeadersHandler.OnDynamicIndexedHeader(int? index, ReadOnlySpan<byte> name, ReadOnlySpan<byte> value) { }
         }
 
         private ReadOnlySpan<byte> GetFrameData(ReadOnlySpan<byte> frameData, bool hasPad, bool hasPriority)
@@ -1336,15 +1337,10 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) Trace("");
 
-            if (headers.HeaderStore is null)
-            {
-                return;
-            }
-
             HeaderEncodingSelector<HttpRequestMessage>? encodingSelector = _pool.Settings._requestHeaderEncodingSelector;
 
             ref string[]? tmpHeaderValuesArray = ref t_headerValues;
-            foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
+            foreach (HeaderEntry header in headers.GetEntries())
             {
                 int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref tmpHeaderValuesArray);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
@@ -1360,7 +1356,7 @@ namespace System.Net.Http
                     // The Connection, Upgrade and ProxyConnection headers are also not supported in HTTP2.
                     if (knownHeader != KnownHeaders.Host && knownHeader != KnownHeaders.Connection && knownHeader != KnownHeaders.Upgrade && knownHeader != KnownHeaders.ProxyConnection)
                     {
-                        if (header.Key.KnownHeader == KnownHeaders.TE)
+                        if (knownHeader == KnownHeaders.TE)
                         {
                             // HTTP/2 allows only 'trailers' TE header. rfc7540 8.1.2.2
                             foreach (string value in headerValues)
@@ -2042,7 +2038,7 @@ namespace System.Net.Http
                         _keepAlivePingTimeoutTimestamp = now + _keepAlivePingTimeout;
 
                         long pingPayload = Interlocked.Increment(ref _keepAlivePingPayload);
-                        SendPingAsync(pingPayload);
+                        LogExceptions(SendPingAsync(pingPayload));
                         return;
                     }
                     break;

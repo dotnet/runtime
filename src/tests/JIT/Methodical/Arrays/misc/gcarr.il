@@ -20,7 +20,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module 'gcarr.exe'
 .namespace GCTest
 {
   .class private auto ansi Test

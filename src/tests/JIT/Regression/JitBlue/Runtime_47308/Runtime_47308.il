@@ -9,7 +9,7 @@
 
 .assembly extern System.Console {}
 
-.assembly Test1 {}
+.assembly 'Runtime_47308' {}
 .assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
 .class FullProof {

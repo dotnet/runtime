@@ -6,7 +6,7 @@
 .assembly extern mscorlib {}
 .assembly extern System.Runtime {}
 .assembly extern TypeHierarchyCommonCs {}
-.assembly TypeHierarchyTest {}
+.assembly 'CuriouslyRecurringGenericWithUnimplementedMethod' {}
 .class interface public abstract auto ansi InterfaceScenario1`1<T>
 {
   .method public newslot virtual abstract static int32 Method() cil managed noinlining

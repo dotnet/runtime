@@ -12,8 +12,10 @@ namespace ABIStress
 {
     class Callee
     {
-        private static readonly MethodInfo s_hashCodeAddMethod =
-            typeof(HashCode).GetMethods().Single(mi => mi.Name == "Add" && mi.GetParameters().Length == 1);
+        private static readonly MethodInfo s_memoryMarshalCreateReadOnlySpanMethod =
+            typeof(MemoryMarshal).GetMethod("CreateReadOnlySpan").MakeGenericMethod(typeof(byte));
+        private static readonly MethodInfo s_hashCodeAddBytesMethod =
+            typeof(HashCode).GetMethod("AddBytes");
         private static readonly MethodInfo s_hashCodeToHashCodeMethod =
             typeof(HashCode).GetMethod("ToHashCode");
 
@@ -51,8 +53,12 @@ namespace ABIStress
             {
                 TypeEx pm = Parameters[i];
                 g.Emit(OpCodes.Ldloca, hashCode);
-                g.Emit(OpCodes.Ldarg, checked((short)i));
-                g.Emit(OpCodes.Call, s_hashCodeAddMethod.MakeGenericMethod(pm.Type));
+
+                g.Emit(OpCodes.Ldarga, checked((short)i));
+                g.Emit(OpCodes.Ldc_I4, pm.Size);
+                g.Emit(OpCodes.Call, s_memoryMarshalCreateReadOnlySpanMethod);
+
+                g.Emit(OpCodes.Call, s_hashCodeAddBytesMethod);
             }
 
             g.Emit(OpCodes.Ldloca, hashCode);
