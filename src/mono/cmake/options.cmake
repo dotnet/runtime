@@ -54,6 +54,7 @@ option (ENABLE_CHECKED_BUILD_METADATA "Enable runtime checks of mempool referenc
 option (ENABLE_MSCORDBI "Generate mscordbi to support icordbg interface")
 option (ENABLE_SMALL_CONFIG "Reduce runtime requirements (and capabilities)")
 option (ENABLE_DTRACE "Enable DTrace probes")
+option (ENABLE_EXPERIMENT_TIERED "Enable experiment 'Tiered Compilation'")
 option (USE_MALLOC_FOR_MEMPOOLS "Use malloc for each single mempool allocation, so tools like Valgrind can run better")
 option (STATIC_COMPONENTS "Compile mono runtime components as static (not dynamic) libraries")
 

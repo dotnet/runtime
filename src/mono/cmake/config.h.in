@@ -922,12 +922,6 @@
 /* Enable hybrid suspend for GC stop-the-world */
 #cmakedefine ENABLE_HYBRID_SUSPEND 1
 
-/* Enable feature experiments */
-#cmakedefine ENABLE_EXPERIMENTS 1
-
-/* Enable experiment 'null' */
-#cmakedefine ENABLE_EXPERIMENT_null 1
-
 /* Enable experiment 'Tiered Compilation' */
 #cmakedefine ENABLE_EXPERIMENT_TIERED 1
 

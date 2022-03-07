@@ -48,7 +48,6 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/coree.h>
 #include <mono/metadata/jit-info.h>
-#include <mono/utils/mono-experiments.h>
 #include <mono/utils/w32subset.h>
 #include "external-only.h"
 #include <mono/utils/mono-tls-inline.h>
@@ -200,11 +199,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_jit_info_tables_init ();
 
 	SET_APPDOMAIN (domain);
-
-#if defined(ENABLE_EXPERIMENT_null)
-	if (mono_experiment_enabled (MONO_EXPERIMENT_null))
-		g_warning ("null experiment enabled");
-#endif
 
 	/* Get a list of runtimes supported by the exe */
 	if (exe_filename != NULL) {
