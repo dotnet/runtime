@@ -8,7 +8,7 @@ using SharedTypes;
 
 using Xunit;
 
-namespace DllImportGenerator.IntegrationTests
+namespace LibraryImportGenerator.IntegrationTests
 {
     partial class NativeExportsNE
     {
@@ -102,7 +102,7 @@ namespace DllImportGenerator.IntegrationTests
                 str2 = "Bar"
             };
 
-            var expected = new StringContainer 
+            var expected = new StringContainer
             {
                 str1 = ReverseUTF8Bytes(stringContainer.str1),
                 str2 = ReverseUTF8Bytes(stringContainer.str2)

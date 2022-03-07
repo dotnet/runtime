@@ -203,12 +203,17 @@
         "operator": "and",
         "operands": [
           {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Eric / Jeff - Issue Triage",
-              "columnName": "Needs Triage",
-              "isOrgProject": true
-            }
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Eric / Jeff - Issue Triage",
+                  "columnName": "Triaged",
+                  "isOrgProject": true
+                }
+              }
+            ]
           },
           {
             "operator": "and",
@@ -225,6 +230,12 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "isAction",
+            "parameters": {
+              "action": "unlabeled"
+            }
           }
         ]
       },
@@ -233,12 +244,13 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Eric / Jeff - Issue Triage] Remove relabeled issues",
+      "taskName": "[Area Pod: Eric / Jeff - Issue Triage] Mark relabeled issues as Triaged",
       "actions": [
         {
-          "name": "removeFromProject",
+          "name": "addToProject",
           "parameters": {
             "projectName": "Area Pod: Eric / Jeff - Issue Triage",
+            "columnName": "Triaged",
             "isOrgProject": true
           }
         }
@@ -260,18 +272,6 @@
               "projectName": "Area Pod: Eric / Jeff - Issue Triage",
               "isOrgProject": true
             }
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Eric / Jeff - Issue Triage",
-                  "columnName": "Triaged"
-                }
-              }
-            ]
           },
           {
             "operator": "or",
@@ -315,6 +315,12 @@
             "projectName": "Area Pod: Eric / Jeff - Issue Triage",
             "columnName": "Triaged",
             "isOrgProject": true
+          }
+        },
+        {
+          "name": "removeLabel",
+          "parameters": {
+            "label": "untriaged"
           }
         }
       ]
@@ -383,12 +389,17 @@
         "operator": "and",
         "operands": [
           {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Eric / Jeff - PRs",
-              "columnName": "Needs Champion",
-              "isOrgProject": true
-            }
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Eric / Jeff - PRs",
+                  "columnName": "Done",
+                  "isOrgProject": true
+                }
+              }
+            ]
           },
           {
             "operator": "and",
@@ -414,12 +425,13 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Eric / Jeff - PRs] Remove relabeled PRs",
+      "taskName": "[Area Pod: Eric / Jeff - PRs] Mark relabeled PRs as Done",
       "actions": [
         {
-          "name": "removeFromProject",
+          "name": "addToProject",
           "parameters": {
             "projectName": "Area Pod: Eric / Jeff - PRs",
+            "columnName": "Done",
             "isOrgProject": true
           }
         }
@@ -810,12 +822,17 @@
         "operator": "and",
         "operands": [
           {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Buyaa / Jose / Steve - Issue Triage",
-              "columnName": "Needs Triage",
-              "isOrgProject": true
-            }
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Buyaa / Jose / Steve - Issue Triage",
+                  "columnName": "Triaged",
+                  "isOrgProject": true
+                }
+              }
+            ]
           },
           {
             "operator": "and",
@@ -942,6 +959,12 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "isAction",
+            "parameters": {
+              "action": "unlabeled"
+            }
           }
         ]
       },
@@ -950,12 +973,13 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Buyaa / Jose / Steve - Issue Triage] Remove relabeled issues",
+      "taskName": "[Area Pod: Buyaa / Jose / Steve - Issue Triage] Mark relabeled issues as Triaged",
       "actions": [
         {
-          "name": "removeFromProject",
+          "name": "addToProject",
           "parameters": {
             "projectName": "Area Pod: Buyaa / Jose / Steve - Issue Triage",
+            "columnName": "Triaged",
             "isOrgProject": true
           }
         }
@@ -977,18 +1001,6 @@
               "projectName": "Area Pod: Buyaa / Jose / Steve - Issue Triage",
               "isOrgProject": true
             }
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Buyaa / Jose / Steve - Issue Triage",
-                  "columnName": "Triaged"
-                }
-              }
-            ]
           },
           {
             "operator": "or",
@@ -1032,6 +1044,12 @@
             "projectName": "Area Pod: Buyaa / Jose / Steve - Issue Triage",
             "columnName": "Triaged",
             "isOrgProject": true
+          }
+        },
+        {
+          "name": "removeLabel",
+          "parameters": {
+            "label": "untriaged"
           }
         }
       ]
@@ -1160,12 +1178,17 @@
         "operator": "and",
         "operands": [
           {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Buyaa / Jose / Steve - PRs",
-              "columnName": "Needs Champion",
-              "isOrgProject": true
-            }
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Buyaa / Jose / Steve - PRs",
+                  "columnName": "Done",
+                  "isOrgProject": true
+                }
+              }
+            ]
           },
           {
             "operator": "and",
@@ -1301,12 +1324,13 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Buyaa / Jose / Steve - PRs] Remove relabeled PRs",
+      "taskName": "[Area Pod: Buyaa / Jose / Steve - PRs] Mark relabeled PRs as Done",
       "actions": [
         {
-          "name": "removeFromProject",
+          "name": "addToProject",
           "parameters": {
             "projectName": "Area Pod: Buyaa / Jose / Steve - PRs",
+            "columnName": "Done",
             "isOrgProject": true
           }
         }
@@ -1571,12 +1595,17 @@
         "operator": "and",
         "operands": [
           {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Eirik / Krzysztof / Layomi - Issue Triage",
-              "columnName": "Needs Triage",
-              "isOrgProject": true
-            }
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi - Issue Triage",
+                  "columnName": "Triaged",
+                  "isOrgProject": true
+                }
+              }
+            ]
           },
           {
             "operator": "and",
@@ -1626,6 +1655,12 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "isAction",
+            "parameters": {
+              "action": "unlabeled"
+            }
           }
         ]
       },
@@ -1634,12 +1669,13 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi - Issue Triage] Remove relabeled issues",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi - Issue Triage] Mark relabeled issues as Triaged",
       "actions": [
         {
-          "name": "removeFromProject",
+          "name": "addToProject",
           "parameters": {
             "projectName": "Area Pod: Eirik / Krzysztof / Layomi - Issue Triage",
+            "columnName": "Triaged",
             "isOrgProject": true
           }
         }
@@ -1661,18 +1697,6 @@
               "projectName": "Area Pod: Eirik / Krzysztof / Layomi - Issue Triage",
               "isOrgProject": true
             }
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi - Issue Triage",
-                  "columnName": "Triaged"
-                }
-              }
-            ]
           },
           {
             "operator": "or",
@@ -1716,6 +1740,12 @@
             "projectName": "Area Pod: Eirik / Krzysztof / Layomi - Issue Triage",
             "columnName": "Triaged",
             "isOrgProject": true
+          }
+        },
+        {
+          "name": "removeLabel",
+          "parameters": {
+            "label": "untriaged"
           }
         }
       ]
@@ -1802,12 +1832,17 @@
         "operator": "and",
         "operands": [
           {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Eirik / Krzysztof / Layomi - PRs",
-              "columnName": "Needs Champion",
-              "isOrgProject": true
-            }
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi - PRs",
+                  "columnName": "Done",
+                  "isOrgProject": true
+                }
+              }
+            ]
           },
           {
             "operator": "and",
@@ -1866,12 +1901,13 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi - PRs] Remove relabeled PRs",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi - PRs] Mark relabeled PRs as Done",
       "actions": [
         {
-          "name": "removeFromProject",
+          "name": "addToProject",
           "parameters": {
             "projectName": "Area Pod: Eirik / Krzysztof / Layomi - PRs",
+            "columnName": "Done",
             "isOrgProject": true
           }
         }
@@ -2298,12 +2334,17 @@
         "operator": "and",
         "operands": [
           {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Eric / Maryam / Tarek - Issue Triage",
-              "columnName": "Needs Triage",
-              "isOrgProject": true
-            }
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Eric / Maryam / Tarek - Issue Triage",
+                  "columnName": "Triaged",
+                  "isOrgProject": true
+                }
+              }
+            ]
           },
           {
             "operator": "and",
@@ -2452,6 +2493,12 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "isAction",
+            "parameters": {
+              "action": "unlabeled"
+            }
           }
         ]
       },
@@ -2460,12 +2507,13 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Eric / Maryam / Tarek - Issue Triage] Remove relabeled issues",
+      "taskName": "[Area Pod: Eric / Maryam / Tarek - Issue Triage] Mark relabeled issues as Triaged",
       "actions": [
         {
-          "name": "removeFromProject",
+          "name": "addToProject",
           "parameters": {
             "projectName": "Area Pod: Eric / Maryam / Tarek - Issue Triage",
+            "columnName": "Triaged",
             "isOrgProject": true
           }
         }
@@ -2487,18 +2535,6 @@
               "projectName": "Area Pod: Eric / Maryam / Tarek - Issue Triage",
               "isOrgProject": true
             }
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Eric / Maryam / Tarek - Issue Triage",
-                  "columnName": "Triaged"
-                }
-              }
-            ]
           },
           {
             "operator": "or",
@@ -2542,6 +2578,12 @@
             "projectName": "Area Pod: Eric / Maryam / Tarek - Issue Triage",
             "columnName": "Triaged",
             "isOrgProject": true
+          }
+        },
+        {
+          "name": "removeLabel",
+          "parameters": {
+            "label": "untriaged"
           }
         }
       ]
@@ -2682,12 +2724,17 @@
         "operator": "and",
         "operands": [
           {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Eric / Maryam / Tarek - PRs",
-              "columnName": "Needs Champion",
-              "isOrgProject": true
-            }
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Eric / Maryam / Tarek - PRs",
+                  "columnName": "Done",
+                  "isOrgProject": true
+                }
+              }
+            ]
           },
           {
             "operator": "and",
@@ -2845,12 +2892,13 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Eric / Maryam / Tarek - PRs] Remove relabeled PRs",
+      "taskName": "[Area Pod: Eric / Maryam / Tarek - PRs] Mark relabeled PRs as Done",
       "actions": [
         {
-          "name": "removeFromProject",
+          "name": "addToProject",
           "parameters": {
             "projectName": "Area Pod: Eric / Maryam / Tarek - PRs",
+            "columnName": "Done",
             "isOrgProject": true
           }
         }
@@ -3187,12 +3235,17 @@
         "operator": "and",
         "operands": [
           {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
-              "columnName": "Needs Triage",
-              "isOrgProject": true
-            }
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
+                  "columnName": "Triaged",
+                  "isOrgProject": true
+                }
+              }
+            ]
           },
           {
             "operator": "and",
@@ -3286,6 +3339,12 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "isAction",
+            "parameters": {
+              "action": "unlabeled"
+            }
           }
         ]
       },
@@ -3294,12 +3353,13 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Carlos / Jeremy - Issue Triage] Remove relabeled issues",
+      "taskName": "[Area Pod: Carlos / Jeremy - Issue Triage] Mark relabeled issues as Triaged",
       "actions": [
         {
-          "name": "removeFromProject",
+          "name": "addToProject",
           "parameters": {
             "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
+            "columnName": "Triaged",
             "isOrgProject": true
           }
         }
@@ -3321,18 +3381,6 @@
               "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
               "isOrgProject": true
             }
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
-                  "columnName": "Triaged"
-                }
-              }
-            ]
           },
           {
             "operator": "or",
@@ -3376,6 +3424,12 @@
             "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
             "columnName": "Triaged",
             "isOrgProject": true
+          }
+        },
+        {
+          "name": "removeLabel",
+          "parameters": {
+            "label": "untriaged"
           }
         }
       ]
@@ -3486,12 +3540,17 @@
         "operator": "and",
         "operands": [
           {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Carlos / Jeremy - PRs",
-              "columnName": "Needs Champion",
-              "isOrgProject": true
-            }
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Carlos / Jeremy - PRs",
+                  "columnName": "Done",
+                  "isOrgProject": true
+                }
+              }
+            ]
           },
           {
             "operator": "and",
@@ -3594,12 +3653,13 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Carlos / Jeremy - PRs] Remove relabeled PRs",
+      "taskName": "[Area Pod: Carlos / Jeremy - PRs] Mark relabeled PRs as Done",
       "actions": [
         {
-          "name": "removeFromProject",
+          "name": "addToProject",
           "parameters": {
             "projectName": "Area Pod: Carlos / Jeremy - PRs",
+            "columnName": "Done",
             "isOrgProject": true
           }
         }
@@ -3918,12 +3978,17 @@
         "operator": "and",
         "operands": [
           {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Adam / David - Issue Triage",
-              "columnName": "Needs Triage",
-              "isOrgProject": true
-            }
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Adam / David - Issue Triage",
+                  "columnName": "Triaged",
+                  "isOrgProject": true
+                }
+              }
+            ]
           },
           {
             "operator": "and",
@@ -4006,6 +4071,12 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "isAction",
+            "parameters": {
+              "action": "unlabeled"
+            }
           }
         ]
       },
@@ -4014,12 +4085,13 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Adam / David - Issue Triage] Remove relabeled issues",
+      "taskName": "[Area Pod: Adam / David - Issue Triage] Mark relabeled issues as Triaged",
       "actions": [
         {
-          "name": "removeFromProject",
+          "name": "addToProject",
           "parameters": {
             "projectName": "Area Pod: Adam / David - Issue Triage",
+            "columnName": "Triaged",
             "isOrgProject": true
           }
         }
@@ -4041,18 +4113,6 @@
               "projectName": "Area Pod: Adam / David - Issue Triage",
               "isOrgProject": true
             }
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Adam / David - Issue Triage",
-                  "columnName": "Triaged"
-                }
-              }
-            ]
           },
           {
             "operator": "or",
@@ -4096,6 +4156,12 @@
             "projectName": "Area Pod: Adam / David - Issue Triage",
             "columnName": "Triaged",
             "isOrgProject": true
+          }
+        },
+        {
+          "name": "removeLabel",
+          "parameters": {
+            "label": "untriaged"
           }
         }
       ]
@@ -4200,12 +4266,17 @@
         "operator": "and",
         "operands": [
           {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Adam / David - PRs",
-              "columnName": "Needs Champion",
-              "isOrgProject": true
-            }
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Adam / David - PRs",
+                  "columnName": "Done",
+                  "isOrgProject": true
+                }
+              }
+            ]
           },
           {
             "operator": "and",
@@ -4297,12 +4368,13 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Adam / David - PRs] Remove relabeled PRs",
+      "taskName": "[Area Pod: Adam / David - PRs] Mark relabeled PRs as Done",
       "actions": [
         {
-          "name": "removeFromProject",
+          "name": "addToProject",
           "parameters": {
             "projectName": "Area Pod: Adam / David - PRs",
+            "columnName": "Done",
             "isOrgProject": true
           }
         }
@@ -4585,12 +4657,17 @@
         "operator": "and",
         "operands": [
           {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Michael / Tanner - Issue Triage",
-              "columnName": "Needs Triage",
-              "isOrgProject": true
-            }
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Michael / Tanner - Issue Triage",
+                  "columnName": "Triaged",
+                  "isOrgProject": true
+                }
+              }
+            ]
           },
           {
             "operator": "and",
@@ -4651,6 +4728,12 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "isAction",
+            "parameters": {
+              "action": "unlabeled"
+            }
           }
         ]
       },
@@ -4659,12 +4742,13 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Michael / Tanner - Issue Triage] Remove relabeled issues",
+      "taskName": "[Area Pod: Michael / Tanner - Issue Triage] Mark relabeled issues as Triaged",
       "actions": [
         {
-          "name": "removeFromProject",
+          "name": "addToProject",
           "parameters": {
             "projectName": "Area Pod: Michael / Tanner - Issue Triage",
+            "columnName": "Triaged",
             "isOrgProject": true
           }
         }
@@ -4686,18 +4770,6 @@
               "projectName": "Area Pod: Michael / Tanner - Issue Triage",
               "isOrgProject": true
             }
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Michael / Tanner - Issue Triage",
-                  "columnName": "Triaged"
-                }
-              }
-            ]
           },
           {
             "operator": "or",
@@ -4741,6 +4813,12 @@
             "projectName": "Area Pod: Michael / Tanner - Issue Triage",
             "columnName": "Triaged",
             "isOrgProject": true
+          }
+        },
+        {
+          "name": "removeLabel",
+          "parameters": {
+            "label": "untriaged"
           }
         }
       ]
@@ -4833,12 +4911,17 @@
         "operator": "and",
         "operands": [
           {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Michael / Tanner - PRs",
-              "columnName": "Needs Champion",
-              "isOrgProject": true
-            }
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Michael / Tanner - PRs",
+                  "columnName": "Done",
+                  "isOrgProject": true
+                }
+              }
+            ]
           },
           {
             "operator": "and",
@@ -4908,12 +4991,13 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Michael / Tanner - PRs] Remove relabeled PRs",
+      "taskName": "[Area Pod: Michael / Tanner - PRs] Mark relabeled PRs as Done",
       "actions": [
         {
-          "name": "removeFromProject",
+          "name": "addToProject",
           "parameters": {
             "projectName": "Area Pod: Michael / Tanner - PRs",
+            "columnName": "Done",
             "isOrgProject": true
           }
         }
@@ -5196,12 +5280,17 @@
         "operator": "and",
         "operands": [
           {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Jeremy / Levi - Issue Triage",
-              "columnName": "Needs Triage",
-              "isOrgProject": true
-            }
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Jeremy / Levi - Issue Triage",
+                  "columnName": "Triaged",
+                  "isOrgProject": true
+                }
+              }
+            ]
           },
           {
             "operator": "and",
@@ -5262,6 +5351,12 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "isAction",
+            "parameters": {
+              "action": "unlabeled"
+            }
           }
         ]
       },
@@ -5270,12 +5365,13 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Jeremy / Levi - Issue Triage] Remove relabeled issues",
+      "taskName": "[Area Pod: Jeremy / Levi - Issue Triage] Mark relabeled issues as Triaged",
       "actions": [
         {
-          "name": "removeFromProject",
+          "name": "addToProject",
           "parameters": {
             "projectName": "Area Pod: Jeremy / Levi - Issue Triage",
+            "columnName": "Triaged",
             "isOrgProject": true
           }
         }
@@ -5297,18 +5393,6 @@
               "projectName": "Area Pod: Jeremy / Levi - Issue Triage",
               "isOrgProject": true
             }
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Jeremy / Levi - Issue Triage",
-                  "columnName": "Triaged"
-                }
-              }
-            ]
           },
           {
             "operator": "or",
@@ -5352,6 +5436,12 @@
             "projectName": "Area Pod: Jeremy / Levi - Issue Triage",
             "columnName": "Triaged",
             "isOrgProject": true
+          }
+        },
+        {
+          "name": "removeLabel",
+          "parameters": {
+            "label": "untriaged"
           }
         }
       ]
@@ -5444,12 +5534,17 @@
         "operator": "and",
         "operands": [
           {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Jeremy / Levi - PRs",
-              "columnName": "Needs Champion",
-              "isOrgProject": true
-            }
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Jeremy / Levi - PRs",
+                  "columnName": "Done",
+                  "isOrgProject": true
+                }
+              }
+            ]
           },
           {
             "operator": "and",
@@ -5519,12 +5614,13 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Jeremy / Levi - PRs] Remove relabeled PRs",
+      "taskName": "[Area Pod: Jeremy / Levi - PRs] Mark relabeled PRs as Done",
       "actions": [
         {
-          "name": "removeFromProject",
+          "name": "addToProject",
           "parameters": {
             "projectName": "Area Pod: Jeremy / Levi - PRs",
+            "columnName": "Done",
             "isOrgProject": true
           }
         }

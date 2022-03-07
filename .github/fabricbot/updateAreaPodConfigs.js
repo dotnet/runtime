@@ -7,9 +7,9 @@
 const path = require('path');
 const fs = require('fs');
 
-let generatedRuntimeConfigsFile = path.join(__dirname, '..', 'generated', 'areapods-runtime.json');
-let generatedApiDocsConfigsFile = path.join(__dirname, '..', 'generated', 'areapods-dotnet-api-docs.json');
-let generatedMachineLearningConfigsFile = path.join(__dirname, '..', 'generated', 'areapods-machinelearning.json');
+let generatedRuntimeConfigsFile = path.join(__dirname, 'generated', 'areapods-runtime.json');
+let generatedApiDocsConfigsFile = path.join(__dirname, 'generated', 'areapods-dotnet-api-docs.json');
+let generatedMachineLearningConfigsFile = path.join(__dirname, 'generated', 'areapods-machinelearning.json');
 
 let areaPods = [
   {
@@ -120,7 +120,7 @@ let areaPods = [
 ];
 
 let areaPodConfig = {
-  issueRemove: ({pod, areas}) => ({
+  issueMovedToAnotherArea: ({pod, areas}) => ({
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -130,12 +130,17 @@ let areaPodConfig = {
         "operator": "and",
         "operands": [
           {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": `Area Pod: ${pod} - Issue Triage`,
-              "columnName": "Needs Triage",
-              "isOrgProject": true
-            }
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": `Area Pod: ${pod} - Issue Triage`,
+                  "columnName": "Triaged",
+                  "isOrgProject": true
+                }
+              }
+            ]
           },
           {
             "operator": "and",
@@ -148,6 +153,12 @@ let areaPodConfig = {
                 }
               ]
             }))
+          },
+          {
+            "name": "isAction",
+            "parameters": {
+              "action": "unlabeled"
+            }
           }
         ]
       },
@@ -156,12 +167,14 @@ let areaPodConfig = {
         "issues",
         "project_card"
       ],
-      "taskName": `[Area Pod: ${pod} - Issue Triage] Remove relabeled issues`,
+      "taskName": `[Area Pod: ${pod} - Issue Triage] Mark relabeled issues as Triaged`,
       "actions": [
         {
-          "name": "removeFromProject",
-          "parameters": {
+          "name": "addToProject",
+          "parameters":
+          {
             "projectName": `Area Pod: ${pod} - Issue Triage`,
+            "columnName": "Triaged",
             "isOrgProject": true
           }
         }
@@ -398,18 +411,6 @@ let areaPodConfig = {
             }
           },
           {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": `Area Pod: ${pod} - Issue Triage`,
-                  "columnName": "Triaged"
-                }
-              }
-            ]
-          },
-          {
             "operator": "or",
             "operands":
             [
@@ -460,6 +461,12 @@ let areaPodConfig = {
             "columnName": "Triaged",
             "isOrgProject": true
           }
+        },
+        {
+          "name": "removeLabel",
+          "parameters": {
+            "label": "untriaged"
+          }
         }
       ]
     }
@@ -467,7 +474,7 @@ let areaPodConfig = {
 
   /* Pull Requests */
 
-  pullRequestAdd: ({pod, areas}) => ({
+  pullRequestNeedsChampion: ({pod, areas}) => ({
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
@@ -516,7 +523,7 @@ let areaPodConfig = {
       ]
     }
   }),
-  pullRequestRemove: ({pod, areas}) => ({
+  pullRequestMovedToAnotherArea: ({pod, areas}) => ({
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
@@ -526,12 +533,17 @@ let areaPodConfig = {
         "operator": "and",
         "operands": [
           {
-            "name": "isInProjectColumn",
-            "parameters": {
-            "projectName": `Area Pod: ${pod} - PRs`,
-            "columnName": "Needs Champion",
-            "isOrgProject": true
-            }
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                "projectName": `Area Pod: ${pod} - PRs`,
+                "columnName": "Done",
+                "isOrgProject": true
+                }
+              }
+            ]
           },
           (!!areas && {
             "operator": "and",
@@ -553,15 +565,17 @@ let areaPodConfig = {
         "issues",
         "project_card"
       ],
-      "taskName": `[Area Pod: ${pod} - PRs] Remove relabeled PRs`,
+      "taskName": `[Area Pod: ${pod} - PRs] Mark relabeled PRs as Done`,
       "actions": [
         {
-          "name": "removeFromProject",
-          "parameters": {
+          "name": "addToProject",
+          "parameters":
+          {
             "projectName": `Area Pod: ${pod} - PRs`,
+            "columnName": "Done",
             "isOrgProject": true
           }
-        }
+        },
       ]
     }
   })
@@ -574,10 +588,10 @@ let generatedRuntimeTasks = areaPods
     [
       areaPodConfig.issueNeedsTriage(areaPod),
       areaPodConfig.issueNeedsFurtherTriage(areaPod),
-      areaPodConfig.issueRemove(areaPod),
+      areaPodConfig.issueMovedToAnotherArea(areaPod),
       areaPodConfig.issueTriaged(areaPod),
-      areaPodConfig.pullRequestAdd(areaPod),
-      areaPodConfig.pullRequestRemove(areaPod),
+      areaPodConfig.pullRequestNeedsChampion(areaPod),
+      areaPodConfig.pullRequestMovedToAnotherArea(areaPod),
     ]);
 
 let generatedRuntimeJson = JSON.stringify(generatedRuntimeTasks, null, 2);
@@ -591,11 +605,10 @@ let generatedApiDocsTasks = areaPods
     [
       areaPodConfig.issueNeedsTriage(areaPod),
       areaPodConfig.issueNeedsFurtherTriage(areaPod),
-      areaPodConfig.issueRemove(areaPod),
-      // We're not using milestones in the dotnet-api-docs repo, so we can't automatically move to triaged
-      // areaPodConfig.issueTriaged(areaPod),
-      areaPodConfig.pullRequestAdd(areaPod),
-      areaPodConfig.pullRequestRemove(areaPod),
+      areaPodConfig.issueMovedToAnotherArea(areaPod),
+      areaPodConfig.issueTriaged(areaPod),
+      areaPodConfig.pullRequestNeedsChampion(areaPod),
+      areaPodConfig.pullRequestMovedToAnotherArea(areaPod),
     ]);
 
 let generatedApiDocsJson = JSON.stringify(generatedApiDocsTasks, null, 2);
@@ -614,9 +627,9 @@ let generatedMachineLearningTasks = areaPods
       areaPodConfig.issueNeedsTriage(areaPod),
       areaPodConfig.issueNeedsFurtherTriage(areaPod),
       areaPodConfig.issueTriaged(areaPod),
-      areaPodConfig.pullRequestAdd(areaPod)
-      // Issues and PRs don't get removed from the boards because that
-      // only applies when moved to a different pod via area label
+      areaPodConfig.pullRequestNeedsChampion(areaPod)
+      // The machinelearning repo doesn't have areas,
+      // so the *MovedToAnotherArea tasks don't apply
     ]);
 
 let generatedMachineLearningJson = JSON.stringify(generatedMachineLearningTasks, null, 2);

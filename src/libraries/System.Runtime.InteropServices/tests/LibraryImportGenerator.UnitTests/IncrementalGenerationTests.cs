@@ -10,9 +10,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
-using static Microsoft.Interop.DllImportGenerator;
+using static Microsoft.Interop.LibraryImportGenerator;
 
-namespace DllImportGenerator.UnitTests
+namespace LibraryImportGenerator.UnitTests
 {
     public class IncrementalGenerationTests
     {
@@ -28,7 +28,7 @@ namespace DllImportGenerator.UnitTests
 
             Compilation comp1 = await TestUtils.CreateCompilation(source);
 
-            Microsoft.Interop.DllImportGenerator generator = new();
+            Microsoft.Interop.LibraryImportGenerator generator = new();
             GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new IIncrementalGenerator[] { generator }, EnableIncrementalTrackingDriverOptions);
 
             driver = driver.RunGenerators(comp1);
@@ -54,7 +54,7 @@ namespace DllImportGenerator.UnitTests
 
             Compilation comp1 = await TestUtils.CreateCompilation(new[] { syntaxTree });
 
-            Microsoft.Interop.DllImportGenerator generator = new();
+            Microsoft.Interop.LibraryImportGenerator generator = new();
             GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new[] { generator }, EnableIncrementalTrackingDriverOptions);
 
             driver = driver.RunGenerators(comp1);
@@ -82,7 +82,7 @@ namespace DllImportGenerator.UnitTests
 
             Compilation comp1 = await TestUtils.CreateCompilation(source);
 
-            Microsoft.Interop.DllImportGenerator generator = new();
+            Microsoft.Interop.LibraryImportGenerator generator = new();
             GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new[] { generator }, EnableIncrementalTrackingDriverOptions);
 
             driver = driver.RunGenerators(comp1);
@@ -110,7 +110,7 @@ namespace DllImportGenerator.UnitTests
         {
             Compilation comp1 = await TestUtils.CreateCompilation(new string[] { CodeSnippets.BasicParametersAndModifiers<int>(), CodeSnippets.BasicParametersAndModifiers<bool>() });
 
-            Microsoft.Interop.DllImportGenerator generator = new();
+            Microsoft.Interop.LibraryImportGenerator generator = new();
             GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new[] { generator }, EnableIncrementalTrackingDriverOptions);
 
             driver = driver.RunGenerators(comp1);
@@ -147,7 +147,7 @@ namespace DllImportGenerator.UnitTests
             SyntaxTree customTypeImpl1Tree = CSharpSyntaxTree.ParseText(customTypeImpl1, new CSharpParseOptions(LanguageVersion.Preview));
             comp1 = comp1.AddSyntaxTrees(customTypeImpl1Tree);
 
-            Microsoft.Interop.DllImportGenerator generator = new();
+            Microsoft.Interop.LibraryImportGenerator generator = new();
             GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new[] { generator }, EnableIncrementalTrackingDriverOptions);
 
             driver = driver.RunGenerators(comp1);
@@ -180,7 +180,7 @@ namespace DllImportGenerator.UnitTests
 
             Compilation comp1 = await TestUtils.CreateCompilation(new[] { syntaxTree });
 
-            Microsoft.Interop.DllImportGenerator generator = new();
+            Microsoft.Interop.LibraryImportGenerator generator = new();
             GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new[] { generator }, EnableIncrementalTrackingDriverOptions);
 
             driver = driver.RunGenerators(comp1);

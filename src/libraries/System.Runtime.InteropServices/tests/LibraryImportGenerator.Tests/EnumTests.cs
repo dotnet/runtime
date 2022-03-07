@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 using Xunit;
 
-namespace DllImportGenerator.IntegrationTests
+namespace LibraryImportGenerator.IntegrationTests
 {
     partial class NativeExportsNE
     {

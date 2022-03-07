@@ -765,7 +765,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         if (_findOpts is RegexFindOptimizations findOpts)
                         {
                             // Find the first position i that matches with some likely character.
-                            if (!findOpts.TryFindNextStartingPosition(input, ref i, 0, 0, input.Length))
+                            if (!findOpts.TryFindNextStartingPosition(input, ref i, 0))
                             {
                                 // no match was found
                                 return NoMatchExists;
