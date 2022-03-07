@@ -51,7 +51,7 @@
 #include <mono/utils/mono-experiments.h>
 #include <mono/utils/w32subset.h>
 #include "external-only.h"
-#include "mono/utils/mono-tls-inline.h"
+#include <mono/utils/mono-tls-inline.h>
 
 /*
  * There is only one domain, but some code uses the domain TLS

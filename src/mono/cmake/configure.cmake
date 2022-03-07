@@ -166,6 +166,16 @@ if (HOST_LINUX OR HOST_ANDROID)
   set(CMAKE_REQUIRED_DEFINITIONS)
 endif()
 
+check_c_source_compiles(
+  "
+  int main(void)
+  {
+    static __thread int foo __attribute__((tls_model(\"initial-exec\")));
+    return 0;
+  }
+  "
+  HAVE_TLS_MODEL_ATTR)
+
 if(HOST_WIN32)
   # checking for this doesn't work for some reason, hardcode result
   set(HAVE_WINTERNL_H 1)

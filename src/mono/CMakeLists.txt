@@ -171,6 +171,9 @@ endif()
 message ("CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}")
 message ("CMAKE_SYSTEM_VARIANT=${CMAKE_SYSTEM_VARIANT}")
 
+# TODO: check if we can enable this on more platforms
+# set(MONO_KEYWORD_THREAD "__thread")
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   add_definitions(-D_THREAD_SAFE)
   set(HOST_DARWIN 1)
