@@ -187,7 +187,7 @@ namespace System.DirectoryServices.Protocols
 
             public ref int GetPinnableReference() => ref (_managed is null ? ref Unsafe.NullRef<int>() : ref _managed.bv_len);
 
-            public void* Value => Unsafe.AsPointer(ref GetPinnableReference());
+            public void* ToNativeValue() => Unsafe.AsPointer(ref GetPinnableReference());
         }
 #endif
     }
@@ -239,11 +239,9 @@ namespace System.DirectoryServices.Protocols
                 _native.dereference = managed.dereference is not null ? Marshal.GetFunctionPointerForDelegate(managed.dereference) : IntPtr.Zero;
             }
 
-            public Native Value
-            {
-                get => _native;
-                set => _native = value;
-            }
+            public Native ToNativeValue() => _native;
+
+            public void FromNativeValue(Native value) => _native = value;
 
             public LdapReferralCallback ToManaged()
             {

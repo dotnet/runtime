@@ -16,7 +16,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
             _handle = handle;
         }
 
-        public IntPtr Value => _handle.Handle;
+        public IntPtr ToNativeValue() => _handle.Handle;
 
         public void FreeNative() => GC.KeepAlive(_handle.Wrapper);
     }

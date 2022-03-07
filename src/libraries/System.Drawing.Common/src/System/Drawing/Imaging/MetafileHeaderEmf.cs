@@ -45,7 +45,7 @@ namespace System.Drawing.Imaging
 
             public ref byte GetPinnableReference() => ref (_managed is null ? ref Unsafe.NullRef<byte>() : ref _managed.GetPinnableReference());
 
-            public void* Value => Unsafe.AsPointer(ref GetPinnableReference());
+            public void* ToNativeValue() => Unsafe.AsPointer(ref GetPinnableReference());
         }
 #endif
     }

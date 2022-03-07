@@ -121,11 +121,9 @@ namespace System.Drawing.Imaging
                 _native.LogicalDpiY = managed.LogicalDpiY;
             }
 
-            public Native Value
-            {
-                get => _native;
-                set => _native = value;
-            }
+            public Native ToNativeValue() => _native;
+
+            public void FromNativeValue(Native value) => _native = value;
 
             public MetafileHeaderWmf ToManaged()
             {
