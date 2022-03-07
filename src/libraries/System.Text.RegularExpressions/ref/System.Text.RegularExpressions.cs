@@ -138,6 +138,7 @@ namespace System.Text.RegularExpressions
         protected internal System.Text.RegularExpressions.RegexRunnerFactory? factory;
         public static readonly System.TimeSpan InfiniteMatchTimeout;
         protected internal System.TimeSpan internalMatchTimeout;
+        [System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)]
         protected internal string? pattern;
         protected internal System.Text.RegularExpressions.RegexOptions roptions;
         protected Regex() { }
