@@ -38,10 +38,10 @@ namespace Microsoft.Extensions.Hosting
     }
     public partial class HostBuilderContext
     {
-        public HostBuilderContext(System.Collections.Generic.IDictionary<object, object?> properties) { }
-        public Microsoft.Extensions.Configuration.IConfiguration? Configuration { get { throw null; } set { } }
-        public Microsoft.Extensions.Hosting.IHostEnvironment? HostingEnvironment { get { throw null; } set { } }
-        public System.Collections.Generic.IDictionary<object, object?> Properties { get { throw null; } }
+        public HostBuilderContext(System.Collections.Generic.IDictionary<object, object> properties) { }
+        public Microsoft.Extensions.Configuration.IConfiguration Configuration { get { throw null; } set { } }
+        public Microsoft.Extensions.Hosting.IHostEnvironment HostingEnvironment { get { throw null; } set { } }
+        public System.Collections.Generic.IDictionary<object, object> Properties { get { throw null; } }
     }
     public static partial class HostDefaults
     {

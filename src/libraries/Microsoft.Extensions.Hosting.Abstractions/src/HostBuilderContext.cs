@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Hosting
     /// </summary>
     public class HostBuilderContext
     {
-        public HostBuilderContext(IDictionary<object, object?> properties!!)
+        public HostBuilderContext(IDictionary<object, object> properties!!)
         {
             Properties = properties;
         }
@@ -19,16 +19,16 @@ namespace Microsoft.Extensions.Hosting
         /// <summary>
         /// The <see cref="IHostEnvironment" /> initialized by the <see cref="IHost" />.
         /// </summary>
-        public IHostEnvironment? HostingEnvironment { get; set; }
+        public IHostEnvironment HostingEnvironment { get; set; } = null!;
 
         /// <summary>
         /// The <see cref="IConfiguration" /> containing the merged configuration of the application and the <see cref="IHost" />.
         /// </summary>
-        public IConfiguration? Configuration { get; set; }
+        public IConfiguration Configuration { get; set; } = null!;
 
         /// <summary>
         /// A central location for sharing state between components during the host building process.
         /// </summary>
-        public IDictionary<object, object?> Properties { get; }
+        public IDictionary<object, object> Properties { get; }
     }
 }
