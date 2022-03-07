@@ -47,10 +47,6 @@ EXTERN _NDirectImportWorker@4:PROC
 EXTERN _VarargPInvokeStubWorker@12:PROC
 EXTERN _GenericPInvokeCalliStubWorker@12:PROC
 
-ifndef FEATURE_CORECLR
-EXTERN _CopyCtorCallStubWorker@4:PROC
-endif
-
 EXTERN _PreStubWorker@8:PROC
 EXTERN _TheUMEntryPrestubWorker@4:PROC
 
@@ -1266,75 +1262,6 @@ FASTCALL_ENDFUNC
 
 endif ; FEATURE_COMINTEROP
 
-ifndef FEATURE_CORECLR
-
-;==========================================================================
-; This is small stub whose purpose is to record current stack pointer and
-; call CopyCtorCallStubWorker to invoke copy constructors and destructors
-; as appropriate. This stub operates on arguments already pushed to the
-; stack by JITted IL stub and must not create a new frame, i.e. it must tail
-; call to the target for it to see the arguments that copy ctors have been
-; called on.
-;
-_CopyCtorCallStub@0 proc public
-    ; there may be an argument in ecx - save it
-    push    ecx
-
-    ; push pointer to arguments
-    lea     edx, [esp + 8]
-    push    edx
-
-    call    _CopyCtorCallStubWorker@4
-
-    ; restore ecx and tail call to the target
-    pop     ecx
-    jmp     eax
-_CopyCtorCallStub@0 endp
-
-endif ; !FEATURE_CORECLR
-
-;==========================================================================
-_ExternalMethodFixupStub@0 proc public
-
-    pop     eax             ; pop off the return address to the stub
-                            ; leaving the actual caller's return address on top of the stack
-
-    STUB_PROLOG
-
-    mov         esi, esp
-
-    ; EAX is return address into CORCOMPILE_EXTERNAL_METHOD_THUNK. Subtract 5 to get start address.
-    sub         eax, 5
-
-    push        0
-    push        0
-
-    push        eax
-
-    ; pTransitionBlock
-    push        esi
-
-    call        _ExternalMethodFixupWorker@16
-
-    ; eax now contains replacement stub. PreStubWorker will never return
-    ; NULL (it throws an exception if stub creation fails.)
-
-    ; From here on, mustn't trash eax
-
-    STUB_EPILOG
-
-_ExternalMethodFixupPatchLabel@0:
-public _ExternalMethodFixupPatchLabel@0
-
-    ; Tailcall target
-    jmp eax
-
-    ; This will never be executed. It is just to help out stack-walking logic
-    ; which disassembles the epilog to unwind the stack.
-    ret
-
-_ExternalMethodFixupStub@0 endp
-
 ifdef FEATURE_READYTORUN
 ;==========================================================================
 _DelayLoad_MethodCall@0 proc public
@@ -1360,8 +1287,11 @@ _DelayLoad_MethodCall@0 proc public
 
     STUB_EPILOG
 
-    ; Share the patch label
-    jmp _ExternalMethodFixupPatchLabel@0
+_ExternalMethodFixupPatchLabel@0:
+public _ExternalMethodFixupPatchLabel@0
+
+    ; Tailcall target
+    jmp eax
 
     ; This will never be executed. It is just to help out stack-walking logic
     ; which disassembles the epilog to unwind the stack.

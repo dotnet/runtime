@@ -13,15 +13,17 @@ internal static partial class Interop
         internal const uint CREATE_EVENT_MANUAL_RESET = 0x1;
 
         [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetEvent(SafeWaitHandle handle);
 
         [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool ResetEvent(SafeWaitHandle handle);
 
-        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "CreateEventExW", CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "CreateEventExW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial SafeWaitHandle CreateEventEx(IntPtr lpSecurityAttributes, string? name, uint flags, uint desiredAccess);
 
-        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "OpenEventW", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static partial SafeWaitHandle OpenEvent(uint desiredAccess, bool inheritHandle, string name);
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "OpenEventW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial SafeWaitHandle OpenEvent(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheritHandle, string name);
     }
 }

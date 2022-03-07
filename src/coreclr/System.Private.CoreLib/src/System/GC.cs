@@ -78,7 +78,7 @@ namespace System
         }
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_StartNoGCRegion")]
-        internal static partial int _StartNoGCRegion(long totalSize, bool lohSizeKnown, long lohSize, bool disallowFullBlockingGC);
+        internal static partial int _StartNoGCRegion(long totalSize, [MarshalAs(UnmanagedType.Bool)] bool lohSizeKnown, long lohSize, [MarshalAs(UnmanagedType.Bool)] bool disallowFullBlockingGC);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EndNoGCRegion")]
         internal static partial int _EndNoGCRegion();

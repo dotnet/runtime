@@ -7688,13 +7688,12 @@ const char* CodeGen::siStackVarName(size_t offs, size_t size, unsigned reg, unsi
 /*****************************************************************************/
 #endif // !defined(DEBUG)
 #endif // defined(LATE_DISASM)
-/*****************************************************************************/
 
 //------------------------------------------------------------------------
 // indirForm: Make a temporary indir we can feed to pattern matching routines
 //    in cases where we don't want to instantiate all the indirs that happen.
 //
-GenTreeIndir CodeGen::indirForm(var_types type, GenTree* base)
+/* static */ GenTreeIndir CodeGen::indirForm(var_types type, GenTree* base)
 {
     GenTreeIndir i(GT_IND, type, base, nullptr);
     i.SetRegNum(REG_NA);
@@ -7706,7 +7705,7 @@ GenTreeIndir CodeGen::indirForm(var_types type, GenTree* base)
 // indirForm: Make a temporary indir we can feed to pattern matching routines
 //    in cases where we don't want to instantiate all the indirs that happen.
 //
-GenTreeStoreInd CodeGen::storeIndirForm(var_types type, GenTree* base, GenTree* data)
+/* static */ GenTreeStoreInd CodeGen::storeIndirForm(var_types type, GenTree* base, GenTree* data)
 {
     GenTreeStoreInd i(type, base, data);
     i.SetRegNum(REG_NA);
@@ -8088,7 +8087,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
 // genMultiRegStoreToLocal: store multi-reg value to a local
 //
 // Arguments:
-//    lclNode  -  Gentree of GT_STORE_LCL_VAR
+//    lclNode  -  GenTree of GT_STORE_LCL_VAR
 //
 // Return Value:
 //    None
@@ -8100,18 +8099,18 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
 {
     assert(lclNode->OperIs(GT_STORE_LCL_VAR));
     assert(varTypeIsStruct(lclNode) || varTypeIsMultiReg(lclNode));
-    GenTree* op1       = lclNode->gtGetOp1();
-    GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
+
+    GenTree* op1 = lclNode->gtGetOp1();
     assert(op1->IsMultiRegNode());
-    unsigned regCount =
-        actualOp1->IsMultiRegLclVar() ? actualOp1->AsLclVar()->GetFieldCount(compiler) : actualOp1->GetMultiRegCount();
+    GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
+    unsigned regCount  = actualOp1->GetMultiRegCount(compiler);
     assert(regCount > 1);
 
     // Assumption: current implementation requires that a multi-reg
     // var in 'var = call' is flagged as lvIsMultiRegRet to prevent it from
     // being promoted, unless compiler->lvaEnregMultiRegVars is true.
 
-    unsigned   lclNum = lclNode->AsLclVarCommon()->GetLclNum();
+    unsigned   lclNum = lclNode->GetLclNum();
     LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
     if (op1->OperIs(GT_CALL))
     {
@@ -8121,7 +8120,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
 
 #ifdef FEATURE_SIMD
     // Check for the case of an enregistered SIMD type that's returned in multiple registers.
-    if (varDsc->lvIsRegCandidate() && lclNode->GetRegNum() != REG_NA)
+    if (varDsc->lvIsRegCandidate() && (lclNode->GetRegNum() != REG_NA))
     {
         assert(varTypeIsSIMD(lclNode));
         genMultiRegStoreToSIMDLocal(lclNode);
@@ -8171,6 +8170,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         assert(compiler->lvaEnregMultiRegVars);
         assert(regCount == varDsc->lvFieldCnt);
     }
+
     for (unsigned i = 0; i < regCount; ++i)
     {
         regNumber reg     = genConsumeReg(op1, i);
@@ -8178,6 +8178,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         // genConsumeReg will return the valid register, either from the COPY
         // or from the original source.
         assert(reg != REG_NA);
+
         if (isMultiRegVar)
         {
             // Each field is passed in its own register, use the field types.
@@ -8191,8 +8192,6 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
 
                 // We may need a cross register-file copy here.
                 inst_Mov(destType, varReg, reg, /* canSkip */ true);
-
-                fieldVarDsc->SetRegNum(varReg);
             }
             else
             {
@@ -8200,7 +8199,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             }
             if ((varReg == REG_STK) || fieldVarDsc->IsAlwaysAliveInMemory())
             {
-                if (!lclNode->AsLclVar()->IsLastUse(i))
+                if (!lclNode->IsLastUse(i))
                 {
                     // A byte field passed in a long register should be written on the stack as a byte.
                     instruction storeIns = ins_StoreFromSrc(reg, destType);
@@ -8216,6 +8215,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             // it is safe to store a long register into a byte field as it is known that we have enough padding after.
             GetEmitter()->emitIns_S_R(ins_Store(srcType), emitTypeSize(srcType), reg, lclNum, offset);
             offset += genTypeSize(srcType);
+
 #ifdef DEBUG
 #ifdef TARGET_64BIT
             assert(offset <= varDsc->lvSize());
@@ -8289,8 +8289,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
         // GenTreeCopyOrReload only reports the highest index that has a valid register.
         // However, we need to ensure that we consume all the registers of the child node,
         // so we use its regCount.
-        unsigned regCount =
-            op1->IsMultiRegLclVar() ? op1->AsLclVar()->GetFieldCount(compiler) : op1->GetMultiRegCount();
+        unsigned regCount = op1->GetMultiRegCount(compiler);
         assert(regCount <= MAX_MULTIREG_COUNT);
 
         // First set the source registers as busy if they haven't been spilled.

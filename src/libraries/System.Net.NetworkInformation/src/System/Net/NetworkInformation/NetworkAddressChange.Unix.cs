@@ -194,7 +194,7 @@ namespace System.Net.NetworkInformation
 
                     Interop.Error result = ReadEvents(socket);
 
-                    if (result != Interop.Error.SUCCESS ||
+                    if (result != Interop.Error.SUCCESS &&
                         result != Interop.Error.EAGAIN)
                     {
                         throw new Win32Exception(result.Info().RawErrno);

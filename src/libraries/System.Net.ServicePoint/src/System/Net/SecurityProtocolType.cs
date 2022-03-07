@@ -12,8 +12,10 @@ namespace System.Net
 #pragma warning disable CS0618
         Ssl3 = SslProtocols.Ssl3,
 #pragma warning restore CS0618
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
         Tls = SslProtocols.Tls,
         Tls11 = SslProtocols.Tls11,
+#pragma warning restore SYSLIB0039
         Tls12 = SslProtocols.Tls12,
         Tls13 = SslProtocols.Tls13,
     }

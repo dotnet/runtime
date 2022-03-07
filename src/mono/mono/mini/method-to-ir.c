@@ -77,7 +77,7 @@
 #include "ir-emit.h"
 
 #include "jit-icalls.h"
-#include <mono/mini/jit.h>
+#include <mono/jit/jit.h>
 #include "seq-points.h"
 #include "aot-compiler.h"
 #include "mini-llvm.h"
@@ -6278,12 +6278,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		method_definition = imethod->declaring;
 	}
 
-	/* SkipVerification is not allowed if core-clr is enabled */
-	if (!dont_verify && mini_assembly_can_skip_verification (method)) {
-		dont_verify = TRUE;
-		dont_verify_stloc = TRUE;
-	}
-
 	if (sig->is_inflated)
 		generic_context = mono_method_get_context (method);
 	else if (generic_container)
@@ -6496,6 +6490,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			for (int i = 0; i < header->num_clauses; ++i) {
 				MonoExceptionClause *clause = &header->clauses [i];
 				/* Finally clauses are checked after the remove_finally pass */
+
 				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
 					cfg->interp_entry_only = TRUE;
 			}
@@ -6677,6 +6672,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	ins_flag = 0;
 	start_new_bblock = 0;
 	MonoOpcodeEnum il_op; il_op = MonoOpcodeEnum_Invalid;
+
+	emit_set_deopt_il_offset (cfg, ip - cfg->cil_start);
 
 	for (guchar *next_ip = ip; ip < end; ip = next_ip) {
 		MonoOpcodeEnum previous_il_op = il_op;

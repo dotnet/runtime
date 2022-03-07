@@ -550,41 +550,6 @@ Exit
         ret      lr
     LEAF_END
 
-;------------------------------------------------
-; ExternalMethodFixupStub
-;
-; In NGEN images, calls to cross-module external methods initially
-; point to a jump thunk that calls into the following function that will
-; call into a VM helper. The VM helper is responsible for patching up the
-; thunk, upon executing the precode, so that all subsequent calls go directly
-; to the actual method body.
-;
-; This is done lazily for performance reasons.
-;
-; On entry:
-;
-; x12 = Address of thunk
-
-    NESTED_ENTRY ExternalMethodFixupStub
-
-    PROLOG_WITH_TRANSITION_BLOCK
-
-    add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
-    mov         x1, x12                         ; pThunk
-    mov         x2, #0                          ; sectionIndex
-    mov         x3, #0                          ; pModule
-
-    bl          ExternalMethodFixupWorker
-
-    ; mov the address we patched to in x12 so that we can tail call to it
-    mov         x12, x0
-
-    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL ExternalMethodFixupPatchLabel
-    EPILOG_BRANCH_REG   x12
-
-    NESTED_END
-
 ; void SinglecastDelegateInvokeStub(Delegate *pThis)
     LEAF_ENTRY SinglecastDelegateInvokeStub
         cmp     x0, #0
@@ -1217,8 +1182,9 @@ Fail
     mov x12, x0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    ; Share patch label
-    b ExternalMethodFixupPatchLabel
+    PATCH_LABEL ExternalMethodFixupPatchLabel
+    EPILOG_BRANCH_REG   x12
+
     NESTED_END
 
     MACRO
