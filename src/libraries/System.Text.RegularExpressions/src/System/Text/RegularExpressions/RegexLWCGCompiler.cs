@@ -59,7 +59,7 @@ namespace System.Text.RegularExpressions
             EmitTryMatchAtCurrentPosition();
 
             DynamicMethod scanMethod = DefineDynamicMethod($"Regex{regexNum}_Scan{description}", null, typeof(CompiledRegexRunner), new[] { typeof(RegexRunner), typeof(ReadOnlySpan<char>) });
-            EmitScan(tryfindNextPossibleStartPositionMethod, tryMatchAtCurrentPositionMethod);
+            EmitScan(options, tryfindNextPossibleStartPositionMethod, tryMatchAtCurrentPositionMethod);
 
             return new CompiledRegexRunnerFactory(scanMethod);
         }
