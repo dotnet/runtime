@@ -2488,7 +2488,6 @@ gpointer  mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboole
 gpointer  mono_arch_get_throw_corlib_exception  (MonoTrampInfo **info, gboolean aot);
 gpointer  mono_arch_get_throw_pending_exception (MonoTrampInfo **info, gboolean aot);
 gboolean mono_arch_handle_exception             (void *sigctx, gpointer obj);
-void     mono_arch_handle_altstack_exception    (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, gpointer fault_addr, gboolean stack_ovf);
 gboolean mono_handle_soft_stack_ovf             (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, guint8* fault_addr);
 void     mono_handle_hard_stack_ovf             (MonoJitTlsData *jit_tls, MonoJitInfo *ji, MonoContext *mctx, guint8* fault_addr);
 void     mono_arch_undo_ip_adjustment           (MonoContext *ctx);
@@ -2566,9 +2565,6 @@ void     mono_thread_state_init                 (MonoThreadUnwindState *ctx);
 MONO_COMPONENT_API gboolean mono_thread_state_init_from_current    (MonoThreadUnwindState *ctx);
 MONO_COMPONENT_API gboolean mono_thread_state_init_from_monoctx    (MonoThreadUnwindState *ctx, MonoContext *mctx);
 
-void     mono_setup_altstack                    (MonoJitTlsData *tls);
-void     mono_free_altstack                     (MonoJitTlsData *tls);
-gpointer mono_altstack_restore_prot             (host_mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp);
 MONO_COMPONENT_API MonoJitInfo* mini_jit_info_table_find           (gpointer addr);
 MonoJitInfo* mini_jit_info_table_find_ext       (gpointer addr, gboolean allow_trampolines);
 G_EXTERN_C void mono_resume_unwind              (MonoContext *ctx);

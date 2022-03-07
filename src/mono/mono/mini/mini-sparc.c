@@ -2931,11 +2931,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint32 size_reg;
 			gint32 offset2;
 
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-			/* Perform stack touching */
-			NOT_IMPLEMENTED;
-#endif
-
 			/* Keep alignment */
 			/* Add 4 to compensate for the rounding of localloc_offset */
 			sparc_add_imm (code, FALSE, ins->sreg1, 4 + MONO_ARCH_LOCALLOC_ALIGNMENT - 1, ins->dreg);
@@ -2989,11 +2984,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOCALLOC_IMM: {
 			gint32 offset = ins->inst_imm;
 			gint32 offset2;
-
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-			/* Perform stack touching */
-			NOT_IMPLEMENTED;
-#endif
 
 			/* To compensate for the rounding of localloc_offset */
 			offset += sizeof (target_mgreg_t);
@@ -3896,11 +3886,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	cfg->stack_offset = offset;
 
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-			/* Perform stack touching */
-			NOT_IMPLEMENTED;
-#endif
-
 	if (!sparc_is_imm13 (- cfg->stack_offset)) {
 		/* Can't use sparc_o7 here, since we're still in the caller's frame */
 		sparc_set (code, (- cfg->stack_offset), GP_SCRATCH_REG);
@@ -4288,17 +4273,6 @@ mono_arch_get_lmf_addr (void)
 	return pthread_getspecific (lmf_addr_key);
 #endif
 }
-
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-
-/*
- * There seems to be no way to determine stack boundaries under solaris,
- * so it's not possible to determine whenever a SIGSEGV is caused by stack
- * overflow or not.
- */
-#error "--with-sigaltstack=yes not supported on solaris"
-
-#endif
 
 void
 mono_arch_tls_init (void)

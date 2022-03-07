@@ -1204,18 +1204,6 @@ mono_gc_get_vtable_bits (MonoClass *klass)
 	return 0;
 }
 
-/*
- * mono_gc_register_altstack:
- *
- *   Register the dimensions of the normal stack and altstack with the collector.
- * Currently, STACK/STACK_SIZE is only used when the thread is suspended while it is on an altstack.
- */
-void
-mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer altstack, gint32 altstack_size)
-{
-	GC_register_altstack (stack, stack_size, altstack, altstack_size);
-}
-
 int
 mono_gc_get_los_limit (void)
 {

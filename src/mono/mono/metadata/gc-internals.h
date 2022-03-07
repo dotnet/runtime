@@ -406,8 +406,6 @@ MonoVTable *mono_gc_get_vtable (MonoObject *obj);
 
 guint mono_gc_get_vtable_bits (MonoClass *klass);
 
-void mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer altstack, gint32 altstack_size);
-
 gboolean mono_gc_is_critical_method (MonoMethod *method);
 
 G_EXTERN_C // due to THREAD_INFO_TYPE varying

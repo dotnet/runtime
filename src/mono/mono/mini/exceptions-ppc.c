@@ -641,81 +641,6 @@ mono_arch_ip_from_context (void *sigctx)
 #endif
 }
 
-static void
-altstack_handle_and_restore (MonoContext *mctx, gpointer obj)
-{
-	mono_handle_exception (mctx, obj);
-	mono_restore_context (mctx);
-}
-
-void
-mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, gpointer fault_addr, gboolean stack_ovf)
-{
-#ifdef MONO_CROSS_COMPILE
-	g_assert_not_reached ();
-#else
-#ifdef MONO_ARCH_USE_SIGACTION
-	os_ucontext *uc = (os_ucontext*)sigctx;
-	MonoContext *uc_copy;
-	MonoJitInfo *ji = mini_jit_info_table_find (mono_arch_ip_from_context (sigctx));
-	gpointer *sp;
-	int frame_size;
-
-	if (stack_ovf) {
-		const char *method;
-		/* we don't do much now, but we can warn the user with a useful message */
-		fprintf (stderr, "Stack overflow: IP: %p, SP: %p\n", mono_arch_ip_from_context (sigctx), (gpointer)UCONTEXT_REG_Rn(uc, 1));
-		if (ji && !ji->is_trampoline && jinfo_get_method (ji))
-			method = mono_method_full_name (jinfo_get_method (ji), TRUE);
-		else
-			method = "Unmanaged";
-		fprintf (stderr, "At %s\n", method);
-		abort ();
-	}
-	if (!ji)
-		mono_handle_native_crash (mono_get_signame (SIGSEGV), (MonoContext*)sigctx, siginfo);
-	/* setup a call frame on the real stack so that control is returned there
-	 * and exception handling can continue.
-	 * The frame looks like:
-	 *   ucontext struct
-	 *   ...
-	 * 224 is the size of the red zone
-	 */
-	frame_size = sizeof (MonoContext) + sizeof (gpointer) * 16 + 224;
-	frame_size += 15;
-	frame_size &= ~15;
-	sp = (void**)(UCONTEXT_REG_Rn(uc, 1) & ~15);
-	sp = (void**)((char*)sp - frame_size);
-	/* may need to adjust pointers in the new struct copy, depending on the OS */
-	uc_copy = (MonoContext*)(sp + 16);
-	mono_sigctx_to_monoctx (uc, uc_copy);
-	g_assert (mono_arch_ip_from_context (uc) == MONO_CONTEXT_GET_IP (uc_copy));
-	/* at the return form the signal handler execution starts in altstack_handle_and_restore() */
-	UCONTEXT_REG_LNK(uc) = UCONTEXT_REG_NIP(uc);
-#ifdef PPC_USES_FUNCTION_DESCRIPTOR
-	{
-		MonoPPCFunctionDescriptor *handler_ftnptr = (MonoPPCFunctionDescriptor*)altstack_handle_and_restore;
-
-		UCONTEXT_REG_NIP(uc) = (gulong)handler_ftnptr->code;
-		UCONTEXT_REG_Rn(uc, 2) = (gulong)handler_ftnptr->toc;
-	}
-#else
-	UCONTEXT_REG_NIP(uc) = (unsigned long)altstack_handle_and_restore;
-#if _CALL_ELF == 2
-	/* ELF v2 ABI calling convention requires to put the target address into
-	* r12 if we use the global entry point of a function. */
-	UCONTEXT_REG_Rn(uc, 12) = (unsigned long) altstack_handle_and_restore;
-#endif
-#endif
-	UCONTEXT_REG_Rn(uc, 1) = (unsigned long)sp;
-	UCONTEXT_REG_Rn(uc, PPC_FIRST_ARG_REG) = (unsigned long)uc_copy;
-	UCONTEXT_REG_Rn(uc, PPC_FIRST_ARG_REG + 1) = 0;
-	UCONTEXT_REG_Rn(uc, PPC_FIRST_ARG_REG + 2) = 0;
-#endif
-
-#endif /* !MONO_CROSS_COMPILE */
-}
-
 /*
  * handle_exception:
  *
@@ -778,7 +703,6 @@ mono_arch_handle_exception (void *ctx, gpointer obj)
 	UCONTEXT_REG_Rn (sigctx, PPC_FIRST_ARG_REG) = (gsize)obj;
 
 	/* Allocate a stack frame below the red zone */
-	/* Similar to mono_arch_handle_altstack_exception () */
 	frame_size = 224;
 	frame_size += 15;
 	frame_size &= ~15;
