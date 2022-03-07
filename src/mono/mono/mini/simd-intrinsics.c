@@ -355,7 +355,7 @@ static gboolean
 type_is_unsigned (MonoType *type) {
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
 	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
-	return type_enum_is_unsigned (etype);
+	return type_enum_is_unsigned (etype->type);
 }
 
 static gboolean
