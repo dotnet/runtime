@@ -13,6 +13,10 @@
       <Parent>linux</Parent>
       <Architectures>x64;x86;arm;armel;arm64;s390x</Architectures>
     </RuntimeGroup>
+    <RuntimeGroup Include="linux-bionic">
+      <Parent>android</Parent>
+      <Architectures>x64;arm64</Architectures>
+    </RuntimeGroup>
 
     <RuntimeGroup Include="alpine">
       <Parent>linux-musl</Parent>
