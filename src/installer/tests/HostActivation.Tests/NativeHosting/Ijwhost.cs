@@ -34,13 +34,39 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.HaveStdOutContaining("NativeEntryPoint: calling managed class")
-                .And.HaveStdOutContaining("AssemblyLoadContext = \"IsolatedComponentLoadContext");
+                .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
+                .And.HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"IsolatedComponentLoadContext");
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ManagedHost(bool selfContained)
+        {
+            string [] args = {
+                "ijwhost",
+                sharedState.IjwLibraryPath,
+                "NativeEntryPoint"
+            };
+            TestProjectFixture fixture = selfContained ? sharedState.ManagedHostFixture_SelfContained : sharedState.ManagedHostFixture_FrameworkDependent;
+            CommandResult result = Command.Create(fixture.TestProject.AppExe, args)
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(fixture.BuiltDotnet.BinPath)
+                .MultilevelLookup(false)
+                .Execute();
+
+            result.Should().Pass()
+                .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
+                .And.HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"IsolatedComponentLoadContext")
+                .And.HaveStdErrContaining($"Executing as a {(selfContained ? "self-contained" : "framework-dependent")} app");
         }
 
         public class SharedTestState : SharedTestStateBase
         {
             public string IjwLibraryPath { get; }
+
+            public TestProjectFixture ManagedHostFixture_FrameworkDependent { get; }
+            public TestProjectFixture ManagedHostFixture_SelfContained { get; }
 
             public SharedTestState()
             {
@@ -60,6 +86,22 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 new RuntimeConfig(Path.Combine(folder, "ijw.runtimeconfig.json"))
                     .WithFramework(new RuntimeConfig.Framework(Constants.MicrosoftNETCoreApp, RepoDirectories.MicrosoftNETCoreAppVersion))
                     .Save();
+
+                ManagedHostFixture_FrameworkDependent = new TestProjectFixture("ManagedHost", RepoDirectories)
+                    .EnsureRestored()
+                    .PublishProject(selfContained: false);
+
+                ManagedHostFixture_SelfContained = new TestProjectFixture("ManagedHost", RepoDirectories)
+                    .EnsureRestored()
+                    .PublishProject(selfContained: true);
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                ManagedHostFixture_FrameworkDependent.Dispose();
+                ManagedHostFixture_SelfContained.Dispose();
+
+                base.Dispose(disposing);
             }
         }
     }

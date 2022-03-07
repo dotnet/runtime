@@ -19,12 +19,12 @@ public:
     {
         Assembly^ assembly = Assembly::GetExecutingAssembly();
         AssemblyLoadContext^ alc = AssemblyLoadContext::GetLoadContext(assembly);
-        Console::WriteLine("AssemblyLoadContext = " + alc->ToString());
+        Console::WriteLine("[C++/CLI] ManagedClass: AssemblyLoadContext = " + alc->ToString());
     }
 };
 
 extern "C" __declspec(dllexport) void __cdecl NativeEntryPoint()
 {
-    std::cout << "NativeEntryPoint: calling managed class" << std::endl;
+    std::cout << "[C++/CLI] NativeEntryPoint: calling managed class" << std::endl;
     ManagedClass::Print();
 }
