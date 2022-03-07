@@ -155,7 +155,7 @@ def build_and_run(coreclr_args, output_mch_name):
         #   error NU3037: Package 'System.Runtime 4.1.0' from source 'https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json':
         #     The repository primary signature validity period has expired. [C:\h\w\A3B008C0\w\B581097F\u\performance\src\benchmarks\micro\MicroBenchmarks.csproj]
         # Using environment variable specified in https://github.com/NuGet/NuGet.Client/pull/4259.
-        env_copy["NUGET_EXPERIMENTAL_CHAIN_BUILD_RETRY_POLICY"] = "3,1000"
+        env_copy["NUGET_EXPERIMENTAL_CHAIN_BUILD_RETRY_POLICY"] = "9,2000"
 
     run_command(
         [dotnet_exe, "restore", project_file, "--packages",
