@@ -530,6 +530,14 @@ namespace System
             throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_Enum);
         }
 
+        [DoesNotReturn]
+        internal static void ThrowApplicationException(int hr)
+        {
+            var ex = new ApplicationException();
+            ex.HResult = hr;
+            throw ex;
+        }
+
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
         {
             if (array == null)
@@ -860,6 +868,8 @@ namespace System
                     return "stream";
                 case ExceptionArgument.anyOf:
                     return "anyOf";
+                case ExceptionArgument.overlapped:
+                    return "overlapped";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -1129,6 +1139,7 @@ namespace System
         offset,
         stream,
         anyOf,
+        overlapped,
     }
 
     //

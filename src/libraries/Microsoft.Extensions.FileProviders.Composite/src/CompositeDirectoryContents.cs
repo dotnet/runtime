@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.FileProviders.Composite
 {
@@ -15,9 +16,9 @@ namespace Microsoft.Extensions.FileProviders.Composite
     {
         private readonly IList<IFileProvider> _fileProviders;
         private readonly string _subPath;
-        private List<IFileInfo> _files;
+        private List<IFileInfo>? _files;
         private bool _exists;
-        private List<IDirectoryContents> _directories;
+        private List<IDirectoryContents>? _directories;
 
         /// <summary>
         /// Creates a new instance of <see cref="CompositeDirectoryContents"/> to represents the result of a call composition of
@@ -31,6 +32,7 @@ namespace Microsoft.Extensions.FileProviders.Composite
             _subPath = subpath;
         }
 
+        [MemberNotNull(nameof(_directories))]
         private void EnsureDirectoriesAreInitialized()
         {
             if (_directories == null)
@@ -48,6 +50,8 @@ namespace Microsoft.Extensions.FileProviders.Composite
             }
         }
 
+        [MemberNotNull(nameof(_files))]
+        [MemberNotNull(nameof(_directories))]
         private void EnsureFilesAreInitialized()
         {
             EnsureDirectoriesAreInitialized();

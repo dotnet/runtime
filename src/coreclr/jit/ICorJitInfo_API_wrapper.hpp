@@ -1154,6 +1154,15 @@ bool WrapICorJitInfo::getSystemVAmd64PassStructInRegisterDescriptor(
     return temp;
 }
 
+uint32_t WrapICorJitInfo::getLoongArch64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    API_ENTER(getLoongArch64PassStructInRegisterFlags);
+    uint32_t temp = wrapHnd->getLoongArch64PassStructInRegisterFlags(structHnd);
+    API_LEAVE(getLoongArch64PassStructInRegisterFlags);
+    return temp;
+}
+
 uint32_t WrapICorJitInfo::getThreadTLSIndex(
           void** ppIndirection)
 {

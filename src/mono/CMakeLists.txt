@@ -66,7 +66,6 @@ if(ENABLE_MINIMAL)
   process_enable_minimal()
 endif()
 
-set(DISABLE_MDB 1)
 set(DISABLE_COM 1)
 set(DISABLE_PERFCOUNTERS 1)
 
@@ -510,6 +509,12 @@ if(GCC)
     set(WERROR_C "${WERROR_C} -Werror=incompatible-pointer-types")
   endif()
 
+  if(HOST_WASI)
+    # When building under WASI SDK, it's stricter about discarding 'const' qualifiers, causing some existing
+    # code (e.g., mono-rand.c:315) to be rejected
+    set(WERROR_C "${WERROR_C} -Wno-incompatible-pointer-types-discards-qualifiers")
+  endif()
+
   append("${WARNINGS} ${WARNINGS_C} ${WERROR} ${WERROR_C}" CMAKE_C_FLAGS)
   append("${WARNINGS} ${WERROR}" CMAKE_CXX_FLAGS)
 
@@ -857,6 +862,12 @@ endif()
 ### End of OS specific checks
 
 include_directories("${CLR_SRC_NATIVE_DIR}")
+
+if(NOT DISABLE_LIBS)
+  set(INSTALL_MONO_API 1)
+endif()
+add_subdirectory("${CLR_SRC_NATIVE_DIR}/public" public_apis)
+
 add_subdirectory(mono)
 if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT HOST_MACCAT)
   add_subdirectory(dlls/mscordbi)

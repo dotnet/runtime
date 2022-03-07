@@ -592,7 +592,7 @@ static LONG _debugFilter(LPEXCEPTION_POINTERS ep, PVOID pv)
         EX_END_CATCH(RethrowTerminalExceptions);
 
         CONSISTENCY_CHECK_MSGF(false,
-            ("Unhandled exception on the helper thread.\nEvent=%s(0x%x)\nCode=0x%0x, Ip=0x%p, .cxr=%p, .exr=%p.\n pid=0x%x (%d), tid=0x%x (%d).\n-----\nStack of exception:\n%s\n----\n",
+            ("Unhandled exception on the helper thread.\nEvent=%s(0x%p)\nCode=0x%0x, Ip=0x%p, .cxr=%p, .exr=%p.\n pid=0x%x (%d), tid=0x%x (%d).\n-----\nStack of exception:\n%s\n----\n",
             IPCENames::GetName(type), type,
             ep->ExceptionRecord->ExceptionCode, GetIP(ep->ContextRecord), ep->ContextRecord, ep->ExceptionRecord,
             pid, pid, tid, tid,
@@ -1573,7 +1573,7 @@ HRESULT DebuggerRCThread::SendIPCEvent()
 
     DebuggerIPCEvent* pManagedEvent = GetIPCEventSendBuffer();
 
-    STRESS_LOG2(LF_CORDB, LL_INFO1000, "D::SendIPCEvent %s to outofproc appD 0x%x,\n",
+    STRESS_LOG2(LF_CORDB, LL_INFO1000, "D::SendIPCEvent %s to outofproc appD 0x%p,\n",
             IPCENames::GetName(pManagedEvent->type),
             VmPtrToCookie(pManagedEvent->vmAppDomain));
 
@@ -1611,7 +1611,7 @@ bool DebuggerRCThread::IsRCThreadReady()
     // leaving the threadid still non-0. So check the actual thread object
     // and make sure it's still around.
     int ret = WaitForSingleObject(m_thread, 0);
-    LOG((LF_CORDB, LL_EVERYTHING, "DRCT::IsReady - wait(0x%x)=%d, GetLastError() = %d\n", m_thread, ret, GetLastError()));
+    LOG((LF_CORDB, LL_EVERYTHING, "DRCT::IsReady - wait(0x%p)=%d, GetLastError() = %d\n", m_thread, ret, GetLastError()));
 
     if (ret != WAIT_TIMEOUT)
     {

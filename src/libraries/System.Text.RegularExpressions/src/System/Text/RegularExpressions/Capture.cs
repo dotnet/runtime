@@ -9,7 +9,7 @@ namespace System.Text.RegularExpressions
     /// </summary>
     public class Capture
     {
-        internal Capture(string text, int index, int length)
+        internal Capture(string? text, int index, int length)
         {
             Text = text;
             Index = index;
@@ -19,27 +19,38 @@ namespace System.Text.RegularExpressions
         /// <summary>Returns the position in the original string where the first character of captured substring was found.</summary>
         public int Index { get; private protected set; }
 
+        /// <summary>
+        /// This method should only be called when the text for matching was sliced with a different beginning, so the resulting index of
+        /// the match is not from the start of the text, but instead the start of the slice. This method will add back that extra indices
+        /// to account for the original text beginning.
+        /// </summary>
+        /// <param name="beginning">The original text's beginning offset.</param>
+        internal void AddBeginningToIndex(int beginning)
+        {
+            Index += beginning;
+        }
+
         /// <summary>Returns the length of the captured substring.</summary>
         public int Length { get; private protected set; }
 
         /// <summary>The original string</summary>
-        internal string Text { get; set; }
+        internal string? Text { get; set; }
 
         /// <summary>Gets the captured substring from the input string.</summary>
         /// <value>The substring that is captured by the match.</value>
-        public string Value => Text.Substring(Index, Length);
+        public string Value => Text is string text ? text.Substring(Index, Length) : string.Empty;
 
         /// <summary>Gets the captured span from the input string.</summary>
         /// <value>The span that is captured by the match.</value>
-        public ReadOnlySpan<char> ValueSpan => Text.AsSpan(Index, Length);
+        public ReadOnlySpan<char> ValueSpan => Text is string text ? text.AsSpan(Index, Length) : ReadOnlySpan<char>.Empty;
 
         /// <summary>Returns the substring that was matched.</summary>
         public override string ToString() => Value;
 
         /// <summary>The substring to the left of the capture</summary>
-        internal ReadOnlyMemory<char> GetLeftSubstring() => Text.AsMemory(0, Index);
+        internal ReadOnlyMemory<char> GetLeftSubstring() => Text is string text ? text.AsMemory(0, Index) : ReadOnlyMemory<char>.Empty;
 
         /// <summary>The substring to the right of the capture</summary>
-        internal ReadOnlyMemory<char> GetRightSubstring() => Text.AsMemory(Index + Length, Text.Length - Index - Length);
+        internal ReadOnlyMemory<char> GetRightSubstring() => Text is string text ? text.AsMemory(Index + Length, Text.Length - Index - Length) : ReadOnlyMemory<char>.Empty;
     }
 }

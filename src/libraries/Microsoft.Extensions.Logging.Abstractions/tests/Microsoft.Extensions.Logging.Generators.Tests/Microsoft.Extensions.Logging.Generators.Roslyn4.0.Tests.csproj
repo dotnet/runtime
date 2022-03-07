@@ -1,12 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <RoslynApiVersion>$(MicrosoftCodeAnalysisCSharpWorkspacesVersion)</RoslynApiVersion>
+    <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_4_0)</RoslynApiVersion>
     <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER</DefineConstants>
     <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
     <EmccLinkOptimizationFlag Condition="'$(ContinuousIntegrationBuild)' == 'true'">-O1</EmccLinkOptimizationFlag>
     <WasmNativeStrip>false</WasmNativeStrip>
   </PropertyGroup>
+
+  <ItemGroup>
+    <HighAotMemoryUsageAssembly Include="Microsoft.CodeAnalysis.CSharp.dll" />
+  </ItemGroup>
 
   <Import Project="Microsoft.Extensions.Logging.Generators.targets"/>
 

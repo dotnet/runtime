@@ -22,11 +22,13 @@ namespace System.Runtime.InteropServices.ObjectiveC
         }
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_TrySetGlobalMessageSendCallback")]
+        [return:MarshalAs(UnmanagedType.Bool)]
         private static partial bool TrySetGlobalMessageSendCallback(
             MessageSendFunction msgSendFunction,
             IntPtr func);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_TryInitializeReferenceTracker")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,

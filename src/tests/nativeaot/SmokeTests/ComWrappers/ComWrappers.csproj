@@ -3,12 +3,16 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+
+    <!-- Shouldn't need this: https://github.com/dotnet/linker/issues/2618 -->
+    <NoWarn>$(NoWarn);IL2050</NoWarn>
+
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ComWrappers.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

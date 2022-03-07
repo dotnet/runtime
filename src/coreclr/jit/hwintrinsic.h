@@ -159,6 +159,7 @@ enum HWIntrinsicFlag : unsigned int
 
     // The intrinsic supports some sort of containment analysis
     HW_Flag_SupportsContainment = 0x2000
+
 #else
 #error Unsupported platform
 #endif

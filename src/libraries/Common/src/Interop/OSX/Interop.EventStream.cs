@@ -99,7 +99,7 @@ internal static partial class Interop
         /// <param name="flags">Flags to say what kind of events should be sent through this stream.</param>
         /// <returns>On success, returns a pointer to an FSEventStream object; otherwise, returns IntPtr.Zero</returns>
         /// <remarks>For *nix systems, the CLR maps ANSI to UTF-8, so be explicit about that</remarks>
-        [GeneratedDllImport(Interop.Libraries.CoreServicesLibrary, CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Interop.Libraries.CoreServicesLibrary, StringMarshalling = StringMarshalling.Utf8)]
         internal static unsafe partial SafeEventStreamHandle FSEventStreamCreate(
             IntPtr                      allocator,
             delegate* unmanaged<FSEventStreamRef, IntPtr, size_t, byte**, FSEventStreamEventFlags*, FSEventStreamEventId*, void> callback,
@@ -127,6 +127,7 @@ internal static partial class Interop
         /// <param name="streamRef">The stream to receive events on.</param>
         /// <returns>Returns true if the stream was started; otherwise, returns false and no events will be received.</returns>
         [GeneratedDllImport(Interop.Libraries.CoreServicesLibrary)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool FSEventStreamStart(SafeEventStreamHandle streamRef);
 
         /// <summary>
