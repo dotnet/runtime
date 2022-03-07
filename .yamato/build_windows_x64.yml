@@ -25,9 +25,9 @@ commands:
   - artifacts\7za-win-x64\7za.exe a artifacts\unity\%ARTIFACT_FILENAME% .\artifacts\bin\microsoft.netcore.app.runtime.win-x64\Release\runtimes\win-x64\*
 
 artifacts:
-  win-x64-7z:
+  7z-archives:
     paths:
       - artifacts\unity\**
-  win-x64:
+  build:
     paths:
       - artifacts\bin\**

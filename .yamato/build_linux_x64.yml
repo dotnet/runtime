@@ -29,9 +29,9 @@ commands:
   - artifacts/7za-linux-x64/7za a artifacts/unity/$ARTIFACT_FILENAME ./artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64/*
 
 artifacts:
-  linux-x64-7z:
+  7z-archives:
     paths:
       - artifacts/unity/**
-  linux-x64:
+  build:
     paths:
       - artifacts/bin/**

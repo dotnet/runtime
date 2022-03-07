@@ -1,3 +1,2 @@
 globals:
   artifact_base_name: dotnet-unity
-  stevedore_publish_location: testing

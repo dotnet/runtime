@@ -8,7 +8,7 @@ agent:
   flavor: b1.xlarge
 
 dependencies:
-  - path: .yamato/build_windows.yml
+  - path: .yamato/build_windows_x86.yml
 
 commands:
 # build/run tests

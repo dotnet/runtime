@@ -1,6 +1,6 @@
 {% metadata_file .yamato/Globals.metafile %}
 ---
-name: Generate OSX x64Arm64
+name: Generate OSX x64+ARM64
 
 agent:
   type: Unity::VM::osx
@@ -22,6 +22,7 @@ commands:
   - cp LICENSE.md artifacts/bin/microsoft.netcore.app.runtime.osx-x64arm64/Release/runtimes/osx-x64arm64/.
   - artifacts/7za-mac-x64/7za a artifacts/unity/$ARTIFACT_FILENAME ./artifacts/bin/microsoft.netcore.app.runtime.osx-x64arm64/Release/runtimes/osx-x64arm64/*
 
+# We don't test x64+ARM64 yet, so let's build it on PRs targeting unity-main to make sure it builds at least
 triggers:
   pull_requests:
     - targets:
@@ -29,6 +30,9 @@ triggers:
           - "unity-main"
 
 artifacts:
-  osx-x64arm64-7z:
+  7z-archives:
     paths:
       - artifacts/unity/**
+  build:
+    paths:
+      - artifacts/bin/**

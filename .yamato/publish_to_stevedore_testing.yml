@@ -1,0 +1,9 @@
+name: Publish To Stevedore (Testing)
+
+variables:
+  STEVEDORE_REPO: testing
+
+dependencies:
+  - .yamato/publish_to_stevedore_linux.yml
+  - .yamato/publish_to_stevedore_osx.yml
+  - .yamato/publish_to_stevedore_windows.yml

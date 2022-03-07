@@ -4,7 +4,7 @@ name: Build OSX ARM64
 
 agent:
   type: Unity::VM::osx
-  image: platform-foundation/mac-10.15-bokken:latest
+  image: platform-foundation/mac-10.15-bokken:v0.1.1-1022244
   flavor: m1.mac
 
 variables:
@@ -28,10 +28,17 @@ commands:
   - cp LICENSE.md artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Release/runtimes/osx-arm64/.
   - artifacts/7za-mac-x64/7za a artifacts/unity/$ARTIFACT_FILENAME ./artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Release/runtimes/osx-arm64/*
 
+# We don't test ARM64 yet, so let's build it on PRs targeting unity-main to make sure it builds at least
+triggers:
+  pull_requests:
+    - targets:
+        only:
+          - "unity-main"
+
 artifacts:
-  osx-arm64-7z:
+  7z-archives:
     paths:
       - artifacts/unity/**
-  osx-arm64:
+  build:
     paths:
       - artifacts/bin/**

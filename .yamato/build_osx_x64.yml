@@ -29,9 +29,9 @@ commands:
   - artifacts/7za-mac-x64/7za a artifacts/unity/$ARTIFACT_FILENAME ./artifacts/bin/microsoft.netcore.app.runtime.osx-x64/Release/runtimes/osx-x64/*
 
 artifacts:
-  osx-x64-7z:
+  7z-archives:
     paths:
       - artifacts/unity/**
-  osx-x64:
+  build:
     paths:
       - artifacts/bin/**

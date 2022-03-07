@@ -1,0 +1,9 @@
+name: Publish To Stevedore (Public)
+
+variables:
+  STEVEDORE_REPO: public
+
+dependencies:
+  - .yamato/publish_to_stevedore_linux.yml
+  - .yamato/publish_to_stevedore_osx.yml
+  - .yamato/publish_to_stevedore_windows.yml

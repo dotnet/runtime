@@ -1,6 +1,4 @@
-{% metadata_file .yamato/Globals.metafile %}
----
-name: Publish To Stevedore Linux x64
+name: Publish To Stevedore Linux
 
 agent:
   type: Unity::VM
@@ -11,7 +9,7 @@ dependencies:
   - path: .yamato/build_linux_x64.yml
 
 variables:
-  STEVEDORE_REPO: {{globals.stevedore_publish_location}}
+  STEVEDORE_REPO: testing
 
 commands:
 # upload to stevedore
