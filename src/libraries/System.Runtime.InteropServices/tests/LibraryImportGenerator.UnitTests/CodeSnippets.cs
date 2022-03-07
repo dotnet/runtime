@@ -3,7 +3,7 @@
 
 using System.Runtime.InteropServices;
 
-namespace DllImportGenerator.UnitTests
+namespace LibraryImportGenerator.UnitTests
 {
     internal static class CodeSnippets
     {

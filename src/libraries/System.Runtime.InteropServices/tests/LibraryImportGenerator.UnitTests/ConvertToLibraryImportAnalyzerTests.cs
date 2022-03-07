@@ -8,14 +8,14 @@ using System.Threading.Tasks;
 
 using Xunit;
 
-using static Microsoft.Interop.Analyzers.ConvertToGeneratedDllImportAnalyzer;
+using static Microsoft.Interop.Analyzers.ConvertToLibraryImportAnalyzer;
 
-using VerifyCS = DllImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.ConvertToGeneratedDllImportAnalyzer>;
+using VerifyCS = LibraryImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.ConvertToLibraryImportAnalyzer>;
 
-namespace DllImportGenerator.UnitTests
+namespace LibraryImportGenerator.UnitTests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
-    public class ConvertToGeneratedDllImportAnalyzerTests
+    public class ConvertToLibraryImportAnalyzerTests
     {
         public static IEnumerable<object[]> MarshallingRequiredTypes() => new[]
         {
@@ -56,10 +56,10 @@ namespace DllImportGenerator.UnitTests
             string source = DllImportWithType(type.FullName!);
             await VerifyCS.VerifyAnalyzerAsync(
                 source,
-                VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
+                VerifyCS.Diagnostic(ConvertToLibraryImport)
                     .WithLocation(0)
                     .WithArguments("Method_Parameter"),
-                VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
+                VerifyCS.Diagnostic(ConvertToLibraryImport)
                     .WithLocation(1)
                     .WithArguments("Method_Return"));
         }
@@ -86,13 +86,13 @@ unsafe partial class Test
 ";
             await VerifyCS.VerifyAnalyzerAsync(
                 source,
-                VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
+                VerifyCS.Diagnostic(ConvertToLibraryImport)
                     .WithLocation(0)
                     .WithArguments("Method_In"),
-                VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
+                VerifyCS.Diagnostic(ConvertToLibraryImport)
                     .WithLocation(1)
                     .WithArguments("Method_Out"),
-                VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
+                VerifyCS.Diagnostic(ConvertToLibraryImport)
                     .WithLocation(2)
                     .WithArguments("Method_Ref"));
         }
@@ -113,10 +113,10 @@ partial class Test
 ";
             await VerifyCS.VerifyAnalyzerAsync(
                 source,
-                VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
+                VerifyCS.Diagnostic(ConvertToLibraryImport)
                     .WithLocation(0)
                     .WithArguments("Method1"),
-                VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
+                VerifyCS.Diagnostic(ConvertToLibraryImport)
                     .WithLocation(1)
                     .WithArguments("Method2"));
         }

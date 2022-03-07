@@ -25,6 +25,8 @@ import {
     mono_wasm_trace_logger,
     mono_wasm_add_dbg_command_received,
     mono_wasm_change_debugger_log_level,
+    mono_wasm_symbolicate_string,
+    mono_wasm_stringify_as_error_with_stack,
 } from "./debug";
 import { ENVIRONMENT_IS_WEB, ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
 import { DotnetModuleConfigImports, DotnetModule } from "./types";
@@ -323,6 +325,10 @@ const INTERNAL: any = {
 
     // with mono_wasm_debugger_log and mono_wasm_trace_logger
     logging: undefined,
+
+    //
+    mono_wasm_symbolicate_string,
+    mono_wasm_stringify_as_error_with_stack,
 
     // used in debugger DevToolsHelper.cs
     mono_wasm_get_loaded_files,

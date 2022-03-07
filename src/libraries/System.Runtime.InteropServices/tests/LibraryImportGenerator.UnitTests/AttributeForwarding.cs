@@ -13,7 +13,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace DllImportGenerator.UnitTests
+namespace LibraryImportGenerator.UnitTests
 {
     public class AttributeForwarding
     {
@@ -46,7 +46,7 @@ struct Native
 }}
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(newComp.GetDiagnostics());
 
             ITypeSymbol attributeType = newComp.GetTypeByMetadataName(attributeMetadataName)!;
@@ -88,7 +88,7 @@ struct Native
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(newComp.GetDiagnostics());
 
             ITypeSymbol attributeType = newComp.GetTypeByMetadataName("System.Runtime.InteropServices.UnmanagedCallConvAttribute")!;
@@ -132,7 +132,7 @@ struct Native
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(newComp.GetDiagnostics());
 
             ITypeSymbol attributeType = newComp.GetTypeByMetadataName("System.Runtime.InteropServices.UnmanagedCallConvAttribute")!;
@@ -180,7 +180,7 @@ struct Native
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(newComp.GetDiagnostics());
 
             ITypeSymbol attributeType = newComp.GetTypeByMetadataName("System.Runtime.InteropServices.UnmanagedCallConvAttribute")!;
@@ -232,7 +232,7 @@ struct Native
 }}
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(newComp.GetDiagnostics());
 
             ITypeSymbol attributeType = newComp.GetTypeByMetadataName("System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute")!;
@@ -281,7 +281,7 @@ struct Native
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
             Assert.Empty(newComp.GetDiagnostics());
 
@@ -310,7 +310,7 @@ partial class C
 }
 " + CodeSnippets.GeneratedDllImportAttributeDeclaration;
             Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
             IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
 
@@ -353,7 +353,7 @@ partial class C
 }
 " + CodeSnippets.GeneratedDllImportAttributeDeclaration;
             Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
             IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
 
@@ -382,7 +382,7 @@ partial class C
 }
 " + CodeSnippets.GeneratedDllImportAttributeDeclaration;
             Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
             IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
 

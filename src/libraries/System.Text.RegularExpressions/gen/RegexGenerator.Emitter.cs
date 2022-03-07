@@ -535,6 +535,17 @@ namespace System.Text.RegularExpressions.Generator
                                 Goto(NoStartingPositionFound);
                             }
                             writer.WriteLine("pos = newlinePos + pos + 1;");
+
+                            // We've updated the position.  Make sure there's still enough room in the input for a possible match.
+                            using (EmitBlock(writer, minRequiredLength switch
+                            {
+                                0 => "if (pos > inputSpan.Length)",
+                                1 => "if (pos >= inputSpan.Length)",
+                                _ => $"if (pos > inputSpan.Length - {minRequiredLength})"
+                            }))
+                            {
+                                Goto(NoStartingPositionFound);
+                            }
                         }
                         writer.WriteLine();
                         break;

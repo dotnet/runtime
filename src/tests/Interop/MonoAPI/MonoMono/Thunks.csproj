@@ -8,6 +8,6 @@
     <Compile Include="..\Common\*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Native\mono-embedding-api-test\CMakeLists.txt" />
+    <CMakeProjectReference Include="..\Native\mono-embedding-api-test\CMakeLists.txt" />
   </ItemGroup>
 </Project>

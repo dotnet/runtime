@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 using Xunit;
 
-namespace DllImportGenerator.IntegrationTests
+namespace LibraryImportGenerator.IntegrationTests
 {
     [CustomTypeMarshaller(typeof(int))]
     public struct SetLastErrorMarshaller

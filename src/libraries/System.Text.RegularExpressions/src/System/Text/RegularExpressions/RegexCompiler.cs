@@ -622,6 +622,18 @@ namespace System.Text.RegularExpressions
                                 Ldc(1);
                                 Add();
                                 Stloc(pos);
+
+                                // We've updated the position.  Make sure there's still enough room in the input for a possible match.
+                                // if (pos > inputSpan.Length - minRequiredLength) returnFalse;
+                                Ldloca(inputSpan);
+                                Call(s_spanGetLengthMethod);
+                                if (minRequiredLength != 0)
+                                {
+                                    Ldc(minRequiredLength);
+                                    Sub();
+                                }
+                                Ldloc(pos);
+                                BltFar(returnFalse);
                             }
 
                             MarkLabel(label);

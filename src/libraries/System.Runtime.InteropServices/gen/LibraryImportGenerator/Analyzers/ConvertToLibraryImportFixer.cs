@@ -21,13 +21,13 @@ using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
 namespace Microsoft.Interop.Analyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp)]
-    public sealed class ConvertToGeneratedDllImportFixer : CodeFixProvider
+    public sealed class ConvertToLibraryImportFixer : CodeFixProvider
     {
-        public override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(Ids.ConvertToGeneratedDllImport);
+        public override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(Ids.ConvertToLibraryImport);
 
         public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
 
-        private const string ConvertToGeneratedDllImportKey = "ConvertToGeneratedDllImport";
+        private const string ConvertToLibraryImportKey = "ConvertToLibraryImport";
 
         private static readonly string[] s_preferredAttributeArgumentOrder =
             {
@@ -75,8 +75,8 @@ namespace Microsoft.Interop.Analyzers
             // Register code fix
             context.RegisterCodeFix(
                 CodeAction.Create(
-                    Resources.ConvertToGeneratedDllImport,
-                    cancelToken => ConvertToGeneratedDllImport(
+                    Resources.ConvertToLibraryImport,
+                    cancelToken => ConvertToLibraryImport(
                         context.Document,
                         methodSyntax,
                         methodSymbol,
@@ -84,7 +84,7 @@ namespace Microsoft.Interop.Analyzers
                         generatedDllImportAttrType,
                         entryPointSuffix: null,
                         cancelToken),
-                    equivalenceKey: ConvertToGeneratedDllImportKey),
+                    equivalenceKey: ConvertToLibraryImportKey),
                 context.Diagnostics);
 
             DllImportData dllImportData = methodSymbol.GetDllImportData()!;
@@ -98,8 +98,8 @@ namespace Microsoft.Interop.Analyzers
                 {
                     context.RegisterCodeFix(
                         CodeAction.Create(
-                            string.Format(Resources.ConvertToGeneratedDllImportWithSuffix, "A"),
-                            cancelToken => ConvertToGeneratedDllImport(
+                            string.Format(Resources.ConvertToLibraryImportWithSuffix, "A"),
+                            cancelToken => ConvertToLibraryImport(
                                 context.Document,
                                 methodSyntax,
                                 methodSymbol,
@@ -107,15 +107,15 @@ namespace Microsoft.Interop.Analyzers
                                 generatedDllImportAttrType,
                                 entryPointSuffix: 'A',
                                 cancelToken),
-                            equivalenceKey: ConvertToGeneratedDllImportKey + "A"),
+                            equivalenceKey: ConvertToLibraryImportKey + "A"),
                         context.Diagnostics);
                 }
                 if (dllImportData.CharacterSet is CharSet.Unicode or CharSet.Auto)
                 {
                     context.RegisterCodeFix(
                         CodeAction.Create(
-                            string.Format(Resources.ConvertToGeneratedDllImportWithSuffix, "W"),
-                            cancelToken => ConvertToGeneratedDllImport(
+                            string.Format(Resources.ConvertToLibraryImportWithSuffix, "W"),
+                            cancelToken => ConvertToLibraryImport(
                                 context.Document,
                                 methodSyntax,
                                 methodSymbol,
@@ -123,13 +123,13 @@ namespace Microsoft.Interop.Analyzers
                                 generatedDllImportAttrType,
                                 entryPointSuffix: 'W',
                                 cancelToken),
-                            equivalenceKey: ConvertToGeneratedDllImportKey + "W"),
+                            equivalenceKey: ConvertToLibraryImportKey + "W"),
                         context.Diagnostics);
                 }
             }
         }
 
-        private async Task<Document> ConvertToGeneratedDllImport(
+        private async Task<Document> ConvertToLibraryImport(
             Document doc,
             MethodDeclarationSyntax methodSyntax,
             IMethodSymbol methodSymbol,
@@ -156,7 +156,7 @@ namespace Microsoft.Interop.Analyzers
 
             // Add annotation about potential behavioural and compatibility changes
             generatedDllImportSyntax = generatedDllImportSyntax.WithAdditionalAnnotations(
-                WarningAnnotation.Create(string.Format(Resources.ConvertToGeneratedDllImportWarning, "[TODO] Documentation link")));
+                WarningAnnotation.Create(string.Format(Resources.ConvertToLibraryImportWarning, "[TODO] Documentation link")));
 
             // Replace DllImport with GeneratedDllImport
             SyntaxNode generatedDeclaration = generator.ReplaceNode(methodSyntax, dllImportSyntax, generatedDllImportSyntax);

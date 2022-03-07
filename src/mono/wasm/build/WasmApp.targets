@@ -98,9 +98,6 @@
 
     <EnableDefaultWasmAssembliesToBundle Condition="'$(EnableDefaultWasmAssembliesToBundle)' == ''">true</EnableDefaultWasmAssembliesToBundle>
     <WasmBuildOnlyAfterPublish Condition="'$(WasmBuildOnlyAfterPublish)' == '' and '$(DeployOnBuild)' == 'true'">true</WasmBuildOnlyAfterPublish>
-
-    <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
-    <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == ''">false</WasmEmitSymbolMap>
   </PropertyGroup>
 
   <!-- PUBLISH -->

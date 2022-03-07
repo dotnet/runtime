@@ -4,7 +4,7 @@
     <RootNamespace>Internal.TypeSystem</RootNamespace>
     <AssemblyName>ILCompiler.TypeSystem</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>net6.0</TargetFrameworks>
+    <TargetFramework>net6.0</TargetFramework>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Platforms>x64;x86</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>

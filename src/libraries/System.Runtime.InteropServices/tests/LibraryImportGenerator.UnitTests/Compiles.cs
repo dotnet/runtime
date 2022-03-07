@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace DllImportGenerator.UnitTests
+namespace LibraryImportGenerator.UnitTests
 {
     public class Compiles
     {
@@ -238,7 +238,7 @@ namespace DllImportGenerator.UnitTests
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(generatorDiags);
 
             var newCompDiags = newComp.GetDiagnostics();
@@ -264,7 +264,7 @@ namespace DllImportGenerator.UnitTests
             Compilation comp = await TestUtils.CreateCompilation(source, preprocessorSymbols: preprocessorSymbols);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(generatorDiags);
 
             var newCompDiags = newComp.GetDiagnostics();
@@ -313,7 +313,7 @@ namespace DllImportGenerator.UnitTests
             var newComp = TestUtils.RunGenerators(
                 comp,
                 out var generatorDiags,
-                new Microsoft.Interop.DllImportGenerator());
+                new Microsoft.Interop.LibraryImportGenerator());
 
             Assert.Empty(generatorDiags);
 
@@ -350,7 +350,7 @@ namespace DllImportGenerator.UnitTests
             var newComp = TestUtils.RunGenerators(
                 comp,
                 out var generatorDiags,
-                new Microsoft.Interop.DllImportGenerator());
+                new Microsoft.Interop.LibraryImportGenerator());
 
             Assert.Empty(generatorDiags);
 
@@ -384,7 +384,7 @@ namespace DllImportGenerator.UnitTests
             var newComp = TestUtils.RunGenerators(
                 comp,
                 out var generatorDiags,
-                new Microsoft.Interop.DllImportGenerator());
+                new Microsoft.Interop.LibraryImportGenerator());
 
             Assert.Empty(generatorDiags);
 
@@ -422,9 +422,9 @@ namespace DllImportGenerator.UnitTests
 
             var newComp = TestUtils.RunGenerators(
                 comp,
-                new DllImportGeneratorOptionsProvider(useMarshalType: true, generateForwarders: false),
+                new LibraryImportGeneratorOptionsProvider(useMarshalType: true, generateForwarders: false),
                 out var generatorDiags,
-                new Microsoft.Interop.DllImportGenerator());
+                new Microsoft.Interop.LibraryImportGenerator());
 
             Assert.Empty(generatorDiags);
 
@@ -451,7 +451,7 @@ namespace DllImportGenerator.UnitTests
             Compilation comp = await TestUtils.CreateCompilation(sources);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(generatorDiags);
 
             var newCompDiags = newComp.GetDiagnostics();

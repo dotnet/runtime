@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace DllImportGenerator.IntegrationTests
+namespace LibraryImportGenerator.IntegrationTests
 {
     internal partial class NativeExportsNE
     {

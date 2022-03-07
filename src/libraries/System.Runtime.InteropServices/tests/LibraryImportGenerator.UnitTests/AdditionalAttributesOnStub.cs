@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace DllImportGenerator.UnitTests
+namespace LibraryImportGenerator.UnitTests
 {
     public class AdditionalAttributesOnStub
     {
@@ -39,7 +39,7 @@ struct Native
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
 
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
             ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
             IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
@@ -58,7 +58,7 @@ partial class C
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
 
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
             ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
             IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
@@ -90,7 +90,7 @@ struct Native
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
 
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
             ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
             IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
@@ -109,7 +109,7 @@ partial class C
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
 
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
             ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
             IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
@@ -141,7 +141,7 @@ partial class C
 }}";
             Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
 
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
             ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
             IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
@@ -181,7 +181,7 @@ struct Native
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
 
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
             ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
             IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
@@ -214,7 +214,7 @@ struct Native
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
 
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
             ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
             IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
@@ -247,7 +247,7 @@ struct Native
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
 
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
             ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
             IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");

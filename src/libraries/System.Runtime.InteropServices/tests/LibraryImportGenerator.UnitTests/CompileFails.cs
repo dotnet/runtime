@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Xunit;
 
-namespace DllImportGenerator.UnitTests
+namespace LibraryImportGenerator.UnitTests
 {
     public class CompileFails
     {
@@ -128,7 +128,7 @@ namespace DllImportGenerator.UnitTests
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
 
             // Verify the compilation failed with errors.
             IEnumerable<Diagnostic> generatorErrors = generatorDiags.Where(d => d.Severity == DiagnosticSeverity.Error);
@@ -160,7 +160,7 @@ namespace DllImportGenerator.UnitTests
             // Do not validate that the compilation has no errors that the generator will not fix.
             Compilation comp = await TestUtils.CreateCompilation(source);
 
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
 
             // Verify the compilation failed with errors.
             int generatorErrors = generatorDiags.Count(d => d.Severity == DiagnosticSeverity.Error);
