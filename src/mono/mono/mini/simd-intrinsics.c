@@ -652,6 +652,22 @@ type_to_xextract_op (MonoTypeEnum type)
 	}
 }
 
+static MonoClass *
+create_class_instance (MonoCompile *cfg, MonoMethodSignature *fsig, const char* name_space, const char *name)
+{
+	MonoClass *ivector128 = mono_class_load_from_name (mono_defaults.corlib, name_space, name);
+	MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+	MonoType *param_type = mono_class_get_generic_class (arg_class)->context.class_inst->type_argv [0];
+	MonoType *args [ ] = { param_type };
+	MonoGenericContext *ctx = mono_method_get_context (cfg->method);
+	ctx->class_inst = mono_metadata_get_generic_inst (1, args);
+	ERROR_DECL (error);
+	MonoClass *ivector128_inst = mono_class_inflate_generic_class_checked (ivector128, ctx, error);
+	mono_error_assert_ok (error); /* FIXME don't swallow the error */
+
+	return ivector128_inst;
+}
+
 static int
 type_to_extract_op (MonoTypeEnum type)
 {
@@ -725,6 +741,7 @@ static guint16 sri_vector_methods [] = {
 	SN_Max,
 	SN_Min,
 	SN_Multiply,
+	SN_Narrow,
 	SN_Negate,
 	SN_OnesComplement,
 	SN_Sqrt,
@@ -1057,6 +1074,78 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		default:
 			g_assert_not_reached ();
 		}
+	}
+	case SN_Narrow: {
+#ifdef TARGET_ARM64
+		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
+		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
+			return NULL;
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int size = mono_class_value_size (arg_class, NULL);
+		if (size == 16) {
+			switch (arg0_type) {
+			case MONO_TYPE_R8: {
+				MonoInst *ins = emit_simd_ins (cfg, arg_class, OP_ARM64_FCVTN, args [0]->dreg, -1);
+				return emit_simd_ins (cfg, arg_class, OP_ARM64_FCVTN2, ins->dreg, args [1]->dreg);
+			}
+			case MONO_TYPE_I2:
+			case MONO_TYPE_I4:
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_U8: {
+				MonoInst *ins = emit_simd_ins (cfg, arg_class, OP_ARM64_XTN, args [0]->dreg, -1);
+				return emit_simd_ins (cfg, arg_class, OP_ARM64_XTN2, ins->dreg, args [1]->dreg);
+			}
+			default:
+				return NULL;
+			}
+		} else {
+			switch (arg0_type) {
+			case MONO_TYPE_R8: {
+				MonoInst *ins1 = emit_simd_ins (cfg, arg_class, OP_XWIDEN_UNSAFE, args [0]->dreg, -1);
+				int tmp = alloc_ireg (cfg);
+				MONO_EMIT_NEW_ICONST (cfg, tmp, 16);
+				MonoInst *ins2 = emit_simd_ins (cfg, arg_class, OP_EXTRACT_R8, args [1]->dreg, -1);
+				ins2->inst_c0 = 0;
+				ins2->inst_c1 = arg0_type;
+
+				MonoClass *ivector128_inst = create_class_instance (cfg, fsig, "System.Runtime.Intrinsics", "Vector128`1");
+
+				ins1 = emit_simd_ins (cfg, ivector128_inst, OP_XINSERT_R8, ins1->dreg, ins2->dreg);
+				ins1->sreg3 = tmp;
+				ins1->inst_c1 = arg0_type;
+				return emit_simd_ins (cfg, arg_class, OP_ARM64_FCVTN, ins1->dreg, -1);
+			}
+			case MONO_TYPE_I2:
+			case MONO_TYPE_I4:
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_U8: {
+				MonoInst *ins1 = emit_simd_ins (cfg, arg_class, OP_XWIDEN_UNSAFE, args [0]->dreg, -1);
+				int tmp = alloc_ireg (cfg);
+				MONO_EMIT_NEW_ICONST (cfg, tmp, 16);
+				int insert_op = type_to_xinsert_op (arg0_type);
+				int extract_op = type_to_extract_op (arg0_type);
+				MonoInst *ins2 = emit_simd_ins (cfg, arg_class, extract_op, args [1]->dreg, -1);
+				ins2->inst_c0 = 0;
+				ins2->inst_c1 = arg0_type;
+
+				MonoClass *ivector128_inst = create_class_instance (cfg, fsig, "System.Runtime.Intrinsics", "Vector128`1");
+
+				ins1 = emit_simd_ins (cfg, ivector128_inst, insert_op, ins1->dreg, ins2->dreg);
+				ins1->sreg3 = tmp;
+				ins1->inst_c1 = arg0_type;
+				return emit_simd_ins (cfg, arg_class, OP_ARM64_XTN, ins1->dreg, -1);
+			}
+			default:
+				return NULL;
+			}
+		}
+#else
+		return NULL;
+#endif
 	}
 	case SN_Negate:
 	case SN_OnesComplement: {
@@ -2195,27 +2284,8 @@ emit_arm64_intrinsics (
 		case SN_InsertScalar:
 		case SN_Insert: {
 			MonoClass *ret_klass = mono_class_from_mono_type_internal (fsig->ret);
-			int insert_op = 0;
-			int extract_op = 0;
-			switch (arg0_type) {
-			case MONO_TYPE_I1: case MONO_TYPE_U1: insert_op = OP_XINSERT_I1; extract_op = OP_EXTRACT_I1; break;
-			case MONO_TYPE_I2: case MONO_TYPE_U2: insert_op = OP_XINSERT_I2; extract_op = OP_EXTRACT_I2; break;
-			case MONO_TYPE_I4: case MONO_TYPE_U4: insert_op = OP_XINSERT_I4; extract_op = OP_EXTRACT_I4; break;
-			case MONO_TYPE_I8: case MONO_TYPE_U8: insert_op = OP_XINSERT_I8; extract_op = OP_EXTRACT_I8; break;
-			case MONO_TYPE_R4: insert_op = OP_XINSERT_R4; extract_op = OP_EXTRACT_R4; break;
-			case MONO_TYPE_R8: insert_op = OP_XINSERT_R8; extract_op = OP_EXTRACT_R8; break;
-			case MONO_TYPE_I:
-			case MONO_TYPE_U:
-#if TARGET_SIZEOF_VOID_P == 8
-				insert_op = OP_XINSERT_I8;
-				extract_op = OP_EXTRACT_I8;
-#else
-				insert_op = OP_XINSERT_I4;
-				extract_op = OP_EXTRACT_I4;
-#endif
-				break;
-			default: g_assert_not_reached ();
-			}
+			int insert_op = type_to_xinsert_op (arg0_type);
+			int extract_op = type_to_extract_op (arg0_type);
 			int val_src_reg = args [2]->dreg;
 			switch (id) {
 			case SN_InsertSelectedScalar: {
