@@ -137,14 +137,28 @@ namespace System.IO.Tests
         {
             string path = GetTestFilePath();
             
-            // create large (~100MB) file
-            File.WriteAllLines(path, Enumerable.Repeat("A very large file used for testing StreamReader cancellation. 0123456789012345678901234567890123456789.", 1_000_000));
+            // create large (~1GB) file
+            File.WriteAllLines(path, Enumerable.Repeat("A very large file used for testing StreamReader cancellation. 0123456789012345678901234567890123456789.", 10_000_000));
 
             using StreamReader reader = File.OpenText(path);
-            using CancellationTokenSource cts = new (TimeSpan.FromMilliseconds(50));
+            using CancellationTokenSource cts = new ();
             var token = cts.Token;
 
-            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await reader.ReadToEndAsync(token));
+            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            {
+                Task<string> readToEndTask = reader.ReadToEndAsync(token);
+
+                // This is a time-sensitive test where the cancellation needs to happen before the async read completes.
+                // A sleep may be too long a delay, so spin-wait for a very short duration before canceling.
+                SpinWait spinner = default;
+                while (!spinner.NextSpinWillYield)
+                {
+                    spinner.SpinOnce(sleep1Threshold: -1);
+                }
+
+                cts.Cancel();
+                await readToEndTask;
+            });
             Assert.Equal(token, ex.CancellationToken);
         }
 
@@ -566,7 +580,6 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(0, false)]
         [InlineData(0, true)]
         [InlineData(1, false)]

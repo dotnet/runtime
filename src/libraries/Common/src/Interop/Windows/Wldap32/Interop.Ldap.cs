@@ -143,7 +143,7 @@ internal static partial class Interop
 
         [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_search_extW", StringMarshalling = StringMarshalling.Utf16)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
-        public static partial int ldap_search(ConnectionHandle ldapHandle, string dn, int scope, string filter, IntPtr attributes, bool attributeOnly, IntPtr servercontrol, IntPtr clientcontrol, int timelimit, int sizelimit, ref int messageNumber);
+        public static partial int ldap_search(ConnectionHandle ldapHandle, string dn, int scope, string filter, IntPtr attributes, [MarshalAs(UnmanagedType.Bool)] bool attributeOnly, IntPtr servercontrol, IntPtr clientcontrol, int timelimit, int sizelimit, ref int messageNumber);
 
         [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_first_entry")]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]

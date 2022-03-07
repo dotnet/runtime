@@ -25,7 +25,7 @@ internal static partial class Interop
 
         [GeneratedDllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleTimeFormat", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool GetLocaleTimeFormat(string localeName, bool shortFormat, char* value, int valueLength);
+        internal static unsafe partial bool GetLocaleTimeFormat(string localeName, [MarshalAs(UnmanagedType.Bool)] bool shortFormat, char* value, int valueLength);
 
         [GeneratedDllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleInfoInt", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]

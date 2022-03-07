@@ -5416,11 +5416,11 @@ GENERICS_TYPE_TOKEN DacDbiInterfaceImpl::ResolveExactGenericArgsToken(DWORD     
 
     if (dwExactGenericArgsTokenIndex == 0)
     {
-        // In a rare case of VS4Mac debugging VS4Mac ARM64 optimized code we get a null generics argument token. We aren't sure 
-        // why the token is null, it may be a bug or it may be by design in the runtime. In the interest of time we are working 
-        // around the issue rather than investigating the root cause. This workaround should only cause us to degrade generic 
-        // types from exact type parameters to approximate or canonical type parameters. In the future if we discover this issue 
-        // is happening more frequently than we expect or the workaround is more impactful than we expect we may need to remove 
+        // In a rare case of VS4Mac debugging VS4Mac ARM64 optimized code we get a null generics argument token. We aren't sure
+        // why the token is null, it may be a bug or it may be by design in the runtime. In the interest of time we are working
+        // around the issue rather than investigating the root cause. This workaround should only cause us to degrade generic
+        // types from exact type parameters to approximate or canonical type parameters. In the future if we discover this issue
+        // is happening more frequently than we expect or the workaround is more impactful than we expect we may need to remove
         // this workaround and resolve the underlying issue.
         if (rawToken == 0)
         {
@@ -6388,7 +6388,7 @@ HRESULT DacHeapWalker::MoveToNextObject()
         mCurrObj += mCurrSize;
 
         // Check to see if we are in the correct bounds.
-        bool isGen0 = IsRegionGCEnabled() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) : 
+        bool isGen0 = IsRegionGCEnabled() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) :
                                    (mHeaps[mCurrHeap].Gen0Start <= mCurrObj && mHeaps[mCurrHeap].Gen0End > mCurrObj);
 
         if (isGen0)
@@ -6480,7 +6480,7 @@ HRESULT DacHeapWalker::NextSegment()
 
         mCurrObj = mHeaps[mCurrHeap].Segments[mCurrSeg].Start;
 
-        bool isGen0 = IsRegionGCEnabled() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) : 
+        bool isGen0 = IsRegionGCEnabled() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) :
                                    (mHeaps[mCurrHeap].Gen0Start <= mCurrObj && mHeaps[mCurrHeap].Gen0End > mCurrObj);
 
         if (isGen0)
@@ -6904,7 +6904,7 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
             _ASSERTE(eph < heaps[i].SegmentCount);
             if (heaps[i].Segments[eph].Start != heaps[i].Gen1Start)
                 total++;
-        }        
+        }
     }
 
     pSegments->Alloc(total);
@@ -7166,33 +7166,33 @@ HRESULT DacDbiInterfaceImpl::GetObjectFields(COR_TYPEID id, ULONG32 celt, COR_FI
     for (ULONG32 i = 0; i < cFields; ++i)
     {
         FieldDesc *pField = fieldDescIterator.Next();
-        layout[i].token = pField->GetMemberDef();
-        layout[i].offset = (ULONG32)pField->GetOffset() + (fReferenceType ? Object::GetOffsetOfFirstField() : 0);
+
+        COR_FIELD* corField = layout + i;
+        corField->token = pField->GetMemberDef();
+        corField->offset = (ULONG32)pField->GetOffset() + (fReferenceType ? Object::GetOffsetOfFirstField() : 0);
 
         TypeHandle fieldHandle = pField->LookupFieldTypeHandle();
 
         if (fieldHandle.IsNull())
         {
-            layout[i].id.token1 = 0;
-            layout[i].id.token2 = 0;
-            layout[i].fieldType = (CorElementType)0;
+            corField->id = {};
+            corField->fieldType = (CorElementType)0;
+        }
+        else if (fieldHandle.IsByRef())
+        {
+            corField->fieldType = ELEMENT_TYPE_BYREF;
+            // All ByRefs intentionally return IntPtr's MethodTable.
+            corField->id.token1 = CoreLibBinder::GetElementType(ELEMENT_TYPE_I).GetAddr();
+            corField->id.token2 = 0;
         }
         else
         {
+            // Note that pointer types are handled in this path.
+            // IntPtr's MethodTable is set for all pointer types and is expected.
             PTR_MethodTable mt = fieldHandle.GetMethodTable();
-            layout[i].fieldType = mt->GetInternalCorElementType();
-            layout[i].id.token1 = (ULONG64)mt.GetAddr();
-
-            if (!mt->IsArray())
-            {
-                layout[i].id.token2 = 0;
-            }
-            else
-            {
-                TypeHandle hnd = mt->GetArrayElementTypeHandle();
-                PTR_MethodTable cmt = hnd.GetMethodTable();
-                layout[i].id.token2 = (ULONG64)cmt.GetAddr();
-            }
+            corField->fieldType = mt->GetInternalCorElementType();
+            corField->id.token1 = (ULONG64)mt.GetAddr();
+            corField->id.token2 = 0;
         }
     }
 

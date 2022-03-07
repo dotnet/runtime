@@ -13,6 +13,11 @@
     <PreviousNetCoreAppBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.PreviousNetCoreApp.txt</PreviousNetCoreAppBaselineFile>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ApiCompatExcludeAttributeFile Include="$(ApiCompatExcludeAttributeList.Split(','))" />
+    <ApiCompatExcludeAttributeFile Include="ApiCompatBaselineExcludedAttributes.txt" />
+  </ItemGroup>
+
   <!-- For API comparision, ApiCompat needs both the inbox and the out-of-band assemblies plus the shims to be built. -->
   <ItemGroup>
     <ProjectReference Include="..\sfx-src.proj;
@@ -30,14 +35,14 @@
   <Target Name="RunApiCompat"
           DependsOnTargets="FindReferenceAssembliesForReferences"
           AfterTargets="Build"
-          Inputs="@(ReferencePathWithRefAssemblies);$(ApiCompatNSBaselineFile);$(ApiCompatNSOnlyBaselineFile);$(PreviousNetCoreAppBaselineFile)"
+          Inputs="@(ReferencePathWithRefAssemblies);$(ApiCompatNSBaselineFile);$(ApiCompatNSOnlyBaselineFile);$(PreviousNetCoreAppBaselineFile);@(ApiCompatExcludeAttributeFile)"
           Outputs="$(IntermediateOutputPath)$(TargetArchitecture)-marker.txt">
     <PropertyGroup>
       <ApiCompatResponseFile>$(IntermediateOutputPath)apicompat.rsp</ApiCompatResponseFile>
       <ApiCompatExitCode>0</ApiCompatExitCode>
       <!-- TODO: Replace with ReferencePathWithRefAssemblies when ApiCompat supports passing in a list of assemblies: https://github.com/dotnet/arcade/issues/8394. -->
       <ApiCompatArgs>--impl-dirs "$(LibrariesAllRefArtifactsPath.TrimEnd('\/'))"</ApiCompatArgs>
-      <ApiCompatArgs Condition="'$(ApiCompatExcludeAttributeList)' != ''">$(ApiCompatArgs) --exclude-attributes "$(ApiCompatExcludeAttributeList)"</ApiCompatArgs>
+      <ApiCompatArgs Condition="'@(ApiCompatExcludeAttributeFile)' != ''">$(ApiCompatArgs) --exclude-attributes "@(ApiCompatExcludeAttributeFile->Metadata('FullPath'), ',')"</ApiCompatArgs>
     </PropertyGroup>
 
     <WriteLinesToFile File="$(ApiCompatResponseFile)"
