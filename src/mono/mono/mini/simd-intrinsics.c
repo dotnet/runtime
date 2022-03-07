@@ -965,10 +965,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_GreaterThanOrEqualAny:
 		case SN_LessThanAny:
 		case SN_LessThanOrEqualAny: {
-			g_assert (fsig->param_count == 2 &&
-				fsig->ret->type == MONO_TYPE_BOOLEAN &&
-				mono_metadata_type_equal (fsig->params [0], fsig->params [1]));
-
 			MonoInst *zero = emit_xzero (cfg, arg_class);
 			return emit_not_xequal (cfg, klass, cmp, zero);
 		}
