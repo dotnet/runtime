@@ -6,7 +6,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace DllImportGenerator.UnitTests.Verifiers
+namespace LibraryImportGenerator.UnitTests.Verifiers
 {
     internal static class CSharpVerifierHelper
     {

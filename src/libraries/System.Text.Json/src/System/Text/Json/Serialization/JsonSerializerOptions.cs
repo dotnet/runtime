@@ -33,8 +33,13 @@ namespace System.Text.Json
         /// </remarks>
         public static JsonSerializerOptions Default { get; } = CreateDefaultImmutableInstance();
 
+        internal JsonSerializerContext? _serializerContext;
+
+        // Stores the JsonTypeInfo factory, which requires unreferenced code and must be rooted by the reflection-based serializer.
+        private static Func<Type, JsonSerializerOptions, JsonTypeInfo>? s_typeInfoCreationFunc;
+
         // For any new option added, adding it to the options copied in the copy constructor below must be considered.
-        private JsonSerializerContext? _serializerContext;
+
         private MemberAccessor? _memberAccessorStrategy;
         private JsonNamingPolicy? _dictionaryKeyPolicy;
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
@@ -138,7 +143,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Binds current <see cref="JsonSerializerOptions"/> instance with a new instance of the specified <see cref="Serialization.JsonSerializerContext"/> type.
+        /// Binds current <see cref="JsonSerializerOptions"/> instance with a new instance of the specified <see cref="JsonSerializerContext"/> type.
         /// </summary>
         /// <typeparam name="TContext">The generic definition of the specified context type.</typeparam>
         /// <remarks>When serializing and deserializing types using the options
@@ -146,7 +151,11 @@ namespace System.Text.Json
         /// </remarks>
         public void AddContext<TContext>() where TContext : JsonSerializerContext, new()
         {
-            VerifyMutable();
+            if (_serializerContext != null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_JsonSerializerOptionsAlreadyBoundToContext();
+            }
+
             TContext context = new();
             _serializerContext = context;
             context._options = this;
@@ -541,16 +550,6 @@ namespace System.Text.Json
             }
         }
 
-        internal JsonSerializerContext? JsonSerializerContext
-        {
-            get => _serializerContext;
-            set
-            {
-                VerifyMutable();
-                _serializerContext = value;
-            }
-        }
-
         // The cached value used to determine if ReferenceHandler should use Preserve or IgnoreCycles semanitcs or None of them.
         internal ReferenceHandlingStrategy ReferenceHandlingStrategy = ReferenceHandlingStrategy.None;
 
@@ -577,24 +576,26 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Whether the options instance has been primed for reflection-based serialization.
+        /// Whether <see cref="InitializeForReflectionSerializer()"/> needs to be called.
         /// </summary>
-        internal bool IsInitializedForReflectionSerializer { get; private set; }
+        internal static bool IsInitializedForReflectionSerializer { get; set; }
 
         /// <summary>
         /// Initializes the converters for the reflection-based serializer.
         /// <seealso cref="InitializeForReflectionSerializer"/> must be checked before calling.
         /// </summary>
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        internal void InitializeForReflectionSerializer()
+        internal static void InitializeForReflectionSerializer()
         {
-            RootReflectionSerializerDependencies();
+            // For threading cases, the state that is set here can be overwritten.
+            RootBuiltInConverters();
+            s_typeInfoCreationFunc = CreateJsonTypeInfo;
             IsInitializedForReflectionSerializer = true;
-            if (_cachingContext != null)
-            {
-                _cachingContext.Options.IsInitializedForReflectionSerializer = true;
-            }
+
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options) => new JsonTypeInfo(type, options);
         }
+
 
         private JsonTypeInfo GetJsonTypeInfoFromContextOrCreate(Type type)
         {
@@ -604,13 +605,12 @@ namespace System.Text.Json
                 return info;
             }
 
-            if (!IsInitializedForReflectionSerializer)
+            if (s_typeInfoCreationFunc == null)
             {
                 ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type);
                 return null!;
             }
 
-            Debug.Assert(s_typeInfoCreationFunc != null);
             return s_typeInfoCreationFunc(type, this);
         }
 

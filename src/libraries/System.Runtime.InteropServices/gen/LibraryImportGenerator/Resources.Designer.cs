@@ -259,56 +259,56 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Convert to &apos;GeneratedDllImport&apos;.
+        ///   Looks up a localized string similar to Convert to &apos;LibraryImport&apos;.
         /// </summary>
-        internal static string ConvertToGeneratedDllImport {
+        internal static string ConvertToLibraryImport {
             get {
-                return ResourceManager.GetString("ConvertToGeneratedDllImport", resourceCulture);
+                return ResourceManager.GetString("ConvertToLibraryImport", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Use &apos;GeneratedDllImportAttribute&apos; instead of &apos;DllImportAttribute&apos; to generate P/Invoke marshalling code at compile time.
+        ///   Looks up a localized string similar to Use &apos;LibraryImportAttribute&apos; instead of &apos;DllImportAttribute&apos; to generate P/Invoke marshalling code at compile time.
         /// </summary>
-        internal static string ConvertToGeneratedDllImportDescription {
+        internal static string ConvertToLibraryImportDescription {
             get {
-                return ResourceManager.GetString("ConvertToGeneratedDllImportDescription", resourceCulture);
+                return ResourceManager.GetString("ConvertToLibraryImportDescription", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Mark the method &apos;{0}&apos; with &apos;GeneratedDllImportAttribute&apos; instead of &apos;DllImportAttribute&apos; to generate P/Invoke marshalling code at compile time.
+        ///   Looks up a localized string similar to Mark the method &apos;{0}&apos; with &apos;LibraryImportAttribute&apos; instead of &apos;DllImportAttribute&apos; to generate P/Invoke marshalling code at compile time.
         /// </summary>
-        internal static string ConvertToGeneratedDllImportMessage {
+        internal static string ConvertToLibraryImportMessage {
             get {
-                return ResourceManager.GetString("ConvertToGeneratedDllImportMessage", resourceCulture);
+                return ResourceManager.GetString("ConvertToLibraryImportMessage", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Use &apos;GeneratedDllImportAttribute&apos; instead of &apos;DllImportAttribute&apos; to generate P/Invoke marshalling code at compile time.
+        ///   Looks up a localized string similar to Use &apos;LibraryImportAttribute&apos; instead of &apos;DllImportAttribute&apos; to generate P/Invoke marshalling code at compile time.
         /// </summary>
-        internal static string ConvertToGeneratedDllImportTitle {
+        internal static string ConvertToLibraryImportTitle {
             get {
-                return ResourceManager.GetString("ConvertToGeneratedDllImportTitle", resourceCulture);
+                return ResourceManager.GetString("ConvertToLibraryImportTitle", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Conversion to &apos;GeneratedDllImport&apos; may change behavior and compatibility. See {0} for more information..
+        ///   Looks up a localized string similar to Conversion to &apos;LibraryImport&apos; may change behavior and compatibility. See {0} for more information..
         /// </summary>
-        internal static string ConvertToGeneratedDllImportWarning {
+        internal static string ConvertToLibraryImportWarning {
             get {
-                return ResourceManager.GetString("ConvertToGeneratedDllImportWarning", resourceCulture);
+                return ResourceManager.GetString("ConvertToLibraryImportWarning", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Convert to &apos;GeneratedDllImport&apos; with &apos;{0}&apos; suffix.
+        ///   Looks up a localized string similar to Convert to &apos;LibraryImport&apos; with &apos;{0}&apos; suffix.
         /// </summary>
-        internal static string ConvertToGeneratedDllImportWithSuffix {
+        internal static string ConvertToLibraryImportWithSuffix {
             get {
-                return ResourceManager.GetString("ConvertToGeneratedDllImportWithSuffix", resourceCulture);
+                return ResourceManager.GetString("ConvertToLibraryImportWithSuffix", resourceCulture);
             }
         }
         
