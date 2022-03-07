@@ -33,6 +33,7 @@ MONO_PRAGMA_WARNING_POP()
 #include "metadata/marshal.h"
 #include "metadata/marshal-internals.h"
 #include "metadata/marshal-ilgen.h"
+#include "metadata/marshal-legacy.h"
 #include "metadata/method-builder.h"
 #include "metadata/method-builder-internals.h"
 #include "metadata/tabledefs.h"
@@ -3157,75 +3158,7 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	if (!m->runtime_marshalling_enabled)
 		return mono_emit_disabled_marshal (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
-	if (spec && spec->native == MONO_NATIVE_CUSTOM)
-		return get_marshal_cb ()->emit_marshal_custom (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-
-	if (spec && spec->native == MONO_NATIVE_ASANY)
-		return get_marshal_cb ()->emit_marshal_asany (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-
-	switch (t->type) {
-	case MONO_TYPE_VALUETYPE:
-		if (t->data.klass == mono_class_try_get_handleref_class ())
-			return get_marshal_cb ()->emit_marshal_handleref (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-
-		return get_marshal_cb ()->emit_marshal_vtype (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-	case MONO_TYPE_STRING:
-		return get_marshal_cb ()->emit_marshal_string (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_OBJECT:
-#if !defined(DISABLE_COM)
-		if (spec && spec->native == MONO_NATIVE_STRUCT)
-			return get_marshal_cb ()->emit_marshal_variant (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-#endif
-
-#if !defined(DISABLE_COM)
-		if ((spec && (spec->native == MONO_NATIVE_IUNKNOWN ||
-			spec->native == MONO_NATIVE_IDISPATCH ||
-			spec->native == MONO_NATIVE_INTERFACE)) ||
-			(t->type == MONO_TYPE_CLASS && mono_cominterop_is_interface(t->data.klass)))
-			return mono_cominterop_emit_marshal_com_interface (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-		if (spec && (spec->native == MONO_NATIVE_SAFEARRAY) &&
-			(spec->data.safearray_data.elem_type == MONO_VARIANT_VARIANT) &&
-			((action == MARSHAL_ACTION_CONV_OUT) || (action == MARSHAL_ACTION_CONV_IN) || (action == MARSHAL_ACTION_PUSH)))
-			return mono_cominterop_emit_marshal_safearray (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-#endif
-
-		if (mono_class_try_get_safehandle_class () != NULL && t->data.klass &&
-		    mono_class_is_subclass_of_internal (t->data.klass,  mono_class_try_get_safehandle_class (), FALSE))
-			return get_marshal_cb ()->emit_marshal_safehandle (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-
-		return get_marshal_cb ()->emit_marshal_object (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_SZARRAY:
-		return get_marshal_cb ()->emit_marshal_array (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-	case MONO_TYPE_BOOLEAN:
-		return get_marshal_cb ()->emit_marshal_boolean (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-	case MONO_TYPE_PTR:
-		return get_marshal_cb ()->emit_marshal_ptr (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-	case MONO_TYPE_CHAR:
-		return get_marshal_cb ()->emit_marshal_char (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-	case MONO_TYPE_FNPTR:
-		return get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-	case MONO_TYPE_GENERICINST:
-		if (mono_type_generic_inst_is_valuetype (t))
-			return get_marshal_cb ()->emit_marshal_vtype (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-		else
-			return get_marshal_cb ()->emit_marshal_object (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-	default:
-		return conv_arg;
-	}
+	return mono_emit_marshal_legacy (m, argnum, t, spec, conv_arg, conv_arg_type, action, get_marshal_cb ());
 }
 
 static void

@@ -91,6 +91,8 @@ set(metadata_common_sources
     lock-tracer.h
     marshal.c
     marshal.h
+    marshal-legacy.c
+    marshal-legacy.h
     marshal-internals.h
     marshal-noilgen.c
     mempool.c
