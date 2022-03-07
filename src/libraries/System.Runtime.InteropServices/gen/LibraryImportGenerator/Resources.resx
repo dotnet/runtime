@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -142,7 +142,7 @@
     <value>'{0}' has no equivalent in 'DllImportAtttribute' and will not be forwarded</value>
   </data>
   <data name="CannotForwardToDllImportTitle" xml:space="preserve">
-    <value>Specified 'GeneratedDllImportAttribute' arguments cannot be forwarded to 'DllImportAttribute'</value>
+    <value>Specified 'LibraryImportAttribute' arguments cannot be forwarded to 'DllImportAttribute'</value>
   </data>
   <data name="CannotHaveMultipleMarshallingAttributesDescription" xml:space="preserve">
     <value>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</value>
@@ -224,10 +224,10 @@
     <value>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</value>
   </data>
   <data name="InvalidAttributedMethodDescription" xml:space="preserve">
-    <value>Methods marked with 'GeneratedDllImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</value>
+    <value>Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</value>
   </data>
   <data name="InvalidAttributedMethodSignatureMessage" xml:space="preserve">
-    <value>Method '{0}' should be 'static', 'partial', and non-generic when marked with 'GeneratedDllImportAttribute'. P/Invoke source generation will ignore method '{0}'.</value>
+    <value>Method '{0}' should be 'static', 'partial', and non-generic when marked with 'LibraryImportAttribute'. P/Invoke source generation will ignore method '{0}'.</value>
   </data>
   <data name="InvalidLibraryImportAttributeUsageTitle" xml:space="preserve">
     <value>Invalid 'LibraryImportAttribute' usage</value>
@@ -301,7 +301,7 @@
     <comment>{0} is a version number</comment>
   </data>
   <data name="TargetFrameworkNotSupportedMessage" xml:space="preserve">
-    <value>'GeneratedDllImportAttribute' cannot be used for source-generated P/Invokes on an unknown target framework v{0}.</value>
+    <value>'LibraryImportAttribute' cannot be used for source-generated P/Invokes on an unknown target framework v{0}.</value>
     <comment>{0} is a version number</comment>
   </data>
   <data name="TargetFrameworkNotSupportedTitle" xml:space="preserve">
