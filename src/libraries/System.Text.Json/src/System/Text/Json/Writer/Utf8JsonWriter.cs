@@ -99,10 +99,15 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// Thrown when the instance of <see cref="IBufferWriter{Byte}" /> that is passed in is null.
         /// </exception>
-        public Utf8JsonWriter(IBufferWriter<byte> bufferWriter, JsonWriterOptions options = default)
+        public Utf8JsonWriter(IBufferWriter<byte> bufferWriter!!, JsonWriterOptions options = default)
         {
-            _output = bufferWriter ?? throw new ArgumentNullException(nameof(bufferWriter));
+            _output = bufferWriter;
             _options = options;
+
+            if (_options.MaxDepth == 0)
+            {
+                _options.MaxDepth = JsonWriterOptions.DefaultMaxDepth; // If max depth is not set, revert to the default depth.
+            }
         }
 
         /// <summary>
@@ -115,15 +120,19 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// Thrown when the instance of <see cref="Stream" /> that is passed in is null.
         /// </exception>
-        public Utf8JsonWriter(Stream utf8Json, JsonWriterOptions options = default)
+        public Utf8JsonWriter(Stream utf8Json!!, JsonWriterOptions options = default)
         {
-            if (utf8Json == null)
-                throw new ArgumentNullException(nameof(utf8Json));
             if (!utf8Json.CanWrite)
                 throw new ArgumentException(SR.StreamNotWritable);
 
             _stream = utf8Json;
             _options = options;
+
+            if (_options.MaxDepth == 0)
+            {
+                _options.MaxDepth = JsonWriterOptions.DefaultMaxDepth; // If max depth is not set, revert to the default depth.
+            }
+
             _arrayBufferWriter = new ArrayBufferWriter<byte>();
         }
 
@@ -227,7 +236,7 @@ namespace System.Text.Json
                 // The conditions are ordered with stream first as that would be the most common mode
                 if (_output == null)
                 {
-                    throw new ObjectDisposedException(nameof(Utf8JsonWriter));
+                    ThrowHelper.ThrowObjectDisposedException_Utf8JsonWriter();
                 }
             }
         }
@@ -426,8 +435,8 @@ namespace System.Text.Json
 
         private void WriteStart(byte token)
         {
-            if (CurrentDepth >= JsonConstants.MaxWriterDepth)
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.DepthTooLarge, _currentDepth, token: default, tokenType: default);
+            if (CurrentDepth >= _options.MaxDepth)
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.DepthTooLarge, _currentDepth, _options.MaxDepth, token: default, tokenType: default);
 
             if (_options.IndentedOrNotSkipValidation)
             {
@@ -486,7 +495,7 @@ namespace System.Text.Json
                 if (_tokenType != JsonTokenType.PropertyName)
                 {
                     Debug.Assert(_tokenType != JsonTokenType.None && _tokenType != JsonTokenType.StartArray);
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayWithoutProperty, currentDepth: default, token: default, _tokenType);
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayWithoutProperty, currentDepth: default, maxDepth: _options.MaxDepth, token: default, _tokenType);
                 }
             }
             else
@@ -497,7 +506,7 @@ namespace System.Text.Json
                 // It is more likely for CurrentDepth to not equal 0 when writing valid JSON, so check that first to rely on short-circuiting and return quickly.
                 if (CurrentDepth == 0 && _tokenType != JsonTokenType.None)
                 {
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayAfterPrimitiveOrClose, currentDepth: default, token: default, _tokenType);
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayAfterPrimitiveOrClose, currentDepth: default, maxDepth: _options.MaxDepth, token: default, _tokenType);
                 }
             }
         }
@@ -505,7 +514,7 @@ namespace System.Text.Json
         private void WriteStartIndented(byte token)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             int minRequired = indent + 1;   // 1 start token
             int maxRequired = minRequired + 3; // Optionally, 1 list separator and 1-2 bytes for new line
@@ -695,8 +704,8 @@ namespace System.Text.Json
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000
         /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
-        public void WriteStartArray(string propertyName)
-            => WriteStartArray((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan());
+        public void WriteStartArray(string propertyName!!)
+            => WriteStartArray(propertyName.AsSpan());
 
         /// <summary>
         /// Writes the beginning of a JSON object with a property name as the key.
@@ -715,8 +724,8 @@ namespace System.Text.Json
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000
         /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
-        public void WriteStartObject(string propertyName)
-            => WriteStartObject((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan());
+        public void WriteStartObject(string propertyName!!)
+            => WriteStartObject(propertyName.AsSpan());
 
         /// <summary>
         /// Writes the beginning of a JSON array with a property name as the key.
@@ -898,14 +907,14 @@ namespace System.Text.Json
         private void ValidateEnd(byte token)
         {
             if (_bitStack.CurrentDepth <= 0 || _tokenType == JsonTokenType.PropertyName)
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, token, _tokenType);
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, maxDepth: _options.MaxDepth, token, _tokenType);
 
             if (token == JsonConstants.CloseBracket)
             {
                 if (_inObject)
                 {
                     Debug.Assert(_tokenType != JsonTokenType.None);
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, token, _tokenType);
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, maxDepth: _options.MaxDepth, token, _tokenType);
                 }
             }
             else
@@ -914,7 +923,7 @@ namespace System.Text.Json
 
                 if (!_inObject)
                 {
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, token, _tokenType);
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, maxDepth: _options.MaxDepth, token, _tokenType);
                 }
             }
 
@@ -940,7 +949,7 @@ namespace System.Text.Json
                     indent -= JsonConstants.SpacesPerIndent;
                 }
 
-                Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+                Debug.Assert(indent <= 2 * _options.MaxDepth);
                 Debug.Assert(_options.SkipValidation || _tokenType != JsonTokenType.None);
 
                 int maxRequired = indent + 3; // 1 end token, 1-2 bytes for new line

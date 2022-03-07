@@ -727,7 +727,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         [RequiresUnreferencedCode(BinaryParserUnreferencedCodeMessage)]
         private void ReadArray(BinaryHeaderEnum binaryHeaderEnum)
         {
-            BinaryAssemblyInfo? assemblyInfo = null;
+            BinaryAssemblyInfo? assemblyInfo;
             BinaryArray record = new BinaryArray(binaryHeaderEnum);
             record.Read(this);
 

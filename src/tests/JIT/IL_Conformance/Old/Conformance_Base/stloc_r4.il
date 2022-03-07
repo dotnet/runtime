@@ -57,4 +57,4 @@ FAIL:
 	ret
 }
 }
-.assembly stloc_r4.exe{}
+.assembly stloc_r4{}

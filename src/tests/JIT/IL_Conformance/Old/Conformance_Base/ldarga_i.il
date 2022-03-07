@@ -39,4 +39,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldarga_i.exe{}
+.assembly ldarga_i{}

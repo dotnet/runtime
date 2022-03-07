@@ -13,7 +13,7 @@
 
 using System;
 
-public class Test
+public class Test_Collect_fail
 {
     public static int Main()
     {

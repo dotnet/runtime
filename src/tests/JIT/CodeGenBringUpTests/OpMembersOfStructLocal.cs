@@ -132,7 +132,7 @@ public struct PointDbl
 
 }
 
-public class BringUpTest
+public class BringUpTest_OpMembersOfStructLocal
 {
     const int Pass = 100;
     const int Fail = -1;

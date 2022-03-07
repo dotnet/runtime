@@ -33,7 +33,7 @@ body:
                 public void Fancy(T item);
             }
         }
-        ```     
+        ```
     validations:
       required: true
   - type: textarea
@@ -41,7 +41,7 @@ body:
     attributes:
       label: API Usage
       description: |
-        Please provide code examples that highlight how the proposed API additions are meant to be consumed. This will help suggest whether the API has the right shape to be functional, performant and useable.
+        Please provide code examples that highlight how the proposed API additions are meant to be consumed. This will help suggest whether the API has the right shape to be functional, performant and usable.
       placeholder: API usage
       value: |
         ```C#
@@ -52,7 +52,7 @@ body:
         // Getting the values out
         foreach (var v in c)
             Console.WriteLine(v);
-        ```     
+        ```
     validations:
       required: true
   - type: textarea

@@ -67,7 +67,7 @@ namespace System.Text.Json
         private void WriteNumberValueIndented(float value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             int maxRequired = indent + JsonConstants.MaximumFormatSingleLength + 1 + s_newLineLength; // Optionally, 1 list separator and 1-2 bytes for new line
 
@@ -109,9 +109,7 @@ namespace System.Text.Json
 #if BUILDING_INBOX_LIBRARY
             return Utf8Formatter.TryFormat(value, destination, out bytesWritten);
 #else
-            const string FormatString = "G9";
-
-            string utf16Text = value.ToString(FormatString, CultureInfo.InvariantCulture);
+            string utf16Text = value.ToString(JsonConstants.SingleFormatString, CultureInfo.InvariantCulture);
 
             // Copy the value to the destination, if it's large enough.
 

@@ -47,4 +47,10 @@ internal static partial class Interop
         internal uint PrivilegeCount;
         internal LUID ModifiedId;
     }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct TOKEN_USER
+    {
+        public SID_AND_ATTRIBUTES sidAndAttributes;
+    }
 }

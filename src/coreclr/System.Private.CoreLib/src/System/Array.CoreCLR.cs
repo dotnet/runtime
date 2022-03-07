@@ -4,10 +4,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -16,6 +16,7 @@ namespace System
     public abstract partial class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable
     {
         // Create instance will create an array
+        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
         public static unsafe Array CreateInstance(Type elementType, int length)
         {
             if (elementType is null)
@@ -68,6 +69,7 @@ namespace System
             return InternalCreate((void*)t.TypeHandle.Value, 3, pLengths, null);
         }
 
+        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
         public static unsafe Array CreateInstance(Type elementType, params int[] lengths)
         {
             if (elementType is null)
@@ -93,6 +95,7 @@ namespace System
                 return InternalCreate((void*)t.TypeHandle.Value, lengths.Length, pLengths, null);
         }
 
+        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
         public static unsafe Array CreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
         {
             if (elementType == null)
@@ -382,6 +385,7 @@ namespace System
             }
         }
 
+        [Intrinsic]
         public unsafe int GetLength(int dimension)
         {
             int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
@@ -394,6 +398,7 @@ namespace System
             return Unsafe.Add(ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this), dimension);
         }
 
+        [Intrinsic]
         public unsafe int GetUpperBound(int dimension)
         {
             int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
@@ -407,6 +412,7 @@ namespace System
             return Unsafe.Add(ref bounds, dimension) + Unsafe.Add(ref bounds, rank + dimension) - 1;
         }
 
+        [Intrinsic]
         public unsafe int GetLowerBound(int dimension)
         {
             int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
@@ -518,7 +524,7 @@ namespace System
             _this[index] = value;
         }
 
-        private void Add<T>(T value)
+        private void Add<T>(T _)
         {
             // Not meaningful for arrays.
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
@@ -553,20 +559,20 @@ namespace System
             return Array.IndexOf(_this, value, 0, _this.Length);
         }
 
-        private void Insert<T>(int index, T value)
+        private void Insert<T>(int _, T _1)
         {
             // Not meaningful for arrays
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
         }
 
-        private bool Remove<T>(T value)
+        private bool Remove<T>(T _)
         {
             // Not meaningful for arrays
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
             return default;
         }
 
-        private void RemoveAt<T>(int index)
+        private void RemoveAt<T>(int _)
         {
             // Not meaningful for arrays
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);

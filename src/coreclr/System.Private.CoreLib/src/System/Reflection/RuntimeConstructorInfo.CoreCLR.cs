@@ -115,22 +115,16 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        public override bool IsDefined(Type attributeType, bool inherit)
+        public override bool IsDefined(Type attributeType!!, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
@@ -212,17 +206,17 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, in Span<object?> arguments)
+        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> arguments)
         {
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            return RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, false, wrapExceptions);
+            return RuntimeMethodHandle.InvokeMethod(obj, in arguments, Signature, false, wrapExceptions);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object InvokeCtorWorker(BindingFlags invokeAttr, in Span<object?> arguments)
+        private object InvokeCtorWorker(BindingFlags invokeAttr, Span<object?> arguments)
         {
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            return RuntimeMethodHandle.InvokeMethod(null, arguments, Signature, true, wrapExceptions)!;
+            return RuntimeMethodHandle.InvokeMethod(null, in arguments, Signature, true, wrapExceptions)!;
         }
 
         [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]

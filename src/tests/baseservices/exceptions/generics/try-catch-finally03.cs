@@ -33,27 +33,27 @@ public class Gen<T>
 			{
 				throw new GenException<T>();
 			}
-			Test.Eval(!throwException);
+			Test_try_catch_finally03.Eval(!throwException);
 		}
 		catch(GenException<T>)
 		{
-			Test.Eval(throwException);
+			Test_try_catch_finally03.Eval(throwException);
 		}
 		catch
 		{
 			Console.WriteLine("Caught Wrong Exception");
-			Test.Eval(false);
+			Test_try_catch_finally03.Eval(false);
 		}
 		finally
 		{
 			set = true;
-			Test.Eval(true);
+			Test_try_catch_finally03.Eval(true);
 		}
-		Test.Eval(set);
+		Test_try_catch_finally03.Eval(set);
 	}
 }
 
-public class Test
+public class Test_try_catch_finally03
 {
 	public static int counter = 0;
 	public static bool result = true;

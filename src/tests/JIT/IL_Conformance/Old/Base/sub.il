@@ -4,7 +4,7 @@
 .assembly extern legacy library mscorlib {}
 .assembly extern  mscorlib {}
 .assembly extern legacy library mscorlib {}
-.assembly sub.exe{}
+.assembly 'sub'{}
 
 .class public _sub {
 

@@ -205,7 +205,7 @@ mono_dl_current_error_string (void)
 #else
 	WCHAR local_buf [1024];
 	if (!FormatMessageW (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
-		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), local_buf, G_N_ELEMENTS (local_buf) - 1, NULL) )
+		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), local_buf, STRING_LENGTH (local_buf), NULL) )
 		local_buf [0] = TEXT('\0');
 
 	ret = u16to8 (local_buf)
@@ -219,12 +219,6 @@ mono_dl_current_error_string (void)
 	return g_strdup_printf ("GetLastError=%d. FormatMessage not supported.", GetLastError ());
 }
 #endif /* HAVE_API_SUPPORT_WIN32_FORMAT_MESSAGE */
-
-int
-mono_dl_get_executable_path (char *buf, int buflen)
-{
-	return -1; //TODO
-}
 
 const char*
 mono_dl_get_system_dir (void)

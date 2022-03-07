@@ -110,4 +110,4 @@ FAIL:
 	ret
 }
 }
-.assembly clt_u4.exe{}
+.assembly clt_u4{}

@@ -150,5 +150,5 @@ END:
 
 
 
-.assembly ldc_ret_i4.exe{}
+.assembly ldc_ret_i4{}
 

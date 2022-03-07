@@ -9,7 +9,7 @@
 }
 
 .assembly extern legacy library mscorlib {}
-.assembly seh_tests.exe{}
+.assembly seh_tests{}
 
 .class public		seh {
 

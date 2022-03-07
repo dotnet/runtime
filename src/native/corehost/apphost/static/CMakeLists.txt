@@ -18,11 +18,8 @@ set(SKIP_VERSIONING 1)
 
 include_directories(..)
 include_directories(../../json)
-
-include_directories(${CLR_SRC_LIBS_NATIVE_DIR}/AnyOS/zlib)
-if(NOT CLR_CMAKE_TARGET_WIN32)
-    include_directories(${CLR_SRC_LIBS_NATIVE_DIR}/Unix/Common)
-endif()
+include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native)
+include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
 
 set(SOURCES
     ../bundle_marker.cpp
@@ -110,6 +107,9 @@ if(CLR_CMAKE_TARGET_WIN32)
     # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
     add_linker_flag("/INCREMENTAL:NO")
+
+    # Delay load libraries required for WinRT as that is not supported on all platforms
+    add_linker_flag("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
@@ -130,6 +130,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         shell32.lib
         bcrypt.lib
         RuntimeObject.lib
+        delayimp.lib
     )
 
     set(RUNTIMEINFO_LIB runtimeinfo)
@@ -151,19 +152,19 @@ else()
     )
 
     # additional requirements for System.IO.Compression.Native
-    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.IO.Compression.Native/extra_libs.cmake)
+    include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
     append_extra_compression_libs(NATIVE_LIBS)
 
     # Additional requirements for System.Net.Security.Native
-    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Net.Security.Native/extra_libs.cmake)
+    include(${CLR_SRC_NATIVE_DIR}/libs/System.Net.Security.Native/extra_libs.cmake)
     append_extra_security_libs(NATIVE_LIBS)
 
     # Additional requirements for System.Native
-    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Native/extra_libs.cmake)
+    include(${CLR_SRC_NATIVE_DIR}/libs/System.Native/extra_libs.cmake)
     append_extra_system_libs(NATIVE_LIBS)
 
     # Additional requirements for System.Security.Cryptography.Native.OpenSsl
-    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Security.Cryptography.Native/extra_libs.cmake)
+    include(${CLR_SRC_NATIVE_DIR}/libs/System.Security.Cryptography.Native/extra_libs.cmake)
     append_extra_cryptography_libs(NATIVE_LIBS)
 
     set(RUNTIMEINFO_LIB runtimeinfo)
@@ -176,7 +177,7 @@ if(CLR_CMAKE_TARGET_OSX)
     )
 
     # Additional requirements for System.Security.Cryptography.Native.Apple
-    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Security.Cryptography.Native.Apple/extra_libs.cmake)
+    include(${CLR_SRC_NATIVE_DIR}/libs/System.Security.Cryptography.Native.Apple/extra_libs.cmake)
     append_extra_cryptography_apple_libs(NATIVE_LIBS)
 endif()
 

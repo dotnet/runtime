@@ -124,4 +124,4 @@ FAIL:
 	ret
 }
 }
-.assembly blt_u4.exe{}
+.assembly blt_u4{}

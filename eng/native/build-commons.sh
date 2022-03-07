@@ -14,26 +14,6 @@ initTargetDistroRid()
     initDistroRidGlobal "$__TargetOS" "$__BuildArch" "$__PortableBuild" "$passedRootfsDir"
 }
 
-isMSBuildOnNETCoreSupported()
-{
-    __IsMSBuildOnNETCoreSupported="$__msbuildonunsupportedplatform"
-
-    if [[ "$__IsMSBuildOnNETCoreSupported" == 1 ]]; then
-        return
-    fi
-
-    if [[ "$__SkipManaged" == 1 ]]; then
-        __IsMSBuildOnNETCoreSupported=0
-        return
-    fi
-
-    if [[ ( "$__HostOS" == "Linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "armel" || "$__HostArch" == "arm64" || "$__HostArch" == "s390x" ) ]]; then
-        __IsMSBuildOnNETCoreSupported=1
-    elif [[ ( "$__HostOS" == "OSX" || "$__HostOS" == "FreeBSD" ) && "$__HostArch" == "x64" ]]; then
-        __IsMSBuildOnNETCoreSupported=1
-    fi
-}
-
 setup_dirs()
 {
     echo Setting up directories for build
@@ -68,6 +48,10 @@ check_prereqs()
 
 build_native()
 {
+    if [[ ! -e "$__RepoRootDir/artifacts/obj/_version.c" ]]; then
+        eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
+    fi
+
     targetOS="$1"
     platformArch="$2"
     cmakeDir="$3"
@@ -127,56 +111,13 @@ build_native()
         buildTool="make"
     fi
 
-    runtimeVersionHeaderFile="$intermediatesDir/../runtime_version.h"
     if [[ "$__SkipConfigure" == 0 ]]; then
-        # if msbuild is not supported, then set __SkipGenerateVersion to 1
-        if [[ "$__IsMSBuildOnNETCoreSupported" == 0 ]]; then __SkipGenerateVersion=1; fi
-        # Drop version.c file
-        __versionSourceFile="$intermediatesDir/version.c"
-
-        if [[ ! -z "${__LogsDir}" ]]; then
-            __binlogArg="-bl:\"$__LogsDir/GenNativeVersion_$__TargetOS.$__BuildArch.$__BuildType.binlog\""
-        fi
-
-        if [[ "$__SkipGenerateVersion" == 0 ]]; then
-            "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary "$__ArcadeScriptArgs" "$__RepoRootDir"/eng/empty.csproj \
-                                                   /p:NativeVersionFile="$__versionSourceFile" \
-                                                   /p:RuntimeVersionFile="$runtimeVersionHeaderFile" \
-                                                   /t:GenerateRuntimeVersionFile /restore \
-                                                   $__CommonMSBuildArgs $__binlogArg $__UnprocessedBuildArgs
-            local exit_code="$?"
-            if [[ "$exit_code" != 0 ]]; then
-                echo "${__ErrMsgPrefix}Failed to generate native version file."
-                exit "$exit_code"
-            fi
-        else
-            # Generate the dummy version.c and runtime_version.h, but only if they didn't exist to make sure we don't trigger unnecessary rebuild
-            __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
-            if [[ -e "$__versionSourceFile" ]]; then
-                read existingVersionSourceLine < "$__versionSourceFile"
-            fi
-            if [[ "$__versionSourceLine" != "$existingVersionSourceLine" ]]; then
-                cat << EOF > $runtimeVersionHeaderFile
-#define RuntimeAssemblyMajorVersion 0
-#define RuntimeAssemblyMinorVersion 0
-#define RuntimeFileMajorVersion 0
-#define RuntimeFileMinorVersion 0
-#define RuntimeFileBuildVersion 0
-#define RuntimeFileRevisionVersion 0
-#define RuntimeProductMajorVersion 0
-#define RuntimeProductMinorVersion 0
-#define RuntimeProductPatchVersion 0
-#define RuntimeProductVersion
-EOF
-                echo "$__versionSourceLine" > "$__versionSourceFile"
-            fi
-        fi
 
         if [[ "$__StaticAnalyzer" == 1 ]]; then
             scan_build=scan-build
         fi
 
-        nextCommand="\"$__RepoRootDir/eng/native/gen-buildsys.sh\" \"$cmakeDir\" \"$intermediatesDir\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType \"$generator\" $scan_build $cmakeArgs"
+        nextCommand="\"$__RepoRootDir/eng/native/gen-buildsys.sh\" \"$cmakeDir\" \"$intermediatesDir\" $platformArch $__Compiler $__BuildType \"$generator\" $scan_build $cmakeArgs"
         echo "Invoking $nextCommand"
         eval $nextCommand
 
@@ -256,7 +197,7 @@ usage()
     echo ""
     echo "Common Options:"
     echo ""
-    echo "BuildArch can be: -arm, -armel, -arm64, -s390x, x64, x86, -wasm"
+    echo "BuildArch can be: -arm, -armv6, -armel, -arm64, -loongarch64, -s390x, x64, x86, -wasm"
     echo "BuildType can be: -debug, -checked, -release"
     echo "-os: target OS (defaults to running OS)"
     echo "-bindir: output directory (defaults to $__ProjectRoot/artifacts)"
@@ -269,12 +210,10 @@ usage()
     echo "        will use ROOTFS_DIR environment variable if set."
     echo "-gcc: optional argument to build using gcc in PATH."
     echo "-gccx.y: optional argument to build using gcc version x.y."
-    echo "-msbuildonunsupportedplatform: build managed binaries even if distro is not officially supported."
     echo "-ninja: target ninja instead of GNU make"
     echo "-numproc: set the number of build processes."
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
     echo "-skipconfigure: skip build configuration."
-    echo "-skipgenerateversion: disable version generation even if MSBuild is supported."
     echo "-keepnativesymbols: keep native/unmanaged debug symbols."
     echo "-verbose: optional argument to enable verbose build output."
     echo ""
@@ -294,8 +233,6 @@ __HostArch=$arch
 __TargetOS=$os
 __HostOS=$os
 __BuildOS=$os
-
-__msbuildonunsupportedplatform=0
 
 # Get the number of processors available to the scheduler
 # Other techniques such as `nproc` only get the number of
@@ -322,7 +259,7 @@ while :; do
         break
     fi
 
-    lowerI="$(echo "$1" | tr "[:upper:]" "[:lower:]")"
+    lowerI="$(echo "${1/--/-}" | tr "[:upper:]" "[:lower:]")"
     case "$lowerI" in
         -\?|-h|--help)
             usage
@@ -331,6 +268,10 @@ while :; do
 
         arm|-arm)
             __BuildArch=arm
+            ;;
+
+        armv6|-armv6)
+            __BuildArch=armv6
             ;;
 
         arm64|-arm64)
@@ -367,15 +308,7 @@ while :; do
             ;;
 
         clang*|-clang*)
-                __Compiler=clang
-                # clangx.y or clang-x.y
-                version="$(echo "$lowerI" | tr -d '[:alpha:]-=')"
-                parts=(${version//./ })
-                __CompilerMajorVersion="${parts[0]}"
-                __CompilerMinorVersion="${parts[1]}"
-                if [[ -z "$__CompilerMinorVersion" && "$__CompilerMajorVersion" -le 6 ]]; then
-                    __CompilerMinorVersion=0;
-                fi
+            __Compiler="$lowerI"
             ;;
 
         cmakeargs|-cmakeargs)
@@ -403,20 +336,11 @@ while :; do
             ;;
 
         gcc*|-gcc*)
-                __Compiler=gcc
-                # gccx.y or gcc-x.y
-                version="$(echo "$lowerI" | tr -d '[:alpha:]-=')"
-                parts=(${version//./ })
-                __CompilerMajorVersion="${parts[0]}"
-                __CompilerMinorVersion="${parts[1]}"
+            __Compiler="$lowerI"
             ;;
 
         keepnativesymbols|-keepnativesymbols)
             __CMakeArgs="$__CMakeArgs -DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true"
-            ;;
-
-        msbuildonunsupportedplatform|-msbuildonunsupportedplatform)
-            __msbuildonunsupportedplatform=1
             ;;
 
         ninja|-ninja)
@@ -445,10 +369,6 @@ while :; do
             __SkipConfigure=1
             ;;
 
-        skipgenerateversion|-skipgenerateversion)
-            __SkipGenerateVersion=1
-            ;;
-
         verbose|-verbose)
             __VerboseBuild=1
             ;;
@@ -459,6 +379,10 @@ while :; do
 
         x64|-x64)
             __BuildArch=x64
+            ;;
+
+        loongarch64|-loongarch64)
+            __BuildArch=loongarch64
             ;;
 
         s390x|-s390x)
@@ -525,7 +449,7 @@ if [[ "$__CrossBuild" == 1 ]]; then
     CROSSCOMPILE=1
     export CROSSCOMPILE
     # Darwin that doesn't use rootfs
-    if [[ ! -n "$ROOTFS_DIR" && "$platform" != "Darwin" ]]; then
+    if [[ -z "$ROOTFS_DIR" && "$platform" != "Darwin" ]]; then
         ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__BuildArch"
         export ROOTFS_DIR
     fi
@@ -533,6 +457,3 @@ fi
 
 # init the target distro name
 initTargetDistroRid
-
-# Init if MSBuild for .NET Core is supported for this platform
-isMSBuildOnNETCoreSupported

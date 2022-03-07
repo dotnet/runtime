@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 
 namespace Microsoft.Extensions.Configuration.CommandLine
@@ -13,12 +14,12 @@ namespace Microsoft.Extensions.Configuration.CommandLine
         /// <summary>
         /// Gets or sets the switch mappings.
         /// </summary>
-        public IDictionary<string, string> SwitchMappings { get; set; }
+        public IDictionary<string, string>? SwitchMappings { get; set; }
 
         /// <summary>
         /// Gets or sets the command line args.
         /// </summary>
-        public IEnumerable<string> Args { get; set; }
+        public IEnumerable<string> Args { get; set; } = Array.Empty<string>();
 
         /// <summary>
         /// Builds the <see cref="CommandLineConfigurationProvider"/> for this source.

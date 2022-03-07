@@ -57,8 +57,10 @@ namespace System.Net.Security.Tests
             TlsFrameHelper.TlsFrameInfo info = default;
             Assert.True(TlsFrameHelper.TryGetFrameInfo(s_Tls12ClientHello, ref info));
 
+#pragma warning disable SYSLIB0039
             Assert.Equal(SslProtocols.Tls, info.Header.Version);
-            Assert.Equal(SslProtocols.Tls|SslProtocols.Tls12, info.SupportedVersions);
+            Assert.Equal(SslProtocols.Tls | SslProtocols.Tls12, info.SupportedVersions);
+#pragma warning restore SYSLIB0039
             Assert.Equal(TlsFrameHelper.ApplicationProtocolInfo.Http11 | TlsFrameHelper.ApplicationProtocolInfo.Http2, info.ApplicationProtocols);
         }
 
@@ -68,8 +70,10 @@ namespace System.Net.Security.Tests
             TlsFrameHelper.TlsFrameInfo info = default;
             Assert.True(TlsFrameHelper.TryGetFrameInfo(s_Tls13ClientHello, ref info));
 
+#pragma warning disable SYSLIB0039
             Assert.Equal(SslProtocols.Tls, info.Header.Version);
             Assert.Equal(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13, info.SupportedVersions);
+#pragma warning restore SYSLIB0039
             Assert.Equal(TlsFrameHelper.ApplicationProtocolInfo.Other, info.ApplicationProtocols);
         }
 
@@ -100,13 +104,13 @@ namespace System.Net.Security.Tests
             var uniqueInvalidHellos = new HashSet<string>();
             foreach (byte[] invalidClientHello in InvalidClientHello())
             {
-                for (int i = 0; i < invalidClientHello.Length - 1; i++)
+                for (int i = 0; i < invalidClientHello.Length; i++)
                 {
                     uniqueInvalidHellos.Add(Convert.ToBase64String(invalidClientHello.Take(i).ToArray()));
                 }
             }
 
-            for (int i = 0; i < s_validClientHello.Length - 1; i++)
+            for (int i = 0; i < s_validClientHello.Length; i++)
             {
                 uniqueInvalidHellos.Add(Convert.ToBase64String(s_validClientHello.Take(i).ToArray()));
             }

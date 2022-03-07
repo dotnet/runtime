@@ -15,8 +15,8 @@ then
 	export BVT_ROOT=$PWD
 fi
 
-if [ -n "$PERL5LIB" ] ; then
-    if [ -z "`expr $PERL5LIB : ".*\($BVT_ROOT/Common/Smarty\)"`" ] ;  then
+if [ -n "$PERL5LIB" ]; then
+    if [ -z "`expr $PERL5LIB : ".*\($BVT_ROOT/Common/Smarty\)"`" ];  then
         export PERL5LIB="$PERL5LIB:$BVT_ROOT/Common/Smarty"
     fi
 else

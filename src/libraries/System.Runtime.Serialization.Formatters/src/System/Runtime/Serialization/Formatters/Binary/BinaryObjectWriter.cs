@@ -50,23 +50,13 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         [RequiresUnreferencedCode(ObjectWriterUnreferencedCodeMessage)]
-        internal void Serialize(object graph, BinaryFormatterWriter serWriter)
+        internal void Serialize(object graph!!, BinaryFormatterWriter serWriter!!)
         {
-            if (graph == null)
-            {
-                throw new ArgumentNullException(nameof(graph));
-            }
-            if (serWriter == null)
-            {
-                throw new ArgumentNullException(nameof(serWriter));
-            }
-
             _serWriter = serWriter;
 
             serWriter.WriteBegin();
-            long headerId = 0;
+            long headerId;
             object? obj;
-            bool isNew;
 
             // allocations if methodCall or methodResponse and no graph
             _idGenerator = new ObjectIDGenerator();
@@ -74,14 +64,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _formatterConverter = new FormatterConverter();
             _serObjectInfoInit = new SerObjectInfoInit();
 
-            _topId = InternalGetId(graph, false, null, out isNew);
+            _topId = InternalGetId(graph, false, null, out _);
             headerId = -1;
             WriteSerializedStreamHeader(_topId, headerId);
 
             _objectQueue.Enqueue(graph);
             while ((obj = GetNext(out long objectId)) != null)
             {
-                WriteObjectInfo? objectInfo = null;
+                WriteObjectInfo? objectInfo;
 
                 // GetNext will return either an object or a WriteObjectInfo.
                 // A WriteObjectInfo is returned if this object was member of another object
@@ -587,7 +577,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 return;
             }
 
-            NameInfo? actualTypeInfo = null;
+            NameInfo? actualTypeInfo;
             Type? dataType = null;
             bool isObjectOnMember = false;
 
@@ -976,7 +966,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 _assemblyToIdTable = new Dictionary<string, long>();
             }
 
-            long assemId = 0;
+            long assemId;
             string assemblyString = objectInfo.GetAssemblyString();
 
             string serializedAssemblyString = assemblyString;
@@ -996,7 +986,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 // Need to prefix assembly string to separate the string names from the
                 // assemblyName string names. That is a string can have the same value
                 // as an assemblyNameString, but it is serialized differently
-                bool isNew = false;
+                bool isNew;
                 if (_assemblyToIdTable.TryGetValue(assemblyString, out assemId))
                 {
                     isNew = false;

@@ -1107,7 +1107,7 @@ test_write_event (void)
 
 	EventData data[1];
 	ep_event_data_init (&data[0], 0, 0, 0);
-	ep_write_event_2 (ep_event, data, EP_ARRAY_SIZE (data), NULL, NULL);
+	ep_write_event_2 (ep_event, data, ARRAY_SIZE (data), NULL, NULL);
 	ep_event_data_fini (data);
 
 ep_on_exit:
@@ -1158,7 +1158,7 @@ test_write_get_next_event (void)
 
 	EventData data[1];
 	ep_event_data_init (&data[0], 0, 0, 0);
-	ep_write_event_2 (ep_event, data, EP_ARRAY_SIZE (data), NULL, NULL);
+	ep_write_event_2 (ep_event, data, ARRAY_SIZE (data), NULL, NULL);
 	ep_event_data_fini (data);
 
 	event_instance = ep_get_next_event (session_id);
@@ -1234,7 +1234,7 @@ test_write_wait_get_next_event (void)
 	EventData data[1];
 	ep_event_data_init (&data[0], 0, 0, 0);
 	for (int i = 0; i < 100; i++)
-		ep_write_event_2 (ep_event, data, EP_ARRAY_SIZE (data), NULL, NULL);
+		ep_write_event_2 (ep_event, data, ARRAY_SIZE (data), NULL, NULL);
 	ep_event_data_fini (data);
 
 	//Should be signaled, since we should have buffers put in readonly by now.
@@ -1303,7 +1303,7 @@ test_write_event_perf (void)
 	for (events_written = 0; events_written < 10 * 1000 * 1000; events_written += 1000) {
 		int64_t start = ep_perf_timestamp_get ();
 		for (uint32_t i = 0; i < 1000; i++)
-			ep_write_event_2 (ep_event, data, EP_ARRAY_SIZE (data), NULL, NULL);
+			ep_write_event_2 (ep_event, data, ARRAY_SIZE (data), NULL, NULL);
 		int64_t stop = ep_perf_timestamp_get ();
 		accumulted_write_time_ticks += stop - start;
 

@@ -2,13 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly delegate26{}
-.module delegate26.exe
+.assembly 'test_07'{}
+.assembly extern xunit.core {}
 
 .class public auto ansi beforefieldinit Client extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
   {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.locals init (int32)
 

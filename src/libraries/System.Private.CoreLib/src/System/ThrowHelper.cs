@@ -495,6 +495,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowFileLoadException_InvalidAssemblyName(string name)
+        {
+            throw new FileLoadException(SR.InvalidAssemblyName, name);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException_PrecisionTooLarge()
         {
             throw new ArgumentOutOfRangeException("precision", SR.Format(SR.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));
@@ -522,6 +528,14 @@ namespace System
         internal static void ArgumentOutOfRangeException_Enum_Value()
         {
             throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_Enum);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowApplicationException(int hr)
+        {
+            var ex = new ApplicationException();
+            ex.HResult = hr;
+            throw ex;
         }
 
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
@@ -852,6 +866,10 @@ namespace System
                     return "offset";
                 case ExceptionArgument.stream:
                     return "stream";
+                case ExceptionArgument.anyOf:
+                    return "anyOf";
+                case ExceptionArgument.overlapped:
+                    return "overlapped";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -1119,7 +1137,9 @@ namespace System
         buffer,
         buffers,
         offset,
-        stream
+        stream,
+        anyOf,
+        overlapped,
     }
 
     //

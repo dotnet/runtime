@@ -41,12 +41,8 @@ namespace System.Net.Sockets
         {
         }
 
-        public NetworkStream(Socket socket, FileAccess access, bool ownsSocket)
+        public NetworkStream(Socket socket!!, FileAccess access, bool ownsSocket)
         {
-            if (socket == null)
-            {
-                throw new ArgumentNullException(nameof(socket));
-            }
             if (!socket.Blocking)
             {
                 // Stream.Read*/Write* are incompatible with the semantics of non-blocking sockets, and
@@ -422,12 +418,7 @@ namespace System.Net.Sockets
         public override int EndRead(IAsyncResult asyncResult)
         {
             ThrowIfDisposed();
-
-            // Validate input parameters.
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            ArgumentNullException.ThrowIfNull(asyncResult);
 
             try
             {
@@ -486,12 +477,7 @@ namespace System.Net.Sockets
         public override void EndWrite(IAsyncResult asyncResult)
         {
             ThrowIfDisposed();
-
-            // Validate input parameters.
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            ArgumentNullException.ThrowIfNull(asyncResult);
 
             try
             {
@@ -669,12 +655,7 @@ namespace System.Net.Sockets
 
         private void ThrowIfDisposed()
         {
-            if (_disposed != 0)
-            {
-                ThrowObjectDisposedException();
-            }
-
-            void ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().FullName);
+            ObjectDisposedException.ThrowIf(_disposed != 0, this);
         }
 
         private static IOException WrapException(string resourceFormatString, Exception innerException)

@@ -25,11 +25,6 @@ variables:
   - template: /eng/pipelines/common/variables.yml
 
 jobs:
-#
-# Evaluate paths
-#
-- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-  - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -42,7 +37,7 @@ jobs:
       richCodeNavigationEnvironment: "production"
       richCodeNavigationLanguage: "csharp"
       timeoutInMinutes: 240
-      buildArgs: -s libs.ref+libs.src -c debug -allConfigurations
+      buildArgs: -s libs.sfx+libs.oob -allConfigurations
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

@@ -622,7 +622,7 @@ bool Ref_Initialize()
         n_slots * sizeof(HHANDLETABLE));
     for (int uCPUindex = 0; uCPUindex < n_slots; uCPUindex++)
     {
-        pBucket->pTable[uCPUindex] = HndCreateHandleTable(s_rgTypeFlags, _countof(s_rgTypeFlags));
+        pBucket->pTable[uCPUindex] = HndCreateHandleTable(s_rgTypeFlags, ARRAY_SIZE(s_rgTypeFlags));
         if (pBucket->pTable[uCPUindex] == NULL)
             goto CleanupAndFail;
 
@@ -719,7 +719,7 @@ bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket)
     ZeroMemory(result->pTable, n_slots * sizeof(HHANDLETABLE));
 
     for (int uCPUindex=0; uCPUindex < n_slots; uCPUindex++) {
-        result->pTable[uCPUindex] = HndCreateHandleTable(s_rgTypeFlags, _countof(s_rgTypeFlags));
+        result->pTable[uCPUindex] = HndCreateHandleTable(s_rgTypeFlags, ARRAY_SIZE(s_rgTypeFlags));
         if (!result->pTable[uCPUindex])
             return false;
     }
@@ -1045,7 +1045,7 @@ void Ref_TraceNormalRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc, 
     // promote objects pointed to by strong handles
     // during ephemeral GCs we also want to promote the ones pointed to by sizedref handles.
     uint32_t types[2] = {HNDTYPE_STRONG, HNDTYPE_SIZEDREF};
-    uint32_t uTypeCount = (((condemned >= maxgen) && !g_theGCHeap->IsConcurrentGCInProgress()) ? 1 : _countof(types));
+    uint32_t uTypeCount = (((condemned >= maxgen) && !g_theGCHeap->IsConcurrentGCInProgress()) ? 1 : ARRAY_SIZE(types));
     uint32_t flags = (sc->concurrent) ? HNDGCF_ASYNC : HNDGCF_NORMAL;
 
     HandleTableMap *walk = &g_HandleTableMap;
@@ -1149,7 +1149,7 @@ void Ref_CheckReachable(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
            {
                 HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                 if (hTable)
-                    HndScanHandlesForGC(hTable, CheckPromoted, lp1, 0, types, _countof(types), condemned, maxgen, flags);
+                    HndScanHandlesForGC(hTable, CheckPromoted, lp1, 0, types, ARRAY_SIZE(types), condemned, maxgen, flags);
         }
         }
         walk = walk->pNext;
@@ -1395,7 +1395,7 @@ void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
             {
                 HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                 if (hTable)
-                    HndScanHandlesForGC(hTable, CheckPromoted, lp1, 0, types, _countof(types), condemned, maxgen, flags);
+                    HndScanHandlesForGC(hTable, CheckPromoted, lp1, 0, types, ARRAY_SIZE(types), condemned, maxgen, flags);
             }
         }
         walk = walk->pNext;
@@ -1454,7 +1454,7 @@ void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Re
             {
                 HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber(sc)];
                 if (hTable)
-                    HndScanHandlesForGC(hTable, UpdatePointer, uintptr_t(sc), uintptr_t(fn), types, _countof(types), condemned, maxgen, flags);
+                    HndScanHandlesForGC(hTable, UpdatePointer, uintptr_t(sc), uintptr_t(fn), types, ARRAY_SIZE(types), condemned, maxgen, flags);
             }
         walk = walk->pNext;
     }
@@ -1505,7 +1505,7 @@ void Ref_ScanHandlesForProfilerAndETW(uint32_t maxgen, uintptr_t lp1, handle_sca
                 {
                     HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                     if (hTable)
-                        HndScanHandlesForGC(hTable, &ScanPointerForProfilerAndETW, lp1, (uintptr_t)fn, types, _countof(types), maxgen, maxgen, flags);
+                        HndScanHandlesForGC(hTable, &ScanPointerForProfilerAndETW, lp1, (uintptr_t)fn, types, ARRAY_SIZE(types), maxgen, maxgen, flags);
                 }
         walk = walk->pNext;
     }
@@ -1574,7 +1574,7 @@ void Ref_ScanPointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_
                 {
                     HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                     if (hTable)
-                        HndScanHandlesForGC(hTable, &ScanPointer, uintptr_t(sc), uintptr_t(fn), types, _countof(types), condemned, maxgen, flags);
+                        HndScanHandlesForGC(hTable, &ScanPointer, uintptr_t(sc), uintptr_t(fn), types, ARRAY_SIZE(types), condemned, maxgen, flags);
                 }
             }
         }
@@ -1601,7 +1601,7 @@ void Ref_UpdatePinnedPointers(uint32_t condemned, uint32_t maxgen, ScanContext* 
             {
                 HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber(sc)];
                 if (hTable)
-                    HndScanHandlesForGC(hTable, UpdatePointerPinned, uintptr_t(sc), uintptr_t(fn), types, _countof(types), condemned, maxgen, flags);
+                    HndScanHandlesForGC(hTable, UpdatePointerPinned, uintptr_t(sc), uintptr_t(fn), types, ARRAY_SIZE(types), condemned, maxgen, flags);
             }
         walk = walk->pNext;
     }
@@ -1646,7 +1646,7 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
             {
                 HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                 if (hTable)
-                    HndScanHandlesForGC(hTable, NULL, 0, 0, types, _countof(types), condemned, maxgen, HNDGCF_AGE);
+                    HndScanHandlesForGC(hTable, NULL, 0, 0, types, ARRAY_SIZE(types), condemned, maxgen, HNDGCF_AGE);
             }
         walk = walk->pNext;
     }
@@ -1689,7 +1689,7 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
             {
                 HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                 if (hTable)
-                    HndResetAgeMap(hTable, types, _countof(types), condemned, maxgen, HNDGCF_NORMAL);
+                    HndResetAgeMap(hTable, types, ARRAY_SIZE(types), condemned, maxgen, HNDGCF_NORMAL);
             }
         walk = walk->pNext;
     }
@@ -1733,7 +1733,7 @@ void Ref_VerifyHandleTable(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
             {
                 HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber(sc)];
                 if (hTable)
-                    HndVerifyTable(hTable, types, _countof(types), condemned, maxgen, HNDGCF_NORMAL);
+                    HndVerifyTable(hTable, types, ARRAY_SIZE(types), condemned, maxgen, HNDGCF_NORMAL);
             }
         }
         walk = walk->pNext;

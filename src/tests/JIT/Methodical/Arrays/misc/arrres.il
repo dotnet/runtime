@@ -19,7 +19,7 @@
 .assembly 'arrres'// as "arrres"
 {
 }
-.module 'arrres.exe'
+.assembly extern xunit.core {}
 .namespace GCTest
 {
   .class private auto ansi Test
@@ -151,6 +151,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  4
       .locals (int32 V_0,

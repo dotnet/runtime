@@ -20,6 +20,7 @@ namespace Sample
 
         public override string Name => "WebSocket";
         public override Measurement[] Measurements => measurements;
+        public override bool BrowserOnly => true;
 
 
         Measurement[] measurements;

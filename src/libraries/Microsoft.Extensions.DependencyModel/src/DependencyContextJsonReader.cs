@@ -19,13 +19,8 @@ namespace Microsoft.Extensions.DependencyModel
 
         private readonly IDictionary<string, string> _stringPool = new Dictionary<string, string>();
 
-        public DependencyContext Read(Stream stream)
+        public DependencyContext Read(Stream stream!!)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
             ArraySegment<byte> buffer = ReadToEnd(stream);
             try
             {
@@ -358,7 +353,14 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                targets.Add(ReadTarget(ref reader, reader.GetString()!));
+                string? targetName = reader.GetString();
+
+                if (string.IsNullOrEmpty(targetName))
+                {
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(targetName)));
+                }
+
+                targets.Add(ReadTarget(ref reader, targetName));
             }
 
             reader.CheckEndObject();
@@ -374,7 +376,14 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                libraries.Add(ReadTargetLibrary(ref reader, reader.GetString()!));
+                string? targetLibraryName = reader.GetString();
+
+                if (string.IsNullOrEmpty(targetLibraryName))
+                {
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(targetLibraryName)));
+                }
+
+                libraries.Add(ReadTargetLibrary(ref reader, targetLibraryName));
             }
 
             reader.CheckEndObject();
@@ -448,7 +457,16 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.TryReadStringProperty(out string? name, out string? version))
             {
-                dependencies.Add(new Dependency(Pool(name)!, Pool(version)!));
+                if (string.IsNullOrEmpty(name))
+                {
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(name)));
+                }
+                if (string.IsNullOrEmpty(version))
+                {
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(version)));
+                }
+
+                dependencies.Add(new Dependency(Pool(name), Pool(version)));
             }
 
             reader.CheckEndObject();
@@ -464,7 +482,12 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                string libraryName = reader.GetString()!;
+                string? libraryName = reader.GetString();
+
+                if (string.IsNullOrEmpty(libraryName))
+                {
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(libraryName)));
+                }
                 reader.Skip();
 
                 runtimes.Add(libraryName);
@@ -486,7 +509,12 @@ namespace Microsoft.Extensions.DependencyModel
                 string? assemblyVersion = null;
                 string? fileVersion = null;
 
-                string path = reader.GetString()!;
+                string? path = reader.GetString();
+
+                if (string.IsNullOrEmpty(path))
+                {
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(path)));
+                }
 
                 reader.ReadStartObject();
 
@@ -521,9 +549,16 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
+                string? runtimePath = reader.GetString();
+
+                if (string.IsNullOrEmpty(runtimePath))
+                {
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(runtimePath)));
+                }
+
                 var runtimeTarget = new RuntimeTargetEntryStub
                 {
-                    Path = reader.GetString()!
+                    Path = runtimePath
                 };
 
                 reader.ReadStartObject();
@@ -565,7 +600,13 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                string path = reader.GetString()!;
+                string? path = reader.GetString();
+
+                if (string.IsNullOrEmpty(path))
+                {
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(path)));
+                }
+
                 string? locale = null;
 
                 reader.ReadStartObject();
@@ -599,7 +640,12 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                string libraryName = reader.GetString()!;
+                string? libraryName = reader.GetString();
+
+                if (string.IsNullOrEmpty(libraryName))
+                {
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(libraryName)));
+                }
 
                 libraries.Add(Pool(libraryName), ReadOneLibrary(ref reader));
             }
@@ -650,10 +696,15 @@ namespace Microsoft.Extensions.DependencyModel
 
             reader.CheckEndObject();
 
+            if (string.IsNullOrEmpty(type))
+            {
+                throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(type)));
+            }
+
             return new LibraryStub()
             {
                 Hash = hash,
-                Type = Pool(type)!,
+                Type = Pool(type),
                 Serviceable = serviceable,
                 Path = path,
                 HashPath = hashPath,
@@ -669,8 +720,13 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                string runtime = reader.GetString()!;
+                string? runtime = reader.GetString();
                 string?[] fallbacks = reader.ReadStringArray();
+
+                if (string.IsNullOrEmpty(runtime))
+                {
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(runtime)));
+                }
 
                 runtimeFallbacks.Add(new RuntimeFallbacks(runtime, fallbacks));
             }

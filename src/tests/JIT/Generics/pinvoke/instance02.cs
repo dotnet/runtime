@@ -25,7 +25,7 @@ public class Gen<T>
     }
 }
 
-public class Test
+public class Test_instance02
 {
     public static uint counter = 0;
     public static bool result = true;

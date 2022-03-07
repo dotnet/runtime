@@ -93,6 +93,9 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
 
     LPCUTF8 pszName = NULL;
     LPCUTF8 pszNameSpace = NULL;
+    // Reserve stack space for parsing out the namespace in a name-based lookup
+    // at this scope so the stack space is in scope for all usages in this method.
+    CQuickBytes namespaceBuffer;
 
     //
     // Compute the hashcode of the type (hashcode based on type name and namespace name)
@@ -105,7 +108,6 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
 
         pszName = pName->GetName();
         pszNameSpace = "";
-
         if (pName->GetNameSpace() != NULL)
         {
             pszNameSpace = pName->GetNameSpace();
@@ -113,14 +115,13 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
         else
         {
             LPCUTF8 p;
-            CQuickBytes szNamespace;
 
             if ((p = ns::FindSep(pszName)) != NULL)
             {
                 SIZE_T d = p - pszName;
 
                 FAULT_NOT_FATAL();
-                pszNameSpace = szNamespace.SetStringNoThrow(pszName, d);
+                pszNameSpace = namespaceBuffer.SetStringNoThrow(pszName, d);
 
                 if (pszNameSpace == NULL)
                     return FALSE;
@@ -822,7 +823,7 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
         return false;
 
     // If R2R code is disabled for this module, simply behave as if it is never found
-    if (m_readyToRunCodeDisabled)
+    if (ReadyToRunCodeDisabled())
         return false;
 
     if (m_pgoInstrumentationDataHashtable.IsNull())
@@ -889,7 +890,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
         goto done;
 
     // If R2R code is disabled for this module, simply behave as if it is never found
-    if (m_readyToRunCodeDisabled)
+    if (ReadyToRunCodeDisabled())
         goto done;
 
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
@@ -1076,7 +1077,7 @@ BOOL ReadyToRunInfo::MethodIterator::Next()
     }
     CONTRACTL_END;
 
-    if (m_pInfo->m_readyToRunCodeDisabled)
+    if (m_pInfo->ReadyToRunCodeDisabled())
         return FALSE;
 
     // Enumerate non-generic methods

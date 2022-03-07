@@ -7,8 +7,8 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetControlCharacters")]
-        internal static extern void GetControlCharacters(
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetControlCharacters")]
+        internal static partial void GetControlCharacters(
             ControlCharacterNames[] controlCharacterNames, byte[] controlCharacterValues, int controlCharacterLength,
             out byte posixDisableValue);
 

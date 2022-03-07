@@ -127,6 +127,8 @@ namespace System.Linq.Parallel
         private void WrapHelper<TKey>(PartitionedStream<TResult, TKey> inputStream, IPartitionedStreamRecipient<TResult> recipient, QuerySettings settings)
         {
             int partitionCount = inputStream.PartitionCount;
+            if (ParallelEnumerable.SinglePartitionMode)
+                Debug.Assert(partitionCount == 1);
 
             // Create shared data.
             OperatorState<TKey> operatorState = new OperatorState<TKey>();
@@ -321,13 +323,16 @@ namespace System.Linq.Parallel
                     }
                     finally
                     {
-                        // No matter whether we exit due to an exception or normal completion, we must ensure
-                        // that we signal other partitions that we have completed.  Otherwise, we can cause deadlocks.
-                        _sharedBarrier.Signal();
+                        if (!ParallelEnumerable.SinglePartitionMode) {
+                            // No matter whether we exit due to an exception or normal completion, we must ensure
+                            // that we signal other partitions that we have completed.  Otherwise, we can cause deadlocks.
+                            _sharedBarrier.Signal();
+                        }
                     }
 
                     // Before exiting the search phase, we will synchronize with others. This is a barrier.
-                    _sharedBarrier.Wait(_cancellationToken);
+                    if (!ParallelEnumerable.SinglePartitionMode)
+                        _sharedBarrier.Wait(_cancellationToken);
 
                     // Publish the buffer and set the index to just before the 1st element.
                     _buffer = buffer;

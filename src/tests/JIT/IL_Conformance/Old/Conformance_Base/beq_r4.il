@@ -540,4 +540,4 @@ FAIL:
 	ret
 
 }
-.assembly beq_r4.exe{}
+.assembly beq_r4{}

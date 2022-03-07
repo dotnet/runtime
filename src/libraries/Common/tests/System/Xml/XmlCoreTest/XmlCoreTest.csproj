@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RootNamespace>XmlCoreTest.Common</RootNamespace>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AsyncUtil.cs" />
@@ -19,5 +19,6 @@
   <ItemGroup>
     <ProjectReference Include="..\ModuleCore\ModuleCore.csproj" />
     <ProjectReference Include="..\XmlDiff\XmlDiff.csproj" />
+    <ProjectReference Include="..\..\..\TestUtilities\TestUtilities.csproj" />
   </ItemGroup>
 </Project>

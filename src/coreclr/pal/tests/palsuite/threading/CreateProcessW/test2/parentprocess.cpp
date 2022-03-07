@@ -6,7 +6,7 @@
 ** Source: createprocessw/test2/parentprocess.c
 **
 ** Purpose: Test the following features of CreateProcessW:
-**          - Check to see if hProcess & hThread are set in 
+**          - Check to see if hProcess & hThread are set in
 **            return PROCESS_INFORMATION structure
 **          - Check to see if stdin, stdout, & stderr handles
 **            are used when STARTF_USESTDHANDLES is specified
@@ -19,7 +19,7 @@
 **               WaitForSingleObject
 **               WriteFile, ReadFile
 **               GetExitCodeProcess
-** 
+**
 
 **
 **=========================================================*/
@@ -68,11 +68,11 @@ PALTEST(threading_CreateProcessW_test2_paltest_createprocessw_test2, "threading/
     }
 
     /*Setup SECURITY_ATTRIBUTES structure for CreatePipe*/
-    pipeAttributes.nLength              = sizeof(SECURITY_ATTRIBUTES); 
-    pipeAttributes.lpSecurityDescriptor = NULL; 
-    pipeAttributes.bInheritHandle       = TRUE; 
-    
-    
+    pipeAttributes.nLength              = sizeof(SECURITY_ATTRIBUTES);
+    pipeAttributes.lpSecurityDescriptor = NULL;
+    pipeAttributes.bInheritHandle       = TRUE;
+
+
     /*Create a StdIn pipe for child*/
     bRetVal = CreatePipe(&hTestStdInR,      /* read handle*/
                          &hTestStdInW,      /* write handle */
@@ -138,7 +138,7 @@ PALTEST(threading_CreateProcessW_test2_paltest_createprocessw_test2, "threading/
     /* Launch the child */
     if ( !CreateProcess (NULL, szFullPathNameW, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi ))
     {
-        Fail("ERROR: CreateProcess call failed.  GetLastError returned %d\n", 
+        Fail("ERROR: CreateProcess call failed.  GetLastError returned %d\n",
              GetLastError() );
     }
 
@@ -157,7 +157,7 @@ PALTEST(threading_CreateProcessW_test2_paltest_createprocessw_test2, "threading/
         Fail("ERROR: %ld :unable to write to write pipe handle "
              "hTestStdInW=0x%lx\n", GetLastError(), hTestStdInW);
     }
-    
+
     /* Wait for the child to finish, Max 20 seconds */
     dwExitCode = WaitForSingleObject(pi.hProcess, 20000);
 
@@ -222,7 +222,7 @@ PALTEST(threading_CreateProcessW_test2_paltest_createprocessw_test2, "threading/
                        NULL);              /* overlapped buffer*/
 
 
-    /* Confirm that we recieved the same string that we originally */
+    /* Confirm that we received the same string that we originally */
     /* wrote to the child and was received on both stdout & stderr.*/
     if (strncmp(szTestString, szStdOutBuf, strlen(szTestString)) != 0
         || strncmp(szTestString, szStdErrBuf, strlen(szTestString)) != 0)

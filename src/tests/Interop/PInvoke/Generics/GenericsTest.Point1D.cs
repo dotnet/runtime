@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 unsafe partial class GenericsNative
 {
@@ -40,23 +40,23 @@ unsafe partial class GenericsTest
     private static void TestPoint1D()
     {
         GenericsNative.Point1<double> value = GenericsNative.GetPoint1D(1.0);
-        Assert.AreEqual(value.e00, 1.0);
+        Assert.Equal(value.e00, 1.0);
 
         GenericsNative.Point1<double> value2;
         GenericsNative.GetPoint1DOut(1.0, &value2);
-        Assert.AreEqual(value2.e00, 1.0);
+        Assert.Equal(value2.e00, 1.0);
 
         GenericsNative.GetPoint1DOut(1.0, out GenericsNative.Point1<double> value3);
-        Assert.AreEqual(value3.e00, 1.0);
+        Assert.Equal(value3.e00, 1.0);
 
         GenericsNative.Point1<double>* value4 = GenericsNative.GetPoint1DPtr(1.0);
-        Assert.AreEqual(value4->e00, 1.0);
+        Assert.Equal(value4->e00, 1.0);
 
         ref readonly GenericsNative.Point1<double> value5 = ref GenericsNative.GetPoint1DRef(1.0);
-        Assert.AreEqual(value5.e00, 1.0);
+        Assert.Equal(value5.e00, 1.0);
 
         GenericsNative.Point1<double> result = GenericsNative.AddPoint1D(value, value);
-        Assert.AreEqual(result.e00, 2.0);
+        Assert.Equal(result.e00, 2.0);
 
         GenericsNative.Point1<double>[] values = new GenericsNative.Point1<double>[] {
             value,
@@ -69,13 +69,13 @@ unsafe partial class GenericsTest
         fixed (GenericsNative.Point1<double>* pValues = &values[0])
         {
             GenericsNative.Point1<double> result2 = GenericsNative.AddPoint1Ds(pValues, values.Length);
-            Assert.AreEqual(result2.e00, 5.0);
+            Assert.Equal(result2.e00, 5.0);
         }
 
         GenericsNative.Point1<double> result3 = GenericsNative.AddPoint1Ds(values, values.Length);
-        Assert.AreEqual(result3.e00, 5.0);
+        Assert.Equal(result3.e00, 5.0);
 
         GenericsNative.Point1<double> result4 = GenericsNative.AddPoint1Ds(in values[0], values.Length);
-        Assert.AreEqual(result4.e00, 5.0);
+        Assert.Equal(result4.e00, 5.0);
     }
 }

@@ -465,7 +465,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     sb.Append(", ");
                 }
-                sb.AppendFormat($"{Signature.ParameterTypes[i]}");
+                sb.Append($"{Signature.ParameterTypes[i]}");
             }
             sb.Append(")");
 

@@ -324,20 +324,5 @@ namespace Internal.TypeSystem
                 return 4;
             }
         }
-
-        public int MaximumAutoLayoutPackingSize
-        {
-            get
-            {
-                if (Abi == TargetAbi.CoreRT)
-                {
-                    if (Architecture == TargetArchitecture.X86)
-                    {
-                        return PointerSize;
-                    }
-                }
-                return MaximumAlignment;
-            }
-        }
     }
 }

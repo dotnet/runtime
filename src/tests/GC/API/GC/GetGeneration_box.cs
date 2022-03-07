@@ -12,7 +12,7 @@ public struct StructType {
 public enum EnumType {
 }
 
-public class Test {
+public class Test_GetGeneration_box {
 
     public static int Main() {
         // literals

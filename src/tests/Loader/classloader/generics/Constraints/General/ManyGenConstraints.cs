@@ -6,7 +6,7 @@
 
 using System;
 
-public class Test {
+public class Test_ManyGenConstraints {
    public static int Main() 
    {    
 	bool pass = true; 

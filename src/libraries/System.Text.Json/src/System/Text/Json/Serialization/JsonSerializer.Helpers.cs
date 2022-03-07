@@ -17,13 +17,13 @@ namespace System.Text.Json
         {
             Debug.Assert(runtimeType != null);
 
-            options ??= JsonSerializerOptions.s_defaultOptions;
-            if (!options.IsInitializedForReflectionSerializer)
+            options ??= JsonSerializerOptions.Default;
+            if (!JsonSerializerOptions.IsInitializedForReflectionSerializer)
             {
-                options.InitializeForReflectionSerializer();
+                JsonSerializerOptions.InitializeForReflectionSerializer();
             }
 
-            return options.GetOrAddClassForRootType(runtimeType);
+            return options.GetOrAddJsonTypeInfoForRootType(runtimeType);
         }
 
         private static JsonTypeInfo GetTypeInfo(JsonSerializerContext context, Type type)

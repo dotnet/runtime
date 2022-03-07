@@ -7,7 +7,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 
-using TestLibrary;
+using Xunit;
 
 using ResolutionStage = BinderTracingTests.ResolutionAttempt.ResolutionStage;
 using ResolutionResult = BinderTracingTests.ResolutionAttempt.ResolutionResult;
@@ -250,7 +250,7 @@ namespace BinderTracingTests
             var assemblyPath = Helpers.GetAssemblyInSubdirectoryPath(assemblyName.Name);
             CustomALC alc = new CustomALC(nameof(AssemblyLoadContextLoad), true /*throwOnLoad*/);
 
-            Assert.Throws<FileLoadException, Exception>(() => alc.LoadFromAssemblyName(assemblyName));
+            AssertExtensions.ThrowsWithInnerException<FileLoadException, Exception>(() => alc.LoadFromAssemblyName(assemblyName));
 
             return new BindOperation()
             {
@@ -412,7 +412,7 @@ namespace BinderTracingTests
             CustomALC alc = new CustomALC(nameof(AssemblyLoadContextResolvingEvent_CustomALC_Exception));
             using (var handlers = new Handlers(HandlerReturn.Exception, alc))
             {
-                Assert.Throws<FileLoadException, BinderTestException>(() => alc.LoadFromAssemblyName(assemblyName));
+                AssertExtensions.ThrowsWithInnerException<FileLoadException, BinderTestException>(() => alc.LoadFromAssemblyName(assemblyName));
 
                 return new BindOperation()
                 {
@@ -444,7 +444,7 @@ namespace BinderTracingTests
             var assemblyName = new AssemblyName(SubdirectoryAssemblyName);
             using (var handlers = new Handlers(HandlerReturn.Exception, AssemblyLoadContext.Default))
             {
-                Assert.Throws<FileLoadException, BinderTestException>(() => AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName));
+                AssertExtensions.ThrowsWithInnerException<FileLoadException, BinderTestException>(() => AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName));
 
                 return new BindOperation()
                 {
@@ -551,7 +551,7 @@ namespace BinderTracingTests
             CustomALC alc = new CustomALC(nameof(AppDomainAssemblyResolveEvent_Exception));
             using (var handlers = new Handlers(HandlerReturn.Exception))
             {
-                Assert.Throws<FileLoadException, BinderTestException>(() => alc.LoadFromAssemblyName(assemblyName));
+                AssertExtensions.ThrowsWithInnerException<FileLoadException, BinderTestException>(() => alc.LoadFromAssemblyName(assemblyName));
 
                 return new BindOperation()
                 {
@@ -585,7 +585,7 @@ namespace BinderTracingTests
 
             Assembly asm = AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyPath);
 
-            Assert.AreNotEqual(assemblyPath, asm.Location);
+            Assert.NotEqual(assemblyPath, asm.Location);
             return new BindOperation()
             {
                 AssemblyName = asm.GetName(),

@@ -18,6 +18,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
         public FileInfo TraceFile;
         public FileInfo OutputFileName;
+        public FileInfo PreciseDebugInfoFile;
         public int? Pid;
         public string ProcessName;
         public PgoFileType? FileType;
@@ -29,11 +30,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public bool ValidateOutputFile;
         public bool GenerateCallGraph;
         public bool Spgo;
-        public bool SpgoIncludeBlockCounts;
-        public bool SpgoIncludeEdgeCounts;
+        public bool IncludeFullGraphs;
         public int SpgoMinSamples = 50;
         public bool VerboseWarnings;
-        public jittraceoptions JitTraceOptions;
+        public JitTraceOptions JitTraceOptions;
         public double ExcludeEventsBefore;
         public double ExcludeEventsAfter;
         public bool Warnings;
@@ -45,6 +45,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public bool DumpMibc = false;
         public FileInfo InputFileToDump;
         public List<FileInfo> CompareMibc;
+        public DirectoryInfo DumpWorstOverlapGraphsTo;
+        public int DumpWorstOverlapGraphs = -1;
         public bool InheritTimestamp;
 
         public string[] HelpArgs = Array.Empty<string>();
@@ -61,7 +63,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         {
             try
             {
-                return (Verbosity)Enum.Parse(typeof(Verbosity), s);
+                return Enum.Parse<Verbosity>(s);
             }
             catch 
             {
@@ -196,18 +198,20 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 CommonOptions();
                 CompressedOption();
 
+                string preciseDebugInfoFile = null;
+                syntax.DefineOption(name: "precise-debug-info-file", ref preciseDebugInfoFile, "Name of file of newline separated JSON objects containing precise debug info");
+                if (preciseDebugInfoFile != null)
+                    PreciseDebugInfoFile = new FileInfo(preciseDebugInfoFile);
+
                 syntax.DefineOption(name: "spgo", value: ref Spgo, help: "Base profile on samples in the input. Uses last branch records if available and otherwise raw IP samples.", requireValue: false);
-                syntax.DefineOption(name: "spgo-with-block-counts", value: ref SpgoIncludeBlockCounts, help: "Include block counts in the written .mibc file. If neither this nor spgo-with-edge-counts are specified, then defaults to true.", requireValue: false);
-                syntax.DefineOption(name: "spgo-with-edge-counts", value: ref SpgoIncludeEdgeCounts, help: "Include edge counts in the written .mibc file.", requireValue: false);
                 syntax.DefineOption(name: "spgo-min-samples", value: ref SpgoMinSamples, help: $"The minimum number of total samples a function must have before generating profile data for it with SPGO. Default: {SpgoMinSamples}", requireValue: false);
 
-                if (!SpgoIncludeBlockCounts && !SpgoIncludeEdgeCounts)
-                    SpgoIncludeBlockCounts = true;
+                syntax.DefineOption(name: "include-full-graphs", value: ref IncludeFullGraphs, help: "Include all blocks and edges in the written .mibc file, regardless of profile counts", requireValue: false);
 
                 HelpOption();
             }
 
-            JitTraceOptions = jittraceoptions.none;
+            JitTraceOptions = JitTraceOptions.none;
 #if DEBUG
             // Usage of the jittrace format requires using logic embedded in the runtime repository and isn't suitable for general consumer use at this time
             // Build it in debug and check builds to ensure that it doesn't bitrot, and remains available for use by developers willing to build the repo
@@ -226,14 +230,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 syntax.DefineOption(name: "sorted", value: ref sorted, help: "Generate sorted output.", requireValue: false);
                 if (sorted)
                 {
-                    JitTraceOptions |= jittraceoptions.sorted;
+                    JitTraceOptions |= JitTraceOptions.sorted;
                 }
 
                 bool showtimestamp = false;
                 syntax.DefineOption(name: "showtimestamp", value: ref showtimestamp, help: "Show timestamps in output.", requireValue: false);
                 if (showtimestamp)
                 {
-                    JitTraceOptions |= jittraceoptions.showtimestamp;
+                    JitTraceOptions |= JitTraceOptions.showtimestamp;
                 }
 
                 syntax.DefineOption(name: "includeReadyToRun", value: ref ProcessR2REvents, help: "Include ReadyToRun methods in the trace file.", requireValue: false);
@@ -305,6 +309,12 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 CompareMibc = DefineFileOptionList(name: "i|input", help: "The input .mibc files to be compared. Specify as --input file1.mibc --input file2.mibc");
                 if (CompareMibc.Count != 2)
                     Help = true;
+
+                syntax.DefineOption(name: "dump-worst-overlap-graphs", value: ref DumpWorstOverlapGraphs, help: "Number of graphs to dump to .dot format in dump-worst-overlap-graphs-to directory");
+                string dumpWorstOverlapGraphsTo = null;
+                syntax.DefineOption(name: "dump-worst-overlap-graphs-to", value: ref dumpWorstOverlapGraphsTo, help: "Number of graphs to dump to .dot format in dump-worst-overlap-graphs-to directory");
+                if (dumpWorstOverlapGraphsTo != null)
+                    DumpWorstOverlapGraphsTo = new DirectoryInfo(dumpWorstOverlapGraphsTo);
             }
 
             if (syntax.ActiveCommand == null)

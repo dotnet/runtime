@@ -89,6 +89,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61131", TestPlatforms.OSX)]
         [InlineData(true, false, true, false)]
         [InlineData(true, false, true, true)]
         [InlineData(true, false, false, false)]
@@ -180,6 +181,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61131", TestPlatforms.OSX)]
         [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
         [InlineData("{0}", false, true)]
         [InlineData("{0}\n", false, true)]
@@ -245,6 +247,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61131", TestPlatforms.OSX)]
         [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
         public void GetHostFxrPath_GlobalInstallation_HasNoDefaultInstallationPath()
         {
@@ -275,6 +278,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61131", TestPlatforms.OSX)]
         [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
         public void GetHostFxrPath_GlobalInstallation_ArchitectureSpecificPathIsPickedOverDefaultPath()
         {

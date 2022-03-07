@@ -20,9 +20,25 @@ namespace Microsoft.Extensions.Hosting
         public const string BuildWebHost = nameof(BuildWebHost);
         public const string CreateWebHostBuilder = nameof(CreateWebHostBuilder);
         public const string CreateHostBuilder = nameof(CreateHostBuilder);
+        private const string TimeoutEnvironmentKey = "DOTNET_HOST_FACTORY_RESOLVER_DEFAULT_TIMEOUT_IN_SECONDS";
 
         // The amount of time we wait for the diagnostic source events to fire
-        private static readonly TimeSpan s_defaultWaitTimeout = Debugger.IsAttached ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(5);
+        private static readonly TimeSpan s_defaultWaitTimeout = SetupDefaultTimout();
+
+        private static TimeSpan SetupDefaultTimout()
+        {
+            if (Debugger.IsAttached)
+            {
+                return Timeout.InfiniteTimeSpan;
+            }
+            
+            if (uint.TryParse(Environment.GetEnvironmentVariable(TimeoutEnvironmentKey), out uint timeoutInSeconds))
+            {
+                return TimeSpan.FromSeconds((int)timeoutInSeconds);
+            }
+
+            return TimeSpan.FromMinutes(5);
+        }
 
         public static Func<string[], TWebHost>? ResolveWebHostFactory<TWebHost>(Assembly assembly)
         {
@@ -229,7 +245,7 @@ namespace Microsoft.Extensions.Hosting
 
                         // Try to set an exception if the entry point returns gracefully, this will force
                         // build to throw
-                        _hostTcs.TrySetException(new InvalidOperationException("Unable to build IHost"));
+                        _hostTcs.TrySetException(new InvalidOperationException("The entry point exited without ever building an IHost."));
                     }
                     catch (TargetInvocationException tie) when (tie.InnerException is StopTheHostException)
                     {
@@ -268,7 +284,7 @@ namespace Microsoft.Extensions.Hosting
                     // Wait before throwing an exception
                     if (!_hostTcs.Task.Wait(_waitTimeout))
                     {
-                        throw new InvalidOperationException("Unable to build IHost");
+                        throw new InvalidOperationException($"Timed out waiting for the entry point to build the IHost after {s_defaultWaitTimeout}. This timeout can be modified using the '{TimeoutEnvironmentKey}' environment variable.");
                     }
                 }
                 catch (AggregateException) when (_hostTcs.Task.IsCompleted)

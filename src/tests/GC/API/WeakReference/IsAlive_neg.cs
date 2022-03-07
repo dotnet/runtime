@@ -8,7 +8,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
-public class Test {
+public class Test_IsAlive_neg {
     public static int[] array;
     
     [MethodImplAttribute(MethodImplOptions.NoInlining)]

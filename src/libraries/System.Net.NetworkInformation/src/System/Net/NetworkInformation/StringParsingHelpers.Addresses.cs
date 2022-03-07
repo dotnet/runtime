@@ -8,7 +8,6 @@ namespace System.Net.NetworkInformation
 {
     internal static partial class StringParsingHelpers
     {
-        private static char[] s_delimiter = new char[1] { ' ' };
         // /proc/net/route contains some information about gateway addresses,
         // and separates the information about by each interface.
         internal static List<GatewayIPAddressInformation> ParseIPv4GatewayAddressesFromRouteFile(List<GatewayIPAddressInformation> collection, string[] fileLines, string interfaceName)
@@ -58,7 +57,7 @@ namespace System.Net.NetworkInformation
             {
                 if (line.StartsWith("00000000000000000000000000000000", StringComparison.Ordinal))
                 {
-                   string[] token = line.Split(s_delimiter, StringSplitOptions.RemoveEmptyEntries);
+                   string[] token = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                    if (token.Length > 9 && token[4] != "00000000000000000000000000000000")
                    {
                         if (!string.IsNullOrEmpty(interfaceName) && interfaceName != token[9])
@@ -87,7 +86,7 @@ namespace System.Net.NetworkInformation
             {
                 if (File.Exists(filePath)) // avoid an exception in most cases if path doesn't already exist
                 {
-                    string fileContents = File.ReadAllText(filePath);
+                    string fileContents = ReadAllText(filePath);
                     int leaseIndex = -1;
                     int secondBrace = -1;
                     while ((leaseIndex = fileContents.IndexOf("lease", leaseIndex + 1, StringComparison.Ordinal)) != -1)
@@ -129,7 +128,7 @@ namespace System.Net.NetworkInformation
             {
                 if (File.Exists(smbConfFilePath)) // avoid an exception in most cases if path doesn't already exist
                 {
-                    string fileContents = File.ReadAllText(smbConfFilePath);
+                    string fileContents = ReadAllText(smbConfFilePath);
                     string label = "wins server = ";
                     int labelIndex = fileContents.IndexOf(label);
                     int labelLineStart = fileContents.LastIndexOf(Environment.NewLine, labelIndex, StringComparison.Ordinal);

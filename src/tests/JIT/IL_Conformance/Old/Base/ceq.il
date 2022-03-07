@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly ceq.exe{}
+.assembly 'ceq'{}
 
 .class public _ceq {
 

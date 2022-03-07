@@ -48,11 +48,12 @@ namespace Wasm.Build.NativeRebuild.Tests
         {
             buildArgs = GenerateProjectContents(buildArgs, nativeRelink, invariant, extraProperties);
             BuildProject(buildArgs,
-                        initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                        dotnetWasmFromRuntimePack: false,
-                        hasIcudt: !invariant,
-                        id: id,
-                        createProject: true);
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
+                                DotnetWasmFromRuntimePack: false,
+                                HasIcudt: !invariant,
+                                CreateProject: true));
 
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: RunHost.V8, id: id);
             return (buildArgs, GetBuildPaths(buildArgs));
@@ -80,11 +81,12 @@ namespace Wasm.Build.NativeRebuild.Tests
             Console.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
             (_, string output) = BuildProject(buildArgs,
                                             id: id,
-                                            dotnetWasmFromRuntimePack: false,
-                                            hasIcudt: !invariant,
-                                            createProject: false,
-                                            useCache: false,
-                                            verbosity: verbosity);
+                                            new BuildProjectOptions(
+                                                DotnetWasmFromRuntimePack: false,
+                                                HasIcudt: !invariant,
+                                                CreateProject: false,
+                                                UseCache: false,
+                                                Verbosity: verbosity));
 
             return output;
         }

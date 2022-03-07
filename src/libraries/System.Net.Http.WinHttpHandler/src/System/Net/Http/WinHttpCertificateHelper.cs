@@ -64,7 +64,7 @@ namespace System.Net.Http
 
                 fixed (char* namePtr = hostName)
                 {
-                    eppStruct.pwszServerName = namePtr;
+                    eppStruct.pwszServerName = (ushort*)namePtr; // The native field is WCHAR*, so we can just cast to ushort in this case
                     cppStruct.dwFlags =
                         Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_ALL &
                         ~Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_INVALID_NAME_FLAG;

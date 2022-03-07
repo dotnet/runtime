@@ -9,7 +9,12 @@ namespace System.Runtime
     {
         private static ulong GetTopOfMemory()
         {
-            Interop.Kernel32.GetSystemInfo(out Interop.Kernel32.SYSTEM_INFO info);
+            Interop.Kernel32.SYSTEM_INFO info;
+            unsafe
+            {
+                Interop.Kernel32.GetSystemInfo(&info);
+            }
+
             return (ulong)info.lpMaximumApplicationAddress;
         }
 

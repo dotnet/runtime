@@ -269,7 +269,7 @@ public struct GenJaggedObjectArray : GenOuter<int>.IGen<object[][]>
 }
 
 
-public class Test
+public class Test_NestedInterface06
 {
 	public static int counter = 0;
 	public static bool result = true;

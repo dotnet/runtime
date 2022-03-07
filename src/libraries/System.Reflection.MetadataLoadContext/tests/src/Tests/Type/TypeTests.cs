@@ -209,6 +209,63 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        static void TestArrayMethodsGetSetAddressAreNotEquals()
+        {
+           void test(Type type)
+            {
+                MethodInfo v1 = type.GetMethod("Get");
+                MethodInfo v2 = type.GetMethod("Set");
+                MethodInfo v3 = type.GetMethod("Address");
+                Assert.NotEqual(v1, v2);
+                Assert.NotEqual(v1, v3);
+                Assert.NotEqual(v2, v3);
+            }
+
+            test(typeof(int[]));
+            test(typeof(int[]).Project());
+        }
+
+        [Fact]
+        static void TestArrayMethodsGetSetAddressEqualityForDifferentTypes()
+        {
+            void testNotEqual(Type type1, Type type2)
+            {
+                Assert.NotEqual(type1.GetMethod("Get"), type2.GetMethod("Get"));
+                Assert.NotEqual(type1.GetMethod("Set"), type2.GetMethod("Set"));
+                Assert.NotEqual(type1.GetMethod("Address"), type2.GetMethod("Address"));
+            }
+
+            testNotEqual(typeof(int[]), typeof(long[]));
+            testNotEqual(typeof(int[]).Project(), typeof(long[]).Project());
+            testNotEqual(typeof(int[]).Project(), typeof(int[]));
+
+            void testEqual(Type type1, Type type2)
+            {
+                Assert.Equal(type1.GetMethod("Get"), type2.GetMethod("Get"));
+                Assert.Equal(type1.GetMethod("Set"), type2.GetMethod("Set"));
+                Assert.Equal(type1.GetMethod("Address"), type2.GetMethod("Address"));
+            }
+
+            testEqual(typeof(int[]), typeof(int[]));
+            testEqual(typeof(int[]).Project(), typeof(int[]).Project());
+            testEqual(typeof(long[]).Project(), typeof(long[]).Project());
+        }
+
+        [Fact]
+        static void TestArrayGetMethodsResultEqualsFilteredGetMethod()
+        {
+            Type type = typeof(int[]).Project();
+
+            Assert.Equal(type.GetMethod("Get"), type.GetMethods().First(m => m.Name == "Get"));
+            Assert.Equal(type.GetMethod("Set"), type.GetMethods().First(m => m.Name == "Set"));
+            Assert.Equal(type.GetMethod("Address"), type.GetMethods().First(m => m.Name == "Address"));
+
+            Assert.NotEqual(type.GetMethod("Get"), type.GetMethods().First(m => m.Name == "Set"));
+            Assert.NotEqual(type.GetMethod("Set"), type.GetMethods().First(m => m.Name == "Address"));
+            Assert.NotEqual(type.GetMethod("Address"), type.GetMethods().First(m => m.Name == "Get"));
+        }
+
+        [Fact]
         public static void TestArrayAddressMethod()
         {
             bool expectedDefaultValue = true;
@@ -405,6 +462,36 @@ namespace System.Reflection.Tests
             Assert.True(typeof(MyColor).Project().IsValueType);
 
             return;
+        }
+
+        public static IEnumerable<object[]> ByRefPonterTypes_IsPublicIsVisible_TestData()
+        {
+            yield return new object[] { typeof(int).Project().MakeByRefType(), true, true };
+            yield return new object[] { typeof(int).Project().MakePointerType(), true, true };
+            yield return new object[] { typeof(int).Project(), true, true };
+            yield return new object[] { typeof(SampleMetadata.PublicClass.InternalNestedClass).Project().MakeByRefType(), true, false };
+            yield return new object[] { typeof(SampleMetadata.PublicClass.InternalNestedClass).Project().MakePointerType(), true, false };
+            yield return new object[] { typeof(SampleMetadata.PublicClass.InternalNestedClass).Project(), false, false };
+            yield return new object[] { typeof(SampleMetadata.PublicClass).Project().MakeByRefType(), true, true };
+            yield return new object[] { typeof(SampleMetadata.PublicClass).Project().MakePointerType(), true, true };
+            yield return new object[] { typeof(SampleMetadata.PublicClass).Project(), true, true };
+        }
+
+        [Theory]
+        [MemberData(nameof(ByRefPonterTypes_IsPublicIsVisible_TestData))]
+        public static void ByRefPonterTypes_IsPublicIsVisible(Type type, bool isPublic, bool isVisible)
+        {
+            Assert.Equal(isPublic, type.IsPublic);
+            Assert.Equal(!isPublic, type.IsNestedAssembly);
+            Assert.Equal(isVisible, type.IsVisible);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/11354")]
+        public static void FunctionPointerTypeIsPublic()
+        {
+            Assert.True(typeof(delegate*<string, int>).Project().IsPublic);
+            Assert.True(typeof(delegate*<string, int>).Project().MakePointerType().IsPublic);
         }
 
         [Fact]

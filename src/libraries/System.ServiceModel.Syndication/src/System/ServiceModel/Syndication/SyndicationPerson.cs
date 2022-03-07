@@ -27,13 +27,8 @@ namespace System.ServiceModel.Syndication
             Uri = uri;
         }
 
-        protected SyndicationPerson(SyndicationPerson source)
+        protected SyndicationPerson(SyndicationPerson source!!)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
             Email = source.Email;
             Name = source.Name;
             Uri = source.Uri;

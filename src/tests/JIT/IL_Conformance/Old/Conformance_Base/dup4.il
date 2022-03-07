@@ -53,4 +53,4 @@ FAIL:
 	ret
 }
 }
-.assembly dup4.exe{}
+.assembly dup4{}

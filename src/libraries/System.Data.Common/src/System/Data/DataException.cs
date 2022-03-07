@@ -614,7 +614,8 @@ namespace System.Data
         public static Exception CannotChangeCaseLocale(Exception? innerException) => _Argument(SR.DataSet_CannotChangeCaseLocale, innerException);
         public static Exception CannotChangeSchemaSerializationMode() => _InvalidOperation(SR.DataSet_CannotChangeSchemaSerializationMode);
         public static Exception InvalidSchemaSerializationMode(Type enumType, string mode) => _InvalidEnumArgumentException(SR.Format(SR.ADP_InvalidEnumerationValue, enumType.Name, mode));
-        public static Exception InvalidRemotingFormat(SerializationFormat mode) => _InvalidEnumArgumentException<SerializationFormat>(mode);
+        public static Exception InvalidRemotingFormat(SerializationFormat mode) => _InvalidEnumArgumentException(mode);
+        public static Exception SerializationFormatBinaryNotSupported() => _InvalidEnumArgumentException(SerializationFormat.Binary);
 
         //
         // DataTable and DataTableCollection

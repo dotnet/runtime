@@ -40,4 +40,4 @@ FAIL:
 }
 }
 
-.assembly ldarg_ref.exe{}
+.assembly ldarg_ref{}

@@ -45,7 +45,7 @@ public class cs1
     {
     }
 
-    public static int Main(String[] args)
+    public static int Main()
     {
         try
         {

@@ -41,7 +41,7 @@ namespace hello
         {
             Console.WriteLine("in Finally\n");
         }
-        static public int Main(string[] args)
+        static public int Main()
         {
             int i = 0;
             //Start recording

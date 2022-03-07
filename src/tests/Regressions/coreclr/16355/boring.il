@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Runtime { }
+.assembly extern xunit.core {}
 
 .assembly boring { }
 
@@ -68,6 +69,9 @@
 
 .method public hidebysig static int32 Main() cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
 
   newobj instance void class Fooer::.ctor()

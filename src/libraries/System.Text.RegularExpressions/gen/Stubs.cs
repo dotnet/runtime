@@ -54,13 +54,13 @@ namespace System.Threading
 {
     internal static class InterlockedExtensions
     {
-        public static int Or(ref int location1, int value)
+        public static uint Or(ref uint location1, uint value)
         {
-            int current = location1;
+            uint current = location1;
             while (true)
             {
-                int newValue = current | value;
-                int oldValue = Interlocked.CompareExchange(ref location1, newValue, current);
+                uint newValue = current | value;
+                uint oldValue = (uint)Interlocked.CompareExchange(ref Unsafe.As<uint, int>(ref location1), (int)newValue, (int)current);
                 if (oldValue == current)
                 {
                     return oldValue;
@@ -73,7 +73,7 @@ namespace System.Threading
 
 namespace System.Text.RegularExpressions
 {
-    internal class RegexReplacement
+    internal sealed class RegexReplacement
     {
         public RegexReplacement(string rep, RegexNode concat, Hashtable caps) { }
 
@@ -83,9 +83,4 @@ namespace System.Text.RegularExpressions
         public const int LastGroup = -3;
         public const int WholeString = -4;
     }
-}
-
-namespace System.Runtime.CompilerServices
-{
-    internal static class IsExternalInit { }
 }

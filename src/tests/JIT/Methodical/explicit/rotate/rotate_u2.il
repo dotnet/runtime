@@ -17,7 +17,7 @@
   
   
 }
-.module 'rotate_u2.exe'
+.assembly extern xunit.core {}
 // MVID: {D13C2D0A-FC17-423E-926F-6A239416DD1C}
 .namespace Rotate
 {
@@ -221,6 +221,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       20 (0x14)
       .maxstack  2

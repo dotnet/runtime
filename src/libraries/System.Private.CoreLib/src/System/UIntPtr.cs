@@ -8,9 +8,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
-using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
+#pragma warning disable CA1066 // Implement IEquatable when overriding Object.Equals
+
 #if TARGET_64BIT
 using nuint_t = System.UInt64;
 #else
@@ -69,11 +70,8 @@ namespace System
             _value = (void*)l;
         }
 
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
             info.AddValue("value", ToUInt64());
         }
 

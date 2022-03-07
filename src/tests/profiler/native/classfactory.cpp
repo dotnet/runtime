@@ -15,6 +15,7 @@
 #include "releaseondetach/releaseondetach.h"
 #include "transitions/transitions.h"
 #include "multiple/multiple.h"
+#include "inlining/inlining.h"
 
 ClassFactory::ClassFactory(REFCLSID clsid) : refCount(0), clsid(clsid)
 {
@@ -113,6 +114,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     else if (clsid == MultiplyLoaded::GetClsid())
     {
         profiler = new MultiplyLoaded();
+    }
+    else if (clsid == InliningProfiler::GetClsid())
+    {
+        profiler = new InliningProfiler();
     }
     else
     {

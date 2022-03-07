@@ -8,7 +8,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Primitives\ref\System.Security.Cryptography.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\ref\System.Security.Cryptography.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.X509Certificates\ref\System.Security.Cryptography.X509Certificates.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
   </ItemGroup>

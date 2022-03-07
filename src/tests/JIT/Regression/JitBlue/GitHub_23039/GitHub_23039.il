@@ -8,6 +8,7 @@
 .assembly GitHub_23039
 {
 }
+.assembly extern xunit.core {}
 
 // Bug where assertion prop was tripped up because morph swapped arg
 // order on an isinst helper call that fed into a conditional jump,
@@ -32,6 +33,9 @@ IS:    ldc.i4 -1
 {
    .method public static hidebysig int32 Main() cil managed 
    {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       call int32 class X`1<object>::F()
       ret      

@@ -5,13 +5,10 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
-using Microsoft.Xunit.Performance;
 using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-
-[assembly: OptimizeForBenchmarks]
 
 public static class CscBench
 {
@@ -64,23 +61,6 @@ public static class CscBench
         }
 
         return result;
-    }
-
-    [Benchmark]
-    public static void CompileTest()
-    {
-        if (!FindMscorlib())
-        {
-            throw new Exception("This test requires CORE_ROOT to be set");
-        }
-
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                CompileBench();
-            }
-        }
     }
 
     public static TextSpan GetSpanBetweenMarkers(SyntaxTree tree)
@@ -152,22 +132,6 @@ class C {
         }
 
         return result;
-    }
-
-    [Benchmark]
-    public static void DatflowTest()
-    {
-        if (!FindMscorlib())
-        {
-            throw new Exception("This test requires CORE_ROOT to be set");
-        }
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                DataflowBench();
-            }
-        }
     }
 
     static bool Bench()

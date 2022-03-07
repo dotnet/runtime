@@ -1570,7 +1570,7 @@ namespace System.DirectoryServices.AccountManagement
                         sddlSid = sddlSid.Substring(0, index) + "-" + ((uint)primaryGroupId).ToString(CultureInfo.InvariantCulture);
 
                         // Now, we convert the SDDL back into a SID
-                        if (UnsafeNativeMethods.ConvertStringSidToSid(sddlSid, ref pGroupSid))
+                        if (Interop.Advapi32.ConvertStringSidToSid(sddlSid, out pGroupSid) != Interop.BOOL.FALSE)
                         {
                             // Now we convert the native SID to a byte[] SID
                             groupSid = Utils.ConvertNativeSidToByteArray(pGroupSid);
@@ -1581,7 +1581,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (pGroupSid != IntPtr.Zero)
-                    UnsafeNativeMethods.LocalFree(pGroupSid);
+                    Interop.Kernel32.LocalFree(pGroupSid);
             }
 
             if (groupSid != null)

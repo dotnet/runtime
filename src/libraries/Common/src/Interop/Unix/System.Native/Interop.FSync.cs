@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FSync", SetLastError = true)]
-        internal static extern int FSync(SafeFileHandle fd);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FSync", SetLastError = true)]
+        internal static partial int FSync(SafeFileHandle fd);
     }
 }

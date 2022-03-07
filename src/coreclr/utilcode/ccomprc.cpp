@@ -461,7 +461,7 @@ Exit:
 // We load the localized libraries and cache the handle for future use.
 // Mutliple threads may call this, so the cache structure is thread safe.
 //*****************************************************************************
-HRESULT CCompRC::LoadString(ResourceCategory eCategory, UINT iResourceID, __out_ecount(iMax) LPWSTR szBuffer, int iMax,  int *pcwchUsed)
+HRESULT CCompRC::LoadString(ResourceCategory eCategory, UINT iResourceID, _Out_writes_(iMax) LPWSTR szBuffer, int iMax,  int *pcwchUsed)
 {
     WRAPPER_NO_CONTRACT;
     LocaleIDValue langIdValue;
@@ -487,7 +487,7 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, UINT iResourceID, __out_
     return LoadString(eCategory, langId, iResourceID, szBuffer, iMax, pcwchUsed);
 }
 
-HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iResourceID, __out_ecount(iMax) LPWSTR szBuffer, int iMax, int *pcwchUsed)
+HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iResourceID, _Out_writes_(iMax) LPWSTR szBuffer, int iMax, int *pcwchUsed)
 {
 #ifdef DBI_COMPONENT_MONO
     return E_NOTIMPL;

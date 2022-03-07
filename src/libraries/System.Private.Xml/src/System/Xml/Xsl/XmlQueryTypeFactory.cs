@@ -1176,7 +1176,7 @@ namespace System.Xml.Xsl
                 subtypeId = 2;
             else
             {
-                Debug.Fail("Don't know how to serialize " + type.GetType().ToString());
+                Debug.Fail($"Don't know how to serialize {type.GetType()}");
                 subtypeId = -1;
             }
 

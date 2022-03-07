@@ -44,4 +44,4 @@ FAIL:
 	ret
 }
 }
-.assembly bne_u.exe{}
+.assembly bne_u{}

@@ -4,8 +4,10 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
     <!-- CS0649: uninitialized interop type fields -->
     <!-- SA1129: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3277 -->
-    <NoWarn>$(NoWarn);CS0649;SA1129;CA1847</NoWarn>
-    <SetIsTrimmable>false</SetIsTrimmable>
+    <!-- CA1846: Prefer 'AsSpan' over 'Substring' when span-based overloads are available -->
+    <NoWarn>$(NoWarn);CS0649;SA1129;CA1846;CA1847;IDE0059</NoWarn>
+    <Nullable>annotations</Nullable>
+    <IsTrimmable>false</IsTrimmable>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
@@ -15,12 +17,14 @@ Commonly Used Types
 System.Speech.Synthesis.SpeechSynthesizer
 System.Speech.Recognition.SpeechRecognizer</PackageDescription>
   </PropertyGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <!-- System.Speech has its own SR scheme in which resource ID's are mapped to SAPI error codes. So we disable our default SR.cs generation and include resources explicitly -->
-    <OmitResources Condition="'$(TargetsWindows)' == 'true'">true</OmitResources>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_SystemSpeech</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'windows'">SR.PlatformNotSupported_SystemSpeech</GeneratePlatformNotSupportedAssemblyMessage>
+    <OmitResources Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''">true</OmitResources>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="SR.cs" />
     <Compile Include="SRID.cs" />
     <Compile Include="AudioFormat\AudioFormatConverter.cs" />
@@ -118,7 +122,6 @@ System.Speech.Recognition.SpeechRecognizer</PackageDescription>
     <Compile Include="Internal\Synthesis\EngineSiteSapi.cs" />
     <Compile Include="Internal\Synthesis\ISSmlParser.cs" />
     <Compile Include="Internal\Synthesis\PcmConverter.cs" />
-    <Compile Include="Internal\Synthesis\SafeNativeMethods.cs" />
     <Compile Include="Internal\Synthesis\SpeakInfo.cs" />
     <Compile Include="Internal\Synthesis\SpeechSeg.cs" />
     <Compile Include="Internal\Synthesis\SSmlParser.cs" />
@@ -197,8 +200,34 @@ System.Speech.Recognition.SpeechRecognizer</PackageDescription>
     <Compile Include="Synthesis\VoiceInfo.cs" />
     <Compile Include="Synthesis\TTSEngine\SAPIEngineTypes.cs" />
     <Compile Include="Synthesis\TTSEngine\TTSEngineTypes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+            Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.MMSYSERR.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.MMSYSERR.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutClose.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutClose.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutGetDevCaps.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutGetDevCaps.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutGetNumDevs.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutGetNumDevs.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutOpen.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutOpen.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutPause.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutOpen.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutPrepareHeader.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutPrepareHeader.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutReset.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutReset.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutRestart.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutRestart.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutWrite.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutWrite.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0-windows'))">
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <EmbeddedResource Include="Resources\Strings.resx">
       <Visible>true</Visible>
       <ManifestResourceName>ExceptionStringTable</ManifestResourceName>
@@ -237,6 +266,7 @@ System.Speech.Recognition.SpeechRecognizer</PackageDescription>
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.TraceSource" />
     <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Requests" />
     <Reference Include="System.Net.WebClient" />
@@ -244,7 +274,7 @@ System.Speech.Recognition.SpeechRecognizer</PackageDescription>
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.Serialization.Formatters" />
     <Reference Include="System.Threading" />

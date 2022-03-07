@@ -130,11 +130,8 @@ namespace System.IO.Hashing
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source"/> is <see langword="null"/>.
         /// </exception>
-        public static byte[] Hash(byte[] source)
+        public static byte[] Hash(byte[] source!!)
         {
-            if (source is null)
-                throw new ArgumentNullException(nameof(source));
-
             return Hash(new ReadOnlySpan<byte>(source));
         }
 
@@ -147,11 +144,8 @@ namespace System.IO.Hashing
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source"/> is <see langword="null"/>.
         /// </exception>
-        public static byte[] Hash(byte[] source, int seed)
+        public static byte[] Hash(byte[] source!!, int seed)
         {
-            if (source is null)
-                throw new ArgumentNullException(nameof(source));
-
             return Hash(new ReadOnlySpan<byte>(source), seed);
         }
 
@@ -215,7 +209,7 @@ namespace System.IO.Hashing
             int totalLength = source.Length;
             State state = new State((uint)seed);
 
-            while (source.Length > StripeSize)
+            while (source.Length >= StripeSize)
             {
                 state.ProcessStripe(source);
                 source = source.Slice(StripeSize);

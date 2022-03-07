@@ -9,7 +9,7 @@ namespace System.Net.Tests
     public class LoggingTest
     {
         [Fact]
-        [SkipOnCoreClr("System.Net.Tests are flaky", RuntimeConfiguration.Checked)]
+        [SkipOnCoreClr("System.Net.Tests are flaky", ~RuntimeConfiguration.Release)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public void EventSource_ExistsWithCorrectId()
         {

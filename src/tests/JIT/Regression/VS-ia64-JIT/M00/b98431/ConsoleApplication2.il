@@ -30,7 +30,7 @@
   .hash algorithm 0x00008004
   .ver 1:0:583:22480
 }
-.module ConsoleApplication2.exe
+.assembly extern xunit.core {}
 .imagebase 0x11000000
 .file alignment 0x00000200
 .stackreserve 0x00100000
@@ -45,6 +45,9 @@
   {
     .method public static int32  Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  2
       .locals init (bool V_0,

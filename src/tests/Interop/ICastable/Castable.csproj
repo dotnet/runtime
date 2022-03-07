@@ -1,11 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <!-- Internal.Console is not in the CoreLib reference assemblies.  ICastable is CoreCLR-only  -->
-    <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
-    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android' Or '$(TargetOS)' == 'iOS' Or '$(TargetOS)' == 'iOSSimulator'">true</CLRTestTargetUnsupported>
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Castable.cs" />
+    <ProjectReference Include="ICastable.CoreLib.csproj" Private="false" />
   </ItemGroup>
 </Project>

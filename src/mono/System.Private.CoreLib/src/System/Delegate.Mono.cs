@@ -146,7 +146,7 @@ namespace System
                 return null;
             }
 
-            Delegate? d = CreateDelegate_internal(type, firstArgument, method, throwOnBindFailure);
+            Delegate? d = CreateDelegate_internal(new QCallTypeHandle(ref rtType), firstArgument, method, throwOnBindFailure);
             if (d != null)
             {
                 d.original_method_info = method;
@@ -180,7 +180,7 @@ namespace System
                 return null;
             }
 
-            return CreateDelegate_internal(type, target, info, throwOnBindFailure);
+            return CreateDelegate_internal(new QCallTypeHandle(ref rtType), target, info, throwOnBindFailure);
         }
 
         public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
@@ -211,7 +211,7 @@ namespace System
                 return null;
             }
 
-            return CreateDelegate_internal(type, null, info, throwOnBindFailure);
+            return CreateDelegate_internal(new QCallTypeHandle(ref rtType), null, info, throwOnBindFailure);
         }
 
         // GetCandidateMethod is annotated as DynamicallyAccessedMemberTypes.All because it will bind to non-public methods
@@ -578,7 +578,7 @@ namespace System
         private protected static extern MulticastDelegate AllocDelegateLike_internal(Delegate d);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Delegate? CreateDelegate_internal(Type type, object? target, MethodInfo info, bool throwOnBindFailure);
+        private static extern Delegate? CreateDelegate_internal(QCallTypeHandle type, object? target, MethodInfo info, bool throwOnBindFailure);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern MethodInfo GetVirtualMethod_internal();

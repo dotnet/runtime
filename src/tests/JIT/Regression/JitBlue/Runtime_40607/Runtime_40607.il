@@ -10,7 +10,7 @@
 .assembly Runtime_40607
 {
 }
-.module Runtime_40607.dll
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit Runtime_40607.Program extends [System.Runtime]System.Object
 {
@@ -372,6 +372,9 @@
 
   .method private hidebysig static int32 Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  2
     .locals init (int32 V_0)

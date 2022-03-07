@@ -42,14 +42,17 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static int GetBestInterfaceForAddress(IPAddress addr)
+        private static unsafe int GetBestInterfaceForAddress(IPAddress addr)
         {
             int index;
             Internals.SocketAddress address = new Internals.SocketAddress(addr);
-            int error = (int)Interop.IpHlpApi.GetBestInterfaceEx(address.Buffer, out index);
-            if (error != 0)
+            fixed (byte* buffer = address.Buffer)
             {
-                throw new NetworkInformationException(error);
+                int error = (int)Interop.IpHlpApi.GetBestInterfaceEx(buffer, &index);
+                if (error != 0)
+                {
+                    throw new NetworkInformationException(error);
+                }
             }
 
             return index;
@@ -77,7 +80,7 @@ namespace System.Net.NetworkInformation
             return false;
         }
 
-        internal static NetworkInterface[] GetNetworkInterfaces()
+        internal static unsafe NetworkInterface[] GetNetworkInterfaces()
         {
             AddressFamily family = AddressFamily.Unspecified;
             uint bufferSize = 0;
@@ -91,7 +94,7 @@ namespace System.Net.NetworkInformation
 
             // Figure out the right buffer size for the adapter information.
             uint result = Interop.IpHlpApi.GetAdaptersAddresses(
-                family, (uint)flags, IntPtr.Zero, IntPtr.Zero, ref bufferSize);
+                family, (uint)flags, IntPtr.Zero, IntPtr.Zero, &bufferSize);
 
             while (result == Interop.IpHlpApi.ERROR_BUFFER_OVERFLOW)
             {
@@ -101,7 +104,7 @@ namespace System.Net.NetworkInformation
                 try
                 {
                     result = Interop.IpHlpApi.GetAdaptersAddresses(
-                        family, (uint)flags, IntPtr.Zero, buffer, ref bufferSize);
+                        family, (uint)flags, IntPtr.Zero, buffer, &bufferSize);
 
                     // If succeeded, we're going to add each new interface.
                     if (result == Interop.IpHlpApi.ERROR_SUCCESS)

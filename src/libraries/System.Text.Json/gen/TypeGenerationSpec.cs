@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
+using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -17,6 +18,11 @@ namespace System.Text.Json.SourceGeneration
         /// Fully qualified assembly name, prefixed with "global::", e.g. global::System.Numerics.BigInteger.
         /// </summary>
         public string TypeRef { get; private set; }
+
+        /// <summary>
+        /// If specified as a root type via <c>JsonSerializableAttribute</c>, specifies the location of the attribute application.
+        /// </summary>
+        public Location? AttributeLocation { get; set; }
 
         /// <summary>
         /// The name of the public <c>JsonTypeInfo&lt;T&gt;</c> property for this type on the generated context class.

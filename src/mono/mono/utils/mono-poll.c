@@ -108,7 +108,7 @@ mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)
 		nexc++;
 		if (fd > maxfd)
 			maxfd = fd;
-			
+
 	}
 
 	affected = select (maxfd + 1, &rfds, &wfds, &efds, tvptr);

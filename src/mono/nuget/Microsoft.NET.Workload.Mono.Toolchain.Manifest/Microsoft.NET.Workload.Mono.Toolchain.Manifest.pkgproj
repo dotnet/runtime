@@ -37,6 +37,7 @@
     <ItemGroup>
       <_WorkloadManifestValues Include="WorkloadVersion" Value="$(PackageVersion)" />
       <_WorkloadManifestValues Include="PackageVersion" Value="$(PackageVersion)" />
+      <_WorkloadManifestValues Include="NetCoreAppCurrent" Value="$(NetCoreAppCurrent)" />
       <_WorkloadManifestValues Include="EmscriptenVersion" Value="$(MicrosoftNETRuntimeEmscriptenVersion)" />
     </ItemGroup>
 

@@ -16,7 +16,7 @@ internal static partial class Interop
         internal short repeatCount;
         internal short virtualKeyCode;
         internal short virtualScanCode;
-        internal char uChar; // Union between WCHAR and ASCII char
+        internal ushort uChar; // Union between WCHAR and ASCII char
         internal int controlKeyState;
     }
 
@@ -32,9 +32,8 @@ internal static partial class Interop
 
     internal static partial class Kernel32
     {
-
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "ReadConsoleInputW")]
-        internal static extern bool ReadConsoleInput(IntPtr hConsoleInput, out InputRecord buffer, int numInputRecords_UseOne, out int numEventsRead);
-
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "ReadConsoleInputW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool ReadConsoleInput(IntPtr hConsoleInput, out InputRecord buffer, int numInputRecords_UseOne, out int numEventsRead);
     }
 }

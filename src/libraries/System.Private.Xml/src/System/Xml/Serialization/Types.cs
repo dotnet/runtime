@@ -375,7 +375,7 @@ namespace System.Xml.Serialization
 
             if (_nullableTypeDesc == null)
             {
-                _nullableTypeDesc = new TypeDesc("NullableOf" + _name, "System.Nullable`1[" + _fullName + "]", null, TypeKind.Struct, this, _flags | TypeFlags.OptionalValue, _formatterName);
+                _nullableTypeDesc = new TypeDesc($"NullableOf{_name}", $"System.Nullable`1[{_fullName}]", null, TypeKind.Struct, this, _flags | TypeFlags.OptionalValue, _formatterName);
                 _nullableTypeDesc._type = type;
             }
 
@@ -423,7 +423,7 @@ namespace System.Xml.Serialization
         internal TypeDesc CreateArrayTypeDesc()
         {
             if (_arrayTypeDesc == null)
-                _arrayTypeDesc = new TypeDesc(null, _name + "[]", _fullName + "[]", TypeKind.Array, null, TypeFlags.Reference | (_flags & TypeFlags.UseReflection), this);
+                _arrayTypeDesc = new TypeDesc(null, $"{_name}[]", $"{_fullName}[]", TypeKind.Array, null, TypeFlags.Reference | (_flags & TypeFlags.UseReflection), this);
             return _arrayTypeDesc;
         }
 
@@ -784,7 +784,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls GetEnumeratorElementType")]
         private TypeDesc ImportTypeDesc(Type type, MemberInfo? memberInfo, bool directReference)
         {
-            TypeDesc? typeDesc = null;
+            TypeDesc? typeDesc;
             TypeKind kind;
             Type? arrayElementType = null;
             Type? baseType = null;
@@ -849,7 +849,7 @@ namespace System.Xml.Serialization
             else if (typeof(ICollection).IsAssignableFrom(type) && !IsArraySegment(type))
             {
                 kind = TypeKind.Collection;
-                arrayElementType = GetCollectionElementType(type, memberInfo == null ? null : memberInfo.DeclaringType!.FullName + "." + memberInfo.Name);
+                arrayElementType = GetCollectionElementType(type, memberInfo == null ? null : $"{memberInfo.DeclaringType!.FullName}.{memberInfo.Name}");
                 flags |= GetConstructorFlags(type, ref exception);
             }
             else if (type == typeof(XmlQualifiedName))
@@ -922,7 +922,7 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        exception = new NotSupportedException(SR.Format(SR.XmlUnsupportedInterfaceDetails, memberInfo.DeclaringType!.FullName + "." + memberInfo.Name, type.FullName));
+                        exception = new NotSupportedException(SR.Format(SR.XmlUnsupportedInterfaceDetails, $"{memberInfo.DeclaringType!.FullName}.{memberInfo.Name}", type.FullName));
                     }
                 }
             }
@@ -1016,7 +1016,7 @@ namespace System.Xml.Serialization
         {
             if (t.IsArray)
             {
-                return "ArrayOf" + TypeName(t.GetElementType()!);
+                return $"ArrayOf{TypeName(t.GetElementType()!)}";
             }
             else if (t.IsGenericType)
             {
@@ -1152,7 +1152,7 @@ namespace System.Xml.Serialization
                 if (mappings[i].ChoiceIdentifier != null)
                     memberInfos[mappings[i].ChoiceIdentifier!.MemberName!] = mappings[i].ChoiceIdentifier!.MemberInfo!;
                 if (mappings[i].CheckSpecifiedMemberInfo != null)
-                    memberInfos[mappings[i].Name + "Specified"] = mappings[i].CheckSpecifiedMemberInfo!;
+                    memberInfos[$"{mappings[i].Name}Specified"] = mappings[i].CheckSpecifiedMemberInfo!;
             }
 
             // The scenario here is that user has one base class A and one derived class B and wants to serialize/deserialize an object of B.
@@ -1164,7 +1164,7 @@ namespace System.Xml.Serialization
             // 2) Do the same thing for the memberMapping array. Note that we need to create a new copy of MemberMapping object since the old one could still be referenced
             //    by the StructMapping of the baseclass, so updating it directly could lead to other issues.
             Dictionary<string, MemberInfo>? replaceList = null;
-            MemberInfo? replacedInfo = null;
+            MemberInfo? replacedInfo;
             foreach (KeyValuePair<string, MemberInfo> pair in memberInfos)
             {
                 if (ShouldBeReplaced(pair.Value, structMapping.TypeDesc!.Type!, out replacedInfo))
@@ -1224,7 +1224,7 @@ namespace System.Xml.Serialization
                             {
                                 // The property name is a match. It might be an override, or
                                 // it might be hiding. Either way, check to see if the derived
-                                // property has a getter that is useable for serialization.
+                                // property has a getter that is usable for serialization.
                                 if (info.GetMethod != null && !info.GetMethod!.IsPublic
                                     && memberInfoToBeReplaced is PropertyInfo
                                     && ((PropertyInfo)memberInfoToBeReplaced).GetMethod!.IsPublic

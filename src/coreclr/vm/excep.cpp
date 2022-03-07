@@ -190,7 +190,7 @@ BOOL ExceptionIsOfRightType(TypeHandle clauseType, TypeHandle thrownType)
 // Gets the message text from an exception
 //===========================================================================
 ULONG GetExceptionMessage(OBJECTREF throwable,
-                          __inout_ecount(bufferLength) LPWSTR buffer,
+                          _Inout_updates_(bufferLength) LPWSTR buffer,
                           ULONG bufferLength)
 {
     CONTRACTL
@@ -500,7 +500,7 @@ OBJECTREF PossiblyUnwrapThrowable(OBJECTREF throwable, Assembly *pAssembly)
     // Check if we are required to compute the RuntimeWrapExceptions status.
     BOOL fIsRuntimeWrappedException = ((throwable != NULL) && (throwable->GetMethodTable() == pMT_RuntimeWrappedException));
     BOOL fRequiresComputingRuntimeWrapExceptionsStatus = (fIsRuntimeWrappedException &&
-                                                          (!(pAssembly->GetManifestModule()->IsRuntimeWrapExceptionsStatusComputed())));
+                                                          (!(pAssembly->GetModule()->IsRuntimeWrapExceptionsStatusComputed())));
 
     CONTRACTL
     {
@@ -513,7 +513,7 @@ OBJECTREF PossiblyUnwrapThrowable(OBJECTREF throwable, Assembly *pAssembly)
     }
     CONTRACTL_END;
 
-    if (fIsRuntimeWrappedException && (!pAssembly->GetManifestModule()->IsRuntimeWrapExceptions()))
+    if (fIsRuntimeWrappedException && (!pAssembly->GetModule()->IsRuntimeWrapExceptions()))
     {
         // We already created the instance, fetched the field.  We know it is
         // not marshal by ref, or any of the other cases that might trigger GC.
@@ -4175,8 +4175,8 @@ InitializeCrashDump()
 
 bool GenerateDump(
     LPCWSTR dumpName,
-    int dumpType,
-    bool diag)
+    INT dumpType,
+    ULONG32 flags)
 {
 #ifdef TARGET_UNIX
     MAKE_UTF8PTR_FROMWIDE_NOTHROW (dumpNameUtf8, dumpName);
@@ -4186,10 +4186,10 @@ bool GenerateDump(
     }
     else
     {
-        return PAL_GenerateCoreDump(dumpNameUtf8, dumpType, diag);
+        return PAL_GenerateCoreDump(dumpNameUtf8, dumpType, flags);
     }
 #else // TARGET_UNIX
-    return GenerateCrashDump(dumpName, dumpType, diag);
+    return GenerateCrashDump(dumpName, dumpType, flags & GenerateDumpFlagsLoggingEnabled);
 #endif // TARGET_UNIX
 }
 
@@ -5162,7 +5162,7 @@ static SString GetExceptionMessageWrapper(Thread* pThread, OBJECTREF throwable)
 void STDMETHODCALLTYPE
 DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
                                           OBJECTREF throwable,
-                                          __inout_ecount(buf_size) WCHAR *buf,
+                                          _Inout_updates_(buf_size) WCHAR *buf,
                                           const int buf_size,
                                           BOOL sendWindowsEventLog)
 {
@@ -5782,7 +5782,7 @@ static BOOL GetManagedFormatStringForResourceID(CCompRC::ResourceCategory eCateg
 //==========================================================================
 // Private helper for TypeLoadException.
 //==========================================================================
-void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
@@ -5801,7 +5801,7 @@ void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnSt
 // Private helper for FileLoadException and FileNotFoundException.
 //==========================================================================
 
-void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
@@ -5817,7 +5817,7 @@ void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack
 //==========================================================================
 // Private helper for FileLoadException and FileNotFoundException.
 //==========================================================================
-void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
@@ -11476,7 +11476,7 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
 // Note: The "cond" argument is there to tide us over during the transition from
 //  BAD_FORMAT_ASSERT to THROW_BAD_FORMAT. It will go away soon.
 //---------------------------------------------------------------------------------
-VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(__in_z const char *cond))
+VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const char *cond))
 {
     CONTRACTL
     {
@@ -11906,8 +11906,8 @@ VOID DECLSPEC_NORETURN ThrowFieldLayoutError(mdTypeDef cl,                // cl 
     }
 
     CHAR offsetBuf[16];
-    sprintf_s(offsetBuf, COUNTOF(offsetBuf), "%d", dwOffset);
-    offsetBuf[COUNTOF(offsetBuf) - 1] = '\0';
+    sprintf_s(offsetBuf, ARRAY_SIZE(offsetBuf), "%d", dwOffset);
+    offsetBuf[ARRAY_SIZE(offsetBuf) - 1] = '\0';
 
     pModule->GetAssembly()->ThrowTypeLoadException(pszNamespace,
                                                    pszName,
@@ -12136,8 +12136,8 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
          _ASSERTE(pAssemblyTypeFrom != NULL);
          _ASSERTE(pAssemblyTypeTo != NULL);
 
-         PEAssembly *pPEAssemblyTypeFrom = pAssemblyTypeFrom->GetManifestFile();
-         PEAssembly *pPEAssemblyTypeTo = pAssemblyTypeTo->GetManifestFile();
+         PEAssembly *pPEAssemblyTypeFrom = pAssemblyTypeFrom->GetPEAssembly();
+         PEAssembly *pPEAssemblyTypeTo = pAssemblyTypeTo->GetPEAssembly();
 
          _ASSERTE(pPEAssemblyTypeFrom != NULL);
          _ASSERTE(pPEAssemblyTypeTo != NULL);

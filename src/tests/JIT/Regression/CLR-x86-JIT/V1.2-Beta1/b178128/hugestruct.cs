@@ -133,7 +133,7 @@ struct Big100000DW
 }
 
 
-class Test
+class Test_hugestruct
 {
     static int Main()
     {

@@ -9,7 +9,7 @@
 }
 
 .assembly extern legacy library mscorlib {}
-.assembly ldobj.exe{
+.assembly 'ldobj'{
 }
 
 .class public			_ldobj {

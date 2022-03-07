@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
-        [DllImport(Libraries.User32)]
-        public static extern IntPtr GetWindow(IntPtr hWnd, int uCmd);
+        [GeneratedDllImport(Libraries.User32)]
+        public static partial IntPtr GetWindow(IntPtr hWnd, int uCmd);
     }
 }

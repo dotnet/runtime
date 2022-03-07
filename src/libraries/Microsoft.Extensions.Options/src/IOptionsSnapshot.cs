@@ -16,6 +16,6 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Returns a configured <typeparamref name="TOptions"/> instance with the given name.
         /// </summary>
-        TOptions Get(string name);
+        TOptions Get(string? name);
     }
 }

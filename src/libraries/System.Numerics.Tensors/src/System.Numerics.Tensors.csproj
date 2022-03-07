@@ -4,7 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
-    <!-- TODO: Reenable when this package shipped with NET6. -->
+    <!-- We don't ship a stable package, enable whenever this package is no longer experimental. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <PackageDescription>Tensor class which represents and extends multi-dimensional arrays.
 
@@ -34,7 +34,5 @@ System.Numerics.Tensors.SparseTensor&lt;T&gt;</PackageDescription>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
   </ItemGroup>
 </Project>

@@ -20,7 +20,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-publib.h>
-#include <mono/mini/jit.h>
+#include <mono/jit/jit.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-threads.h>
@@ -79,6 +79,12 @@ prof_jit_done (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 	if (prof->methods)
 		g_ptr_array_add (prof->methods, method);
 	mono_os_mutex_unlock (&prof->mutex);
+}
+
+static void
+prof_inline_method (MonoProfiler *prof, MonoMethod *method, MonoMethod *inlined_method)
+{
+	prof_jit_done (prof, inlined_method, NULL);
 }
 
 static void
@@ -396,6 +402,7 @@ mono_profiler_init_aot (const char *desc)
 	MonoProfilerHandle handle = mono_profiler_create (&aot_profiler);
 	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized);
 	mono_profiler_set_jit_done_callback (handle, prof_jit_done);
+	mono_profiler_set_inline_method_callback (handle, prof_inline_method);
 }
 
 static void

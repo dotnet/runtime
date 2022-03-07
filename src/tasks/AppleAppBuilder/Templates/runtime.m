@@ -5,9 +5,12 @@
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/class.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/object.h>
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
 #include <TargetConditionals.h>
@@ -330,6 +333,8 @@ mono_ios_runtime_init (void)
     mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP);
 #else
     mono_jit_set_aot_mode (MONO_AOT_MODE_FULL);
+    // it's for PlatformDetection.IsMonoAOT on iOS/tvOS
+    setenv ("MONO_AOT_MODE", "aot", TRUE);
 #endif
 
 #endif

@@ -83,7 +83,7 @@ namespace System.Xml.Xsl.XsltOld
                     break;
 
                 default:
-                    Debug.Fail("Invalid NodeType on output: " + mainNode.NodeType);
+                    Debug.Fail($"Invalid NodeType on output: {mainNode.NodeType}");
                     break;
             }
             record.Reset();

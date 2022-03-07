@@ -214,11 +214,6 @@ typedef unsigned char   regNumberSmall;
 
 /*****************************************************************************/
 
-#define LEA_AVAILABLE 1
-#define SCALED_ADDR_MODES 1
-
-/*****************************************************************************/
-
 #ifdef DEBUG
 #define DSP_SRC_OPER_LEFT 0
 #define DSP_SRC_OPER_RIGHT 1

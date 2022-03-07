@@ -269,19 +269,34 @@ namespace ILVerification.Tests
             return typeSystemContext.GetModule(resolver.Resolve(new AssemblyName(Path.GetFileNameWithoutExtension(assemblyName)).Name));
         }
 
-        private sealed class TestResolver : ResolverBase
+        private sealed class TestResolver : IResolver
         {
+            Dictionary<string, PEReader> _resolverCache = new Dictionary<string, PEReader>();
             Dictionary<string, string> _simpleNameToPathMap;
+
             public TestResolver(Dictionary<string, string> simpleNameToPathMap)
             {
                 _simpleNameToPathMap = simpleNameToPathMap;
             }
 
-            protected override PEReader ResolveCore(string simpleName)
+            PEReader IResolver.ResolveAssembly(AssemblyName assemblyName)
+                => Resolve(assemblyName.Name);
+
+            PEReader IResolver.ResolveModule(AssemblyName referencingModule, string fileName)
+                => Resolve(Path.GetFileNameWithoutExtension(fileName));
+
+            public PEReader Resolve(string simpleName)
             {
+                if (_resolverCache.TryGetValue(simpleName, out PEReader peReader))
+                {
+                    return peReader;
+                }
+
                 if (_simpleNameToPathMap.TryGetValue(simpleName, out string path))
                 {
-                    return new PEReader(File.OpenRead(path));
+                    var result = new PEReader(File.OpenRead(path));
+                    _resolverCache.Add(simpleName, result);
+                    return result;
                 }
 
                 return null;
@@ -289,7 +304,7 @@ namespace ILVerification.Tests
         }
     }
 
-    abstract class TestCase : IXunitSerializable
+    public abstract class TestCase : IXunitSerializable
     {
         public string TestName { get; set; }
         public string TypeName { get; set; }
@@ -324,12 +339,12 @@ namespace ILVerification.Tests
     /// <summary>
     /// Describes a test case with a method that contains valid IL
     /// </summary>
-    class ValidILTestCase : TestCase { }
+    public class ValidILTestCase : TestCase { }
 
     /// <summary>
     /// Describes a test case with a method that contains invalid IL with the expected VerifierErrors
     /// </summary>
-    class InvalidILTestCase : TestCase
+    public class InvalidILTestCase : TestCase
     {
         public List<VerifierError> ExpectedVerifierErrors { get; set; }
 
@@ -369,9 +384,9 @@ namespace ILVerification.Tests
         }
     }
 
-    class ValidTypeTestCase : TestCase { }
+    public class ValidTypeTestCase : TestCase { }
 
-    class InvalidTypeTestCase : TestCase
+    public class InvalidTypeTestCase : TestCase
     {
         public List<VerifierError> ExpectedVerifierErrors { get; set; }
 

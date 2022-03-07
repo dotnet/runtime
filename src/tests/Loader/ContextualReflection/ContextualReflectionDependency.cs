@@ -58,7 +58,7 @@ namespace ContextualReflectionTest
             }
             finally
             {
-                TestLibrary.Assert.AreEqual(expected, ResolveEvent);
+                Xunit.Assert.Equal(expected, ResolveEvent);
             }
         }
     }

@@ -336,22 +336,85 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
-        internal static void CheckDiagnosticMessages(ImmutableArray<Diagnostic> diagnostics, DiagnosticSeverity level, string[] expectedMessages)
+        public static Compilation CreateReferencedLibRecordCompilation()
         {
-            string[] actualMessages = diagnostics.Where(diagnostic => diagnostic.Severity == level).Select(diagnostic => diagnostic.GetMessage()).ToArray();
+            string source = @"
+            using System.Text.Json.Serialization;
 
-            // Can't depend on reflection order when generating type metadata.
-            Array.Sort(actualMessages);
-            Array.Sort(expectedMessages);
+            namespace ReferencedAssembly
+            {
+                public record LibRecord(int Id)
+                {
+                    public string Address1 { get; set; }
+                    public string Address2 { get; set; }
+                    public string City { get; set; }
+                    public string State { get; set; }
+                    public string PostalCode { get; set; }
+                    public string Name { get; set; }
+                    [JsonInclude]
+                    public string PhoneNumber;
+                    [JsonInclude]
+                    public string Country;
+                }
+            }
+";
+
+            return CreateCompilation(source);
+        }
+
+            public static Compilation CreateReferencedSimpleLibRecordCompilation()
+            {
+                string source = @"
+            using System.Text.Json.Serialization;
+
+            namespace ReferencedAssembly
+            {
+                public record LibRecord
+                {
+                    public int Id { get; set; }
+                    public string Address1 { get; set; }
+                    public string Address2 { get; set; }
+                    public string City { get; set; }
+                    public string State { get; set; }
+                    public string PostalCode { get; set; }
+                    public string Name { get; set; }
+                    [JsonInclude]
+                    public string PhoneNumber;
+                    [JsonInclude]
+                    public string Country;
+                }
+            }
+";
+
+                return CreateCompilation(source);
+        }
+
+        internal static void CheckDiagnosticMessages(
+            DiagnosticSeverity level,
+            ImmutableArray<Diagnostic> diagnostics,
+            (Location Location, string Message)[] expectedDiags,
+            bool sort = true)
+        {
+            (Location Location, string Message)[] actualDiags = diagnostics
+                .Where(diagnostic => diagnostic.Severity == level)
+                .Select(diagnostic => (diagnostic.Location, diagnostic.GetMessage()))
+                .ToArray();
+
+            if (sort)
+            {
+                // Can't depend on reflection order when generating type metadata.
+                Array.Sort(actualDiags);
+                Array.Sort(expectedDiags);
+            }
 
             if (CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase))
             {
-                Assert.Equal(expectedMessages, actualMessages);
+                Assert.Equal(expectedDiags, actualDiags);
             }
             else
             {
                 // for non-English runs, just compare the number of messages are the same
-                Assert.Equal(expectedMessages.Length, actualMessages.Length);
+                Assert.Equal(expectedDiags.Length, actualDiags.Length);
             }
         }
     }

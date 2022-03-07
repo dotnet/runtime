@@ -108,8 +108,18 @@ namespace Wasm.Build.Tests
             EnvVars["DOTNET_INSTALL_DIR"] = sdkForWorkloadPath;
             EnvVars["DOTNET_MULTILEVEL_LOOKUP"] = "0";
             EnvVars["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
+            EnvVars["_WasmStrictVersionMatch"] = "true";
             EnvVars["MSBuildSDKsPath"] = string.Empty;
             EnvVars["PATH"] = $"{sdkForWorkloadPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}";
+
+            // helps with debugging
+            EnvVars["WasmNativeStrip"] = "false";
+
+            if (OperatingSystem.IsWindows())
+            {
+                EnvVars["WasmCachePath"] = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                                                        ".emscripten-cache");
+            }
 
             RuntimeNativeDir = Path.Combine(RuntimePackDir, "runtimes", "browser-wasm", "native");
             DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");

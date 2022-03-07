@@ -239,7 +239,7 @@ namespace System.Linq.Tests
             Assert.Equal(Enumerable.Range(0, 2), q);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void CoalesceShifts()
         {
             Expression list = Expression.ListInit(

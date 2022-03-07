@@ -43,4 +43,4 @@ END:
 
 
 
-.assembly initblk.exe{}
+.assembly 'initblk'{}

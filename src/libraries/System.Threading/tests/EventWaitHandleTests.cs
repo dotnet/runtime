@@ -84,17 +84,21 @@ namespace System.Threading.Tests
             using (EventWaitHandle are = new EventWaitHandle(false, EventResetMode.AutoReset))
             {
                 Assert.False(are.WaitOne(0));
+                Assert.False(are.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
                 are.Set();
                 Assert.True(are.WaitOne(0));
                 Assert.False(are.WaitOne(0));
+                Assert.False(are.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
                 are.Set();
                 are.Reset();
                 Assert.False(are.WaitOne(0));
+                Assert.False(are.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
             }
 
             using (EventWaitHandle mre = new EventWaitHandle(false, EventResetMode.ManualReset))
             {
                 Assert.False(mre.WaitOne(0));
+                Assert.False(mre.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
                 mre.Set();
                 Assert.True(mre.WaitOne(0));
                 Assert.True(mre.WaitOne(0));
@@ -102,6 +106,7 @@ namespace System.Threading.Tests
                 Assert.True(mre.WaitOne(0));
                 mre.Reset();
                 Assert.False(mre.WaitOne(0));
+                Assert.False(mre.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
             }
         }
 
@@ -158,8 +163,14 @@ namespace System.Threading.Tests
         {
             string name = Guid.NewGuid().ToString("N");
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => EventWaitHandle.OpenExisting(name));
-            EventWaitHandle ignored;
-            Assert.False(EventWaitHandle.TryOpenExisting(name, out ignored));
+            EventWaitHandle e;
+            Assert.False(EventWaitHandle.TryOpenExisting(name, out e));
+            Assert.Null(e);
+
+            using (e = new EventWaitHandle(false, EventResetMode.AutoReset, name)) { }
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() => EventWaitHandle.OpenExisting(name));
+            Assert.False(EventWaitHandle.TryOpenExisting(name, out e));
+            Assert.Null(e);
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // OpenExisting not supported on Unix

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CError.cs" />
@@ -25,6 +25,7 @@
     <Compile Include="TC_SchemaSet_Includes.cs" />
     <Compile Include="TC_SchemaSet_IsCompiled.cs" />
     <Compile Include="TC_SchemaSet_Misc.cs" />
+    <Compile Include="TC_SchemaSet_NmTokens.cs" />
     <Compile Include="TC_SchemaSet_ProhibitDTD.cs" />
     <Compile Include="TC_SchemaSet_Remove.cs" />
     <Compile Include="TC_SchemaSet_RemoveRecursive.cs" />

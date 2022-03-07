@@ -14,7 +14,7 @@
 .assembly 'catchfinally_tail'// as "catchfinally_tail"
 {
 }
-.module 'catchfinally_tail.exe'
+.assembly extern xunit.core {}
 // MVID: {CCB52291-4072-427C-8C14-2780C164EB2B}
 .namespace JitTest
 {
@@ -186,6 +186,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       97 (0x61)
       .maxstack  1

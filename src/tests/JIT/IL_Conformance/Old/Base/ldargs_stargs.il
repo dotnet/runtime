@@ -110,4 +110,4 @@ FAIL:
 }
 }
 
-.assembly ldargs_stargs.exe {}
+.assembly ldargs_stargs {}

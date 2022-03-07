@@ -35,13 +35,13 @@ HRESULT __cdecl PostErrorVA(            // Returned error.
 // This function formats an error message, but doesn't fill the IErrorInfo.
 //*****************************************************************************
 HRESULT __cdecl FormatRuntimeErrorVa(
-    __out_ecount(cchMsg) WCHAR *rcMsg,  // Buffer into which to format.
+    _Out_writes_(cchMsg) WCHAR *rcMsg,  // Buffer into which to format.
     ULONG       cchMsg,                 // Size of buffer, characters.
     HRESULT     hrRpt,                  // The HR to report.
     va_list     marker);                // Optional args.
 
 HRESULT __cdecl FormatRuntimeError(
-    __out_ecount(cchMsg) WCHAR *rcMsg,  // Buffer into which to format.
+    _Out_writes_(cchMsg) WCHAR *rcMsg,  // Buffer into which to format.
     ULONG       cchMsg,                 // Size of buffer, characters.
     HRESULT     hrRpt,                  // The HR to report.
     ...);                               // Optional args.

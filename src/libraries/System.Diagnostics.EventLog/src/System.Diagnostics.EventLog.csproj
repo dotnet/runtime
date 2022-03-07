@@ -1,8 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <NoWarn>$(NoWarn);CA1838;CA1847</NoWarn>
+    <NoWarn>$(NoWarn);CA1847</NoWarn>
+    <!-- Suppressions to avoid ifdefs:
+            CA1845: Use span-based 'string.Concat' and 'AsSpan' instead of 'Substring'
+            CA1846: Prefer 'AsSpan' over 'Substring' when span-based overloads are available -->
+    <NoWarn>$(NoWarn);CA1845;CA1846</NoWarn>
+    <Nullable>annotations</Nullable>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides the System.Diagnostics.EventLog class, which allows the applications to use the windows event log service.
 
@@ -12,11 +17,12 @@ System.Diagnostics.EventLog</PackageDescription>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_EventLog</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetPlatformIdentifier)' != 'windows'">SR.PlatformNotSupported_EventLog</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\Diagnostics\EntryWrittenEventArgs.cs" />
     <Compile Include="System\Diagnostics\EntryWrittenEventHandler.cs" />
     <Compile Include="System\Diagnostics\EventData.cs" />
@@ -105,7 +111,10 @@ System.Diagnostics.EventLog</PackageDescription>
     <Compile Include="$(CommonPath)System\Diagnostics\NetFrameworkUtils.cs"
              Link="Common\System\Diagnostics\NetFrameworkUtils.cs" />
   </ItemGroup>
-
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
@@ -125,8 +134,10 @@ System.Diagnostics.EventLog</PackageDescription>
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.TraceSource" />
     <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Security.Principal.Windows" />
@@ -141,7 +152,7 @@ System.Diagnostics.EventLog</PackageDescription>
     <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <ProjectReference Include="Messages\System.Diagnostics.EventLog.Messages.csproj"
                       ReferenceOutputAssembly="false"
                       OutputItemType="TfmRuntimeSpecificPackageFile"

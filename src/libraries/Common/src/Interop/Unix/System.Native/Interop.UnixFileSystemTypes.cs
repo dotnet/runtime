@@ -145,8 +145,8 @@ internal static partial class Interop
             zfs = 0x2FC12FC1,
         }
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetFileSystemType")]
-        private static extern long GetFileSystemType(SafeFileHandle fd);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetFileSystemType")]
+        private static partial long GetFileSystemType(SafeFileHandle fd);
 
         internal static bool TryGetFileSystemType(SafeFileHandle fd, out UnixFileSystemTypes fileSystemType)
         {

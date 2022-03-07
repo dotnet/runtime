@@ -149,11 +149,18 @@ DECL_OFFSET(SgenThreadInfo, tlab_temp_end)
 #ifndef DISABLE_JIT_OFFSETS
 DECL_SIZE(MonoMethodRuntimeGenericContext)
 DECL_SIZE(MonoLMF)
+DECL_SIZE(MonoLMFExt)
 DECL_SIZE(MonoTypedRef)
 DECL_SIZE(CallContext)
 DECL_SIZE(MonoContext)
 
 DECL_OFFSET(MonoLMF, previous_lmf)
+DECL_OFFSET(MonoLMFExt, kind)
+DECL_OFFSET(MonoLMFExt, il_state)
+
+DECL_OFFSET(MonoMethodILState, method)
+DECL_OFFSET(MonoMethodILState, il_offset)
+DECL_OFFSET(MonoMethodILState, data)
 
 DECL_OFFSET(MonoMethodRuntimeGenericContext, class_vtable)
 

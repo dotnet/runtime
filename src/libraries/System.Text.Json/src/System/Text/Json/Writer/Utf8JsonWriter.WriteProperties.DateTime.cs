@@ -50,8 +50,8 @@ namespace System.Text.Json
         /// Writes the <see cref="DateTime"/> using the round-trippable ('O') <see cref="StandardFormat"/> , for example: 2017-06-12T05:30:45.7680000.
         /// The property name is escaped before writing.
         /// </remarks>
-        public void WriteString(string propertyName, DateTime value)
-            => WriteString((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), value);
+        public void WriteString(string propertyName!!, DateTime value)
+            => WriteString(propertyName.AsSpan(), value);
 
         /// <summary>
         /// Writes the property name and <see cref="DateTime"/> value (as a JSON string) as part of a name/value pair of a JSON object.
@@ -278,7 +278,7 @@ namespace System.Text.Json
         private void WriteStringIndented(ReadOnlySpan<char> escapedPropertyName, DateTime value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(escapedPropertyName.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - indent - JsonConstants.MaximumFormatDateTimeOffsetLength - 7 - s_newLineLength);
 
@@ -327,7 +327,7 @@ namespace System.Text.Json
         private void WriteStringIndented(ReadOnlySpan<byte> escapedPropertyName, DateTime value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(escapedPropertyName.Length < int.MaxValue - indent - JsonConstants.MaximumFormatDateTimeOffsetLength - 7 - s_newLineLength);
 

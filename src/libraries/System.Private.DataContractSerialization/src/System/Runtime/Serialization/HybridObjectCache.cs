@@ -22,8 +22,7 @@ namespace System.Runtime.Serialization
             if (_objectDictionary == null)
                 _objectDictionary = new Dictionary<string, object?>();
 
-            object? existingObject;
-            if (_objectDictionary.TryGetValue(id, out existingObject))
+            if (_objectDictionary.ContainsKey(id))
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.MultipleIdDefinition, id)));
             _objectDictionary.Add(id, obj);
         }

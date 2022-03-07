@@ -26,4 +26,4 @@ PASS:
 }
 }
 
-.assembly br_s.exe {}
+.assembly br_s {}

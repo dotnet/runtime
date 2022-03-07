@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
@@ -11,6 +12,6 @@
       <Name>InjectedCode</Name>
     </ProjectReference>
     <!-- This is needed to make sure native binary gets installed in the right location -->
-    <ProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

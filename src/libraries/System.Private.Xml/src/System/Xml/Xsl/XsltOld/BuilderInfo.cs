@@ -99,7 +99,7 @@ namespace System.Xml.Xsl.XsltOld
                     {
                         if (localName.Length > 0)
                         {
-                            _name = prefix + ":" + localName;
+                            _name = $"{prefix}:{localName}";
                         }
                         else
                         {

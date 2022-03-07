@@ -49,8 +49,8 @@ namespace System.Text.Json
         /// Writes the <see cref="decimal"/> using the default <see cref="StandardFormat"/> (that is, 'G').
         /// The property name is escaped before writing.
         /// </remarks>
-        public void WriteNumber(string propertyName, decimal value)
-            => WriteNumber((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), value);
+        public void WriteNumber(string propertyName!!, decimal value)
+            => WriteNumber(propertyName.AsSpan(), value);
 
         /// <summary>
         /// Writes the property name and <see cref="decimal"/> value (as a JSON number) as part of a name/value pair of a JSON object.
@@ -271,7 +271,7 @@ namespace System.Text.Json
         private void WriteNumberIndented(ReadOnlySpan<char> escapedPropertyName, decimal value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(escapedPropertyName.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - indent - JsonConstants.MaximumFormatDecimalLength - 5 - s_newLineLength);
 
@@ -317,7 +317,7 @@ namespace System.Text.Json
         private void WriteNumberIndented(ReadOnlySpan<byte> escapedPropertyName, decimal value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(escapedPropertyName.Length < int.MaxValue - indent - JsonConstants.MaximumFormatDecimalLength - 5 - s_newLineLength);
 

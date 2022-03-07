@@ -3,8 +3,6 @@
 
 /*++
 
-
-
 Module Name:
 
     process.cpp
@@ -12,8 +10,6 @@ Module Name:
 Abstract:
 
     Implementation of process object and functions related to processes.
-
-
 
 --*/
 
@@ -77,7 +73,9 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #   define __NR_membarrier  389
 #  elif defined(__aarch64__)
 #   define __NR_membarrier  283
-#  elif
+#  elif defined(__loongarch64)
+#   define __NR_membarrier  283
+#  else
 #   error Unknown architecture
 #  endif
 # endif
@@ -87,7 +85,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <libproc.h>
 #include <sys/sysctl.h>
 #include <sys/posix_sem.h>
-#if defined(HOST_ARM64)
 #include <mach/task.h>
 #include <mach/vm_map.h>
 extern "C"
@@ -99,13 +96,12 @@ extern "C"
         if (machret != KERN_SUCCESS)                                        \
         {                                                                   \
             char _szError[1024];                                            \
-            snprintf(_szError, _countof(_szError), "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
+            snprintf(_szError, ARRAY_SIZE(_szError), "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
             mach_error(_szError, machret);                                  \
             abort();                                                        \
         }                                                                   \
     } while (false)
 
-#endif // defined(HOST_ARM64)
 #endif // __APPLE__
 
 #ifdef __NetBSD__
@@ -2148,7 +2144,7 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
 
     // All the format specifiers for the fields in the stat file are provided by 'man proc'.
     int sscanfRet = sscanf_s(scanStartPosition,
-        "%*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %*ld %*ld %llu \n",
+        "%*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %*u %*u %*d %*d %*d %*d %*d %*d %llu \n",
          &starttime);
 
     if (sscanfRet != 1)
@@ -2993,7 +2989,7 @@ CreateProcessModules(
         int devHi, devLo, inode;
         char moduleName[PATH_MAX];
 
-        if (sscanf_s(line, "%p-%p %*[-rwxsp] %p %x:%x %d %s\n", &startAddress, &endAddress, &offset, &devHi, &devLo, &inode, moduleName, _countof(moduleName)) == 7)
+        if (sscanf_s(line, "%p-%p %*[-rwxsp] %p %x:%x %d %s\n", &startAddress, &endAddress, &offset, &devHi, &devLo, &inode, moduleName, ARRAY_SIZE(moduleName)) == 7)
         {
             if (inode != 0)
             {
@@ -3139,8 +3135,7 @@ PROCBuildCreateDumpCommandLine(
     char** ppidarg,
     const char* dumpName,
     INT dumpType,
-    BOOL diag,
-    BOOL crashReport)
+    ULONG32 flags)
 {
     if (g_szCoreCLRPath == nullptr)
     {
@@ -3198,12 +3193,17 @@ PROCBuildCreateDumpCommandLine(
             break;
     }
 
-    if (diag)
+    if (flags & GenerateDumpFlagsLoggingEnabled)
     {
         argv.push_back("--diag");
     }
 
-    if (crashReport)
+    if (flags & GenerateDumpFlagsVerboseLoggingEnabled)
+    {
+        argv.push_back("--verbose");
+    }
+
+    if (flags & GenerateDumpFlagsCrashReportEnabled)
     {
         argv.push_back("--crashreport");
     }
@@ -3305,17 +3305,22 @@ PROCAbortInitialize()
             }
         }
 
+        ULONG32 flags = GenerateDumpFlagsNone;
         CLRConfigNoCache createDumpCfg = CLRConfigNoCache::Get("CreateDumpDiagnostics", /*noprefix*/ false, &getenv);
         DWORD val = 0;
-        BOOL diag = createDumpCfg.IsSet() && createDumpCfg.TryAsInteger(10, val) && val == 1;
-
+        if (createDumpCfg.IsSet() && createDumpCfg.TryAsInteger(10, val) && val == 1)
+        {
+            flags |= GenerateDumpFlagsLoggingEnabled;
+        }
         CLRConfigNoCache enabldReportCfg = CLRConfigNoCache::Get("EnableCrashReport", /*noprefix*/ false, &getenv);
         val = 0;
-        BOOL crashReport = enabldReportCfg.IsSet() && enabldReportCfg.TryAsInteger(10, val) && val == 1;
-
+        if (enabldReportCfg.IsSet() && enabldReportCfg.TryAsInteger(10, val) && val == 1)
+        {
+            flags |= GenerateDumpFlagsCrashReportEnabled;
+        }
         char* program = nullptr;
         char* pidarg = nullptr;
-        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, &pidarg, dmpNameCfg.AsString(), dumpType, diag, crashReport))
+        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, &pidarg, dmpNameCfg.AsString(), dumpType, flags))
         {
             return FALSE;
         }
@@ -3337,8 +3342,8 @@ Parameters:
         WithHeap = 2,
         Triage = 3,
         Full = 4
-    diag
-        true - log createdump diagnostics to console
+    flags
+        See enum
 
 Return:
     TRUE success
@@ -3348,7 +3353,7 @@ BOOL
 PAL_GenerateCoreDump(
     LPCSTR dumpName,
     INT dumpType,
-    BOOL diag)
+    ULONG32 flags)
 {
     std::vector<const char*> argvCreateDump;
 
@@ -3362,7 +3367,7 @@ PAL_GenerateCoreDump(
     }
     char* program = nullptr;
     char* pidarg = nullptr;
-    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, dumpType, diag, false);
+    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, dumpType, flags);
     if (result)
     {
         result = PROCCreateCrashDump(argvCreateDump);
@@ -3481,7 +3486,7 @@ InitializeFlushProcessWriteBuffers()
         }
     }
 
-#if defined(TARGET_OSX) && defined(HOST_ARM64)
+#ifdef TARGET_OSX
     return TRUE;
 #else
     s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
@@ -3511,7 +3516,7 @@ InitializeFlushProcessWriteBuffers()
     }
 
     return status == 0;
-#endif // defined(TARGET_OSX) && defined(HOST_ARM64)
+#endif // TARGET_OSX
 }
 
 #define FATAL_ASSERT(e, msg) \
@@ -3561,7 +3566,7 @@ FlushProcessWriteBuffers()
         status = pthread_mutex_unlock(&flushProcessWriteBuffersMutex);
         FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-#if defined(TARGET_OSX) && defined(HOST_ARM64)
+#ifdef TARGET_OSX
     else
     {
         mach_msg_type_number_t cThreads;
@@ -3587,7 +3592,7 @@ FlushProcessWriteBuffers()
         machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
         CHECK_MACH("vm_deallocate()", machret);
     }
-#endif // defined(TARGET_OSX) && defined(HOST_ARM64)
+#endif // TARGET_OSX
 }
 
 /*++

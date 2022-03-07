@@ -87,9 +87,6 @@
   <data name="net_MethodNotImplementedException" xml:space="preserve">
     <value>This method is not implemented by this class.</value>
   </data>
-  <data name="net_OperationNotSupportedException" xml:space="preserve">
-    <value>This operation is not supported.</value>
-  </data>
   <data name="net_PropertyNotImplementedException" xml:space="preserve">
     <value>This property is not implemented by this class.</value>
   </data>
@@ -269,5 +266,8 @@
   </data>
   <data name="SystemNetRequests_PlatformNotSupported" xml:space="preserve">
     <value>System.Net.Requests is not supported on this platform.</value>
+  </data>
+  <data name="CacheEntryNotFound" xml:space="preserve">
+    <value>The request was aborted: The request cache-only policy does not allow a network request and the response is not found in cache.</value>
   </data>
 </root>

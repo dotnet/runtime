@@ -1,5 +1,11 @@
 <Project>
-  <Target Name="GenerateReferenceAssemblySource" DependsOnTargets="GetProjectWithBestTargetFrameworks">
+  <Target Name="SetBuildTargetFramework">
+    <PropertyGroup>
+      <BuildTargetFramework Condition="'$(BuildTargetFramework)' == ''">$(NetCoreAppCurrent)</BuildTargetFramework>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="GenerateReferenceAssemblySource" DependsOnTargets="SetBuildTargetFramework;GetProjectWithBestTargetFrameworks">
     <MSBuild Projects="@(InnerBuildProjectsWithBestTargetFramework)"
              Targets="GenerateReferenceAssemblySource"
              BuildInParallel="$(BuildInParallel)">

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 
-class Test{
+class Test_ng_standard{
 	public static int Main(){
 		Console.WriteLine("Test creation/invocation of non-generic closed instance or open static delegates over various generic methods");
 

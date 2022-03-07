@@ -91,4 +91,4 @@ FAIL:
 	ret
 }
 }
-.assembly br.exe{}
+.assembly 'br'{}

@@ -4,7 +4,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly callnonvirt.exe{}
+.assembly callnonvirt{}
 
 .class public TestClass {
 

@@ -69,6 +69,19 @@ namespace MonoTests.System.Runtime.Caching
         }
         public static bool DoesNotSupportPhysicalMemoryMonitor => !SupportsPhysicalMemoryMonitor;
 
+        private bool IsFullFramework = RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
+
+        private PokerMemoryCache CreatePokerMemoryCache(string name, string throwOnDisposed)
+        {
+            if (throwOnDisposed == null)
+            {
+                return new PokerMemoryCache(name);
+            }
+
+            var config = new NameValueCollection();
+            config.Add("throwOnDisposed", throwOnDisposed);
+            return new PokerMemoryCache("MyCache", config);
+        }
 
         [Fact]
         public void ConstructorParameters()
@@ -196,6 +209,10 @@ namespace MonoTests.System.Runtime.Caching
                 DefaultCacheCapabilities.CacheEntryRemovedCallback |
                 DefaultCacheCapabilities.CacheEntryUpdateCallback,
                 mc.DefaultCacheCapabilities);
+
+            // throwOnDisposed is false
+            mc.Dispose();
+            mc.Trim(0);
         }
 
         [Fact]
@@ -212,6 +229,10 @@ namespace MonoTests.System.Runtime.Caching
                 DefaultCacheCapabilities.CacheEntryRemovedCallback |
                 DefaultCacheCapabilities.CacheEntryUpdateCallback,
                 mc.DefaultCacheCapabilities);
+
+            // throwOnDisposed is false
+            mc.Dispose();
+            mc.Trim(0);
         }
 
         [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]
@@ -236,10 +257,10 @@ namespace MonoTests.System.Runtime.Caching
             Assert.Equal(TimeSpan.FromMinutes(70), mc.PollingInterval);
         }
 
-        [Fact]
-        public void Indexer()
+        [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
+        public void Indexer(string throwOnDisposed)
         {
-            var mc = new PokerMemoryCache("MyCache");
+            var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
 
             Assert.Throws<ArgumentNullException>(() =>
             {
@@ -269,13 +290,23 @@ namespace MonoTests.System.Runtime.Caching
             Assert.Equal(1, mc.Calls.Count);
             Assert.Equal("get_this [string key]", mc.Calls[0]);
             Assert.Equal("value", value);
+
+            mc.Dispose();
+            if (throwOnDisposed == "true" && !IsFullFramework)  // Noisy when disposed is a Core-only feature.
+            {
+                Assert.Throws<ObjectDisposedException>(() => { var val = mc["key"]; });
+            }
+            else
+            {
+                Assert.Null(mc["key"]);
+            }
         }
 
-        [Fact]
+        [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1429")]
-        public void Contains()
+        public void Contains(string throwOnDisposed)
         {
-            var mc = new PokerMemoryCache("MyCache");
+            var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
 
             Assert.Throws<ArgumentNullException>(() =>
             {
@@ -301,6 +332,17 @@ namespace MonoTests.System.Runtime.Caching
 
             // Attempt to retrieve an expired entry
             Assert.False(mc.Contains("key"));
+
+            // Contains throws when disposed
+            mc.Dispose();
+            if (throwOnDisposed == "true" && !IsFullFramework)  // Noisy when disposed is a Core-only feature.
+            {
+                Assert.Throws<ObjectDisposedException>(() => { mc.Contains("key"); });
+            }
+            else
+            {
+                Assert.False(mc.Contains("key"));
+            }
         }
 
         [Fact]
@@ -353,10 +395,10 @@ namespace MonoTests.System.Runtime.Caching
             Assert.True (monitor.HasChanged);
         }
 
-        [Fact]
-        public void AddOrGetExisting_String_Object_DateTimeOffset_String()
+        [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
+        public void AddOrGetExisting_String_Object_DateTimeOffset_String(string throwOnDisposed)
         {
-            var mc = new PokerMemoryCache("MyCache");
+            var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
 
             Assert.Throws<ArgumentNullException>(() =>
             {
@@ -388,6 +430,23 @@ namespace MonoTests.System.Runtime.Caching
             value = mc.AddOrGetExisting("key_expired", "value", DateTimeOffset.MinValue);
             Assert.False(mc.Contains("key_expired"));
             Assert.Null(value);
+
+            // Throws when disposed
+            mc.Dispose();
+            if (throwOnDisposed == "true" && !IsFullFramework)  // Noisy when disposed is a Core-only feature.
+            {
+                Assert.Throws<ObjectDisposedException>(() => {
+                    value = mc.AddOrGetExisting("key3_A2-1", "value3", DateTimeOffset.Now.AddMinutes(1));
+                });
+                Assert.Throws<ObjectDisposedException>(() => {
+                    value = mc.AddOrGetExisting("not-key3_A2-1", "value4", DateTimeOffset.Now.AddMinutes(1));
+                });
+            }
+            else
+            {
+                Assert.Null(mc.AddOrGetExisting("key3_A2-1", "value3", DateTimeOffset.Now.AddMinutes(1)));
+                Assert.Null(mc.AddOrGetExisting("not-key3_A2-1", "value4", DateTimeOffset.Now.AddMinutes(1)));
+            }
         }
 
         [Fact]
@@ -610,10 +669,10 @@ namespace MonoTests.System.Runtime.Caching
             Assert.Equal("AddOrGetExisting (CacheItem item, CacheItemPolicy policy)", mc.Calls[0]);
         }
 
-        [Fact]
-        public void Set_String_Object_CacheItemPolicy_String()
+        [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
+        public void Set_String_Object_CacheItemPolicy_String(string throwOnDisposed)
         {
-            var mc = new PokerMemoryCache("MyCache");
+            var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
 
             Assert.Throws<NotSupportedException>(() =>
             {
@@ -691,6 +750,22 @@ namespace MonoTests.System.Runtime.Caching
             Assert.True(mc.Contains("key_A5"));
             Assert.Equal(2, mc.Calls.Count);
             Assert.Equal("Set (string key, object value, CacheItemPolicy policy, string regionName = null)", mc.Calls[0]);
+
+            // Throws when disposed
+            mc.Dispose();
+            if (throwOnDisposed == "true" && !IsFullFramework)  // Noisy when disposed is a Core-only feature.
+            {
+                cip = new CacheItemPolicy();
+                cip.AbsoluteExpiration = DateTimeOffset.MaxValue;
+                Assert.Throws<ObjectDisposedException>(() => { mc.Set("key_A6", "value_A6", cip); });
+            }
+            else
+            {
+                cip = new CacheItemPolicy();
+                cip.AbsoluteExpiration = DateTimeOffset.MaxValue;
+                mc.Set("key_A6", "value_A6", cip);
+                Assert.Null(mc["key_A6"]);
+            }
         }
 
         [Fact]
@@ -820,10 +895,10 @@ namespace MonoTests.System.Runtime.Caching
             Assert.Equal("Set (string key, object value, CacheItemPolicy policy, string regionName = null)", mc.Calls[1]);
         }
 
-        [Fact]
-        public void Remove()
+        [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
+        public void Remove(string throwOnDisposed)
         {
-            var mc = new PokerMemoryCache("MyCache");
+            var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
 
             Assert.Throws<NotSupportedException>(() =>
             {
@@ -904,12 +979,35 @@ namespace MonoTests.System.Runtime.Caching
             value = mc.Remove("key");
             Assert.NotNull(value);
             Assert.False(callbackInvoked);
+
+            // Throws when disposed
+            cip = new CacheItemPolicy();
+            cip.UpdateCallback = (CacheEntryUpdateArguments args) =>
+            {
+                callbackInvoked = true;
+                reason = args.RemovedReason;
+                throw new ApplicationException("test");
+            };
+            mc.Set("key", "value", cip);
+            callbackInvoked = false;
+            reason = (CacheEntryRemovedReason)1000;
+            mc.Dispose();
+            if (throwOnDisposed == "true" && !IsFullFramework)  // Noisy when disposed is a Core-only feature.
+            {
+                Assert.Throws<ObjectDisposedException>(() => { value = mc.Remove("key"); });
+            }
+            else
+            {
+                value = mc.Remove("key");
+                Assert.Null(value);
+                Assert.False(callbackInvoked);
+            }
         }
 
-        [Fact]
-        public void GetValues()
+        [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
+        public void GetValues(string throwOnDisposed)
         {
-            var mc = new PokerMemoryCache("MyCache");
+            var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
 
             Assert.Throws<ArgumentNullException>(() =>
             {
@@ -953,6 +1051,18 @@ namespace MonoTests.System.Runtime.Caching
             Assert.Equal("value1", value["key1"]);
             Assert.Equal("value3", value["key3"]);
             Assert.False(value.ContainsKey("Key1"));
+
+            // Throws when disposed
+            mc.Dispose();
+            if (throwOnDisposed == "true" && !IsFullFramework)  // Noisy when disposed is a Core-only feature.
+            {
+                Assert.Throws<ObjectDisposedException>(() => { mc.GetValues(new string[] { "key1", "key3" }); });
+            }
+            else
+            {
+                value = mc.GetValues(new string[] { "key1", "key3" });
+                Assert.Null(value);
+            }
         }
 
         [Fact]
@@ -995,11 +1105,14 @@ namespace MonoTests.System.Runtime.Caching
 
         // Due to internal implementation details Trim has very few easily verifiable scenarios
         // ActiveIssue: https://github.com/dotnet/runtime/issues/36488
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))]
-        public void Trim()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))]
+        [InlineData("true"), InlineData("false"), InlineData(null)]
+        public void Trim(string throwOnDisposed)
         {
             var config = new NameValueCollection();
             config["__MonoEmulateOneCPU"] = "true";
+            if (throwOnDisposed != null)
+                config["throwOnDisposed"] = throwOnDisposed;
             var mc = new MemoryCache("MyCache", config);
 
             var numCpuCores = Environment.ProcessorCount;
@@ -1029,6 +1142,18 @@ namespace MonoTests.System.Runtime.Caching
             Assert.Equal(11, mc.GetCount());
             trimmed = mc.Trim(50);
             Assert.Equal(11, mc.GetCount());
+
+            // Trim should throw if the cache is disposed
+            // Throws when disposed
+            mc.Dispose();
+            if (throwOnDisposed == "true" && !IsFullFramework)  // Noisy when disposed is a Core-only feature.
+            {
+                Assert.Throws<ObjectDisposedException>(() => { mc.Trim(50); });
+            }
+            else
+            {
+                Assert.Equal(0, mc.Trim(50));
+            }
         }
 
         [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]

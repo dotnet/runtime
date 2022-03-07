@@ -353,4 +353,4 @@ FAIL:
 	ret
 }
 }
-.assembly rem_i8.exe{}
+.assembly rem_i8{}

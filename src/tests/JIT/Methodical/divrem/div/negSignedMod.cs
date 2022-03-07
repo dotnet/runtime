@@ -4,7 +4,7 @@
 using System;
 using System.IO;
 
-internal class Test
+internal class Test_negSignedMod
 {
     private static int Main()
     {

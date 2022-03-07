@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly mul.exe{}
+.assembly 'mul'{}
 
 .class public _mul {
 

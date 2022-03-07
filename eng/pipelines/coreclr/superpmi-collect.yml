@@ -12,7 +12,7 @@ trigger:
     - src/coreclr/inc/jiteeversionguid.h
 
 # This pipeline is supposed to be run only on merged changes
-# and should not be triggerable from a PR. 
+# and should not be triggerable from a PR.
 pr: none
 
 schedules:
@@ -30,8 +30,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
     platforms:
-    # Linux tests are built on the OSX machines.
-    # - OSX_x64
+    - OSX_arm64
     - Linux_arm
     - Linux_arm64
     - Linux_x64
@@ -46,6 +45,16 @@ jobs:
       - Linux_x64
       - windows_x64
 
+# superpmi-collect-job that targets macOS/arm64 depends on coreclr binaries produced by the macOS/x64 job
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_x64
+    jobParameters:
+      testGroup: outerloop
+
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
@@ -54,7 +63,6 @@ jobs:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: outerloop
-      liveLibrariesBuildConfig: Release
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -63,6 +71,7 @@ jobs:
     platforms:
     # Linux tests are built on the OSX machines.
     # - OSX_x64
+    - OSX_arm64
     - Linux_arm
     - Linux_arm64
     - Linux_x64
@@ -84,6 +93,7 @@ jobs:
     platforms:
     # Linux tests are built on the OSX machines.
     # - OSX_x64
+    - OSX_arm64
     - Linux_arm
     - Linux_arm64
     - Linux_x64
@@ -106,6 +116,7 @@ jobs:
     platforms:
     # Linux tests are built on the OSX machines.
     # - OSX_x64
+    - OSX_arm64
     - Linux_arm
     - Linux_arm64
     - Linux_x64
@@ -128,6 +139,7 @@ jobs:
     platforms:
     # Linux tests are built on the OSX machines.
     # - OSX_x64
+    - OSX_arm64
     - Linux_arm
     - Linux_arm64
     - Linux_x64
@@ -149,6 +161,7 @@ jobs:
     platforms:
     # Linux tests are built on the OSX machines.
     # - OSX_x64
+    - OSX_arm64
     #TODO: Need special handling of running "benchmark build" from inside TMP folder on helix machine.
     # - Linux_arm
     # - Linux_arm64

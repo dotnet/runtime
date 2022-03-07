@@ -377,7 +377,7 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Fact]
-        public static void AccesingNestedJsonArray()
+        public static void AccessingNestedJsonArray()
         {
             var issues = new JsonObject
             {

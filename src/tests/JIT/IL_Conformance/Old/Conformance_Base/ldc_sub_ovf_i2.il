@@ -2024,5 +2024,5 @@ END:
 //---- EOF ------------------
 }
 
-.assembly ldc_sub_ovf_i2.exe{}
+.assembly ldc_sub_ovf_i2{}
 

@@ -12,7 +12,7 @@ namespace System.DirectoryServices.Protocols
         internal static int AddDirectoryEntry(ConnectionHandle ldapHandle, string dn, IntPtr attrs, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber) =>
                                 Interop.Ldap.ldap_add(ldapHandle, dn, attrs, servercontrol, clientcontrol, ref messageNumber);
 
-        internal static int CompareDirectoryEntries(ConnectionHandle ldapHandle, string dn, string attributeName, string strValue, berval binaryValue, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber) =>
+        internal static int CompareDirectoryEntries(ConnectionHandle ldapHandle, string dn, string attributeName, string strValue, BerVal binaryValue, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber) =>
                                 Interop.Ldap.ldap_compare(ldapHandle, dn, attributeName, binaryValue, servercontrol, clientcontrol, ref messageNumber);
 
         internal static void FreeDirectoryControl(IntPtr control) => Interop.Ldap.ldap_control_free(control);
@@ -23,7 +23,7 @@ namespace System.DirectoryServices.Protocols
 
         internal static int DeleteDirectoryEntry(ConnectionHandle ldapHandle, string dn, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber) => Interop.Ldap.ldap_delete_ext(ldapHandle, dn, servercontrol, clientcontrol, ref messageNumber);
 
-        internal static int ExtendedDirectoryOperation(ConnectionHandle ldapHandle, string oid, berval data, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber) =>
+        internal static int ExtendedDirectoryOperation(ConnectionHandle ldapHandle, string oid, BerVal data, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber) =>
                                 Interop.Ldap.ldap_extended_operation(ldapHandle, oid, data, servercontrol, clientcontrol, ref messageNumber);
 
         internal static IntPtr GetFirstAttributeFromEntry(ConnectionHandle ldapHandle, IntPtr result, ref IntPtr address) => Interop.Ldap.ldap_first_attribute(ldapHandle, result, ref address);
@@ -50,7 +50,13 @@ namespace System.DirectoryServices.Protocols
         internal static int GetSecurityHandleOption(ConnectionHandle ldapHandle, LdapOption option, ref SecurityHandle outValue) => Interop.Ldap.ldap_get_option_sechandle(ldapHandle, option, ref outValue);
 
         // This option is not supported on Linux, so it would most likely throw.
-        internal static int GetSecInfoOption(ConnectionHandle ldapHandle, LdapOption option, SecurityPackageContextConnectionInformation outValue) => Interop.Ldap.ldap_get_option_secInfo(ldapHandle, option, outValue);
+        internal static unsafe int GetSecInfoOption(ConnectionHandle ldapHandle, LdapOption option, SecurityPackageContextConnectionInformation outValue)
+        {
+            fixed (void* outValuePtr = outValue)
+            {
+                return Interop.Ldap.ldap_get_option_secInfo(ldapHandle, option, outValuePtr);
+            }
+        }
 
         internal static IntPtr GetValuesFromAttribute(ConnectionHandle ldapHandle, IntPtr result, string name) => Interop.Ldap.ldap_get_values_len(ldapHandle, result, name);
 
@@ -109,9 +115,9 @@ namespace System.DirectoryServices.Protocols
             try
             {
                 passwordPtr = LdapPal.StringToPtr(passwd);
-                berval passwordBerval = new berval
+                BerVal passwordBerval = new BerVal
                 {
-                    bv_len = passwd.Length,
+                    bv_len = passwd?.Length ?? 0,
                     bv_val = passwordPtr,
                 };
 

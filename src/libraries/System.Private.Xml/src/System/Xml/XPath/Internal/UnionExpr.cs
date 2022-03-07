@@ -86,7 +86,7 @@ namespace MS.Internal.Xml.XPath
         public override XPathNavigator? Advance()
         {
             XPathNavigator? res1, res2;
-            XmlNodeOrder order = 0;
+            XmlNodeOrder order;
             if (_advance1)
             {
                 res1 = qy1.Advance();

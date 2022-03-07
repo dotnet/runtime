@@ -149,11 +149,8 @@ namespace System.Net
             }
         }
 
-        public override int EndRead(IAsyncResult asyncResult)
+        public override int EndRead(IAsyncResult asyncResult!!)
         {
-            if (asyncResult == null)
-                throw new ArgumentNullException(nameof(asyncResult));
-
             HttpStreamAsyncResult? ares = asyncResult as HttpStreamAsyncResult;
             if (ares == null || !ReferenceEquals(this, ares._parent))
             {

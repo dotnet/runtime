@@ -51,11 +51,13 @@ namespace System.Net
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete("Serialization has been deprecated for FileWebResponse.")]
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete("Serialization has been deprecated for FileWebResponse.")]
         protected override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
@@ -101,10 +103,7 @@ namespace System.Net
 
         private void CheckDisposed()
         {
-            if (_closed)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_closed, this);
         }
 
         public override void Close()

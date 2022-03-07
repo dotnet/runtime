@@ -72,9 +72,6 @@
   <data name="Argument_NullElement" xml:space="preserve">
     <value>'{0}' cannot contain a null (Nothing in Visual Basic) element.</value>
   </data>
-  <data name="AssemblyFileNotFoundOrWrongType" xml:space="preserve">
-    <value>Assembly file {0} is either not found or not a dll or exe file.</value>
-  </data>
   <data name="CardinalityMismatch_NoExports" xml:space="preserve">
     <value>No exports were found that match the constraint: {0}</value>
   </data>
@@ -129,12 +126,6 @@
   <data name="InvalidMetadataView" xml:space="preserve">
     <value>The Type '{0}' supplied is not a valid Metadata View.</value>
   </data>
-  <data name="InvalidOperationReentrantCompose" xml:space="preserve">
-    <value>A call to Compose occurred during a call to Compose on the same CompositionContainer object. Use the IsComposing property on CompositionContainer to ensure a composition is not already in progress before calling Compose.</value>
-  </data>
-  <data name="MetadataItemNotSupported" xml:space="preserve">
-    <value>This export does not support the metadata item '{0}'.</value>
-  </data>
   <data name="NotSupportedInterfaceMetadataView" xml:space="preserve">
     <value>Interface '{0}' is not a valid MetadataView; MetadataViews do not support non-public interfaces, and interfaces that contain members that are not properties.</value>
   </data>
@@ -143,9 +134,6 @@
   </data>
   <data name="NotImplemented_NotOverriddenByDerived" xml:space="preserve">
     <value>The {0} member must be overridden by a derived class.</value>
-  </data>
-  <data name="NotSupportedReadOnlyDictionary" xml:space="preserve">
-    <value>The underlying dictionary is read-only.</value>
   </data>
   <data name="ObjectAlreadyInitialized" xml:space="preserve">
     <value>This property cannot be set after the object's public surface has been accessed.</value>
@@ -357,9 +345,6 @@
   <data name="CompositionTrace_Discovery_DefinitionMismatchedExportArity" xml:space="preserve">
     <value>The composable part definition '{0}' was ignored because the export '{1}' has different generic parameters than the part type.</value>
   </data>
-  <data name="InvalidArgument_ReflectionContext" xml:space="preserve">
-    <value>'reflectionContext' must be a type that is assignable from System.Reflection.ReflectionContext.</value>
-  </data>
   <data name="Argument_ReflectionContextReturnsReflectionOnlyType" xml:space="preserve">
     <value>'{0}' returns a mapped type that is a reflection-only type which is not supported.</value>
   </data>
@@ -369,14 +354,8 @@
   <data name="ContractMismatch_MetadataViewImplementationCanNotBeNull" xml:space="preserve">
     <value>The implementation type for the MetadataView '{0} can not be null.</value>
   </data>
-  <data name="InvalidPartCreationPolicyOnImport" xml:space="preserve">
-    <value>A CreationPolicy of '(0)' can not be applied to an Import that is not an ExportFactory.</value>
-  </data>
   <data name="ExportFactory_TooManyGenericParameters" xml:space="preserve">
     <value>ExportFactory subclass '{0}' can not have more than two generic parameters.</value>
-  </data>
-  <data name="CatalogMutation_Invalid" xml:space="preserve">
-    <value>ScopingPolicyCatalog does not support catalog mutation.</value>
   </data>
   <data name="NotSupportedCatalogChanges" xml:space="preserve">
     <value>This CompositionService does not support catalog changes.</value>

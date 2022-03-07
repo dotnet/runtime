@@ -360,7 +360,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         while (iData.Next_Unlocked(pDomainAssembly.This()))
         {
             // The assembly could be collected (ref-count = 0), do not use holder which calls add-ref
-            Assembly * pAssembly = pDomainAssembly->GetLoadedAssembly();
+            Assembly * pAssembly = pDomainAssembly->GetAssembly();
 
             if (pAssembly != NULL)
             {
@@ -393,7 +393,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         while (i.Next_Unlocked(pDomainAssembly.This()))
         {
             // The assembly could be collected (ref-count = 0), do not use holder which calls add-ref
-            Assembly * pAssembly = pDomainAssembly->GetLoadedAssembly();
+            Assembly * pAssembly = pDomainAssembly->GetAssembly();
 
             if (pAssembly != NULL)
             {
@@ -420,7 +420,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         while (i.Next_Unlocked(pDomainAssembly.This()))
         {
             // The assembly could be collected (ref-count = 0), do not use holder which calls add-ref
-            Assembly * pAssembly = pDomainAssembly->GetLoadedAssembly();
+            Assembly * pAssembly = pDomainAssembly->GetAssembly();
 
             if (pAssembly != NULL)
             {
@@ -633,14 +633,8 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
 //---------------------------------------------------------------------------------------
 //
 //static
-BOOL QCALLTYPE LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
+BOOL LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
 {
-    QCALL_CONTRACT;
-
-    BOOL ret = FALSE;
-
-    BEGIN_QCALL;
-
     if (ObjectHandleIsNull(pLoaderAllocator->GetLoaderAllocatorObjectHandle()))
     {
         STRESS_LOG1(LF_CLASSLOADER, LL_INFO100, "Begin LoaderAllocator::Destroy for loader allocator %p\n", reinterpret_cast<void *>(static_cast<PTR_LoaderAllocator>(pLoaderAllocator)));
@@ -678,7 +672,7 @@ BOOL QCALLTYPE LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllo
         DomainAssembly* pDomainAssembly = (DomainAssembly*)(pID->GetDomainAssemblyIterator());
         if (pDomainAssembly != NULL)
         {
-            Assembly *pAssembly = pDomainAssembly->GetCurrentAssembly();
+            Assembly *pAssembly = pDomainAssembly->GetAssembly();
             pLoaderAllocator->m_pFirstDomainAssemblyFromSameALCToDelete = pAssembly->GetDomainAssembly();
         }
 
@@ -705,13 +699,26 @@ BOOL QCALLTYPE LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllo
         }
         STRESS_LOG1(LF_CLASSLOADER, LL_INFO100, "End LoaderAllocator::Destroy for loader allocator %p\n", reinterpret_cast<void *>(static_cast<PTR_LoaderAllocator>(pLoaderAllocator)));
 
-        ret = TRUE;
+        return TRUE;
     }
+
+    return FALSE;
+} // LoaderAllocator::Destroy
+
+extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
+{
+    QCALL_CONTRACT;
+
+    BOOL ret = FALSE;
+
+    BEGIN_QCALL;
+
+    ret = LoaderAllocator::Destroy(pLoaderAllocator);
 
     END_QCALL;
 
     return ret;
-} // LoaderAllocator::Destroy
+}
 
 #define MAX_LOADERALLOCATOR_HANDLE 0x40000000
 

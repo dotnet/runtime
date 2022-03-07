@@ -590,4 +590,4 @@ FAIL:
 	ret
 }
 }
-.assembly mul_r8.exe{}
+.assembly mul_r8{}

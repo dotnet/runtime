@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -11,12 +12,12 @@ using Xunit;
 
 namespace ILVerification.Tests
 {
-    public class ILTypeVerificationTester : XunitBase
+    public class ILTypeVerificationTester
     {
         [Theory(DisplayName = "")]
         [MemberData(nameof(TestDataLoader.GetTypesWithValidType), MemberType = typeof(TestDataLoader))]
         [Trait("", "Valid type implementation tests")]
-        private void TestValidTypes(ValidTypeTestCase validType)
+        public static void TestValidTypes(ValidTypeTestCase validType)
         {
             IEnumerable<VerificationResult> results = Verify(validType);
             Assert.Empty(results);
@@ -25,7 +26,7 @@ namespace ILVerification.Tests
         [Theory(DisplayName = "")]
         [MemberData(nameof(TestDataLoader.GetTypesWithInvalidType), MemberType = typeof(TestDataLoader))]
         [Trait("", "Invalid type implementation tests")]
-        private void TestInvalidTypes(InvalidTypeTestCase invalidType)
+        public static void TestInvalidTypes(InvalidTypeTestCase invalidType)
         {
             IEnumerable<VerificationResult> results = null;
 
@@ -64,11 +65,6 @@ namespace ILVerification.Tests
                 SanityChecks = true
             });
             return verifier.Verify(module.PEReader, typeHandle);
-        }
-
-        public static int Main(string[] args)
-        {
-            return new ILTypeVerificationTester().RunTests();
         }
     }
 }

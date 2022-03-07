@@ -42,7 +42,7 @@ public class ArrayHolder
     public static Gen<int>[][][][][] GenArray = new Gen<int>[10][][][][];
 }
 
-public class Test
+public class Test_struct01_static
 {
     public static int counter = 0;
     public static bool result = true;

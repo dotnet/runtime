@@ -17,17 +17,17 @@ public class Gen
 		catch(T)
 		{
 				Console.WriteLine("Caught Wrong Exception");
-				Test.Eval(false);			
+				Test_106011.Eval(false);			
 		}
 		catch(Ex E)
 		{
-			Test.Eval(Object.ReferenceEquals(e,E));
+			Test_106011.Eval(Object.ReferenceEquals(e,E));
 		
 		}
 	}
 }
 
-public class Test
+public class Test_106011
 {
 	public static int counter = 0;
 	public static bool result = true;

@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -207,7 +206,7 @@ namespace System
 
                 // Do a quick search for the first element of "value".
                 int relativeIndex = IndexOf(ref Unsafe.Add(ref searchSpace, index), valueHead, remainingSearchSpaceLength);
-                if (relativeIndex == -1)
+                if (relativeIndex < 0)
                     break;
                 index += relativeIndex;
 
@@ -289,6 +288,115 @@ namespace System
 
         Found:
             return true;
+        }
+
+        internal static unsafe int IndexOfValueType<T>(ref T searchSpace, T value, int length) where T : struct, IEquatable<T>
+        {
+            Debug.Assert(length >= 0);
+
+            nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
+            if (Vector.IsHardwareAccelerated && Vector<T>.IsTypeSupported && (Vector<T>.Count * 2) <= length)
+            {
+                Vector<T> valueVector = new Vector<T>(value);
+                Vector<T> compareVector;
+                Vector<T> matchVector;
+                if ((uint)length % (uint)Vector<T>.Count != 0)
+                {
+                    // Number of elements is not a multiple of Vector<T>.Count, so do one
+                    // check and shift only enough for the remaining set to be a multiple
+                    // of Vector<T>.Count.
+                    compareVector = Unsafe.As<T, Vector<T>>(ref Unsafe.Add(ref searchSpace, index));
+                    matchVector = Vector.Equals(valueVector, compareVector);
+                    if (matchVector != Vector<T>.Zero)
+                    {
+                        goto VectorMatch;
+                    }
+                    index += length % Vector<T>.Count;
+                    length -= length % Vector<T>.Count;
+                }
+                while (length > 0)
+                {
+                    compareVector = Unsafe.As<T, Vector<T>>(ref Unsafe.Add(ref searchSpace, index));
+                    matchVector = Vector.Equals(valueVector, compareVector);
+                    if (matchVector != Vector<T>.Zero)
+                    {
+                        goto VectorMatch;
+                    }
+                    index += Vector<T>.Count;
+                    length -= Vector<T>.Count;
+                }
+                goto NotFound;
+            VectorMatch:
+                for (int i = 0; i < Vector<T>.Count; i++)
+                    if (compareVector[i].Equals(value))
+                        return (int)(index + i);
+            }
+
+            while (length >= 8)
+            {
+                if (value.Equals(Unsafe.Add(ref searchSpace, index)))
+                    goto Found;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 1)))
+                    goto Found1;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 2)))
+                    goto Found2;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
+                    goto Found3;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 4)))
+                    goto Found4;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 5)))
+                    goto Found5;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 6)))
+                    goto Found6;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 7)))
+                    goto Found7;
+
+                length -= 8;
+                index += 8;
+            }
+
+            while (length >= 4)
+            {
+                if (value.Equals(Unsafe.Add(ref searchSpace, index)))
+                    goto Found;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 1)))
+                    goto Found1;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 2)))
+                    goto Found2;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
+                    goto Found3;
+
+                length -= 4;
+                index += 4;
+            }
+
+            while (length > 0)
+            {
+                if (value.Equals(Unsafe.Add(ref searchSpace, index)))
+                    goto Found;
+
+                index += 1;
+                length--;
+            }
+        NotFound:
+            return -1;
+
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
+            return (int)index;
+        Found1:
+            return (int)(index + 1);
+        Found2:
+            return (int)(index + 2);
+        Found3:
+            return (int)(index + 3);
+        Found4:
+            return (int)(index + 4);
+        Found5:
+            return (int)(index + 5);
+        Found6:
+            return (int)(index + 6);
+        Found7:
+            return (int)(index + 7);
         }
 
         public static unsafe int IndexOf<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>
@@ -664,11 +772,17 @@ namespace System
             if (valueLength == 0)
                 return searchSpaceLength;  // A zero-length sequence is always treated as "found" at the end of the search space.
 
-            T valueHead = value;
-            ref T valueTail = ref Unsafe.Add(ref value, 1);
             int valueTailLength = valueLength - 1;
+            if (valueTailLength == 0)
+            {
+                return LastIndexOf(ref searchSpace, value, searchSpaceLength);
+            }
 
             int index = 0;
+
+            T valueHead = value;
+            ref T valueTail = ref Unsafe.Add(ref value, 1);
+
             while (true)
             {
                 Debug.Assert(0 <= index && index <= searchSpaceLength); // Ensures no deceptive underflows in the computation of "remainingSearchSpaceLength".
@@ -678,7 +792,7 @@ namespace System
 
                 // Do a quick search for the first element of "value".
                 int relativeIndex = LastIndexOf(ref searchSpace, valueHead, remainingSearchSpaceLength);
-                if (relativeIndex == -1)
+                if (relativeIndex < 0)
                     break;
 
                 // Found the first element of "value". See if the tail matches.

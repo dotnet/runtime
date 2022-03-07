@@ -176,5 +176,5 @@ END:
 //---- EOF ------------------
 }
 
-.assembly ldc_ret_r4.exe{}
+.assembly ldc_ret_r4{}
 

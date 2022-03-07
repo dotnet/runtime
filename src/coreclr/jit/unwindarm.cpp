@@ -1693,7 +1693,12 @@ void UnwindFragmentInfo::Dump(int indent)
     printf("%*sUnwindFragmentInfo #%d, @0x%08p, size:%d:\n", indent, "", ufiNum, dspPtr(this), sizeof(*this));
     printf("%*s  uwiComp: 0x%08p\n", indent, "", dspPtr(uwiComp));
     printf("%*s  ufiNext: 0x%08p\n", indent, "", dspPtr(ufiNext));
-    printf("%*s  ufiEmitLoc: 0x%08p\n", indent, "", dspPtr(ufiEmitLoc));
+    printf("%*s  ufiEmitLoc: 0x%08p ", indent, "", dspPtr(ufiEmitLoc));
+    if (ufiEmitLoc != nullptr)
+    {
+        ufiEmitLoc->Print(uwiComp->compMethodID);
+    }
+    printf("\n");
     printf("%*s  ufiHasPhantomProlog: %s\n", indent, "", dspBool(ufiHasPhantomProlog));
     printf("%*s  %d epilog%s\n", indent, "", count, (count != 1) ? "s" : "");
     printf("%*s  ufiEpilogList: 0x%08p\n", indent, "", dspPtr(ufiEpilogList));
@@ -2270,7 +2275,7 @@ void DumpUnwindInfo(Compiler*         comp,
     else
     {
         printf("  --- One epilog, unwind codes at %u\n", epilogCount);
-        assert(epilogCount < _countof(epilogStartAt));
+        assert(epilogCount < ArrLen(epilogStartAt));
         epilogStartAt[epilogCount] = true; // the one and only epilog starts its unwind codes at this offset
     }
 

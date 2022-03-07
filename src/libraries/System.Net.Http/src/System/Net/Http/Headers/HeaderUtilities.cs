@@ -5,7 +5,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -22,10 +21,7 @@ namespace System.Net.Http.Headers
 
         internal const string BytesUnit = "bytes";
 
-        // Validator
-        internal static readonly Action<HttpHeaderValueCollection<string>, string> TokenValidator = ValidateToken;
-
-        internal static void SetQuality(ObjectCollection<NameValueHeaderValue> parameters, double? value)
+        internal static void SetQuality(UnvalidatedObjectCollection<NameValueHeaderValue> parameters, double? value)
         {
             Debug.Assert(parameters != null);
 
@@ -125,7 +121,7 @@ namespace System.Net.Http.Headers
             destination.Append(HexConverter.ToCharUpper(c));
         }
 
-        internal static double? GetQuality(ObjectCollection<NameValueHeaderValue> parameters)
+        internal static double? GetQuality(UnvalidatedObjectCollection<NameValueHeaderValue> parameters)
         {
             Debug.Assert(parameters != null);
 
@@ -134,7 +130,7 @@ namespace System.Net.Http.Headers
             {
                 // Note that the RFC requires decimal '.' regardless of the culture. I.e. using ',' as decimal
                 // separator is considered invalid (even if the current culture would allow it).
-                double qualityValue = 0;
+                double qualityValue;
                 if (double.TryParse(qualityParameter.Value, NumberStyles.AllowDecimalPoint,
                     NumberFormatInfo.InvariantInfo, out qualityValue))
                 {
@@ -166,7 +162,7 @@ namespace System.Net.Http.Headers
                 throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
             }
 
-            int length = 0;
+            int length;
             if ((HttpRuleParser.GetCommentLength(value, 0, out length) != HttpParseResult.Parsed) ||
                 (length != value.Length)) // no trailing spaces allowed
             {
@@ -181,7 +177,7 @@ namespace System.Net.Http.Headers
                 throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
             }
 
-            int length = 0;
+            int length;
             if ((HttpRuleParser.GetQuotedStringLength(value, 0, out length) != HttpParseResult.Parsed) ||
                 (length != value.Length)) // no trailing spaces allowed
             {
@@ -372,17 +368,12 @@ namespace System.Net.Http.Headers
             sb.Append('}');
         }
 
-        private static void ValidateToken(HttpHeaderValueCollection<string> collection, string value)
-        {
-            CheckValidToken(value, "item");
-        }
-
-        internal static ObjectCollection<NameValueHeaderValue>? Clone(this ObjectCollection<NameValueHeaderValue>? source)
+        internal static UnvalidatedObjectCollection<NameValueHeaderValue>? Clone(this UnvalidatedObjectCollection<NameValueHeaderValue>? source)
         {
             if (source == null)
                 return null;
 
-            var copy = new ObjectCollection<NameValueHeaderValue>();
+            var copy = new UnvalidatedObjectCollection<NameValueHeaderValue>();
             foreach (NameValueHeaderValue item in source)
             {
                 copy.Add(new NameValueHeaderValue(item));

@@ -16,7 +16,7 @@ public class Foo : Base
 		
 }
 
-public class Test
+public class Test_method001f
 {
 	public static int counter = 0;
 	public static bool result = true;

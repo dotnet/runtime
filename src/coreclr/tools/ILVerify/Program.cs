@@ -19,8 +19,10 @@ using static System.Console;
 
 namespace ILVerify
 {
-    class Program : ResolverBase
+    class Program : IResolver
     {
+        private readonly Dictionary<string, PEReader> _resolverCache = new Dictionary<string, PEReader>();
+
         private Options _options;
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // map of simple name to file path
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // map of simple name to file path
@@ -96,7 +98,7 @@ namespace ILVerify
             string[] includePatterns = options.Include;
             if (options.IncludeFile != null)
             {
-                if (options.Include.Length != 0)
+                if (options.Include != null && options.Include.Length != 0)
                     WriteLine("[Warning] --include-file takes precedence over --include");
                 includePatterns = File.ReadAllLines(options.IncludeFile.FullName);
             }
@@ -105,7 +107,7 @@ namespace ILVerify
             string[] excludePatterns = options.Exclude;
             if (options.ExcludeFile != null)
             {
-                if (options.Exclude.Length != 0)
+                if (options.Exclude != null && options.Exclude.Length != 0)
                     WriteLine("[Warning] --exclude-file takes precedence over --exclude");
                 excludePatterns = File.ReadAllLines(options.ExcludeFile.FullName);
             }
@@ -114,7 +116,7 @@ namespace ILVerify
             string[] ignoreErrorPatterns = options.IgnoreError;
             if (options.IgnoreErrorFile != null)
             {
-                if (options.IgnoreError.Length != 0)
+                if (options.IgnoreError != null && options.IgnoreError.Length != 0)
                     WriteLine("[Warning] --ignore-error-file takes precedence over --ignore-error");
                 ignoreErrorPatterns = File.ReadAllLines(options.IgnoreErrorFile.FullName);
             }
@@ -463,12 +465,25 @@ namespace ILVerify
             return false;
         }
 
-        protected override PEReader ResolveCore(string simpleName)
+        PEReader IResolver.ResolveAssembly(AssemblyName assemblyName)
+            => Resolve(assemblyName.Name);
+
+        PEReader IResolver.ResolveModule(AssemblyName referencingModule, string fileName)
+            => Resolve(Path.GetFileNameWithoutExtension(fileName));
+
+        public PEReader Resolve(string simpleName)
         {
+            if (_resolverCache.TryGetValue(simpleName, out PEReader peReader))
+            {
+                return peReader;
+            }
+
             string path = null;
             if (_inputFilePaths.TryGetValue(simpleName, out path) || _referenceFilePaths.TryGetValue(simpleName, out path))
             {
-                return new PEReader(File.OpenRead(path));
+                PEReader result = new PEReader(File.OpenRead(path));
+                _resolverCache.Add(simpleName, result);
+                return result;
             }
 
             return null;

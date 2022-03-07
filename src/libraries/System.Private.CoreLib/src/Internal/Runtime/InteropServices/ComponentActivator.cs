@@ -36,10 +36,7 @@ namespace Internal.Runtime.InteropServices
         private static string MarshalToString(IntPtr arg, string argName)
         {
             string? result = Marshal.PtrToStringAuto(arg);
-            if (result == null)
-            {
-                throw new ArgumentNullException(argName);
-            }
+            ArgumentNullException.ThrowIfNull(result, argName);
             return result;
         }
 
@@ -81,10 +78,7 @@ namespace Internal.Runtime.InteropServices
                     throw new ArgumentOutOfRangeException(nameof(reserved));
                 }
 
-                if (functionHandle == IntPtr.Zero)
-                {
-                    throw new ArgumentNullException(nameof(functionHandle));
-                }
+                ArgumentNullException.ThrowIfNull(functionHandle);
 
                 // Set up the AssemblyLoadContext for this delegate.
                 AssemblyLoadContext alc = GetIsolatedComponentLoadContext(assemblyPath);
@@ -136,13 +130,12 @@ namespace Internal.Runtime.InteropServices
                     throw new ArgumentOutOfRangeException(nameof(reserved));
                 }
 
-                if (functionHandle == IntPtr.Zero)
-                {
-                    throw new ArgumentNullException(nameof(functionHandle));
-                }
+                ArgumentNullException.ThrowIfNull(functionHandle);
 
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
                 // Create the function pointer.
                 *(IntPtr*)functionHandle = InternalGetFunctionPointer(AssemblyLoadContext.Default, typeName, methodName, delegateTypeNative);
+#pragma warning restore IL2026
             }
             catch (Exception e)
             {

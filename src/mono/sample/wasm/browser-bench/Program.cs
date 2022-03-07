@@ -11,24 +11,22 @@ using System.Threading.Tasks;
 
 namespace Sample
 {
-    public class Test
+    public partial class Test
     {
-        public static void Main(string[] args)
+        List<BenchTask> tasks = new()
         {
-        }
-
-        BenchTask[] tasks =
-        {
+            new AppStartTask(),
             new ExceptionsTask(),
-            new JsonTask (),
+            new JsonTask(),
             new WebSocketTask()
         };
-        static Test instance = new Test ();
+        static Test instance = new Test();
+        Formatter formatter = new HTMLFormatter();
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Task<string> RunBenchmark()
         {
-            return instance.RunTasks ();
+            return instance.RunTasks();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -46,14 +44,15 @@ namespace Sample
                 var idx = names[i].IndexOf(':');
                 string name;
 
-                if (idx == -1) {
+                if (idx == -1)
+                {
                     name = names[i];
                     pattern = null;
                 }
                 else
                 {
                     name = names[i].Substring(0, idx);
-                    pattern = new Regex (names[i][(idx + 1)..]);
+                    pattern = new Regex(names[i][(idx + 1)..]);
                 }
 
                 var taskType = Type.GetType($"Sample.{name}Task");
@@ -62,10 +61,10 @@ namespace Sample
 
                 var task = (BenchTask)Activator.CreateInstance(taskType);
                 task.pattern = pattern;
-                tasksList.Add (task);
+                tasksList.Add(task);
             }
 
-            instance.tasks = tasksList.ToArray ();
+            instance.tasks = tasksList;
         }
 
         int taskCounter = 0;
@@ -80,11 +79,12 @@ namespace Sample
         List<BenchTask.Result> results = new();
         bool resultsReturned;
 
-        bool NextTask ()
+        bool NextTask()
         {
             bool hasMeasurement;
-            do {
-                if (taskCounter == tasks.Length)
+            do
+            {
+                if (taskCounter == tasks.Count)
                     return false;
 
                 Task = tasks[taskCounter];
@@ -100,7 +100,7 @@ namespace Sample
             return true;
         }
 
-        bool NextMeasurement ()
+        bool NextMeasurement()
         {
             runIdx = 0;
 
@@ -122,45 +122,46 @@ namespace Sample
             if (resultsReturned)
                 return "";
 
-            if (taskCounter == 0) {
-                NextTask ();
-                return "Benchmark started<br>";
+            if (taskCounter == 0)
+            {
+                NextTask();
+                return $"Benchmark started{formatter.NewLine}";
             }
 
             if (measurementIdx == -1)
                 return ResultsSummary();
 
-            if (runIdx >= Task.Measurements [measurementIdx].NumberOfRuns && !NextMeasurement() && !NextTask ())
-                    return ResultsSummary();
+            if (runIdx >= Task.Measurements[measurementIdx].NumberOfRuns && !NextMeasurement() && !NextTask())
+                return ResultsSummary();
 
             runIdx++;
 
-            return await Task.RunBatch(results, measurementIdx);
+            return $"{await Task.RunBatch(results, measurementIdx)}{formatter.NewLine}";
         }
 
-        string ResultsSummary ()
+        string ResultsSummary()
         {
-            Dictionary<string, double> minTimes = new Dictionary<string, double> ();
+            Dictionary<string, double> minTimes = new Dictionary<string, double>();
             StringBuilder sb = new();
 
             foreach (var result in results)
             {
                 double t;
                 var key = $"{result.taskName}, {result.measurementName}";
-                t = result.span.TotalMilliseconds/result.steps;
+                t = result.span.TotalMilliseconds / result.steps;
                 if (minTimes.ContainsKey(key))
-                    t = Math.Min (minTimes[key], t);
+                    t = Math.Min(minTimes[key], t);
 
                 minTimes[key] = t;
             }
 
-            sb.Append("<h4>Summary</h4>");
+            sb.Append($"{formatter.NewLine}Summary{formatter.NewLine}");
             foreach (var key in minTimes.Keys)
             {
-                sb.Append($"{key}: {minTimes [key]}ms<br>");
+                sb.Append($"{key}: {minTimes[key]}ms{formatter.NewLine}");
             }
 
-            sb.Append("<h4>.md</h4><tt>| measurement | time |<br>|-:|-:|<br>");
+            sb.Append($"{formatter.NewLine}.md{formatter.NewLine}{formatter.CodeStart}| measurement | time |{formatter.NewLine}|-:|-:|{formatter.NewLine}");
             foreach (var key in minTimes.Keys)
             {
                 var time = minTimes[key];
@@ -170,13 +171,37 @@ namespace Sample
                     time *= 1000;
                     unit = "us";
                 }
-                sb.Append($"| {key.Replace('_',' '),38} | {time,10:F4}{unit} |<br>".Replace (" ", "&nbsp;"));
+                sb.Append($"| {key.Replace('_', ' '),38} | {time,10:F4}{unit} |{formatter.NewLine}".Replace(" ", formatter.NonBreakingSpace));
             }
-            sb.Append("</tt>");
+            sb.Append($"{formatter.CodeEnd}");
 
             resultsReturned = true;
 
             return sb.ToString();
         }
+    }
+
+    public abstract class Formatter
+    {
+        public abstract string NewLine { get; }
+        public abstract string NonBreakingSpace { get; }
+        public abstract string CodeStart { get; }
+        public abstract string CodeEnd { get; }
+    }
+
+    public class PlainFormatter : Formatter
+    {
+        override public string NewLine => "\n";
+        override public string NonBreakingSpace => " ";
+        override public string CodeStart => "";
+        override public string CodeEnd => "";
+    }
+
+    public class HTMLFormatter : Formatter
+    {
+        override public string NewLine => "<br/>";
+        override public string NonBreakingSpace => "&nbsp;";
+        override public string CodeStart => "<code>";
+        override public string CodeEnd => "</code>";
     }
 }

@@ -701,4 +701,4 @@ END:
 }
 }
 
-.assembly Conv_I4.exe{}
+.assembly Conv_I4{}

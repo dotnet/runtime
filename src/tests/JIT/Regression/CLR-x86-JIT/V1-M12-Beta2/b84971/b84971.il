@@ -7,7 +7,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly EHTest {}
+.assembly 'b84971' {}
+.assembly extern xunit.core {}
 .class public EHTest
 {
 .method public static void f1() cil managed
@@ -58,6 +59,9 @@ leave OUT
 
 .method public static int32 Main() cil managed
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .try
 {

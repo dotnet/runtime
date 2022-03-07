@@ -10,8 +10,8 @@ internal static partial class Interop
         private static volatile bool s_loadedLegacy;
         private static readonly object s_legacyLoadLock = new object();
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern void CryptoNative_RegisterLegacyAlgorithms();
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial void CryptoNative_RegisterLegacyAlgorithms();
 
         internal static void EnsureLegacyAlgorithmsRegistered()
         {

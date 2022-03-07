@@ -36,9 +36,9 @@ namespace System.Text.Json
                 }
             }
 
-            public void Add(string propertyName) => throw ThrowHelper.NotSupportedException_NodeCollectionIsReadOnly();
+            public void Add(string propertyName) => ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
 
-            public void Clear() => throw ThrowHelper.NotSupportedException_NodeCollectionIsReadOnly();
+            public void Clear() => ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
 
             public bool Contains(string propertyName) => _parent.ContainsProperty(propertyName);
 
@@ -68,7 +68,7 @@ namespace System.Text.Json
                 }
             }
 
-            bool ICollection<string>.Remove(string propertyName) => throw ThrowHelper.NotSupportedException_NodeCollectionIsReadOnly();
+            bool ICollection<string>.Remove(string propertyName) => throw ThrowHelper.GetNotSupportedException_NodeCollectionIsReadOnly();
         }
     }
 }

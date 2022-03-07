@@ -79,5 +79,5 @@ end:
 }
 
 
-.assembly blt_s.exe {}
+.assembly blt_s {}
 

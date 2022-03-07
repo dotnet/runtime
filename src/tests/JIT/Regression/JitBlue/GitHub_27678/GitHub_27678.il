@@ -21,6 +21,7 @@
 .assembly extern System.Runtime {}
 .assembly extern System.Diagnostics.Debug {}
 .assembly GitHub_27678 {}
+.assembly extern xunit.core {}
 
 .class private sequential ansi sealed beforefieldinit AStruct
        extends [System.Runtime]System.ValueType
@@ -166,6 +167,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       62 (0x3e)
     .maxstack  3

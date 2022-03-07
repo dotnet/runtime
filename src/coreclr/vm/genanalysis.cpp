@@ -88,7 +88,7 @@ bool gcGenAnalysisDump = false;
     const uint64_t keyword                          = GCHeapAndTypeNamesKeyword|GCHeapSurvivalAndMovementKeyword|GCHeapDumpKeyword|TypeKeyword;
     pProviders[0].providerName = W("Microsoft-Windows-DotNETRuntime");
     pProviders[0].keywords = keyword;
-    pProviders[0].loggingLevel = (uint32_t)EP_EVENT_LEVEL_VERBOSE;
+    pProviders[0].loggingLevel = (uint32_t)EP_EVENT_LEVEL_INFORMATIONAL;
     pProviders[0].filterData = nullptr;
 
     EventPipeProviderConfigurationAdapter configAdapter(pProviders, providerCnt);

@@ -9,6 +9,7 @@
 
 .assembly extern mscorlib { }
 .assembly 'filter' { }
+.assembly extern xunit.core {}
 .namespace SinCalc
 {
   .class auto ansi MistakeException extends [mscorlib]System.Exception
@@ -265,6 +266,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  5
       .locals ([0] class System.Object i,

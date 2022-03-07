@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 /*
 if there are 3 classes A,B and C, and B inherits from A and C inherits from B, 
 and classes A and B have a public virtual newslot method M(), calling C::M() 
@@ -11,7 +12,7 @@ function call DerivedDerived::Method() since the method is not defined on this t
 */
 
 .assembly extern mscorlib {}
-.assembly Generated26 {}
+.assembly 'dev10_715437' {}
 
 
 .class public DerivedDerived extends class Derived`2<string,int32>
@@ -85,6 +86,9 @@ function call DerivedDerived::Method() since the method is not defined on this t
 
     .method public hidebysig static int32  Main() cil managed
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
         .maxstack  10
 

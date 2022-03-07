@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel
@@ -19,7 +20,7 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly AttributeCollection Empty = new AttributeCollection(null);
 
-        private static Hashtable? s_defaultAttributes;
+        private static Dictionary<Type, Attribute?>? s_defaultAttributes;
 
         private readonly Attribute[] _attributes;
 
@@ -46,10 +47,7 @@ namespace System.ComponentModel
 
             for (int idx = 0; idx < _attributes.Length; idx++)
             {
-                if (_attributes[idx] == null)
-                {
-                    throw new ArgumentNullException(nameof(attributes));
-                }
+                ArgumentNullException.ThrowIfNull(_attributes[idx], nameof(attributes));
             }
         }
 
@@ -60,13 +58,8 @@ namespace System.ComponentModel
         /// <summary>
         /// Creates a new AttributeCollection from an existing AttributeCollection
         /// </summary>
-        public static AttributeCollection FromExisting(AttributeCollection existing, params Attribute[]? newAttributes)
+        public static AttributeCollection FromExisting(AttributeCollection existing!!, params Attribute[]? newAttributes)
         {
-            if (existing == null)
-            {
-                throw new ArgumentNullException(nameof(existing));
-            }
-
             if (newAttributes == null)
             {
                 newAttributes = Array.Empty<Attribute>();
@@ -78,10 +71,7 @@ namespace System.ComponentModel
 
             for (int idx = 0; idx < newAttributes.Length; idx++)
             {
-                if (newAttributes[idx] == null)
-                {
-                    throw new ArgumentNullException(nameof(newAttributes));
-                }
+                ArgumentNullException.ThrowIfNull(newAttributes[idx], nameof(newAttributes));
 
                 // We must see if this attribute is already in the existing
                 // array. If it is, we replace it.
@@ -135,15 +125,10 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the attribute with the specified type.
         /// </summary>
-        public virtual Attribute? this[[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType]
+        public virtual Attribute? this[[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType!!]
         {
             get
             {
-                if (attributeType == null)
-                {
-                    throw new ArgumentNullException(nameof(attributeType));
-                }
-
                 lock (s_internalSyncObject)
                 {
                     // 2 passes here for perf. Really!  first pass, we just
@@ -257,24 +242,19 @@ namespace System.ComponentModel
         /// Returns the default value for an attribute. This uses the following heuristic:
         /// 1. It looks for a public static field named "Default".
         /// </summary>
-        protected Attribute? GetDefaultAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType)
+        protected Attribute? GetDefaultAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType!!)
         {
-            if (attributeType == null)
-            {
-                throw new ArgumentNullException(nameof(attributeType));
-            }
-
             lock (s_internalSyncObject)
             {
                 if (s_defaultAttributes == null)
                 {
-                    s_defaultAttributes = new Hashtable();
+                    s_defaultAttributes = new Dictionary<Type, Attribute?>();
                 }
 
                 // If we have already encountered this, use what's in the table.
-                if (s_defaultAttributes.ContainsKey(attributeType))
+                if (s_defaultAttributes.TryGetValue(attributeType, out Attribute? defaultAttribute))
                 {
-                    return (Attribute?)s_defaultAttributes[attributeType];
+                    return defaultAttribute;
                 }
 
                 Attribute? attr = null;

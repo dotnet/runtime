@@ -33,7 +33,6 @@ jobs:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: gc-simulator
-      liveLibrariesBuildConfig: Release
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

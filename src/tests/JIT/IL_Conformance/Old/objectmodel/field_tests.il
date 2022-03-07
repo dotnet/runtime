@@ -3,7 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly field_tests.exe{}
+.assembly field_tests{}
 
 .class public field_tests {
 

@@ -6,16 +6,16 @@
 
 #if defined(FEATURE_PERFTRACING)
 
-#include "ep.h"
-#include "ep-provider.h"
-#include "ep-config.h"
-#include "ep-event.h"
-#include "ep-event-instance.h"
-#include "ep-session.h"
-#include "ep-session-provider.h"
-#include "ep-metadata-generator.h"
-#include "ep-event-payload.h"
-#include "ep-buffer-manager.h"
+#include <eventpipe/ep.h>
+#include <eventpipe/ep-provider.h>
+#include <eventpipe/ep-config.h>
+#include <eventpipe/ep-event.h>
+#include <eventpipe/ep-event-instance.h>
+#include <eventpipe/ep-session.h>
+#include <eventpipe/ep-session-provider.h>
+#include <eventpipe/ep-metadata-generator.h>
+#include <eventpipe/ep-event-payload.h>
+#include <eventpipe/ep-buffer-manager.h>
 
 
 class EventPipeProviderConfigurationAdapter final

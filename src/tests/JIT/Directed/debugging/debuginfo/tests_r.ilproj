@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>library</OutputType>
+    <IlasmFlags>$(IlasmFlags) -DEBUG=OPT</IlasmFlags>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="attribute.csproj" />
+    <Compile Include="tests.il" />
+  </ItemGroup>
+</Project>

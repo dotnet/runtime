@@ -13,7 +13,7 @@ namespace System.Threading
         private static class WorkerThread
         {
             private const int SemaphoreSpinCountDefaultBaseline = 70;
-#if !TARGET_ARM64 && !TARGET_ARM
+#if !TARGET_ARM64 && !TARGET_ARM && !TARGET_LOONGARCH64
             private const int SemaphoreSpinCountDefault = SemaphoreSpinCountDefaultBaseline;
 #else
             // On systems with ARM processors, more spin-waiting seems to be necessary to avoid perf regressions from incurring

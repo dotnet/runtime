@@ -5,7 +5,7 @@ namespace NetClient
 {
     using System;
     using System.Runtime.InteropServices;
-    using TestLibrary;
+    using Xunit;
 
     class ErrorTests
     {
@@ -52,8 +52,8 @@ namespace NetClient
 
             foreach (var hr in hrs)
             {
-                Assert.AreEqual(hr, this.server.Return_As_HResult(hr));
-                Assert.AreEqual(hr, this.server.Return_As_HResult_Struct(hr).hr);
+                Assert.Equal(hr, this.server.Return_As_HResult(hr));
+                Assert.Equal(hr, this.server.Return_As_HResult_Struct(hr).hr);
             }
         }
     }

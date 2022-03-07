@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -45,13 +45,13 @@ $SED -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/CALL_OP
 		CALL_OP
 		pop
 		ldc.i4.0
-		ret 
+		ret
 	}
 
 }
 
 
- 
+
 
 
 //EOF

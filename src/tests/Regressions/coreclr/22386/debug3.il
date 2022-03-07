@@ -3,6 +3,7 @@
 //
 
 .assembly extern System.Runtime { }
+.assembly extern xunit.core {}
 .assembly extern System.Console { }
 
 .assembly debug3 { }
@@ -97,6 +98,9 @@
 
 .method private hidebysig static int32 Main() cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .locals init (class I1 V_0,
              valuetype Test1 V_1,

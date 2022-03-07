@@ -30,5 +30,17 @@
         <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
         <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
+    <HelixWorkItem Include="SOD - Maui iOS .app Size" Condition="'$(iOSLlvmBuild)' == 'False'">
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <PreCommands>cd $(ScenarioDirectory)mauiios;xcopy %HELIX_CORRELATION_PAYLOAD%\MauiiOSDefault .\app\/e;$(Python) pre.py</PreCommands>
+      <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
+      <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
+    <HelixWorkItem Include="SOD - Maui MacCatalyst .app Size" Condition="'$(iOSLlvmBuild)' == 'False'">
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <PreCommands>cd $(ScenarioDirectory)mauiios;xcopy %HELIX_CORRELATION_PAYLOAD%\MauiMacCatalystDefault .\app\/e;$(Python) pre.py</PreCommands>
+      <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
+      <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
   </ItemGroup>
 </Project>

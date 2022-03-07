@@ -71,6 +71,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         CORJIT_FLAGS flags,
                         ULONG* sizeOfCode = NULL);
 
+void setILIntrinsicMethodInfo(CORINFO_METHOD_INFO* methInfo,
+                              uint8_t* ilcode,
+                              int ilsize,
+                              int maxstack);
+
+
 void getMethodInfoHelper(MethodDesc * ftn,
                          CORINFO_METHOD_HANDLE ftnHnd,
                          COR_ILMETHOD_DECODER * header,
@@ -425,7 +431,7 @@ public:
     static CorInfoHelpFunc getSharedStaticsHelper(FieldDesc * pField, MethodTable * pFieldMT);
 
     static size_t findNameOfToken (Module* module, mdToken metaTOK,
-                            __out_ecount (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
+                            _Out_writes_ (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
 
     DWORD getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftnHnd);
 
@@ -475,14 +481,6 @@ public:
         CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
         CORINFO_TAILCALL_HELPERS* pResult);
 
-    // Returns whether we are generating code for NGen image.
-    bool IsCompilingForNGen()
-    {
-        LIMITED_METHOD_CONTRACT;
-        // NGen is the only place where we set the override
-        return this != m_pOverride;
-    }
-
     // This normalizes EE type information into the form expected by the JIT.
     //
     // If typeHnd contains exact type information, then *clsRet will contain
@@ -492,7 +490,6 @@ public:
                                       CORINFO_CLASS_HANDLE *clsRet = NULL /* optional out */ );
 
     CEEInfo(MethodDesc * fd = NULL, bool fVerifyOnly = false, bool fAllowInlining = true) :
-        m_pOverride(NULL),
         m_pMethodBeingCompiled(fd),
         m_fVerifyOnly(fVerifyOnly),
         m_pThread(GetThreadNULLOk()),
@@ -569,13 +566,6 @@ public:
 #endif
 
 protected:
-    // NGen provides its own modifications to EE-JIT interface. From technical reason it cannot simply inherit
-    // from code:CEEInfo class (because it has dependencies on VM that NGen does not want).
-    // Therefore the "normal" EE-JIT interface has code:m_pOverride hook that is set either to
-    //   * 'this' (code:CEEInfo) at runtime, or to
-    //   *  code:ZapInfo - the NGen specific implementation of the interface.
-    ICorDynamicInfo * m_pOverride;
-
     MethodDesc*             m_pMethodBeingCompiled;             // Top-level method being compiled
     bool                    m_fVerifyOnly;
     Thread *                m_pThread;                          // Cached current thread for faster JIT-EE transitions
@@ -726,8 +716,6 @@ public:
             delete [] ((BYTE*) m_pPatchpointInfoFromJit);
 
         m_pPatchpointInfoFromJit = NULL;
-        m_pPatchpointInfoFromRuntime = NULL;
-        m_ilOffset = 0;
 #endif
 
 #ifdef FEATURE_EH_FUNCLETS
@@ -849,8 +837,6 @@ public:
             GC_NOTRIGGER;
             MODE_ANY;
         } CONTRACTL_END;
-
-        m_pOverride = this;
     }
 
     ~CEEJitInfo()

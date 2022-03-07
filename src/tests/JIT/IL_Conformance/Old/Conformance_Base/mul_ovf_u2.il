@@ -279,4 +279,4 @@ END:
 }
 }
 
-.assembly mul_ovf_u2.exe{}
+.assembly mul_ovf_u2{}

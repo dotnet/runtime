@@ -82,7 +82,7 @@ public:
 private:
     bool HasSmallCapacity() const
     {
-        return m_layoutCount <= _countof(m_layoutArray);
+        return m_layoutCount <= ArrLen(m_layoutArray);
     }
 
     ClassLayout* GetLayoutByIndex(unsigned index) const
@@ -157,7 +157,7 @@ private:
 
     unsigned AddBlkLayout(Compiler* compiler, ClassLayout* layout)
     {
-        if (m_layoutCount < _countof(m_layoutArray))
+        if (m_layoutCount < ArrLen(m_layoutArray))
         {
             m_layoutArray[m_layoutCount] = layout;
             return m_layoutCount++;
@@ -201,7 +201,7 @@ private:
 
     unsigned AddObjLayout(Compiler* compiler, ClassLayout* layout)
     {
-        if (m_layoutCount < _countof(m_layoutArray))
+        if (m_layoutCount < ArrLen(m_layoutArray))
         {
             m_layoutArray[m_layoutCount] = layout;
             return m_layoutCount++;
@@ -220,7 +220,7 @@ private:
             unsigned      newCapacity = m_layoutCount * 2;
             ClassLayout** newArray    = alloc.allocate<ClassLayout*>(newCapacity);
 
-            if (m_layoutCount <= _countof(m_layoutArray))
+            if (m_layoutCount <= ArrLen(m_layoutArray))
             {
                 BlkLayoutIndexMap* blkLayoutMap = new (alloc) BlkLayoutIndexMap(alloc);
                 ObjLayoutIndexMap* objLayoutMap = new (alloc) ObjLayoutIndexMap(alloc);
@@ -370,7 +370,7 @@ void ClassLayout::InitializeGCPtrs(Compiler* compiler)
         unsigned gcPtrCount = compiler->info.compCompHnd->getClassGClayout(m_classHandle, gcPtrs);
 
         assert((gcPtrCount == 0) || ((compiler->info.compCompHnd->getClassAttribs(m_classHandle) &
-                                      (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_CONTAINS_STACK_PTR)) != 0));
+                                      (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) != 0));
 
         // Since class size is unsigned there's no way we could have more than 2^30 slots
         // so it should be safe to fit this into a 30 bits bit field.

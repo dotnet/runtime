@@ -13,7 +13,8 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
 {
     public class FileConfigurationProviderTest
     {
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void ProviderDisposesChangeTokenRegistration()
         {
             var changeToken = new ConfigurationRootTest.ChangeToken();
@@ -39,7 +40,8 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
             new object[] { @$"{Path.DirectorySeparatorChar}{Guid.NewGuid()}{Path.DirectorySeparatorChar}configuration.txt" }
         };
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52319", TestPlatforms.Android)]
         public void ProviderThrowsInvalidDataExceptionWhenLoadFails()
         {
@@ -72,7 +74,7 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(ProviderThrowsInvalidDataExceptionInput))]
         public void ProviderThrowsFileNotFoundExceptionWhenNotFound(string physicalPath)
         {
@@ -91,7 +93,7 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
             Assert.Contains(physicalPath, exception.Message);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(ProviderThrowsInvalidDataExceptionInput))]
         public void ProviderThrowsDirectoryNotFoundExceptionWhenNotFound(string physicalPath)
         {

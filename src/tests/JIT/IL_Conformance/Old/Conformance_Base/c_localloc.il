@@ -110,4 +110,4 @@ FAIL:
 
 }
 }
-.assembly c_localloc.exe {}
+.assembly c_localloc {}

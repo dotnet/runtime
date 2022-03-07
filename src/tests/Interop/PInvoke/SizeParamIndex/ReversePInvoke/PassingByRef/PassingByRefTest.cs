@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 public class ReversePInvoke_MashalArrayByRef_AsManagedTest
 {
@@ -56,7 +56,7 @@ public class ReversePInvoke_MashalArrayByRef_AsManagedTest
     public delegate bool DelUlongArrByRefAsCdeclCaller([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref ulong[] arrArg, ref ulong arraySize);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate bool DelStringArrByRefAsCdeclCaller([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1, ArraySubType = UnmanagedType.BStr)] ref string[] arrArg, ref Int32 arraySize);
-    
+
     #endregion
 
     #region Test Method
@@ -159,11 +159,11 @@ public class ReversePInvoke_MashalArrayByRef_AsManagedTest
 
         //Common value type
         Console.WriteLine("\tScenario 1 : byte ==> BYTE, Array_Size = byte.MinValue, Return_Array_Size = 20");
-        Assert.IsTrue(DoCallBack_MarshalByteArray_AsParam_AsByRef(new DelByteArrByRefAsCdeclCaller(TestMethodForByteArray_AsReversePInvokeByRef_AsCdecl)));
+        Assert.True(DoCallBack_MarshalByteArray_AsParam_AsByRef(new DelByteArrByRefAsCdeclCaller(TestMethodForByteArray_AsReversePInvokeByRef_AsCdecl)));
         Console.WriteLine("\t\tMarshalByteArray_AsReversePInvokeByRef_AsCdecl Passed!");
 
         Console.WriteLine("\tScenario 2 : sbyte ==> CHAR, Array_Size = 1, Return_Array_Size = sbyte.Max");
-        Assert.IsTrue(DoCallBack_MarshalSbyteArray_AsParam_AsByRef(new DelSbyteArrByRefAsCdeclCaller(TestMethodForSbyteArray_AsReversePInvokeByRef_AsCdecl)));
+        Assert.True(DoCallBack_MarshalSbyteArray_AsParam_AsByRef(new DelSbyteArrByRefAsCdeclCaller(TestMethodForSbyteArray_AsReversePInvokeByRef_AsCdecl)));
         Console.WriteLine("\t\tMarshalSbyteArray_AsReversePInvokeByRef_AsCdecl Passed!");
 
         // We don't support exception interop in .NET off-Windows.
@@ -176,33 +176,33 @@ public class ReversePInvoke_MashalArrayByRef_AsManagedTest
 
 
         Console.WriteLine("\tScenario 4 : short ==> SHORT, Array_Size = 10, Return_Array_Size = -1");
-        Assert.IsTrue(DoCallBack_MarshalShortArrayReturnNegativeSize_AsParam_AsByRef(new DelShortArrByRefAsCdeclCaller(TestMethodForShortArrayReturnNegativeSize_AsReversePInvokeByRef_AsCdecl)));
+        Assert.True(DoCallBack_MarshalShortArrayReturnNegativeSize_AsParam_AsByRef(new DelShortArrByRefAsCdeclCaller(TestMethodForShortArrayReturnNegativeSize_AsReversePInvokeByRef_AsCdecl)));
         Console.WriteLine("\t\tMarshalShortArray_AsReversePInvokeByRef_AsCdecl Passed!");
 
         Console.WriteLine("\tScenario 5 : ushort ==> USHORT, Array_Size = ushort.MaxValue, Return_Array_Size = 20");
-        Assert.IsTrue(DoCallBack_MarshalUshortArray_AsParam_AsByRef(new DelUshortArrByRefAsCdeclCaller(TestMethodForUshortArray_AsReversePInvokeByRef_AsCdecl)));
+        Assert.True(DoCallBack_MarshalUshortArray_AsParam_AsByRef(new DelUshortArrByRefAsCdeclCaller(TestMethodForUshortArray_AsReversePInvokeByRef_AsCdecl)));
         Console.WriteLine("\t\tMarshalUshortArray_AsReversePInvokeByRef_AsCdecl Passed!");
 
         Console.WriteLine("\tScenario 6 : Int32 ==> LONG, Array_Size = 10, Return_Array_Size = 20");
-        Assert.IsTrue(DoCallBack_MarshalInt32Array_AsParam_AsByRef(new DelInt32ArrByRefAsCdeclCaller(TestMethodForInt32Array_AsReversePInvokeByRef_AsCdecl)));
+        Assert.True(DoCallBack_MarshalInt32Array_AsParam_AsByRef(new DelInt32ArrByRefAsCdeclCaller(TestMethodForInt32Array_AsReversePInvokeByRef_AsCdecl)));
         Console.WriteLine("\t\tMarshalInt32Array_AsReversePInvokeByRef_AsCdecl Passed!");
 
         Console.WriteLine("\tScenario 7 : UInt32 ==> ULONG, Array_Size = 10, Return_Array_Size = 20");
-        Assert.IsTrue(DoCallBack_MarshalUint32Array_AsParam_AsByRef(new DelUint32ArrByRefAsCdeclCaller(TestMethodForUint32Array_AsReversePInvokeByRef_AsCdecl)));
+        Assert.True(DoCallBack_MarshalUint32Array_AsParam_AsByRef(new DelUint32ArrByRefAsCdeclCaller(TestMethodForUint32Array_AsReversePInvokeByRef_AsCdecl)));
         Console.WriteLine("\t\tMarshalUint32Array_AsReversePInvokeByRef_AsCdecl Passed!");
 
         Console.WriteLine("\tScenario 8 : long ==> LONGLONG, Array_Size = 10, Return_Array_Size = 20");
-        Assert.IsTrue(DoCallBack_MarshalLongArray_AsParam_AsByRef(new DelLongArrByRefAsCdeclCaller(TestMethodForLongArray_AsReversePInvokeByRef_AsCdecl)));
+        Assert.True(DoCallBack_MarshalLongArray_AsParam_AsByRef(new DelLongArrByRefAsCdeclCaller(TestMethodForLongArray_AsReversePInvokeByRef_AsCdecl)));
         Console.WriteLine("\t\tMarshalLongArray_AsReversePInvokeByRef_AsCdecl Passed!");
 
         Console.WriteLine("\tScenario 9 : ulong ==> ULONGLONG, Array_Size = 10, Return_Array_Size = 20");
-        Assert.IsTrue(DoCallBack_MarshalUlongArray_AsParam_AsByRef(new DelUlongArrByRefAsCdeclCaller(TestMethodForUlongArray_AsReversePInvokeByRef_AsCdecl)));
+        Assert.True(DoCallBack_MarshalUlongArray_AsParam_AsByRef(new DelUlongArrByRefAsCdeclCaller(TestMethodForUlongArray_AsReversePInvokeByRef_AsCdecl)));
         Console.WriteLine("\t\tMarshalUlongArray_AsReversePInvokeByRef_AsCdecl Passed!");
 
         if (OperatingSystem.IsWindows())
         {
             Console.WriteLine("\tScenario 10 : string ==> BSTR, Array_Size = 10, Return_Array_Size = 20");
-            Assert.IsTrue(DoCallBack_MarshalStringArray_AsParam_AsByRef(new DelStringArrByRefAsCdeclCaller(TestMethodForStringArray_AsReversePInvokeByRef_AsCdecl)));
+            Assert.True(DoCallBack_MarshalStringArray_AsParam_AsByRef(new DelStringArrByRefAsCdeclCaller(TestMethodForStringArray_AsReversePInvokeByRef_AsCdecl)));
             Console.WriteLine("\t\tMarshalStringArray_AsReversePInvokeByRef_AsCdecl Passed!");
         }
     }

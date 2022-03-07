@@ -530,7 +530,9 @@ namespace MS.Internal.Xml.Cache
                 {
                     Debug.Assert(pageOrig != null);
                     // Make a copy of the original namespace node
+#pragma warning disable IDE0059 // https://github.com/dotnet/roslyn/issues/58564
                     idxTemp = pageOrig[idxOrig].GetParent(out pageTemp!);
+#pragma warning restore IDE0059
                     idxTemp = NewNamespaceNode(out pageTemp, pageOrig[idxOrig].LocalName, pageOrig[idxOrig].Value, pageTemp, idxTemp);
 
                     // Attach copy to chain of copied nodes

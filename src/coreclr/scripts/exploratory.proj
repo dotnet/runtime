@@ -38,11 +38,11 @@
 
   <!-- For Scheduled= 3 hours. For PRs= 1 hour -->
   <PropertyGroup Condition=" '$(RunReason)' == 'Scheduled' ">
-      <WorkItemTimeout>3:15</WorkItemTimeout>
+      <WorkItemTimeout>3:30</WorkItemTimeout>
       <RunDuration>180</RunDuration>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(RunReason)' != 'Scheduled' ">
-      <WorkItemTimeout>1:15</WorkItemTimeout>
+      <WorkItemTimeout>1:30</WorkItemTimeout>
       <RunDuration>60</RunDuration>
   </PropertyGroup>
 
@@ -57,7 +57,14 @@
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
     <HelixPostCommands>@(HelixPostCommand)</HelixPostCommands>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(ToolName)' == 'Antigen' ">
     <WorkItemCommand>$(Python) $(CoreRoot)$(FileSeparatorChar)antigen_run.py -run_configuration $(RunConfiguration) -output_directory $(OutputDirectory) -antigen_directory $(ToolPath) -core_root $(CoreRoot) -run_duration $(RunDuration) </WorkItemCommand>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(ToolName)' == 'Fuzzlyn' ">
+    <WorkItemCommand>$(Python) $(CoreRoot)$(FileSeparatorChar)fuzzlyn_run.py -run_configuration $(RunConfiguration) -output_directory $(OutputDirectory) -fuzzlyn_directory $(ToolPath) -core_root $(CoreRoot) -run_duration $(RunDuration)</WorkItemCommand>
   </PropertyGroup>
 
   <ItemGroup>
@@ -79,7 +86,7 @@
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <Command>$(WorkItemCommand) -partition %(PartitionName)</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>AllIssues-$(RunConfiguration)-%(PartitionName).zip;issues-summary-$(RunConfiguration)-%(PartitionName).txt;Antigen-$(RunConfiguration)-%(PartitionName).log</DownloadFilesFromResults>
+      <DownloadFilesFromResults>AllIssues-$(RunConfiguration)-%(PartitionName).zip;issues-summary-$(RunConfiguration)-%(PartitionName).txt;$(ToolName)-$(RunConfiguration)-%(PartitionName).log</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
 

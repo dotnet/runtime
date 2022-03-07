@@ -61,7 +61,7 @@ namespace System.Net.Http
 
             foreach (string v in values)
             {
-                if (v == "Session-Based-Authentication")
+                if (v.Equals("Session-Based-Authentication", StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }

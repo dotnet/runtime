@@ -48,7 +48,7 @@
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
 
-  <Target Name="Build" DependsOnTargets="GenerateVersions">
+  <Target Name="Build" DependsOnTargets="GetAssemblyVersion;_GetVersionProps;_GenerateMsiVersionString">
     <ItemGroup>
       <!-- Overrides for Visual Studio setup generation. If the workload definition IDs change,
            these must be updated. -->
@@ -105,14 +105,6 @@
     <ItemGroup>
       <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.Manifest-*.nupkg" />
     </ItemGroup>
-
-    <GenerateMsiVersion
-        Major="$([System.Version]::Parse('$(SDKBundleVersion)').Major)"
-        Minor="$([System.Version]::Parse('$(SDKBundleVersion)').Minor)"
-        Patch="$([System.Version]::Parse('$(SDKBundleVersion)').Build)"
-        BuildNumber="$([System.Version]::Parse('$(SDKBundleVersion)').Revision)" >
-      <Output TaskParameter="MsiVersion" PropertyName="MsiVersion" />
-    </GenerateMsiVersion>
 
     <GenerateManifestMsi
         IntermediateBaseOutputPath="$(IntermediateOutputPath)"
@@ -195,28 +187,38 @@
     <MSBuild Projects="@(VisualStudioManifestProjects)" BuildInParallel="true" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath);OutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
   </Target>
 
-  <Target Name="GenerateVersions" DependsOnTargets="GetAssemblyVersion">
-    <Exec Command="git rev-list --count HEAD"
-          ConsoleToMSBuild="true"
-          Condition=" '$(GitCommitCount)' == '' ">
-      <Output TaskParameter="ConsoleOutput" PropertyName="GitCommitCount" />
-    </Exec>
-
-    <Error Condition=" '$(OfficialBuild)' == 'true' And '$(_PatchNumber)' == '' "
-           Text="_PatchNumber should not be empty in an official build. Check if there were changes in Arcade." />
-
+  <Target Name="_GetVersionProps">
     <PropertyGroup>
-      <GitCommitCount>$(GitCommitCount.PadLeft(6,'0'))</GitCommitCount>
-
-      <!-- This number comes from arcade and combines the date based build number id and the revision (incremental number per day) -->
-      <CombinedBuildNumberAndRevision>$(_PatchNumber)</CombinedBuildNumberAndRevision>
-      <!-- Fallback to commit count when patch number is not set. This happens only during CI. -->
-      <CombinedBuildNumberAndRevision Condition=" '$(CombinedBuildNumberAndRevision)' == '' ">$(GitCommitCount)</CombinedBuildNumberAndRevision>
-
-      <!-- This number comes from arcade and combines the date based build number id and the revision (incremental number per day) -->
-      <SDKBundleVersion>$(FileVersion)</SDKBundleVersion>
-      <!-- Fallback to commit count when patch number is not set. This happens only during CI. -->
-      <SDKBundleVersion Condition=" '$(SDKBundleVersion)' == '' ">$(VersionPrefix).$(CombinedBuildNumberAndRevision)</SDKBundleVersion>
+      <_MajorVersion>$([System.Version]::Parse('$(AssemblyVersion)').Major)</_MajorVersion>
+      <_MinorVersion>$([System.Version]::Parse('$(AssemblyVersion)').Minor)</_MinorVersion>
+      <_PatchVersion>$([System.Version]::Parse('$(AssemblyVersion)').Build)</_PatchVersion>
+      <_BuildNumber>$([System.Version]::Parse('$(AssemblyVersion)').Revision)</_BuildNumber>
     </PropertyGroup>
+  </Target>
+
+  <Target Name="_GenerateMsiVersionString">
+    <PropertyGroup>
+      <VersionPadding Condition="'$(VersionPadding)'==''">5</VersionPadding>
+      <!-- Using the following default comparison date will produce versions that align with our internal build system. -->
+      <VersionComparisonDate Condition="'$(VersionComparisonDate)'==''">1996-04-01</VersionComparisonDate>
+    </PropertyGroup>
+
+    <GenerateCurrentVersion
+      SeedDate="$([System.DateTime]::Now.ToString(yyyy-MM-dd))"
+      OfficialBuildId="$(OfficialBuildId)"
+      ComparisonDate="$(VersionComparisonDate)"
+      Padding="$(VersionPadding)">
+      <Output PropertyName="BuildNumberMajor" TaskParameter="GeneratedVersion" />
+      <Output PropertyName="BuildNumberMinor" TaskParameter="GeneratedRevision" />
+    </GenerateCurrentVersion>
+
+    <GenerateMsiVersion
+      Major="$(_MajorVersion)"
+      Minor="$(_MinorVersion)"
+      Patch="$(_PatchVersion)"
+      BuildNumberMajor="$(BuildNumberMajor)"
+      BuildNumberMinor="$(BuildNumberMinor)">
+      <Output TaskParameter="MsiVersion" PropertyName="MsiVersion" />
+    </GenerateMsiVersion>
   </Target>
 </Project>

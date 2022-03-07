@@ -211,6 +211,9 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Reference Include="System.Security.Cryptography" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data.OracleClient" />

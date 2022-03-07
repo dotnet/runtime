@@ -10,10 +10,10 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CreateAutoreleasePool")]
-        internal static extern IntPtr CreateAutoreleasePool();
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CreateAutoreleasePool")]
+        internal static partial IntPtr CreateAutoreleasePool();
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_DrainAutoreleasePool")]
-        internal static extern void DrainAutoreleasePool(IntPtr ptr);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_DrainAutoreleasePool")]
+        internal static partial void DrainAutoreleasePool(IntPtr ptr);
     }
 }

@@ -151,7 +151,7 @@ namespace System.Runtime.Loader.Tests
             Assert.Equal(assemblyExpected, assemblyExpectedFromLoad);
 
             // And make sure the simple name matches
-            Assert.Equal(assemblyExpected.GetName().Name, TestAssemblyName);
+            Assert.Equal(TestAssemblyName, assemblyExpected.GetName().Name);
 
             // Unwire the Resolving event.
             AssemblyLoadContext.Default.Resolving -= ResolveAssemblyAgain;

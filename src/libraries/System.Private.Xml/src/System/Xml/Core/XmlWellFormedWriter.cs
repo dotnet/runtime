@@ -1096,10 +1096,7 @@ namespace System.Xml
         {
             try
             {
-                if (buffer == null)
-                {
-                    throw new ArgumentNullException(nameof(buffer));
-                }
+                ArgumentNullException.ThrowIfNull(buffer);
                 if (index < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index));
@@ -1134,10 +1131,7 @@ namespace System.Xml
         {
             try
             {
-                if (buffer == null)
-                {
-                    throw new ArgumentNullException(nameof(buffer));
-                }
+                ArgumentNullException.ThrowIfNull(buffer);
                 if (index < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index));
@@ -1198,10 +1192,7 @@ namespace System.Xml
         {
             try
             {
-                if (buffer == null)
-                {
-                    throw new ArgumentNullException(nameof(buffer));
-                }
+                ArgumentNullException.ThrowIfNull(buffer);
                 if (index < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index));
@@ -1300,10 +1291,7 @@ namespace System.Xml
         {
             try
             {
-                if (ns == null)
-                {
-                    throw new ArgumentNullException(nameof(ns));
-                }
+                ArgumentNullException.ThrowIfNull(ns);
                 for (int i = _nsTop; i >= 0; i--)
                 {
                     if (_nsStack[i].namespaceUri == ns)
@@ -2074,7 +2062,7 @@ namespace System.Xml
         {
             if (state >= State.Error)
             {
-                Debug.Fail("We should never get to this point. State = " + state);
+                Debug.Fail($"We should never get to this point. State = {state}");
                 return "Error";
             }
             else
@@ -2176,7 +2164,7 @@ namespace System.Xml
                 case State.Start:
                     if (_conformanceLevel == ConformanceLevel.Document)
                     {
-                        throw new InvalidOperationException(wrongTokenMessage + ' ' + SR.Xml_ConformanceLevelFragment);
+                        throw new InvalidOperationException($"{wrongTokenMessage} {SR.Xml_ConformanceLevelFragment}");
                     }
                     break;
             }

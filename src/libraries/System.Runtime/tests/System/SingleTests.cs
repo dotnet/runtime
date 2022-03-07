@@ -273,6 +273,11 @@ namespace System.Tests
             yield return new object[] { (-567.89f).ToString(), defaultStyle, null, -567.89f };
             yield return new object[] { "1E23", defaultStyle, null, 1E23f };
 
+            yield return new object[] { emptyFormat.NumberDecimalSeparator + "234", defaultStyle, null, 0.234f };
+            yield return new object[] { "234" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 234.0f };
+            yield return new object[] { new string('0', 72) + "3" + new string('0', 38) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 3E38f };
+            yield return new object[] { new string('0', 73) + "3" + new string('0', 38) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 3E38f };
+
             // 2^24 + 1. Not exactly representable
             yield return new object[] { "16777217.0", defaultStyle, invariantFormat, 16777216.0f };
             yield return new object[] { "16777217.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", defaultStyle, invariantFormat, 16777218.0f };

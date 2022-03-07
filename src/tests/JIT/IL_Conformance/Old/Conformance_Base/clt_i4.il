@@ -295,4 +295,4 @@ FAIL:
 	ret
 }
 }
-.assembly clt_i4.exe{}
+.assembly clt_i4{}

@@ -26,7 +26,7 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
         Assert.False(string.IsNullOrEmpty(_fixture.TestAccount.AccountName));
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanRunImpersonatedTests))]
     [OuterLoop]
     public async Task RunImpersonatedAsync_TaskAndTaskOfT()
     {
@@ -60,7 +60,7 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
         }
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanRunImpersonatedTests))]
     [OuterLoop]
     public void RunImpersonated_NameResolution()
     {
@@ -78,7 +78,7 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
         });
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanRunImpersonatedTests))]
     [OuterLoop]
     public async Task RunImpersonatedAsync_NameResolution()
     {

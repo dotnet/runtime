@@ -5,9 +5,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern mscorlib{}
-.assembly extern common{}
-.assembly eh05{}
+.assembly extern localloc_common{}
+.assembly 'eh06_large'{}
 
 .class private auto ansi beforefieldinit LocallocTest
        extends [mscorlib]System.Object
@@ -35,6 +36,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  1
     .locals init (int32 retValue)

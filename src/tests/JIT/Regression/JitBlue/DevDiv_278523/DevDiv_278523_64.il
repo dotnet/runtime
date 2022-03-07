@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly a {}
-.module a.exe
+.assembly 'DevDiv_278523_64' {}
+.assembly extern xunit.core {}
 
 // This test originally triggered an assert when computing the value number for a block assignment. In particular, the
 // VN framework expected any block assignments to a tracked lclVar to have a destination address of the form
@@ -62,6 +62,9 @@
 
     .method private static int32 Main()
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
         .locals init (int32 V_0)
 

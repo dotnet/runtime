@@ -37,6 +37,7 @@ namespace System.Tests
         private static string s_strLisbon = s_isWindows ? "GMT Standard Time" : "Europe/Lisbon";
         private static string s_strNewfoundland = s_isWindows ? "Newfoundland Standard Time" : "America/St_Johns";
         private static string s_strIran = s_isWindows ? "Iran Standard Time" : "Asia/Tehran";
+        private static string s_strFiji = s_isWindows ? "Fiji Standard Time" : "Pacific/Fiji";
 
         private static TimeZoneInfo s_myUtc = TimeZoneInfo.Utc;
         private static TimeZoneInfo s_myLocal = TimeZoneInfo.Local;
@@ -566,17 +567,7 @@ namespace System.Tests
 
             time1utc = new DateTime(2006, 12, 31, 15, 59, 59, DateTimeKind.Utc);
             time1 = new DateTime(2006, 12, 31, 15, 59, 59);
-            if (s_isWindows)
-            {
-                // ambiguous time between rules
-                // this is not ideal, but the way it works
-                VerifyConvert(time1utc, s_strPerth, time1.AddHours(8));
-            }
-            else
-            {
-                // Linux has the correct rules for Perth for days from December 3, 2006 to the end of the year
-                VerifyConvert(time1utc, s_strPerth, time1.AddHours(9));
-            }
+            VerifyConvert(time1utc, s_strPerth, time1.AddHours(9));
 
             // 2007 rule
             time1utc = new DateTime(2006, 12, 31, 20, 1, 2, DateTimeKind.Utc);
@@ -2349,6 +2340,14 @@ namespace System.Tests
             "Zulu"
         };
 
+        // On Android GMT, GMT+0, and GMT-0 are values
+        private static readonly string[] s_GMTAliases = new [] {
+            "GMT",
+            "GMT0",
+            "GMT+0",
+            "GMT-0"
+        };
+
         [Theory]
         [MemberData(nameof(SystemTimeZonesTestData))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
@@ -2401,7 +2400,12 @@ namespace System.Tests
                 // All we can really say generically here is that they aren't empty.
                 Assert.False(string.IsNullOrWhiteSpace(timeZone.DisplayName), $"Id: \"{timeZone.Id}\", DisplayName should not have been empty.");
                 Assert.False(string.IsNullOrWhiteSpace(timeZone.StandardName), $"Id: \"{timeZone.Id}\", StandardName should not have been empty.");
-                Assert.False(string.IsNullOrWhiteSpace(timeZone.DaylightName), $"Id: \"{timeZone.Id}\", DaylightName should not have been empty.");
+
+                // GMT* on Android does sets daylight savings time to false, so there will be no DaylightName
+                if (!PlatformDetection.IsAndroid || (PlatformDetection.IsAndroid && !timeZone.Id.StartsWith("GMT")))
+                {
+                    Assert.False(string.IsNullOrWhiteSpace(timeZone.DaylightName), $"Id: \"{timeZone.Id}\", DaylightName should not have been empty.");
+                }
             }
         }
 
@@ -2485,6 +2489,7 @@ namespace System.Tests
             // 0x3E, 0x2C, 0x30, 0x2F, 0x30, 0x2C, 0x4A, 0x33, 0x36, 0x35, 0x2F, 0x32, 0x35, 0x0A
         };
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64134")]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData("<+00>0<+01>,0/0,J365/25", 1, 1, true)]
@@ -2585,6 +2590,10 @@ namespace System.Tests
             {
                 // UTC and all of its aliases (Etc/UTC, and others) start with just "(UTC) "
                 Assert.StartsWith("(UTC) ", tzi.DisplayName);
+            }
+            else if (s_GMTAliases.Contains(tzi.Id, StringComparer.OrdinalIgnoreCase))
+            {
+                Assert.StartsWith("GMT", tzi.DisplayName);
             }
             else
             {
@@ -2701,6 +2710,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(nameof(DoesNotSupportIanaNamesConversion))]
+        [PlatformSpecific(~TestPlatforms.Android)]
         public static void UnsupportedImplicitConversionTest()
         {
             string nonNativeTzName = s_isWindows ? "America/Los_Angeles" : "Pacific Standard Time";
@@ -2857,6 +2867,36 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void FijiTimeZoneTest()
+        {
+            TimeZoneInfo fijiTZ = TimeZoneInfo.FindSystemTimeZoneById(s_strFiji); // "Fiji Standard Time" - "Pacific/Fiji"
+
+            DateTime utcDT = new DateTime(2021, 1, 1, 14, 0, 0, DateTimeKind.Utc);
+            Assert.Equal(TimeSpan.FromHours(13), fijiTZ.GetUtcOffset(utcDT));
+            Assert.True(fijiTZ.IsDaylightSavingTime(utcDT));
+
+            utcDT = new DateTime(2021, 1, 31, 10, 0, 0, DateTimeKind.Utc);
+            Assert.Equal(TimeSpan.FromHours(12), fijiTZ.GetUtcOffset(utcDT));
+            Assert.False(fijiTZ.IsDaylightSavingTime(utcDT));
+
+            utcDT = new DateTime(2022, 10, 1, 10, 0, 0, DateTimeKind.Utc);
+            Assert.Equal(TimeSpan.FromHours(12), fijiTZ.GetUtcOffset(utcDT));
+            Assert.False(fijiTZ.IsDaylightSavingTime(utcDT));
+
+            utcDT = new DateTime(2022, 12, 31, 11, 0, 0, DateTimeKind.Utc);
+            Assert.Equal(TimeSpan.FromHours(13), fijiTZ.GetUtcOffset(utcDT));
+            Assert.True(fijiTZ.IsDaylightSavingTime(utcDT));
+
+            utcDT = new DateTime(2023, 1, 1, 10, 0, 0, DateTimeKind.Utc);
+            Assert.Equal(TimeSpan.FromHours(13), fijiTZ.GetUtcOffset(utcDT));
+            Assert.True(fijiTZ.IsDaylightSavingTime(utcDT));
+
+            utcDT = new DateTime(2023, 2, 1, 0, 0, 0, DateTimeKind.Utc);
+            Assert.Equal(TimeSpan.FromHours(12), fijiTZ.GetUtcOffset(utcDT));
+            Assert.False(fijiTZ.IsDaylightSavingTime(utcDT));
+        }
+
+        [Fact]
         public static void AdjustmentRuleBaseUtcOffsetDeltaTest()
         {
             TimeZoneInfo.TransitionTime start = TimeZoneInfo.TransitionTime.CreateFixedDateRule(timeOfDay: new DateTime(1, 1, 1, 2, 0, 0), month: 3, day: 7);
@@ -2880,6 +2920,20 @@ namespace System.Tests
 
             // BaseUtcOffsetDelta should be counted to the returned offset during the daylight time.
             Assert.Equal(new TimeSpan(2, 0, 0), customTimeZone.GetUtcOffset(new DateTime(2021, 3, 10, 2, 0, 0)));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64111", TestPlatforms.Linux)]
+        public static void NoBackwardTimeZones()
+        {
+            ReadOnlyCollection<TimeZoneInfo> tzCollection = TimeZoneInfo.GetSystemTimeZones();
+            HashSet<String> tzDisplayNames = new HashSet<String>();
+
+            foreach (TimeZoneInfo timezone in tzCollection)
+            {
+                tzDisplayNames.Add(timezone.DisplayName);
+            }
+            Assert.Equal(tzCollection.Count, tzDisplayNames.Count);
         }
 
         private static bool IsEnglishUILanguage => CultureInfo.CurrentUICulture.Name.Length == 0 || CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";

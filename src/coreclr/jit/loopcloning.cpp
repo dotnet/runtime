@@ -767,7 +767,7 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
 {
     noway_assert(conds.Size() > 0);
     assert(slowHead != nullptr);
-    assert((insertAfter->bbJumpKind == BBJ_NONE) || (insertAfter->bbJumpKind == BBJ_COND));
+    assert(insertAfter->KindIs(BBJ_NONE, BBJ_COND));
 
     // Choose how to generate the conditions
     const bool generateOneConditionPerBlock = true;
@@ -1447,7 +1447,7 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
                     }
 #endif // DEBUG
 
-                    if (bndsChkNode->gtGetOp1()->OperIsBoundsCheck())
+                    if (bndsChkNode->gtGetOp1()->OperIs(GT_BOUNDS_CHECK))
                     {
                         // This COMMA node will only represent a bounds check if we've haven't already removed this
                         // bounds check in some other nesting cloned loop. For example, consider:
@@ -1592,19 +1592,18 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
         return false;
     }
 
-    BasicBlock* head = loop.lpHead;
-    BasicBlock* end  = loop.lpBottom;
-    BasicBlock* beg  = head->bbNext;
+    BasicBlock* top    = loop.lpTop;
+    BasicBlock* bottom = loop.lpBottom;
 
-    if (end->bbJumpKind != BBJ_COND)
+    if (bottom->bbJumpKind != BBJ_COND)
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Couldn't find termination test.\n", loopInd);
         return false;
     }
 
-    if (end->bbJumpDest != beg)
+    if (bottom->bbJumpDest != top)
     {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Branch at loop 'end' not looping to 'begin'.\n", loopInd);
+        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Branch at loop 'bottom' not looping to 'top'.\n", loopInd);
         return false;
     }
 
@@ -1632,7 +1631,7 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
         return false;
     }
 
-    if (!(loop.lpTestTree->OperKind() & GTK_RELOP) || !(loop.lpTestTree->gtFlags & GTF_RELOP_ZTT))
+    if (!loop.lpTestTree->OperIsCompare() || !(loop.lpTestTree->gtFlags & GTF_RELOP_ZTT))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Loop inversion NOT present, loop test [%06u] may not protect "
                 "entry from head.\n",
@@ -1790,10 +1789,9 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 
     LoopDsc& loop = optLoopTable[loopInd];
 
-    JITDUMP("\nCloning loop " FMT_LP ": [head: " FMT_BB ", first: " FMT_BB ", top: " FMT_BB ", entry: " FMT_BB
-            ", bottom: " FMT_BB ", child: " FMT_LP "].\n",
-            loopInd, loop.lpHead->bbNum, loop.lpFirst->bbNum, loop.lpTop->bbNum, loop.lpEntry->bbNum,
-            loop.lpBottom->bbNum, loop.lpChild);
+    JITDUMP("\nCloning loop " FMT_LP ": [head: " FMT_BB ", top: " FMT_BB ", entry: " FMT_BB ", bottom: " FMT_BB
+            ", child: " FMT_LP "].\n",
+            loopInd, loop.lpHead->bbNum, loop.lpTop->bbNum, loop.lpEntry->bbNum, loop.lpBottom->bbNum, loop.lpChild);
 
     // Determine the depth of the loop, so we can properly weight blocks added (outside the cloned loop blocks).
     unsigned depth         = optLoopDepth(loopInd);
@@ -1849,7 +1847,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // X
 
     BasicBlock* h = loop.lpHead;
-    if (h->bbJumpKind != BBJ_NONE && h->bbJumpKind != BBJ_ALWAYS)
+    if (!h->KindIs(BBJ_NONE, BBJ_ALWAYS))
     {
         // Make a new block to be the unique entry to the loop.
         JITDUMP("Create new unique single-successor entry to loop\n");
@@ -2176,7 +2174,7 @@ bool Compiler::optIsStackLocalInvariant(unsigned loopNum, unsigned lclNum)
 //  Example tree to pattern match:
 //
 // *  COMMA     int
-// +--*  ARR_BOUNDS_CHECK_Rng void
+// +--*  BOUNDS_CHECK_Rng void
 // |  +--*  LCL_VAR   int    V02 loc1
 // |  \--*  ARR_LENGTH int
 // |     \--*  LCL_VAR   ref    V00 arg0
@@ -2193,7 +2191,7 @@ bool Compiler::optIsStackLocalInvariant(unsigned loopNum, unsigned lclNum)
 // Note that byte arrays don't require the LSH to scale the index, so look like this:
 //
 // *  COMMA     ubyte
-// +--*  ARR_BOUNDS_CHECK_Rng void
+// +--*  BOUNDS_CHECK_Rng void
 // |  +--*  LCL_VAR   int    V03 loc2
 // |  \--*  ARR_LENGTH int
 // |     \--*  LCL_VAR   ref    V00 arg0
@@ -2218,33 +2216,33 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
         return false;
     }
     GenTree* before = tree->gtGetOp1();
-    if (before->gtOper != GT_ARR_BOUNDS_CHECK)
+    if (!before->OperIs(GT_BOUNDS_CHECK))
     {
         return false;
     }
     GenTreeBoundsChk* arrBndsChk = before->AsBoundsChk();
-    if (arrBndsChk->gtIndex->gtOper != GT_LCL_VAR)
+    if (arrBndsChk->GetIndex()->gtOper != GT_LCL_VAR)
     {
         return false;
     }
 
-    // For span we may see gtArrLen is a local var or local field or constant.
+    // For span we may see the array length is a local var or local field or constant.
     // We won't try and extract those.
-    if (arrBndsChk->gtArrLen->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_CNS_INT))
+    if (arrBndsChk->GetArrayLength()->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_CNS_INT))
     {
         return false;
     }
-    if (arrBndsChk->gtArrLen->gtGetOp1()->gtOper != GT_LCL_VAR)
+    if (arrBndsChk->GetArrayLength()->gtGetOp1()->gtOper != GT_LCL_VAR)
     {
         return false;
     }
-    unsigned arrLcl = arrBndsChk->gtArrLen->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+    unsigned arrLcl = arrBndsChk->GetArrayLength()->gtGetOp1()->AsLclVarCommon()->GetLclNum();
     if (lhsNum != BAD_VAR_NUM && arrLcl != lhsNum)
     {
         return false;
     }
 
-    unsigned indLcl = arrBndsChk->gtIndex->AsLclVarCommon()->GetLclNum();
+    unsigned indLcl = arrBndsChk->GetIndex()->AsLclVarCommon()->GetLclNum();
 
     if (lhsNum == BAD_VAR_NUM)
     {
@@ -2623,6 +2621,7 @@ PhaseStatus Compiler::optCloneLoops()
     {
         JITDUMP("Recompute reachability and dominators after loop cloning\n");
         constexpr bool computePreds = false;
+        // TODO: recompute the loop table, to include the slow loop path in the table?
         fgUpdateChangedFlowGraph(computePreds);
     }
 

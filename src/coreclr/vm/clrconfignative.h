@@ -4,10 +4,5 @@
 #ifndef _CLRCONFIGNATIVE_H_
 #define _CLRCONFIGNATIVE_H_
 
-class ClrConfigNative
-{
-public:
-    static BOOL QCALLTYPE GetConfigBoolValue(LPCWSTR name, BOOL *exist);
-};
-
+extern "C" BOOL QCALLTYPE ClrConfig_GetConfigBoolValue(LPCWSTR name, BOOL *exist);
 #endif // _CLRCONFIGNATIVE_H_

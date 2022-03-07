@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -152,6 +150,27 @@ namespace System.Numerics
         public static Matrix4x4 Identity
         {
             get => _identity;
+        }
+
+        public unsafe float this[int row, int column]
+        {
+            get
+            {
+                if ((uint)row >= 4)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+
+                Vector4 vrow = Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row);
+                return vrow[column];
+            }
+            set
+            {
+                if ((uint)row >= 4)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+
+                ref Vector4 vrow = ref Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row);
+                var tmp = Vector4.WithElement(vrow, column, value);
+                vrow = tmp;
+            }
         }
 
         /// <summary>Indicates whether the current matrix is the identity matrix.</summary>

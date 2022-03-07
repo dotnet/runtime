@@ -31,7 +31,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public RegexReplacement(string rep, RegexNode concat, Hashtable _caps)
         {
-            if (concat.Type != RegexNode.Concatenate)
+            if (concat.Kind != RegexNodeKind.Concatenate)
             {
                 throw ThrowHelper.CreateArgumentException(ExceptionResource.ReplacementError);
             }
@@ -47,17 +47,17 @@ namespace System.Text.RegularExpressions
             {
                 RegexNode child = concat.Child(i);
 
-                switch (child.Type)
+                switch (child.Kind)
                 {
-                    case RegexNode.Multi:
+                    case RegexNodeKind.Multi:
                         vsb.Append(child.Str!);
                         break;
 
-                    case RegexNode.One:
+                    case RegexNodeKind.One:
                         vsb.Append(child.Ch);
                         break;
 
-                    case RegexNode.Ref:
+                    case RegexNodeKind.Backreference:
                         if (vsb.Length > 0)
                         {
                             rules.Append(strings.Length);
@@ -106,12 +106,11 @@ namespace System.Text.RegularExpressions
         /// Either returns a weakly cached RegexReplacement helper or creates one and caches it.
         /// </summary>
         /// <returns></returns>
-        public static RegexReplacement GetOrCreate(WeakReference<RegexReplacement> replRef, string replacement, Hashtable caps,
+        public static RegexReplacement GetOrCreate(WeakReference<RegexReplacement?> replRef, string replacement, Hashtable caps,
             int capsize, Hashtable capnames, RegexOptions roptions)
         {
-            RegexReplacement? repl;
 
-            if (!replRef.TryGetTarget(out repl) || !repl.Pattern.Equals(replacement))
+            if (!replRef.TryGetTarget(out RegexReplacement? repl) || !repl.Pattern.Equals(replacement))
             {
                 repl = RegexParser.ParseReplacement(replacement, roptions, caps, capsize, capnames);
                 replRef.SetTarget(repl);

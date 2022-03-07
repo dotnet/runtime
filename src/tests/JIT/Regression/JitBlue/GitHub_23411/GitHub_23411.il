@@ -7,7 +7,7 @@
 .assembly GitHub_23411
 {
 }
-.module GitHub_23411.exe
+.assembly extern xunit.core {}
 
 .class public auto ansi beforefieldinit GitHub_23411
 	extends [System.Runtime]System.Object
@@ -196,6 +196,9 @@
   .method private hidebysig static int32 
           Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       59 (0x3b)
     .maxstack  8

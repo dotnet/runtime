@@ -303,7 +303,7 @@ namespace System.Composition.Hosting.Tests
             public T Fetch() => default(T);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void CreateContainer_ImportConventionsWithInheritedProperties_Success()
         {
             var conventions = new ConventionBuilder();
@@ -351,7 +351,7 @@ namespace System.Composition.Hosting.Tests
 
         public class DerivedFromBaseWithExport : BaseWithExport { }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void CreateContainer_ExportsToInheritedProperties_DontInterfereWithBase()
         {
             var conventions = new ConventionBuilder();

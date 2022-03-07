@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0-windows;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
     <IsPackable>true</IsPackable>
+    <Nullable>Annotations</Nullable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddXamarinPlaceholderFilesToPackage>true</AddXamarinPlaceholderFilesToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
@@ -65,7 +66,7 @@ System.Runtime.Caching.ObjectCache</PackageDescription>
     <Compile Include="System\Runtime\Caching\Hosting\IMemoryCacheManager.cs" />
     <Compile Include="System\Runtime\Caching\Resources\RH.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\Runtime\Caching\MemoryMonitor.Windows.cs" />
     <Compile Include="System\Runtime\Caching\PhysicalMemoryMonitor.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
@@ -73,7 +74,7 @@ System.Runtime.Caching.ObjectCache</PackageDescription>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MEMORYSTATUSEX.cs" Link="Common\Interop\Windows\Kernel32\Interop.MEMORYSTATUSEX.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="System\Runtime\Caching\PhysicalMemoryMonitor.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -91,9 +92,11 @@ System.Runtime.Caching.ObjectCache</PackageDescription>
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.IO.FileSystem.Watcher" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />

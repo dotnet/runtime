@@ -3501,7 +3501,7 @@ void UnwindEspFrameEpilog(
     /* Increment "offset" in steps to see which callee-saved
        registers have already been popped */
 
-    for (unsigned i = NumItems(CALLEE_SAVED_REGISTERS_MASK); i > 0; i--)
+    for (unsigned i = ARRAY_SIZE(CALLEE_SAVED_REGISTERS_MASK); i > 0; i--)
     {
         RegMask regMask = CALLEE_SAVED_REGISTERS_MASK[i - 1];
 
@@ -3625,7 +3625,7 @@ void UnwindEbpDoubleAlignFrameEpilog(
         }
     }
 
-    for (unsigned i = NumItems(CALLEE_SAVED_REGISTERS_MASK) - 1; i > 0; i--)
+    for (unsigned i = STRING_LENGTH(CALLEE_SAVED_REGISTERS_MASK); i > 0; i--)
     {
         RegMask regMask = CALLEE_SAVED_REGISTERS_MASK[i - 1];
         _ASSERTE(regMask != RM_EBP);
@@ -3750,7 +3750,7 @@ void UnwindEspFrameProlog(
     unsigned regsMask = RM_NONE;
     PTR_DWORD savedRegPtr = PTR_DWORD((TADDR)ESP);
 
-    for (unsigned i = 0; i < NumItems(CALLEE_SAVED_REGISTERS_MASK); i++)
+    for (unsigned i = 0; i < ARRAY_SIZE(CALLEE_SAVED_REGISTERS_MASK); i++)
     {
         RegMask regMask = CALLEE_SAVED_REGISTERS_MASK[i];
 
@@ -3857,7 +3857,7 @@ void UnwindEspFrame(
 
         const RegMask regsMask = info->savedRegMask;
 
-        for (unsigned i = NumItems(CALLEE_SAVED_REGISTERS_MASK); i > 0; i--)
+        for (unsigned i = ARRAY_SIZE(CALLEE_SAVED_REGISTERS_MASK); i > 0; i--)
         {
             RegMask regMask = CALLEE_SAVED_REGISTERS_MASK[i - 1];
 
@@ -3965,7 +3965,7 @@ void UnwindEbpDoubleAlignFrameProlog(
         /* Increment "offset" in steps to see which callee-saved
            registers have been pushed already */
 
-        for (unsigned i = 0; i < NumItems(CALLEE_SAVED_REGISTERS_MASK) - 1; i++)
+        for (unsigned i = 0; i < STRING_LENGTH(CALLEE_SAVED_REGISTERS_MASK); i++)
         {
             RegMask regMask = CALLEE_SAVED_REGISTERS_MASK[i];
             _ASSERTE(regMask != RM_EBP);
@@ -4133,7 +4133,7 @@ bool UnwindEbpDoubleAlignFrame(
         if (info->doubleAlign && (curEBP & 0x04))
             pSavedRegs--;
 
-        for (unsigned i = 0; i < NumItems(CALLEE_SAVED_REGISTERS_MASK) - 1; i++)
+        for (unsigned i = 0; i < STRING_LENGTH(CALLEE_SAVED_REGISTERS_MASK); i++)
         {
             RegMask regMask = CALLEE_SAVED_REGISTERS_MASK[i];
             if ((info->savedRegMask & regMask) == 0)

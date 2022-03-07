@@ -8,11 +8,8 @@ namespace System.Reflection.TypeLoading
     /// </summary>
     internal abstract partial class RoType
     {
-        public sealed override Type? GetInterface(string name, bool ignoreCase)
+        public sealed override Type? GetInterface(string name!!, bool ignoreCase)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             name.SplitTypeName(out string ns, out string simpleName);
 
             Type? match = null;
@@ -31,7 +28,7 @@ namespace System.Reflection.TypeLoading
                 if (ns.Length != 0 && !ns.Equals(ifc.Namespace))
                     continue;
                 if (match != null)
-                    throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                    throw new AmbiguousMatchException();
                 match = ifc;
             }
             return match;

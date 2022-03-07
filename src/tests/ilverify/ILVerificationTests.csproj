@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputPath>$(BaseOutputPathWithConfig)ilverify\</OutputPath>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- The test uses xunit directly and it fails to find the test assembly for some reason -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="ILMethodTester.cs" />
+    <Compile Include="ILTypeVerificationTester.cs" />
+    <Compile Include="TestDataLoader.cs" />
+  </ItemGroup>
+
+  <Import Project="..\..\coreclr\tools\ILVerification\ILVerification.projitems" />
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="ILTests\*.ilproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

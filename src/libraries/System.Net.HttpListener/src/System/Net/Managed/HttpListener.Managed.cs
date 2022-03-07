@@ -305,10 +305,7 @@ namespace System.Net
         public HttpListenerContext EndGetContext(IAsyncResult asyncResult)
         {
             CheckDisposed();
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            ArgumentNullException.ThrowIfNull(asyncResult);
 
             ListenerAsyncResult? ares = asyncResult as ListenerAsyncResult;
             if (ares == null || !ReferenceEquals(this, ares._parent))

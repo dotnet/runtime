@@ -2122,5 +2122,5 @@ END:
 }
 
 
-.assembly ldc_add_ovf_i8.exe{}
+.assembly ldc_add_ovf_i8{}
 

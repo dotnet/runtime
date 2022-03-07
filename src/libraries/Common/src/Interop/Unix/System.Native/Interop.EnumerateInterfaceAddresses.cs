@@ -42,18 +42,18 @@ internal static partial class Interop
             private fixed byte __padding[3];
         }
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_EnumerateInterfaceAddresses")]
-        public static extern unsafe int EnumerateInterfaceAddresses(
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_EnumerateInterfaceAddresses")]
+        public static unsafe partial int EnumerateInterfaceAddresses(
             void* context,
             delegate* unmanaged<void*, byte*, IpAddressInfo*, void> ipv4Found,
             delegate* unmanaged<void*, byte*, IpAddressInfo*, uint*, void> ipv6Found,
             delegate* unmanaged<void*, byte*, LinkLayerAddressInfo*, void> linkLayerFound);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_EnumerateGatewayAddressesForInterface")]
-        public static extern unsafe int EnumerateGatewayAddressesForInterface(void* context, uint interfaceIndex, delegate* unmanaged<void*, IpAddressInfo*, void> onGatewayFound);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_EnumerateGatewayAddressesForInterface")]
+        public static unsafe partial int EnumerateGatewayAddressesForInterface(void* context, uint interfaceIndex, delegate* unmanaged<void*, IpAddressInfo*, void> onGatewayFound);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNetworkInterfaces")]
-        public static unsafe extern int GetNetworkInterfaces(ref int count, ref NetworkInterfaceInfo* addrs, ref int addressCount, ref IpAddressInfo *aa);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNetworkInterfaces")]
+        public static unsafe partial int GetNetworkInterfaces(int* count, NetworkInterfaceInfo** addrs, int* addressCount, IpAddressInfo** aa);
 
     }
 }

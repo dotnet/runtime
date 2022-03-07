@@ -19,9 +19,7 @@ namespace System.Diagnostics
 
         internal static void EnterMutexWithoutGlobal(string mutexName, ref Mutex mutex)
         {
-            bool createdNew;
-
-            Mutex tmpMutex = new Mutex(false, mutexName, out createdNew);
+            Mutex tmpMutex = new Mutex(false, mutexName, out _);
 
             SafeWaitForMutex(tmpMutex, ref mutex);
         }

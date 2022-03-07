@@ -9,8 +9,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Text;
 
-using Internal.Runtime.CompilerServices;
-
 namespace System.Numerics
 {
     /* Note: The following patterns are used throughout the code here and are described here
@@ -237,7 +235,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Add(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Add(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -287,7 +285,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Divide(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Divide(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -449,7 +447,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -467,7 +465,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Count; index++)
             {
-                var element = Scalar<T>.Multiply(value.GetElementUnsafe(index), factor);
+                T element = Scalar<T>.Multiply(value.GetElementUnsafe(index), factor);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -500,7 +498,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Subtract(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Subtract(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -601,7 +599,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = this.GetElementUnsafe(index);
+                T value = this.GetElementUnsafe(index);
                 hashCode.Add(value);
             }
 

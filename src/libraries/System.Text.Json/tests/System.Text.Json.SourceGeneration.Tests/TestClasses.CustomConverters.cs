@@ -245,13 +245,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         public ClassWithCustomConverterProperty.NestedPoco Property { get; set; }
     }
 
-    public struct ClassWithCustomConverterPropertyFactory
+    public class ClassWithCustomConverterFactoryProperty
     {
         [JsonConverter(typeof(JsonStringEnumConverter))] // This converter is a JsonConverterFactory
         public Serialization.Tests.SampleEnum MyEnum { get; set; }
     }
 
-    public struct StructWithCustomConverterPropertyFactory
+    public struct StructWithCustomConverterFactoryProperty
     {
         [JsonConverter(typeof(JsonStringEnumConverter))] // This converter is a JsonConverterFactory
         public Serialization.Tests.SampleEnum MyEnum { get; set; }

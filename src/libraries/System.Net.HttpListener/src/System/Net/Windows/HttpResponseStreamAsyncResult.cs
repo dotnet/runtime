@@ -186,7 +186,7 @@ namespace System.Net
         private static void IOCompleted(HttpResponseStreamAsyncResult asyncResult, uint errorCode, uint numBytes)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode:0x{errorCode:x8} numBytes: {numBytes}");
-            object? result = null;
+            object? result;
             try
             {
                 if (errorCode != Interop.HttpApi.ERROR_SUCCESS && errorCode != Interop.HttpApi.ERROR_HANDLE_EOF)

@@ -26,6 +26,7 @@ namespace System.Linq.Parallel
     ///
     /// </summary>
     /// <typeparam name="T"></typeparam>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     internal sealed class AsynchronousChannelMergeEnumerator<T> : MergeEnumerator<T>
     {
         private readonly AsynchronousChannel<T>[] _channels; // The channels being enumerated.
@@ -220,6 +221,7 @@ namespace System.Linq.Parallel
                                 break;
                             }
 
+                            Debug.Assert(!ParallelEnumerable.SinglePartitionMode);
                             Debug.Assert(_consumerEvent != null);
                             //This Wait() does not require cancellation support as it will wake up when all the producers into the
                             //channel have finished.  Hence, if all the producers wake up on cancellation, so will this.

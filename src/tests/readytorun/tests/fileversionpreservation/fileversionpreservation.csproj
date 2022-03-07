@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>exe</OutputType>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
-    <CLRTestPriority>0</CLRTestPriority>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>

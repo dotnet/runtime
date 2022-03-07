@@ -236,11 +236,8 @@ namespace System.Data.ProviderBase
         }
 
         // SxS: this method uses GetCurrentProcessId to construct the instance name.
-        // TODO: remove the Resource* attributes if you do not use GetCurrentProcessId after the fix
         private string GetInstanceName()
         {
-            string? result = null;
-
             string? instanceName = GetAssemblyName(); // instance perfcounter name
 
             if (ADP.IsEmpty(instanceName))
@@ -252,14 +249,13 @@ namespace System.Data.ProviderBase
                 }
             }
 
-            // TODO: If you do not use GetCurrentProcessId after fixing VSDD 534795, please remove Resource* attributes from this method
-            int pid = SafeNativeMethods.GetCurrentProcessId();
+            uint pid = Interop.Kernel32.GetCurrentProcessId();
 
             // there are several characters which have special meaning
             // to PERFMON.  They recommend that we translate them as shown below, to
             // prevent problems.
 
-            result = $"{instanceName}[{pid}]";
+            string result = $"{instanceName}[{pid}]";
             result = result.Replace('(', '[').Replace(')', ']').Replace('#', '_').Replace('/', '_').Replace('\\', '_');
 
             // counter instance name cannot be greater than 127

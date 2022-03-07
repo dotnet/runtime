@@ -173,7 +173,7 @@ namespace System.Xml.Xsl.XsltOld
                     {
                         for (int src = srcAttList.Count - 1; 0 <= src; src--)
                         {
-                            // We can ignore duplicate attibutes here.
+                            // We can ignore duplicate attributes here.
                             dstAttList!.Add(srcAttList[src]);
                         }
                     }

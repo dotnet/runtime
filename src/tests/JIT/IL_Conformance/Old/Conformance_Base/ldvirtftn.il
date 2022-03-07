@@ -22,4 +22,4 @@ FAIL:
     ret
 }
 }
-.assembly ldvirtftn.exe{}
+.assembly 'ldvirtftn'{}

@@ -23,13 +23,18 @@
 #define _INC_INTERNAL_SECURECRT
 
 /* more VS specific goodness */
-#define __out_ecount_z( x )
-#define __out_ecount( x )
-#define __in_opt
-#define __in_z_opt
-#define __out_ecount_z_opt( x )
-#define __in_z
-#define __in
+#define _In_
+#define _In_z_
+#define _In_opt_
+#define _In_opt_z_
+#define _Out_
+#define _Out_opt_
+#define _Out_writes_(size)
+#define _Out_writes_opt_(size)
+#define _Out_writes_bytes_(size)
+#define _Out_writes_bytes_opt_(size)
+#define _Out_writes_z_(size)
+#define _Out_writes_opt_z_(size)
 
 /*
  * The original SafeCRT implemention allows runtime control over buffer checking.

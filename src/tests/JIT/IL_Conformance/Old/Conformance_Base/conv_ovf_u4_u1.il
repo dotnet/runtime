@@ -150,4 +150,4 @@ END:
 
 
 
-.assembly conv_ovf_u4_u1.exe{}
+.assembly conv_ovf_u4_u1{}

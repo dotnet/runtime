@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { auto }
-.assembly extern System.Runtime { auto }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 
-.assembly CopyPropByrefToNativeInt { }
+.assembly 'copy_prop_byref_to_native_int' { }
+.assembly extern xunit.core {}
 
 .typedef [System.Runtime]System.WeakReference as WeakRef
 .typedef [System.Runtime]System.GC as GC
@@ -16,6 +17,9 @@
 
   .method private static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals ( [0] int32 result, [1] int32[] arr )
 

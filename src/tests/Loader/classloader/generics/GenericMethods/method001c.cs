@@ -21,7 +21,7 @@ public class FooSub : Foo
 
 }
 
-public class Test 
+public class Test_method001c 
 {
 	public static int counter = 0;
 	public static bool result = true;

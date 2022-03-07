@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
@@ -122,6 +123,71 @@ namespace System.Text.Json.SourceGeneration.Tests
             JsonSerializer.Serialize(writer, new HighLowTemps(), SerializationContext.Default.HighLowTemps);
             Assert.Equal(18, writer.BytesCommitted);
             Assert.Equal(0, writer.BytesPending);
+        }
+
+        [Fact]
+        public static void FastPathInvokedForNullableUnderlyingType()
+        {
+            PersonStruct? person = new()
+            {
+                FirstName = "Jane",
+                LastName = "Doe"
+            };
+
+            NullablePersonContext context = new();
+            Assert.False(context.FastPathCalled);
+            string json = JsonSerializer.Serialize(person, context.NullablePersonStruct);
+            Assert.True(context.FastPathCalled);
+            JsonTestHelper.AssertJsonEqual(@"{""FirstName"":""Jane"",""LastName"":""Doe""}", json);
+        }
+
+        internal partial class NullablePersonContext : JsonSerializerContext
+        {
+            private static JsonSerializerOptions s_options = new JsonSerializerOptions();
+
+            public bool FastPathCalled { get; private set; }
+
+            public NullablePersonContext() : base(s_options)
+            {
+            }
+
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => s_options;
+
+            public JsonTypeInfo<PersonStruct?> NullablePersonStruct =>
+                JsonMetadataServices.CreateValueInfo<PersonStruct?>(s_options, JsonMetadataServices.GetNullableConverter(underlyingTypeInfo: PersonStruct));
+
+            public JsonTypeInfo<PersonStruct> PersonStruct
+            {
+                get
+                {
+                    var objectInfo = new JsonObjectInfoValues<PersonStruct>()
+                    {
+                        ObjectCreator = static () => new PersonStruct(),
+                        SerializeHandler = PersonStructSerializeHandler
+                    };
+
+                    return JsonMetadataServices.CreateObjectInfo(s_options, objectInfo);
+                }
+            }
+
+            private void PersonStructSerializeHandler(Utf8JsonWriter writer, PersonStruct value)
+            {
+                FastPathCalled = true;
+                writer.WriteStartObject();
+                writer.WriteString("FirstName", value.FirstName);
+                writer.WriteString("LastName", value.LastName);
+                writer.WriteEndObject();
+            }
+
+            public override JsonTypeInfo? GetTypeInfo(Type type)
+            {
+                if (type == typeof(PersonStruct))
+                {
+                    return PersonStruct;
+                }
+
+                return null;
+            }
         }
     }
 }

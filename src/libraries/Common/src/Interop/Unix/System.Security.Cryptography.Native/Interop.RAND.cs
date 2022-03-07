@@ -12,11 +12,10 @@ internal static partial class Interop
         {
             Debug.Assert(count >= 0);
 
-            return CryptoNative_GetRandomBytes(pbBuffer, count);
+            return CryptoNative_GetRandomBytes(pbBuffer, count) != 0;
         }
 
-        [DllImport(Libraries.CryptoNative)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern unsafe bool CryptoNative_GetRandomBytes(byte* buf, int num);
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static unsafe partial int CryptoNative_GetRandomBytes(byte* buf, int num);
     }
 }

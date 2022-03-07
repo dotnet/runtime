@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <CLRTestKind>BuildOnly</CLRTestKind>
-    <CLRTestPriority>0</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Test6_FriendPriInterface.il" />

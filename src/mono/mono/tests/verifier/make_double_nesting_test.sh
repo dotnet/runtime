@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -50,7 +50,7 @@ $SED -e "s/CLASS_ACCESS/${TEST_CLASS_ACCESS}/g" -e "s/NESTED_ACCESS/${TEST_NESTE
   .ver  0:0:0:0
 }
 
-// VALIDITY CIL which breaks the ECMA-335 rules. 
+// VALIDITY CIL which breaks the ECMA-335 rules.
 // this CIL should fail verification by a conforming CLI verifier.
 
 .assembly extern mscorlib
@@ -71,7 +71,7 @@ $SED -e "s/CLASS_ACCESS/${TEST_CLASS_ACCESS}/g" -e "s/NESTED_ACCESS/${TEST_NESTE
 	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void object::.ctor()
 		ret
 	}
@@ -84,7 +84,7 @@ $SED -e "s/CLASS_ACCESS/${TEST_CLASS_ACCESS}/g" -e "s/NESTED_ACCESS/${TEST_NESTE
 		.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
 		{
 			.maxstack 8
-			ldarg.0 
+			ldarg.0
 			call instance void object::.ctor()
 			ret
 		}
@@ -93,8 +93,8 @@ $SED -e "s/CLASS_ACCESS/${TEST_CLASS_ACCESS}/g" -e "s/NESTED_ACCESS/${TEST_NESTE
 		{
 			.maxstack 8
 			ldc.i4.0
-			ret 
-		}		
+			ret
+		}
 	}
 }
 
@@ -112,7 +112,7 @@ $SED -e "s/CLASS_ACCESS/${TEST_CLASS_ACCESS}/g" -e "s/NESTED_ACCESS/${TEST_NESTE
 	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		ROOT_CONSTRUCTOR
 		ret
 	}
@@ -123,13 +123,13 @@ $SED -e "s/CLASS_ACCESS/${TEST_CLASS_ACCESS}/g" -e "s/NESTED_ACCESS/${TEST_NESTE
 		{
 			.maxstack 8
 			ldc.i4.0
-			ret 
+			ret
 		}
 
 		.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
 		{
 			.maxstack 8
-			ldarg.0 
+			ldarg.0
 			NESTED_CONSTRUCTOR
 			ret
 		}

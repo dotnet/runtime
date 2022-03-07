@@ -48,11 +48,8 @@ namespace System.Reflection
             return invocationFlags;
         }
 
-        internal static void CheckCanCreateInstance(Type declaringType, bool isVarArg)
+        internal static void CheckCanCreateInstance(Type declaringType!!, bool isVarArg)
         {
-            if (declaringType == null)
-                throw new ArgumentNullException(nameof(declaringType));
-
             // ctor is declared on interface class
             if (declaringType.IsInterface)
                 throw new MemberAccessException(
@@ -105,19 +102,19 @@ namespace System.Reflection
 
             ValidateInvokeTarget(obj);
 
+            // Correct number of arguments supplied
+            int actualCount = (parameters is null) ? 0 : parameters.Length;
+            if (ArgumentTypes.Length != actualCount)
+            {
+                throw new TargetParameterCountException(SR.Arg_ParmCnt);
+            }
+
             if ((InvocationFlags & InvocationFlags.RunClassConstructor) != 0)
             {
                 // Run the class constructor through the class constructor mechanism instead of the Invoke path.
                 // This avoids allowing mutation of readonly static fields, and initializes the type correctly.
                 InvokeClassConstructor();
                 return null;
-            }
-
-            // Correct number of arguments supplied
-            int actualCount = (parameters is null) ? 0 : parameters.Length;
-            if (ArgumentTypes.Length != actualCount)
-            {
-                throw new TargetParameterCountException(SR.Arg_ParmCnt);
             }
 
             StackAllocedArguments stackArgs = default;

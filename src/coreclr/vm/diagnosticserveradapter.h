@@ -6,7 +6,7 @@
 
 #if defined(FEATURE_PERFTRACING)
 
-#include "ds-server.h"
+#include <eventpipe/ds-server.h>
 
 class DiagnosticServerAdapter final
 {

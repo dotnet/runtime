@@ -260,7 +260,7 @@ namespace DebuggerTests
 
                for (int i = 0; i < ret_len; i++)
                {
-                   var act_i = CheckValueType(obj_own_val, i.ToString(), "Math.SimpleStruct");
+                   var act_i = await CheckValueType(obj_own_val, i.ToString(), "Math.SimpleStruct");
 
                    // Valuetypes can get sent as part of the container's getProperties, so ensure that we can access it
                    var act_i_props = await GetProperties(act_i["value"]["objectId"]?.Value<string>());
@@ -361,7 +361,7 @@ namespace DebuggerTests
                await CheckProps(obj_own_val, new
                {
                    a_obj = TObject("Object"),
-                   b_arr = TArray("Array", 2)
+                   b_arr = TArray("Array", "Array(2)")
                }, "obj_own");
            });
 
@@ -534,7 +534,6 @@ namespace DebuggerTests
             // doesn't get reported, and the execution is NOT paused even with setPauseOnException=true
             result = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
             Assert.False(result.IsOk, "result.IsOk");
-            Assert.True(result.IsErr, "result.IsErr");
 
             var hasErrorMessage = result.Error["exceptionDetails"]?["exception"]?["description"]?.Value<string>()?.Contains(error_msg);
             Assert.True((hasErrorMessage ?? false), "Exception message not found");
@@ -641,7 +640,7 @@ namespace DebuggerTests
                // Check arrays through getters
 
                res = await InvokeGetter(obj, get_args_fn(new[] { "IntArray" }), cfo_fn);
-               await CheckValue(res.Value["result"], TArray("int[]", 2), $"{local_name}.IntArray");
+               await CheckValue(res.Value["result"], TArray("int[]", "int[2]"), $"{local_name}.IntArray");
                {
                    var arr_elems = await GetProperties(res.Value["result"]?["objectId"]?.Value<string>());
                    var exp_elems = new[]
@@ -654,7 +653,7 @@ namespace DebuggerTests
                }
 
                res = await InvokeGetter(obj, get_args_fn(new[] { "DTArray" }), cfo_fn);
-               await CheckValue(res.Value["result"], TArray("System.DateTime[]", 2), $"{local_name}.DTArray");
+               await CheckValue(res.Value["result"], TArray("System.DateTime[]", "System.DateTime[2]"), $"{local_name}.DTArray");
                {
                    var dt0 = new DateTime(6, 7, 8, 9, 10, 11);
                    var dt1 = new DateTime(1, 2, 3, 4, 5, 6);
@@ -785,7 +784,7 @@ namespace DebuggerTests
                });
 
                var res = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
-               Assert.True(res.IsErr);
+               Assert.False(res.IsOk);
            });
 
         [Theory]
@@ -811,7 +810,7 @@ namespace DebuggerTests
             });
 
             var res = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
-            Assert.True(res.IsErr);
+            Assert.False(res.IsOk);
         }
 
         [Theory]
@@ -944,7 +943,7 @@ namespace DebuggerTests
                 if (res_array_len < 0)
                     await CheckValue(result.Value["result"], TObject("Object"), $"cfo-res");
                 else
-                    await CheckValue(result.Value["result"], TArray("Array", res_array_len), $"cfo-res");
+                    await CheckValue(result.Value["result"], TArray("Array", $"Array({res_array_len})"), $"cfo-res");
             }
         }
     }

@@ -460,8 +460,8 @@ ipc_poll_fds (
 	result_poll = WSAPoll (fds, (ULONG)nfds, (INT)timeout);
 #else
 #ifndef EP_NO_RT_DEPENDENCY
-	int64_t start;
-	int64_t stop;
+	int64_t start = 0;
+	int64_t stop = 0;
 	bool retry_poll = false;
 	do {
 		if (timeout != EP_INFINITE_WAIT)
@@ -530,8 +530,22 @@ ipc_socket_accept (
 	ds_ipc_socket_t client_socket;
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	do {
-		client_socket = accept (s, address, address_len);
+#if defined(HAVE_ACCEPT4) && defined(SOCK_CLOEXEC)
+    	client_socket = accept4 (s, address, address_len, SOCK_CLOEXEC);
+#else
+    	client_socket = accept (s, address, address_len);
+#endif
 	} while (ipc_retry_syscall (client_socket));
+
+#if !defined(HAVE_ACCEPT4) || !defined(SOCK_CLOEXEC)
+#if defined(FD_CLOEXEC)
+		if (client_socket != -1)
+		{
+			// ignore any failures; this is best effort
+			fcntl (client_socket, F_SETFD, FD_CLOEXEC);
+		}
+#endif
+#endif
 	DS_EXIT_BLOCKING_PAL_SECTION;
 	return client_socket;
 }

@@ -201,8 +201,7 @@ namespace System.Linq.Expressions.Tests
 
         #endregion
 
-#if FEATURE_COMPILE
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public static void VerifyIL_NullableShortNegateChecked()
         {
@@ -234,7 +233,5 @@ namespace System.Linq.Expressions.Tests
                     IL_001d: ret
                 }");
         }
-#endif
-
     }
 }

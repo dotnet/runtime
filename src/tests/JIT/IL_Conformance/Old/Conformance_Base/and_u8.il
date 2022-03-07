@@ -108,4 +108,4 @@ FAIL:
 	ret
 }
 }
-.assembly and_u8.exe{}
+.assembly and_u8{}

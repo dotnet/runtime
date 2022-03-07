@@ -15,7 +15,7 @@ internal struct Foo<T>
     }
 }
 
-internal class Test
+internal class Test_Delegate010
 {
     public static int Main()
     {

@@ -1571,5 +1571,5 @@ END:
 //---- EOF ------------------
 }
 
-.assembly ldc_add_ovf_u8.exe{}
+.assembly ldc_add_ovf_u8{}
 

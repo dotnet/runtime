@@ -40,4 +40,4 @@ FAIL:
 	ret
 }
 }
-.assembly add_i.exe{}
+.assembly add_i{}

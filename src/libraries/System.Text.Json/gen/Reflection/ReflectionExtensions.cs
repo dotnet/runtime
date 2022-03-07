@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.Reflection
 {
@@ -20,13 +21,8 @@ namespace System.Text.Json.Reflection
             return index < customAttributeData.ConstructorArguments.Count ? (TValue)customAttributeData.ConstructorArguments[index].Value! : default!;
         }
 
-        public static bool IsInitOnly(this MethodInfo method)
+        public static bool IsInitOnly(this MethodInfo method!!)
         {
-            if (method == null)
-            {
-                throw new ArgumentNullException(nameof(method));
-            }
-
             MethodInfoWrapper methodInfoWrapper = (MethodInfoWrapper)method;
             return methodInfoWrapper.IsInitOnly;
         }
@@ -44,6 +40,24 @@ namespace System.Text.Json.Reflection
             }
 
             return false;
+        }
+
+        public static Location? GetDiagnosticLocation(this Type type)
+        {
+            Debug.Assert(type is TypeWrapper);
+            return ((TypeWrapper)type).Location;
+        }
+
+        public static Location? GetDiagnosticLocation(this PropertyInfo propertyInfo)
+        {
+            Debug.Assert(propertyInfo is PropertyInfoWrapper);
+            return ((PropertyInfoWrapper)propertyInfo).Location;
+        }
+
+        public static Location? GetDiagnosticLocation(this FieldInfo fieldInfo)
+        {
+            Debug.Assert(fieldInfo is FieldInfoWrapper);
+            return ((FieldInfoWrapper)fieldInfo).Location;
         }
     }
 }

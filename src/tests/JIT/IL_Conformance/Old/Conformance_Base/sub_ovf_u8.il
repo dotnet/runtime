@@ -248,4 +248,4 @@ END:
 }
 }
 
-.assembly sub_ovf_u8.exe{}
+.assembly sub_ovf_u8{}

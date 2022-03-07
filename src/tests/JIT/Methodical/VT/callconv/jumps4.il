@@ -10,10 +10,10 @@
 .assembly extern mscorlib
 {
 }
-.assembly jumps // as "jumps"
+.assembly 'jumps4' // as "jumps"
 {
                         }
-.module jumps.exe
+.assembly extern xunit.core {}
 .namespace MS
 {
   .class value private auto ansi sealed VT
@@ -282,6 +282,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  1
       .locals (int32 V_0,
