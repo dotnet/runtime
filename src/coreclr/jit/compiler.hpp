@@ -4480,9 +4480,9 @@ inline static bool StructHasCustomLayout(DWORD attribs)
     return ((attribs & CORINFO_FLG_CUSTOMLAYOUT) != 0);
 }
 
-inline static bool StructHasNoPromotionFlagSet(DWORD attribs)
+inline static bool StructHasDontDigFieldsFlagSet(DWORD attribs)
 {
-    return ((attribs & CORINFO_FLG_DONT_PROMOTE) != 0);
+    return ((attribs & CORINFO_FLG_DONT_DIG_FIELDS) != 0);
 }
 
 //------------------------------------------------------------------------------

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.IO;
-using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -131,25 +129,49 @@ namespace System.Net.Security.Tests
         {
             _log.WriteLine("Server: " + serverSslProtocols + "; Client: " + clientSslProtocols);
 
-            IPEndPoint endPoint = new IPEndPoint(IPAddress.Loopback, 0);
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
 
-            using (var server = new DummyTcpServer(endPoint, encryptionPolicy))
-            using (var client = new TcpClient())
+            using (client)
+            using (server)
             {
-                server.SslProtocols = serverSslProtocols;
                 // Use a different SNI for each connection to prevent TLS 1.3 renegotiation issue: https://github.com/dotnet/runtime/issues/47378
                 string serverName = TestHelper.GetTestSNIName(nameof(ClientAsyncSslHelper), clientSslProtocols, serverSslProtocols);
 
-                await client.ConnectAsync(server.RemoteEndPoint.Address, server.RemoteEndPoint.Port);
-                using (SslStream sslStream = new SslStream(client.GetStream(), false, certificateCallback != null ? certificateCallback : AllowAnyServerCertificate, null))
+                Task serverTask = default;
+                try
                 {
-                    Task clientAuthTask = sslStream.AuthenticateAsClientAsync(serverName, null, clientSslProtocols, false);
-                    await clientAuthTask.WaitAsync(TestConfiguration.PassingTestTimeout);
+                    Task clientTask = client.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                        {
+                            EnabledSslProtocols = clientSslProtocols,
+                            RemoteCertificateValidationCallback = AllowAnyServerCertificate,
+                            TargetHost = serverName });
+                    serverTask = server.AuthenticateAsServerAsync( new SslServerAuthenticationOptions
+                        {
+                            EncryptionPolicy = encryptionPolicy,
+                            EnabledSslProtocols = serverSslProtocols,
+                            ServerCertificate = TestConfiguration.ServerCertificate,
+                            CertificateRevocationCheckMode = X509RevocationMode.NoCheck });
 
-                    _log.WriteLine("Client authenticated to server({0}) with encryption cipher: {1} {2}-bit strength",
-                        server.RemoteEndPoint, sslStream.CipherAlgorithm, sslStream.CipherStrength);
-                    Assert.True(sslStream.CipherAlgorithm != CipherAlgorithmType.Null, "Cipher algorithm should not be NULL");
-                    Assert.True(sslStream.CipherStrength > 0, "Cipher strength should be greater than 0");
+                    await clientTask.WaitAsync(TestConfiguration.PassingTestTimeout);
+
+                    _log.WriteLine("Client authenticated to server with encryption cipher: {0} {1}-bit strength",
+                            client.CipherAlgorithm, client.CipherStrength);
+                    Assert.True(client.CipherAlgorithm != CipherAlgorithmType.Null, "Cipher algorithm should not be NULL");
+                    Assert.True(client.CipherStrength > 0, "Cipher strength should be greater than 0");
+                }
+                finally
+                {
+                    // make sure we signal server in case of client failures
+                    client.Close();
+                    try
+                    {
+                        await serverTask;
+                    }
+                    catch (Exception ex)
+                    {
+                        // We generally don't care about server but can log exception to help diagnose test failures
+                        _log.WriteLine(ex.ToString());
+                    }
                 }
             }
         }
