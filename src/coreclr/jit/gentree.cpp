@@ -874,7 +874,12 @@ unsigned GenTree::GetMultiRegCount(Compiler* comp) const
 //
 regMaskTP GenTree::gtGetContainedRegMask()
 {
-    regMaskTP mask = GetRegNum() != REG_NA ? gtGetRegMask() : 0;
+    if (!isContained())
+    {
+        return gtGetRegMask();
+    }
+
+    regMaskTP mask = 0;
     for (GenTree* operand : Operands())
     {
         mask |= operand->gtGetContainedRegMask();
