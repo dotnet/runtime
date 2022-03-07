@@ -281,7 +281,13 @@ namespace System.Text.RegularExpressions
                         return false;
                     }
 
+                    // We've updated the position.  Make sure there's still enough room in the input for a possible match.
                     pos = newline + 1 + pos;
+                    if (pos > textSpan.Length - MinRequiredLength)
+                    {
+                        pos = textSpan.Length;
+                        return false;
+                    }
                 }
             }
 
