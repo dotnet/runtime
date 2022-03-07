@@ -1,3 +1,10 @@
+### Release version 0.0.5
+
+Changes:
+
+ * add SIMD support
+ * read table and element sections
+
 ### Release version 0.0.4
 
 Changes:
