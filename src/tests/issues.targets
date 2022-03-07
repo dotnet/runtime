@@ -33,6 +33,9 @@
         <ExcludeList Include="$(XUnitTestBinBase)/baseservices/threading/threadpool/bindhandle/bindhandleinvalid6/*">
             <Issue>https://github.com/dotnet/runtime/issues/66273</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XUnitTestBinBase)/baseservices/threading/threadpool/bindhandle/bindhandlenull/*">
+            <Issue>https://github.com/dotnet/runtime/issues/66274</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Coverage/271010/**">
             <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
         </ExcludeList>
