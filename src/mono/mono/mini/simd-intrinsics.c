@@ -959,8 +959,13 @@ static guint16 vector64_vector128_t_methods [] = {
 	SN_get_IsSupported,
 	SN_get_Zero,
 	SN_op_Addition,
+	SN_op_BitwiseAnd,
+	SN_op_BitwiseOr,
+	SN_op_Division,
 	SN_op_Equality,
+	SN_op_ExclusiveOr,
 	SN_op_Inequality,
+	SN_op_Multiply,
 	SN_op_Subtraction,
 };
 
@@ -1025,15 +1030,57 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		break;
 	}
 	case SN_op_Addition:
-	case SN_op_Subtraction: {	
+	case SN_op_Subtraction:
+	case SN_op_Division:
+	case SN_op_Multiply:
+	case SN_op_BitwiseAnd:
+	case SN_op_BitwiseOr:
+	case SN_op_ExclusiveOr: {
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
 		MonoInst *ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, args [1]->dreg);
 		ins->inst_c1 = etype->type;
-		if (etype->type == MONO_TYPE_R4 || etype->type == MONO_TYPE_R8)
-			ins->inst_c0 = id == SN_op_Addition ? OP_FADD : OP_FSUB;
-		else
-			ins->inst_c0 = id == SN_op_Addition ? OP_IADD : OP_ISUB;
+
+		if (etype->type == MONO_TYPE_R4 || etype->type == MONO_TYPE_R8) {
+			switch (id) {
+			case SN_op_Addition:
+				ins->inst_c0 = OP_FADD;
+				break;
+			case SN_op_Subtraction:
+				ins->inst_c0 = OP_FSUB;
+				break;
+			case SN_op_Multiply:
+				ins->inst_c0 = OP_FMUL;
+				break;
+			case SN_op_Division:
+				ins->inst_c0 = OP_FDIV;
+				break;
+			default:
+				NULLIFY_INS (ins);
+				return NULL;
+			}
+		} else {
+			switch (id) {
+			case SN_op_Addition:
+				ins->inst_c0 = OP_IADD;
+				break;
+			case SN_op_Subtraction:
+				ins->inst_c0 = OP_ISUB;
+				break;
+			case SN_op_BitwiseAnd:
+				ins->inst_c0 = OP_IAND;
+				break;
+			case SN_op_BitwiseOr:
+				ins->inst_c0 = OP_IOR;
+				break;
+			case SN_op_ExclusiveOr:
+				ins->inst_c0 = OP_IXOR;
+				break;
+			default:
+				NULLIFY_INS (ins);
+				return NULL;
+			}
+		}
 		return ins;
 	}
 	case SN_op_Equality:
