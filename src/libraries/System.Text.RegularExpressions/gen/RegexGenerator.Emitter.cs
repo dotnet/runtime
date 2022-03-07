@@ -883,28 +883,25 @@ namespace System.Text.RegularExpressions.Generator
 
             // In some limited cases, TryFindNextPossibleStartingPosition will only return true if it successfully matched the whole expression.
             // We can special case these to do essentially nothing in TryMatchAtCurrentPosition other than emit the capture.
-            if ((node.Options & RegexOptions.RightToLeft) == 0)
+            switch (node.Kind)
             {
-                switch (node.Kind)
-                {
-                    case RegexNodeKind.Multi or RegexNodeKind.Notone or RegexNodeKind.One or RegexNodeKind.Set when !IsCaseInsensitive(node):
-                        // This is the case for single and multiple characters, though the whole thing is only guaranteed
-                        // to have been validated in TryFindNextPossibleStartingPosition when doing case-sensitive comparison.
-                        writer.WriteLine($"int start = base.runtextpos;");
-                        writer.WriteLine($"int end = start + {(node.Kind == RegexNodeKind.Multi ? node.Str!.Length : 1)};");
-                        writer.WriteLine("base.Capture(0, start, end);");
-                        writer.WriteLine("base.runtextpos = end;");
-                        writer.WriteLine("return true;");
-                        return requiredHelpers;
+                case RegexNodeKind.Multi or RegexNodeKind.Notone or RegexNodeKind.One or RegexNodeKind.Set when !IsCaseInsensitive(node):
+                    // This is the case for single and multiple characters, though the whole thing is only guaranteed
+                    // to have been validated in TryFindNextPossibleStartingPosition when doing case-sensitive comparison.
+                    writer.WriteLine($"int start = base.runtextpos;");
+                    writer.WriteLine($"int end = start {((node.Options & RegexOptions.RightToLeft) == 0 ? "+" : "-")} {(node.Kind == RegexNodeKind.Multi ? node.Str!.Length : 1)};");
+                    writer.WriteLine("base.Capture(0, start, end);");
+                    writer.WriteLine("base.runtextpos = end;");
+                    writer.WriteLine("return true;");
+                    return requiredHelpers;
 
-                    case RegexNodeKind.Empty:
-                        // This case isn't common in production, but it's very common when first getting started with the
-                        // source generator and seeing what happens as you add more to expressions.  When approaching
-                        // it from a learning perspective, this is very common, as it's the empty string you start with.
-                        writer.WriteLine("base.Capture(0, base.runtextpos, base.runtextpos);");
-                        writer.WriteLine("return true;");
-                        return requiredHelpers;
-                }
+                case RegexNodeKind.Empty:
+                    // This case isn't common in production, but it's very common when first getting started with the
+                    // source generator and seeing what happens as you add more to expressions.  When approaching
+                    // it from a learning perspective, this is very common, as it's the empty string you start with.
+                    writer.WriteLine("base.Capture(0, base.runtextpos, base.runtextpos);");
+                    writer.WriteLine("return true;");
+                    return requiredHelpers;
             }
 
             // In some cases, we need to emit declarations at the beginning of the method, but we only discover we need them later.

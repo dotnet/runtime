@@ -1256,35 +1256,37 @@ namespace System.Text.RegularExpressions
 
             // In some limited cases, TryFindNextPossibleStartingPosition will only return true if it successfully matched the whole expression.
             // We can special case these to do essentially nothing in TryMatchAtCurrentPosition other than emit the capture.
-            if ((node.Options & RegexOptions.RightToLeft) == 0)
+            switch (node.Kind)
             {
-                switch (node.Kind)
-                {
-                    case RegexNodeKind.Multi or RegexNodeKind.Notone or RegexNodeKind.One or RegexNodeKind.Set when !IsCaseInsensitive(node):
-                        // This is the case for single and multiple characters, though the whole thing is only guaranteed
-                        // to have been validated in TryFindNextPossibleStartingPosition when doing case-sensitive comparison.
-                        // base.Capture(0, base.runtextpos, base.runtextpos + node.Str.Length);
-                        // base.runtextpos = base.runtextpos + node.Str.Length;
-                        // return true;
-                        Ldthis();
-                        Dup();
-                        Ldc(0);
-                        Ldthisfld(s_runtextposField);
-                        Dup();
-                        Ldc(node.Kind == RegexNodeKind.Multi ? node.Str!.Length : 1);
-                        Add();
-                        Call(s_captureMethod);
-                        Ldthisfld(s_runtextposField);
-                        Ldc(node.Kind == RegexNodeKind.Multi ? node.Str!.Length : 1);
-                        Add();
-                        Stfld(s_runtextposField);
-                        Ldc(1);
-                        Ret();
-                        return;
+                case RegexNodeKind.Multi or RegexNodeKind.Notone or RegexNodeKind.One or RegexNodeKind.Set when !IsCaseInsensitive(node):
+                    // This is the case for single and multiple characters, though the whole thing is only guaranteed
+                    // to have been validated in TryFindNextPossibleStartingPosition when doing case-sensitive comparison.
+                    // base.Capture(0, base.runtextpos, base.runtextpos + node.Str.Length);
+                    // base.runtextpos = base.runtextpos + node.Str.Length;
+                    // return true;
+                    int length = node.Kind == RegexNodeKind.Multi ? node.Str!.Length : 1;
+                    if ((node.Options & RegexOptions.RightToLeft) != 0)
+                    {
+                        length = -length;
+                    }
+                    Ldthis();
+                    Dup();
+                    Ldc(0);
+                    Ldthisfld(s_runtextposField);
+                    Dup();
+                    Ldc(length);
+                    Add();
+                    Call(s_captureMethod);
+                    Ldthisfld(s_runtextposField);
+                    Ldc(length);
+                    Add();
+                    Stfld(s_runtextposField);
+                    Ldc(1);
+                    Ret();
+                    return;
 
-                        // The source generator special-cases RegexNode.Empty, for purposes of code learning rather than
-                        // performance.  Since that's not applicable to RegexCompiler, that code isn't mirrored here.
-                }
+                    // The source generator special-cases RegexNode.Empty, for purposes of code learning rather than
+                    // performance.  Since that's not applicable to RegexCompiler, that code isn't mirrored here.
             }
 
             AnalysisResults analysis = RegexTreeAnalyzer.Analyze(_regexTree);

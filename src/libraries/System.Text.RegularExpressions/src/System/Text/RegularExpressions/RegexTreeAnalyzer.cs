@@ -170,7 +170,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Gets whether a node directly or indirectly contains captures.</summary>
         /// <remarks>
-        /// If the whole tree couldn't be examined, this return true.  That could lead to additional
+        /// If the whole tree couldn't be examined, this returns true.  That could lead to additional
         /// code being emitted to deal with captures that can't occur, but functionally it's the
         /// safe choice.
         /// </remarks>
@@ -191,7 +191,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Gets whether a node might have <see cref="RegexOptions.IgnoreCase"/> set.</summary>
         /// <remarks>
-        /// If the whole tree couldn't be examined, this return true.  That could lead to additional
+        /// If the whole tree couldn't be examined, this returns true.  That could lead to additional
         /// code being emitted to support case-insensitivity in expressions that don't actually need
         /// it, but functionally it's the safe choice.
         /// </remarks>
@@ -199,7 +199,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Gets whether a node might have <see cref="RegexOptions.RightToLeft"/> set.</summary>
         /// <remarks>
-        /// If the whole tree couldn't be examined, this return true.  That could lead to additional
+        /// If the whole tree couldn't be examined, this returns true.  That could lead to additional
         /// code being emitted to support expressions that don't actually contain any RightToLeft
         /// nodes, but functionally it's the safe choice.
         /// </remarks>
