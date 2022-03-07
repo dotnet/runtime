@@ -1016,7 +1016,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB,LL_EVERYTHING, "DJI::SetBoundaries: this=0x%x cMap=0x%x pMap=0x%x\n", this, cMap, pMap));
+    LOG((LF_CORDB,LL_EVERYTHING, "DJI::SetBoundaries: this=0x%p cMap=0x%x pMap=0x%p\n", this, cMap, pMap));
     _ASSERTE((cMap == 0) == (pMap == NULL));
     _ASSERTE(m_sequenceMap == NULL);
 
@@ -1043,7 +1043,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     // like the DebuggerJitInfo's.</TODO>
     //
     m_sequenceMap = (DebuggerILToNativeMap *)new (interopsafe) DebuggerILToNativeMap[cMap];
-    LOG((LF_CORDB,LL_EVERYTHING, "DJI::SetBoundaries: this=0x%x m_sequenceMap=0x%x\n", this, m_sequenceMap));
+    LOG((LF_CORDB,LL_EVERYTHING, "DJI::SetBoundaries: this=0x%p m_sequenceMap=0x%x\n", this, m_sequenceMap));
     _ASSERTE(m_sequenceMap != NULL); // we'll throw on null
 
     m_sequenceMapCount = cMap;
@@ -1186,7 +1186,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     m_callsiteMap = m_sequenceMap + m_sequenceMapCount;
     m_callsiteMapCount -= m_sequenceMapCount;
 
-    LOG((LF_CORDB, LL_INFO100000, "DJI::SetBoundaries: this=0x%x boundary count is %d (%d callsites)\n",
+    LOG((LF_CORDB, LL_INFO100000, "DJI::SetBoundaries: this=0x%p boundary count is %d (%d callsites)\n",
          this, m_sequenceMapCount, m_callsiteMapCount));
 
 #ifdef LOGGING
@@ -1691,7 +1691,7 @@ DebuggerJitInfo *DebuggerMethodInfo::CreateInitAndAddJitInfo(NativeCodeVersion n
         // We know it's not in the table. Go add it!
         DebuggerJitInfo *djiPrev = m_latestJitInfo;
 
-        LOG((LF_CORDB,LL_INFO10000,"DMI:CAAJI: current head of dji list:0x%08x\n", djiPrev));
+        LOG((LF_CORDB,LL_INFO10000,"DMI:CAAJI: current head of dji list:0x%p\n", djiPrev));
 
         if (djiPrev != NULL)
         {
@@ -1714,7 +1714,7 @@ DebuggerJitInfo *DebuggerMethodInfo::CreateInitAndAddJitInfo(NativeCodeVersion n
     // We've now added a new DJI into the table and released the lock. Thus any other thread
     // can come and use our DJI. Good thing we inited the DJI _before_ adding it to the table.
 
-    LOG((LF_CORDB,LL_INFO10000,"DMI:CAAJI: new head of dji list:0x%08x\n", m_latestJitInfo));
+    LOG((LF_CORDB,LL_INFO10000,"DMI:CAAJI: new head of dji list:0x%p\n", m_latestJitInfo));
 
     return dji;
 }
@@ -2407,7 +2407,7 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetMethodInfo(Module *pModule, mdMe
     }
     else
     {
-        LOG((LF_CORDB, LL_INFO1000, "DMI::GMI: for methodDef 0x%x, got 0x%x prev:0x%x\n",
+        LOG((LF_CORDB, LL_INFO1000, "DMI::GMI: for methodDef 0x%x, got 0x%p prev:0x%p\n",
             token, entry->mi, (entry->mi?entry->mi->m_prevMethodInfo:0)));
         return entry->mi;
     }

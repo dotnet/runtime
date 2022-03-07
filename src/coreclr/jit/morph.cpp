@@ -18500,8 +18500,8 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
         return tree;
     }
 
-    int          foldCount = 0;
-    unsigned int lclNum    = op2->AsLclVarCommon()->GetLclNum();
+    int      foldCount = 0;
+    unsigned lclNum    = op2->AsLclVarCommon()->GetLclNum();
 
     // Search for pattern of shape ADD(ADD(ADD(lclNum, lclNum), lclNum), lclNum).
     while (true)
@@ -18530,7 +18530,7 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
 
     // V0 + V0 ... + V0 becomes V0 * foldCount, where postorder transform will optimize
     // accordingly
-    consTree->BashToConst(foldCount, lclVarTree->TypeGet());
+    consTree->BashToConst(foldCount, tree->TypeGet());
 
     GenTree* morphed = gtNewOperNode(GT_MUL, tree->TypeGet(), lclVarTree, consTree);
     DEBUG_DESTROY_NODE(tree);

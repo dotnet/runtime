@@ -96,6 +96,7 @@ namespace System.Text.Json.Serialization
 
                 CreateCollection(ref reader, ref state);
 
+                state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
                 _valueConverter ??= GetConverter<TValue>(elementTypeInfo);
                 if (_valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
                 {
@@ -159,6 +160,7 @@ namespace System.Text.Json.Serialization
                     }
 
                     state.Current.ObjectState = StackFrameObjectState.StartToken;
+                    state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
                 }
 
                 // Handle the metadata properties.
