@@ -260,24 +260,13 @@ emit_xcompare (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum etype, MonoInst 
 	return ins;
 }
 
+static gboolean type_enum_is_unsigned (MonoTypeEnum type);
+
 static MonoInst*
 emit_xcompare_for_intrinsic (MonoCompile *cfg, MonoClass *klass, int intrinsic_id, MonoTypeEnum etype, MonoInst *arg1, MonoInst *arg2)
 {
 	MonoInst *ins = emit_xcompare (cfg, klass, etype, arg1, arg2);
-
-	gboolean is_unsigned;
-	switch (etype) {
-	case MONO_TYPE_U1:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_U8:
-	case MONO_TYPE_U:
-		is_unsigned = TRUE;
-		break;
-	default:
-		is_unsigned = FALSE;
-		break;
-	}
+	gboolean is_unsigned = type_enum_is_unsigned (etype);
 
 	switch (intrinsic_id) {
 	case SN_GreaterThan:
@@ -360,7 +349,13 @@ static gboolean
 type_is_unsigned (MonoType *type) {
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
 	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
-	switch (etype->type) {
+	return type_enum_is_unsigned (etype);
+}
+
+static gboolean
+type_enum_is_unsigned (MonoTypeEnum type)
+{
+	switch (type) {
 	case MONO_TYPE_U1:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_U4:
