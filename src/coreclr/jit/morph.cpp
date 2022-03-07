@@ -6833,7 +6833,8 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         calleeArgStackSize = roundUp(calleeArgStackSize, info->GetByteAlignment());
         calleeArgStackSize += info->GetStackByteSize();
 #ifdef TARGET_ARM
-        if (info->IsSplit()) {
+        if (info->IsSplit())
+        {
             reportFastTailCallDecision("Splitted arguments not supported on ARM");
             return false;
         }
@@ -6866,7 +6867,6 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     calleeArgStackSize += preSpilledRegsSize;
 #endif // TARGET_ARM
 
-
     if (!opts.compFastTailCalls)
     {
         reportFastTailCallDecision("Configuration doesn't allow fast tail calls");
@@ -6880,9 +6880,10 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     }
 
 #ifdef TARGET_ARM
-    if (callee->IsR2RRelativeIndir() || callee->HasNonStandardAddedArgs(this)) {
+    if (callee->IsR2RRelativeIndir() || callee->HasNonStandardAddedArgs(this))
+    {
         reportFastTailCallDecision(
-                "Method with non-standard args passed in callee trash register cannot be tail called");
+            "Method with non-standard args passed in callee trash register cannot be tail called");
         return false;
     }
 #endif

@@ -782,7 +782,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         varNumOut = getFirstArg();
         argOffsetOut += genCountBits(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
         assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
-#endif // TARGET_ARM
+#endif                                        // TARGET_ARM
 
         // Since it is a fast tail call, the existence of first incoming arg is guaranteed
         // because fast tail call requires that in-coming arg area of caller is >= out-going

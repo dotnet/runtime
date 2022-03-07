@@ -108,7 +108,7 @@ unsigned CodeGen::getFirstArg()
     // Iterate over all the lvParam variables in the Lcl var table until we find the first one
     // that's passed on the stack or register.
     LclVarDsc* varDsc = nullptr;
-    int delta = isFramePointerUsed() ? 2 * REGSIZE_BYTES : genTotalFrameSize();
+    int        delta  = isFramePointerUsed() ? 2 * REGSIZE_BYTES : genTotalFrameSize();
     for (unsigned i = 0; i < compiler->info.compArgsCount; i++)
     {
         varDsc = compiler->lvaGetDesc(i);
