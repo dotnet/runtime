@@ -917,30 +917,35 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
 	}
 	case SN_GreaterThan:
+	case SN_GreaterThanOrEqual:
+	case SN_LessThan:
+	case SN_LessThanOrEqual: {
+		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
+		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
+			return NULL;
+
+		return emit_xcompare_for_intrinsic (cfg, klass, id, arg0_type, args [0], args [1]);
+	}
 	case SN_GreaterThanAll:
 	case SN_GreaterThanAny:
-	case SN_GreaterThanOrEqual:
 	case SN_GreaterThanOrEqualAll:
 	case SN_GreaterThanOrEqualAny:
-	case SN_LessThan:
 	case SN_LessThanAll:
 	case SN_LessThanAny:
-	case SN_LessThanOrEqual:
 	case SN_LessThanOrEqualAll:
 	case SN_LessThanOrEqualAny: {
 		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
 		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
 			return NULL;
 
+		g_assert (fsig->param_count == 2 &&
+			fsig->ret->type == MONO_TYPE_BOOLEAN &&
+			mono_metadata_type_equal (fsig->params [0], fsig->params [1]));
+
+		MonoInst *cmp = emit_xcompare_for_intrinsic (cfg, klass, id, arg0_type, args [0], args [1]);
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
-		MonoInst *cmp = emit_xcompare_for_intrinsic (cfg, arg_class, id, arg0_type, args [0], args [1]);
 
 		switch (id) {
-		case SN_GreaterThan:
-		case SN_GreaterThanOrEqual:
-		case SN_LessThan:
-		case SN_LessThanOrEqual:
-			return cmp;
 		case SN_GreaterThanAll:
 		case SN_GreaterThanOrEqualAll:
 		case SN_LessThanAll:
@@ -949,19 +954,23 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			// they must be treated differently than integer types
 			if (arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8) {
 				MonoInst *zero = emit_xzero (cfg, arg_class);
-				MonoInst *inverted_cmp = emit_xcompare (cfg, arg_class, arg0_type, cmp, zero);
-				return emit_xequal (cfg, arg_class, inverted_cmp, zero);
+				MonoInst *inverted_cmp = emit_xcompare (cfg, klass, arg0_type, cmp, zero);
+				return emit_xequal (cfg, klass, inverted_cmp, zero);
 			}
 
 			MonoInst *ones = emit_xones (cfg, arg_class);
-			return emit_xequal (cfg, arg_class, cmp, ones);
+			return emit_xequal (cfg, klass, cmp, ones);
 		}
 		case SN_GreaterThanAny:
 		case SN_GreaterThanOrEqualAny:
 		case SN_LessThanAny:
 		case SN_LessThanOrEqualAny: {
+			g_assert (fsig->param_count == 2 &&
+				fsig->ret->type == MONO_TYPE_BOOLEAN &&
+				mono_metadata_type_equal (fsig->params [0], fsig->params [1]));
+
 			MonoInst *zero = emit_xzero (cfg, arg_class);
-			return emit_not_xequal (cfg, arg_class, cmp, zero);
+			return emit_not_xequal (cfg, klass, cmp, zero);
 		}
 		default:
 			g_assert_not_reached ();
