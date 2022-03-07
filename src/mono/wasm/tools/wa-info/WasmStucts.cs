@@ -27,6 +27,11 @@ namespace WebAssemblyInfo
 
         public long Offset;
 
+        public SIMDOpcode SIMDOpcode;
+        public byte[] SIMDImmByteArray;
+        public byte[] SIMDImmLaneIdxArray;
+        public byte SIMDImmLaneIdx;
+
         public string ToString(WasmReader? reader)
         {
             var prefix = Program.PrintOffsets ? $"0x{Offset:x8}: " : null;
@@ -85,6 +90,12 @@ namespace WebAssemblyInfo
                     var align = MemArg.Align != 0 ? $" align:{MemArg.Align}" : null;
 
                     return $"{opStr}{offset}{align}";
+                case Opcode.SIMDPrefix:
+                    opStr = prefix + SIMDOpcode.ToString().ToLower().Replace("_", ".");
+                    offset = MemArg.Offset != 0 ? $" offset:{MemArg.Offset}" : null;
+                    align = MemArg.Align != 0 ? $" align:{MemArg.Align}" : null;
+
+                    return $"{opStr}{offset}{align}    [SIMD]";
                 case Opcode.Nop:
                 default:
                     return opStr;

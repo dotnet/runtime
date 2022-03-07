@@ -499,11 +499,274 @@ namespace WebAssemblyInfo
                 case Opcode.F64_Reinterpret_I64:
                     break;
 
+                case Opcode.SIMDPrefix:
+                    ReadSIMDInstruction(ref instruction);
+                    break;
+
                 default:
                     throw new FileLoadException($"Unknown opcode: {opcode} ({opcode:x})");
             }
 
             return instruction;
+        }
+
+        void ReadSIMDInstruction(ref Instruction instruction)
+        {
+            instruction.SIMDOpcode = (SIMDOpcode)ReadI32();
+
+            switch (instruction.SIMDOpcode)
+            {
+                case SIMDOpcode.V128_Load:
+                case SIMDOpcode.V128_Load8x8_S:
+                case SIMDOpcode.V128_Load8x8_U:
+                case SIMDOpcode.V128_Load16x4_S:
+                case SIMDOpcode.V128_Load16x4_U:
+                case SIMDOpcode.V128_Load32x2_S:
+                case SIMDOpcode.V128_Load32x2_U:
+                case SIMDOpcode.V128_Load8_Splat:
+                case SIMDOpcode.V128_Load16_Splat:
+                case SIMDOpcode.V128_Load32_Splat:
+                case SIMDOpcode.V128_Load64_Splat:
+                case SIMDOpcode.V128_Store:
+                case SIMDOpcode.V128_Load32_Zero:
+                case SIMDOpcode.V128_Load64_Zero:
+                    instruction.MemArg = ReadMemArg();
+                    break;
+                case SIMDOpcode.V128_Load8_Lane:
+                case SIMDOpcode.V128_Load16_Lane:
+                case SIMDOpcode.V128_Load32_Lane:
+                case SIMDOpcode.V128_Load64_Lane:
+                case SIMDOpcode.V128_Store8_Lane:
+                case SIMDOpcode.V128_Store16_Lane:
+                case SIMDOpcode.V128_Store32_Lane:
+                case SIMDOpcode.V128_Store64_Lane:
+                    instruction.MemArg = ReadMemArg();
+                    instruction.SIMDImmLaneIdx = Reader.ReadByte();
+                    break;
+                case SIMDOpcode.V128_Const:
+                    instruction.SIMDImmByteArray = Reader.ReadBytes(16);
+                    break;
+                case SIMDOpcode.I8x16_Shuffle:
+                    instruction.SIMDImmLaneIdxArray = Reader.ReadBytes(16);
+                    break;
+                case SIMDOpcode.I8x16_Extract_Lane_S:
+                case SIMDOpcode.I8x16_Extract_Lane_U:
+                case SIMDOpcode.I8x16_Replace_Lane:
+                case SIMDOpcode.I16x8_Extract_Lane_S:
+                case SIMDOpcode.I16x8_Extract_Lane_U:
+                case SIMDOpcode.I16x8_Replace_Lane:
+                case SIMDOpcode.I32x4_Extract_Lane:
+                case SIMDOpcode.I32x4_Replace_Lane:
+                case SIMDOpcode.I64x2_Extract_Lane:
+                case SIMDOpcode.I64x2_Replace_Lane:
+                case SIMDOpcode.F32x4_Extract_Lane:
+                case SIMDOpcode.F32x4_Replace_Lane:
+                case SIMDOpcode.F64x2_Extract_Lane:
+                case SIMDOpcode.F64x2_Replace_Lane:
+                    instruction.SIMDImmLaneIdx = Reader.ReadByte();
+                    break;
+                case SIMDOpcode.I8x16_Swizzle:
+                case SIMDOpcode.I8x16_Splat:
+                case SIMDOpcode.I16x8_Splat:
+                case SIMDOpcode.I32x4_Splat:
+                case SIMDOpcode.I64x2_Splat:
+                case SIMDOpcode.F32x4_Splat:
+                case SIMDOpcode.F64x2_Splat:
+                case SIMDOpcode.I8x16_Eq:
+                case SIMDOpcode.I8x16_Ne:
+                case SIMDOpcode.I8x16_Lt_S:
+                case SIMDOpcode.I8x16_Lt_U:
+                case SIMDOpcode.I8x16_Gt_S:
+                case SIMDOpcode.I8x16_Gt_U:
+                case SIMDOpcode.I8x16_Le_S:
+                case SIMDOpcode.I8x16_Le_U:
+                case SIMDOpcode.I8x16_Ge_S:
+                case SIMDOpcode.I8x16_Ge_U:
+                case SIMDOpcode.I16x8_Eq:
+                case SIMDOpcode.I16x8_Ne:
+                case SIMDOpcode.I16x8_Lt_S:
+                case SIMDOpcode.I16x8_Lt_U:
+                case SIMDOpcode.I16x8_Gt_S:
+                case SIMDOpcode.I16x8_Gt_U:
+                case SIMDOpcode.I16x8_Le_S:
+                case SIMDOpcode.I16x8_Le_U:
+                case SIMDOpcode.I16x8_Ge_S:
+                case SIMDOpcode.I16x8_Ge_U:
+                case SIMDOpcode.I32x4_Eq:
+                case SIMDOpcode.I32x4_Ne:
+                case SIMDOpcode.I32x4_Lt_S:
+                case SIMDOpcode.I32x4_Lt_U:
+                case SIMDOpcode.I32x4_Gt_S:
+                case SIMDOpcode.I32x4_Gt_U:
+                case SIMDOpcode.I32x4_Le_S:
+                case SIMDOpcode.I32x4_Le_U:
+                case SIMDOpcode.I32x4_Ge_S:
+                case SIMDOpcode.I32x4_Ge_U:
+                case SIMDOpcode.F32x4_Eq:
+                case SIMDOpcode.F32x4_Ne:
+                case SIMDOpcode.F32x4_Lt:
+                case SIMDOpcode.F32x4_Gt:
+                case SIMDOpcode.F32x4_Le:
+                case SIMDOpcode.F32x4_Ge:
+                case SIMDOpcode.F64x2_Eq:
+                case SIMDOpcode.F64x2_Ne:
+                case SIMDOpcode.F64x2_Lt:
+                case SIMDOpcode.F64x2_Gt:
+                case SIMDOpcode.F64x2_Le:
+                case SIMDOpcode.F64x2_Ge:
+                case SIMDOpcode.V128_Not:
+                case SIMDOpcode.V128_And:
+                case SIMDOpcode.V128_Andnot:
+                case SIMDOpcode.V128_Or:
+                case SIMDOpcode.V128_Xor:
+                case SIMDOpcode.V128_Bitselect:
+                case SIMDOpcode.I8x16_Abs:
+                case SIMDOpcode.I8x16_Neg:
+                case SIMDOpcode.I8x16_All_True:
+                case SIMDOpcode.I8x16_Bitmask:
+                case SIMDOpcode.I8x16_Narrow_I16x8_S:
+                case SIMDOpcode.I8x16_Narrow_I16x8_U:
+                case SIMDOpcode.I8x16_Shl:
+                case SIMDOpcode.I8x16_Shr_S:
+                case SIMDOpcode.I8x16_Shr_U:
+                case SIMDOpcode.I8x16_Add:
+                case SIMDOpcode.I8x16_Add_Sat_S:
+                case SIMDOpcode.I8x16_Add_Sat_U:
+                case SIMDOpcode.I8x16_Sub:
+                case SIMDOpcode.I8x16_Sub_Sat_S:
+                case SIMDOpcode.I8x16_Sub_Sat_U:
+                case SIMDOpcode.I8x16_Min_S:
+                case SIMDOpcode.I8x16_Min_U:
+                case SIMDOpcode.I8x16_Max_S:
+                case SIMDOpcode.I8x16_Max_U:
+                case SIMDOpcode.I8x16_Avgr_U:
+                case SIMDOpcode.I16x8_Abs:
+                case SIMDOpcode.I16x8_Neg:
+                case SIMDOpcode.I16x8_All_True:
+                case SIMDOpcode.I16x8_Bitmask:
+                case SIMDOpcode.I16x8_Narrow_I32x4_S:
+                case SIMDOpcode.I16x8_Narrow_I32x4_U:
+                case SIMDOpcode.I16x8_Extend_Low_I8x16_S:
+                case SIMDOpcode.I16x8_Extend_High_I8x16_S:
+                case SIMDOpcode.I16x8_Extend_Low_I8x16_U:
+                case SIMDOpcode.I16x8_Extend_High_I8x16_U:
+                case SIMDOpcode.I16x8_Shl:
+                case SIMDOpcode.I16x8_Shr_S:
+                case SIMDOpcode.I16x8_Shr_U:
+                case SIMDOpcode.I16x8_Add:
+                case SIMDOpcode.I16x8_Add_Sat_S:
+                case SIMDOpcode.I16x8_Add_Sat_U:
+                case SIMDOpcode.I16x8_Sub:
+                case SIMDOpcode.I16x8_Sub_Sat_S:
+                case SIMDOpcode.I16x8_Sub_Sat_U:
+                case SIMDOpcode.I16x8_Mul:
+                case SIMDOpcode.I16x8_Min_S:
+                case SIMDOpcode.I16x8_Min_U:
+                case SIMDOpcode.I16x8_Max_S:
+                case SIMDOpcode.I16x8_Max_U:
+                case SIMDOpcode.I16x8_Avgr_U:
+                case SIMDOpcode.I32x4_Abs:
+                case SIMDOpcode.I32x4_Neg:
+                case SIMDOpcode.I32x4_All_True:
+                case SIMDOpcode.I32x4_Bitmask:
+                case SIMDOpcode.I32x4_Extend_Low_I16x8_S:
+                case SIMDOpcode.I32x4_Extend_High_I16x8_S:
+                case SIMDOpcode.I32x4_Extend_Low_I16x8_U:
+                case SIMDOpcode.I32x4_Extend_High_I16x8_U:
+                case SIMDOpcode.I32x4_Shl:
+                case SIMDOpcode.I32x4_Shr_S:
+                case SIMDOpcode.I32x4_Shr_U:
+                case SIMDOpcode.I32x4_Add:
+                case SIMDOpcode.I32x4_Sub:
+                case SIMDOpcode.I32x4_Mul:
+                case SIMDOpcode.I32x4_Min_S:
+                case SIMDOpcode.I32x4_Min_U:
+                case SIMDOpcode.I32x4_Max_S:
+                case SIMDOpcode.I32x4_Max_U:
+                case SIMDOpcode.I32x4_Dot_I16x8_S:
+                case SIMDOpcode.I64x2_Abs:
+                case SIMDOpcode.I64x2_Neg:
+                case SIMDOpcode.I64x2_Bitmask:
+                case SIMDOpcode.I64x2_Extend_Low_I32x4_S:
+                case SIMDOpcode.I64x2_Extend_High_I32x4_S:
+                case SIMDOpcode.I64x2_Extend_Low_I32x4_U:
+                case SIMDOpcode.I64x2_Extend_High_I32x4_U:
+                case SIMDOpcode.I64x2_Shl:
+                case SIMDOpcode.I64x2_Shr_S:
+                case SIMDOpcode.I64x2_Shr_U:
+                case SIMDOpcode.I64x2_Add:
+                case SIMDOpcode.I64x2_Sub:
+                case SIMDOpcode.I64x2_Mul:
+                case SIMDOpcode.F32x4_Ceil:
+                case SIMDOpcode.F32x4_Floor:
+                case SIMDOpcode.F32x4_Trunc:
+                case SIMDOpcode.F32x4_Nearest:
+                case SIMDOpcode.F64x2_Ceil:
+                case SIMDOpcode.F64x2_Floor:
+                case SIMDOpcode.F64x2_Trunc:
+                case SIMDOpcode.F64x2_Nearest:
+                case SIMDOpcode.F32x4_Abs:
+                case SIMDOpcode.F32x4_Neg:
+                case SIMDOpcode.F32x4_Sqrt:
+                case SIMDOpcode.F32x4_Add:
+                case SIMDOpcode.F32x4_Sub:
+                case SIMDOpcode.F32x4_Mul:
+                case SIMDOpcode.F32x4_Div:
+                case SIMDOpcode.F32x4_Min:
+                case SIMDOpcode.F32x4_Max:
+                case SIMDOpcode.F32x4_Pmin:
+                case SIMDOpcode.F32x4_Pmax:
+                case SIMDOpcode.F64x2_Abs:
+                case SIMDOpcode.F64x2_Neg:
+                case SIMDOpcode.F64x2_Sqrt:
+                case SIMDOpcode.F64x2_Add:
+                case SIMDOpcode.F64x2_Sub:
+                case SIMDOpcode.F64x2_Mul:
+                case SIMDOpcode.F64x2_Div:
+                case SIMDOpcode.F64x2_Min:
+                case SIMDOpcode.F64x2_Max:
+                case SIMDOpcode.F64x2_Pmin:
+                case SIMDOpcode.F64x2_Pmax:
+                case SIMDOpcode.I32x4_Trunc_Sat_F32x4_S:
+                case SIMDOpcode.I32x4_Trunc_Sat_F32x4_U:
+                case SIMDOpcode.F32x4_Convert_I32x4_S:
+                case SIMDOpcode.F32x4_Convert_I32x4_U:
+                case SIMDOpcode.I16x8_Extmul_Low_I8x16_S:
+                case SIMDOpcode.I16x8_Extmul_High_I8x16_S:
+                case SIMDOpcode.I16x8_Extmul_Low_I8x16_U:
+                case SIMDOpcode.I16x8_Extmul_High_I8x16_U:
+                case SIMDOpcode.I32x4_Extmul_Low_I16x8_S:
+                case SIMDOpcode.I32x4_Extmul_High_I16x8_S:
+                case SIMDOpcode.I32x4_Extmul_Low_I16x8_U:
+                case SIMDOpcode.I32x4_Extmul_High_I16x8_U:
+                case SIMDOpcode.I64x2_Extmul_Low_I32x4_S:
+                case SIMDOpcode.I64x2_Extmul_High_I32x4_S:
+                case SIMDOpcode.I64x2_Extmul_Low_I32x4_U:
+                case SIMDOpcode.I64x2_Extmul_High_I32x4_U:
+                case SIMDOpcode.I16x8_Q15mulr_Sat_S:
+                case SIMDOpcode.V128_Any_True:
+                case SIMDOpcode.I64x2_Eq:
+                case SIMDOpcode.I64x2_Ne:
+                case SIMDOpcode.I64x2_Lt_S:
+                case SIMDOpcode.I64x2_Gt_S:
+                case SIMDOpcode.I64x2_Le_S:
+                case SIMDOpcode.I64x2_Ge_S:
+                case SIMDOpcode.I64x2_All_True:
+                case SIMDOpcode.F64x2_Convert_Low_I32x4_S:
+                case SIMDOpcode.F64x2_Convert_Low_I32x4_U:
+                case SIMDOpcode.I32x4_Trunc_Sat_F64x2_S_Zero:
+                case SIMDOpcode.I32x4_Trunc_Sat_F64x2_U_Zero:
+                case SIMDOpcode.F32x4_Demote_F64x2_Zero:
+                case SIMDOpcode.F64x2_Promote_Low_F32x4:
+                case SIMDOpcode.I8x16_Popcnt:
+                case SIMDOpcode.I16x8_Extadd_Pairwise_I8x16_S:
+                case SIMDOpcode.I16x8_Extadd_Pairwise_I8x16_U:
+                case SIMDOpcode.I32x4_Extadd_Pairwise_I16x8_S:
+                case SIMDOpcode.I32x4_Extadd_Pairwise_I16x8_U:
+                    break;
+                default:
+                    throw new FileLoadException($"Unknown SIMD opcode: {instruction.SIMDOpcode} ({instruction.SIMDOpcode:x})");
+            }
         }
 
         public (Instruction[], Opcode) ReadBlock(Opcode end = Opcode.End)

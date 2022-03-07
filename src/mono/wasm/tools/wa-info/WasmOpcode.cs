@@ -200,5 +200,6 @@ namespace WebAssemblyInfo
         I64_Extend32_S = 0xc4,
         // special
         Prefix = 0xfc,
+        SIMDPrefix = 0xfd,
     }
 }
