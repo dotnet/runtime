@@ -6300,15 +6300,13 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
     if ((targetReg != REG_NA) && (op1->GetRegNum() != targetReg) && (op2->GetRegNum() != targetReg) &&
         !varTypeIsByte(targetType))
     {
-        // memory loads might still use target reg here so we can't clear it
-        if ((op1->isUsedFromReg() || op1->isContainedFltOrDblImmed()) &&
-            (op2->isUsedFromReg() || op2->isContainedFltOrDblImmed()))
+        regMaskTP targetRegMask = genRegMask(targetReg);
+        if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
         {
             instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
             targetType = TYP_BOOL; // just a tip for inst_SETCC that movzx is not needed
         }
     }
-
     GetEmitter()->emitInsBinary(ins, cmpAttr, op1, op2);
 
     // Are we evaluating this into a register?
@@ -6470,9 +6468,8 @@ void CodeGen::genCompareInt(GenTree* treeNode)
         if ((targetReg != REG_NA) && (op1->GetRegNum() != targetReg) && (op2->GetRegNum() != targetReg) &&
             !varTypeIsByte(targetType))
         {
-            // memory loads might still use target reg here so we can't clear it
-            if ((op1->isUsedFromReg() || op1->isContainedIntOrIImmed()) &&
-                (op2->isUsedFromReg() || op2->isContainedIntOrIImmed()))
+            regMaskTP targetRegMask = genRegMask(targetReg);
+            if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
             {
                 instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
                 targetType = TYP_BOOL; // just a tip for inst_SETCC that movzx is not needed

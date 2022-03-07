@@ -863,6 +863,26 @@ unsigned GenTree::GetMultiRegCount(Compiler* comp) const
 }
 
 //---------------------------------------------------------------
+// gtGetContainedRegMask: Get the reg mask of the node including
+//    contained nodes (recursive).
+//
+// Arguments:
+//    None
+//
+// Return Value:
+//    Reg Mask of GenTree node.
+//
+regMaskTP GenTree::gtGetContainedRegMask()
+{
+    regMaskTP mask = GetRegNum() != REG_NA ? gtGetRegMask() : 0;
+    for (GenTree* operand : Operands())
+    {
+        mask |= operand->gtGetContainedRegMask();
+    }
+    return mask;
+}
+
+//---------------------------------------------------------------
 // gtGetRegMask: Get the reg mask of the node.
 //
 // Arguments:
