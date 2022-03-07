@@ -18,6 +18,9 @@
     <TestAssemblies Condition="'$(TestAssemblies)' == ''">true</TestAssemblies>
     <TestPackages Condition="'$(TestPackages)' == ''">false</TestPackages>
     <TestTrimming Condition="'$(TestTrimming)' == ''">false</TestTrimming>
+
+    <RunDisabledWasmTests>true</RunDisabledWasmTests>
+    <RunDisabledWasmTestsOnWindows>true</RunDisabledWasmTestsOnWindows>
   </PropertyGroup>
 
   <!-- Samples which are too complex for CI -->
