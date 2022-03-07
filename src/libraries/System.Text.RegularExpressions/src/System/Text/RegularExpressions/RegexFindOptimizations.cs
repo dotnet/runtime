@@ -10,9 +10,6 @@ namespace System.Text.RegularExpressions
     /// <summary>Contains state and provides operations related to finding the next location a match could possibly begin.</summary>
     internal sealed class RegexFindOptimizations
     {
-        /// <summary>The minimum required length an input need be to match the pattern.</summary>
-        /// <remarks>0 is a valid minimum length.  This value may also be the max (and hence fixed) length of the expression.</remarks>
-        private readonly int _minRequiredLength;
         /// <summary>True if the input should be processed right-to-left rather than left-to-right.</summary>
         private readonly bool _rightToLeft;
         /// <summary>Provides the ToLower routine for lowercasing characters.</summary>
@@ -20,15 +17,16 @@ namespace System.Text.RegularExpressions
         /// <summary>Lookup table used for optimizing ASCII when doing set queries.</summary>
         private readonly uint[]?[]? _asciiLookups;
 
-        public RegexFindOptimizations(RegexTree tree, CultureInfo culture)
+        public RegexFindOptimizations(RegexNode root, RegexOptions options, CultureInfo culture)
         {
-            _rightToLeft = (tree.Options & RegexOptions.RightToLeft) != 0;
-            _minRequiredLength = tree.MinRequiredLength;
+            _rightToLeft = (options & RegexOptions.RightToLeft) != 0;
             _textInfo = culture.TextInfo;
+
+            MinRequiredLength = root.ComputeMinLength();
 
             // Compute any anchor starting the expression.  If there is one, we won't need to search for anything,
             // as we can just match at that single location.
-            LeadingAnchor = RegexPrefixAnalyzer.FindLeadingAnchor(tree.Root);
+            LeadingAnchor = RegexPrefixAnalyzer.FindLeadingAnchor(root);
             if (_rightToLeft && LeadingAnchor == RegexNodeKind.Bol)
             {
                 // Filter out Bol for RightToLeft, as we don't currently optimize for it.
@@ -56,15 +54,15 @@ namespace System.Text.RegularExpressions
             {
                 bool triedToComputeMaxLength = false;
 
-                TrailingAnchor = RegexPrefixAnalyzer.FindTrailingAnchor(tree.Root);
+                TrailingAnchor = RegexPrefixAnalyzer.FindTrailingAnchor(root);
                 if (TrailingAnchor is RegexNodeKind.End or RegexNodeKind.EndZ)
                 {
                     triedToComputeMaxLength = true;
-                    if (tree.Root.ComputeMaxLength() is int maxLength)
+                    if (root.ComputeMaxLength() is int maxLength)
                     {
-                        Debug.Assert(maxLength >= _minRequiredLength, $"{maxLength} should have been greater than {_minRequiredLength} minimum");
+                        Debug.Assert(maxLength >= MinRequiredLength, $"{maxLength} should have been greater than {MinRequiredLength} minimum");
                         MaxPossibleLength = maxLength;
-                        if (_minRequiredLength == maxLength)
+                        if (MinRequiredLength == maxLength)
                         {
                             FindMode = TrailingAnchor == RegexNodeKind.End ?
                                 FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End :
@@ -74,16 +72,16 @@ namespace System.Text.RegularExpressions
                     }
                 }
 
-                if ((tree.Options & RegexOptions.NonBacktracking) != 0 && !triedToComputeMaxLength)
+                if ((options & RegexOptions.NonBacktracking) != 0 && !triedToComputeMaxLength)
                 {
                     // NonBacktracking also benefits from knowing whether the pattern is a fixed length, as it can use that
                     // knowledge to avoid multiple match phases in some situations.
-                    MaxPossibleLength = tree.Root.ComputeMaxLength();
+                    MaxPossibleLength = root.ComputeMaxLength();
                 }
             }
 
             // If there's a leading case-sensitive substring, just use IndexOf and inherit all of its optimizations.
-            string caseSensitivePrefix = RegexPrefixAnalyzer.FindCaseSensitivePrefix(tree.Root);
+            string caseSensitivePrefix = RegexPrefixAnalyzer.FindCaseSensitivePrefix(root);
             if (caseSensitivePrefix.Length > 1)
             {
                 LeadingCaseSensitivePrefix = caseSensitivePrefix;
@@ -98,8 +96,8 @@ namespace System.Text.RegularExpressions
 
             // If we're compiling, then the compilation process already handles sets that reduce to a single literal,
             // so we can simplify and just always go for the sets.
-            bool dfa = (tree.Options & RegexOptions.NonBacktracking) != 0;
-            bool compiled = (tree.Options & RegexOptions.Compiled) != 0 && !dfa; // for now, we never generate code for NonBacktracking, so treat it as non-compiled
+            bool dfa = (options & RegexOptions.NonBacktracking) != 0;
+            bool compiled = (options & RegexOptions.Compiled) != 0 && !dfa; // for now, we never generate code for NonBacktracking, so treat it as non-compiled
             bool interpreter = !compiled && !dfa;
 
             // For interpreter, we want to employ optimizations, but we don't want to make construction significantly
@@ -109,7 +107,7 @@ namespace System.Text.RegularExpressions
             if (_rightToLeft)
             {
                 // Determine a set for anything that can possibly start the expression.
-                if (RegexPrefixAnalyzer.FindFirstCharClass(tree, culture) is (string CharClass, bool CaseInsensitive) set)
+                if (RegexPrefixAnalyzer.FindFirstCharClass(root, culture) is (string CharClass, bool CaseInsensitive) set)
                 {
                     // See if the set is limited to holding only a few characters.
                     Span<char> scratch = stackalloc char[5]; // max optimized by IndexOfAny today
@@ -148,10 +146,10 @@ namespace System.Text.RegularExpressions
 
             // As a backup, see if we can find a literal after a leading atomic loop.  That might be better than whatever sets we find, so
             // we want to know whether we have one in our pocket before deciding whether to use a leading set.
-            (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? literalAfterLoop = RegexPrefixAnalyzer.FindLiteralFollowingLeadingLoop(tree);
+            (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? literalAfterLoop = RegexPrefixAnalyzer.FindLiteralFollowingLeadingLoop(root);
 
             // Build up a list of all of the sets that are a fixed distance from the start of the expression.
-            List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)>? fixedDistanceSets = RegexPrefixAnalyzer.FindFixedDistanceSets(tree, culture, thorough: !interpreter);
+            List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)>? fixedDistanceSets = RegexPrefixAnalyzer.FindFixedDistanceSets(root, culture, thorough: !interpreter);
             Debug.Assert(fixedDistanceSets is null || fixedDistanceSets.Count != 0);
 
             // If we got such sets, we'll likely use them.  However, if the best of them is something that doesn't support a vectorized
@@ -214,6 +212,10 @@ namespace System.Text.RegularExpressions
         /// <summary>Gets the trailing anchor (e.g. RegexNodeKind.Bol) if one exists and was computed.</summary>
         public RegexNodeKind TrailingAnchor { get; }
 
+        /// <summary>Gets the minimum required length an input need be to match the pattern.</summary>
+        /// <remarks>0 is a valid minimum length.  This value may also be the max (and hence fixed) length of the expression.</remarks>
+        public int MinRequiredLength { get; }
+
         /// <summary>The maximum possible length an input could be to match the pattern.</summary>
         /// <remarks>
         /// This is currently only set when <see cref="TrailingAnchor"/> is found to be an end anchor.
@@ -246,7 +248,7 @@ namespace System.Text.RegularExpressions
             // Return early if we know there's not enough input left to match.
             if (!_rightToLeft)
             {
-                if (pos > end - _minRequiredLength)
+                if (pos > end - MinRequiredLength)
                 {
                     pos = end;
                     return false;
@@ -254,7 +256,7 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                if (pos - _minRequiredLength < beginning)
+                if (pos - MinRequiredLength < beginning)
                 {
                     pos = beginning;
                     return false;
@@ -351,16 +353,16 @@ namespace System.Text.RegularExpressions
                     return true;
 
                 case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ:
-                    if (pos < end - _minRequiredLength - 1)
+                    if (pos < end - MinRequiredLength - 1)
                     {
-                        pos = end - _minRequiredLength - 1;
+                        pos = end - MinRequiredLength - 1;
                     }
                     return true;
 
                 case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End:
-                    if (pos < end - _minRequiredLength)
+                    if (pos < end - MinRequiredLength)
                     {
-                        pos = end - _minRequiredLength;
+                        pos = end - MinRequiredLength;
                     }
                     return true;
 
@@ -522,7 +524,7 @@ namespace System.Text.RegularExpressions
 
                 case FindNextStartingPositionMode.FixedLiteral_LeftToRight_CaseSensitive:
                     {
-                        Debug.Assert(FixedDistanceLiteral.Distance <= _minRequiredLength);
+                        Debug.Assert(FixedDistanceLiteral.Distance <= MinRequiredLength);
 
                         int i = textSpan.Slice(pos + FixedDistanceLiteral.Distance, end - pos - FixedDistanceLiteral.Distance).IndexOf(FixedDistanceLiteral.Literal);
                         if (i >= 0)
@@ -537,7 +539,7 @@ namespace System.Text.RegularExpressions
 
                 case FindNextStartingPositionMode.FixedLiteral_LeftToRight_CaseInsensitive:
                     {
-                        Debug.Assert(FixedDistanceLiteral.Distance <= _minRequiredLength);
+                        Debug.Assert(FixedDistanceLiteral.Distance <= MinRequiredLength);
 
                         char ch = FixedDistanceLiteral.Literal;
                         TextInfo ti = _textInfo;
@@ -562,7 +564,7 @@ namespace System.Text.RegularExpressions
                     {
                         List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)> sets = FixedDistanceSets!;
                         (char[]? primaryChars, string primarySet, int primaryDistance, _) = sets[0];
-                        int endMinusRequiredLength = end - Math.Max(1, _minRequiredLength);
+                        int endMinusRequiredLength = end - Math.Max(1, MinRequiredLength);
 
                         if (primaryChars is not null)
                         {
@@ -637,7 +639,7 @@ namespace System.Text.RegularExpressions
                         List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)> sets = FixedDistanceSets!;
                         (_, string primarySet, int primaryDistance, _) = sets[0];
 
-                        int endMinusRequiredLength = end - Math.Max(1, _minRequiredLength);
+                        int endMinusRequiredLength = end - Math.Max(1, MinRequiredLength);
                         TextInfo ti = _textInfo;
                         ref uint[]? startingAsciiLookup = ref _asciiLookups![0];
 

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyName>Microsoft.Interop.DllImportGenerator</AssemblyName>
+    <AssemblyName>Microsoft.Interop.LibraryImportGenerator</AssemblyName>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>Preview</LangVersion>

@@ -319,6 +319,12 @@ emit_xzero (MonoCompile *cfg, MonoClass *klass)
 	return emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
 }
 
+static MonoInst*
+emit_xones (MonoCompile *cfg, MonoClass *klass)
+{
+	return emit_simd_ins (cfg, klass, OP_XONES, -1, -1);
+}
+
 static gboolean
 is_intrinsics_vector_type (MonoType *vector_type)
 {
@@ -926,7 +932,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
 			return NULL;
 
-		MonoInst *cmp = emit_xcompare_for_intrinsic (cfg, klass, id, arg0_type, args [0], args [1]);
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		MonoInst *cmp = emit_xcompare_for_intrinsic (cfg, arg_class, id, arg0_type, args [0], args [1]);
 
 		switch (id) {
 		case SN_GreaterThan:
@@ -938,21 +945,26 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_GreaterThanOrEqualAll:
 		case SN_LessThanAll:
 		case SN_LessThanOrEqualAll: {
-			MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
-			MonoInst *zero = emit_xzero (cfg, arg_class);
-			MonoInst *all_bits_set = emit_xcompare (cfg, arg_class, arg0_type, zero, zero);
-			return emit_xequal (cfg, arg_class, cmp, all_bits_set);
+			// for floating point numbers all ones is NaN and so
+			// they must be treated differently than integer types
+			if (arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8) {
+				MonoInst *zero = emit_xzero (cfg, arg_class);
+				MonoInst *inverted_cmp = emit_xcompare (cfg, arg_class, arg0_type, cmp, zero);
+				return emit_xequal (cfg, arg_class, inverted_cmp, zero);
+			}
+
+			MonoInst *ones = emit_xones (cfg, arg_class);
+			return emit_xequal (cfg, arg_class, cmp, ones);
 		}
 		case SN_GreaterThanAny:
 		case SN_GreaterThanOrEqualAny:
 		case SN_LessThanAny:
 		case SN_LessThanOrEqualAny: {
-			MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 			MonoInst *zero = emit_xzero (cfg, arg_class);
 			return emit_not_xequal (cfg, arg_class, cmp, zero);
 		}
 		default:
-			g_assert_not_reached();
+			g_assert_not_reached ();
 		}
 	}
 	case SN_Negate:
@@ -1079,8 +1091,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		return emit_xzero (cfg, klass);
 	}
 	case SN_get_AllBitsSet: {
-		MonoInst *ins = emit_xzero (cfg, klass);
-		return emit_xcompare (cfg, klass, etype->type, ins, ins);
+		return emit_xones (cfg, klass);
 	}
 	case SN_Equals: {
 		if (fsig->param_count == 1 && fsig->ret->type == MONO_TYPE_BOOLEAN && mono_metadata_type_equal (fsig->params [0], type)) {
@@ -1272,9 +1283,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		return emit_simd_ins (cfg, klass, expand_opcode, one->dreg, -1);
 	}
 	case SN_get_AllBitsSet: {
-		/* Compare a zero vector with itself */
-		ins = emit_xzero (cfg, klass);
-		return emit_xcompare (cfg, klass, etype->type, ins, ins);
+		return emit_xones (cfg, klass);
 	}
 	case SN_get_Item: {
 		if (!COMPILE_LLVM (cfg))

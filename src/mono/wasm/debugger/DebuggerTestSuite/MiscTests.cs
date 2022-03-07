@@ -84,8 +84,8 @@ namespace DebuggerTests
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:PrimitiveTypesTest'); }, 1);",
                 test_fn: async (locals) =>
                 {
-                    await CheckSymbol(locals, "c0", "8364 '€'");
-                    await CheckSymbol(locals, "c1", "65 'A'");
+                    await CheckSymbol(locals, "c0", '€');
+                    await CheckSymbol(locals, "c1", 'A');
                     await Task.CompletedTask;
                 }
             );

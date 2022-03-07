@@ -130,8 +130,8 @@ namespace System.Text.RegularExpressions.Tests
 
         private static RegexFindOptimizations ComputeOptimizations(string pattern, RegexOptions options)
         {
-            RegexCode code = RegexWriter.Write(RegexParser.Parse(pattern, options, CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
-            return new RegexFindOptimizations(code.Tree, CultureInfo.InvariantCulture);
+            RegexTree tree = RegexParser.Parse(pattern, options, CultureInfo.InvariantCulture);
+            return new RegexFindOptimizations(tree.Root, options, CultureInfo.InvariantCulture);
         }
     }
 }

@@ -82,7 +82,9 @@ namespace System.Net.Security.Tests
                 using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null, EncryptionPolicy.NoEncryption))
                 {
                     await Assert.ThrowsAsync(TestConfiguration.SupportsHandshakeAlerts ? typeof(AuthenticationException) : typeof(IOException), () =>
-                        sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocols.Tls | SslProtocols.Tls11 |  SslProtocols.Tls12, false));
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
+                        sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12, false));
+#pragma warning restore SYSLIB0039
                 }
             }
         }

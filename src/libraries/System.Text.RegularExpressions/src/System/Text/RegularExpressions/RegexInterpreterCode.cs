@@ -1,19 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 
 namespace System.Text.RegularExpressions
 {
-    /// <summary>Representation of a regular expression, written by <see cref="RegexWriter"/> and containing the code evaluated by <see cref="RegexInterpreter"/>.</summary>
-    /// <remarks>It currently stores some data used by engines other than the interpreter; that can be refactored out in the future.</remarks>
-    internal sealed class RegexCode
+    /// <summary>Contains the code, written by <see cref="RegexWriter"/>, for <see cref="RegexInterpreter"/> to evaluate a regular expression.</summary>
+    internal sealed class RegexInterpreterCode
     {
-        /// <summary>The optimized parse tree.</summary>
-        public readonly RegexTree Tree;
+        /// <summary>Find logic to use to find the next possible location for a match.</summary>
+        public readonly RegexFindOptimizations FindOptimizations;
+        /// <summary>The options associated with the regex.</summary>
+        public readonly RegexOptions Options;
         /// <summary>RegexOpcodes and arguments written by <see cref="RegexWriter"/>.</summary>
         public readonly int[] Codes;
         /// <summary>The string / set table. <see cref="Codes"/> includes offsets into this table, for string and set arguments.</summary>
@@ -22,26 +21,15 @@ namespace System.Text.RegularExpressions
         public readonly uint[]?[] StringsAsciiLookup;
         /// <summary>How many instructions in <see cref="Codes"/> use backtracking.</summary>
         public readonly int TrackCount;
-        /// <summary>Mapping of user group numbers to impl group slots.</summary>
-        public readonly Hashtable? Caps;
-        /// <summary>Number of impl group slots.</summary>
-        public readonly int CapSize;
-        /// <summary>True if right to left.</summary>
-        public readonly bool RightToLeft;
-        /// <summary>Optimization mode and supporting data to enable quickly finding the next possible match location.</summary>
-        public readonly RegexFindOptimizations FindOptimizations;
 
-        public RegexCode(RegexTree tree, CultureInfo culture, int[] codes, string[] strings, int trackcount, Hashtable? caps, int capsize)
+        public RegexInterpreterCode(RegexFindOptimizations findOptimizations, RegexOptions options, int[] codes, string[] strings, int trackcount)
         {
-            Tree = tree;
+            FindOptimizations = findOptimizations;
+            Options = options;
             Codes = codes;
             Strings = strings;
             StringsAsciiLookup = new uint[strings.Length][];
             TrackCount = trackcount;
-            Caps = caps;
-            CapSize = capsize;
-            RightToLeft = (tree.Options & RegexOptions.RightToLeft) != 0;
-            FindOptimizations = new RegexFindOptimizations(tree, culture);
         }
 
         /// <summary>Gets whether the specified opcode may incur backtracking.</summary>
@@ -152,8 +140,7 @@ namespace System.Text.RegularExpressions
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine($"Direction: {(RightToLeft ? "right-to-left" : "left-to-right")}");
-            sb.AppendLine($"Anchor:    {FindOptimizations.LeadingAnchor}");
+            sb.AppendLine($"Direction: {((Options & RegexOptions.RightToLeft) != 0 ? "right-to-left" : "left-to-right")}");
             sb.AppendLine();
             for (int i = 0; i < Codes.Length; i += OpcodeSize((RegexOpcode)Codes[i]))
             {

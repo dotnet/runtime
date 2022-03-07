@@ -69,6 +69,7 @@ namespace System.Reflection
         }
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetCodeBase")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool GetCodeBase(QCallAssembly assembly,
                                                StringHandleOnStack retString);
 
@@ -177,8 +178,8 @@ namespace System.Reflection
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetType", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void GetType(QCallAssembly assembly,
                                             string name,
-                                            bool throwOnError,
-                                            bool ignoreCase,
+                                            [MarshalAs(UnmanagedType.Bool)] bool throwOnError,
+                                            [MarshalAs(UnmanagedType.Bool)] bool ignoreCase,
                                             ObjectHandleOnStack type,
                                             ObjectHandleOnStack keepAlive,
                                             ObjectHandleOnStack assemblyLoadContext);
@@ -349,7 +350,7 @@ namespace System.Reflection
         private static partial void InternalLoad(ObjectHandleOnStack assemblyName,
                                                 ObjectHandleOnStack requestingAssembly,
                                                 StackCrawlMarkHandle stackMark,
-                                                bool throwOnFileNotFound,
+                                                [MarshalAs(UnmanagedType.Bool)] bool throwOnFileNotFound,
                                                 ObjectHandleOnStack assemblyLoadContext,
                                                 ObjectHandleOnStack retAssembly);
 
@@ -605,8 +606,8 @@ namespace System.Reflection
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetModules")]
         private static partial void GetModules(QCallAssembly assembly,
-                                              bool loadIfNotFound,
-                                              bool getResourceModules,
+                                              [MarshalAs(UnmanagedType.Bool)] bool loadIfNotFound,
+                                              [MarshalAs(UnmanagedType.Bool)] bool getResourceModules,
                                               ObjectHandleOnStack retModuleHandles);
 
         private RuntimeModule[] GetModulesInternal(bool loadIfNotFound,

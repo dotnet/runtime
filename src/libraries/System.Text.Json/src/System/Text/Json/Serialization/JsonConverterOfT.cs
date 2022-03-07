@@ -299,7 +299,7 @@ namespace System.Text.Json.Serialization
             bool success;
 
             if (
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
                 // Short-circuit the check against "is not null"; treated as a constant by recent versions of the JIT.
                 !typeof(T).IsValueType &&
 #else
