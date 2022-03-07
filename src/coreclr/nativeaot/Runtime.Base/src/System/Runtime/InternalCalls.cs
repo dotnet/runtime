@@ -59,7 +59,7 @@ namespace System.Runtime
             RhpCollect(generation, mode);
         }
 
-        [GeneratedDllImport(Redhawk.BaseName)]
+        [LibraryImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         private static partial void RhpCollect(int generation, InternalGCCollectionMode mode);
 
@@ -69,7 +69,7 @@ namespace System.Runtime
             return RhpGetGcTotalMemory();
         }
 
-        [GeneratedDllImport(Redhawk.BaseName)]
+        [LibraryImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         private static partial long RhpGetGcTotalMemory();
 
@@ -286,48 +286,48 @@ namespace System.Runtime
 
         // Block the current thread until at least one object needs to be finalized (returns true) or
         // memory is low (returns false and the finalizer thread should initiate a garbage collection).
-        [GeneratedDllImport(Redhawk.BaseName)]
+        [LibraryImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial uint RhpWaitForFinalizerRequest();
 
         // Indicate that the current round of finalizations is complete.
-        [GeneratedDllImport(Redhawk.BaseName)]
+        [LibraryImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial void RhpSignalFinalizationComplete();
 
-        [GeneratedDllImport(Redhawk.BaseName)]
+        [LibraryImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial void RhpAcquireCastCacheLock();
 
-        [GeneratedDllImport(Redhawk.BaseName)]
+        [LibraryImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial void RhpReleaseCastCacheLock();
 
-        [GeneratedDllImport(Redhawk.BaseName)]
+        [LibraryImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial ulong RhpGetTickCount64();
 
-        [GeneratedDllImport(Redhawk.BaseName)]
+        [LibraryImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial void RhpAcquireThunkPoolLock();
 
-        [GeneratedDllImport(Redhawk.BaseName)]
+        [LibraryImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial void RhpReleaseThunkPoolLock();
 
-        [GeneratedDllImport(Redhawk.BaseName)]
+        [LibraryImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial IntPtr RhAllocateThunksMapping();
 
         // Enters a no GC region, possibly doing a blocking GC if there is not enough
         // memory available to satisfy the caller's request.
-        [GeneratedDllImport(Redhawk.BaseName)]
+        [LibraryImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial int RhpStartNoGCRegion(long totalSize, [MarshalAs(UnmanagedType.Bool)] bool hasLohSize, long lohSize, [MarshalAs(UnmanagedType.Bool)] bool disallowFullBlockingGC);
 
         // Exits a no GC region, possibly doing a GC to clean up the garbage that
         // the caller allocated.
-        [GeneratedDllImport(Redhawk.BaseName)]
+        [LibraryImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial int RhpEndNoGCRegion();
     }

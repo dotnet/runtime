@@ -11,11 +11,11 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_DsaGenerateKey")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_DsaGenerateKey")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool DsaGenerateKey(out SafeDsaHandle dsa, int bits);
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_DsaSizeSignature")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_DsaSizeSignature")]
         private static partial int DsaSizeSignature(SafeDsaHandle dsa);
 
         /// <summary>
@@ -27,7 +27,7 @@ internal static partial class Interop
             return size;
         }
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_DsaSignatureFieldSize")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_DsaSignatureFieldSize")]
         private static partial int AndroidCryptoNative_DsaSignatureFieldSize(SafeDsaHandle dsa);
 
         /// <summary>
@@ -41,7 +41,7 @@ internal static partial class Interop
             return size;
         }
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_DsaSizeP")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_DsaSizeP")]
         private static partial int DsaSizeP(SafeDsaHandle dsa);
 
         /// <summary>
@@ -59,7 +59,7 @@ internal static partial class Interop
         internal static bool DsaSign(SafeDsaHandle dsa, ReadOnlySpan<byte> hash, Span<byte> refSignature, out int outSignatureLength) =>
             DsaSign(dsa, ref MemoryMarshal.GetReference(hash), hash.Length, ref MemoryMarshal.GetReference(refSignature), out outSignatureLength);
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_DsaSign")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_DsaSign")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool DsaSign(SafeDsaHandle dsa, ref byte hash, int hashLength, ref byte refSignature, out int outSignatureLength);
 
@@ -80,7 +80,7 @@ internal static partial class Interop
             return ret == 1;
         }
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_DsaVerify")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_DsaVerify")]
         private static partial int DsaVerify(SafeDsaHandle dsa, ref byte hash, int hashLength, ref byte signature, int signatureLength);
 
         internal static DSAParameters ExportDsaParameters(SafeDsaHandle key, bool includePrivateParameters)
@@ -141,7 +141,7 @@ internal static partial class Interop
             }
         }
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_GetDsaParameters")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_GetDsaParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool GetDsaParameters(
             SafeDsaHandle key,
@@ -151,7 +151,7 @@ internal static partial class Interop
             out SafeBignumHandle y, out int y_cb,
             out SafeBignumHandle x, out int x_cb);
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_DsaKeyCreateByExplicitParameters")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_DsaKeyCreateByExplicitParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool DsaKeyCreateByExplicitParameters(
             out SafeDsaHandle dsa,

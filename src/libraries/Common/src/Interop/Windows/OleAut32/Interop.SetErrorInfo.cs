@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class OleAut32
     {
         // only using this to clear existing error info with null
-        [GeneratedDllImport(Interop.Libraries.OleAut32)]
+        [LibraryImport(Interop.Libraries.OleAut32)]
         // TLS values are preserved between threads, need to check that we use this API to clear the error state only.
         internal static partial void SetErrorInfo(int dwReserved, IntPtr pIErrorInfo);
     }

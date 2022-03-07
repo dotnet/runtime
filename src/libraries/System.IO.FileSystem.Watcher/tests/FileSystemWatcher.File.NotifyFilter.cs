@@ -12,7 +12,7 @@ namespace System.IO.Tests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public partial class File_NotifyFilter_Tests : FileSystemWatcherTest
     {
-        [GeneratedDllImport("advapi32.dll", EntryPoint = "SetNamedSecurityInfoW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport("advapi32.dll", EntryPoint = "SetNamedSecurityInfoW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         private static partial uint SetSecurityInfoByHandle(string name, uint objectType, uint securityInformation,
             IntPtr owner, IntPtr group, IntPtr dacl, IntPtr sacl);
 
