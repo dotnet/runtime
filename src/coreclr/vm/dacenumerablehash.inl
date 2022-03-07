@@ -499,7 +499,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
     DPTR(PTR_VolatileEntry) curBuckets = m_pTable->GetBuckets();
     DWORD cBuckets = GetLength(curBuckets);
 
-    while (m_dwBucket < cBuckets)
+    while (m_dwBucket < cBuckets + SKIP_SPECIAL_SLOTS)
     {
         if (m_pEntry == NULL)
         {

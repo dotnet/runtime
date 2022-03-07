@@ -19,8 +19,10 @@ using static System.Console;
 
 namespace ILVerify
 {
-    class Program : ResolverBase
+    class Program : IResolver
     {
+        private readonly Dictionary<string, PEReader> _resolverCache = new Dictionary<string, PEReader>();
+
         private Options _options;
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // map of simple name to file path
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // map of simple name to file path
@@ -463,12 +465,25 @@ namespace ILVerify
             return false;
         }
 
-        protected override PEReader ResolveCore(string simpleName)
+        PEReader IResolver.ResolveAssembly(AssemblyName assemblyName)
+            => Resolve(assemblyName.Name);
+
+        PEReader IResolver.ResolveModule(AssemblyName referencingModule, string fileName)
+            => Resolve(Path.GetFileNameWithoutExtension(fileName));
+
+        public PEReader Resolve(string simpleName)
         {
+            if (_resolverCache.TryGetValue(simpleName, out PEReader peReader))
+            {
+                return peReader;
+            }
+
             string path = null;
             if (_inputFilePaths.TryGetValue(simpleName, out path) || _referenceFilePaths.TryGetValue(simpleName, out path))
             {
-                return new PEReader(File.OpenRead(path));
+                PEReader result = new PEReader(File.OpenRead(path));
+                _resolverCache.Add(simpleName, result);
+                return result;
             }
 
             return null;

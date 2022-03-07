@@ -151,7 +151,7 @@ namespace System
                 throw new ArgumentNullException(nameof(typeName));
 
             return RuntimeTypeHandle.GetTypeByName(
-                typeName, throwOnError, ignoreCase, ref stackMark, false);
+                typeName, throwOnError, ignoreCase, ref stackMark);
         }
 
         private static void SplitName(string? fullname, out string? name, out string? ns)
@@ -833,7 +833,7 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers) as ConstructorInfo;
+                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
 
             if (binder == null)
                 binder = DefaultBinder;
@@ -873,7 +873,7 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types, modifiers);
+                return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types);
 
             if (binder == null)
                 binder = DefaultBinder;
@@ -946,6 +946,10 @@ namespace System
             return match;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern",
+            Justification = "Trimming makes sure that interfaces are fully preserved, so the Interfaces annotation is transitive." +
+                            "The cache doesn't carry the necessary annotation since it returns an array type," +
+                            "so the analysis complains that the returned value doesn't have the necessary annotation.")]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string fullname, bool ignoreCase)

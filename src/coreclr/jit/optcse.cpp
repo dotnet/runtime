@@ -242,27 +242,6 @@ bool Compiler::optCSE_canSwap(GenTree* op1, GenTree* op2)
     return canSwap;
 }
 
-//------------------------------------------------------------------------
-// optCSE_canSwap: Determine if the execution order of a node's operands can be swapped.
-//
-// Arguments:
-//    tree - The node of interest
-//
-// Return Value:
-//    Return true iff it safe to swap the execution order of the operands of 'tree',
-//    considering only the locations of the CSE defs and uses.
-//
-bool Compiler::optCSE_canSwap(GenTree* tree)
-{
-    // We must have a binary treenode with non-null op1 and op2
-    assert((tree->OperKind() & GTK_SMPOP) != 0);
-
-    GenTree* op1 = tree->AsOp()->gtOp1;
-    GenTree* op2 = tree->gtGetOp2();
-
-    return optCSE_canSwap(op1, op2);
-}
-
 /*****************************************************************************
  *
  *  Compare function passed to jitstd::sort() by CSE_Heuristic::SortCandidates
@@ -3190,8 +3169,6 @@ public:
                 }
 #endif // DEBUG
 
-                exp->gtCSEnum = NO_CSE; // clear the gtCSEnum field
-
                 GenTree* val = exp;
                 if (isSharedConst)
                 {
@@ -3229,6 +3206,14 @@ public:
 
                 // Backpatch the SSA def, if we're putting this CSE temp into ssa.
                 asg->AsOp()->gtOp1->AsLclVar()->SetSsaNum(cseSsaNum);
+
+                // Move the information about the CSE def to the assignment; it
+                // now indicates a completed CSE def instead of just a
+                // candidate. optCSE_canSwap uses this information to reason
+                // about evaluation order in between substitutions of CSE
+                // defs/uses.
+                asg->gtCSEnum = exp->gtCSEnum;
+                exp->gtCSEnum = NO_CSE;
 
                 if (cseSsaNum != SsaConfig::RESERVED_SSA_NUM)
                 {
@@ -3816,6 +3801,13 @@ bool Compiler::optConfigDisableCSE2()
 
 void Compiler::optOptimizeCSEs()
 {
+    if (optCSEstart != BAD_VAR_NUM)
+    {
+        // CSE being run multiple times so we may need to clean up old
+        // information.
+        optCleanupCSEs();
+    }
+
     optCSECandidateCount = 0;
     optCSEstart          = lvaCount;
 

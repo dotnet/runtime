@@ -22,6 +22,8 @@ using ILCompiler.Reflection.ReadyToRun;
 using Internal.Runtime;
 using Internal.TypeSystem;
 
+using OperatingSystem = ILCompiler.Reflection.ReadyToRun.OperatingSystem;
+
 namespace R2RDump
 {
     public class DumpOptions : IAssemblyResolver
@@ -416,6 +418,25 @@ namespace R2RDump
                     _dumper.DumpEntryPoints();
                 }
 
+                TargetArchitecture architecture = r2r.Machine switch
+                {
+                    Machine.I386 => TargetArchitecture.X86,
+                    Machine.Amd64 => TargetArchitecture.X64,
+                    Machine.ArmThumb2 => TargetArchitecture.ARM,
+                    Machine.Arm64 => TargetArchitecture.ARM64,
+                    _ => throw new NotImplementedException(r2r.Machine.ToString()),
+                };
+                TargetOS os = r2r.OperatingSystem switch
+                {
+                    OperatingSystem.Windows => TargetOS.Windows,
+                    OperatingSystem.Linux => TargetOS.Linux,
+                    OperatingSystem.Apple => TargetOS.OSX,
+                    OperatingSystem.FreeBSD => TargetOS.FreeBSD,
+                    OperatingSystem.NetBSD => TargetOS.FreeBSD,
+                    _ => throw new NotImplementedException(r2r.OperatingSystem.ToString()),
+                };
+                TargetDetails details = new TargetDetails(architecture, os, TargetAbi.CoreRT);
+
                 if (_options.CreatePDB)
                 {
                     string pdbPath = _options.PdbPath;
@@ -423,7 +444,6 @@ namespace R2RDump
                     {
                         pdbPath = Path.GetDirectoryName(r2r.Filename);
                     }
-                    TargetDetails details = new TargetDetails(r2r.TargetArchitecture, r2r.TargetOperatingSystem, TargetAbi.CoreRT);
                     var pdbWriter = new PdbWriter(pdbPath, PDBExtraData.None, details);
                     pdbWriter.WritePDBData(r2r.Filename, ProduceDebugInfoMethods(r2r));
                 }
@@ -435,8 +455,6 @@ namespace R2RDump
                     {
                         perfmapPath = Path.ChangeExtension(r2r.Filename, ".r2rmap");
                     }
-                    // TODO: can't seem to find any place that surfaces the ABI. This is for debugging purposes, so may not be as relevant to be correct.
-                    TargetDetails details = new TargetDetails(r2r.TargetArchitecture, r2r.TargetOperatingSystem, TargetAbi.CoreRT);
                     PerfMapWriter.Write(perfmapPath, _options.PerfmapFormatVersion, ProduceDebugInfoMethods(r2r), ProduceDebugInfoAssemblies(r2r), details);
                 }
 

@@ -32,7 +32,7 @@ namespace System.Resources
 
         // For RuntimeResourceSet, ignore the Table parameter - it's a wasted
         // allocation.
-        internal ResourceSet(bool junk)
+        internal ResourceSet(bool _)
         {
         }
 

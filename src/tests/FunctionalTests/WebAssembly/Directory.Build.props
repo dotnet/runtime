@@ -8,7 +8,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, '$(MSBuildThisFileDirectory)..'))" />
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <OutputPath>$(RepoRoot)artifacts\bin\$(MSBuildProjectName)</OutputPath>
     <_InTreeEmSdk>$(MSBuildThisFileDirectory)..\..\..\mono\wasm\emsdk</_InTreeEmSdk>
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and Exists($(_InTreeEmSdk))">$(_InTreeEmSdk)</EMSDK_PATH>

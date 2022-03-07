@@ -27,15 +27,10 @@ namespace System.Reflection.Metadata.Ecma335
         /// Additional context needed to resolve generic parameters.
         /// </param>
         public SignatureDecoder(
-            ISignatureTypeProvider<TType, TGenericContext> provider,
+            ISignatureTypeProvider<TType, TGenericContext> provider!!,
             MetadataReader metadataReader,
             TGenericContext genericContext)
         {
-            if (provider == null)
-            {
-                Throw.ArgumentNull(nameof(provider));
-            }
-
             _metadataReaderOpt = metadataReader;
             _provider = provider;
             _genericContext = genericContext;

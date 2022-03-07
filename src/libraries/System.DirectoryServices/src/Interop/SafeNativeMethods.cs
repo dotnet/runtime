@@ -13,6 +13,7 @@ namespace System.DirectoryServices.Interop
         public static partial void VariantInit(IntPtr pObject);
 
         [GeneratedDllImport(global::Interop.Libraries.Activeds)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool FreeADsMem(IntPtr pVoid);
 
         public const int
@@ -22,10 +23,10 @@ namespace System.DirectoryServices.Interop
             ERROR_MORE_DATA = 234,
             ERROR_SUCCESS = 0;
 
-        [GeneratedDllImport(global::Interop.Libraries.Activeds, CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(global::Interop.Libraries.Activeds, StringMarshalling = StringMarshalling.Utf16)]
         public static unsafe partial int ADsGetLastError(out int error, char* errorBuffer, int errorBufferLength, char* nameBuffer, int nameBufferLength);
 
-        [GeneratedDllImport(global::Interop.Libraries.Activeds, CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(global::Interop.Libraries.Activeds, StringMarshalling = StringMarshalling.Utf16)]
         public static partial int ADsSetLastError(int error, string? errorString, string? provider);
 
         public class EnumVariant

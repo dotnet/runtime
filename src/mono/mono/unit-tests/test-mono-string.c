@@ -5,7 +5,7 @@
 #include "config.h"
 #include <stdio.h>
 #include "metadata/object-internals.h"
-#include "mini/jit.h"
+#include <mono/jit/jit.h>
 
 static int
 new_string_ok (void)

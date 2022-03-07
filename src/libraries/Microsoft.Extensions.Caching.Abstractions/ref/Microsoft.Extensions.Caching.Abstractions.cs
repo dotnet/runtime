@@ -60,14 +60,14 @@ namespace Microsoft.Extensions.Caching.Memory
     public static partial class CacheExtensions
     {
         public static object? Get(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key) { throw null; }
-        public static System.Threading.Tasks.Task<TItem> GetOrCreateAsync<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, System.Func<Microsoft.Extensions.Caching.Memory.ICacheEntry, System.Threading.Tasks.Task<TItem?>> factory) { throw null; }
-        public static TItem? GetOrCreate<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, System.Func<Microsoft.Extensions.Caching.Memory.ICacheEntry, TItem?> factory) { throw null; }
+        public static System.Threading.Tasks.Task<TItem?> GetOrCreateAsync<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, System.Func<Microsoft.Extensions.Caching.Memory.ICacheEntry, System.Threading.Tasks.Task<TItem>> factory) { throw null; }
+        public static TItem? GetOrCreate<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, System.Func<Microsoft.Extensions.Caching.Memory.ICacheEntry, TItem> factory) { throw null; }
         public static TItem? Get<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key) { throw null; }
-        public static TItem? Set<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, TItem? value) { throw null; }
-        public static TItem? Set<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, TItem? value, Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions? options) { throw null; }
-        public static TItem? Set<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, TItem? value, Microsoft.Extensions.Primitives.IChangeToken expirationToken) { throw null; }
-        public static TItem? Set<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, TItem? value, System.DateTimeOffset absoluteExpiration) { throw null; }
-        public static TItem? Set<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, TItem? value, System.TimeSpan absoluteExpirationRelativeToNow) { throw null; }
+        public static TItem Set<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, TItem value) { throw null; }
+        public static TItem Set<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, TItem value, Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions? options) { throw null; }
+        public static TItem Set<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, TItem value, Microsoft.Extensions.Primitives.IChangeToken expirationToken) { throw null; }
+        public static TItem Set<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, TItem value, System.DateTimeOffset absoluteExpiration) { throw null; }
+        public static TItem Set<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, TItem value, System.TimeSpan absoluteExpirationRelativeToNow) { throw null; }
         public static bool TryGetValue<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, out TItem? value) { throw null; }
     }
     public enum CacheItemPriority

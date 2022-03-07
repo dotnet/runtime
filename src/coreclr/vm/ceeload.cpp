@@ -4615,16 +4615,16 @@ void Module::RunEagerFixups()
     {
         // For composite images, multiple modules may request initializing eager fixups
         // from multiple threads so we need to lock their resolution.
-        if (compositeNativeImage->EagerFixupsHaveRun())
-        {
-            return;
-        }
         CrstHolder compositeEagerFixups(compositeNativeImage->EagerFixupsLock());
         if (compositeNativeImage->EagerFixupsHaveRun())
         {
+            if (compositeNativeImage->ReadyToRunCodeDisabled())
+                GetReadyToRunInfo()->DisableAllR2RCode();
             return;
         }
         RunEagerFixupsUnlocked();
+        if (GetReadyToRunInfo()->ReadyToRunCodeDisabled())
+            compositeNativeImage->DisableAllR2RCode();
         compositeNativeImage->SetEagerFixupsHaveRun();
     }
     else
@@ -4703,6 +4703,14 @@ void Module::RunEagerFixupsUnlocked()
             }
         }
     }
+
+    TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
+
+    ExecutionManager::AddCodeRange(
+        base, base + (TADDR)pNativeImage->GetVirtualSize(),
+        ExecutionManager::GetReadyToRunJitManager(),
+        RangeSection::RANGE_SECTION_READYTORUN,
+        this /* pHeapListOrZapModule */);
 }
 #endif // !DACCESS_COMPILE
 

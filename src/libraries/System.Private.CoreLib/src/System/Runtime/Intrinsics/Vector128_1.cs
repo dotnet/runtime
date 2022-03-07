@@ -4,13 +4,10 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
-
-using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics
 {

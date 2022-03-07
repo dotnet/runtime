@@ -248,23 +248,6 @@ namespace System.Net.Security
                 {
                     sslContext = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
                     context = sslContext;
-
-                    if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !sslAuthenticationOptions.IsServer)
-                    {
-                        Interop.AppleCrypto.SslSetTargetName(sslContext.SslContext, sslAuthenticationOptions.TargetHost);
-                    }
-
-                    if (sslAuthenticationOptions.CertificateContext == null && sslAuthenticationOptions.CertSelectionDelegate != null)
-                    {
-                        // certificate was not provided but there is user callback. We can break handshake if server asks for certificate
-                        // and we can try to get it based on remote certificate and trusted issuers.
-                        Interop.AppleCrypto.SslBreakOnCertRequested(sslContext.SslContext, true);
-                    }
-
-                    if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.RemoteCertRequired)
-                    {
-                        Interop.AppleCrypto.SslSetAcceptClientCert(sslContext.SslContext);
-                    }
                 }
 
                 if (inputBuffer.Length > 0)

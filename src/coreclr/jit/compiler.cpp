@@ -1885,7 +1885,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compQmarkRationalized = false;
     compQmarkUsed         = false;
     compFloatingPointUsed = false;
-    compUnsafeCastUsed    = false;
 
     compSuppressedZeroInit = false;
 
@@ -5288,6 +5287,18 @@ void Compiler::generatePatchpointInfo()
         JITDUMP("--OSR-- monitor acquired V%02u virtual offset is %d\n", lvaMonAcquired,
                 patchpointInfo->MonitorAcquiredOffset());
     }
+
+#if defined(TARGET_AMD64)
+    // Record callee save registers.
+    // Currently only needed for x64.
+    //
+    regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    rsPushRegs |= RBM_FPBASE;
+    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
+    JITDUMP("--OSR-- Tier0 callee saves: ");
+    JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
+    JITDUMP("\n");
+#endif
 
     // Register this with the runtime.
     info.compCompHnd->setPatchpointInfo(patchpointInfo);
@@ -9737,6 +9748,29 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 }
 
 //------------------------------------------------------------------------------
+// gtTypeForNullCheck: helper to get the most optimal and correct type for nullcheck
+//
+// Arguments:
+//    tree - the node for nullcheck;
+//
+var_types Compiler::gtTypeForNullCheck(GenTree* tree)
+{
+    if (varTypeIsIntegral(tree))
+    {
+#if defined(TARGET_XARCH)
+        // Just an optimization for XARCH - smaller mov
+        if (varTypeIsLong(tree))
+        {
+            return TYP_INT;
+        }
+#endif
+        return tree->TypeGet();
+    }
+    // for the rest: probe a single byte to avoid potential AVEs
+    return TYP_BYTE;
+}
+
+//------------------------------------------------------------------------------
 // gtChangeOperToNullCheck: helper to change tree oper to a NULLCHECK.
 //
 // Arguments:
@@ -9752,7 +9786,7 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
 {
     assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
-    tree->ChangeType(TYP_INT);
+    tree->ChangeType(gtTypeForNullCheck(tree));
     block->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }

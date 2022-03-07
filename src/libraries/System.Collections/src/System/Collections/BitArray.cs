@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Arm;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Collections
 {
@@ -851,7 +850,7 @@ namespace System.Collections
                         }
                     }
                 }
-                else if (AdvSimd.IsSupported)
+                else if (AdvSimd.Arm64.IsSupported)
                 {
                     Vector128<byte> ones = Vector128.Create((byte)1);
                     Vector128<byte> bitMask128 = BitConverter.IsLittleEndian ?
@@ -885,12 +884,12 @@ namespace System.Collections
                             Vector128<byte> shuffledLower = AdvSimd.Arm64.ZipLow(vector, vector);
                             Vector128<byte> extractedLower = AdvSimd.And(shuffledLower, bitMask128);
                             Vector128<byte> normalizedLower = AdvSimd.Min(extractedLower, ones);
-                            AdvSimd.Store((byte*)destination + i, normalizedLower);
 
                             Vector128<byte> shuffledHigher = AdvSimd.Arm64.ZipHigh(vector, vector);
                             Vector128<byte> extractedHigher = AdvSimd.And(shuffledHigher, bitMask128);
                             Vector128<byte> normalizedHigher = AdvSimd.Min(extractedHigher, ones);
-                            AdvSimd.Store((byte*)destination + i + Vector128<byte>.Count, normalizedHigher);
+
+                            AdvSimd.Arm64.StorePair((byte*)destination + i, normalizedLower, normalizedHigher);
                         }
                     }
                 }

@@ -2164,7 +2164,8 @@ void fgArgInfo::EvalArgsToTemps()
 }
 
 //------------------------------------------------------------------------------
-// fgMakeMultiUse : If the node is a local, clone it, otherwise insert a comma form temp
+// fgMakeMultiUse : If the node is an unaliased local or constant clone it,
+//    otherwise insert a comma form temp
 //
 // Arguments:
 //    ppTree  - a pointer to the child node we will be replacing with the comma expression that
@@ -2172,18 +2173,32 @@ void fgArgInfo::EvalArgsToTemps()
 //
 // Return Value:
 //    A fresh GT_LCL_VAR node referencing the temp which has not been used
-
+//
+// Notes:
+//    Caller must ensure that if the node is an unaliased local, the second use this
+//    creates will be evaluated before the local can be reassigned.
+//
+//    Can be safely called in morph preorder, before GTF_GLOB_REF is reliable.
+//
 GenTree* Compiler::fgMakeMultiUse(GenTree** pOp)
 {
-    GenTree* tree = *pOp;
-    if (tree->IsLocal())
+    GenTree* const tree = *pOp;
+
+    if (tree->IsInvariant())
     {
         return gtClone(tree);
     }
-    else
+    else if (tree->IsLocal())
     {
-        return fgInsertCommaFormTemp(pOp);
+        // Can't rely on GTF_GLOB_REF here.
+        //
+        if (!lvaGetDesc(tree->AsLclVarCommon())->IsAddressExposed())
+        {
+            return gtClone(tree);
+        }
     }
+
+    return fgInsertCommaFormTemp(pOp);
 }
 
 //------------------------------------------------------------------------------
@@ -5496,7 +5511,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     // See https://github.com/dotnet/runtime/pull/61293#issuecomment-964146497
 
     // Use 2) form only for primitive types for now - it significantly reduced number of size regressions
-    if (!varTypeIsIntegral(elemTyp))
+    if (!varTypeIsIntegral(elemTyp) && !varTypeIsFloating(elemTyp))
     {
         groupArrayRefWithElemOffset = false;
     }
@@ -10470,6 +10485,17 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
             assert(blockWidth == info.compCompHnd->getClassSize(call->gtRetClsHnd));
 #endif
         }
+#ifdef TARGET_ARM64
+        else if (effectiveVal->OperIsHWIntrinsic())
+        {
+            needsIndirection = false;
+#ifdef DEBUG
+            GenTreeHWIntrinsic* intrinsic = effectiveVal->AsHWIntrinsic();
+            assert(intrinsic->TypeGet() == TYP_STRUCT);
+            assert(HWIntrinsicInfo::IsMultiReg(intrinsic->GetHWIntrinsicId()));
+#endif
+        }
+#endif // TARGET_ARM64
 
         if (lclNode != nullptr)
         {
@@ -12150,6 +12176,14 @@ DONE_MORPHING_CHILDREN:
         case GT_GE:
         case GT_GT:
 
+            if (!optValnumCSE_phase && (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST)))
+            {
+                tree = fgOptimizeRelationalComparisonWithCasts(tree->AsOp());
+                oper = tree->OperGet();
+                op1  = tree->gtGetOp1();
+                op2  = tree->gtGetOp2();
+            }
+
             // op2's value may be changed, so it cannot be a CSE candidate.
             if (op2->IsIntegralConst() && !gtIsActiveCSE_Candidate(op2))
             {
@@ -12815,7 +12849,7 @@ DONE_MORPHING_CHILDREN:
                 // Perform the transform ADDR(COMMA(x, ..., z)) == COMMA(x, ..., ADDR(z)).
                 // (Be sure to mark "z" as an l-value...)
 
-                GenTreePtrStack commas(getAllocator(CMK_ArrayStack));
+                ArrayStack<GenTree*> commas(getAllocator(CMK_ArrayStack));
                 for (GenTree* comma = op1; comma != nullptr && comma->gtOper == GT_COMMA; comma = comma->gtGetOp2())
                 {
                     commas.Push(comma);
@@ -13490,6 +13524,89 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
     return cmp;
 }
 
+#ifdef FEATURE_HW_INTRINSICS
+
+//------------------------------------------------------------------------
+// fgOptimizeHWIntrinsic: optimize a HW intrinsic node
+//
+// Arguments:
+//    node - HWIntrinsic node to examine
+//
+// Returns:
+//    The original node if no optimization happened or if tree bashing occured.
+//    An alternative tree if an optimization happened.
+//
+// Notes:
+//    Checks for HWIntrinsic nodes: Vector64.Create/Vector128.Create/Vector256.Create,
+//    and if the call is one of these, attempt to optimize.
+//    This is post-order, meaning that it will not morph the children.
+//
+GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
+{
+    assert(!optValnumCSE_phase);
+
+    if (opts.OptimizationDisabled())
+    {
+        return node;
+    }
+
+    switch (node->GetHWIntrinsicId())
+    {
+        case NI_Vector128_Create:
+#if defined(TARGET_XARCH)
+        case NI_Vector256_Create:
+#elif defined(TARGET_ARM64)
+        case NI_Vector64_Create:
+#endif
+        {
+            bool hwAllArgsAreConstZero = true;
+            for (GenTree* arg : node->Operands())
+            {
+                if (!arg->IsIntegralConst(0) && !arg->IsFloatPositiveZero())
+                {
+                    hwAllArgsAreConstZero = false;
+                    break;
+                }
+            }
+
+            if (hwAllArgsAreConstZero)
+            {
+                switch (node->GetHWIntrinsicId())
+                {
+                    case NI_Vector128_Create:
+                    {
+                        node->ResetHWIntrinsicId(NI_Vector128_get_Zero);
+                        break;
+                    }
+#if defined(TARGET_XARCH)
+                    case NI_Vector256_Create:
+                    {
+                        node->ResetHWIntrinsicId(NI_Vector256_get_Zero);
+                        break;
+                    }
+#elif defined(TARGET_ARM64)
+                    case NI_Vector64_Create:
+                    {
+                        node->ResetHWIntrinsicId(NI_Vector64_get_Zero);
+                        break;
+                    }
+#endif
+                    default:
+                        unreached();
+                }
+            }
+            break;
+        }
+
+        default:
+            break;
+    }
+
+    return node;
+}
+
+#endif
+
 //------------------------------------------------------------------------
 // fgOptimizeCommutativeArithmetic: Optimizes commutative operations.
 //
@@ -13615,8 +13732,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
     // TODO-Bug: this code will lose the GC-ness of a tree like "native int + byref(0)".
     if (op2->IsIntegralConst(0) && ((add->TypeGet() == op1->TypeGet()) || !op1->TypeIs(TYP_REF)))
     {
-        if (op2->IsCnsIntOrI() && (op2->AsIntCon()->gtFieldSeq != nullptr) &&
-            (op2->AsIntCon()->gtFieldSeq != FieldSeqStore::NotAField()))
+        if (op2->IsCnsIntOrI() && varTypeIsI(op1))
         {
             fgAddFieldSeqForZeroOffset(op1, op2->AsIntCon()->gtFieldSeq);
         }
@@ -13858,6 +13974,145 @@ GenTree* Compiler::fgOptimizeBitwiseAnd(GenTreeOp* andOp)
     }
 
     return nullptr;
+}
+
+//------------------------------------------------------------------------
+// fgOptimizeRelationalComparisonWithCasts: Recognizes comparisons against
+//   various cast operands and tries to remove them. E.g.:
+//
+//   *  GE        int
+//   +--*  CAST      long <- ulong <- uint
+//   |  \--*  X         int
+//   \--*  CNS_INT   long
+//
+//   to:
+//
+//   *  GE_un     int
+//   +--*  X         int
+//   \--*  CNS_INT   int
+//
+//   same for:
+//
+//   *  GE        int
+//   +--*  CAST      long <- ulong <- uint
+//   |  \--*  X         int
+//   \--*  CAST      long <- [u]long <- int
+//      \--*  ARR_LEN   int
+//
+//   These patterns quite often show up along with index checks
+//
+// Arguments:
+//   cmp - the GT_LE/GT_LT/GT_GE/GT_GT tree to morph.
+//
+// Return Value:
+//   Returns the same tree where operands might have narrower types
+//
+// Notes:
+//   TODO-Casts: consider unifying this function with "optNarrowTree"
+//
+GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
+{
+    assert(cmp->OperIs(GT_LE, GT_LT, GT_GE, GT_GT));
+    assert(!optValnumCSE_phase);
+
+    GenTree* op1 = cmp->gtGetOp1();
+    GenTree* op2 = cmp->gtGetOp2();
+
+    // Caller is expected to call this function only if we have CAST nodes
+    assert(op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST));
+
+    if (!op1->TypeIs(TYP_LONG))
+    {
+        // We can extend this logic to handle small types as well, but currently it's done mostly to
+        // assist range check elimination
+        return cmp;
+    }
+
+    GenTree* castOp;
+    GenTree* knownPositiveOp;
+
+    bool knownPositiveIsOp2;
+    if (op2->IsIntegralConst() || ((op2->OperIs(GT_CAST) && op2->AsCast()->CastOp()->OperIs(GT_ARR_LENGTH))))
+    {
+        // op2 is either a LONG constant or (T)ARR_LENGTH
+        knownPositiveIsOp2 = true;
+        castOp             = cmp->gtGetOp1();
+        knownPositiveOp    = cmp->gtGetOp2();
+    }
+    else
+    {
+        // op1 is either a LONG constant (yes, it's pretty normal for relops)
+        // or (T)ARR_LENGTH
+        castOp             = cmp->gtGetOp2();
+        knownPositiveOp    = cmp->gtGetOp1();
+        knownPositiveIsOp2 = false;
+    }
+
+    if (castOp->OperIs(GT_CAST) && varTypeIsLong(castOp->CastToType()) && castOp->AsCast()->CastOp()->TypeIs(TYP_INT) &&
+        castOp->IsUnsigned() && !castOp->gtOverflow())
+    {
+        bool knownPositiveFitsIntoU32 = false;
+        if (knownPositiveOp->IsIntegralConst() && FitsIn<UINT32>(knownPositiveOp->AsIntConCommon()->IntegralValue()))
+        {
+            // BTW, we can fold the whole condition if op2 doesn't fit into UINT_MAX.
+            knownPositiveFitsIntoU32 = true;
+        }
+        else if (knownPositiveOp->OperIs(GT_CAST) && varTypeIsLong(knownPositiveOp->CastToType()) &&
+                 knownPositiveOp->AsCast()->CastOp()->OperIs(GT_ARR_LENGTH))
+        {
+            knownPositiveFitsIntoU32 = true;
+            // TODO-Casts: recognize Span.Length here as well.
+        }
+
+        if (!knownPositiveFitsIntoU32)
+        {
+            return cmp;
+        }
+
+        JITDUMP("Removing redundant cast(s) for:\n")
+        DISPTREE(cmp)
+        JITDUMP("\n\nto:\n\n")
+
+        cmp->SetUnsigned();
+
+        // Drop cast from castOp
+        if (knownPositiveIsOp2)
+        {
+            cmp->gtOp1 = castOp->AsCast()->CastOp();
+        }
+        else
+        {
+            cmp->gtOp2 = castOp->AsCast()->CastOp();
+        }
+        DEBUG_DESTROY_NODE(castOp);
+
+        if (knownPositiveOp->OperIs(GT_CAST))
+        {
+            // Drop cast from knownPositiveOp too
+            if (knownPositiveIsOp2)
+            {
+                cmp->gtOp2 = knownPositiveOp->AsCast()->CastOp();
+            }
+            else
+            {
+                cmp->gtOp1 = knownPositiveOp->AsCast()->CastOp();
+            }
+            DEBUG_DESTROY_NODE(knownPositiveOp);
+        }
+        else
+        {
+            // Change type for constant from LONG to INT
+            knownPositiveOp->ChangeType(TYP_INT);
+#ifndef TARGET_64BIT
+            assert(knownPositiveOp->OperIs(GT_CNS_LNG));
+            knownPositiveOp->BashToConst(static_cast<int>(knownPositiveOp->AsIntConCommon()->IntegralValue()));
+#endif
+            fgUpdateConstTreeValueNumber(knownPositiveOp);
+        }
+        DISPTREE(cmp)
+        JITDUMP("\n")
+    }
+    return cmp;
 }
 
 //------------------------------------------------------------------------
@@ -14421,6 +14676,13 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
     }
 #endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
 
+#ifdef FEATURE_HW_INTRINSICS
+    if (multiOp->OperIsHWIntrinsic() && !optValnumCSE_phase)
+    {
+        return fgOptimizeHWIntrinsic(multiOp->AsHWIntrinsic());
+    }
+#endif
+
     return multiOp;
 }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
@@ -14441,13 +14703,10 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 //    division will be used, in that case this transform allows CSE to
 //    eliminate the redundant div from code like "x = a / 3; y = a % 3;".
 //
-//    This method will produce the above expression in 'a' and 'b' are
-//    leaf nodes, otherwise, if any of them is not a leaf it will spill
-//    its value into a temporary variable, an example:
-//    (x * 2 - 1) % (y + 1) ->  t1 - (t2 * ( comma(t1 = x * 2 - 1, t1) / comma(t2 = y + 1, t2) ) )
-//
 GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
 {
+    JITDUMP("\nMorphing MOD/UMOD [%06u] to Sub/Mul/Div\n", dspTreeID(tree));
+
     if (tree->OperGet() == GT_MOD)
     {
         tree->SetOper(GT_DIV);
@@ -14461,29 +14720,15 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
         noway_assert(!"Illegal gtOper in fgMorphModToSubMulDiv");
     }
 
-    var_types type        = tree->gtType;
-    GenTree*  denominator = tree->gtOp2;
-    GenTree*  numerator   = tree->gtOp1;
+    var_types type = tree->gtType;
 
-    if (!numerator->OperIsLeaf())
-    {
-        numerator = fgMakeMultiUse(&tree->gtOp1);
-    }
+    GenTree* const copyOfNumeratorValue   = fgMakeMultiUse(&tree->gtOp1);
+    GenTree* const copyOfDenominatorValue = fgMakeMultiUse(&tree->gtOp2);
+    GenTree* const mul                    = gtNewOperNode(GT_MUL, type, tree, copyOfDenominatorValue);
+    GenTree* const sub                    = gtNewOperNode(GT_SUB, type, copyOfNumeratorValue, mul);
 
-    if (!denominator->OperIsLeaf())
-    {
-        denominator = fgMakeMultiUse(&tree->gtOp2);
-    }
-
-    // The numerator and denominator may have been assigned to temps, in which case
-    // their defining assignments are in the current tree. Therefore, we need to
-    // set the execuction order accordingly on the nodes we create.
-    // That is, the "mul" will be evaluated in "normal" order, and the "sub" must
-    // be set to be evaluated in reverse order.
+    // Ensure "sub" does not evaluate "copyOfNumeratorValue" before it is defined by "mul".
     //
-    GenTree* mul = gtNewOperNode(GT_MUL, type, tree, gtCloneExpr(denominator));
-    assert(!mul->IsReverseOp());
-    GenTree* sub = gtNewOperNode(GT_SUB, type, gtCloneExpr(numerator), mul);
     sub->gtFlags |= GTF_REVERSE_OPS;
 
 #ifdef DEBUG
@@ -17836,7 +18081,7 @@ void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZ
     if (verbose)
     {
         printf("\nfgAddFieldSeqForZeroOffset for");
-        gtDispFieldSeq(fieldSeqZero);
+        gtDispAnyFieldSeq(fieldSeqZero);
 
         printf("\naddr (Before)\n");
         gtDispNode(addr, nullptr, nullptr, false);

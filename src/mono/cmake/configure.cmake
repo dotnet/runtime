@@ -71,7 +71,7 @@ ac_check_headers (
   strings.h stdint.h unistd.h signal.h setjmp.h syslog.h netdb.h utime.h semaphore.h libproc.h alloca.h ucontext.h pwd.h elf.h
   gnu/lib-names.h netinet/tcp.h netinet/in.h link.h arpa/inet.h unwind.h poll.h wchar.h linux/magic.h
   android/legacy_signal_inlines.h android/ndk-version.h execinfo.h pthread.h pthread_np.h net/if.h dirent.h
-  CommonCrypto/CommonDigest.h dlfcn.h getopt.h pwd.h iconv.h alloca.h
+  CommonCrypto/CommonDigest.h dlfcn.h getopt.h pwd.h alloca.h
   /usr/include/malloc.h)
 
 ac_check_funcs (
@@ -164,13 +164,6 @@ check_c_source_compiles(
 
 if (HOST_LINUX OR HOST_ANDROID)
   set(CMAKE_REQUIRED_DEFINITIONS)
-endif()
-
-# ICONV
-set(ICONV_LIB)
-find_library(LIBICONV_FOUND iconv)
-if(NOT LIBICONV_FOUND STREQUAL "LIBICONV_FOUND-NOTFOUND")
-  set(ICONV_LIB "iconv")
 endif()
 
 if(HOST_WIN32)

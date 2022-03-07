@@ -5,11 +5,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -442,11 +442,11 @@ namespace System
 
         public static string Format(string format, params object?[] args)
         {
-            if (args == null)
+            if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in FormatHelper.
-                throw new ArgumentNullException((format == null) ? nameof(format) : nameof(args));
+                ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
             return FormatHelper(null, format, new ParamsArray(args));
@@ -469,11 +469,11 @@ namespace System
 
         public static string Format(IFormatProvider? provider, string format, params object?[] args)
         {
-            if (args == null)
+            if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in FormatHelper.
-                throw new ArgumentNullException((format == null) ? nameof(format) : nameof(args));
+                ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
             return FormatHelper(provider, format, new ParamsArray(args));
