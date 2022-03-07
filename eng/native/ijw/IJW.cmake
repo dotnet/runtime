@@ -1,4 +1,36 @@
 if (CLR_CMAKE_HOST_WIN32)
+
+  function(remove_ijw_incompatible_options options updatedOptions)
+
+    # IJW isn't compatible with Ehsc, which CMake enables by default,
+    if(options MATCHES "/EHsc")
+        string(REPLACE "/EHsc" "" options "${options}")
+    endif()
+
+    # IJW isn't compatible with CFG
+    if(options MATCHES "/guard:cf")
+        string(REPLACE "/guard:cf" "" options "${options}")
+    endif()
+
+    # IJW isn't compatible with EHCONT, which requires CFG
+    if(options MATCHES "/guard:ehcont")
+        string(REPLACE "/guard:ehcont" "" options "${options}")
+    endif()
+
+    # IJW isn't compatible with GR-
+    if(options MATCHES "/GR-")
+        string(REPLACE "/GR-" "" options "${options}")
+    endif()
+
+    SET(${updatedOptions} "${options}" PARENT_SCOPE)
+  endfunction()
+
+  function(remove_ijw_incompatible_target_options targetName)
+    get_target_property(compileOptions ${targetName} COMPILE_OPTIONS)
+    remove_ijw_incompatible_options("${compileOptions}" compileOptions)
+    set_target_properties(${targetName} PROPERTIES COMPILE_OPTIONS "${compileOptions}")
+  endfunction()
+
   # 4365 - signed/unsigned mismatch
   add_compile_options(/wd4365)
 
@@ -13,24 +45,7 @@ if (CLR_CMAKE_HOST_WIN32)
     string(REPLACE "/RTC1" " " CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
   endif()
 
-  if(CMAKE_CXX_FLAGS MATCHES "/EHsc")
-    string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  endif()
-
-  # IJW isn't compatible with CFG
-  if(CMAKE_CXX_FLAGS MATCHES "/guard:cf")
-    string(REPLACE "/guard:cf" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  endif()
-
-  # IJW isn't compatible with EHCONT, which requires CFG
-  if(CMAKE_CXX_FLAGS MATCHES "/guard:ehcont")
-    string(REPLACE "/guard:ehcont" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  endif()
-
-  # IJW isn't compatible with GR-
-  if(CMAKE_CXX_FLAGS MATCHES "/GR-")
-    string(REPLACE "/GR-" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  endif()
+  remove_ijw_incompatible_options("${CMAKE_CXX_FLAGS}" CMAKE_CXX_FLAGS)
 
   set(CLR_SDK_REF_PACK_OUTPUT "")
   set(CLR_SDK_REF_PACK_DISCOVERY_ERROR "")
@@ -62,4 +77,5 @@ if (CLR_CMAKE_HOST_WIN32)
   add_compile_options(/AI${CLR_SDK_REF_PACK})
 
   list(APPEND LINK_LIBRARIES_ADDITIONAL ijwhost)
+
 endif()
