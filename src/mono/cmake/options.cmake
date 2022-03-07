@@ -53,6 +53,7 @@ option (ENABLE_CHECKED_BUILD_THREAD "Enable runtime history of per-thread coop s
 option (ENABLE_CHECKED_BUILD_METADATA "Enable runtime checks of mempool references between metadata images (must set env var MONO_CHECK_MODE=metadata)")
 option (ENABLE_MSCORDBI "Generate mscordbi to support icordbg interface")
 option (ENABLE_SMALL_CONFIG "Reduce runtime requirements (and capabilities)")
+option (USE_MALLOC_FOR_MEMPOOLS "Use malloc for each single mempool allocation, so tools like Valgrind can run better")
 option (STATIC_COMPONENTS "Compile mono runtime components as static (not dynamic) libraries")
 
 set (MONO_GC "sgen" CACHE STRING "Garbage collector implementation (sgen, boehm, null). Default: sgen")
