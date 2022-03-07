@@ -509,94 +509,122 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Keep the or flat, assuming both right and left are flat.
         /// Apply a counber subsumption/combining optimization, such that e.g. a{2,5}|a{3,10} will be combined to a{2,10}.
         /// </summary>
-        internal static SymbolicRegexNode<S> OrderedOr(SymbolicRegexBuilder<S> builder, SymbolicRegexNode<S> left, SymbolicRegexNode<S> right)
+        internal static SymbolicRegexNode<S> OrderedOr(SymbolicRegexBuilder<S> builder, SymbolicRegexNode<S> left, SymbolicRegexNode<S> right, bool deduplicated = false)
         {
             if (left.IsAnyStar || right == builder._nothing || left == right)
                 return left;
             if (left == builder._nothing)
                 return right;
 
-            if (left._kind != SymbolicRegexNodeKind.OrderedOr)
+            // If left is not an Or, try to avoid allocation by checking if deduplication is necessary
+            if (!deduplicated && left._kind != SymbolicRegexNodeKind.OrderedOr)
             {
-                // Apply the counter subsumption/combining optimization if possible
-                (SymbolicRegexNode<S> loop, SymbolicRegexNode<S> rest) = left.FirstCounterInfo();
-                if (loop != builder._nothing)
+                SymbolicRegexNode<S> current = right;
+                // Initially assume there are no duplicates
+                deduplicated = true;
+                while (current._kind == SymbolicRegexNodeKind.OrderedOr)
                 {
-                    Debug.Assert(loop._kind == SymbolicRegexNodeKind.Loop && loop._left is not null);
-                    (SymbolicRegexNode<S> otherLoop, SymbolicRegexNode<S> otherRest) = right.FirstCounterInfo();
-                    if (otherLoop != builder._nothing && rest == otherRest)
+                    Debug.Assert(current._left is not null && current._right is not null);
+                    // All Ors are supposed to be in a right associative normal form
+                    Debug.Assert(current._left._kind != SymbolicRegexNodeKind.OrderedOr);
+                    if (current._left == left)
                     {
-                        // Found two adjacent counters with the same continuation, check that the loops are equivalent apart from bounds
-                        // and that the bounds form a contiguous interval. Two integer intervals [x1,x2] and [y1,y2] overlap when
-                        // x1 <= y2 and y1 <= x2. The union of intervals that just touch is still contiguous, e.g. [2,5] and [6,10] make
-                        // [2,10], so the lower bounds are decremented by 1 in the check.
-                        Debug.Assert(otherLoop._kind == SymbolicRegexNodeKind.Loop && otherLoop._left is not null);
-                        if (loop._left == otherLoop._left && loop.IsLazy == otherLoop.IsLazy &&
-                            loop._lower - 1 <= otherLoop._upper && otherLoop._lower - 1 <= loop._upper)
-                        {
-                            // Loops are equivalent apart from bounds, and the union of the bounds is a contiguous interval
-                            // Build a new counter for the union of the ranges
-                            SymbolicRegexNode<S> newCounter = CreateConcat(builder, CreateLoop(builder, loop._left,
-                                Math.Min(loop._lower, otherLoop._lower), Math.Max(loop._upper, otherLoop._upper), loop.IsLazy), rest);
-                            if (right._kind == SymbolicRegexNodeKind.OrderedOr)
-                            {
-                                // The right counter came from an or, so include the rest of that or
-                                Debug.Assert(right._right is not null);
-                                return OrderedOr(builder, newCounter, right._right);
-                            }
-                            else
-                            {
-                                return newCounter;
-                            }
-                        }
+                        // Duplicate found, mark that and exit early
+                        deduplicated = false;
+                        break;
                     }
+                    current = current._right;
                 }
-                // No need for flattening and counter optimization did not apply, just build the or
-                return Create(builder, SymbolicRegexNodeKind.OrderedOr, left, right, -1, -1, default, null, SymbolicRegexInfo.Or(left._info, right._info));
+                // If the loop above got to the end, current is the last element. Check that too
+                if (deduplicated)
+                    deduplicated = (current != left);
             }
 
-            // If the left side was an or, then it has to be flattened, gather the elements from both sides
-            List<SymbolicRegexNode<S>> elems = left.ToList(listKind: SymbolicRegexNodeKind.OrderedOr);
-            int firstRightElem = elems.Count;
-            right.ToList(elems, listKind: SymbolicRegexNodeKind.OrderedOr);
-
-            // Eliminate any duplicate elements, keeping the leftmost element
-            HashSet<SymbolicRegexNode<S>> seenElems = new();
-            // Keep track of if any elements from the right side need to be eliminated
-            bool rightChanged = false;
-            for (int i = 0; i < elems.Count; i++)
+            if (!deduplicated || left._kind == SymbolicRegexNodeKind.OrderedOr)
             {
-                if (!seenElems.Contains(elems[i]))
+                // If the left side was an or, then it has to be flattened, gather the elements from both sides
+                List<SymbolicRegexNode<S>> elems = left.ToList(listKind: SymbolicRegexNodeKind.OrderedOr);
+                int firstRightElem = elems.Count;
+                right.ToList(elems, listKind: SymbolicRegexNodeKind.OrderedOr);
+
+                // Eliminate any duplicate elements, keeping the leftmost element
+                HashSet<SymbolicRegexNode<S>> seenElems = new();
+                // Keep track of if any elements from the right side need to be eliminated
+                bool rightChanged = false;
+                for (int i = 0; i < elems.Count; i++)
                 {
-                    seenElems.Add(elems[i]);
+                    if (!seenElems.Contains(elems[i]))
+                    {
+                        seenElems.Add(elems[i]);
+                    }
+                    else
+                    {
+                        // Nothing will be eliminated in the next step
+                        elems[i] = builder._nothing;
+                        rightChanged |= i >= firstRightElem;
+                    }
+                }
+
+                // Build the flattened or, avoiding rebuilding the right side if possible
+                if (rightChanged)
+                {
+                    SymbolicRegexNode<S> or = builder._nothing;
+                    for (int i = elems.Count - 1; i >= 0; i--)
+                    {
+                        or = OrderedOr(builder, elems[i], or, deduplicated: true);
+                    }
+                    return or;
                 }
                 else
                 {
-                    // Nothing will be eliminated in the next step
-                    elems[i] = builder._nothing;
-                    rightChanged |= i >= firstRightElem;
+                    SymbolicRegexNode<S> or = right;
+                    for (int i = firstRightElem - 1; i >= 0; i--)
+                    {
+                        or = OrderedOr(builder, elems[i], or, deduplicated: true);
+                    }
+                    return or;
                 }
             }
 
-            // Build the flattened or, avoiding rebuilding the right side if possible
-            if (rightChanged)
+            Debug.Assert(left._kind != SymbolicRegexNodeKind.OrderedOr);
+            Debug.Assert(deduplicated);
+
+            // Apply the counter subsumption/combining optimization if possible
+            (SymbolicRegexNode<S> loop, SymbolicRegexNode<S> rest) = left.FirstCounterInfo();
+            if (loop != builder._nothing)
             {
-                SymbolicRegexNode<S> or = builder._nothing;
-                for (int i = elems.Count - 1; i >= 0; i--)
+                Debug.Assert(loop._kind == SymbolicRegexNodeKind.Loop && loop._left is not null);
+                (SymbolicRegexNode<S> otherLoop, SymbolicRegexNode<S> otherRest) = right.FirstCounterInfo();
+                if (otherLoop != builder._nothing && rest == otherRest)
                 {
-                    or = OrderedOr(builder, elems[i], or);
+                    // Found two adjacent counters with the same continuation, check that the loops are equivalent apart from bounds
+                    // and that the bounds form a contiguous interval. Two integer intervals [x1,x2] and [y1,y2] overlap when
+                    // x1 <= y2 and y1 <= x2. The union of intervals that just touch is still contiguous, e.g. [2,5] and [6,10] make
+                    // [2,10], so the lower bounds are decremented by 1 in the check.
+                    Debug.Assert(otherLoop._kind == SymbolicRegexNodeKind.Loop && otherLoop._left is not null);
+                    if (loop._left == otherLoop._left && loop.IsLazy == otherLoop.IsLazy &&
+                        loop._lower - 1 <= otherLoop._upper && otherLoop._lower - 1 <= loop._upper)
+                    {
+                        // Loops are equivalent apart from bounds, and the union of the bounds is a contiguous interval
+                        // Build a new counter for the union of the ranges
+                        SymbolicRegexNode<S> newCounter = CreateConcat(builder, CreateLoop(builder, loop._left,
+                            Math.Min(loop._lower, otherLoop._lower), Math.Max(loop._upper, otherLoop._upper), loop.IsLazy), rest);
+                        if (right._kind == SymbolicRegexNodeKind.OrderedOr)
+                        {
+                            // The right counter came from an or, so include the rest of that or
+                            Debug.Assert(right._right is not null);
+                            return OrderedOr(builder, newCounter, right._right, deduplicated: true);
+                        }
+                        else
+                        {
+                            return newCounter;
+                        }
+                    }
                 }
-                return or;
             }
-            else
-            {
-                SymbolicRegexNode<S> or = right;
-                for (int i = firstRightElem - 1; i >= 0; i--)
-                {
-                    or = OrderedOr(builder, elems[i], or);
-                }
-                return or;
-            }
+
+            // Counter optimization did not apply, just build the or
+            return Create(builder, SymbolicRegexNodeKind.OrderedOr, left, right, -1, -1, default, null, SymbolicRegexInfo.Or(left._info, right._info));
         }
 
         /// <summary>
@@ -1624,11 +1652,37 @@ namespace System.Text.RegularExpressions.Symbolic
                     return;
 
                 case SymbolicRegexNodeKind.CaptureStart:
-                    sb.Append('('); // The group number may be wrong
+                    sb.Append('\u230A'); // Left floor
+                    // Include group number as a subscript
+                    Debug.Assert(_lower >= 0);
+                    foreach (char c in _lower.ToString())
+                    {
+                        sb.Append((char)('\u2080' + (c - '0')));
+                    }
                     return;
 
                 case SymbolicRegexNodeKind.CaptureEnd:
-                    sb.Append(')');
+                    // Include group number as a superscript
+                    Debug.Assert(_lower >= 0);
+                    foreach (char c in _lower.ToString())
+                    {
+                        switch (c)
+                        {
+                            case '1':
+                                sb.Append('\u00B9');
+                                break;
+                            case '2':
+                                sb.Append('\u00B2');
+                                break;
+                            case '3':
+                                sb.Append('\u00B3');
+                                break;
+                            default:
+                                sb.Append((char)('\u2070' + (c - '0')));
+                                break;
+                        }
+                    }
+                    sb.Append('\u2309'); // Right ceiling
                     return;
 
                 case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
