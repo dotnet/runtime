@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Logging
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddLogging(configure);
             ServiceProvider serviceProvider = serviceCollection.BuildServiceProvider();
-            ILoggerFactory loggerFactory = serviceProvider.GetService<ILoggerFactory>()!;
+            ILoggerFactory loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
             return new DisposingLoggerFactory(loggerFactory, serviceProvider);
         }
 
