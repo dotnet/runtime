@@ -28,9 +28,8 @@ usage()
   echo "  --help (-h)                     Print help and exit."
   echo "  --librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   echo "                                  [Default: Debug]"
-  echo "  --os                            Target operating system: windows, Linux, Linux-bionic, FreeBSD, OSX, MacCatalyst,"
-  echo "                                  tvOS, tvOSSimulator, iOS, iOSSimulator, Android, Browser, NetBSD, illumos"
-  echo "                                  or Solaris."
+  echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS,"
+  echo "                                  tvOSSimulator, iOS, iOSSimulator, Android, Browser, NetBSD, illumos or Solaris."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --projects <value>              Project or solution file(s) to build."
   echo "  --runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
@@ -260,8 +259,6 @@ while [[ $# > 0 ]]; do
           os="windows" ;;
         linux)
           os="Linux" ;;
-        linux-bionic)
-          os="Linux-bionic" ;;
         freebsd)
           os="FreeBSD" ;;
         osx)
@@ -286,7 +283,7 @@ while [[ $# > 0 ]]; do
           os="Solaris" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are windows, Linux, Linux-bionic, FreeBSD, OSX, MacCatalyst, tvOS, tvOSSimulator, iOS, iOSSimulator, Android, Browser, illumos and Solaris."
+          echo "The allowed values are windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS, tvOSSimulator, iOS, iOSSimulator, Android, Browser, illumos and Solaris."
           exit 1
           ;;
       esac

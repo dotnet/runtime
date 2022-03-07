@@ -40,7 +40,6 @@
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsMacCatalyst)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsAndroid)' == 'true'">true</BuildMonoAOTCrossCompiler>
-    <BuildMonoAOTCrossCompiler Condition="'$(TargetsLinuxBionic)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <MonoObjCrossDir>$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'cross'))</MonoObjCrossDir>
     <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$([MSBuild]::NormalizePath('$(MonoObjCrossDir)', 'config.h'))</CrossConfigH>
     <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
@@ -70,7 +69,6 @@
     <MonoComponentsStatic Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true' and '$(MonoComponentsStatic)' == ''">false</MonoComponentsStatic>
     <MonoComponentsStatic Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' == 'true' and '$(MonoComponentsStatic)' == ''">false</MonoComponentsStatic>
     <MonoComponentsStatic Condition="'$(TargetsAndroid)' == 'true' and '$(MonoComponentsStatic)' == ''">false</MonoComponentsStatic>
-    <MonoComponentsStatic Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoComponentsStatic)' == ''">false</MonoComponentsStatic>
     <!-- by default, do dynamic components -->
     <!-- TODO: Change to dynamic as default once package/deploy is fixed for all targets -->
     <MonoComponentsStatic Condition="'$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
@@ -93,10 +91,8 @@
     <Error Condition="'$(TargetsiOSSimulator)' == 'true' and '$(TargetsiOS)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'x86' and '$(Platform)' != 'arm64'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
     <Error Condition="('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and !$([MSBuild]::IsOSPlatform('OSX'))" Text="Error: $(TargetOS) can only be built on macOS." />
     <Error Condition="'$(TargetsAndroid)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'x86' and '$(Platform)' != 'arm64' and '$(Platform)' != 'arm'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
-    <Error Condition="'$(TargetsLinuxBionic)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'arm64'" Text="Error: Invalid platform for $(RuntimeOS): $(Platform)." />
     <Error Condition="'$(TargetsBrowser)' == 'true' and '$(EMSDK_PATH)' == '' and '$(SkipMonoCrossJitConfigure)' != 'true'" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
     <Error Condition="'$(TargetsAndroid)' == 'true' and '$(ANDROID_NDK_ROOT)' == '' and '$(SkipMonoCrossJitConfigure)' != 'true'" Text="Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root." />
-    <Error Condition="'$(TargetsLinuxBionic)' == 'true' and '$(ANDROID_NDK_ROOT)' == '' and '$(SkipMonoCrossJitConfigure)' != 'true'" Text="Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root." />
     <Error Condition="'$(HostOS)' == 'windows' and ('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Text="Error: Mono runtime for $(TargetOS) can't be built on Windows." />
 
     <!-- check if Ninja is available and default to it on Unix platforms -->
@@ -395,10 +391,10 @@
       <_MonoCXXFLAGS Include="-fexceptions" />
     </ItemGroup>
     <!-- Android specific options -->
-    <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'">
+    <PropertyGroup Condition="'$(TargetsAndroid)' == 'true'">
       <_MonoRunInitCompiler>false</_MonoRunInitCompiler>
     </PropertyGroup>
-    <ItemGroup Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'">
+    <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(ANDROID_NDK_ROOT)/build/cmake/android.toolchain.cmake"/>
       <_MonoCMakeArgs Include="-DANDROID_NDK=$(ANDROID_NDK_ROOT)"/>
       <_MonoCMakeArgs Include="-DANDROID_STL=none"/>
@@ -459,7 +455,7 @@
       <_MonoCMakeArgs Include="-DDISABLE_LINK_STATIC_COMPONENTS=1" Condition="!('$(TargetsiOSSimulator)' == 'true' or '$(TargetstvOSSimulator)' == 'true')"/>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'">
+    <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_PAL_TCP=1"/>
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1"/>
     </ItemGroup>
@@ -525,8 +521,8 @@
       <MonoToolchainPrebuiltOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">darwin-x86_64</MonoToolchainPrebuiltOS>
       <MonoToolchainPrebuiltOS Condition="'$(HostOS)' == 'windows'">windows-x86_64</MonoToolchainPrebuiltOS>
       <_MonoRuntimeFilePath>$(MonoObjDir)out\lib\$(MonoFileName)</_MonoRuntimeFilePath>
-      <_LinuxAbi Condition="'$(TargetsAndroid)' != 'true' and '$(TargetsLinuxBionic)' != 'true'">gnu</_LinuxAbi>
-      <_LinuxAbi Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'">android</_LinuxAbi>
+      <_LinuxAbi Condition="'$(TargetsAndroid)' != 'true'">gnu</_LinuxAbi>
+      <_LinuxAbi Condition="'$(TargetsAndroid)' == 'true'">android</_LinuxAbi>
       <_LinuxFloatAbi Condition="'$(TargetsAndroid)' != 'true'">hf</_LinuxFloatAbi>
       <_Objcopy>objcopy</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 'arm'">arm-linux-$(_LinuxAbi)eabi$(_LinuxFloatAbi)-$(_Objcopy)</_Objcopy>
@@ -535,7 +531,7 @@
       <_Objcopy Condition="'$(Platform)' == 's390x'">s390x-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 'x64'">x86_64-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 'x86'">i686-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
-      <_Objcopy Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'">$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/bin/llvm-objcopy</_Objcopy>
+      <_Objcopy Condition="'$(TargetsAndroid)' == 'true'">$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/bin/llvm-objcopy</_Objcopy>
     </PropertyGroup>
     <!-- test viability of objcopy command -->
     <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true')" Command="$(_Objcopy) -V" IgnoreStandardErrorWarningFormat="true" ContinueOnError="WarnAndContinue" IgnoreExitCode="true" EchoOff="true" ConsoleToMsBuild="true">
@@ -646,7 +642,7 @@
     </ItemGroup>
 
     <!-- Android specific options -->
-    <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'">
+    <PropertyGroup Condition="'$(TargetsAndroid)' == 'true'">
       <MonoToolchainPrebuiltOS Condition="$([MSBuild]::IsOSPlatform('Linux'))">linux-x86_64</MonoToolchainPrebuiltOS>
       <MonoToolchainPrebuiltOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">darwin-x86_64</MonoToolchainPrebuiltOS>
       <MonoToolchainPrebuiltOS Condition="'$(HostOS)' == 'windows'">windows-x86_64</MonoToolchainPrebuiltOS>
@@ -765,7 +761,7 @@
     <PropertyGroup Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'">
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true'">$(MonoObjDir)out\bin\$(MonoFileName)</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)out\lib\$(MonoFileName)</_MonoRuntimeFilePath>
-      <_MonoRuntimeStaticFilePath Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'">$(MonoObjDir)out\lib\$(MonoStaticLibFileName)</_MonoRuntimeStaticFilePath>
+      <_MonoRuntimeStaticFilePath Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\$(MonoStaticLibFileName)</_MonoRuntimeStaticFilePath>
       <_MonoIncludeInterpStaticFiles Condition="'$(TargetsBrowser)' == 'true'">true</_MonoIncludeInterpStaticFiles>
       <_MonoIncludeIcuFiles Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">true</_MonoIncludeIcuFiles>
     </PropertyGroup>
@@ -899,7 +895,7 @@
     <Copy SourceFiles="@(_MonoIncludeArtifacts)"
           DestinationFiles="@(_MonoIncludeArtifacts->'$(RuntimeBinDir)include\%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true"
-          Condition="'$(MonoGenerateOffsetsOSGroups)' == '' and ('$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true' or '$(TargetsBrowser)' == 'true')"/>
+          Condition="'$(MonoGenerateOffsetsOSGroups)' == '' and ('$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true')"/>
 
     <Copy SourceFiles="@(_MonoRuntimeBuildArtifacts)"
           DestinationFiles="@(_MonoRuntimeBuildArtifacts->'$(RuntimeBinDir)build\%(RecursiveDir)%(Filename)%(Extension)')"
