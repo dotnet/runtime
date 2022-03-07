@@ -185,8 +185,8 @@
       <_EmccCompileBitcodeRsp>$(_WasmIntermediateOutputPath)emcc-compile-bc.rsp</_EmccCompileBitcodeRsp>
       <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
 
-      <EmccInitialMemory Condition="'$(EmccInitialMemory)' == ''">$(EmccTotalMemory)</EmccInitialMemory>
-      <EmccInitialMemory Condition="'$(EmccInitialMemory)' == ''">536870912</EmccInitialMemory>
+      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
+      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">536870912</EmccInitialHeapSize>
     </PropertyGroup>
 
     <ItemGroup>
@@ -223,7 +223,7 @@
       <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
       <_EmccLDFlags Include="-Wl,--allow-undefined" />
-      <_EmccLDSFlags Include="-s INITIAL_MEMORY=$(EmccInitialMemory)" />
+      <_EmccLDSFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
 
       <!-- ILLinker should have removed unused imports, so error for Publish -->
       <_EmccLDSFlags Include="-s ERROR_ON_UNDEFINED_SYMBOLS=0" Condition="'$(WasmBuildingForNestedPublish)' != 'true'" />
