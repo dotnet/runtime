@@ -188,7 +188,7 @@ namespace Microsoft.Extensions.Primitives
 
         public IDisposable RegisterChangeCallback(Action<object?> callback, object? state)
         {
-            var registration = _cancellationChangeToken.RegisterChangeCallback(callback, state);
+            IDisposable registration = _cancellationChangeToken.RegisterChangeCallback(callback, state);
             return new Registration(_disposing, registration);
         }
 
