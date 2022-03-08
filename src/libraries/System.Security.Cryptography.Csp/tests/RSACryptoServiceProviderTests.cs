@@ -392,9 +392,9 @@ namespace System.Security.Cryptography.Csp.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Only Unix has _impl shim pattern
-        public static void TestShimOverloads_Unix()
+        public static void TestShimOverrides_Unix()
         {
-            ShimHelpers.VerifyAllBaseMembersOverloaded(typeof(RSACryptoServiceProvider));
+            ShimHelpers.VerifyAllBaseMembersOverridden(typeof(RSACryptoServiceProvider));
         }
 
         private sealed class RsaKeyLifetime : IDisposable

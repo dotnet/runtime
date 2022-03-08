@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         // Shims should override all virtual members and forward to their _impl.
-        public static void VerifyAllBaseMembersOverloaded(Type shimType)
+        public static void VerifyAllBaseMembersOverridden(Type shimType)
         {
             string[] namesToNotVerify =
             {
