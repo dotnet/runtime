@@ -208,7 +208,7 @@ export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle, after_
         get_js_owned_object_by_gc_handle_ref(gc_handle, delegateRoot.address);
         try {
             if (typeof result[delegate_invoke_symbol] === "undefined") {
-                result[delegate_invoke_symbol] = cwraps.mono_wasm_get_delegate_invoke(delegateRoot.value);
+                result[delegate_invoke_symbol] = cwraps.mono_wasm_get_delegate_invoke_ref(delegateRoot.address);
                 if (!result[delegate_invoke_symbol]) {
                     throw new Error("System.Delegate Invoke method can not be resolved.");
                 }

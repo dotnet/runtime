@@ -55,14 +55,13 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_box_primitive_ref", "void", ["number", "number", "number", "number"]],
     ["mono_wasm_intern_string_ref", "void", ["number"]],
     ["mono_wasm_assembly_get_entry_point", "number", ["number"]],
-    ["mono_wasm_get_delegate_invoke", "number", ["number"]],
+    ["mono_wasm_get_delegate_invoke_ref", "number", ["number"]],
     ["mono_wasm_string_array_new_ref", "void", ["number", "number"]],
     ["mono_wasm_typed_array_new", "number", ["number", "number", "number", "number"]],
     ["mono_wasm_class_get_type", "number", ["number"]],
     ["mono_wasm_type_get_class", "number", ["number"]],
     ["mono_wasm_get_type_name", "string", ["number"]],
     ["mono_wasm_get_type_aqn", "string", ["number"]],
-    ["mono_wasm_unbox_rooted", "number", ["number"]],
 
     //DOTNET
     ["mono_wasm_string_from_js", "number", ["string"]],
@@ -79,7 +78,6 @@ export interface t_Cwraps {
     // MONO
     mono_wasm_register_root(start: VoidPtr, size: number, name: string): number;
     mono_wasm_deregister_root(addr: VoidPtr): void;
-    mono_wasm_string_get_data(string: MonoString, outChars: CharPtrPtr, outLengthBytes: Int32Ptr, outIsInterned: Int32Ptr): void;
     mono_wasm_string_get_data_ref(stringRef: MonoObjectRef, outChars: CharPtrPtr, outLengthBytes: Int32Ptr, outIsInterned: Int32Ptr): void;
     mono_wasm_set_is_debugger_attached(value: boolean): void;
     mono_wasm_send_dbg_command(id: number, command_set: number, command: number, data: VoidPtr, size: number): boolean;
@@ -95,6 +93,9 @@ export interface t_Cwraps {
     mono_wasm_add_satellite_assembly(name: string, culture: string, data: VoidPtr, size: number): void;
     mono_wasm_load_runtime(unused: string, debug_level: number): void;
 
+    // Deprecated
+    mono_wasm_string_get_data(string: MonoString, outChars: CharPtrPtr, outLengthBytes: Int32Ptr, outIsInterned: Int32Ptr): void;
+
     // BINDING
     mono_wasm_get_corlib(): MonoAssembly;
     mono_wasm_assembly_load(name: string): MonoAssembly;
@@ -103,19 +104,11 @@ export interface t_Cwraps {
     mono_wasm_find_corlib_type(namespace: string, name: string): MonoType;
     mono_wasm_assembly_find_type(assembly: MonoAssembly, namespace: string, name: string): MonoType;
     mono_wasm_assembly_find_method(klass: MonoClass, name: string, args: number): MonoMethod;
-    mono_wasm_invoke_method(method: MonoMethod, this_arg: MonoObject, params: VoidPtr, out_exc: MonoObjectRef): MonoObject;
     mono_wasm_invoke_method_ref(method: MonoMethod, this_arg: MonoObjectRef, params: VoidPtr, out_exc: MonoObjectRef, out_result: MonoObjectRef): void;
     mono_wasm_string_get_utf8(str: MonoString): CharPtr;
     mono_wasm_string_from_utf16_ref(str: CharPtr, len: number, result: MonoObjectRef): void;
     mono_wasm_get_obj_type(str: MonoObject): number;
     mono_wasm_array_length(array: MonoArray): number;
-
-    // Deprecated
-    mono_wasm_obj_array_new(size: number): MonoArray;
-    // Deprecated
-    mono_wasm_array_get(array: MonoArray, idx: number): MonoObject;
-    // Deprecated
-    mono_wasm_obj_array_set(array: MonoArray, idx: number, obj: MonoObject): void;
 
     mono_wasm_array_get_ref(array: MonoObjectRef, idx: number, result: MonoObjectRef): void;
     mono_wasm_obj_array_new_ref(size: number, result: MonoObjectRef): void;
@@ -125,14 +118,22 @@ export interface t_Cwraps {
     mono_wasm_box_primitive_ref(klass: MonoClass, value: VoidPtr, value_size: number, result: MonoObjectRef): void;
     mono_wasm_intern_string_ref(strRef: MonoObjectRef): void;
     mono_wasm_assembly_get_entry_point(assembly: MonoAssembly): MonoMethod;
-    mono_wasm_get_delegate_invoke(delegate: MonoObject): MonoMethod;
     mono_wasm_string_array_new_ref(size: number, result: MonoObjectRef): void;
     mono_wasm_typed_array_new(arr: VoidPtr, length: number, size: number, type: number): MonoArray;
     mono_wasm_class_get_type(klass: MonoClass): MonoType;
     mono_wasm_type_get_class(ty: MonoType): MonoClass;
+    mono_wasm_get_delegate_invoke_ref(delegate: MonoObjectRef): MonoMethod;
     mono_wasm_get_type_name(ty: MonoType): string;
     mono_wasm_get_type_aqn(ty: MonoType): string;
-    mono_wasm_unbox_rooted(obj: MonoObject): VoidPtr;
+
+    // Deprecated
+    mono_wasm_invoke_method(method: MonoMethod, this_arg: MonoObject, params: VoidPtr, out_exc: MonoObjectRef): MonoObject;
+    // Deprecated
+    mono_wasm_obj_array_new(size: number): MonoArray;
+    // Deprecated
+    mono_wasm_array_get(array: MonoArray, idx: number): MonoObject;
+    // Deprecated
+    mono_wasm_obj_array_set(array: MonoArray, idx: number, obj: MonoObject): void;
 
     //DOTNET
     mono_wasm_string_from_js(str: string): MonoString;

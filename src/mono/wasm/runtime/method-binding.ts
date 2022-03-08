@@ -217,7 +217,6 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
     const closure: any = {
         Module,
         _malloc: Module._malloc,
-        mono_wasm_unbox_rooted: cwraps.mono_wasm_unbox_rooted,
         setI32,
         setU32,
         setF32,
@@ -262,13 +261,6 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
             body.push("if (!rootBuffer) throw new Error('no root buffer provided');");
             body.push(`rootBuffer.set (${i}, ${valueKey});`);
         }
-
-        // HACK: needs_unbox indicates that we were passed a pointer to a managed object, and either
-        //  it was already rooted by our caller or (needs_root = true) by us. Now we can unbox it and
-        //  pass the raw address of its boxed value into the callee.
-        // FIXME: This isn't fully GC or thread safe
-        if (step.needs_unbox)
-            body.push(`${valueKey} = mono_wasm_unbox_rooted (${valueKey});`);
 
         if (step.indirect) {
             const offsetText = `(indirectStart + ${indirectLocalOffset})`;
@@ -595,7 +587,6 @@ export type Converter = {
         // (value: any, result_root: WasmRoot<MonoObject>)
         convert_root?: Function;
         needs_root?: boolean;
-        needs_unbox?: boolean;
         indirect?: ConverterStepIndirects;
         size?: number;
     }[];
@@ -608,7 +599,6 @@ export type Converter = {
     key?: string;
     name?: string;
     needs_root?: boolean;
-    needs_unbox?: boolean;
     compiled_variadic_function?: Function | null;
     compiled_function?: Function | null;
     scratchRootBuffer?: WasmRootBuffer | null;

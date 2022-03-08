@@ -651,9 +651,13 @@ mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int argument
 }
 
 EMSCRIPTEN_KEEPALIVE MonoMethod*
-mono_wasm_get_delegate_invoke (MonoObject *delegate)
+mono_wasm_get_delegate_invoke_ref (MonoObject **delegate)
 {
-	return mono_get_delegate_invoke(mono_object_get_class (delegate));
+	MonoMethod * result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_get_delegate_invoke(mono_object_get_class (*delegate));
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -1268,14 +1272,6 @@ mono_wasm_type_get_class (MonoType *type)
 	if (!type)
 		return NULL;
 	return mono_type_get_class (type);
-}
-
-EMSCRIPTEN_KEEPALIVE void *
-mono_wasm_unbox_rooted (MonoObject *obj)
-{
-	if (!obj)
-		return NULL;
-	return mono_object_unbox (obj);
 }
 
 EMSCRIPTEN_KEEPALIVE char *
