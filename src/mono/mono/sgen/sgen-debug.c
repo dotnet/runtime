@@ -971,7 +971,7 @@ check_reference_for_xdomain (GCObject **ptr, GCObject *obj, MonoDomain *domain)
 		while ((cur = mono_class_get_fields_internal (klass, &iter))) {
 			/* metadata-update: there are no domains in .NET */
 			g_assert (!m_field_is_from_update (cur));
-			if (cur->offset == offset) {
+			if (m_field_get_offset (cur) == offset) {
 				field = cur;
 				break;
 			}

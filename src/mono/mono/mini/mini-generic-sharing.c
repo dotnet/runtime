@@ -2335,9 +2335,9 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 
 		/* The value is offset by 1 */
 		if (m_class_is_valuetype (m_field_get_parent (field)) && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
-			return GUINT_TO_POINTER (field->offset - MONO_ABI_SIZEOF (MonoObject) + 1);
+			return GUINT_TO_POINTER (m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject) + 1);
 		else
-			return GUINT_TO_POINTER (field->offset + 1);
+			return GUINT_TO_POINTER (m_field_get_offset (field) + 1);
 	}
 	case MONO_RGCTX_INFO_METHOD_RGCTX: {
 		MonoMethodInflated *method = (MonoMethodInflated *)data;
