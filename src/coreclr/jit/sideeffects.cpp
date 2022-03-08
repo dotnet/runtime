@@ -148,6 +148,16 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         }
 
         m_flags = ALIAS_READS_ADDRESSABLE_LOCATION | ALIAS_WRITES_ADDRESSABLE_LOCATION;
+
+        // For calls having return buffer, update the local number that is written after his call.
+        GenTree* retBufArgNode = node->AsCall()->GetLclRetBufArgNode();
+        if (retBufArgNode != nullptr)
+        {
+            m_flags |= ALIAS_WRITES_LCL_VAR;
+            m_lclNum  = retBufArgNode->AsLclVarCommon()->GetLclNum();
+            m_lclOffs = retBufArgNode->AsLclVarCommon()->GetLclOffs();
+        }
+
         return;
     }
     else if (node->OperIsAtomicOp())
@@ -161,7 +171,6 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
     bool isWrite = false;
     if (node->OperIs(GT_ASG))
     {
-        //TODO: For call??
         isWrite = true;
         node    = node->gtGetOp1();
     }
