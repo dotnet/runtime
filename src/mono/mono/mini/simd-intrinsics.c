@@ -383,7 +383,7 @@ type_is_float (MonoType *type) {
 static gboolean
 type_enum_is_float (MonoTypeEnum type)
 {
-	return type == MONO_TYPE_R4 || type == MONO_TYPE_R8:
+	return type == MONO_TYPE_R4 || type == MONO_TYPE_R8;
 }
 
 static int
