@@ -498,12 +498,36 @@ class Enclosing
         [DllImport(""DoesNotExist"")]
         public static extern int [|Method3|](out int ret);
     }
+}
+partial class EnclosingPartial
+{
+    class Test
+    {
+        [DllImport(""DoesNotExist"")]
+        public static extern int [|Method|](out int ret);
+        [DllImport(""DoesNotExist"")]
+        public static extern int [|Method2|](out int ret);
+        [DllImport(""DoesNotExist"")]
+        public static extern int [|Method3|](out int ret);
+    }
 }";
             // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
             string fixedSource = @"
 using System.Runtime.InteropServices;
 
 partial class Enclosing
+{
+    partial class Test
+    {
+        [GeneratedDllImport(""DoesNotExist"")]
+        public static partial int {|CS8795:Method|}(out int ret);
+        [GeneratedDllImport(""DoesNotExist"")]
+        public static partial int {|CS8795:Method2|}(out int ret);
+        [GeneratedDllImport(""DoesNotExist"")]
+        public static partial int {|CS8795:Method3|}(out int ret);
+    }
+}
+partial class EnclosingPartial
 {
     partial class Test
     {

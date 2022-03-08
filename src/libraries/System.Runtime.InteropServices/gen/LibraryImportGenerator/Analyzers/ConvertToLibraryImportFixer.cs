@@ -210,7 +210,7 @@ namespace Microsoft.Interop.Analyzers
             var dllImportSyntax = (AttributeSyntax)await dllImportAttr!.ApplicationSyntaxReference!.GetSyntaxAsync(cancellationToken).ConfigureAwait(false);
 
             // Create LibraryImport attribute based on the DllImport attribute
-            SyntaxNode LibraryImportSyntax = GetLibraryImportAttribute(
+            SyntaxNode libraryImportSyntax = GetLibraryImportAttribute(
                 editor,
                 generator,
                 dllImportSyntax,
@@ -220,11 +220,11 @@ namespace Microsoft.Interop.Analyzers
                 out SyntaxNode? unmanagedCallConvAttributeMaybe);
 
             // Add annotation about potential behavioural and compatibility changes
-            LibraryImportSyntax = LibraryImportSyntax.WithAdditionalAnnotations(
+            libraryImportSyntax = libraryImportSyntax.WithAdditionalAnnotations(
                 WarningAnnotation.Create(string.Format(Resources.ConvertToLibraryImportWarning, "[TODO] Documentation link")));
 
             // Replace DllImport with LibraryImport
-            SyntaxNode generatedDeclaration = generator.ReplaceNode(methodSyntax, dllImportSyntax, LibraryImportSyntax);
+            SyntaxNode generatedDeclaration = generator.ReplaceNode(methodSyntax, dllImportSyntax, libraryImportSyntax);
             if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
             {
                 if (!methodSymbol.ReturnsVoid)
@@ -446,7 +446,7 @@ namespace Microsoft.Interop.Analyzers
             string methodName = methodSymbol.Name;
 
             // Create LibraryImport based on the DllImport attribute
-            SyntaxNode LibraryImportSyntax = generator.ReplaceNode(dllImportSyntax,
+            SyntaxNode libraryImportSyntax = generator.ReplaceNode(dllImportSyntax,
                 dllImportSyntax.Name,
                 generator.TypeExpression(generatedDllImportAttrType));
 
@@ -454,7 +454,7 @@ namespace Microsoft.Interop.Analyzers
             bool hasEntryPointAttributeArgument = false;
             List<SyntaxNode> argumentsToAdd= new List<SyntaxNode>();
             List<SyntaxNode> argumentsToRemove = new List<SyntaxNode>();
-            foreach (SyntaxNode argument in generator.GetAttributeArguments(LibraryImportSyntax))
+            foreach (SyntaxNode argument in generator.GetAttributeArguments(libraryImportSyntax))
             {
                 if (argument is not AttributeArgumentSyntax attrArg)
                     continue;
@@ -551,9 +551,9 @@ namespace Microsoft.Interop.Analyzers
                     generator.LiteralExpression(methodName + entryPointSuffix.Value)));
             }
 
-            LibraryImportSyntax = generator.RemoveNodes(LibraryImportSyntax, argumentsToRemove);
-            LibraryImportSyntax = generator.AddAttributeArguments(LibraryImportSyntax, argumentsToAdd);
-            return SortDllImportAttributeArguments((AttributeSyntax)LibraryImportSyntax, generator);
+            libraryImportSyntax = generator.RemoveNodes(libraryImportSyntax, argumentsToRemove);
+            libraryImportSyntax = generator.AddAttributeArguments(libraryImportSyntax, argumentsToAdd);
+            return SortDllImportAttributeArguments((AttributeSyntax)libraryImportSyntax, generator);
         }
 
         private static SyntaxNode SortDllImportAttributeArguments(AttributeSyntax attribute, SyntaxGenerator generator)
