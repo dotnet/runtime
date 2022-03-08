@@ -137,11 +137,13 @@ namespace System.Net
             switch (credential.Policy)
             {
                 case EncryptionPolicy.RequireEncryption:
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 case EncryptionPolicy.AllowNoEncryption:
                     // SecureTransport doesn't allow TLS_NULL_NULL_WITH_NULL, but
                     // since AllowNoEncryption intersect OS-supported isn't nothing,
                     // let it pass.
                     break;
+#pragma warning restore SYSLIB0040
                 default:
                     throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, credential.Policy));
             }

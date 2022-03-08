@@ -188,8 +188,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Create the dot-star pattern (a concatenation of any* with the original pattern)
             // and all of its initial states.
-            SymbolicRegexNode<TSetType> unorderedPattern = _pattern.IgnoreOrOrderAndLazyness();
-            _dotStarredPattern = _builder.CreateConcat(_builder._anyStar, unorderedPattern);
+            _dotStarredPattern = _builder.CreateConcat(_builder._anyStar, _pattern);
             var dotstarredInitialStates = new DfaMatchingState<TSetType>[statesCount];
             for (uint i = 0; i < dotstarredInitialStates.Length; i++)
             {
@@ -204,8 +203,10 @@ namespace System.Text.RegularExpressions.Symbolic
             _dotstarredInitialStates = dotstarredInitialStates;
 
             // Create the reverse pattern (the original pattern in reverse order) and all of its
-            // initial states.
-            _reversePattern = unorderedPattern.Reverse();
+            // initial states. Also disable backtracking simulation to ensure the reverse path from
+            // the final state that was found is followed. Not doing so might cause the earliest
+            // starting point to not be found.
+            _reversePattern = _builder.CreateDisableBacktrackingSimulation(_pattern.Reverse());
             var reverseInitialStates = new DfaMatchingState<TSetType>[statesCount];
             for (uint i = 0; i < reverseInitialStates.Length; i++)
             {
@@ -264,18 +265,18 @@ namespace System.Text.RegularExpressions.Symbolic
             return TStateHandler.TakeTransition(builder, ref state, mintermId);
         }
 
-        private List<(DfaMatchingState<TSetType>, List<DerivativeEffect>)> CreateNewCapturingTransitions(DfaMatchingState<TSetType> state, TSetType minterm, int offset)
+        private List<(DfaMatchingState<TSetType>, DerivativeEffect[])> CreateNewCapturingTransitions(DfaMatchingState<TSetType> state, TSetType minterm, int offset)
         {
             Debug.Assert(_builder._capturingDelta is not null);
             lock (this)
             {
                 // Get the next state if it exists.  The caller should have already tried and found it null (not yet created),
                 // but in the interim another thread could have created it.
-                List<(DfaMatchingState<TSetType>, List<DerivativeEffect>)>? p = _builder._capturingDelta[offset];
+                List<(DfaMatchingState<TSetType>, DerivativeEffect[])>? p = _builder._capturingDelta[offset];
                 if (p is null)
                 {
                     // Build the new state and store it into the array.
-                    p = state.NfaEagerNextWithEffects(minterm);
+                    p = state.NfaNextWithEffects(minterm);
                     Volatile.Write(ref _builder._capturingDelta[offset], p);
                 }
 
@@ -550,14 +551,14 @@ namespace System.Text.RegularExpressions.Symbolic
                     // Get or create the transitions
                     int offset = (sourceId << builder._mintermsLog) | mintermId;
                     Debug.Assert(builder._capturingDelta is not null);
-                    List<(DfaMatchingState<TSetType>, List<DerivativeEffect>)>? transitions =
+                    List<(DfaMatchingState<TSetType>, DerivativeEffect[])>? transitions =
                         builder._capturingDelta[offset] ??
                         CreateNewCapturingTransitions(sourceState, minterm, offset);
 
                     // Take the transitions in their prioritized order
                     for (int j = 0; j < transitions.Count; ++j)
                     {
-                        (DfaMatchingState<TSetType> targetState, List<DerivativeEffect> effects) = transitions[j];
+                        (DfaMatchingState<TSetType> targetState, DerivativeEffect[] effects) = transitions[j];
                         if (targetState.IsDeadend)
                             continue;
 
@@ -601,8 +602,8 @@ namespace System.Text.RegularExpressions.Symbolic
 
             Debug.Assert(i_end != input.Length && endState is not null);
             // Apply effects for finishing at the stored end state
-            endState.Node.ApplyEffects(effect => endRegisters.ApplyEffect(effect, i_end + 1),
-                CharKind.Context(endState.PrevCharKind, GetCharKind(input, i_end + 1)));
+            endState.Node.ApplyEffects((effect, args) => args.Registers.ApplyEffect(effect, args.Pos),
+                CharKind.Context(endState.PrevCharKind, GetCharKind(input, i_end + 1)), (Registers: endRegisters, Pos: i_end + 1));
             resultRegisters = endRegisters;
             return i_end;
         }
@@ -949,7 +950,7 @@ namespace System.Text.RegularExpressions.Symbolic
             /// </summary>
             /// <param name="effects">list of effects to be applied</param>
             /// <param name="pos">the current input position to record</param>
-            public void ApplyEffects(List<DerivativeEffect> effects, int pos)
+            public void ApplyEffects(DerivativeEffect[] effects, int pos)
             {
                 foreach (DerivativeEffect effect in effects)
                 {

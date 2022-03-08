@@ -30,7 +30,7 @@ namespace Microsoft.Interop
         /// <summary>
         /// Comparer for the context used to generate a stub and the original user-provided syntax that triggered stub creation.
         /// </summary>
-        public static readonly IEqualityComparer<(MethodDeclarationSyntax Syntax, DllImportGenerator.IncrementalStubGenerationContext StubContext)> CalculatedContextWithSyntax = new CustomValueTupleElementComparer<MethodDeclarationSyntax, DllImportGenerator.IncrementalStubGenerationContext>(SyntaxEquivalentComparer.Instance, EqualityComparer<DllImportGenerator.IncrementalStubGenerationContext>.Default);
+        public static readonly IEqualityComparer<(MethodDeclarationSyntax Syntax, LibraryImportGenerator.IncrementalStubGenerationContext StubContext)> CalculatedContextWithSyntax = new CustomValueTupleElementComparer<MethodDeclarationSyntax, LibraryImportGenerator.IncrementalStubGenerationContext>(SyntaxEquivalentComparer.Instance, EqualityComparer<LibraryImportGenerator.IncrementalStubGenerationContext>.Default);
     }
 
     /// <summary>

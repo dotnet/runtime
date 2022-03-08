@@ -179,6 +179,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/66232", TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetConverter_Poco_WriteThrowsNotSupportedException()
         {

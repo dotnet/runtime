@@ -31,8 +31,8 @@ namespace Microsoft.Interop.Analyzers
             public const string NativeGenericTypeMustBeClosedOrMatchArity = Prefix + "016";
             public const string MarshallerGetPinnableReferenceRequiresValueProperty = Prefix + "018";
 
-            // Migration from DllImport to GeneratedDllImport
-            public const string ConvertToGeneratedDllImport = Prefix + "015";
+            // Migration from DllImport to LibraryImport
+            public const string ConvertToLibraryImport = Prefix + "015";
         }
 
         internal static LocalizableResourceString GetResourceString(string resourceName)

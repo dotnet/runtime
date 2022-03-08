@@ -997,9 +997,6 @@ op_to_llvm_type (int opcode)
 	case OP_FCONV_TO_U8:
 	case OP_RCONV_TO_U8:
 		return LLVMInt64Type ();
-	case OP_FCONV_TO_I:
-	case OP_RCONV_TO_I:
-		return TARGET_SIZEOF_VOID_P == 8 ? LLVMInt64Type () : LLVMInt32Type ();
 	case OP_IADD_OVF:
 	case OP_IADD_OVF_UN:
 	case OP_ISUB_OVF:
@@ -2057,6 +2054,7 @@ typedef struct {
 	MonoMethod *method;
 	LLVMValueRef load;
 	LLVMTypeRef type;
+	LLVMValueRef lmethod;
 } CallSite;
 
 static LLVMValueRef
@@ -2153,6 +2151,7 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 			 */
 			LLVMValueRef load = get_dummy_aotconst (ctx, llvm_type);
 			info->load = load;
+			info->lmethod = ctx->lmethod;
 
 			g_ptr_array_add (ctx->callsite_list, info);
 
@@ -6592,10 +6591,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_RCONV_TO_I8:
 			values [ins->dreg] = LLVMBuildFPToSI (builder, lhs, LLVMInt64Type (), dname);
 			break;
-		case OP_FCONV_TO_I:
-		case OP_RCONV_TO_I:
-			values [ins->dreg] = LLVMBuildFPToSI (builder, lhs, IntPtrType (), dname);
-			break;
 		case OP_ICONV_TO_R8:
 		case OP_LCONV_TO_R8:
 			values [ins->dreg] = LLVMBuildSIToFP (builder, lhs, LLVMDoubleType (), dname);
@@ -7802,8 +7797,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				break;
 			case OP_FMAX:
 			case OP_FMIN: {
-				LLVMValueRef args [] = { l, r };
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
+				LLVMValueRef args [] = { l, r };
 				LLVMTypeRef t = LLVMTypeOf (l);
 				LLVMTypeRef elem_t = LLVMGetElementType (t);
 				unsigned int elems = LLVMGetVectorSize (t);
@@ -7831,6 +7826,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				}
 
 #elif defined(TARGET_ARM64)
+				LLVMValueRef args [] = { l, r };
 				IntrinsicId iid = ins->inst_c0 == OP_FMAX ? INTRINS_AARCH64_ADV_SIMD_FMAX : INTRINS_AARCH64_ADV_SIMD_FMIN;
 				llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
 				result = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
@@ -7899,17 +7895,17 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef rhs_int = convert (ctx, rhs, intermediate_t);
 			LLVMValueRef result = NULL;
 			switch (ins->inst_c0) {
-			case XBINOP_FORCEINT_and:
+			case XBINOP_FORCEINT_AND:
 				result = LLVMBuildAnd (builder, lhs_int, rhs_int, "");
 				break;
-			case XBINOP_FORCEINT_or:
+			case XBINOP_FORCEINT_OR:
 				result = LLVMBuildOr (builder, lhs_int, rhs_int, "");
 				break;
-			case XBINOP_FORCEINT_ornot:
+			case XBINOP_FORCEINT_ORNOT:
 				result = LLVMBuildNot (builder, rhs_int, "");
 				result = LLVMBuildOr (builder, result, lhs_int, "");
 				break;
-			case XBINOP_FORCEINT_xor:
+			case XBINOP_FORCEINT_XOR:
 				result = LLVMBuildXor (builder, lhs_int, rhs_int, "");
 				break;
 			}
@@ -11631,7 +11627,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				LLVMBasicBlockRef *bblocks = g_new0 (LLVMBasicBlockRef, nbbs);
 				LLVMGetBasicBlocks (ctx->lmethod, bblocks);
 				for (int i = 0; i < nbbs; ++i)
-					LLVMDeleteBasicBlock (bblocks [i]);
+					LLVMRemoveBasicBlockFromParent (bblocks [i]);
 
 				LLVMBasicBlockRef entry_bb = LLVMAppendBasicBlock (ctx->lmethod, "ENTRY");
 				builder = create_builder (ctx);
@@ -11642,6 +11638,13 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				LLVMValueRef callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mini_llvmonly_throw_nullref_exception));
 				LLVMBuildCall (builder, callee, NULL, 0, "");
 				LLVMBuildUnreachable (builder);
+
+				/* Clean references to instructions inside the method */
+				for (int i = 0; i < ctx->callsite_list->len; ++i) {
+					CallSite *callsite = (CallSite*)g_ptr_array_index (ctx->callsite_list, i);
+					if (callsite->lmethod == ctx->lmethod)
+						callsite->load = NULL;
+				}
 			} else {
 				LLVMDeleteFunction (ctx->lmethod);
 			}
@@ -12900,6 +12903,10 @@ mono_llvm_fixup_aot_module (void)
 		LLVMValueRef lmethod = (LLVMValueRef)g_hash_table_lookup (module->method_to_lmethod, method);
 		LLVMValueRef placeholder = (LLVMValueRef)site->load;
 		LLVMValueRef load;
+
+		if (placeholder == NULL)
+			/* Method failed LLVM compilation */
+			continue;
 
 		gboolean can_direct_call = FALSE;
 

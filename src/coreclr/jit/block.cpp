@@ -464,6 +464,10 @@ void BasicBlock::dspFlags()
     {
         printf("bwd-target ");
     }
+    if (bbFlags & BBF_BACKWARD_JUMP_SOURCE)
+    {
+        printf("bwd-src ");
+    }
     if (bbFlags & BBF_PATCHPOINT)
     {
         printf("ppoint ");
