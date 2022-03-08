@@ -1097,6 +1097,9 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			case SN_op_Subtraction:
 				ins->inst_c0 = OP_ISUB;
 				break;
+			case SN_op_Multiply:
+				ins->inst_c0 = OP_IMUL;
+				break;
 			case SN_op_BitwiseAnd:
 				ins->inst_c0 = OP_IAND;
 				break;
