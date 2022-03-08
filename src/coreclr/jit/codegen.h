@@ -1016,9 +1016,6 @@ protected:
     unsigned getBaseVarForPutArgStk(GenTree* treeNode);
 #endif // TARGET_XARCH
 
-#ifdef TARGET_ARM
-    unsigned getFirstArg();
-#endif
     unsigned getFirstArgWithStackSlot();
 
     void genCompareFloat(GenTree* treeNode);
