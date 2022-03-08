@@ -230,3 +230,25 @@ else()
 endif()
 
 addprefix(utils_sources ../utils/ "${utils_platform_sources};${utils_arch_sources};${utils_common_sources}")
+
+if(ENABLE_DTRACE)
+    find_program(DTRACE dtrace)
+    if(TARGET_OSX)
+        set(dtrace_flags "-arch ${TARGET_ARCH}")
+    else()
+        if(TARGET_SIZEOF_VOID_P EQUAL 8)
+            set(dtrace_flags "-64")
+        elseif(TARGET_SIZEOF_VOID_P EQUAL 4)
+            set(dtrace_flags "-32")
+        endif()
+    endif()
+
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_LIST_DIR}/mono-dtrace.h
+        COMMAND ${DTRACE} -h -s "${CMAKE_CURRENT_LIST_DIR}/mono.d" -o "${CMAKE_CURRENT_LIST_DIR}/mono-dtrace.h"
+        DEPENDS ${CMAKE_CURRENT_LIST_DIR}/mono.d
+        VERBATIM
+    )
+
+    set(utils_sources "${utils_sources};${CMAKE_CURRENT_LIST_DIR}/mono-dtrace.h;../utils/dtrace.h")
+endif()
