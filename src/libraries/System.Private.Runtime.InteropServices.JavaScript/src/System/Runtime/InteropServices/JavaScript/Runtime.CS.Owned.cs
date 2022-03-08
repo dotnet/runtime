@@ -27,7 +27,7 @@ namespace System.Runtime.InteropServices.JavaScript
             result = null;
         }
 
-        public static int TryGetCSOwnedObjectJSHandleRef(ref object rawObj, int shouldAddInflight)
+        public static int TryGetCSOwnedObjectJSHandleRef(in object rawObj, int shouldAddInflight)
         {
             JSObject? jsObject = rawObj as JSObject;
             if (jsObject != null && shouldAddInflight != 0)
@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject?.JSHandle ?? 0;
         }
 
-        public static int GetCSOwnedObjectJSHandleRef(ref JSObject jsObject, int shouldAddInflight)
+        public static int GetCSOwnedObjectJSHandleRef(in JSObject jsObject, int shouldAddInflight)
         {
             jsObject.AssertNotDisposed();
 

@@ -231,7 +231,7 @@ export function _wrap_js_thenable_as_task_root(thenable: Promise<any>, resultRoo
     // TODO optimization: return the tcs.Task on this same call instead of _get_tcs_task
     const tcs_gc_handle = corebindings._create_tcs();
     thenable.then((result) => {
-        corebindings._set_tcs_result(tcs_gc_handle, result);
+        corebindings._set_tcs_result_ref(tcs_gc_handle, result);
         // let go of the thenable reference
         mono_wasm_release_cs_owned_object(thenable_js_handle);
 

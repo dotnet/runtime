@@ -16,7 +16,7 @@ const fn_signatures: [jsname: string, csname: string, signature: string/*ArgsMar
     ["_release_js_owned_object_by_gc_handle", "ReleaseJSOwnedObjectByGCHandle", "i"],
 
     ["_create_tcs", "CreateTaskSource", ""],
-    ["_set_tcs_result", "SetTaskSourceResult", "io"],
+    ["_set_tcs_result_ref", "SetTaskSourceResultRef", "iR"],
     ["_set_tcs_failure", "SetTaskSourceFailure", "is"],
     ["_get_tcs_task_ref", "GetTaskSourceTaskRef", "im"],
     ["_task_from_result_ref", "TaskFromResultRef", "om"],
@@ -42,7 +42,7 @@ export interface t_CSwraps {
 
     _create_tcs(): GCHandle;
     // FIXME: We currently rely on marshaling to convert result types
-    _set_tcs_result(gcHandle: GCHandle, result: any): void
+    _set_tcs_result_ref(gcHandle: GCHandle, result: any): void
     _set_tcs_failure(gcHandle: GCHandle, result: string): void
     _get_tcs_task_ref(gcHandle: GCHandle, result: MonoObjectRef): void;
     // FIXME: We rely on marshaling for the value to be converted

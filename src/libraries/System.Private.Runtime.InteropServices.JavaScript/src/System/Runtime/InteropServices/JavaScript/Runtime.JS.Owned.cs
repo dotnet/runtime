@@ -61,7 +61,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return GetJSOwnedObjectGCHandleRef(tcs);
         }
 
-        public static void SetTaskSourceResult(int tcsGCHandle, object result)
+        public static void SetTaskSourceResultRef(int tcsGCHandle, in object result)
         {
             GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
             // this is JS owned Normal handle. We always have a Target

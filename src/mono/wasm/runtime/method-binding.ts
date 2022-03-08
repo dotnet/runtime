@@ -129,6 +129,8 @@ export function _create_primitive_converters(): void {
     // also as those are callback arguments and we don't have platform code which would release the in-flight reference on C# end
     result.set("o", { steps: [{ convert_root: _js_to_mono_obj_root.bind(BINDING, false) }], size: 0, needs_root: true });
     result.set("u", { steps: [{ convert_root: _js_to_mono_uri_root.bind(BINDING, false) }], size: 0, needs_root: true });
+    // ref object aka T&&
+    result.set("R", { steps: [{ convert_root: _js_to_mono_obj_root.bind(BINDING, false), byref: true }], size: 0, needs_root: true });
 
     // result.set ('k', { steps: [{ convert: js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
     result.set("j", { steps: [{ convert: js_to_mono_enum.bind(BINDING), indirect: "i32" }], size: 8 });
@@ -242,14 +244,27 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
         argumentNames.push(argKey);
 
         if (step.convert_root) {
+            body.push("if (!rootBuffer) throw new Error('no root buffer provided');");
             // FIXME: Optimize this!!!
             if (!converter.scratchValueRoot)
                 closure.scratchValueRoot = converter.scratchValueRoot = mono_wasm_new_root<MonoObject>();
 
             closure[closureKey] = step.convert_root;
+            // Convert the object and store the managed reference in our scratch root
             body.push(`${closureKey}(${argKey}, scratchValueRoot);`);
-            // FIXME: Not GC safe
-            body.push(`let ${valueKey} = scratchValueRoot.value;`);
+            // Next, copy that managed reference into the arguments root buffer. This is its new permanent home
+            // FIXME: It would be ideal if we could skip this step, perhaps by having an external root point into the arguments root buffer
+            body.push(`let address${i} = rootBuffer.get_address(${i});`);
+            body.push(`scratchValueRoot.copy_to_address(address${i});`);
+            // Now that it's copied into the root buffer we can either pass the address of that root to the callee, or,
+            //  if we're feeling particularly GC unsafe and thread hazardous, pass the managed pointer directly.
+            if (step.byref) {
+                body.push(`let ${valueKey} = address${i};`);
+            } else {
+                // FIXME: This is not GC safe! The object could move between now and the method invocation, even though we have
+                //  prevented it from being GCed by storing the pointer into a root buffer.
+                body.push(`let ${valueKey} = scratchValueRoot.value;`);
+            }
         } else if (step.convert) {
             closure[closureKey] = step.convert;
             body.push(`let ${valueKey} = ${closureKey}(${argKey}, method, ${i});`);
@@ -257,7 +272,7 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
             body.push(`let ${valueKey} = ${argKey};`);
         }
 
-        if (step.needs_root) {
+        if (step.needs_root && !step.convert_root) {
             body.push("if (!rootBuffer) throw new Error('no root buffer provided');");
             body.push(`rootBuffer.set (${i}, ${valueKey});`);
         }
@@ -578,7 +593,7 @@ export type ArgsMarshalString = ""
     | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`;
 */
 
-type ConverterStepIndirects = "u32" | "i32" | "float" | "double" | "i64"
+type ConverterStepIndirects = "u32" | "i32" | "float" | "double" | "i64" | "reference"
 
 export type Converter = {
     steps: {
@@ -587,6 +602,7 @@ export type Converter = {
         // (value: any, result_root: WasmRoot<MonoObject>)
         convert_root?: Function;
         needs_root?: boolean;
+        byref?: boolean;
         indirect?: ConverterStepIndirects;
         size?: number;
     }[];
