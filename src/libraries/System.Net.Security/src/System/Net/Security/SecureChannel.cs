@@ -171,8 +171,8 @@ namespace System.Net.Security
         {
             if (!_remoteCertificateExposed)
             {
-                  _remoteCertificate?.Dispose();
-                  _remoteCertificate = null;
+                _remoteCertificate?.Dispose();
+                _remoteCertificate = null;
             }
 
             _securityContext?.Dispose();
@@ -607,8 +607,8 @@ namespace System.Net.Security
                         _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert!);
                     }
 
-                    _credentialsHandle = SslStreamPal.AcquireCredentialsHandle(_sslAuthenticationOptions.CertificateContext,
-                            _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.EncryptionPolicy, _sslAuthenticationOptions.IsServer);
+
+                    _credentialsHandle = AcquireCredentialsHandle(_sslAuthenticationOptions);
 
                     thumbPrint = guessedThumbPrint; // Delay until here in case something above threw.
                 }
@@ -713,12 +713,42 @@ namespace System.Net.Security
             }
             else
             {
-                _credentialsHandle = SslStreamPal.AcquireCredentialsHandle(_sslAuthenticationOptions.CertificateContext, _sslAuthenticationOptions.EnabledSslProtocols,
-                        _sslAuthenticationOptions.EncryptionPolicy, _sslAuthenticationOptions.IsServer);
+                _credentialsHandle = AcquireCredentialsHandle(_sslAuthenticationOptions);
                 thumbPrint = guessedThumbPrint;
             }
 
             return cachedCred;
+        }
+
+        private static SafeFreeCredentials AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
+        {
+            SafeFreeCredentials cred = SslStreamPal.AcquireCredentialsHandle(sslAuthenticationOptions.CertificateContext, sslAuthenticationOptions.EnabledSslProtocols,
+                sslAuthenticationOptions.EncryptionPolicy, sslAuthenticationOptions.IsServer);
+
+            if (sslAuthenticationOptions.CertificateContext != null)
+            {
+                //
+                // Since the SafeFreeCredentials can be cached and reused, it may happen on long running processes that some cert on
+                // the chain expires and all subsequent connections would send expired intermediate certificates. Find the earliest
+                // NotAfter timestamp on the chain and use it as expiration timestamp for the credentials.
+                // This provides an opportunity to recreate the credentials with an alternative (and still valid)
+                // certificate chain.
+                //
+                SslStreamCertificateContext certificateContext = sslAuthenticationOptions.CertificateContext;
+                DateTime expiry = certificateContext.Certificate.NotAfter;
+
+                foreach (X509Certificate2 cert in certificateContext.IntermediateCertificates)
+                {
+                    if (cert.NotAfter < expiry)
+                    {
+                        expiry = cert.NotAfter;
+                    }
+                }
+
+                cred._expiry = expiry.ToUniversalTime();
+            }
+
+            return cred;
         }
 
         //
