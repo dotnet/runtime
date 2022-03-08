@@ -248,19 +248,20 @@ get_underlying_type (MonoType* type)
 		return type->type;
 }
 
+static gboolean type_enum_is_unsigned (MonoTypeEnum type);
+static gboolean type_enum_is_float (MonoTypeEnum type);
+
 static MonoInst*
 emit_xcompare (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum etype, MonoInst *arg1, MonoInst *arg2)
 {
 	MonoInst *ins;
-	gboolean is_fp = etype == MONO_TYPE_R4 || etype == MONO_TYPE_R8;
+	int opcode = type_enum_is_float (etype) ? OP_XCOMPARE_FP : OP_XCOMPARE;
 
-	ins = emit_simd_ins (cfg, klass, is_fp ? OP_XCOMPARE_FP : OP_XCOMPARE, arg1->dreg, arg2->dreg);
+	ins = emit_simd_ins (cfg, klass, opcode, arg1->dreg, arg2->dreg);
 	ins->inst_c0 = CMP_EQ;
 	ins->inst_c1 = etype;
 	return ins;
 }
-
-static gboolean type_enum_is_unsigned (MonoTypeEnum type);
 
 static MonoInst*
 emit_xcompare_for_intrinsic (MonoCompile *cfg, MonoClass *klass, int intrinsic_id, MonoTypeEnum etype, MonoInst *arg1, MonoInst *arg2)
@@ -376,12 +377,13 @@ static gboolean
 type_is_float (MonoType *type) {
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
 	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
-	switch (etype->type) {
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-		return TRUE;
-	}
-	return FALSE;
+	return type_enum_is_float (etype->type);
+}
+
+static gboolean
+type_enum_is_float (MonoTypeEnum type)
+{
+	return type == MONO_TYPE_R4 || type == MONO_TYPE_R8:
 }
 
 static int
@@ -741,16 +743,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	switch (id) {
 	case SN_Abs: {
 #ifdef TARGET_ARM64
-		switch (arg0_type) {
-			case MONO_TYPE_U1:
-			case MONO_TYPE_U2:
-			case MONO_TYPE_U4:
-			case MONO_TYPE_U8:
-			case MONO_TYPE_U:
+		if (type_enum_is_unsigned (arg0_type))
 			return NULL;
-			}
-		gboolean is_float = arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8;
-		int iid = is_float ? INTRINS_AARCH64_ADV_SIMD_FABS : INTRINS_AARCH64_ADV_SIMD_ABS;
+
+		int iid = type_enum_is_float (arg0_type) ? INTRINS_AARCH64_ADV_SIMD_FABS : INTRINS_AARCH64_ADV_SIMD_ABS;
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, iid, arg0_type, fsig, args);
 #else
 		return NULL;
@@ -762,7 +758,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_Multiply:
 	case SN_Subtract: {
 		int instc0 = -1;
-		if (arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8) {
+		if (type_enum_is_float (arg0_type)) {
 			switch (id) {
 			case SN_Add:
 				instc0 = OP_FADD;
@@ -819,7 +815,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_BitwiseAnd:
 	case SN_BitwiseOr:
 	case SN_Xor: {
-		if ((arg0_type == MONO_TYPE_R4) || (arg0_type == MONO_TYPE_R8))
+		if (type_enum_is_float (arg0_type))
 			return NULL;
 
 		int instc0 = -1;
@@ -859,7 +855,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_Ceiling:
 	case SN_Floor: {
 #ifdef TARGET_ARM64
-		if ((arg0_type != MONO_TYPE_R4) && (arg0_type != MONO_TYPE_R8))
+		if (!type_enum_is_float (arg0_type))
 			return NULL;
 		int ceil_or_floor = id == SN_Ceiling ? INTRINS_AARCH64_ADV_SIMD_FRINTP : INTRINS_AARCH64_ADV_SIMD_FRINTM;
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, ceil_or_floor, arg0_type, fsig, args);
@@ -966,7 +962,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_LessThanOrEqualAll: {
 			// for floating point numbers all ones is NaN and so
 			// they must be treated differently than integer types
-			if (arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8) {
+			if (type_enum_is_float (arg0_type)) {
 				MonoInst *zero = emit_xzero (cfg, arg_class);
 				MonoInst *inverted_cmp = emit_xcompare (cfg, klass, arg0_type, cmp, zero);
 				return emit_xequal (cfg, klass, inverted_cmp, zero);
@@ -997,7 +993,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	case SN_Sqrt: {
 #ifdef TARGET_ARM64
-		if ((arg0_type != MONO_TYPE_R4) && (arg0_type != MONO_TYPE_R8))
+		if (!type_enum_is_float (arg0_type))
 			return NULL;
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT, arg0_type, fsig, args);
 #else
@@ -1453,7 +1449,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, args [1]->dreg);
 		ins->inst_c1 = etype->type;
 
-		if (etype->type == MONO_TYPE_R4 || etype->type == MONO_TYPE_R8) {
+		if (type_enum_is_float (etype->type)) {
 			switch (id) {
 			case SN_op_Addition:
 				ins->inst_c0 = OP_FADD;
