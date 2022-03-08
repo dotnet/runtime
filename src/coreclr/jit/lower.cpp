@@ -1986,7 +1986,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
             overwrittenEnd   += preSpilledRegsSize;
 #endif // TARGET_ARM
 
-            unsigned int stackOffset = 0;
+            int stackOffset = 0;
             for (unsigned callerArgLclNum = 0; callerArgLclNum < comp->info.compArgsCount; callerArgLclNum++)
             {
                 LclVarDsc* callerArgDsc = comp->lvaGetDesc(callerArgLclNum);
@@ -2014,10 +2014,10 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 else
 #endif // TARGET_AMD64
                 {
-                    assert(callerArgDsc->GetStackOffset() != BAD_STK_OFFS);
 #ifndef TARGET_ARM
                     stackOffset = callerArgDsc->GetStackOffset();
-#endif // !TARGET_ARM
+                    assert(stackOffset != BAD_STK_OFFS);
+
                     if (baseOff == -1)
                     {
                         baseOff = stackOffset;
@@ -2025,6 +2025,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
 
                     // On all ABIs where we fast tail call the stack args should come in order.
                     assert(baseOff <= stackOffset);
+#endif // !TARGET_ARM
 
                     // Compute offset of this stack argument relative to the first stack arg.
                     // This will be its offset into the incoming arg space area.
