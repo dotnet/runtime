@@ -5542,13 +5542,29 @@ Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* dat
 {
     GenTree* tree = *pTree;
 
-    if (tree->OperIs(GT_ASG))
+    if (tree->OperIsSsaDef())
     {
-        GenTree*   dest     = tree->AsOp()->gtOp1;
-        genTreeOps destOper = dest->OperGet();
-
         isVarAssgDsc* desc = (isVarAssgDsc*)data->pCallbackData;
         assert(desc && desc->ivaSelf == desc);
+
+        GenTree* dest = nullptr;
+        if (tree->OperIs(GT_CALL))
+        {
+            dest = tree->AsCall()->GetLclRetBufArgNode();
+            if (dest == nullptr)
+            {
+                desc->ivaMaskCall = optCallInterf(tree->AsCall());
+                return WALK_CONTINUE;
+            }
+
+            dest = dest->AsOp()->gtOp1;
+        }
+        else
+        {
+            dest = tree->AsOp()->gtOp1;
+        }
+
+        genTreeOps destOper = dest->OperGet();
 
         if (destOper == GT_LCL_VAR)
         {
@@ -5593,14 +5609,6 @@ Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* dat
             varRefKinds refs = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
             desc->ivaMaskInd = varRefKinds(desc->ivaMaskInd | refs);
         }
-    }
-    else if (tree->gtOper == GT_CALL)
-    {
-        //TODO: here
-        isVarAssgDsc* desc = (isVarAssgDsc*)data->pCallbackData;
-        assert(desc && desc->ivaSelf == desc);
-
-        desc->ivaMaskCall = optCallInterf(tree->AsCall());
     }
 
     return WALK_CONTINUE;
