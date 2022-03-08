@@ -313,7 +313,7 @@ void Compiler::optCopyPropPushDef(GenTree*             defNode,
         assert((lclNode->gtFlags & GTF_VAR_DEF) != 0);
 
         // TODO-CQ: design better heuristics for propagation and remove this condition.
-        if (defNode->OperIs(GT_ASG) && !defNode->IsPhiDefn())
+        if (!defNode->IsPhiDefn())
         {
             ssaDefNum = GetSsaNumForLocalVarDef(lclNode);
 

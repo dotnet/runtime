@@ -696,13 +696,13 @@ private:
                 {
                     // Mark the local variable associated as being defined at this position.
                     assert(!exposeParentLcl);
-                    assert(val.Node()->TypeIs(TYP_BYREF, TYP_I_IMPL));
-                    assert(val.Node()->OperIs(GT_ADDR));
 
+#ifdef DEBUG
                     m_compiler->lvaSetHiddenBufferStructArg(val.LclNum());
-                    hasHiddenStructArg = true;
+#endif
 
-                    callTree->SetRetBufArg(callTree->gtCallArgs);
+                    hasHiddenStructArg = true;
+                    callTree->SetLclRetBufArg(callTree->gtCallArgs);
                 }
             }
         }

@@ -529,10 +529,13 @@ public:
     unsigned char lvContainsHoles : 1;     // True when we have a promoted struct that contains holes
     unsigned char lvCustomLayout : 1;      // True when this struct has "CustomLayout"
 
-    unsigned char lvIsMultiRegArg : 1;         // true if this is a multireg LclVar struct used in an argument context
-    unsigned char lvIsMultiRegRet : 1;         // true if this is a multireg LclVar struct assigned from a multireg call
+    unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
+    unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
+
+#ifdef DEBUG
     unsigned char lvHiddenBufferStructArg : 1; // True when this struct (or its field) are passed as hidden buffer
                                                // pointer.
+#endif
 
 #ifdef FEATURE_HFA_FIELDS_PRESENT
     CorInfoHFAElemType _lvHfaElemKind : 3; // What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).
@@ -759,6 +762,7 @@ public:
         return m_addrExposed;
     }
 
+#ifdef DEBUG
     void SetHiddenBufferStructArg(char value)
     {
         lvHiddenBufferStructArg = value;
@@ -768,6 +772,7 @@ public:
     {
         return lvHiddenBufferStructArg;
     }
+#endif
 
 private:
     regNumberSmall _lvRegNum; // Used to store the register this variable is in (or, the low register of a
@@ -3801,7 +3806,10 @@ public:
     // Getters and setters for address-exposed and do-not-enregister local var properties.
     bool lvaVarAddrExposed(unsigned varNum) const;
     void lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReason reason));
+
+#ifdef DEBUG
     void lvaSetHiddenBufferStructArg(unsigned varNum);
+#endif
     void lvaSetVarLiveInOutOfHandler(unsigned varNum);
     bool lvaVarDoNotEnregister(unsigned varNum);
 

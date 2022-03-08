@@ -729,6 +729,8 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
 //
 void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
 {
+    assert(defNode->OperIsSsaDef());
+
     if (defNode->OperIs(GT_ASG))
     {
         // This is perhaps temporary -- maybe should be done elsewhere.  Label GT_INDs on LHS of assignments, so we
@@ -742,16 +744,11 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
         {
             lhs->gtFlags |= GTF_CLS_VAR_ASG_LHS;
         }
-        defNode = defNode->AsOp();
-    }
-    else
-    {
-        assert(defNode->OperIs(GT_CALL));
     }
 
     GenTreeLclVarCommon* lclNode;
-    bool                 isFullDef;
-    bool                 isLocal = defNode->DefinesLocal(m_pCompiler, &lclNode, &isFullDef);
+    bool                 isFullDef = false;
+    bool                 isLocal   = defNode->DefinesLocal(m_pCompiler, &lclNode, &isFullDef);
 
     if (isLocal)
     {
@@ -796,7 +793,7 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
             // If necessary, add "lclNum/ssaNum" to the arg list of a phi def in any
             // handlers for try blocks that "block" is within.  (But only do this for "real" definitions,
             // not phi definitions.)
-            if (defNode->OperIs(GT_CALL) || (!defNode->AsOp()->gtGetOp2()->OperIs(GT_PHI)))
+            if (!defNode->IsPhiDefn())
             {
                 AddDefToHandlerPhis(block, lclNum, ssaNum);
             }
@@ -810,11 +807,10 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
     }
     else if (defNode->OperIs(GT_CALL))
     {
-        // GT_CALL that doesn't define local, nothing to do further.
         return;
     }
 
-    // Figure out if "asgNode" may make a new GC heap state (if we care for this block).
+    // Figure out if "defNode" may make a new GC heap state (if we care for this block).
     if (((block->bbMemoryHavoc & memoryKindSet(GcHeap)) == 0) && m_pCompiler->ehBlockHasExnFlowDsc(block))
     {
         bool isAddrExposedLocal = isLocal && m_pCompiler->lvaVarAddrExposed(lclNode->GetLclNum());

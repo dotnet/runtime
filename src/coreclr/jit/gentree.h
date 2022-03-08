@@ -4855,7 +4855,7 @@ struct GenTreeCall final : public GenTree
         return gtRetBufArg->GetNode()->OperIs(GT_ASG) ? gtRetBufArg->GetNode()->gtGetOp2() : gtRetBufArg->GetNode();
     }
 
-    void SetRetBufArg(Use* retBufArg);
+    void SetLclRetBufArg(Use* retBufArg);
 
     Use* gtRetBufArg; // The argument that holds return buffer argument
 };

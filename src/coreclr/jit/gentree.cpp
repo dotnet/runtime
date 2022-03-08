@@ -1269,8 +1269,9 @@ bool GenTreeCall::AreArgsComplete() const
 //-------------------------------------------------------------------------
 // SetRetBufArg: Sets the "return buffer" argument use.
 //
-void GenTreeCall::SetRetBufArg(Use* retBufArg)
+void GenTreeCall::SetLclRetBufArg(Use* retBufArg)
 {
+    assert(retBufArg->GetNode()->TypeIs(TYP_I_IMPL, TYP_BYREF) && retBufArg->GetNode()->OperIs(GT_ADDR, GT_ASG));
     assert(HasRetBufArg());
     gtRetBufArg = retBufArg;
 }
@@ -15511,8 +15512,6 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
         {
             return false;
         }
-
-        assert(retBufArg->OperIs(GT_ADDR));
 
         unsigned size = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
         return retBufArg->DefinesLocalAddr(comp, size, pLclVarTree, pIsEntire);

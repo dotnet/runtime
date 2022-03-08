@@ -161,6 +161,7 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
     bool isWrite = false;
     if (node->OperIs(GT_ASG))
     {
+        //TODO: For call??
         isWrite = true;
         node    = node->gtGetOp1();
     }

@@ -2145,9 +2145,9 @@ void fgArgInfo::EvalArgsToTemps()
         curArgTabEntry->lateUse = tmpRegArgNext;
         curArgTabEntry->SetLateArgInx(regArgInx++);
 
-        if ((setupArg != nullptr) && (setupArg->OperIs(GT_ARGPLACE)) && (callTree->gtRetBufArg == curArgTabEntry->use))
+        if ((setupArg != nullptr) && setupArg->OperIs(GT_ARGPLACE) && (callTree->gtRetBufArg == curArgTabEntry->use))
         {
-            callTree->SetRetBufArg(tmpRegArgNext);
+            callTree->SetLclRetBufArg(tmpRegArgNext);
         }
     }
 
@@ -9283,11 +9283,11 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     compCurBB->bbFlags |= BBF_HAS_CALL; // This block has a call
 
-    /* Process the "normal" argument list */
+    // Process the "normal" argument list
     call = fgMorphArgs(call);
     noway_assert(call->gtOper == GT_CALL);
 
-    /* Assign DEF flags if it produces a definition from "return buffer" */
+    // Assign DEF flags if it produces a definition from "return buffer".
     fgAssignSetVarDef(call);
     if (call->OperRequiresAsgFlag())
     {
