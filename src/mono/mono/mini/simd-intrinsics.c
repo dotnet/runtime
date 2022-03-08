@@ -1086,8 +1086,8 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	case SN_op_BitwiseOr:
 	case SN_op_Division:
 	case SN_op_ExclusiveOr:
-	case SN_op_Subtraction:
-	case SN_op_Multiply: {
+	case SN_op_Multiply:
+	case SN_op_Subtraction: {
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
 		MonoInst *ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, args [1]->dreg);
