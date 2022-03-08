@@ -386,7 +386,7 @@ stages:
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         liveRuntimeBuildConfig: release
-        liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+        liveLibrariesBuildConfig: Release
         pgoType: 'PGO'
       platforms:
       - windows_x64
