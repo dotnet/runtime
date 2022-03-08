@@ -1532,12 +1532,7 @@ namespace System.Net.Http
         private async ValueTask<HttpConnection> ConstructHttp11ConnectionAsync(bool async, Socket? socket, Stream stream, TransportContext? transportContext, HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Stream newStream = await ApplyPlaintextFilterAsync(async, stream, HttpVersion.Version11, request, cancellationToken).ConfigureAwait(false);
-            if (newStream != stream)
-            {
-                // If a plaintext filter created a new stream, we can't trust that the socket is still applicable.
-                socket = null;
-            }
-            return new HttpConnection(this, socket, newStream, transportContext);
+            return new HttpConnection(this, newStream, transportContext);
         }
 
         private async ValueTask<Http2Connection> ConstructHttp2ConnectionAsync(Stream stream, HttpRequestMessage request, CancellationToken cancellationToken)

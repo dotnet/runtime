@@ -43,7 +43,6 @@ namespace System.Net.Http
         private static readonly ulong s_http11Bytes = BitConverter.ToUInt64(Encoding.ASCII.GetBytes("HTTP/1.1"));
 
         private readonly HttpConnectionPool _pool;
-        private readonly Socket? _socket; // used for polling; _stream should be used for all reading/writing. _stream owns disposal.
         private readonly Stream _stream;
         private readonly TransportContext? _transportContext;
         private readonly WeakReference<HttpConnection> _weakThisRef;
@@ -74,7 +73,6 @@ namespace System.Net.Http
 
         public HttpConnection(
             HttpConnectionPool pool,
-            Socket? socket,
             Stream stream,
             TransportContext? transportContext)
         {
@@ -83,7 +81,6 @@ namespace System.Net.Http
 
             _pool = pool;
             _stream = stream;
-            _socket = socket;
 
             _transportContext = transportContext;
 
