@@ -1182,6 +1182,17 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 	case MONO_CEE_CONV_OVF_U:
 		ins->type = STACK_PTR;
 		ins->opcode += ovfops_op_map [src1->type];
+
+		switch (ins->opcode) {
+		case OP_FCONV_TO_I:
+			ins->opcode = TARGET_SIZEOF_VOID_P == 4 ? OP_FCONV_TO_I4 : OP_FCONV_TO_I8;
+			break;
+		case OP_RCONV_TO_I:
+			ins->opcode = TARGET_SIZEOF_VOID_P == 4 ? OP_RCONV_TO_I4 : OP_RCONV_TO_I8;
+			break;
+		default:
+			break;
+		}
 		break;
 	case MONO_CEE_ADD_OVF:
 	case MONO_CEE_ADD_OVF_UN:
@@ -8723,8 +8734,8 @@ calli_end:
 			break;
 		case MONO_CEE_CONV_U2:
 		case MONO_CEE_CONV_U1:
-		case MONO_CEE_CONV_I:
 		case MONO_CEE_CONV_U:
+		case MONO_CEE_CONV_I:
 			ADD_UNOP (il_op);
 			CHECK_CFG_EXCEPTION;
 			break;

@@ -3510,7 +3510,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_float_to_int (cfg, code, ins->dreg, 2, FALSE);
 			break;
 		case OP_FCONV_TO_I4:
-		case OP_FCONV_TO_I:
 			code = emit_float_to_int (cfg, code, ins->dreg, 4, TRUE);
 			break;
 		case OP_FCONV_TO_I8:
@@ -6155,7 +6154,6 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_FCONV_TO_I2:
 	case OP_FCONV_TO_U2:
 	case OP_FCONV_TO_I4:
-	case OP_FCONV_TO_I:
 		break;
 	default:
 		return;
