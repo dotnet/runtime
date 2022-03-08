@@ -9,7 +9,10 @@ To install `wa-info` as dotnet tool run:
 ```
 dotnet tool install -g wa-info
 ```
-
+to update use:
+```
+dotnet tool update -g wa-info
+```
 ### Command line options
 
 ```
@@ -35,9 +38,22 @@ Options:
 ```
 
 ### Example usage
+Disassemble function
+```
+> wa-info -d -f test test.wasm
+(func test_simd(param i32) (result i32))
+ local 1 123
+ local.get $0
+ i32x4.splat    [SIMD]
+ local.tee $1
+ local.get $1
+ i16x8.avgr.u    [SIMD]
+ i32x4.extract.lane    [SIMD]
+```
+
 Summary of the module and sections
 ```
-> wa-info.exe dotnet.wasm
+> wa-info dotnet.wasm
 Module: path: dotnet.wasm
   size: 74,502,446
   binary format version: 1
@@ -65,7 +81,7 @@ Disassemble function
 
 *note: build the app with `-p:WasmNativeDebugSymbols=true -p:WasmNativeStrip=false` to preserve name custom section*
 ```
-> wa-info.exe -d -f ves_icall_RuntimeFieldInfo_GetValueInternal$ dotnet.wasm
+> wa-info -d -f ves_icall_RuntimeFieldInfo_GetValueInternal$ dotnet.wasm
 (func ves_icall_RuntimeFieldInfo_GetValueInternal(param i32 i32 i32) (result i32))
  local.get $0
  i32.load align:2
@@ -88,6 +104,6 @@ Disassemble function
 
 Get AOT stats
 ```
-> wa-info.exe --aot-stats dotnet.wasm
+> wa-info --aot-stats dotnet.wasm
 AOT stats: 5005 function(s) call(s) interpreter, 2.96% of 169215 functions
 ```
