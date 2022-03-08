@@ -170,7 +170,7 @@ if ($iOSMono) {
     } else {
         Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
         Copy-Item -path "$SourceDirectory\MauiiOSDefaultIPA" $PayloadDirectory\MauiiOSDefaultIPA -Recurse
-        Copy-Item -path "$SourceDirectory\MauiMacCatalystDefault" $PayloadDirectory\MauiMacCatalystDefault -Recurse
+        Copy-Item -path "$SourceDirectory\MauiMacCatalystDefault\MauiMacCatalystDefault.app" $PayloadDirectory\MauiMacCatalystDefault -Recurse
     }
 
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
