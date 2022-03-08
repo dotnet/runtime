@@ -1348,7 +1348,6 @@ namespace System.Net.Http
 
         private CancellationTokenSource GetConnectTimeoutCancellationTokenSource() => new CancellationTokenSource(Settings._connectTimeout);
 
-        // TODO: More cleanup here
         private async ValueTask<(Stream, TransportContext?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Stream? stream = null;
@@ -1358,11 +1357,11 @@ namespace System.Net.Http
                 case HttpConnectionKind.Https:
                 case HttpConnectionKind.ProxyConnect:
                     Debug.Assert(_originAuthority != null);
-                    (_, stream) = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
+                    stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
                     break;
 
                 case HttpConnectionKind.Proxy:
-                    (_, stream) = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+                    stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
                     break;
 
                 case HttpConnectionKind.ProxyTunnel:
@@ -1400,12 +1399,11 @@ namespace System.Net.Http
             return (stream, transportContext);
         }
 
-        private async ValueTask<(Socket?, Stream)> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
+        private async ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             var endPoint = new DnsEndPoint(host, port);
-            Socket? socket = null;
             Stream? stream = null;
             try
             {
@@ -1428,28 +1426,34 @@ namespace System.Net.Http
                 else
                 {
                     // Otherwise, create and connect a socket using default settings.
-                    socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
-
-                    if (async)
+                    Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                    try
                     {
-                        await socket.ConnectAsync(endPoint, cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        using (cancellationToken.UnsafeRegister(static s => ((Socket)s!).Dispose(), socket))
+                        if (async)
                         {
-                            socket.Connect(endPoint);
+                            await socket.ConnectAsync(endPoint, cancellationToken).ConfigureAwait(false);
                         }
-                    }
+                        else
+                        {
+                            using (cancellationToken.UnsafeRegister(static s => ((Socket)s!).Dispose(), socket))
+                            {
+                                socket.Connect(endPoint);
+                            }
+                        }
 
-                    stream = new NetworkStream(socket, ownsSocket: true);
+                        stream = new NetworkStream(socket, ownsSocket: true);
+                    }
+                    catch
+                    {
+                        socket.Dispose();
+                        throw;
+                    }
                 }
 
-                return (socket, stream);
+                return stream;
             }
             catch (Exception ex)
             {
-                socket?.Dispose();
                 throw ex is OperationCanceledException oce && oce.CancellationToken == cancellationToken ?
                     CancellationHelper.CreateOperationCanceledException(innerException: null, cancellationToken) :
                     ConnectHelper.CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
@@ -1583,7 +1587,7 @@ namespace System.Net.Http
             Debug.Assert(_originAuthority != null);
             Debug.Assert(_proxyUri != null);
 
-            (Socket? _, Stream stream) = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+            Stream stream = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
 
             try
             {
