@@ -6863,9 +6863,6 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 #endif // TARGET_ARM
     }
     calleeArgStackSize = GetOutgoingArgByteSize(calleeArgStackSize);
-#ifdef TARGET_ARM
-    calleeArgStackSize += preSpilledRegsSize;
-#endif // TARGET_ARM
 
     if (!opts.compFastTailCalls)
     {
@@ -6883,7 +6880,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     if (callee->IsR2RRelativeIndir() || callee->HasNonStandardAddedArgs(this))
     {
         reportFastTailCallDecision(
-            "Method with non-standard args passed in callee trash register cannot be tail called");
+            "Method with non-standard args passed in callee saved register cannot be tail called");
         return false;
     }
 #endif
