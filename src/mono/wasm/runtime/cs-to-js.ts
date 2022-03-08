@@ -1,19 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_wasm_new_root, WasmRoot } from "./roots";
+import { mono_wasm_new_root, WasmRoot, mono_wasm_new_external_root } from "./roots";
 import {
     GCHandle, JSHandleDisposed, MarshalError, MarshalType, MonoArray,
     MonoArrayNull, MonoObject, MonoObjectNull, MonoString,
-    MonoType, MonoTypeNull
+    MonoType, MonoTypeNull, MonoObjectRef
 } from "./types";
 import { runtimeHelpers } from "./imports";
 import { conv_string_root } from "./strings";
 import corebindings from "./corebindings";
 import cwraps from "./cwraps";
 import { get_js_owned_object_by_gc_handle_ref, js_owned_gc_handle_symbol, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, _js_owned_object_finalized, _js_owned_object_registry, _lookup_js_owned_object, _register_js_owned_object, _use_finalization_registry } from "./gc-handles";
-import { mono_method_get_call_signature, call_method, wrap_error } from "./method-calls";
-import { _js_to_mono_obj_unsafe } from "./js-to-cs";
+import { mono_method_get_call_signature, call_method, wrap_error, wrap_error_root } from "./method-calls";
+import { _js_to_mono_obj_root } from "./js-to-cs";
 import { _are_promises_supported, _create_cancelable_promise } from "./cancelable-promise";
 import { getU32, getI32, getF32, getF64 } from "./memory";
 import { Int32Ptr, VoidPtr } from "./types/emscripten";
@@ -235,17 +235,21 @@ export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle, after_
     return result;
 }
 
-export function mono_wasm_create_cs_owned_object(core_name: MonoString, args: MonoArray, is_exception: Int32Ptr): MonoObject {
-    const argsRoot = mono_wasm_new_root(args), nameRoot = mono_wasm_new_root(core_name);
+export function mono_wasm_create_cs_owned_object_ref(core_name: MonoString, args: MonoArray, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    const argsRoot = mono_wasm_new_root(args),
+        nameRoot = mono_wasm_new_root(core_name),
+        resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
         const js_name = conv_string_root(nameRoot);
         if (!js_name) {
-            return wrap_error(is_exception, "Invalid name @" + nameRoot.value);
+            wrap_error_root(is_exception, "Invalid name @" + nameRoot.value, resultRoot);
+            return;
         }
 
         const coreObj = (<any>globalThis)[js_name];
         if (coreObj === null || typeof coreObj === "undefined") {
-            return wrap_error(is_exception, "JavaScript host object '" + js_name + "' not found.");
+            wrap_error_root(is_exception, "JavaScript host object '" + js_name + "' not found.", resultRoot);
+            return;
         }
 
         try {
@@ -268,11 +272,13 @@ export function mono_wasm_create_cs_owned_object(core_name: MonoString, args: Mo
             const js_handle = mono_wasm_get_js_handle(js_obj);
             // returns boxed js_handle int, because on exception we need to return String on same method signature
             // here we don't have anything to in-flight reference, as the JSObject doesn't exist yet
-            return _js_to_mono_obj_unsafe(false, js_handle);
+            _js_to_mono_obj_root(false, js_handle, resultRoot);
         } catch (ex) {
-            return wrap_error(is_exception, ex);
+            wrap_error_root(is_exception, ex, resultRoot);
+            return;
         }
     } finally {
+        resultRoot.release();
         argsRoot.release();
         nameRoot.release();
     }

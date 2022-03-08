@@ -97,13 +97,13 @@ export function mono_wasm_get_js_handle(js_obj: any): JSHandle {
     return js_handle as JSHandle;
 }
 
-export function mono_wasm_release_cs_owned_object(js_handle: JSHandle): any {
+export function mono_wasm_release_cs_owned_object(js_handle: JSHandle): void {
     const obj = _cs_owned_objects_by_js_handle[<any>js_handle];
     if (typeof obj !== "undefined" && obj !== null) {
         // if this is the global object then do not
         // unregister it.
         if (globalThis === obj)
-            return obj;
+            return;
 
         if (typeof obj[cs_owned_js_handle_symbol] !== "undefined") {
             obj[cs_owned_js_handle_symbol] = undefined;
@@ -112,5 +112,4 @@ export function mono_wasm_release_cs_owned_object(js_handle: JSHandle): any {
         _cs_owned_objects_by_js_handle[<any>js_handle] = undefined;
         _js_handle_free_list.push(js_handle);
     }
-    return obj;
 }

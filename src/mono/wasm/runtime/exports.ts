@@ -38,7 +38,7 @@ import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
 import { conv_string, conv_string_root, js_string_to_mono_string, mono_intern_string } from "./strings";
 import { js_to_mono_obj, js_typed_array_to_array, mono_wasm_typed_array_to_array } from "./js-to-cs";
 import {
-    mono_array_to_js_array, mono_wasm_create_cs_owned_object, unbox_mono_obj
+    mono_array_to_js_array, mono_wasm_create_cs_owned_object_ref, unbox_mono_obj
 } from "./cs-to-js";
 import {
     call_static_method, mono_bind_static_method, mono_call_assembly_entry_point,
@@ -293,7 +293,7 @@ export const __linker_exports: any = {
     mono_wasm_get_by_index,
     mono_wasm_set_by_index,
     mono_wasm_get_global_object,
-    mono_wasm_create_cs_owned_object,
+    mono_wasm_create_cs_owned_object_ref,
     mono_wasm_release_cs_owned_object,
     mono_wasm_typed_array_to_array,
     mono_wasm_typed_array_copy_to,

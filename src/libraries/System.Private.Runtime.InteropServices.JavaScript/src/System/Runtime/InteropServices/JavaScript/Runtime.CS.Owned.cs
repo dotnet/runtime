@@ -105,7 +105,7 @@ namespace System.Runtime.InteropServices.JavaScript
         // TODO: Ref
         internal static IntPtr CreateCSOwnedObject(JSObject proxy, string typeName, params object[] parms)
         {
-            object res = Interop.Runtime.CreateCSOwnedObject(typeName, parms, out int exception);
+            Interop.Runtime.CreateCSOwnedObjectRef(typeName, parms, out int exception, out object res);
             if (exception != 0)
                 throw new JSException((string)res);
 

@@ -12,7 +12,7 @@ const DotnetSupportLib = {
     $DOTNET__postset: `
 let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require};
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, requirePromise:Promise.resolve(require)}, 
+    { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:Promise.resolve(require)},
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
     __dotnet_replacements);
 readAsync = __dotnet_replacements.readAsync;
@@ -48,7 +48,7 @@ const linked_functions = [
     "mono_wasm_get_by_index",
     "mono_wasm_set_by_index",
     "mono_wasm_get_global_object",
-    "mono_wasm_create_cs_owned_object",
+    "mono_wasm_create_cs_owned_object_ref",
     "mono_wasm_release_cs_owned_object",
     "mono_wasm_typed_array_to_array",
     "mono_wasm_typed_array_copy_to",
