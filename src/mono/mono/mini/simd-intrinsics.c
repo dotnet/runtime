@@ -1082,12 +1082,12 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		break;
 	}
 	case SN_op_Addition:
-	case SN_op_Subtraction:
-	case SN_op_Division:
-	case SN_op_Multiply:
 	case SN_op_BitwiseAnd:
 	case SN_op_BitwiseOr:
-	case SN_op_ExclusiveOr: {
+	case SN_op_Division:
+	case SN_op_ExclusiveOr:
+	case SN_op_Subtraction:
+	case SN_op_Multiply: {
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
 		MonoInst *ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, args [1]->dreg);
@@ -1098,14 +1098,14 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			case SN_op_Addition:
 				ins->inst_c0 = OP_FADD;
 				break;
-			case SN_op_Subtraction:
-				ins->inst_c0 = OP_FSUB;
+			case SN_op_Division:
+				ins->inst_c0 = OP_FDIV;
 				break;
 			case SN_op_Multiply:
 				ins->inst_c0 = OP_FMUL;
 				break;
-			case SN_op_Division:
-				ins->inst_c0 = OP_FDIV;
+			case SN_op_Subtraction:
+				ins->inst_c0 = OP_FSUB;
 				break;
 			default:
 				NULLIFY_INS (ins);
@@ -1116,12 +1116,6 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			case SN_op_Addition:
 				ins->inst_c0 = OP_IADD;
 				break;
-			case SN_op_Subtraction:
-				ins->inst_c0 = OP_ISUB;
-				break;
-			case SN_op_Multiply:
-				ins->inst_c0 = OP_IMUL;
-				break;
 			case SN_op_BitwiseAnd:
 				ins->inst_c0 = OP_IAND;
 				break;
@@ -1130,6 +1124,12 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				break;
 			case SN_op_ExclusiveOr:
 				ins->inst_c0 = OP_IXOR;
+				break;
+			case SN_op_Multiply:
+				ins->inst_c0 = OP_IMUL;
+				break;
+			case SN_op_Subtraction:
+				ins->inst_c0 = OP_ISUB;
 				break;
 			default:
 				NULLIFY_INS (ins);
