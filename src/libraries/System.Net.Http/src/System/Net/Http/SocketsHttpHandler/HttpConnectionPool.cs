@@ -636,7 +636,7 @@ namespace System.Net.Http
             {
                 try
                 {
-                    (Socket? _, Stream stream, TransportContext? transportContext) = await ConnectAsync(request, true, cts.Token).ConfigureAwait(false);
+                    (Stream stream, TransportContext? transportContext) = await ConnectAsync(request, true, cts.Token).ConfigureAwait(false);
 
                     if (IsSecure)
                     {
@@ -1348,21 +1348,21 @@ namespace System.Net.Http
 
         private CancellationTokenSource GetConnectTimeoutCancellationTokenSource() => new CancellationTokenSource(Settings._connectTimeout);
 
-        private async ValueTask<(Socket?, Stream, TransportContext?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        // TODO: More cleanup here
+        private async ValueTask<(Stream, TransportContext?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Stream? stream = null;
-            Socket? socket = null;
             switch (_kind)
             {
                 case HttpConnectionKind.Http:
                 case HttpConnectionKind.Https:
                 case HttpConnectionKind.ProxyConnect:
                     Debug.Assert(_originAuthority != null);
-                    (socket, stream) = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
+                    (_, stream) = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
                     break;
 
                 case HttpConnectionKind.Proxy:
-                    (socket, stream) = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+                    (_, stream) = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
                     break;
 
                 case HttpConnectionKind.ProxyTunnel:
@@ -1372,17 +1372,11 @@ namespace System.Net.Http
 
                 case HttpConnectionKind.SocksTunnel:
                 case HttpConnectionKind.SslSocksTunnel:
-                    (socket, stream) = await EstablishSocksTunnel(request, async, cancellationToken).ConfigureAwait(false);
+                    stream = await EstablishSocksTunnel(request, async, cancellationToken).ConfigureAwait(false);
                 break;
             }
 
             Debug.Assert(stream != null);
-            if (socket is null && stream is NetworkStream ns)
-            {
-                // We weren't handed a socket directly.  But if we're able to extract one, do so.
-                // Most likely case here is a ConnectCallback was used and returned a NetworkStream.
-                socket = ns.Socket;
-            }
 
             TransportContext? transportContext = null;
             if (IsSecure)
@@ -1403,7 +1397,7 @@ namespace System.Net.Http
                 stream = sslStream;
             }
 
-            return (socket, stream, transportContext);
+            return (stream, transportContext);
         }
 
         private async ValueTask<(Socket?, Stream)> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
@@ -1464,7 +1458,7 @@ namespace System.Net.Http
 
         internal async ValueTask<HttpConnection> CreateHttp11ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            (Socket? _, Stream stream, TransportContext? transportContext) = await ConnectAsync(request, async, cancellationToken).ConfigureAwait(false);
+            (Stream stream, TransportContext? transportContext) = await ConnectAsync(request, async, cancellationToken).ConfigureAwait(false);
             return await ConstructHttp11ConnectionAsync(async, stream, transportContext, request, cancellationToken).ConfigureAwait(false);
         }
 
@@ -1584,12 +1578,12 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<(Socket? socket, Stream stream)> EstablishSocksTunnel(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        private async ValueTask<Stream> EstablishSocksTunnel(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(_originAuthority != null);
             Debug.Assert(_proxyUri != null);
 
-            (Socket? socket, Stream stream) = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+            (Socket? _, Stream stream) = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
 
             try
             {
@@ -1601,7 +1595,7 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.net_http_request_aborted, e);
             }
 
-            return (socket, stream);
+            return stream;
         }
 
         private void HandleHttp11ConnectionFailure(HttpRequestMessage request, Exception e)
