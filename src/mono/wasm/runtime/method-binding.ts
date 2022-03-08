@@ -303,7 +303,7 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
             body.push(`setU32(buffer + (${i} * 4), ${offsetText});`);
             indirectLocalOffset += step.size!;
         } else {
-            body.push(`setI32(buffer + (${i} * 4), ${valueKey});`);
+            body.push(`setU32(buffer + (${i} * 4), ${valueKey});`);
             indirectLocalOffset += 4;
         }
         body.push("");

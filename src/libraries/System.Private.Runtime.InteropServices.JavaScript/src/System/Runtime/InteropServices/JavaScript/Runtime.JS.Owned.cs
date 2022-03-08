@@ -85,7 +85,7 @@ namespace System.Runtime.InteropServices.JavaScript
             result = tcs.Task;
         }
 
-        public static void TaskFromResultRef(object? obj, out object result)
+        public static void TaskFromResultRef(in object? obj, out object result)
         {
             result = Task.FromResult(obj);
         }

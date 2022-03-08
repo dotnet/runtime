@@ -19,7 +19,7 @@ const fn_signatures: [jsname: string, csname: string, signature: string/*ArgsMar
     ["_set_tcs_result_ref", "SetTaskSourceResultRef", "iR"],
     ["_set_tcs_failure", "SetTaskSourceFailure", "is"],
     ["_get_tcs_task_ref", "GetTaskSourceTaskRef", "im"],
-    ["_task_from_result_ref", "TaskFromResultRef", "om"],
+    ["_task_from_result_ref", "TaskFromResultRef", "Rm"],
     ["_setup_js_cont_ref", "SetupJSContinuationRef", "mo"],
 
     ["_object_to_string_ref", "ObjectToStringRef", "m"],
@@ -41,12 +41,10 @@ export interface t_CSwraps {
     _release_js_owned_object_by_gc_handle(gcHandle: GCHandle): void;
 
     _create_tcs(): GCHandle;
-    // FIXME: We currently rely on marshaling to convert result types
     _set_tcs_result_ref(gcHandle: GCHandle, result: any): void
     _set_tcs_failure(gcHandle: GCHandle, result: string): void
     _get_tcs_task_ref(gcHandle: GCHandle, result: MonoObjectRef): void;
-    // FIXME: We rely on marshaling for the value to be converted
-    _task_from_result_ref(value: MonoObject, result: MonoObjectRef): void;
+    _task_from_result_ref(value: any, result: MonoObjectRef): void;
     // FIXME: PromiseControl is a JS object so we can't pass an address directly
     _setup_js_cont_ref(task: MonoObjectRef, continuation: PromiseControl): void;
 
