@@ -65,6 +65,8 @@ namespace System.Security.Cryptography.Csp.Tests
                 "ExportPkcs8PrivateKey",
                 "ExportEncryptedPkcs8PrivateKey",
                 "ExportRSAPrivateKey",
+                "HashData",
+                "TryHashData",
                 "TryExportRSAPrivateKey",
                 "TryExportRSAPublicKey",
                 "TryExportSubjectPublicKeyInfo",
