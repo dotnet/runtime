@@ -23,7 +23,7 @@ ThreadInfo::~ThreadInfo()
     kern_return_t result = ::mach_port_deallocate(mach_task_self(), m_port);
     if (result != KERN_SUCCESS)
     {
-        fprintf(stderr, "~ThreadInfo: mach_port_deallocate FAILED %x %s\n", result, mach_error_string(result));
+        printf_error("~ThreadInfo: mach_port_deallocate FAILED %x %s\n", result, mach_error_string(result));
     }
 }
 
@@ -38,7 +38,7 @@ ThreadInfo::Initialize()
     kern_return_t result = ::thread_get_state(Port(), x86_THREAD_STATE64, (thread_state_t)&m_gpRegisters, &stateCount);
     if (result != KERN_SUCCESS)
     {
-        fprintf(stderr, "thread_get_state(%x) FAILED %x %s\n", m_tid, result, mach_error_string(result));
+        printf_error("thread_get_state(%x) FAILED %x %s\n", m_tid, result, mach_error_string(result));
         return false;
     }
 
@@ -46,7 +46,7 @@ ThreadInfo::Initialize()
     result = ::thread_get_state(Port(), x86_FLOAT_STATE64, (thread_state_t)&m_fpRegisters, &stateCount);
     if (result != KERN_SUCCESS)
     {
-        fprintf(stderr, "thread_get_state(%x) FAILED %x %s\n", m_tid, result, mach_error_string(result));
+        printf_error("thread_get_state(%x) FAILED %x %s\n", m_tid, result, mach_error_string(result));
         return false;
     }
 #elif defined(__aarch64__)
@@ -54,7 +54,7 @@ ThreadInfo::Initialize()
     kern_return_t result = ::thread_get_state(Port(), ARM_THREAD_STATE64, (thread_state_t)&m_gpRegisters, &stateCount);
     if (result != KERN_SUCCESS)
     {
-        fprintf(stderr, "thread_get_state(%x) FAILED %x %s\n", m_tid, result, mach_error_string(result));
+        printf_error("thread_get_state(%x) FAILED %x %s\n", m_tid, result, mach_error_string(result));
         return false;
     }
 
@@ -62,7 +62,7 @@ ThreadInfo::Initialize()
     result = ::thread_get_state(Port(), ARM_NEON_STATE64, (thread_state_t)&m_fpRegisters, &stateCount);
     if (result != KERN_SUCCESS)
     {
-        fprintf(stderr, "thread_get_state(%x) FAILED %x %s\n", m_tid, result, mach_error_string(result));
+        printf_error("thread_get_state(%x) FAILED %x %s\n", m_tid, result, mach_error_string(result));
         return false;
     }
 #else
