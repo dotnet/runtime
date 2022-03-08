@@ -169,13 +169,13 @@ namespace System.Net.Security
 
             SafeFreeCredentials? credentials = GetCachedCredential(key);
 
-            DateTime now = DateTime.UtcNow;
-            if (credentials == null || credentials.IsClosed || credentials.IsInvalid || credentials.Expiry < now)
+            DateTime utcNow = DateTime.UtcNow;
+            if (credentials == null || credentials.IsClosed || credentials.IsInvalid || credentials.Expiry < utcNow)
             {
                 lock (s_cachedCreds)
                 {
                     credentials = GetCachedCredential(key);
-                    if (credentials == null || credentials.IsClosed || credentials.IsInvalid || credentials.Expiry < now)
+                    if (credentials == null || credentials.IsClosed || credentials.IsInvalid || credentials.Expiry < utcNow)
                     {
                         SafeCredentialReference? cached = SafeCredentialReference.CreateReference(creds);
 

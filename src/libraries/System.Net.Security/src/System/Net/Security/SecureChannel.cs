@@ -607,9 +607,7 @@ namespace System.Net.Security
                         _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert!);
                     }
 
-
                     _credentialsHandle = AcquireCredentialsHandle(_sslAuthenticationOptions);
-
                     thumbPrint = guessedThumbPrint; // Delay until here in case something above threw.
                 }
             }
@@ -735,17 +733,38 @@ namespace System.Net.Security
                 // certificate chain.
                 //
                 SslStreamCertificateContext certificateContext = sslAuthenticationOptions.CertificateContext;
-                DateTime expiry = certificateContext.Certificate.NotAfter;
+                cred._expiry = GetExpiryTimestamp(certificateContext);
 
-                foreach (X509Certificate2 cert in certificateContext.IntermediateCertificates)
+                if (cred._expiry < DateTime.UtcNow)
                 {
-                    if (cert.NotAfter < expiry)
-                    {
-                        expiry = cert.NotAfter;
-                    }
+                    //
+                    // The CertificateContext from auth options is recreated just before creating the SafeFreeCredentials. However, in case when
+                    // it was provided by the user code, it may still contain the (now expired) certificate chain. Such expiration timestamp would
+                    // effectively disable caching as it would lead to creating new credentials for each connection. We attempt to recover by creating
+                    // a temporary certificate context (which builds a new chain with hopefully more recent chain).
+                    //
+                    certificateContext = SslStreamCertificateContext.Create(
+                        certificateContext.Certificate,
+                        new X509Certificate2Collection(certificateContext.IntermediateCertificates),
+                        trust: certificateContext.Trust);
+
+                    cred._expiry = GetExpiryTimestamp(certificateContext);
                 }
 
-                cred._expiry = expiry.ToUniversalTime();
+                static DateTime GetExpiryTimestamp(SslStreamCertificateContext certificateContext)
+                {
+                    DateTime expiry = certificateContext.Certificate.NotAfter;
+
+                    foreach (X509Certificate2 cert in certificateContext.IntermediateCertificates)
+                    {
+                        if (cert.NotAfter < expiry)
+                        {
+                            expiry = cert.NotAfter;
+                        }
+                    }
+
+                    return expiry.ToUniversalTime();
+                }
             }
 
             return cred;
