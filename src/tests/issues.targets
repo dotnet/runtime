@@ -18,6 +18,24 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/mono/runningmono/*">
             <Issue>This test is to verify we are running mono, and therefore only makes sense on mono.</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XUnitTestBinBase)/baseservices/threading/threadpool/bindhandle/bindhandleinvalid/*">
+            <Issue>https://github.com/dotnet/runtime/issues/66273</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XUnitTestBinBase)/baseservices/threading/threadpool/bindhandle/bindhandleinvalid3/*">
+            <Issue>https://github.com/dotnet/runtime/issues/66273</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XUnitTestBinBase)/baseservices/threading/threadpool/bindhandle/bindhandleinvalid4/*">
+            <Issue>https://github.com/dotnet/runtime/issues/66273</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XUnitTestBinBase)/baseservices/threading/threadpool/bindhandle/bindhandleinvalid5/*">
+            <Issue>https://github.com/dotnet/runtime/issues/66273</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XUnitTestBinBase)/baseservices/threading/threadpool/bindhandle/bindhandleinvalid6/*">
+            <Issue>https://github.com/dotnet/runtime/issues/66273</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XUnitTestBinBase)/baseservices/threading/threadpool/bindhandle/bindhandlenull/*">
+            <Issue>https://github.com/dotnet/runtime/issues/66274</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Coverage/271010/**">
             <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
         </ExcludeList>
@@ -60,9 +78,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/binding/tracing/BinderTracingTest.Basic/*">
             <Issue>https://github.com/dotnet/runtime/issues/57786</Issue>
         </ExcludeList>
-	<ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/**">
-	    <Issue>CoreCLR does not implement the mono embedding API</Issue>
-	</ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/**">
+            <Issue>CoreCLR does not implement the mono embedding API</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets on all runtimes -->
@@ -2921,9 +2939,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
-	<ExcludeList Include = "$(XunitTestBinBase)/Interop/MonoAPI/MonoMono/Thunks/**">
-	    <Issue>Test not expected to work with AOT</Issue>
-	</ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/MonoAPI/MonoMono/Thunks/**">
+            <Issue>Test not expected to work with AOT</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot') and '$(TargetArchitecture)' == 'arm64'">
@@ -3868,7 +3886,7 @@
 
     <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' or ('$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator')">
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/**">
-	    <Issue>mobile and wasm don't support tests with native libraries.  wasm also needs static linking</Issue>
-	</ExcludeList>
+            <Issue>mobile and wasm don't support tests with native libraries.  wasm also needs static linking</Issue>
+        </ExcludeList>
     </ItemGroup>
 </Project>
