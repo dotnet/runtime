@@ -158,13 +158,13 @@ namespace System.Net.Http
             // Check to see if we've received anything on the connection; if we have, that's
             // either erroneous data (we shouldn't have received anything yet) or the connection
             // has been closed; either way, we can't use it.
-            if (!async && _socket is not null)
+            if (!async && _stream is NetworkStream networkStream)
             {
                 // Directly poll the socket rather than doing an async read, so that we can
                 // issue an appropriate sync read when we actually need it.
                 try
                 {
-                    return !_socket.Poll(0, SelectMode.SelectRead);
+                    return !networkStream.Socket.Poll(0, SelectMode.SelectRead);
                 }
                 catch (Exception e) when (e is SocketException || e is ObjectDisposedException)
                 {
