@@ -1923,11 +1923,6 @@ namespace System.Text.RegularExpressions.Generator
                     string backtrack = ReserveName($"CaptureBacktrack");
                     MarkLabel(backtrack, emitSemicolon: false);
                     EmitStackPop(startingPos);
-                    if (!childBacktracks)
-                    {
-                        writer.WriteLine($"pos = {startingPos};");
-                        SliceInputSpan(writer);
-                    }
                     Goto(doneLabel);
                     writer.WriteLine();
 
@@ -2154,7 +2149,8 @@ namespace System.Text.RegularExpressions.Generator
                             EmitExpressionConditional(node);
                             break;
 
-                        case RegexNodeKind.Atomic when analysis.MayBacktrack(node.Child(0)):
+                        case RegexNodeKind.Atomic:
+                            Debug.Assert(analysis.MayBacktrack(node.Child(0)));
                             EmitAtomic(node, subsequent);
                             return;
 
@@ -3934,10 +3930,11 @@ namespace System.Text.RegularExpressions.Generator
         private static string Literal(RegexOptions options)
         {
             string s = options.ToString();
-            if (int.TryParse(s, out _))
+            if (int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
             {
                 // The options were formatted as an int, which means the runtime couldn't
                 // produce a textual representation.  So just output casting the value as an int.
+                Debug.Fail("This shouldn't happen, as we should only get to the point of emitting code if RegexOptions was valid.");
                 return $"(global::System.Text.RegularExpressions.RegexOptions)({(int)options})";
             }
 
