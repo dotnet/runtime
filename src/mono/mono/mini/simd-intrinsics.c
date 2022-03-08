@@ -305,7 +305,7 @@ emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoInst *arg1, MonoInst *arg2)
 static MonoInst*
 emit_not_xequal (MonoCompile *cfg, MonoClass *klass, MonoInst *arg1, MonoInst *arg2)
 {
-	MonoInst *ins = emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
+	MonoInst *ins = emit_xequal (cfg, klass, arg1, arg2);
 	int sreg = ins->dreg;
 	int dreg = alloc_ireg (cfg);
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sreg, 0);
@@ -817,13 +817,27 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #endif
 	case SN_BitwiseAnd:
-		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IAND, arg0_type, fsig, args);
 	case SN_BitwiseOr:
-		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IOR, arg0_type, fsig, args);
 	case SN_Xor: {
 		if ((arg0_type == MONO_TYPE_R4) || (arg0_type == MONO_TYPE_R8))
 			return NULL;
-		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IXOR, arg0_type, fsig, args);
+
+		int instc0 = -1;
+		switch (id) {
+		case SN_BitwiseAnd:
+			instc0 = OP_IAND;
+			break;
+		case SN_BitwiseOr:
+			instc0 = OP_IOR;
+			break;
+		case SN_Xor:
+			instc0 = OP_IXOR;
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+
+		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
 	}
 	case SN_As:
 	case SN_AsByte:
