@@ -68,7 +68,7 @@ namespace System.Threading
             nint port = Interop.Kernel32.CreateIoCompletionPort(handle, _ioPort, UIntPtr.Zero, 0);
             if (port == 0)
             {
-                ThreadPool.ThrowApplicationException(Marshal.GetHRForLastWin32Error());
+                ThrowHelper.ThrowApplicationException(Marshal.GetHRForLastWin32Error());
             }
 
             Debug.Assert(port == _ioPort);
@@ -91,7 +91,7 @@ namespace System.Threading
 
             if (!Interop.Kernel32.PostQueuedCompletionStatus(_ioPort, 0, UIntPtr.Zero, (IntPtr)nativeOverlapped))
             {
-                ThreadPool.ThrowApplicationException(Marshal.GetHRForLastWin32Error());
+                ThrowHelper.ThrowApplicationException(Marshal.GetHRForLastWin32Error());
             }
         }
 
@@ -209,7 +209,7 @@ namespace System.Threading
                     _events.CompleteBatchEnqueue();
                 }
 
-                ThreadPool.ThrowApplicationException(Marshal.GetHRForLastWin32Error());
+                ThrowHelper.ThrowApplicationException(Marshal.GetHRForLastWin32Error());
             }
 
             private void PollAndInlineCallbacks()

@@ -625,19 +625,6 @@ extern "C" BOOL QCALLTYPE ThreadPool_PerformGateActivities(INT32 cpuUtilization)
     return needGateThread;
 }
 
-extern "C" void QCALLTYPE ThreadPool_ThrowApplicationException(INT32 hr)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    // This has special code to produce an error message for an HR that differs a bit from Marshal.GetExceptionForHR(). This is
-    // used in a few places in the thread pool to preserve the former messages.
-    COMPlusThrowWin32((HRESULT)hr);
-
-    END_QCALL;
-}
-
 /********************************************************************************************************************/
 
 FCIMPL2(FC_BOOL_RET, ThreadPoolNative::CorUnregisterWait, LPVOID WaitHandle, Object* objectToNotify)
