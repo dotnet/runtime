@@ -519,11 +519,11 @@ partial class Enclosing
 {
     partial class Test
     {
-        [GeneratedDllImport(""DoesNotExist"")]
+        [LibraryImport(""DoesNotExist"")]
         public static partial int {|CS8795:Method|}(out int ret);
-        [GeneratedDllImport(""DoesNotExist"")]
+        [LibraryImport(""DoesNotExist"")]
         public static partial int {|CS8795:Method2|}(out int ret);
-        [GeneratedDllImport(""DoesNotExist"")]
+        [LibraryImport(""DoesNotExist"")]
         public static partial int {|CS8795:Method3|}(out int ret);
     }
 }
@@ -531,11 +531,11 @@ partial class EnclosingPartial
 {
     partial class Test
     {
-        [GeneratedDllImport(""DoesNotExist"")]
+        [LibraryImport(""DoesNotExist"")]
         public static partial int {|CS8795:Method|}(out int ret);
-        [GeneratedDllImport(""DoesNotExist"")]
+        [LibraryImport(""DoesNotExist"")]
         public static partial int {|CS8795:Method2|}(out int ret);
-        [GeneratedDllImport(""DoesNotExist"")]
+        [LibraryImport(""DoesNotExist"")]
         public static partial int {|CS8795:Method3|}(out int ret);
     }
 }";
