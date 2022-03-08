@@ -64,7 +64,7 @@ struct mempool
     size_t obj_size;            /* object size (rounded up for alignment) */
     size_t chunk_size;          /* allocation granularity */
     size_t reserve;             /* minimum (desired) size of the free-list */
-    unsigned int num_free;      /* number of objects on the free-list */
+    size_t num_free;            /* number of objects on the free-list */
     struct object
       {
         struct object *next;
