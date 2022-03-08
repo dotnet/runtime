@@ -28,6 +28,10 @@ namespace System.Linq
             {
                 return list[index];
             }
+            else if (source is IReadOnlyList<TSource> list)
+            {
+                return list[index];
+            }
             else if (TryGetElement(source, index, out TSource? element))
             {
                 return element;
