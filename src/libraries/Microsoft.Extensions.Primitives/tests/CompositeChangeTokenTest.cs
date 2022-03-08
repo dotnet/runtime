@@ -179,7 +179,7 @@ namespace Microsoft.Extensions.Primitives
 
         public ProxyCancellationChangeToken(CancellationToken cancellationToken, Action disposing)
         {
-            _cancellationChangeToken = new(cancellationToken);
+            _cancellationChangeToken = new CancellationChangeToken(cancellationToken);
             _disposing = disposing;
         }
         public bool ActiveChangeCallbacks => _cancellationChangeToken.ActiveChangeCallbacks;
