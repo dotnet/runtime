@@ -7895,17 +7895,17 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef rhs_int = convert (ctx, rhs, intermediate_t);
 			LLVMValueRef result = NULL;
 			switch (ins->inst_c0) {
-			case XBINOP_FORCEINT_and:
+			case XBINOP_FORCEINT_AND:
 				result = LLVMBuildAnd (builder, lhs_int, rhs_int, "");
 				break;
-			case XBINOP_FORCEINT_or:
+			case XBINOP_FORCEINT_OR:
 				result = LLVMBuildOr (builder, lhs_int, rhs_int, "");
 				break;
-			case XBINOP_FORCEINT_ornot:
+			case XBINOP_FORCEINT_ORNOT:
 				result = LLVMBuildNot (builder, rhs_int, "");
 				result = LLVMBuildOr (builder, result, lhs_int, "");
 				break;
-			case XBINOP_FORCEINT_xor:
+			case XBINOP_FORCEINT_XOR:
 				result = LLVMBuildXor (builder, lhs_int, rhs_int, "");
 				break;
 			}
