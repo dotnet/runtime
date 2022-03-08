@@ -243,15 +243,6 @@
 /* Reduce runtime requirements (and capabilities) */
 #cmakedefine MONO_SMALL_CONFIG 1
 
-/* Make jemalloc assert for mono */
-#cmakedefine MONO_JEMALLOC_ASSERT 1
-
-/* Make jemalloc default for mono */
-#cmakedefine MONO_JEMALLOC_DEFAULT 1
-
-/* Enable jemalloc usage for mono */
-#cmakedefine MONO_JEMALLOC_ENABLED 1
-
 /* String of disabled features */
 #define DISABLED_FEATURES @DISABLED_FEATURES@
 

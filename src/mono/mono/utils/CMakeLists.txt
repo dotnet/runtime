@@ -72,7 +72,6 @@ set(utils_common_sources
     mono-proclib.h
     mono-proclib-windows-internals.h
     mono-publib.c
-    mono-jemalloc.c
     mono-string.h
     mono-time.c
     mono-time.h
