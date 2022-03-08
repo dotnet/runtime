@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -71,5 +72,11 @@ namespace System.Threading
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool BindIOCompletionCallbackNative(IntPtr fileHandle);
+
+        // CoreCLR has special code to produce messages for HRs, which differs a bit from Marshal.GetExceptionForHR that is used
+        // by ThrowHelper.ThrowApplicationException(hr).
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_ThrowApplicationException")]
+        [DoesNotReturn]
+        internal static partial void ThrowApplicationException(int hr);
     }
 }

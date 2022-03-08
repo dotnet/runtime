@@ -60,6 +60,7 @@ public:
 extern "C" INT64 QCALLTYPE ThreadPool_GetCompletedWorkItemCount();
 extern "C" BOOL QCALLTYPE ThreadPool_RequestWorkerThread();
 extern "C" BOOL QCALLTYPE ThreadPool_PerformGateActivities(INT32 cpuUtilization);
+extern "C" void QCALLTYPE ThreadPool_ThrowApplicationException(INT32 hr);
 extern "C" HANDLE QCALLTYPE AppDomainTimer_Create(INT32 dueTime, INT32 timerId);
 extern "C" BOOL QCALLTYPE AppDomainTimer_Change(HANDLE hTimer, INT32 dueTime);
 extern "C" BOOL QCALLTYPE AppDomainTimer_Delete(HANDLE hTimer);
