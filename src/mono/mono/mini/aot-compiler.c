@@ -11220,6 +11220,7 @@ emit_image_table (MonoAotCompile *acfg)
 static void
 emit_weak_field_indexes (MonoAotCompile *acfg)
 {
+#ifdef ENABLE_WEAK_ATTR
 	GHashTable *indexes;
 	GHashTableIter iter;
 	gpointer key, value;
@@ -11245,6 +11246,13 @@ emit_weak_field_indexes (MonoAotCompile *acfg)
 	emit_aot_data (acfg, MONO_AOT_TABLE_WEAK_FIELD_INDEXES, "weak_field_indexes", buf, p - buf);
 
 	g_free (buf);
+#else
+	guint8 buf [4];
+	guint8 *p = &buf[0];
+
+	encode_int (0, p, &p);
+	emit_aot_data (acfg, MONO_AOT_TABLE_WEAK_FIELD_INDEXES, "weak_field_indexes", buf, p - buf);
+#endif	
 }
 
 static void

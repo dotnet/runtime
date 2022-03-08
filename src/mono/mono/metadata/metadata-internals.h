@@ -497,9 +497,11 @@ struct _MonoImage {
 	MonoGenericContainer *anonymous_generic_class_container;
 	MonoGenericContainer *anonymous_generic_method_container;
 
+#ifdef ENABLE_WEAK_ATTR
 	gboolean weak_fields_inited;
 	/* Contains 1 based indexes */
 	GHashTable *weak_field_indexes;
+#endif
 
         /* baseline images only: whether any metadata updates have been applied to this image */
         gboolean has_updates;
