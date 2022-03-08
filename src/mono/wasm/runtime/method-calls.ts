@@ -479,6 +479,7 @@ export function wrap_error(is_exception: Int32Ptr | null, ex: any): MonoString {
     return js_string_to_mono_string(res)!;
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function wrap_error_root(is_exception: Int32Ptr | null, ex: any, result: WasmRoot<MonoObject>): void {
     // FIXME
     result.value = wrap_error(is_exception, ex);
