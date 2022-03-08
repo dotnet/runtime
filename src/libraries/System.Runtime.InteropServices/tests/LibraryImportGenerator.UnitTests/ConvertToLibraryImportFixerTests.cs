@@ -482,6 +482,69 @@ partial class Test
         }
 
         [ConditionalFact]
+        public async Task MakeEnclosingTypesPartial()
+        {
+            string source = @"
+using System.Runtime.InteropServices;
+
+class Enclosing
+{
+    class Test
+    {
+        [DllImport(""DoesNotExist"")]
+        public static extern int [|Method|](out int ret);
+        [DllImport(""DoesNotExist"")]
+        public static extern int [|Method2|](out int ret);
+        [DllImport(""DoesNotExist"")]
+        public static extern int [|Method3|](out int ret);
+    }
+}
+partial class EnclosingPartial
+{
+    class Test
+    {
+        [DllImport(""DoesNotExist"")]
+        public static extern int [|Method|](out int ret);
+        [DllImport(""DoesNotExist"")]
+        public static extern int [|Method2|](out int ret);
+        [DllImport(""DoesNotExist"")]
+        public static extern int [|Method3|](out int ret);
+    }
+}";
+            // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
+            string fixedSource = @"
+using System.Runtime.InteropServices;
+
+partial class Enclosing
+{
+    partial class Test
+    {
+        [GeneratedDllImport(""DoesNotExist"")]
+        public static partial int {|CS8795:Method|}(out int ret);
+        [GeneratedDllImport(""DoesNotExist"")]
+        public static partial int {|CS8795:Method2|}(out int ret);
+        [GeneratedDllImport(""DoesNotExist"")]
+        public static partial int {|CS8795:Method3|}(out int ret);
+    }
+}
+partial class EnclosingPartial
+{
+    partial class Test
+    {
+        [GeneratedDllImport(""DoesNotExist"")]
+        public static partial int {|CS8795:Method|}(out int ret);
+        [GeneratedDllImport(""DoesNotExist"")]
+        public static partial int {|CS8795:Method2|}(out int ret);
+        [GeneratedDllImport(""DoesNotExist"")]
+        public static partial int {|CS8795:Method3|}(out int ret);
+    }
+}";
+            await VerifyCS.VerifyCodeFixAsync(
+                source,
+                fixedSource);
+        }
+
+        [ConditionalFact]
         public async Task BooleanMarshalAsAdded()
         {
             string source = @$"
