@@ -176,6 +176,61 @@ check_c_source_compiles(
   "
   HAVE_TLS_MODEL_ATTR)
 
+if (TARGET_RISCV32 OR TARGET_RISCV64)
+  check_c_source_compiles(
+    "
+    int main(void)
+    {
+      #ifdef __riscv_float_abi_double
+      #error \"double\"
+      #endif
+      return 0;
+    }
+    "
+    riscv_fpabi_result)
+
+    # check if the compile succeeded (-> not double)
+    if(riscv_fpabi_result EQUAL 0)
+      check_c_source_compiles(
+        "
+        int main(void)
+        {
+          #ifdef __riscv_float_abi_single
+          #error \"single\"
+          #endif
+          return 0;
+        }
+        "
+        riscv_fpabi_result)
+
+        # check if the compile succeeded (-> not single)
+        if(riscv_fpabi_result EQUAL 0)
+          check_c_source_compiles(
+            "
+            int main(void)
+            {
+              #ifdef __riscv_float_abi_soft
+              #error \"soft\"
+              #endif
+              return 0;
+            }
+            "
+            riscv_fpabi_result)
+
+            # check if the compile succeeded (-> not soft)
+            if(riscv_fpabi_result EQUAL 0)
+              message(FATAL_ERROR "Unable to detect RISC-V floating point abi.")
+            else()
+              set(RISCV_FPABI_SOFT 1)
+            endif()
+        else()
+            set(RISCV_FPABI_SINGLE 1)
+        endif()
+    else()
+        set(RISCV_FPABI_DOUBLE 1)
+    endif()
+endif()
+
 if(HOST_WIN32)
   # checking for this doesn't work for some reason, hardcode result
   set(HAVE_WINTERNL_H 1)
