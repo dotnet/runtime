@@ -36,6 +36,9 @@ namespace Microsoft.Interop.Analyzers
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(ConvertToLibraryImport);
 
+        public const string CharSet = nameof(CharSet);
+        public const string ExactSpelling = nameof(ExactSpelling);
+
         public override void Initialize(AnalysisContext context)
         {
             // Don't analyze generated code
@@ -101,7 +104,12 @@ namespace Microsoft.Interop.Analyzers
             if (knownUnsupportedTypes.Contains(method.ReturnType) || HasUnsupportedUnmanagedTypeValue(method.GetReturnTypeAttributes(), marshalAsAttrType))
                 return;
 
-            context.ReportDiagnostic(method.CreateDiagnostic(ConvertToLibraryImport, method.Name));
+            ImmutableDictionary<string, string>.Builder properties = ImmutableDictionary.CreateBuilder<string, string>();
+
+            properties.Add(CharSet, dllImportData.CharacterSet.ToString());
+            properties.Add(ExactSpelling, dllImportData.ExactSpelling.ToString());
+
+            context.ReportDiagnostic(method.CreateDiagnostic(ConvertToLibraryImport, properties.ToImmutable(), method.Name));
         }
 
         private static bool HasUnsupportedUnmanagedTypeValue(ImmutableArray<AttributeData> attributes, INamedTypeSymbol? marshalAsAttrType)

@@ -2558,39 +2558,46 @@ namespace System.Text.RegularExpressions
         // there's no need to localize).
         internal bool SupportsCompilation([NotNullWhen(false)] out string? reason)
         {
-            if (!StackHelper.TryEnsureSufficientExecutionStack())
-            {
-                reason = "run-time limits were exceeded";
-                return false;
-            }
-
-            // NonBacktracking isn't supported, nor RightToLeft.  The latter applies to both the top-level
-            // options as well as when used to specify positive and negative lookbehinds.
             if ((Options & RegexOptions.NonBacktracking) != 0)
             {
-                reason = "RegexOptions.NonBacktracking was specified";
+                reason = "RegexOptions.NonBacktracking isn't supported";
                 return false;
             }
 
-            if ((Options & RegexOptions.RightToLeft) != 0)
+            if (ExceedsMaxDepthAllowedDepth(this, allowedDepth: 40))
             {
-                reason = "RegexOptions.RightToLeft or a positive/negative lookbehind was used";
+                // For the source generator, deep RegexNode trees can result in emitting C# code that exceeds C# compiler
+                // limitations, leading to "CS8078: An expression is too long or complex to compile". As such, we place
+                // an artificial limit on max tree depth in order to mitigate such issues. The allowed depth can be tweaked
+                // as needed; its exceedingly rare to find expressions with such deep trees. And while RegexCompiler doesn't
+                // have to deal with C# compiler limitations, we still want to limit max tree depth as we want to limit
+                // how deep recursion we'll employ as part of code generation.
+                reason = "the expression may result exceeding run-time or compiler limits";
                 return false;
-            }
-
-            int childCount = ChildCount();
-            for (int i = 0; i < childCount; i++)
-            {
-                // The node isn't supported if any of its children aren't supported.
-                if (!Child(i).SupportsCompilation(out reason))
-                {
-                    return false;
-                }
             }
 
             // Supported.
             reason = null;
             return true;
+
+            static bool ExceedsMaxDepthAllowedDepth(RegexNode node, int allowedDepth)
+            {
+                if (allowedDepth <= 0)
+                {
+                    return true;
+                }
+
+                int childCount = node.ChildCount();
+                for (int i = 0; i < childCount; i++)
+                {
+                    if (ExceedsMaxDepthAllowedDepth(node.Child(i), allowedDepth - 1))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         /// <summary>Gets whether the node is a Set/Setloop/Setloopatomic/Setlazy node.</summary>

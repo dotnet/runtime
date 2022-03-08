@@ -143,7 +143,7 @@ namespace System.Text.RegularExpressions.Generator
                 return Diagnostic.Create(DiagnosticDescriptors.InvalidLangVersion, methodSyntax.GetLocation());
             }
 
-            RegexOptions regexOptions = RegexOptions.Compiled | (options is not null ? (RegexOptions)options : RegexOptions.None);
+            RegexOptions regexOptions = options is not null ? (RegexOptions)options : RegexOptions.None;
 
             // TODO: This is going to include the culture that's current at the time of compilation.
             // What should we do about that?  We could:
@@ -181,7 +181,7 @@ namespace System.Text.RegularExpressions.Generator
             RegexTree tree;
             try
             {
-                tree = RegexParser.Parse(pattern, regexOptions, culture);
+                tree = RegexParser.Parse(pattern, regexOptions | RegexOptions.Compiled, culture); // make sure Compiled is included to get all optimizations applied to it
             }
             catch (Exception e)
             {

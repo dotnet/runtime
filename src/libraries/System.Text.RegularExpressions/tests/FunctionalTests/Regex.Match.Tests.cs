@@ -84,11 +84,36 @@ namespace System.Text.RegularExpressions.Tests
 
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
-                    // Zero-width negative lookahead assertion: Actual - "abc(?!XXX)\\w+"
+                    // Zero-width negative lookahead assertion
                     yield return (@"abc(?!XXX)\w+", "abcXXXdef", RegexOptions.None, 0, 9, false, string.Empty);
 
-                    // Zero-width positive lookbehind assertion: Actual - "(\\w){6}(?<=XXX)def"
+                    // Zero-width positive lookbehind assertion
                     yield return (@"(\w){6}(?<=XXX)def", "abcXXXdef", RegexOptions.None, 0, 9, true, "abcXXXdef");
+                    yield return (@"(?<=c)def", "123abcdef", RegexOptions.None, 0, 9, true, "def");
+                    yield return (@"(?<=abc)def", "123abcdef", RegexOptions.None, 0, 9, true, "def");
+                    yield return (@"(?<=a\wc)def", "123abcdef", RegexOptions.None, 0, 9, true, "def");
+                    yield return (@"(?<=\ba\wc)def", "123 abcdef", RegexOptions.None, 0, 10, true, "def");
+                    yield return (@"(?<=.\ba\wc\B)def", "123 abcdef", RegexOptions.None, 0, 10, true, "def");
+                    yield return (@"(?<=^123 abc)def", "123 abcdef", RegexOptions.None, 0, 10, true, "def");
+                    yield return (@"(?<=^123 abc)def", "123 abcdef", RegexOptions.Multiline, 0, 10, true, "def");
+                    yield return (@"(?<=123$\nabc)def", "123\nabcdef", RegexOptions.Multiline, 0, 10, true, "def");
+                    yield return (@"123(?<!$) abcdef", "123 abcdef", RegexOptions.None, 0, 10, true, "123 abcdef");
+                    yield return (@"\w{3}(?<=^xyz|^abc)defg", "abcdefg", RegexOptions.None, 0, 7, true, "abcdefg");
+                    yield return (@"(abc)\w(?<=(?(1)d|e))", "abcdabc", RegexOptions.None, 0, 7, true, "abcd");
+                    yield return (@"(abc)\w(?<!(?(1)e|d))", "abcdabc", RegexOptions.None, 0, 7, true, "abcd");
+                    yield return (@"(abc)\w(?<=(?(cd)d|e))", "abcdabc", RegexOptions.None, 0, 7, true, "abcd");
+                    yield return (@"(abc)\w(?<!(?(cd)e|d))", "abcdabc", RegexOptions.None, 0, 7, true, "abcd");
+                    yield return (@"\w{3}(?<=(\w){6,8})", "abcdefghijklmnop", RegexOptions.None, 0, 16, true, "def");
+                    yield return (@"\w{3}(?<=(?:\d\w){4})", "a1b2c3d4e5", RegexOptions.None, 0, 10, true, "d4e");
+                    yield return (@"\w{3}(?<=(\w){6,8}?)", "abcdefghijklmnop", RegexOptions.None, 0, 16, true, "def");
+                    yield return (@"\w{3}(?<=(?:\d\w){3,4}?\d)", "a1b2c3d4e5", RegexOptions.None, 0, 10, true, "3d4");
+                    yield return (@"(\w{3})\w*(?<=\1)", "---abcdefababc123", RegexOptions.None, 0, 17, true, "abcdefababc");
+                    yield return (@"(?<=\w{3})\w{4}", "abcdefghijklmnop", RegexOptions.None, 0, 16, true, "defg");
+                    yield return (@"(?<=\w{3,8})\w{4}", "abcdefghijklmnop", RegexOptions.None, 0, 16, true, "defg");
+                    yield return (@"(?<=\w*)\w{4}", "abcdefghijklmnop", RegexOptions.None, 0, 16, true, "abcd");
+                    yield return (@"(?<=\w?)\w{4}", "abcdefghijklmnop", RegexOptions.None, 0, 16, true, "abcd");
+                    yield return (@"(?<=\d?)a{4}", "123aaaaaaaaa", RegexOptions.None, 0, 12, true, "aaaa");
+                    yield return (@"(?<=a{3,5}[ab]*)1234", "aaaaaaa1234", RegexOptions.None, 0, 11, true, "1234");
 
                     // Zero-width negative lookbehind assertion: Actual - "(\\w){6}(?<!XXX)def"
                     yield return (@"(\w){6}(?<!XXX)def", "XXXabcdef", RegexOptions.None, 0, 9, true, "XXXabcdef");

@@ -198,21 +198,6 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        public async Task Diagnostic_RightToLeft_LimitedSupport()
-        {
-            IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@"
-                using System.Text.RegularExpressions;
-                partial class C
-                {
-                    [RegexGenerator(""ab"", RegexOptions.RightToLeft)]
-                    private static partial Regex RightToLeftNotSupported();
-                }
-            ");
-
-            Assert.Equal("SYSLIB1045", Assert.Single(diagnostics).Id);
-        }
-
-        [Fact]
         public async Task Diagnostic_NonBacktracking_LimitedSupport()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@"
@@ -221,36 +206,6 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     [RegexGenerator(""ab"", RegexOptions.NonBacktracking)]
                     private static partial Regex RightToLeftNotSupported();
-                }
-            ");
-
-            Assert.Equal("SYSLIB1045", Assert.Single(diagnostics).Id);
-        }
-
-        [Fact]
-        public async Task Diagnostic_PositiveLookbehind_LimitedSupport()
-        {
-            IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@"
-                using System.Text.RegularExpressions;
-                partial class C
-                {
-                    [RegexGenerator(""(?<=\b20)\d{2}\b"")]
-                    private static partial Regex PositiveLookbehindNotSupported();
-                }
-            ");
-
-            Assert.Equal("SYSLIB1045", Assert.Single(diagnostics).Id);
-        }
-
-        [Fact]
-        public async Task Diagnostic_NegativeLookbehind_LimitedSupport()
-        {
-            IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@"
-                using System.Text.RegularExpressions;
-                partial class C
-                {
-                    [RegexGenerator(""(?<!(Saturday|Sunday) )\b\w+ \d{1,2}, \d{4}\b"")]
-                    private static partial Regex NegativeLookbehindNotSupported();
                 }
             ");
 
