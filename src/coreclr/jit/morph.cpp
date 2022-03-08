@@ -6772,9 +6772,6 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 
     unsigned calleeArgStackSize = 0;
     unsigned callerArgStackSize = info.compArgStackSize;
-#ifdef TARGET_ARM
-    unsigned preSpilledRegsSize = genCountBits(codeGen->regSet.rsMaskPreSpillRegArg) * REGSIZE_BYTES;
-#endif
 
     auto reportFastTailCallDecision = [&](const char* thisFailReason) {
         if (failReason != nullptr)
@@ -6837,28 +6834,6 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         {
             reportFastTailCallDecision("Splitted arguments not supported on ARM");
             return false;
-        }
-
-        if (info->GetRegNum() == REG_STK)
-        {
-            GenTree* arg = info->GetNode();
-            if (arg->OperIs(GT_LCL_FLD))
-            {
-                if (arg->AsLclFld()->GetLclOffs() < info->GetByteOffset() + preSpilledRegsSize)
-                {
-                    reportFastTailCallDecision("Can use overwritten local field on ARM");
-                    return false;
-                }
-            }
-            else if (arg->OperIs(GT_OBJ))
-            {
-                GenTreeLclVarCommon* lcl = arg->AsObj()->Addr()->IsLocalAddrExpr();
-                if (lcl && lcl->GetLclOffs() < info->GetByteOffset() + preSpilledRegsSize)
-                {
-                    reportFastTailCallDecision("Can use overwritten local obj on ARM");
-                    return false;
-                }
-            }
         }
 #endif // TARGET_ARM
     }

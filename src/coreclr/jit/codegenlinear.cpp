@@ -1849,6 +1849,16 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
     // Evaluate each of the GT_FIELD_LIST items into their register
     // and store their register into the outgoing argument area.
     const unsigned argOffset = putArgStk->getArgOffset();
+    unsigned preSpilledRegsSize = 0;
+#if FEATURE_FASTTAILCALL
+#ifdef TARGET_ARM
+    if (putArgStk->putInIncomingArgArea())
+    {
+        preSpilledRegsSize = genCountBits(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
+    }
+#endif // TARGET_ARM
+#endif // FEATURE_FASTTAILCALL
+
     for (GenTreeFieldList::Use& use : putArgStk->gtOp1->AsFieldList()->Uses())
     {
         GenTree* nextArgNode = use.GetNode();
@@ -1857,14 +1867,6 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
         regNumber reg             = nextArgNode->GetRegNum();
         var_types type            = use.GetType();
         unsigned  thisFieldOffset = argOffset + use.GetOffset();
-#if FEATURE_FASTTAILCALL
-#ifdef TARGET_ARM
-        if (putArgStk->putInIncomingArgArea())
-        {
-            thisFieldOffset += genCountBits(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
-        }
-#endif // TARGET_ARM
-#endif // FEATURE_FASTTAILCALL
 
 // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
 // argument area.
@@ -1881,7 +1883,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 #endif // FEATURE_SIMD
         {
             emitAttr attr = emitTypeSize(type);
-            GetEmitter()->emitIns_S_R(ins_Store(type), attr, reg, outArgVarNum, thisFieldOffset);
+            GetEmitter()->emitIns_S_R(ins_Store(type), attr, reg, outArgVarNum, thisFieldOffset + preSpilledRegsSize);
         }
 
 // We can't write beyond the arg area unless this is a tail call, in which case we use

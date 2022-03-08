@@ -1936,6 +1936,9 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     }
 
     GenTree* startNonGCNode = nullptr;
+#ifdef TARGET_ARM
+    unsigned int preSpilledRegsSize = genCountBits(comp->codeGen->regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
+#endif // TARGET_ARM
     if (!putargs.Empty())
     {
         // Get the earliest operand of the first PUTARG_STK node. We will make
@@ -1977,12 +1980,23 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
             unsigned int overwrittenStart = put->getArgOffset();
             unsigned int overwrittenEnd   = overwrittenStart + put->GetStackByteSize();
             int          baseOff          = -1; // Stack offset of first arg on stack
+#ifdef TARGET_ARM
+            baseOff           = 0;
+            overwrittenStart += preSpilledRegsSize;
+            overwrittenEnd   += preSpilledRegsSize;
+#endif // TARGET_ARM
 
+            unsigned int stackOffset = 0;
             for (unsigned callerArgLclNum = 0; callerArgLclNum < comp->info.compArgsCount; callerArgLclNum++)
             {
                 LclVarDsc* callerArgDsc = comp->lvaGetDesc(callerArgLclNum);
 
+#ifdef TARGET_ARM
+                bool isPreSpilled = comp->lvaIsPreSpilled(callerArgLclNum, comp->codeGen->regSet.rsMaskPreSpillRegs(true));
+                if (callerArgDsc->lvIsRegArg && !isPreSpilled)
+#else  // !TARGET_ARM
                 if (callerArgDsc->lvIsRegArg)
+#endif // !TARGET_ARM
                 {
                     continue;
                 }
@@ -2001,19 +2015,31 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
 #endif // TARGET_AMD64
                 {
                     assert(callerArgDsc->GetStackOffset() != BAD_STK_OFFS);
-
+#ifndef TARGET_ARM
+                    stackOffset = callerArgDsc->GetStackOffset();
+#endif // !TARGET_ARM
                     if (baseOff == -1)
                     {
-                        baseOff = callerArgDsc->GetStackOffset();
+                        baseOff = stackOffset;
                     }
 
                     // On all ABIs where we fast tail call the stack args should come in order.
-                    assert(baseOff <= callerArgDsc->GetStackOffset());
+                    assert(baseOff <= stackOffset);
 
                     // Compute offset of this stack argument relative to the first stack arg.
                     // This will be its offset into the incoming arg space area.
-                    argStart = static_cast<unsigned int>(callerArgDsc->GetStackOffset() - baseOff);
+                    argStart = static_cast<unsigned int>(stackOffset - baseOff);
+#ifdef TARGET_ARM
+                    if ((callerArgDsc->lvStructDoubleAlign || callerArgDsc->lvType == TYP_LONG || callerArgDsc->lvType == TYP_DOUBLE )
+                            && ((argStart + preSpilledRegsSize) % (TARGET_POINTER_SIZE * 2)) != 0)
+                    {
+                        argStart += TARGET_POINTER_SIZE;
+                    }
+#endif // TARGET_ARM
                     argEnd   = argStart + comp->lvaLclSize(callerArgLclNum);
+#ifdef TARGET_ARM
+                    stackOffset = argEnd;
+#endif // TARGET_ARM
                 }
 
                 // If ranges do not overlap then this PUTARG_STK will not mess up the arg.
