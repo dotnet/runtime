@@ -1981,9 +1981,9 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
             unsigned int overwrittenEnd   = overwrittenStart + put->GetStackByteSize();
             int          baseOff          = -1; // Stack offset of first arg on stack
 #ifdef TARGET_ARM
-            baseOff           = 0;
+            baseOff = 0;
             overwrittenStart += preSpilledRegsSize;
-            overwrittenEnd   += preSpilledRegsSize;
+            overwrittenEnd += preSpilledRegsSize;
 #endif // TARGET_ARM
 
             int stackOffset = 0;
@@ -1992,7 +1992,8 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 LclVarDsc* callerArgDsc = comp->lvaGetDesc(callerArgLclNum);
 
 #ifdef TARGET_ARM
-                bool isPreSpilled = comp->lvaIsPreSpilled(callerArgLclNum, comp->codeGen->regSet.rsMaskPreSpillRegs(true));
+                bool isPreSpilled =
+                    comp->lvaIsPreSpilled(callerArgLclNum, comp->codeGen->regSet.rsMaskPreSpillRegs(true));
                 if (callerArgDsc->lvIsRegArg && !isPreSpilled)
 #else  // !TARGET_ARM
                 if (callerArgDsc->lvIsRegArg)
@@ -2031,13 +2032,14 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                     // This will be its offset into the incoming arg space area.
                     argStart = static_cast<unsigned int>(stackOffset - baseOff);
 #ifdef TARGET_ARM
-                    if ((callerArgDsc->lvStructDoubleAlign || callerArgDsc->lvType == TYP_LONG || callerArgDsc->lvType == TYP_DOUBLE )
-                            && ((argStart + preSpilledRegsSize) % (TARGET_POINTER_SIZE * 2)) != 0)
+                    if ((callerArgDsc->lvStructDoubleAlign || callerArgDsc->lvType == TYP_LONG ||
+                         callerArgDsc->lvType == TYP_DOUBLE) &&
+                        ((argStart + preSpilledRegsSize) % (TARGET_POINTER_SIZE * 2)) != 0)
                     {
                         argStart += TARGET_POINTER_SIZE;
                     }
 #endif // TARGET_ARM
-                    argEnd   = argStart + comp->lvaLclSize(callerArgLclNum);
+                    argEnd = argStart + comp->lvaLclSize(callerArgLclNum);
 #ifdef TARGET_ARM
                     stackOffset = argEnd;
 #endif // TARGET_ARM

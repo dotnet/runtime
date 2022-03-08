@@ -1848,8 +1848,8 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 
     // Evaluate each of the GT_FIELD_LIST items into their register
     // and store their register into the outgoing argument area.
-    const unsigned argOffset = putArgStk->getArgOffset();
-    unsigned preSpilledRegsSize = 0;
+    const unsigned argOffset          = putArgStk->getArgOffset();
+    unsigned       preSpilledRegsSize = 0;
 #if FEATURE_FASTTAILCALL
 #ifdef TARGET_ARM
     if (putArgStk->putInIncomingArgArea())

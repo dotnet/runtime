@@ -6654,7 +6654,7 @@ unsigned CodeGen::getFirstArgWithStackSlot()
     // that's passed on the stack.
     LclVarDsc* varDsc = nullptr;
 #ifdef TARGET_ARM
-    int        delta  = isFramePointerUsed() ? 2 * REGSIZE_BYTES : genTotalFrameSize();
+    int delta = isFramePointerUsed() ? 2 * REGSIZE_BYTES : genTotalFrameSize();
 #endif // TARGET_ARM
     for (unsigned i = 0; i < compiler->info.compArgsCount; i++)
     {
@@ -6666,7 +6666,7 @@ unsigned CodeGen::getFirstArgWithStackSlot()
 
 #ifdef TARGET_ARM
         if (varDsc->GetStackOffset() == delta)
-#else // UNIX_AMD64_ABI || TARGET_ARM64
+#else  // UNIX_AMD64_ABI || TARGET_ARM64
         if (varDsc->GetArgReg() == REG_STK)
 #endif // TARGET_ARM
         {
