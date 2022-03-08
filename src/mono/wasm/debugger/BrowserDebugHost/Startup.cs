@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -139,7 +140,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     Dictionary<string, string>[] tabs = await ProxyGetJsonAsync<Dictionary<string, string>[]>(GetEndpoint(context));
                     Dictionary<string, string>[] alteredTabs = tabs.Select(t => mapFunc(t, context, devToolsHost)).ToArray();
                     context.Response.ContentType = "application/json";
-                    await context.Response.WriteAsync(JsonSerializer.Serialize(alteredTabs));
+                    byte[] bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(alteredTabs));
+                    context.Response.ContentLength = bytes.Length;
+                    await context.Response.Body.WriteAsync(bytes);
                 }
 
                 async Task ConnectProxy(HttpContext context)
