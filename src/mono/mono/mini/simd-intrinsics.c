@@ -599,6 +599,7 @@ static guint16 sri_vector_methods [] = {
 	SN_Min,
 	SN_Multiply,
 	SN_Subtract,
+	SN_Sum,
 	SN_ToScalar,
 	SN_ToVector128,
 	SN_ToVector128Unsafe,
@@ -722,22 +723,50 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_FDIV, arg0_type, fsig, args);
 	}
-	case SN_Dot: {
+	case SN_Dot:
+	case SN_Sum: {
 #ifdef TARGET_ARM64
 		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
 		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
 			return NULL;
 
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		gboolean is_float = arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8;
+
+		if (!is_float)
+			return NULL;
+
 		gboolean is_unsigned = arg0_type == MONO_TYPE_U1 || arg0_type == MONO_TYPE_U2 || arg0_type == MONO_TYPE_U4 || arg0_type == MONO_TYPE_U8 || arg0_type == MONO_TYPE_U;
 
-		int instc0 = is_float ? OP_FMUL : OP_IMUL;
-		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
+		MonoInst *ins;
+		switch (id) {
+		// In the case of the dot product, we need to first pairwise multiply the elements
+		// of the two input vectors
+		case SN_Dot: {
+			g_assert (fsig->param_count == 2);
+			int instc0 = is_float ? OP_FMUL : OP_IMUL;
+			ins = emit_simd_ins_for_sig (cfg, arg_class, OP_XBINOP, instc0, arg0_type, fsig, args);
+			break;
+		}
+		// In the case of Sum, we don't need to process the single input vector in any way
+		case SN_Sum: { 
+			g_assert (fsig->param_count == 1);
+			ins = args [0];
+			break;
+		}
+		default:
+			g_assert_not_reached ();
+		}
+
+		// int op = -1;
+		// if (is_float) {
+		// 	op = OP_ARM64_FADDV;
+		// } else {
+		// 	op = is_unsigned ? OP_ARM64_UADDV : OP_ARM64_SADDV;
+		// }
 
 		int op = is_unsigned ? OP_ARM64_UADDV : OP_ARM64_SADDV;
-		MonoInst *sum_across_vector = emit_simd_ins (cfg, klass, op, pairwise_multiply->dreg, -1);
-
-		return sum_across_vector;
+		return emit_simd_ins (cfg, arg_class, op, ins->dreg, -1);
 #else
 		return NULL;
 #endif
