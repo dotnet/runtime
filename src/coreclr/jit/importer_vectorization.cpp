@@ -6,10 +6,6 @@
 #pragma hdrstop
 #endif
 
-// Mirrors StringComparer.cs
-constexpr int StringComparer_Ordinal           = 4;
-constexpr int StringComparer_OrdinalIgnoreCase = 5;
-
 //------------------------------------------------------------------------
 // importer_vectorization.cpp
 //
@@ -130,7 +126,7 @@ static GenTreeHWIntrinsic* CreateConstVector(Compiler* comp, var_types simdType,
 //    cns        - Constant data (array of 2-byte chars)
 //    len        - Number of chars in the cns
 //    dataOffset - Offset for data
-//    ignoreCase - Ignore case mode (works only for ASCII cns)
+//    cmpMode    - Ordinal or OrdinalIgnoreCase mode (works only for ASCII cns)
 //
 // Return Value:
 //    A pointer to the newly created SIMD node or nullptr if unrolling is not
@@ -141,7 +137,7 @@ static GenTreeHWIntrinsic* CreateConstVector(Compiler* comp, var_types simdType,
 //    for impExpandHalfConstEquals
 //
 GenTree* Compiler::impExpandHalfConstEqualsSIMD(
-    GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset, bool ignoreCase)
+    GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode)
 {
     constexpr int maxPossibleLength = 32;
     assert(len >= 8 && len <= maxPossibleLength);
@@ -173,7 +169,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
 
     CopyMemory((UINT8*)cnsValue, (UINT8*)cns, len * sizeof(WCHAR));
 
-    if (ignoreCase && !ConvertToLowerCase(cnsValue, toLowerMask, len))
+    if ((cmpMode == OrdinalIgnoreCase) && !ConvertToLowerCase(cnsValue, toLowerMask, len))
     {
         // value contains non-ASCII chars, we can't proceed further
         return nullptr;
@@ -197,7 +193,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         cnsVec1 = CreateConstVector(this, simdType, cnsValue);
         cnsVec2 = CreateConstVector(this, simdType, cnsValue + len - 16);
 
-        if (ignoreCase)
+        if (cmpMode == OrdinalIgnoreCase)
         {
             toLowerVec1 = CreateConstVector(this, simdType, toLowerMask);
             toLowerVec2 = CreateConstVector(this, simdType, toLowerMask + len - 16);
@@ -222,7 +218,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         cnsVec1 = CreateConstVector(this, simdType, cnsValue);
         cnsVec2 = CreateConstVector(this, simdType, cnsValue + len - 8);
 
-        if (ignoreCase)
+        if (cmpMode == OrdinalIgnoreCase)
         {
             toLowerVec1 = CreateConstVector(this, simdType, toLowerMask);
             toLowerVec2 = CreateConstVector(this, simdType, toLowerMask + len - 8);
@@ -260,7 +256,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     //   vpxor    xmm1, xmm1, xmmword ptr[reloc @RWD16]
     //
 
-    if (ignoreCase)
+    if (cmpMode == OrdinalIgnoreCase)
     {
         // Apply ASCII-only ToLowerCase mask (bitwise OR 0x20 for all a-Z chars)
         assert((toLowerVec1 != nullptr) && (toLowerVec2 != nullptr));
@@ -303,27 +299,27 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
 //    type       - Type for the IND node
 //    offset     - Offset for the data pointer
 //    value      - Constant value to compare against
-//    ignoreCase - Ignore case mode (works only for ASCII cns)
-//    useXor     - Use GT_XOR instead of GT_EQ
+//    cmpMode    - Ordinal or OrdinalIgnoreCase mode (works only for ASCII cns)
+//    joint      - Type of joint, can be Eq ((d1 == cns1) && (s2 == cns2))
+//                 or Xor (d1 ^ cns1) | (s2 ^ cns2).
 //
 // Return Value:
 //    A tree with indirect load and comparison
 //    nullptr in case of 'ignoreCase' mode and non-ASCII value
 //
-static GenTree* impCreateCompareInd(Compiler*      comp,
-                                    GenTreeLclVar* obj,
-                                    var_types      type,
-                                    ssize_t        offset,
-                                    ssize_t        value,
-                                    bool           ignoreCase,
-                                    bool           useXor = false)
+GenTree* Compiler::impCreateCompareInd(GenTreeLclVar*        obj,
+                                       var_types             type,
+                                       ssize_t               offset,
+                                       ssize_t               value,
+                                       StringComparison      cmpMode,
+                                       StringComparisonJoint joint)
 {
     var_types actualType    = genActualType(type);
-    GenTree*  offsetTree    = comp->gtNewIconNode(offset, TYP_I_IMPL);
-    GenTree*  addOffsetTree = comp->gtNewOperNode(GT_ADD, TYP_BYREF, obj, offsetTree);
-    GenTree*  indirTree     = comp->gtNewIndir(type, addOffsetTree);
+    GenTree*  offsetTree    = gtNewIconNode(offset, TYP_I_IMPL);
+    GenTree*  addOffsetTree = gtNewOperNode(GT_ADD, TYP_BYREF, obj, offsetTree);
+    GenTree*  indirTree     = gtNewIndir(type, addOffsetTree);
 
-    if (ignoreCase)
+    if (cmpMode == OrdinalIgnoreCase)
     {
         ssize_t mask;
         if (!ConvertToLowerCase((WCHAR*)&value, (WCHAR*)&mask, sizeof(ssize_t) / sizeof(WCHAR)))
@@ -331,17 +327,18 @@ static GenTree* impCreateCompareInd(Compiler*      comp,
             // value contains non-ASCII chars, we can't proceed further
             return nullptr;
         }
-        GenTree* toLowerMask = comp->gtNewIconNode(mask, actualType);
-        indirTree            = comp->gtNewOperNode(GT_OR, actualType, indirTree, toLowerMask);
+        GenTree* toLowerMask = gtNewIconNode(mask, actualType);
+        indirTree            = gtNewOperNode(GT_OR, actualType, indirTree, toLowerMask);
     }
 
-    GenTree* valueTree = comp->gtNewIconNode(value, actualType);
-    if (useXor)
+    GenTree* valueTree = gtNewIconNode(value, actualType);
+    if (joint == Xor)
     {
         // XOR is better than CMP if we want to join multiple comparisons
-        return comp->gtNewOperNode(GT_XOR, actualType, indirTree, valueTree);
+        return gtNewOperNode(GT_XOR, actualType, indirTree, valueTree);
     }
-    return comp->gtNewOperNode(GT_EQ, TYP_INT, indirTree, valueTree);
+    assert(joint == Eq);
+    return gtNewOperNode(GT_EQ, TYP_INT, indirTree, valueTree);
 }
 
 //------------------------------------------------------------------------
@@ -354,7 +351,7 @@ static GenTree* impCreateCompareInd(Compiler*      comp,
 //    cns        - Constant data (array of 2-byte chars)
 //    len        - Number of chars in the cns
 //    dataOffset - Offset for data
-//    ignoreCase - Ignore case mode (works only for ASCII cns)
+//    cmpMode    - Ordinal or OrdinalIgnoreCase mode (works only for ASCII cns)
 //
 // Return Value:
 //    A pointer to the newly created SWAR node or nullptr if unrolling is not
@@ -365,7 +362,7 @@ static GenTree* impCreateCompareInd(Compiler*      comp,
 //    for impExpandHalfConstEquals
 //
 GenTree* Compiler::impExpandHalfConstEqualsSWAR(
-    GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset, bool ignoreCase)
+    GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode)
 {
     assert(len >= 1 && len <= 8);
 
@@ -378,7 +375,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
         //   [ ch1 ]
         //   [value]
         //
-        return impCreateCompareInd(this, data, TYP_SHORT, dataOffset, cns[0], ignoreCase);
+        return impCreateCompareInd(data, TYP_SHORT, dataOffset, cns[0], cmpMode);
     }
     if (len == 2)
     {
@@ -386,7 +383,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
         //   [   value    ]
         //
         const UINT32 value = MAKEINT32(cns[0], cns[1]);
-        return impCreateCompareInd(this, data, TYP_INT, dataOffset, value, ignoreCase);
+        return impCreateCompareInd(data, TYP_INT, dataOffset, value, cmpMode);
     }
 #ifdef TARGET_64BIT
     if (len == 3)
@@ -399,11 +396,11 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
         //
         // where offset for value2 is 2 bytes (1 char)
         //
-        UINT32   value1      = MAKEINT32(cns[0], cns[1]);
-        UINT32   value2      = MAKEINT32(cns[1], cns[2]);
-        GenTree* firstIndir  = impCreateCompareInd(this, data, TYP_INT, dataOffset, value1, ignoreCase, true);
-        GenTree* secondIndir = impCreateCompareInd(this, gtClone(data)->AsLclVar(), TYP_INT,
-                                                   dataOffset + sizeof(USHORT), value2, ignoreCase, true);
+        UINT32   value1     = MAKEINT32(cns[0], cns[1]);
+        UINT32   value2     = MAKEINT32(cns[1], cns[2]);
+        GenTree* firstIndir = impCreateCompareInd(data, TYP_INT, dataOffset, value1, cmpMode, Xor);
+        GenTree* secondIndir =
+            impCreateCompareInd(gtClone(data)->AsLclVar(), TYP_INT, dataOffset + sizeof(USHORT), value2, cmpMode, Xor);
 
         if ((firstIndir == nullptr) || (secondIndir == nullptr))
         {
@@ -421,7 +418,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
         //   [ ch1 ][ ch2 ][ ch3 ][ ch4 ]
         //   [          value           ]
         //
-        return impCreateCompareInd(this, data, TYP_LONG, dataOffset, value1, ignoreCase);
+        return impCreateCompareInd(data, TYP_LONG, dataOffset, value1, cmpMode);
     }
 
     // For 5..7 value2 will overlap with value1, e.g. for Length == 6:
@@ -431,11 +428,10 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
     //                 [          value2          ]
     //
     UINT64   value2     = MAKEINT64(cns[len - 4], cns[len - 3], cns[len - 2], cns[len - 1]);
-    GenTree* firstIndir = impCreateCompareInd(this, data, TYP_LONG, dataOffset, value1, ignoreCase, true);
+    GenTree* firstIndir = impCreateCompareInd(data, TYP_LONG, dataOffset, value1, cmpMode, Xor);
 
-    ssize_t  offset = dataOffset + len * sizeof(WCHAR) - sizeof(UINT64);
-    GenTree* secondIndir =
-        impCreateCompareInd(this, gtClone(data)->AsLclVar(), TYP_LONG, offset, value2, ignoreCase, true);
+    ssize_t  offset      = dataOffset + len * sizeof(WCHAR) - sizeof(UINT64);
+    GenTree* secondIndir = impCreateCompareInd(gtClone(data)->AsLclVar(), TYP_LONG, offset, value2, cmpMode, Xor);
 
     if ((firstIndir == nullptr) || (secondIndir == nullptr))
     {
@@ -464,20 +460,20 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
 //    cns          - Constant data (array of 2-byte chars)
 //    len          - Number of 2-byte chars in the cns
 //    dataOffset   - Offset for data
-//    ignoreCase   - Ignore case mode (works only for ASCII cns)
+//    cmpMode      - Ordinal or OrdinalIgnoreCase mode (works only for ASCII cns)
 //
 // Return Value:
 //    A pointer to the newly created SWAR/SIMD node or nullptr if unrolling is not
 //    possible, not profitable or constant data contains non-ASCII char(s) in 'ignoreCase' mode
 //
-GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVar* data,
-                                            GenTree*       lengthFld,
-                                            bool           checkForNull,
-                                            bool           startsWith,
-                                            WCHAR*         cnsData,
-                                            int            len,
-                                            int            dataOffset,
-                                            bool           ignoreCase)
+GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVar*   data,
+                                            GenTree*         lengthFld,
+                                            bool             checkForNull,
+                                            bool             startsWith,
+                                            WCHAR*           cnsData,
+                                            int              len,
+                                            int              dataOffset,
+                                            StringComparison cmpMode)
 {
     assert(len >= 0);
 
@@ -514,12 +510,12 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVar* data,
         GenTree* indirCmp = nullptr;
         if (len < 8) // SWAR impl supports len == 8 but we'd better give it to SIMD
         {
-            indirCmp = impExpandHalfConstEqualsSWAR(gtClone(data)->AsLclVar(), cnsData, len, dataOffset, ignoreCase);
+            indirCmp = impExpandHalfConstEqualsSWAR(gtClone(data)->AsLclVar(), cnsData, len, dataOffset, cmpMode);
         }
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_64BIT)
         else if (len <= 32)
         {
-            indirCmp = impExpandHalfConstEqualsSIMD(gtClone(data)->AsLclVar(), cnsData, len, dataOffset, ignoreCase);
+            indirCmp = impExpandHalfConstEqualsSIMD(gtClone(data)->AsLclVar(), cnsData, len, dataOffset, cmpMode);
         }
 #endif
 
@@ -627,16 +623,16 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
     const bool isStatic  = methodFlags & CORINFO_FLG_STATIC;
     const int  argsCount = sig->numArgs + (isStatic ? 0 : 1);
 
-    bool     ignoreCase = false;
-    GenTree* op1;
-    GenTree* op2;
+    StringComparison cmpMode = Ordinal;
+    GenTree*         op1;
+    GenTree*         op2;
     if (argsCount == 3) // overload with StringComparison
     {
-        if (impStackTop(0).val->IsIntegralConst(StringComparer_OrdinalIgnoreCase))
+        if (impStackTop(0).val->IsIntegralConst(OrdinalIgnoreCase))
         {
-            ignoreCase = true;
+            cmpMode = OrdinalIgnoreCase;
         }
-        else if (!impStackTop(0).val->IsIntegralConst(StringComparer_Ordinal))
+        else if (!impStackTop(0).val->IsIntegralConst(Ordinal))
         {
             return nullptr;
         }
@@ -716,7 +712,7 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
     varStrLcl             = gtClone(varStrLcl)->AsLclVar();
 
     GenTree* unrolled = impExpandHalfConstEquals(varStrLcl, lenNode, needsNullcheck, startsWith, (WCHAR*)str, cnsLength,
-                                                 strLenOffset + sizeof(int), ignoreCase);
+                                                 strLenOffset + sizeof(int), cmpMode);
     if (unrolled != nullptr)
     {
         impAssignTempGen(varStrTmp, varStr);
@@ -763,16 +759,16 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     const bool isStatic  = methodFlags & CORINFO_FLG_STATIC;
     const int  argsCount = sig->numArgs + (isStatic ? 0 : 1);
 
-    bool     ignoreCase = false;
-    GenTree* op1;
-    GenTree* op2;
+    StringComparison cmpMode = Ordinal;
+    GenTree*         op1;
+    GenTree*         op2;
     if (argsCount == 3) // overload with StringComparison
     {
-        if (impStackTop(0).val->IsIntegralConst(StringComparer_OrdinalIgnoreCase))
+        if (impStackTop(0).val->IsIntegralConst(OrdinalIgnoreCase))
         {
-            ignoreCase = true;
+            cmpMode = OrdinalIgnoreCase;
         }
-        else if (!impStackTop(0).val->IsIntegralConst(StringComparer_Ordinal))
+        else if (!impStackTop(0).val->IsIntegralConst(Ordinal))
         {
             return nullptr;
         }
@@ -859,7 +855,7 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     GenTreeField* spanData   = gtNewFieldRef(TYP_BYREF, pointerHnd, spanObjRefLcl);
 
     GenTree* unrolled =
-        impExpandHalfConstEquals(spanDataTmpLcl, spanLength, false, startsWith, (WCHAR*)str, cnsLength, 0, ignoreCase);
+        impExpandHalfConstEquals(spanDataTmpLcl, spanLength, false, startsWith, (WCHAR*)str, cnsLength, 0, cmpMode);
     if (unrolled != nullptr)
     {
         // We succeeded, fill the placeholders:
