@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -170,18 +171,22 @@ namespace System.Net.Security
     internal abstract class SafeFreeCredentials : SafeHandle
     {
 #endif
+        internal DateTime _expiry;
 
         internal Interop.SspiCli.CredHandle _handle;    //should be always used as by ref in PInvokes parameters
 
         protected SafeFreeCredentials() : base(IntPtr.Zero, true)
         {
             _handle = default;
+            _expiry = DateTime.MaxValue;
         }
 
         public override bool IsInvalid
         {
             get { return IsClosed || _handle.IsZero; }
         }
+
+        public DateTime Expiry => _expiry;
 
 #if DEBUG
         public new IntPtr DangerousGetHandle()
@@ -197,7 +202,6 @@ namespace System.Net.Security
             out SafeFreeCredentials outCredential)
         {
             int errorCode = -1;
-            long timeStamp;
 
             outCredential = new SafeFreeCredential_SECURITY();
 
@@ -210,7 +214,9 @@ namespace System.Net.Security
                             null,
                             null,
                             ref outCredential._handle,
-                            out timeStamp);
+                            out long timestamp);
+
+            outCredential._expiry = DateTime.FromFileTimeUtc(timestamp);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 
@@ -229,6 +235,7 @@ namespace System.Net.Security
             out SafeFreeCredentials outCredential)
         {
             outCredential = new SafeFreeCredential_SECURITY();
+
             int errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
                             null,
                             package,
@@ -238,7 +245,9 @@ namespace System.Net.Security
                             null,
                             null,
                             ref outCredential._handle,
-                            out _);
+                            out long timestamp);
+
+            outCredential._expiry = DateTime.FromFileTimeUtc(timestamp);
 
             if (errorCode != 0)
             {
@@ -267,7 +276,9 @@ namespace System.Net.Security
                                 null,
                                 null,
                                 ref outCredential._handle,
-                                out _);
+                                out long timestamp);
+
+            outCredential._expiry = DateTime.FromFileTimeUtc(timestamp);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 
@@ -285,8 +296,6 @@ namespace System.Net.Security
             Interop.SspiCli.SCH_CREDENTIALS* authdata,
             out SafeFreeCredentials outCredential)
         {
-            long timeStamp;
-
             outCredential = new SafeFreeCredential_SECURITY();
 
             int errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
@@ -298,7 +307,9 @@ namespace System.Net.Security
                                 null,
                                 null,
                                 ref outCredential._handle,
-                                out timeStamp);
+                                out long timestamp);
+
+            outCredential._expiry = DateTime.FromFileTimeUtc(timestamp);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 
