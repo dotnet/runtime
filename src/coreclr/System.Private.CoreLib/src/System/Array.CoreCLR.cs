@@ -16,7 +16,7 @@ namespace System
     public abstract partial class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable
     {
         // Create instance will create an array
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public static unsafe Array CreateInstance(Type elementType, int length)
         {
             if (elementType is null)
@@ -69,7 +69,7 @@ namespace System
             return InternalCreate((void*)t.TypeHandle.Value, 3, pLengths, null);
         }
 
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public static unsafe Array CreateInstance(Type elementType, params int[] lengths)
         {
             if (elementType is null)
@@ -95,7 +95,7 @@ namespace System
                 return InternalCreate((void*)t.TypeHandle.Value, lengths.Length, pLengths, null);
         }
 
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public static unsafe Array CreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
         {
             if (elementType == null)

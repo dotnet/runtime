@@ -139,21 +139,6 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        [OuterLoop]
-        public static void MemoryManagerPinLargeArray()
-        {
-            // Early-out: we can only run this test on 64-bit platforms.
-            if (IntPtr.Size == 4)
-            {
-                return;
-            }
-
-            int[] array = new int[0x2000_0000]; // will produce array with total byte length > 2 GB
-            MemoryManager<int> manager = new CustomMemoryForTest<int>(array);
-            Assert.Throws<ArgumentOutOfRangeException>(() => manager.Pin(int.MinValue));
-        }
-
-        [Fact]
         public static void SpanFromMemoryManagerAfterDispose()
         {
             int[] a = { 91, 92, -93, 94 };

@@ -453,11 +453,18 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
         case GT_CLS_VAR:
         {
+            bool isVolatile = (location->gtFlags & GTF_CLS_VAR_VOLATILE) != 0;
+
+            location->gtFlags &= ~GTF_CLS_VAR_VOLATILE;
             location->SetOper(GT_CLS_VAR_ADDR);
             location->gtType = TYP_BYREF;
 
             assignment->SetOper(GT_STOREIND);
             assignment->AsStoreInd()->SetRMWStatusDefault();
+            if (isVolatile)
+            {
+                assignment->gtFlags |= GTF_IND_VOLATILE;
+            }
 
             // TODO: JIT dump
         }
@@ -691,7 +698,12 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             if (!isLHSOfAssignment)
             {
                 GenTree* ind = comp->gtNewOperNode(GT_IND, node->TypeGet(), node);
+                if ((node->gtFlags & GTF_CLS_VAR_VOLATILE) != 0)
+                {
+                    ind->gtFlags |= GTF_IND_VOLATILE;
+                }
 
+                node->gtFlags &= ~GTF_CLS_VAR_VOLATILE;
                 node->SetOper(GT_CLS_VAR_ADDR);
                 node->gtType = TYP_BYREF;
 

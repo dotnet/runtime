@@ -609,6 +609,9 @@ static guint16 sri_vector_methods [] = {
 	SN_AsVector4,
 	SN_Ceiling,
 	SN_ConditionalSelect,
+	SN_ConvertToDouble,
+	SN_ConvertToInt32,
+	SN_ConvertToUInt32,
 	SN_Create,
 	SN_CreateScalar,
 	SN_CreateScalarUnsafe,
@@ -804,6 +807,33 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #endif
 	}
+	case SN_ConvertToDouble: {
+#ifdef TARGET_ARM64
+		if ((arg0_type != MONO_TYPE_I8) && (arg0_type != MONO_TYPE_U8))
+			return NULL;
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int size = mono_class_value_size (arg_class, NULL);
+		int op = -1;
+		if (size == 8)
+			op = arg0_type == MONO_TYPE_I8 ? OP_ARM64_SCVTF_SCALAR : OP_ARM64_UCVTF_SCALAR;
+		else
+			op = arg0_type == MONO_TYPE_I8 ? OP_ARM64_SCVTF : OP_ARM64_UCVTF;
+		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
+#else
+		return NULL;
+#endif
+	}
+	case SN_ConvertToInt32: 
+	case SN_ConvertToUInt32: {
+#ifdef TARGET_ARM64
+		if (arg0_type != MONO_TYPE_R4)
+			return NULL;
+		int op = id == SN_ConvertToInt32 ? OP_ARM64_FCVTZS : OP_ARM64_FCVTZU;
+		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
+#else
+		return NULL;
+#endif
+	}
 	case SN_Create: {
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
 		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype))
@@ -958,8 +988,10 @@ static guint16 vector64_vector128_t_methods [] = {
 	SN_get_Count,
 	SN_get_IsSupported,
 	SN_get_Zero,
+	SN_op_Addition,
 	SN_op_Equality,
 	SN_op_Inequality,
+	SN_op_Subtraction,
 };
 
 static MonoInst*
@@ -1021,6 +1053,18 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
 		}
 		break;
+	}
+	case SN_op_Addition:
+	case SN_op_Subtraction: {	
+		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
+			return NULL;
+		MonoInst *ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, args [1]->dreg);
+		ins->inst_c1 = etype->type;
+		if (etype->type == MONO_TYPE_R4 || etype->type == MONO_TYPE_R8)
+			ins->inst_c0 = id == SN_op_Addition ? OP_FADD : OP_FSUB;
+		else
+			ins->inst_c0 = id == SN_op_Addition ? OP_IADD : OP_ISUB;
+		return ins;
 	}
 	case SN_op_Equality:
 	case SN_op_Inequality:

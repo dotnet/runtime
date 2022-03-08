@@ -77,7 +77,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return Run(quick: true, -1, input, 0, input.Length, RightToLeft ? input.Length : 0) is null;
+            return RunSingleMatch(quick: true, -1, input, 0, input.Length, RightToLeft ? input.Length : 0) is null;
         }
 
         /// <summary>
@@ -87,7 +87,7 @@ namespace System.Text.RegularExpressions
         /// <returns><see langword="true"/> if the regular expression finds a match; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="RegexMatchTimeoutException">A time-out ocurred.</exception>
         public bool IsMatch(ReadOnlySpan<char> input) =>
-            Run(input, RightToLeft ? input.Length : 0) is null;
+            RunSingleMatch(input, RightToLeft ? input.Length : 0) is null;
 
         /// <summary>
         /// Searches the input string for one or more matches using the previous pattern and options,
@@ -100,7 +100,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return Run(quick: true, -1, input, 0, input.Length, startat) is null;
+            return RunSingleMatch(quick: true, -1, input, 0, input.Length, startat) is null;
         }
 
         /// <summary>
@@ -132,7 +132,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return Run(quick: false, -1, input, 0, input.Length, RightToLeft ? input.Length : 0)!;
+            return RunSingleMatch(quick: false, -1, input, 0, input.Length, RightToLeft ? input.Length : 0)!;
         }
 
         /// <summary>
@@ -146,7 +146,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return Run(quick: false, -1, input, 0, input.Length, startat)!;
+            return RunSingleMatch(quick: false, -1, input, 0, input.Length, startat)!;
         }
 
         /// <summary>
@@ -159,7 +159,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return Run(quick: false, -1, input, beginning, length, RightToLeft ? beginning + length : beginning)!;
+            return RunSingleMatch(quick: false, -1, input, beginning, length, RightToLeft ? beginning + length : beginning)!;
         }
 
         /// <summary>
