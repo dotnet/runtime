@@ -7,7 +7,7 @@ using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
-    public sealed partial class RSACryptoServiceProvider : RSA, ICspAsymmetricAlgorithm
+    public sealed partial class RSACryptoServiceProvider : RSA, ICspAsymmetricAlgorithm, IRuntimeAlgorithm
     {
         private const int DefaultKeySize = 1024;
 
@@ -105,15 +105,6 @@ namespace System.Security.Cryptography
 
         public override RSAParameters ExportParameters(bool includePrivateParameters) =>
             _impl.ExportParameters(includePrivateParameters);
-
-        protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-            HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
-
-        protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-            HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
-
-        protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-            HashOneShotHelpers.HashData(hashAlgorithm, data);
 
         public override void FromXmlString(string xmlString) => _impl.FromXmlString(xmlString);
 

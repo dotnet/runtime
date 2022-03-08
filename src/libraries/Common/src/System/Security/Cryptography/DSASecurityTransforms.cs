@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     internal static partial class DSAImplementation
     {
-        public sealed partial class DSASecurityTransforms : DSA
+        public sealed partial class DSASecurityTransforms : DSA, IRuntimeAlgorithm
         {
             private SecKeyPair? _keys;
             private bool _disposed;
@@ -117,12 +117,6 @@ namespace System.Security.Cryptography
 
                 return HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
             }
-
-            protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-                HashOneShotHelpers.HashData(hashAlgorithm, data);
-
-            protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-                HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
 
             protected override void Dispose(bool disposing)
             {

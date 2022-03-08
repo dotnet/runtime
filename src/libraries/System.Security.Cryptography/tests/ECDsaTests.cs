@@ -35,8 +35,6 @@ namespace System.Security.Cryptography.Tests
                 Assert.Throws<NotSupportedException>(() => ecdsa.ExportExplicitParameters(false));
                 Assert.Throws<NotSupportedException>(() => ecdsa.ImportParameters(default(ECParameters)));
                 Assert.Throws<NotSupportedException>(() => ecdsa.GenerateKey(default(ECCurve)));
-                Assert.Throws<NotSupportedException>(() => ecdsa.BaseHashData(null, HashAlgorithmName.SHA256));
-                Assert.Throws<NotSupportedException>(() => ecdsa.BaseHashData(null, 0, 0, HashAlgorithmName.SHA256));
 
                 Assert.Throws<NotImplementedException>(() => ecdsa.FromXmlString(null));
                 Assert.Throws<NotImplementedException>(() => ecdsa.ToXmlString(false));

@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
 {
     internal static partial class RSAImplementation
     {
-        public sealed partial class RSASecurityTransforms : RSA
+        public sealed partial class RSASecurityTransforms : RSA, IRuntimeAlgorithm
         {
             private SecKeyPair? _keys;
 
@@ -554,15 +554,6 @@ namespace System.Security.Cryptography
 
                 throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
             }
-
-            protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-                HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
-
-            protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-                HashOneShotHelpers.HashData(hashAlgorithm, data);
-
-            protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-                HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
 
             protected override void Dispose(bool disposing)
             {
