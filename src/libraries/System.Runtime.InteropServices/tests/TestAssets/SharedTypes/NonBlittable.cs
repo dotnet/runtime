@@ -314,7 +314,7 @@ namespace SharedTypes
 
         public ReadOnlySpan<byte> GetNativeValuesSource(int length)
         {
-            return allocatedMemory == IntPtr.Zero ? default : new Span<byte>((void*)allocatedMemory, length * sizeOfNativeElement);
+            return allocatedMemory == IntPtr.Zero ? default : NativeValueStorage = new Span<byte>((void*)allocatedMemory, length * sizeOfNativeElement);
         }
 
         public ref byte GetPinnableReference() => ref NativeValueStorage.GetPinnableReference();

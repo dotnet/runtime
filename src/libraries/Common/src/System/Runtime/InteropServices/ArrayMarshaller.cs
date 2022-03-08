@@ -68,7 +68,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
 
         public ReadOnlySpan<byte> GetNativeValuesSource(int length)
         {
-            return _allocatedMemory == IntPtr.Zero ? default : new Span<byte>((void*)_allocatedMemory, length * _sizeOfNativeElement);
+            return _allocatedMemory == IntPtr.Zero ? default : NativeValueStorage = new Span<byte>((void*)_allocatedMemory, length * _sizeOfNativeElement);
         }
         private Span<byte> NativeValueStorage { get; set; }
 
@@ -146,7 +146,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
 
         public ReadOnlySpan<byte> GetNativeValuesSource(int length)
         {
-            return _allocatedMemory == IntPtr.Zero ? default : new Span<byte>((void*)_allocatedMemory, length * _sizeOfNativeElement);
+            return _allocatedMemory == IntPtr.Zero ? default : NativeValueStorage = new Span<byte>((void*)_allocatedMemory, length * _sizeOfNativeElement);
         }
         private Span<byte> NativeValueStorage { get; set; }
 
