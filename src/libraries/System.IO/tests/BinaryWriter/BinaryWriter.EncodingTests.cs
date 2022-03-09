@@ -203,7 +203,7 @@ namespace System.IO.Tests
                 }
                 catch (OutOfMemoryException)
                 {
-                    return; // skip test in low-mem conditions
+                    throw new SkipTestException($"Unable to execute {nameof(WriteChars_VeryLargeArray_DoesNotOverflow)} due to OOM"); // skip test in low-mem conditions
                 }
 
                 Assert.True((long)unmanagedBuffer.ByteLength > int.MaxValue);
