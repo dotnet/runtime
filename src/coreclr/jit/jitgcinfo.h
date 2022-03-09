@@ -20,15 +20,16 @@
 // Shash typedefs
 struct RegSlotIdKey
 {
-    unsigned m_regNum;
+    unsigned short m_regNum;
     unsigned short m_flags;
 
     RegSlotIdKey()
     {
     }
 
-    RegSlotIdKey(unsigned regNum, unsigned short flags) : m_regNum(regNum), m_flags(flags)
+    RegSlotIdKey(unsigned short regNum, unsigned flags) : m_regNum(regNum), m_flags((unsigned short)flags)
     {
+        assert(m_flags == flags);
     }
 
     static unsigned GetHashCode(RegSlotIdKey rsk)
@@ -52,8 +53,9 @@ struct StackSlotIdKey
     {
     }
 
-    StackSlotIdKey(int offset, bool fpRel, unsigned short flags) : m_offset(offset), m_fpRel(fpRel), m_flags(flags)
+    StackSlotIdKey(int offset, bool fpRel, unsigned flags) : m_offset(offset), m_fpRel(fpRel), m_flags((unsigned short)flags)
     {
+        assert(flags == m_flags);
     }
 
     static unsigned GetHashCode(StackSlotIdKey ssk)

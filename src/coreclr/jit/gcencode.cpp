@@ -513,10 +513,10 @@ int FASTCALL lookupCallPattern(unsigned argCnt, unsigned regMask, unsigned argMa
     {
         CallPattern pat;
 
-        pat.fld.argCnt    = (unsigned char)argCnt;
-        pat.fld.regMask   = (unsigned char)regMask; // EBP,EBX,ESI,EDI
-        pat.fld.argMask   = (unsigned char)argMask;
-        pat.fld.codeDelta = (unsigned char)codeDelta;
+        pat.fld.argCnt    = (BYTE)argCnt;
+        pat.fld.regMask   = (BYTE)regMask; // EBP,EBX,ESI,EDI
+        pat.fld.argMask   = (BYTE)argMask;
+        pat.fld.codeDelta = (BYTE)codeDelta;
 
         bool     codeDeltaOK = (pat.fld.codeDelta == codeDelta);
         unsigned bestDelta2  = 0xff;
@@ -4505,7 +4505,7 @@ void GCInfo::gcMakeRegPtrTable(
                 // Append an entry for the call if doing the real thing.
                 if (mode == MAKE_REG_PTR_MODE_DO_WORK)
                 {
-                    pCallSites[callSiteNum]     = callOffset;
+                    pCallSites[callSiteNum] = callOffset;
 
                     assert(call->cdCallInstrSize <= BYTE_MAX);
                     pCallSiteSizes[callSiteNum] = (BYTE)call->cdCallInstrSize;
@@ -4661,7 +4661,8 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
             regFlags = (GcSlotFlags)(regFlags | GC_SLOT_INTERIOR);
         }
 
-        RegSlotIdKey rskey(regNum, regFlags);
+        assert(regNum == (regNumberSmall)regNum);
+        RegSlotIdKey rskey((unsigned short)regNum, regFlags);
         GcSlotId     regSlotId;
         if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
         {

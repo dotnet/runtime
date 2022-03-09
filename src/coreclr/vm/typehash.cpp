@@ -229,8 +229,7 @@ static DWORD HashTypeHandle(TypeHandle t)
     else if (t.IsGenericVariable())
     {
         _ASSERTE(!"Generic variables are unexpected here.");
-        // Revisit the cast to DWORD if this path becomes viable.
-        retVal = (DWORD)t.AsTAddr();
+        retVal = 0;
     }
     else
     {

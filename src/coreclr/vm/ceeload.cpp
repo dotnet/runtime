@@ -1851,7 +1851,7 @@ void Module::FreeModuleIndex(ModuleIndex index)
     // add 1 before we free it.
     SIZE_T val = index.m_dwIndex + 1;
 
-    _ASSERTE(val <= DWORD_MAX);
+    _ASSERTE(val <= MAXDWORD);
     g_pModuleIndexDispenser->DisposeId((DWORD)val);
 }
 
@@ -5023,11 +5023,11 @@ public:
             {
                 SIZE_T offset = profileMap->getCurrentOffset();
                 _ASSERTE((offset & 0x3) == 0);
-                _ASSERTE(offset <= DWORD_MAX);
+                _ASSERTE(offset <= MAXDWORD);
 
                 SIZE_T actualSize  = pSec->profileMap.getCurrentOffset();
                 SIZE_T alignUpSize = AlignUp(actualSize, sizeof(DWORD));
-                _ASSERTE(alignUpSize <= DWORD_MAX);
+                _ASSERTE(alignUpSize <= MAXDWORD);
 
                 profileMap->Allocate(alignUpSize);
 
@@ -5950,8 +5950,8 @@ static void ProfileDataAllocateScenarioInfo(ProfileEmitter * pEmitter, LPCSTR sc
             sHeaderOffset = profileMap->getCurrentOffset();
             sHeader = (CORBBTPROF_SCENARIO_HEADER *) profileMap->Allocate(sizeHeader.Value());
 
-            _ASSERTE(sHeaderSize.Value() <= DWORD_MAX);
-            _ASSERTE(cName.Value() <= DWORD_MAX);
+            _ASSERTE(sHeaderSize.Value() <= MAXDWORD);
+            _ASSERTE(cName.Value() <= MAXDWORD);
             sHeader->size              = (DWORD)sHeaderSize.Value();
             sHeader->scenario.ordinal  = 1;
             sHeader->scenario.mask     = 1;
@@ -5968,8 +5968,8 @@ static void ProfileDataAllocateScenarioInfo(ProfileEmitter * pEmitter, LPCSTR sc
             CORBBTPROF_SCENARIO_RUN *sRun;
             sRun = (CORBBTPROF_SCENARIO_RUN *)  profileMap->Allocate(sizeRun.Value());
 
-            _ASSERTE(cCmdLine.Value() <= DWORD_MAX);
-            _ASSERTE(cSystemInfo.Value() <= DWORD_MAX);
+            _ASSERTE(cCmdLine.Value() <= MAXDWORD);
+            _ASSERTE(cSystemInfo.Value() <= MAXDWORD);
             sRun->runTime     = runTime;
             sRun->mvid        = *pMvid;
             sRun->cCmdLine    = (DWORD)cCmdLine.Value();
@@ -6089,7 +6089,7 @@ static void ProfileDataAllocateMethodBlockCounts(ProfileEmitter * pEmitter, CORC
                     profileMap->Allocate(sizeof(CORBBTPROF_TOKEN_LIST_SECTION_HEADER) +
                                          pTokenArray->Size() * sizeof(CORBBTPROF_TOKEN_INFO));
 
-                _ASSERTE(pTokenArray->Size() <= DWORD_MAX);
+                _ASSERTE(pTokenArray->Size() <= MAXDWORD);
                 header->NumTokens = (DWORD)pTokenArray->Size();
                 memcpy( (header + 1), &((*pTokenArray)[0]), pTokenArray->Size() * sizeof(CORBBTPROF_TOKEN_INFO));
 
@@ -6351,7 +6351,7 @@ HRESULT Module::WriteMethodProfileDataLogFile(bool cleanup)
             HandleHolder profileDataFile(OpenMethodProfileDataLogFile(mvid));
 
             ULONG count;
-            _ASSERTE(profileImage.getCurrentOffset() <= DWORD_MAX);
+            _ASSERTE(profileImage.getCurrentOffset() <= MAXDWORD);
             BOOL result = WriteFile(profileDataFile, profileImage.getOffsetPtr(0), (DWORD)profileImage.getCurrentOffset(), &count, NULL);
             if (!result || (count != profileImage.getCurrentOffset()))
             {
