@@ -2406,9 +2406,15 @@ namespace System.Text.RegularExpressions
             int i = childIndex;
             for ( ; i < exclusiveChildBound; i++)
             {
-                // We focus on only Ones and Sets.  A sequence of Ones should have already been turned into a Multi,
-                // so we don't bother looking for Oneloop/etc.
                 RegexNode child = Child(i);
+                if ((child.Options & RegexOptions.IgnoreCase) != 0)
+                {
+                    // TODO https://github.com/dotnet/runtime/issues/61048: Remove this block once fixed.
+                    // We don't want any nodes that are still IgnoreCase, as they'd no longer be IgnoreCase if
+                    // they were applicable to this optimization.
+                    break;
+                }
+
                 if (child.Kind is RegexNodeKind.One)
                 {
                     // We only want to include ASCII characters, and only if they don't participate in case conversion
@@ -2419,7 +2425,20 @@ namespace System.Text.RegularExpressions
                     {
                         break;
                     }
+
                     vsb.Append(child.Ch);
+                }
+                else if (child.Kind is RegexNodeKind.Multi)
+                {
+                    // As with RegexNodeKind.One, the string needs to be composed solely of ASCII characters that
+                    // don't participate in case conversion.
+                    if (!RegexCharClass.IsAscii(child.Str.AsSpan()) ||
+                        RegexCharClass.ParticipatesInCaseConversion(child.Str.AsSpan()))
+                    {
+                        break;
+                    }
+
+                    vsb.Append(child.Str);
                 }
                 else if (child.Kind is RegexNodeKind.Set ||
                          (child.Kind is RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic && child.M == child.N))
