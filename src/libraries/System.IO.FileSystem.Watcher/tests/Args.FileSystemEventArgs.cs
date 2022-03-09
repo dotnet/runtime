@@ -65,16 +65,6 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [InlineData("C:", "foo.txt")]
-        public static void FileSystemEventArgs_ctor_RelativePathFromCurrentDirectoryInGivenDrive(string directory, string name)
-        {
-            FileSystemEventArgs args = new FileSystemEventArgs(WatcherChangeTypes.All, directory, name);
-
-            Assert.Equal(Path.Combine(Directory.GetCurrentDirectory(), name), args.FullPath);
-        }
-
-        [Theory]
         [InlineData("bar", "")]
         [InlineData("bar", null)]
         public static void FileSystemEventArgs_ctor_When_EmptyFileName_Then_FullPathReturnsTheDirectoryFullPath_WithTrailingSeparator(string directory, string name)

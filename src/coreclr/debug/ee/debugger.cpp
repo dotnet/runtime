@@ -2488,7 +2488,7 @@ void Debugger::JITComplete(NativeCodeVersion nativeCodeVersion, TADDR newAddress
 
     MethodDesc* fd = nativeCodeVersion.GetMethodDesc();
 
-    LOG((LF_CORDB, LL_INFO100000, "D::JITComplete: md:0x%x (%s::%s), address:0x%x.\n",
+    LOG((LF_CORDB, LL_INFO100000, "D::JITComplete: md:0x%p (%s::%s), address:0x%p.\n",
         fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
         newAddress));
 
@@ -2521,13 +2521,13 @@ void Debugger::JITComplete(NativeCodeVersion nativeCodeVersion, TADDR newAddress
             // method on two threads. When this occurs both threads will
             // return the same code pointer and this callback is invoked
             // multiple times.
-            LOG((LF_CORDB, LL_INFO1000000, "D::JITComplete: md:0x%x (%s::%s), address:0x%x. Already created\n",
+            LOG((LF_CORDB, LL_INFO1000000, "D::JITComplete: md:0x%p (%s::%s), address:0x%p. Already created\n",
                 fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
                 newAddress));
             goto Exit;
         }
 
-        LOG((LF_CORDB, LL_INFO1000000, "D::JITComplete: md:0x%x (%s::%s), address:0x%x. Created ji:0x%x\n",
+        LOG((LF_CORDB, LL_INFO1000000, "D::JITComplete: md:0x%p (%s::%s), address:0x%p. Created ji:0x%p\n",
             fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
             newAddress, ji));
 
@@ -2730,16 +2730,8 @@ DebuggerJitInfo *Debugger::GetJitInfoWorker(MethodDesc *fd, const BYTE *pbAddr, 
             break;
         }
     }
-    LOG((LF_CORDB, LL_INFO1000, "D::GJI: for md:0x%x (%s::%s), got dmi:0x%x.\n",
-         fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
-         dmi));
 
-
-
-
-    // Log stuff - fd may be null; so we don't want to AV in the log.
-
-    LOG((LF_CORDB, LL_INFO1000, "D::GJI: for md:0x%x (%s::%s), got dmi:0x%x, dji:0x%x, latest dji:0x%x, latest fd:0x%x, prev dji:0x%x\n",
+    LOG((LF_CORDB, LL_INFO1000, "D::GJI: for md:0x%p (%s::%s), got dmi:0x%p, dji:0x%p, latest dji:0x%p, latest fd:0x%p, prev dji:0x%p\n",
         fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
         dmi, dji, (dmi ? dmi->GetLatestJitInfo_NoCreate() : 0),
         ((dmi && dmi->GetLatestJitInfo_NoCreate()) ? dmi->GetLatestJitInfo_NoCreate()->m_nativeCodeVersion.GetMethodDesc():0),
@@ -4816,7 +4808,7 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
     mdMethodDef md =                fd->GetMemberDef();
 
     LOG((LF_CORDB,LL_INFO10000,"D::MABFP: All BPs will be mapped to "
-        "Ver:0x%04x (DJI:0x%08x)\n", djiNew?djiNew->m_methodInfo->GetCurrentEnCVersion():0, djiNew));
+        "Ver:0x%04x (DJI:0x%p)\n", djiNew?djiNew->m_methodInfo->GetCurrentEnCVersion():0, djiNew));
 
     // We need to traverse the patch list while under the controller lock (small lock).
     // But we can only send BreakpointSetErros while under the debugger lock (big lock).
@@ -4855,7 +4847,7 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
             // elsewhere.
             if(dcp->pMethodDescFilter != NULL && dcp->pMethodDescFilter != djiNew->m_nativeCodeVersion.GetMethodDesc())
             {
-                LOG((LF_CORDB, LL_INFO10000, "Patch not in this generic instance\n"));
+                LOG((LF_CORDB, LL_INFO10000, "Patch not in this generic instance, filter 0x%p\n", dcp->pMethodDescFilter));
                 continue;
             }
 
@@ -5467,7 +5459,7 @@ void Debugger::ReleaseAllRuntimeThreads(AppDomain *pAppDomain)
     //<TODO>@todo APPD if we want true isolation, remove this & finish the work</TODO>
     pAppDomain = NULL;
 
-    STRESS_LOG1(LF_CORDB, LL_INFO10000, "D::RART: Releasing all Runtime threads"
+    STRESS_LOG1(LF_CORDB, LL_INFO10000, "D::RART: Releasing all Runtime threads "
         "for AppD 0x%x.\n", pAppDomain);
 
     // Mark that we're on our way now...
@@ -5679,8 +5671,6 @@ void Debugger::TraceCall(const BYTE *code)
  * Invoked from a probe in managed code when we enter a user method and
  * the flag (set by GetJMCFlagAddr) for that method is != 0.
  * pIP - the ip within the method, right after the prolog.
- * sp  - stack pointer (frame pointer on x86) for the managed method we're entering.
- * bsp - backing store pointer for the managed method we're entering
   ******************************************************************************/
 void Debugger::OnMethodEnter(void * pIP)
 {
@@ -5695,7 +5685,7 @@ void Debugger::OnMethodEnter(void * pIP)
 
     if (!CORDebuggerAttached())
     {
-        LOG((LF_CORDB, LL_INFO1000000, "D::OnMethodEnter returning since debugger attached.\n"));
+        LOG((LF_CORDB, LL_INFO1000000, "D::OnMethodEnter returning since debugger not attached.\n"));
         return;
     }
     FramePointer fp = LEAF_MOST_FRAME;

@@ -91,10 +91,6 @@ mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 		return ins;
 	}
 
-	ins = mono_emit_native_types_intrinsics (cfg, cmethod, fsig, args);
-	if (ins)
-		return ins;
-
 	if (!(cfg->opt & MONO_OPT_INTRINS))
 		return NULL;
 
@@ -115,7 +111,7 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	MonoInst *ins = NULL;
 	int opcode = 0;
 	// Convert Math and MathF methods into LLVM intrinsics, e.g. MathF.Sin -> @llvm.sin.f32
-	if (in_corlib && !strcmp (m_class_get_name (cmethod->klass), "MathF")) {
+	if (in_corlib && !strcmp (m_class_get_name (cmethod->klass), "MathF") && cfg->r4fp) {
 		// (float)
 		if (fsig->param_count == 1 && fsig->params [0]->type == MONO_TYPE_R4) {
 			if (!strcmp (cmethod->name, "Ceiling")) {
@@ -2186,10 +2182,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 		}
 	}
-
-	ins = mono_emit_native_types_intrinsics (cfg, cmethod, fsig, args);
-	if (ins)
-		return ins;
 
 	if (COMPILE_LLVM (cfg)) {
 		ins = llvm_emit_inst_for_method (cfg, cmethod, fsig, args, in_corlib);

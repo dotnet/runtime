@@ -252,7 +252,7 @@ namespace System.Net.Http
         public System.Net.Http.HttpContent? Content { get { throw null; } set { } }
         public System.Net.Http.Headers.HttpRequestHeaders Headers { get { throw null; } }
         public System.Net.Http.HttpMethod Method { get { throw null; } set { } }
-        [Obsolete("HttpRequestMessage.Properties has been deprecated. Use Options instead.")]
+        [System.ObsoleteAttribute("HttpRequestMessage.Properties has been deprecated. Use Options instead.")]
         public System.Collections.Generic.IDictionary<string, object?> Properties { get { throw null; } }
         public HttpRequestOptions Options { get { throw null; } }
         public System.Uri? RequestUri { get { throw null; } set { } }
@@ -437,8 +437,10 @@ namespace System.Net.Http
     public partial class StringContent : System.Net.Http.ByteArrayContent
     {
         public StringContent(string content) : base (default(byte[])) { }
+        public StringContent(string content, System.Net.Http.Headers.MediaTypeHeaderValue mediaType) : base (default(byte[])) { }
         public StringContent(string content, System.Text.Encoding? encoding) : base (default(byte[])) { }
-        public StringContent(string content, System.Text.Encoding? encoding, string? mediaType) : base (default(byte[])) { }
+        public StringContent(string content, System.Text.Encoding? encoding, System.Net.Http.Headers.MediaTypeHeaderValue mediaType) : base (default(byte[])) { }
+        public StringContent(string content, System.Text.Encoding? encoding, string mediaType) : base (default(byte[])) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
 }
@@ -692,6 +694,7 @@ namespace System.Net.Http.Headers
     {
         protected MediaTypeHeaderValue(System.Net.Http.Headers.MediaTypeHeaderValue source) { }
         public MediaTypeHeaderValue(string mediaType) { }
+        public MediaTypeHeaderValue(string mediaType, string? charSet) { }
         public string? CharSet { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public string? MediaType { get { throw null; } set { } }

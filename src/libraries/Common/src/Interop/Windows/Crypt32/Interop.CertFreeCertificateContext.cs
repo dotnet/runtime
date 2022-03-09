@@ -10,6 +10,7 @@ internal static partial class Interop
     {
         // Note: This api always return TRUE, regardless of success.
         [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CertFreeCertificateContext(IntPtr pCertContext);
     }
 }

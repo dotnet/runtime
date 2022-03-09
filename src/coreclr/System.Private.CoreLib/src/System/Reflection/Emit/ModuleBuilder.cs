@@ -1098,17 +1098,6 @@ namespace System.Reflection.Emit
             return GetTypeRefNested(type, refedModule, referencedModuleFileName);
         }
 
-        internal int GetTypeToken(string name)
-        {
-            // Return a token for the class relative to the Module.
-            // Module.GetType() verifies name
-
-            // Unfortunately, we will need to load the Type and then call GetTypeToken in
-            // order to correctly track the assembly reference information.
-
-            return GetTypeToken(InternalModule.GetType(name, false, true)!);
-        }
-
         internal int GetMethodToken(MethodInfo method)
         {
             lock (SyncRoot)

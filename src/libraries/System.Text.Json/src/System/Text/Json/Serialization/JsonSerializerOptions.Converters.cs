@@ -23,11 +23,27 @@ namespace System.Text.Json
         // The global list of built-in converters that override CanConvert().
         private static JsonConverter[]? s_defaultFactoryConverters;
 
+        // Stores the JsonTypeInfo factory, which requires unreferenced code and must be rooted by the reflection-based serializer.
+        private static Func<Type, JsonSerializerOptions, JsonTypeInfo>? s_typeInfoCreationFunc;
+
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        private static void RootBuiltInConverters()
+        private static void RootReflectionSerializerDependencies()
         {
-            s_defaultSimpleConverters = GetDefaultSimpleConverters();
-            s_defaultFactoryConverters = new JsonConverter[]
+            if (s_defaultSimpleConverters is null)
+            {
+                s_defaultSimpleConverters = GetDefaultSimpleConverters();
+                s_defaultFactoryConverters = GetDefaultFactoryConverters();
+                s_typeInfoCreationFunc = CreateJsonTypeInfo;
+            }
+
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options) => new JsonTypeInfo(type, options);
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        private static JsonConverter[] GetDefaultFactoryConverters()
+        {
+            return new JsonConverter[]
             {
                 // Check for disallowed types.
                 new UnsupportedTypeConverterFactory(),
@@ -159,7 +175,7 @@ namespace System.Text.Json
         [RequiresUnreferencedCode("Getting a converter for a type may require reflection which depends on unreferenced code.")]
         public JsonConverter GetConverter(Type typeToConvert!!)
         {
-            RootBuiltInConverters();
+            RootReflectionSerializerDependencies();
             return GetConverterInternal(typeToConvert);
         }
 

@@ -60,5 +60,16 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Indicates the end of a subcapture.</summary>
         /// <remarks><see cref="SymbolicRegexNode{S}._lower"/> stores the associated capture number.</remarks>
         CaptureEnd,
+
+        /// <summary>
+        /// This node disables backtracking simulation in derivatives for the pattern it contains. This is used for the the
+        /// second reverse phase of the match generation algorithm, where its needed to ensure all paths are considered when
+        /// walking backwards from a known final state.
+        /// </summary>
+        /// <remarks>
+        /// If any other metadata nodes are needed that would have the same structure, having just one node kind for this and
+        /// the other uses might make sense.
+        /// </remarks>
+        DisableBacktrackingSimulation,
     }
 }
