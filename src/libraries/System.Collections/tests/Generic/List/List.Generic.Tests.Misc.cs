@@ -1099,5 +1099,23 @@ namespace System.Collections.Tests
             intDriver.TrueForAll_VerifyExceptions(intArray);
             stringDriver.TrueForAll_VerifyExceptions(stringArray);
         }
+
+        [Fact]
+        public static void TrueForAll_ListSizeCanBeChanged()
+        {
+            var list = new List<int>() { 1, 2, 3 };
+            var results = new List<int> { 1, 2, 3, 2, 3, 4, 3, 4, 4 };
+            list.TrueForAll(i =>
+            {
+                if (i < 4)
+                {
+                    list.Add(i + 1);
+                }
+
+                return true;
+            });
+
+            Assert.Equal(list, results);
+        }
     }
 }

@@ -287,6 +287,23 @@ namespace System.Collections.Tests
             }
         }
 
+        [Fact]
+        public void Find_ListSizeCanBeChanged()
+        {
+            var list = new List<int>() { 1, 2, 3 };
+            var results = list.FindAll(i =>
+            {
+                if (i < 4)
+                {
+                    list.Add(i + 1);
+                }
+
+                return true;
+            });
+
+            Assert.Equal(list, results);
+        }
+
         #endregion
 
         #region FindLast
@@ -979,6 +996,23 @@ namespace System.Collections.Tests
 
             //[] Verify FindAll returns an empty List if the match returns false on every item
             VerifyList(list.FindAll(_alwaysFalseDelegate), new List<T>());
+        }
+
+        [Fact]
+        public void FindAll_ListSizeCanBeChanged()
+        {
+            var list = new List<int>() { 1, 2, 3 };
+            var results = list.FindAll(i =>
+            {
+                if (i < 4)
+                {
+                    list.Add(i + 1);
+                }
+
+                return true;
+            });
+
+            Assert.Equal(list, results);
         }
 
         #endregion
