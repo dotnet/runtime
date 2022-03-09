@@ -53,7 +53,8 @@ struct StackSlotIdKey
     {
     }
 
-    StackSlotIdKey(int offset, bool fpRel, unsigned flags) : m_offset(offset), m_fpRel(fpRel), m_flags((unsigned short)flags)
+    StackSlotIdKey(int offset, bool fpRel, unsigned flags)
+        : m_offset(offset), m_fpRel(fpRel), m_flags((unsigned short)flags)
     {
         assert(flags == m_flags);
     }
