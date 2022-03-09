@@ -2646,6 +2646,7 @@ mono_aot_get_weak_field_indexes (MonoImage *image)
 	if (!amodule)
 		return NULL;
 
+#if ENABLE_WEAK_ATTR
 	/* Initialize weak field indexes from the cached copy */
 	guint32 *indexes = (guint32*)amodule->weak_field_indexes;
 	int len  = indexes [0];
@@ -2653,6 +2654,9 @@ mono_aot_get_weak_field_indexes (MonoImage *image)
 	for (int i = 0; i < len; ++i)
 		g_hash_table_insert (indexes_hash, GUINT_TO_POINTER (indexes [i + 1]), GUINT_TO_POINTER (1));
 	return indexes_hash;
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 /* Compute the boundaries of the LLVM code for AMODULE. */

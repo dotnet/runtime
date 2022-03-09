@@ -180,9 +180,10 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal("SYSLIB1043", Assert.Single(diagnostics).Id);
         }
 
-        [ActiveIssue("https://github.com/dotnet/roslyn/pull/55866")]
-        [Fact]
-        public async Task Diagnostic_InvalidLangVersion()
+        [Theory]
+        [InlineData(LanguageVersion.CSharp9)]
+        [InlineData(LanguageVersion.CSharp10)]
+        public async Task Diagnostic_InvalidLangVersion(LanguageVersion version)
         {
             IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@"
                 using System.Text.RegularExpressions;
@@ -191,24 +192,9 @@ namespace System.Text.RegularExpressions.Tests
                     [RegexGenerator(""ab"")]
                     private static partial Regex InvalidLangVersion();
                 }
-            ", langVersion: LanguageVersion.CSharp9);
+            ", langVersion: version);
 
             Assert.Equal("SYSLIB1044", Assert.Single(diagnostics).Id);
-        }
-
-        [Fact]
-        public async Task Diagnostic_RightToLeft_LimitedSupport()
-        {
-            IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@"
-                using System.Text.RegularExpressions;
-                partial class C
-                {
-                    [RegexGenerator(""ab"", RegexOptions.RightToLeft)]
-                    private static partial Regex RightToLeftNotSupported();
-                }
-            ");
-
-            Assert.Equal("SYSLIB1045", Assert.Single(diagnostics).Id);
         }
 
         [Fact]
@@ -227,33 +213,50 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        public async Task Diagnostic_PositiveLookbehind_LimitedSupport()
+        public async Task Diagnostic_CustomRegexGeneratorAttribute_ZeroArgCtor()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@"
                 using System.Text.RegularExpressions;
                 partial class C
                 {
-                    [RegexGenerator(""(?<=\b20)\d{2}\b"")]
-                    private static partial Regex PositiveLookbehindNotSupported();
+                    [RegexGenerator]
+                    private static partial Regex InvalidCtor();
+                }
+
+                namespace System.Text.RegularExpressions
+                {
+                    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+                    public sealed class RegexGeneratorAttribute : Attribute
+                    {
+                    }
                 }
             ");
 
-            Assert.Equal("SYSLIB1045", Assert.Single(diagnostics).Id);
+            Assert.Equal("SYSLIB1040", Assert.Single(diagnostics).Id);
         }
 
         [Fact]
-        public async Task Diagnostic_NegativeLookbehind_LimitedSupport()
+        public async Task Diagnostic_CustomRegexGeneratorAttribute_FourArgCtor()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@"
                 using System.Text.RegularExpressions;
                 partial class C
                 {
-                    [RegexGenerator(""(?<!(Saturday|Sunday) )\b\w+ \d{1,2}, \d{4}\b"")]
-                    private static partial Regex NegativeLookbehindNotSupported();
+                    [RegexGenerator(""a"", RegexOptions.None, -1, ""b""]
+                    private static partial Regex InvalidCtor();
+                }
+
+                namespace System.Text.RegularExpressions
+                {
+                    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+                    public sealed class RegexGeneratorAttribute : Attribute
+                    {
+                        public RegexGeneratorAttribute(string pattern, RegexOptions options, int timeout, string somethingElse) { }
+                    }
                 }
             ");
 
-            Assert.Equal("SYSLIB1045", Assert.Single(diagnostics).Id);
+            Assert.Equal("SYSLIB1040", Assert.Single(diagnostics).Id);
         }
 
         [Fact]
@@ -326,6 +329,22 @@ namespace System.Text.RegularExpressions.Tests
 
                     [RegexGenerator(matchTimeoutMilliseconds: -1, pattern: ""ab"", options: RegexOptions.None)]
                     private static partial Regex Valid2();
+                }}
+            ", compile: true));
+        }
+
+        [Fact]
+        public async Task Valid_AdditionalAttributes()
+        {
+            Assert.Empty(await RegexGeneratorHelper.RunGenerator($@"
+                using System.Text.RegularExpressions;
+                using System.Diagnostics.CodeAnalysis;
+                partial class C
+                {{
+                    [SuppressMessage(""CATEGORY1"", ""SOMEID1"")]
+                    [RegexGenerator(""abc"")]
+                    [SuppressMessage(""CATEGORY2"", ""SOMEID2"")]
+                    private static partial Regex AdditionalAttributes();
                 }}
             ", compile: true));
         }

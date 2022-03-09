@@ -110,19 +110,14 @@ steps:
   #      overwriteExistingFiles: true
   #      cleanDestinationFolder: false
 
-  # Get the current maui nuget config so all things can be found, and add the Emscription version to the rollback file
-  # Add emscription line using sed based on https://stackoverflow.com/questions/6739258/how-do-i-add-a-line-of-text-to-the-middle-of-a-file-using-bash.
-  # This is a workaround as the current
+  # Get the current maui nuget config so all things can be found and darc based package sources are kept up to date.
   - script: |
       curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/main/NuGet.config'
-      curl -o rollback.json 'https://maui.blob.core.windows.net/metadata/rollbacks/main.json'
-      sed -n 'H;${x;s/^\n//;s/  "microsoft.net.sdk.android".*$/  "microsoft.net.workload.emscripten": "6.0.2",\n&/;p;}' rollback.json > updated_rollback.json
-      cat updated_rollback.json
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
       chmod -R a+rx .
       ./dotnet-install.sh --channel 6.0.2xx --quality daily --install-dir .
       ./dotnet --info
-      ./dotnet workload install maui --from-rollback-file ./updated_rollback.json --configfile NuGet.config
+      ./dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/main.json --configfile NuGet.config
     displayName: Install MAUI workload
     workingDirectory: $(Build.SourcesDirectory)
 

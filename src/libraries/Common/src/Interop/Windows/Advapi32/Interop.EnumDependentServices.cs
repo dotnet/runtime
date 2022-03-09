@@ -10,6 +10,7 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
         [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "EnumDependentServicesW", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EnumDependentServices(
             SafeServiceHandle serviceHandle,
             int serviceState,

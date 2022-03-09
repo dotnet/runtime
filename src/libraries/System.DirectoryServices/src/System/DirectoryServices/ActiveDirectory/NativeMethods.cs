@@ -396,7 +396,7 @@ namespace System.DirectoryServices.ActiveDirectory
         [GeneratedDllImport(global::Interop.Libraries.Dnsapi)]
         internal static partial void DnsRecordListFree(
             IntPtr dnsResultList,
-            bool dnsFreeType);
+            [MarshalAs(UnmanagedType.Bool)] bool dnsFreeType);
 
         /*NTSTATUS LsaConnectUntrusted(
               PHANDLE LsaHandle

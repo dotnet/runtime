@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
+    <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
+
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+</Project>

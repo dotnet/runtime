@@ -13,6 +13,7 @@ internal static partial class Interop
         internal const int CRYPT_FORMAT_STR_NO_HEX     = 0x00000010;
 
         [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CryptFormatObject(
             int dwCertEncodingType,   // only valid value is X509_ASN_ENCODING
             int dwFormatType,         // unused - pass 0.

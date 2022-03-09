@@ -1172,19 +1172,6 @@ int          g_mkdir_with_parents (const gchar *pathname, int mode);
 #define g_mkdir mkdir
 
 /*
- * Character set conversion
- */
-typedef struct _GIConv *GIConv;
-
-gsize g_iconv (GIConv cd, gchar **inbytes, gsize *inbytesleft, gchar **outbytes, gsize *outbytesleft);
-GIConv g_iconv_open (const gchar *to_charset, const gchar *from_charset);
-int g_iconv_close (GIConv cd);
-
-gchar    *g_convert            (const gchar *str, gssize len,
-				const gchar *to_codeset, const gchar *from_codeset,
-				gsize *bytes_read, gsize *bytes_written, GError **gerror);
-
-/*
  * Unicode manipulation
  */
 extern const guchar g_utf8_jump_table[256];

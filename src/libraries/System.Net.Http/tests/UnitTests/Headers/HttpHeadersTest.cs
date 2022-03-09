@@ -2359,6 +2359,13 @@ namespace System.Net.Http.Tests
             Assert.Equal(new[] { "newValue" }, valuesFor3);
         }
 
+        [Fact]
+        public void TryAddInvalidHeader_ShouldThrowFormatException()
+        {
+            MockHeaders headers = new MockHeaders();
+            AssertExtensions.ThrowsContains<FormatException>(() => headers.Remove("\u0080"), "\u0080");
+        }
+
         public static IEnumerable<object[]> NumberOfHeadersUpToArrayThreshold_AddNonValidated_EnumerateNonValidated()
         {
             for (int i = 0; i <= HttpHeaders.ArrayThreshold; i++)

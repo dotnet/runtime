@@ -9,10 +9,11 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
         [GeneratedDllImport(Libraries.Advapi32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptEncrypt(
             SafeCapiKeyHandle hKey,
             SafeHashHandle hHash,
-            bool Final,
+            [MarshalAs(UnmanagedType.Bool)] bool Final,
             int dwFlags,
             byte[]? pbData,
             ref int pdwDataLen,

@@ -13,6 +13,7 @@ namespace System.DirectoryServices.Interop
         public static partial void VariantInit(IntPtr pObject);
 
         [GeneratedDllImport(global::Interop.Libraries.Activeds)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool FreeADsMem(IntPtr pVoid);
 
         public const int

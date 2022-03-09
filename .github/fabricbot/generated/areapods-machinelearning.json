@@ -177,18 +177,6 @@
             }
           },
           {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Michael / Tanner - Issue Triage",
-                  "columnName": "Triaged"
-                }
-              }
-            ]
-          },
-          {
             "operator": "or",
             "operands": [
               {
@@ -230,6 +218,12 @@
             "projectName": "Area Pod: Michael / Tanner - Issue Triage",
             "columnName": "Triaged",
             "isOrgProject": true
+          }
+        },
+        {
+          "name": "removeLabel",
+          "parameters": {
+            "label": "untriaged"
           }
         }
       ]

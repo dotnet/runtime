@@ -25,7 +25,7 @@ namespace System.Reflection.Context.Delegation
 
         internal const string UnknownStringMessageInRAF = "Returns <Unknown> for modules with no file path";
 
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
 #endif
         public override string FullyQualifiedName
@@ -48,7 +48,7 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingModule.ModuleVersionId; }
         }
 
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
 #endif
         public override string Name

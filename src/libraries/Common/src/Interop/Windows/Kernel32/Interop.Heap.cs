@@ -25,6 +25,7 @@ internal static partial class Interop
         internal static partial SafeHeapAllocHandle HeapAlloc(IntPtr hHeap, HeapAllocFlags dwFlags, nint dwBytes);
 
         [GeneratedDllImport(Libraries.Kernel32)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool HeapFree(IntPtr hHeap, HeapAllocFlags dwFlags, IntPtr lpMem);
     }
 }

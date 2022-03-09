@@ -127,7 +127,8 @@ static const gint16 opt_names [] = {
 	MONO_OPT_GSHARED |	\
 	MONO_OPT_SIMD |	\
 	MONO_OPT_ALIAS_ANALYSIS	| \
-	MONO_OPT_AOT)
+	MONO_OPT_AOT | \
+	MONO_OPT_FLOAT32)
 
 #define EXCLUDED_FROM_ALL (MONO_OPT_PRECOMP | MONO_OPT_UNSAFE | MONO_OPT_GSHAREDVT)
 
@@ -674,8 +675,8 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 		}
 	} else {
 		for (opt = 0; opt < G_N_ELEMENTS (opt_sets); ++opt) {
-			/* builtin-types.cs & aot-tests.cs need OPT_INTRINS enabled */
-			if (!strcmp ("builtin-types", image->assembly_name) || !strcmp ("aot-tests", image->assembly_name))
+			/* aot-tests.cs need OPT_INTRINS enabled */
+			if (!strcmp ("aot-tests", image->assembly_name))
 				if (!(opt_sets [opt] & MONO_OPT_INTRINS))
 					continue;
 

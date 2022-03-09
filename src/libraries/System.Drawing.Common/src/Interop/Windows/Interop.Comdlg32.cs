@@ -9,9 +9,11 @@ internal static partial class Interop
     internal static partial class Comdlg32
     {
         [GeneratedDllImport(Libraries.Comdlg32, EntryPoint="PrintDlgW", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool PrintDlg(ref PRINTDLG lppd);
 
         [GeneratedDllImport(Libraries.Comdlg32, EntryPoint="PrintDlgW", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool PrintDlg(ref PRINTDLGX86 lppd);
 
         [StructLayout(LayoutKind.Sequential)]

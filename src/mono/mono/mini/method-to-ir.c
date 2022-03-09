@@ -335,7 +335,7 @@ handle_enum:
 		return OP_LMOVE;
 #endif
 	case MONO_TYPE_R4:
-		return OP_RMOVE;
+		return cfg->r4fp ? OP_RMOVE : OP_FMOVE;
 	case MONO_TYPE_R8:
 		return OP_FMOVE;
 	case MONO_TYPE_VALUETYPE:
@@ -481,7 +481,8 @@ add_widen_op (MonoCompile *cfg, MonoInst *ins, MonoInst **arg1_ref, MonoInst **a
 	MonoInst *arg1 = *arg1_ref;
 	MonoInst *arg2 = *arg2_ref;
 
-	if (((arg1->type == STACK_R4 && arg2->type == STACK_R8) ||
+	if (cfg->r4fp &&
+		((arg1->type == STACK_R4 && arg2->type == STACK_R8) ||
 		 (arg1->type == STACK_R8 && arg2->type == STACK_R4))) {
 		MonoInst *conv;
 
@@ -1181,6 +1182,17 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 	case MONO_CEE_CONV_OVF_U:
 		ins->type = STACK_PTR;
 		ins->opcode += ovfops_op_map [src1->type];
+
+		switch (ins->opcode) {
+		case OP_FCONV_TO_I:
+			ins->opcode = TARGET_SIZEOF_VOID_P == 4 ? OP_FCONV_TO_I4 : OP_FCONV_TO_I8;
+			break;
+		case OP_RCONV_TO_I:
+			ins->opcode = TARGET_SIZEOF_VOID_P == 4 ? OP_RCONV_TO_I4 : OP_RCONV_TO_I8;
+			break;
+		default:
+			break;
+		}
 		break;
 	case MONO_CEE_ADD_OVF:
 	case MONO_CEE_ADD_OVF_UN:
@@ -1970,6 +1982,8 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 static MonoInst*
 convert_value (MonoCompile *cfg, MonoType *type, MonoInst *ins)
 {
+	if (!cfg->r4fp)
+		return ins;
 	type = mini_get_underlying_type (type);
 	switch (type->type) {
 	case MONO_TYPE_R4:
@@ -4525,13 +4539,13 @@ mini_emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 		MONO_EMIT_NEW_ICONST (cfg, dreg, 0);
 	} else if (t == MONO_TYPE_I8 || t == MONO_TYPE_U8) {
 		MONO_EMIT_NEW_I8CONST (cfg, dreg, 0);
-	} else if (t == MONO_TYPE_R4) {
+	} else if (cfg->r4fp && t == MONO_TYPE_R4) {
 		MONO_INST_NEW (cfg, ins, OP_R4CONST);
 		ins->type = STACK_R4;
 		ins->inst_p0 = (void*)&r4_0;
 		ins->dreg = dreg;
 		MONO_ADD_INS (cfg->cbb, ins);
-	} else if (t == MONO_TYPE_R8) {
+	} else if (t == MONO_TYPE_R4 || t == MONO_TYPE_R8) {
 		MONO_INST_NEW (cfg, ins, OP_R8CONST);
 		ins->type = STACK_R8;
 		ins->inst_p0 = (void*)&r8_0;
@@ -4561,9 +4575,9 @@ emit_dummy_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_ICONST);
 	} else if (t == MONO_TYPE_I8 || t == MONO_TYPE_U8) {
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_I8CONST);
-	} else if (t == MONO_TYPE_R4) {
+	} else if (cfg->r4fp && t == MONO_TYPE_R4) {
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_R4CONST);
-	} else if (t == MONO_TYPE_R8) {
+	} else if (t == MONO_TYPE_R4 || t == MONO_TYPE_R8) {
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_R8CONST);
 	} else if ((t == MONO_TYPE_VALUETYPE) || (t == MONO_TYPE_TYPEDBYREF) ||
 		   ((t == MONO_TYPE_GENERICINST) && mono_type_generic_inst_is_valuetype (rtype))) {
@@ -6273,12 +6287,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	while (method_definition->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method_definition;
 		method_definition = imethod->declaring;
-	}
-
-	/* SkipVerification is not allowed if core-clr is enabled */
-	if (!dont_verify && mini_assembly_can_skip_verification (method)) {
-		dont_verify = TRUE;
-		dont_verify_stloc = TRUE;
 	}
 
 	if (sig->is_inflated)
@@ -8726,8 +8734,8 @@ calli_end:
 			break;
 		case MONO_CEE_CONV_U2:
 		case MONO_CEE_CONV_U1:
-		case MONO_CEE_CONV_I:
 		case MONO_CEE_CONV_U:
+		case MONO_CEE_CONV_I:
 			ADD_UNOP (il_op);
 			CHECK_CFG_EXCEPTION;
 			break;
@@ -12246,6 +12254,7 @@ mono_op_no_side_effects (int opcode)
 	case OP_RMOVE:
 	case OP_VZERO:
 	case OP_XZERO:
+	case OP_XONES:
 	case OP_ICONST:
 	case OP_I8CONST:
 	case OP_ADD_IMM:

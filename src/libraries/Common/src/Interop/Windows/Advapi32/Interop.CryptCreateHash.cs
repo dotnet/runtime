@@ -16,6 +16,7 @@ internal static partial class Interop
         }
 
         [GeneratedDllImport(Libraries.Advapi32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CryptCreateHash(
             SafeProvHandle hProv,
             int Algid,

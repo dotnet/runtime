@@ -27,7 +27,6 @@
 #define g_byte_array_set_size monoeg_g_byte_array_set_size
 #define g_calloc monoeg_g_calloc
 #define g_clear_error monoeg_g_clear_error
-#define g_convert monoeg_g_convert
 #define g_convert_error_quark monoeg_g_convert_error_quark
 #define g_fixed_buffer_custom_allocator monoeg_g_fixed_buffer_custom_allocator
 #define g_dir_close monoeg_g_dir_close
@@ -78,9 +77,6 @@
 #define g_hash_table_remove_all monoeg_g_hash_table_remove_all
 #define g_hash_table_iter_init monoeg_g_hash_table_iter_init
 #define g_hash_table_iter_next monoeg_g_hash_table_iter_next
-#define g_iconv monoeg_g_iconv
-#define g_iconv_close monoeg_g_iconv_close
-#define g_iconv_open monoeg_g_iconv_open
 #define g_int_equal monoeg_g_int_equal
 #define g_int_hash monoeg_g_int_hash
 #define g_list_alloc monoeg_g_list_alloc
