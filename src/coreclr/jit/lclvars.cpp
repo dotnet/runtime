@@ -956,6 +956,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_INT));
             }
 
+#if FEATURE_FASTTAILCALL
             // Check if arg was split between registers and stack.
             if (!varTypeUsesFloatReg(argType))
             {
@@ -970,6 +971,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     JITDUMP("set user arg V%02u offset to %d\n", varDscInfo->varNum, varDsc->GetStackOffset());
                 }
             }
+#endif
 #endif // TARGET_ARM
 
 #ifdef DEBUG
