@@ -47,10 +47,8 @@ namespace System.Net.Http.Tests
             _ = request.Headers.Accept.Count;
 
             Assert.Equal(1, request.Headers.NonValidated.Count);
-            Assert.Equal(3, request.Headers.NonValidated.ElementAt(0).Value.Count);
-            Assert.Equal("text/bar", request.Headers.NonValidated.ElementAt(0).Value.ElementAt(0));
-            Assert.Equal("invalid", request.Headers.NonValidated.ElementAt(0).Value.ElementAt(1));
-            Assert.Equal("text/baz", request.Headers.NonValidated.ElementAt(0).Value.ElementAt(2));
+            HeaderStringValues accept = request.Headers.NonValidated["Accept"];
+            Assert.Equal(new[] { "text/bar", "invalid", "text/baz" }, accept);
         }
 
         [Theory]
