@@ -1114,6 +1114,19 @@ inline GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDL
         LclVarDsc* varDsc = lvaGetDesc(obj->AsUnOp()->gtOp1->AsLclVarCommon());
 
         varDsc->lvFieldAccessed = 1;
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+        // These structs are passed by reference and can easily become global
+        // references if those references are exposed. We clear out
+        // address-exposure information for these parameters when they are
+        // converted into references in fgRetypeImplicitByRefArgs() so we do
+        // not have the necessary information in morph to know if these
+        // indirections are actually global references, so we have to be
+        // conservative here.
+        if (varDsc->lvIsParam)
+        {
+            fieldNode->gtFlags |= GTF_GLOB_REF;
+        }
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
     }
     else
     {

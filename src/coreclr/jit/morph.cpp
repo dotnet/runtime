@@ -5896,9 +5896,8 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         fgMorphImplicitByRefArgs(objRef);
     }
 
-    noway_assert(((objRef != nullptr) && ((objRef->IsLocalAddrExpr() != nullptr) ||
-                                          (objRef->IsImplicitByrefParameterValue(this) != nullptr))) ||
-                 (tree->gtFlags & GTF_GLOB_REF) != 0);
+    noway_assert(((objRef != nullptr) && (objRef->IsLocalAddrExpr() != nullptr)) ||
+                 ((tree->gtFlags & GTF_GLOB_REF) != 0));
 
     if (tree->AsField()->gtFldMayOverlap)
     {
