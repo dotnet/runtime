@@ -266,12 +266,6 @@
 /* Enable jemalloc usage for mono */
 #cmakedefine MONO_JEMALLOC_ENABLED 1
 
-/* Do not include names of unmanaged functions in the crash dump */
-#cmakedefine MONO_PRIVATE_CRASHES 1
-
-/* Do not create structured crash files during unmanaged crashes */
-#cmakedefine DISABLE_STRUCTURED_CRASH 1
-
 /* String of disabled features */
 #define DISABLED_FEATURES @DISABLED_FEATURES@
 
@@ -899,9 +893,6 @@
 
 /* host or target doesn't allow unaligned memory access */
 #cmakedefine NO_UNALIGNED_ACCESS 1
-
-/* Support for the visibility ("hidden") attribute */
-#cmakedefine HAVE_VISIBILITY_HIDDEN 1
 
 /* Support for the deprecated attribute */
 #cmakedefine HAVE_DEPRECATED 1
