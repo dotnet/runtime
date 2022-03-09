@@ -150,7 +150,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         }
 
         private static bool IsWindowsVersionSupported() => OperatingSystem.IsWindowsVersionAtLeast(MinWindowsVersion.Major,
-            MinWindowsVersion.Minor, MinWindowsVersion.Build, MinWindowsVersion.Revision) && !IsTls13Disabled();
+            MinWindowsVersion.Minor, MinWindowsVersion.Build, MinWindowsVersion.Revision);
 
         private static bool IsTls13Disabled()
         {
