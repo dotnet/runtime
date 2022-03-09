@@ -5,6 +5,8 @@
 
 Commonly Used Types:
 Microsoft.Win32.SystemEvents</PackageDescription>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
@@ -35,6 +37,8 @@ Microsoft.Win32.SystemEvents</PackageDescription>
              Link="Common\Interop\Windows\User32\Interop.DispatchMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetClassInfo.cs"
              Link="Common\Interop\Windows\User32\Interop.GetClassInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetMessage.cs"
+             Link="Common\Interop\Windows\User32\Interop.GetMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetProcessWindowStation.cs"
              Link="Common\Interop\Windows\User32\Interop.GetProcessWindowStation.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetUserObjectInformation.cs"
@@ -49,10 +53,10 @@ Microsoft.Win32.SystemEvents</PackageDescription>
              Link="Common\Interop\Windows\User32\Interop.MSG.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.MsgWaitForMultipleObjectsEx.cs"
              Link="Common\Interop\Windows\User32\Interop.MsgWaitForMultipleObjectsEx.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.PeekMessage.cs"
-             Link="Common\Interop\Windows\User32\Interop.PeekMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.PostMessage.cs"
              Link="Common\Interop\Windows\User32\Interop.PostMessage.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.PostQuitMessage.cs"
+             Link="Common\Interop\Windows\User32\Interop.PostQuitMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.RegisterClass.cs"
              Link="Common\Interop\Windows\User32\Interop.RegisterClass.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.RegisterWindowMessage.cs"

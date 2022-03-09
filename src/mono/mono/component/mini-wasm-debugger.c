@@ -426,7 +426,7 @@ static gboolean
 receive_debugger_agent_message (void *data, int len)
 {
 	EM_ASM ({
-		MONO.mono_wasm_add_dbg_command_received (1, -1, $0, $1);
+		MONO.mono_wasm_add_dbg_command_received (1, 0, $0, $1);
 	}, data, len);
 	mono_wasm_save_thread_context();
 	mono_wasm_fire_debugger_agent_message ();	

@@ -17,7 +17,6 @@
     <DefineConstants>$(DefineConstants);FEATURE_NFLOAT</DefineConstants>
     <IsPackable>true</IsPackable>
     <ServicingVersion>1</ServicingVersion>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageDescription>Exposes additional NFloat APIs for Xamarin/Maui APIs from System.Runtime.InteropServices</PackageDescription>
     <PackageId>$(MSBuildProjectName)</PackageId>
     <!-- TODO: Remove when the package shipped with NET6. -->
