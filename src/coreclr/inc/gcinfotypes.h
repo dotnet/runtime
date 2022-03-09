@@ -53,7 +53,7 @@ inline UINT32 CeilOfLog2(size_t x)
     return result;
 }
 
-enum GcSlotFlags
+enum GcSlotFlags : unsigned short
 {
     GC_SLOT_BASE      = 0x0,
     GC_SLOT_INTERIOR  = 0x1,

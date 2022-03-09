@@ -20,14 +20,14 @@
 // Shash typedefs
 struct RegSlotIdKey
 {
-    unsigned short m_regNum;
+    unsigned m_regNum;
     unsigned short m_flags;
 
     RegSlotIdKey()
     {
     }
 
-    RegSlotIdKey(unsigned short regNum, unsigned short flags) : m_regNum(regNum), m_flags(flags)
+    RegSlotIdKey(unsigned regNum, unsigned short flags) : m_regNum(regNum), m_flags(flags)
     {
     }
 
