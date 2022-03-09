@@ -191,6 +191,7 @@ namespace System.IO.Tests
             Assert.Equal(expectedBytes, stream.GetBuffer()[Get7BitEncodedIntByteLength((uint)expectedBytes.Length)..(int)stream.Length]);
         }
 
+        [OuterLoop("Allocates a lot of memory")]
         [Fact]
         [SkipOnPlatform(TestPlatforms.Android, "OOM on Android could be uncatchable & kill the test runner")]
         public unsafe void WriteChars_VeryLargeArray_DoesNotOverflow()
