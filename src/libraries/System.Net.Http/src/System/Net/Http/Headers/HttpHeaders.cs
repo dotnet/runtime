@@ -513,7 +513,7 @@ namespace System.Net.Http.Headers
                     if (parsedValue is not InvalidValue)
                     {
                         Debug.Assert(parsedValue.GetType() == value.GetType(),
-                        "Stored value does not have the same type as 'value'.");
+                            "Stored value does not have the same type as 'value'.");
 
                         return AreEqual(value, parsedValue, comparer);
                     }
