@@ -24,26 +24,20 @@ namespace System.Net.Http.Headers
             out object? parsedValue)
         {
             CacheControlHeaderValue? temp = null;
-            if (storeValue is not null)
+            if (storeValue is List<object> list)
             {
-                if (storeValue is List<object> list)
+                foreach (object item in list)
                 {
-                    foreach (object item in list)
+                    if (item is CacheControlHeaderValue cacheControl)
                     {
-                        if (item is not HttpHeaders.InvalidValue)
-                        {
-                            temp = item as CacheControlHeaderValue;
-                            break;
-                        }
+                        temp = cacheControl;
+                        break;
                     }
                 }
-                else
-                {
-                    if (storeValue is not HttpHeaders.InvalidValue)
-                    {
-                        temp = storeValue as CacheControlHeaderValue;
-                    }
-                }
+            }
+            else
+            {
+                temp = storeValue as CacheControlHeaderValue;
             }
             Debug.Assert(storeValue == null || temp != null, "'storeValue' is not of type CacheControlHeaderValue");
 
