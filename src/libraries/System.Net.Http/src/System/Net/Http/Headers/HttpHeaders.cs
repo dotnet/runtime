@@ -1367,6 +1367,7 @@ namespace System.Net.Http.Headers
 
                 Debug.Assert(count <= 1, "only allow single parsed value");
             }
+
             internal bool IsEmpty => RawValue == null && ParsedAndInvalidValues == null;
         }
 
