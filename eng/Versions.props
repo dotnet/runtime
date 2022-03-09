@@ -25,7 +25,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- The bands we want to produce workload manifests for -->
-    <WorkloadSdkBandVersions Include="6.0.100;6.0.200" />
+    <WorkloadSdkBandVersions Include="6.0.100;6.0.200;6.0.300" />
   </ItemGroup>
   <PropertyGroup>
     <!-- For source generator support we need to target multiple versions of Rolsyn in order to be able to run on older versions of Roslyn -->
