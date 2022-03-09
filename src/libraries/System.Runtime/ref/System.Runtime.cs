@@ -9043,6 +9043,8 @@ namespace System.Diagnostics
         public long ElapsedTicks { get { throw null; } }
         public bool IsRunning { get { throw null; } }
         public static long GetTimestamp() { throw null; }
+        public static System.TimeSpan GetElapsedTime(long startingTimestamp) { throw null; }
+        public static System.TimeSpan GetElapsedTime(long startingTimestamp, long endingTimestamp) { throw null; }
         public void Reset() { }
         public void Restart() { }
         public void Start() { }
