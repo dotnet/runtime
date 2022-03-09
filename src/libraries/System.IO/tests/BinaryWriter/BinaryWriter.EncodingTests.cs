@@ -10,6 +10,9 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    // WriteChars_VeryLargeArray_DoesNotOverflow allocates a lot of memory and can cause OOM,
+    // it should not be executed in parallel with other tests
+    [Collection(nameof(DisableParallelization))]
     public class BinaryWriter_EncodingTests
     {
         [Fact]
