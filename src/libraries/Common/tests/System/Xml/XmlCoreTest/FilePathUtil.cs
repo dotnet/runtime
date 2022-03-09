@@ -120,13 +120,15 @@ namespace XmlCoreTest.Common
             {
                 if (s_XmlFileInMemoryCache == null)
                 {
-                    s_XmlFileInMemoryCache = new MyDict<string, MemoryStream>();
+                    MyDict<string, MemoryStream> cache = new MyDict<string, MemoryStream>();
 
                     foreach (Tuple<string, byte[]> file in GetDataFiles())
                     {
                         var ms = new MemoryStream(file.Item2);
-                        s_XmlFileInMemoryCache[NormalizeFilePath(file.Item1)] = ms;
+                        cache[NormalizeFilePath(file.Item1)] = ms;
                     }
+
+                    s_XmlFileInMemoryCache = cache;
                 }
             }
         }

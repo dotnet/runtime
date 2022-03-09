@@ -109,9 +109,9 @@ namespace System
             }
         }
 
-        [GeneratedDllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [GeneratedDllImport("advapi32.dll", EntryPoint = "LogonUserW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool LogonUser(string userName, string domain, string password, int logonType, int logonProvider, out SafeAccessTokenHandle safeAccessTokenHandle);
-
 
 #pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
         // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we add support for non-blittable struct marshalling.

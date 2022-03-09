@@ -12,7 +12,7 @@ namespace System.Runtime.Loader
     public partial class AssemblyLoadContext
     {
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InitializeAssemblyLoadContext")]
-        private static partial IntPtr InitializeAssemblyLoadContext(IntPtr ptrAssemblyLoadContext, bool fRepresentsTPALoadContext, bool isCollectible);
+        private static partial IntPtr InitializeAssemblyLoadContext(IntPtr ptrAssemblyLoadContext, [MarshalAs(UnmanagedType.Bool)] bool fRepresentsTPALoadContext, [MarshalAs(UnmanagedType.Bool)] bool isCollectible);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_PrepareForAssemblyLoadContextRelease")]
         private static partial void PrepareForAssemblyLoadContextRelease(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyLoadContextStrong);
@@ -21,14 +21,14 @@ namespace System.Runtime.Loader
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromStream")]
         private static partial void LoadFromStream(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyArray, int iAssemblyArrayLen, IntPtr ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MultiCoreJIT_InternalSetProfileRoot", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MultiCoreJIT_InternalSetProfileRoot", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial void InternalSetProfileRoot(string directoryPath);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MultiCoreJIT_InternalStartProfile", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MultiCoreJIT_InternalStartProfile", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial void InternalStartProfile(string? profile, IntPtr ptrNativeAssemblyBinder);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromPath", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromPath", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void LoadFromPath(IntPtr ptrNativeAssemblyBinder, string? ilPath, string? niPath, ObjectHandleOnStack retAssembly);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -37,16 +37,20 @@ namespace System.Runtime.Loader
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsTracingEnabled();
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceResolvingHandlerInvoked", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceResolvingHandlerInvoked", StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool TraceResolvingHandlerInvoked(string assemblyName, string handlerName, string? alcName, string? resultAssemblyName, string? resultAssemblyPath);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceAssemblyResolveHandlerInvoked", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceAssemblyResolveHandlerInvoked", StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool TraceAssemblyResolveHandlerInvoked(string assemblyName, string handlerName, string? resultAssemblyName, string? resultAssemblyPath);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked", CharSet = CharSet.Unicode)]
-        internal static partial bool TraceAssemblyLoadFromResolveHandlerInvoked(string assemblyName, bool isTrackedAssembly, string requestingAssemblyPath, string? requestedAssemblyPath);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked", StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool TraceAssemblyLoadFromResolveHandlerInvoked(string assemblyName, [MarshalAs(UnmanagedType.Bool)] bool isTrackedAssembly, string requestingAssemblyPath, string? requestedAssemblyPath);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceSatelliteSubdirectoryPathProbed", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceSatelliteSubdirectoryPathProbed", StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]

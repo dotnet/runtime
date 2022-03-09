@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -27,45 +28,22 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {
-            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
-
-            if (TypeToConvert.IsInterface || TypeToConvert.IsAbstract)
+            base.CreateCollection(ref reader, ref state);
+            TDictionary returnValue = (TDictionary)state.Current.ReturnValue!;
+            if (returnValue.IsReadOnly)
             {
-                if (!TypeToConvert.IsAssignableFrom(RuntimeType))
-                {
-                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
-                }
-
-                state.Current.ReturnValue = new Dictionary<TKey, TValue>();
-            }
-            else
-            {
-                if (typeInfo.CreateObject == null)
-                {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(TypeToConvert, ref reader, ref state);
-                }
-
-                TDictionary returnValue = (TDictionary)typeInfo.CreateObject()!;
-
-                if (returnValue.IsReadOnly)
-                {
-                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
-                }
-
-                state.Current.ReturnValue = returnValue;
+                state.Current.ReturnValue = null; // clear out for more accurate JsonPath reporting.
+                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
             }
         }
 
-        internal override Type RuntimeType
+        internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
-            get
+            // Deserialize as Dictionary<TKey,TValue> for interface types that support it.
+            if (jsonTypeInfo.CreateObject is null && TypeToConvert.IsAssignableFrom(typeof(Dictionary<TKey, TValue>)))
             {
-                if (TypeToConvert.IsAbstract || TypeToConvert.IsInterface)
-                {
-                    return typeof(Dictionary<TKey, TValue>);
-                }
-
-                return TypeToConvert;
+                Debug.Assert(TypeToConvert.IsInterface);
+                jsonTypeInfo.CreateObject = () => new Dictionary<TKey, TValue>();
             }
         }
     }

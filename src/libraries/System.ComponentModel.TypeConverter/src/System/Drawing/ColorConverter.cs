@@ -30,7 +30,7 @@ namespace System.Drawing
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }

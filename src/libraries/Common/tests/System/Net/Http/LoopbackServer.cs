@@ -436,7 +436,9 @@ namespace System.Net.Test.Common
 #if !NETSTANDARD2_0 && !NETFRAMEWORK
                 SslProtocols.Tls13 |
 #endif
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                 SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
+#pragma warning restore SYSLIB0039
             }
         }
 

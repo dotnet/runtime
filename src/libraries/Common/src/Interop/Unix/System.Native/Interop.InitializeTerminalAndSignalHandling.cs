@@ -8,9 +8,10 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_InitializeTerminalAndSignalHandling", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool InitializeTerminalAndSignalHandling();
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetKeypadXmit", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetKeypadXmit", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial void SetKeypadXmit(string terminfoString);
     }
 }

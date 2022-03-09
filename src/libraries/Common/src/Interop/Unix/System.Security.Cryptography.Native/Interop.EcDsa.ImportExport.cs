@@ -11,7 +11,7 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByKeyParameters", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByKeyParameters", StringMarshalling = StringMarshalling.Utf8)]
         private static partial int EcKeyCreateByKeyParameters(
             out SafeEcKeyHandle key,
             string oid,
@@ -100,7 +100,7 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_GetECKeyParameters(
             SafeEcKeyHandle key,
-            bool includePrivate,
+            [MarshalAs(UnmanagedType.Bool)] bool includePrivate,
             out SafeBignumHandle qx_bn, out int x_cb,
             out SafeBignumHandle qy_bn, out int y_cb,
             out IntPtr d_bn_not_owned, out int d_cb);
@@ -169,7 +169,7 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_GetECCurveParameters(
             SafeEcKeyHandle key,
-            bool includePrivate,
+            [MarshalAs(UnmanagedType.Bool)] bool includePrivate,
             out ECCurve.ECCurveType curveType,
             out SafeBignumHandle qx, out int x_cb,
             out SafeBignumHandle qy, out int y_cb,

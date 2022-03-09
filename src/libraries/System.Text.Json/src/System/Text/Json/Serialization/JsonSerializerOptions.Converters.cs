@@ -23,11 +23,27 @@ namespace System.Text.Json
         // The global list of built-in converters that override CanConvert().
         private static JsonConverter[]? s_defaultFactoryConverters;
 
+        // Stores the JsonTypeInfo factory, which requires unreferenced code and must be rooted by the reflection-based serializer.
+        private static Func<Type, JsonSerializerOptions, JsonTypeInfo>? s_typeInfoCreationFunc;
+
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        private static void RootBuiltInConverters()
+        private static void RootReflectionSerializerDependencies()
         {
-            s_defaultSimpleConverters = GetDefaultSimpleConverters();
-            s_defaultFactoryConverters = new JsonConverter[]
+            if (s_defaultSimpleConverters is null)
+            {
+                s_defaultSimpleConverters = GetDefaultSimpleConverters();
+                s_defaultFactoryConverters = GetDefaultFactoryConverters();
+                s_typeInfoCreationFunc = CreateJsonTypeInfo;
+            }
+
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options) => new JsonTypeInfo(type, options);
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        private static JsonConverter[] GetDefaultFactoryConverters()
+        {
+            return new JsonConverter[]
             {
                 // Check for disallowed types.
                 new UnsupportedTypeConverterFactory(),
@@ -91,9 +107,9 @@ namespace System.Text.Json
         /// <remarks>
         /// Once serialization or deserialization occurs, the list cannot be modified.
         /// </remarks>
-        public IList<JsonConverter> Converters { get; }
+        public IList<JsonConverter> Converters => _converters;
 
-        internal JsonConverter GetConverterFromMember(Type? parentClassType, Type runtimePropertyType, MemberInfo? memberInfo)
+        internal JsonConverter GetConverterFromMember(Type? parentClassType, Type propertyType, MemberInfo? memberInfo)
         {
             JsonConverter converter = null!;
 
@@ -107,19 +123,19 @@ namespace System.Text.Json
 
                 if (converterAttribute != null)
                 {
-                    converter = GetConverterFromAttribute(converterAttribute, typeToConvert: runtimePropertyType, classTypeAttributeIsOn: parentClassType!, memberInfo);
+                    converter = GetConverterFromAttribute(converterAttribute, typeToConvert: propertyType, classTypeAttributeIsOn: parentClassType!, memberInfo);
                 }
             }
 
             if (converter == null)
             {
-                converter = GetConverterInternal(runtimePropertyType);
+                converter = GetConverterInternal(propertyType);
                 Debug.Assert(converter != null);
             }
 
             if (converter is JsonConverterFactory factory)
             {
-                converter = factory.GetConverterInternal(runtimePropertyType, this);
+                converter = factory.GetConverterInternal(propertyType, this);
 
                 // A factory cannot return null; GetConverterInternal checked for that.
                 Debug.Assert(converter != null);
@@ -133,10 +149,10 @@ namespace System.Text.Json
             //
             // We also throw to avoid passing an invalid argument to setters for nullable struct properties,
             // which would cause an InvalidProgramException when the generated IL is invoked.
-            if (runtimePropertyType.IsValueType && converter.IsValueType &&
-                (runtimePropertyType.IsNullableOfT() ^ converter.TypeToConvert.IsNullableOfT()))
+            if (propertyType.IsValueType && converter.IsValueType &&
+                (propertyType.IsNullableOfT() ^ converter.TypeToConvert.IsNullableOfT()))
             {
-                ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertMultipleTypes(runtimePropertyType, converter);
+                ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertMultipleTypes(propertyType, converter);
             }
 
             return converter;
@@ -159,7 +175,7 @@ namespace System.Text.Json
         [RequiresUnreferencedCode("Getting a converter for a type may require reflection which depends on unreferenced code.")]
         public JsonConverter GetConverter(Type typeToConvert!!)
         {
-            RootBuiltInConverters();
+            RootReflectionSerializerDependencies();
             return GetConverterInternal(typeToConvert);
         }
 
@@ -183,7 +199,7 @@ namespace System.Text.Json
 
             // Priority 2: Attempt to get custom converter added at runtime.
             // Currently there is not a way at runtime to override the [JsonConverter] when applied to a property.
-            foreach (JsonConverter item in Converters)
+            foreach (JsonConverter item in _converters)
             {
                 if (item.CanConvert(typeToConvert))
                 {

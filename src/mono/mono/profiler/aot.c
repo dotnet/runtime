@@ -20,7 +20,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-publib.h>
-#include <mono/mini/jit.h>
+#include <mono/jit/jit.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-threads.h>

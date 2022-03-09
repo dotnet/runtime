@@ -5,7 +5,6 @@ using System.Threading;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Tracing
 {
@@ -53,7 +52,7 @@ namespace System.Diagnostics.Tracing
         internal static partial void LogThreadPoolIOEnqueue(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
-            bool MultiDequeues,
+            [MarshalAs(UnmanagedType.Bool)] bool MultiDequeues,
             ushort ClrInstanceID);
 
         [NonEvent]

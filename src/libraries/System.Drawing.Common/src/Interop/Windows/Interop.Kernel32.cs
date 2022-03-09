@@ -22,7 +22,7 @@ internal static partial class Interop
             return IntGlobalAlloc(uFlags, new UIntPtr(dwBytes));
         }
 
-        [GeneratedDllImport(Libraries.Gdi32, CharSet = CharSet.Auto, ExactSpelling = true, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Gdi32, SetLastError = true)]
         internal static partial IntPtr SelectObject(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
