@@ -285,13 +285,15 @@ emit_xzero (MonoCompile *cfg, MonoClass *klass)
 
 #ifdef TARGET_ARM64
 static MonoInst*
-emit_arm64_addv (MonoCompile *cfg, MonoClass *klass, MonoInst *arg)
+emit_arm64_addv (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum etype, MonoInst *arg)
 {
 	int op = -1;
-	if (type_is_float (arg)) {
+	gboolean is_float = etype == MONO_TYPE_R4 || etype == MONO_TYPE_R8;
+	if (is_float) {
 		op = OP_ARM64_FADDV;
 	} else {
-		op = type_is_unsigned (arg) ? OP_ARM64_UADDV : OP_ARM64_SADDV;
+		gboolean is_unsigned = etype == MONO_TYPE_U1 || etype == MONO_TYPE_U2 || etype == MONO_TYPE_U4 || etype == MONO_TYPE_U8 || etype == MONO_TYPE_U;
+		op = is_unsigned ? OP_ARM64_UADDV : OP_ARM64_SADDV;
 	}
 
 	return emit_simd_ins (cfg, klass, op, arg->dreg, -1);
@@ -791,10 +793,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 
-		int instc0 = type_is_float (args [0]) ? OP_FMUL : OP_IMUL;
-		MonoInst *pariwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
+		gboolean is_float = arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8;
+		int instc0 = is_float ? OP_FMUL : OP_IMUL;
+		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
 
-		return emit_arm64_addv (cfg, klass, pairwise_multiply);
+		return emit_arm64_addv (cfg, klass, arg0_type, pairwise_multiply);
 #else
 		return NULL;
 #endif
