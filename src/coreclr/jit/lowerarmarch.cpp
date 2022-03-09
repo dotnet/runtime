@@ -678,7 +678,7 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
 
     GenTree* const falseExpr = comp->gtNewOperNode(GT_AND, type, neg, cns2);
     MakeSrcContained(falseExpr, cns2);
-    BlockRange().InsertAfter(cns1, falseExpr);
+    BlockRange().InsertAfter(cns2, falseExpr);
 
     GenTree* const cc = comp->gtNewOperNode(GT_CS_NEG_MI, type, trueExpr, falseExpr);
     cc->gtFlags |= GTF_USE_FLAGS;
