@@ -987,7 +987,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #ifdef TARGET_ARM64
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-		return emit_arm64_addv (cfg, klass, args [0]);
+		return emit_arm64_addv (cfg, klass, arg0_type, args [0]);
 #else
 		return NULL;
 #endif
