@@ -780,10 +780,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		gboolean is_float = arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8;
-
-		if (!is_float)
-			return NULL;
-
 		gboolean is_unsigned = arg0_type == MONO_TYPE_U1 || arg0_type == MONO_TYPE_U2 || arg0_type == MONO_TYPE_U4 || arg0_type == MONO_TYPE_U8 || arg0_type == MONO_TYPE_U;
 
 		MonoInst *ins;
@@ -813,7 +809,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			op = is_unsigned ? OP_ARM64_UADDV : OP_ARM64_SADDV;
 		}
 
-		return emit_simd_ins (cfg, arg_class, op, ins->dreg, -1);
+		return emit_simd_ins (cfg, klass, op, ins->dreg, -1);
 #else
 		return NULL;
 #endif

@@ -11032,9 +11032,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				default: g_assert_not_reached ();
 			}
 
-			LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, &lhs, "");
-			// result = LLVMBuildInsertElement (builder, LLVMConstNull (v64_i8_t), result, const_int32 (0), "");
+			LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, &lhs, "arm64_addv");
 			values [ins->dreg] = result;
+			break;
 		}
 		case OP_ARM64_SXTL:
 		case OP_ARM64_SXTL2:
