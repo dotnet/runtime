@@ -688,6 +688,7 @@ static guint16 sri_vector_methods [] = {
 	SN_Max,
 	SN_Min,
 	SN_Multiply,
+	SN_Narrow,
 	SN_Negate,
 	SN_OnesComplement,
 	SN_Sqrt,
@@ -1018,6 +1019,25 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		default:
 			g_assert_not_reached ();
 		}
+	}
+	case SN_Narrow: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+
+		int lower_op, upper_op;
+		if (type_enum_is_float (arg0_type)) {
+			lower_op = OP_ARM64_FCVTXN;
+			upper_op = OP_ARM64_FCVTXN2;
+		} else {
+			lower_op = OP_ARM64_XTN;
+			upper_op = type_enum_is_unsigned (arg0_type) ? OP_ARM64_SQXTUN2 : OP_ARM64_SQXTN2;
+		}
+		
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		MonoInst *lower = emit_simd_ins (cfg, arg_class, lower_op, args [0]->dreg, -1);
+		MonoInst *upper = emit_simd_ins (cfg, arg_class, upper_op, lower->dreg, args [1]->dreg);
+
+		return upper;
 	}
 	case SN_Negate:
 	case SN_OnesComplement: {
