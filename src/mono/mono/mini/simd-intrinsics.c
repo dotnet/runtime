@@ -327,17 +327,34 @@ emit_xones (MonoCompile *cfg, MonoClass *klass)
 }
 
 #ifdef TARGET_ARM64
+static int type_to_extract_op (MonoTypeEnum type);
+static MonoType* get_vector_t_elem_type (MonoType *vector_type);
+
 static MonoInst*
-emit_arm64_addv (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum etype, MonoInst *arg)
+emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_type, MonoInst *arg)
 {
-	int op = -1;
-	if (type_enum_is_float (etype)) {
-		op = OP_ARM64_FADDV;
-	} else {
-		op = type_enum_is_unsigned (etype) ? OP_ARM64_UADDV : OP_ARM64_SADDV;
+	MonoClass *vector_class = mono_class_from_mono_type_internal (vector_type);
+	int vector_size = mono_class_value_size (vector_class, NULL);
+	MonoClass *element_class = mono_class_from_mono_type_internal (get_vector_t_elem_type (vector_type));
+	int element_size = mono_class_value_size (element_class, NULL);
+	gboolean has_single_element = vector_size == element_size;
+
+	// If there's just one element we need to extract it instead of summing the whole array
+	if (has_single_element) {
+		MonoInst *ins = emit_simd_ins (cfg, vector_class, type_to_extract_op (element_type), arg->dreg, -1);
+		ins->inst_c0 = 0;
+		ins->inst_c1 = element_type;
+		return ins;
 	}
 
-	return emit_simd_ins (cfg, klass, op, arg->dreg, -1);
+	int op = -1;
+	if (type_enum_is_float (element_type)) {
+		op = OP_ARM64_FADDV;
+	} else {
+		op = type_enum_is_unsigned (element_type) ? OP_ARM64_UADDV : OP_ARM64_SADDV;
+	}
+
+	return emit_simd_ins (cfg, vector_class, op, arg->dreg, -1);
 }
 #endif
 
@@ -846,7 +863,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		int instc0 = type_enum_is_float (arg0_type) ? OP_FMUL : OP_IMUL;
 		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
 
-		return emit_arm64_addv (cfg, klass, arg0_type, pairwise_multiply);
+		return emit_sum_vector (cfg, fsig->params [0], arg0_type, pairwise_multiply);
 #else
 		return NULL;
 #endif
@@ -1064,7 +1081,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #ifdef TARGET_ARM64
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-		return emit_arm64_addv (cfg, klass, arg0_type, args [0]);
+		return emit_sum_vector (cfg, fsig->params [0], arg0_type, args [0]);
 #else
 		return NULL;
 #endif
