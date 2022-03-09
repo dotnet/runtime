@@ -689,7 +689,7 @@ private:
 };
 
 template <>
-bool ClrSafeInt<int64_t>::multiply(int64_t lhs, int64_t rhs, int64_t &result)
+inline bool ClrSafeInt<int64_t>::multiply(int64_t lhs, int64_t rhs, int64_t &result)
 {
     //fast track this one - and avoid DIV_0 below
     if(lhs == 0 || rhs == 0)
@@ -764,7 +764,7 @@ bool ClrSafeInt<int64_t>::multiply(int64_t lhs, int64_t rhs, int64_t &result)
 }
 
 template <>
-bool ClrSafeInt<uint64_t>::multiply(uint64_t lhs, uint64_t rhs, uint64_t &result)
+inline bool ClrSafeInt<uint64_t>::multiply(uint64_t lhs, uint64_t rhs, uint64_t &result)
 {
     //fast track this one - and avoid DIV_0 below
     if(lhs == 0 || rhs == 0)
@@ -784,7 +784,7 @@ bool ClrSafeInt<uint64_t>::multiply(uint64_t lhs, uint64_t rhs, uint64_t &result
 }
 
 template <>
-bool ClrSafeInt<int32_t>::multiply(int32_t lhs, int32_t rhs, int32_t &result)
+inline bool ClrSafeInt<int32_t>::multiply(int32_t lhs, int32_t rhs, int32_t &result)
 {
     INT64 tmp = (INT64)lhs * (INT64)rhs;
 
@@ -803,7 +803,7 @@ bool ClrSafeInt<int32_t>::multiply(int32_t lhs, int32_t rhs, int32_t &result)
 }
 
 template <>
-bool ClrSafeInt<uint32_t>::multiply(uint32_t lhs, uint32_t rhs, uint32_t &result)
+inline bool ClrSafeInt<uint32_t>::multiply(uint32_t lhs, uint32_t rhs, uint32_t &result)
 {
     UINT64 tmp = (UINT64)lhs * (UINT64)rhs;
     if (tmp & 0xffffffff00000000ULL) //overflow
@@ -816,7 +816,7 @@ bool ClrSafeInt<uint32_t>::multiply(uint32_t lhs, uint32_t rhs, uint32_t &result
 }
 
 template <>
-bool ClrSafeInt<int16_t>::multiply(int16_t lhs, int16_t rhs, int16_t &result)
+inline bool ClrSafeInt<int16_t>::multiply(int16_t lhs, int16_t rhs, int16_t &result)
 {
     INT32 tmp = (INT32)lhs * (INT32)rhs;
     //upper 17 bits must be the same
@@ -833,7 +833,7 @@ bool ClrSafeInt<int16_t>::multiply(int16_t lhs, int16_t rhs, int16_t &result)
 }
 
 template <>
-bool ClrSafeInt<uint16_t>::multiply(uint16_t lhs, uint16_t rhs, uint16_t &result)
+inline bool ClrSafeInt<uint16_t>::multiply(uint16_t lhs, uint16_t rhs, uint16_t &result)
 {
     UINT32 tmp = (UINT32)lhs * (UINT32)rhs;
     if (tmp & 0xffff0000) //overflow
@@ -845,7 +845,7 @@ bool ClrSafeInt<uint16_t>::multiply(uint16_t lhs, uint16_t rhs, uint16_t &result
 }
 
 template <>
-bool ClrSafeInt<int8_t>::multiply(int8_t lhs, int8_t rhs, int8_t &result)
+inline bool ClrSafeInt<int8_t>::multiply(int8_t lhs, int8_t rhs, int8_t &result)
 {
     INT16 tmp = (INT16)lhs * (INT16)rhs;
     //upper 9 bits must be the same
@@ -862,7 +862,7 @@ bool ClrSafeInt<int8_t>::multiply(int8_t lhs, int8_t rhs, int8_t &result)
 }
 
 template <>
-bool ClrSafeInt<uint8_t>::multiply(uint8_t lhs, uint8_t rhs, uint8_t &result)
+inline bool ClrSafeInt<uint8_t>::multiply(uint8_t lhs, uint8_t rhs, uint8_t &result)
 {
     UINT16 tmp = ((UINT16)lhs) * ((UINT16)rhs);
 
