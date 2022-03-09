@@ -5796,6 +5796,10 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
     assert(!"unreachable: integral GT_DIV/GT_MOD should get morphed into helper calls");
 #endif // USE_HELPERS_FOR_INT_DIV
 #if defined(TARGET_ARM64)
+    if (divMod->OperGet() == GT_MOD && divisor->IsIntegralConstPow2())
+    {
+        return LowerModPow2(node);
+    }
     assert(node->OperGet() != GT_MOD);
 #endif // TARGET_ARM64
 

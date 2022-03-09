@@ -3022,6 +3022,18 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     regNumber   targetReg = tree->GetRegNum();
     instruction ins       = genGetInsForOper(tree->OperGet(), targetType);
 
+    if ((tree->gtFlags & GTF_SET_FLAGS) != 0)
+    {
+        switch (tree->OperGet())
+        {
+            case GT_NEG:
+                ins = INS_negs;
+                break;
+            default:
+                noway_assert(!"Unexpected UnaryOp with GTF_SET_FLAGS set");
+        }
+    }
+
     // The arithmetic node must be sitting in a register (since it's not contained)
     assert(!tree->isContained());
     // The dst can only be a register.
@@ -10137,6 +10149,48 @@ void CodeGen::genCodeForAddEx(GenTreeOp* tree)
         ssize_t cns = containedOp->gtGetOp2()->AsIntCon()->IconValue();
         GetEmitter()->emitIns_R_R_R_I(INS_add, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, cns, INS_OPTS_LSL);
     }
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForCond: Generates the code sequence for a GenTree node that
+// represents an addition with sign or zero extended
+//
+// Arguments:
+//    tree - the add with extend node.
+//
+void CodeGen::genCodeForCond(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_CS_NEG_MI));
+    assert(!(tree->gtFlags & GTF_SET_FLAGS) && (tree->gtFlags & GTF_USE_FLAGS));
+    genConsumeOperands(tree);
+
+    instruction ins;
+    insCond     insc;
+    switch (tree->OperGet())
+    {
+        case GT_CS_NEG_MI:
+        {
+            ins = INS_csneg;
+            insc = INS_COND_MI;
+            break;
+        }
+
+        default:
+            unreached();
+    }
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    assert(!op1->isContained());
+    assert(!op2->isContained());
+
+    regNumber dstReg = tree->GetRegNum();
+    regNumber op1Reg = op1->GetRegNum();
+    regNumber op2Reg = op2->GetRegNum();
+
+    GetEmitter()->emitIns_R_R_R_COND(ins, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, insc);
     genProduceReg(tree);
 }
 

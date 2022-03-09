@@ -224,6 +224,7 @@ GTNODE(MADD             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Generat
                                                                       // enabling it for both armarch and xarch for floating-point MADD "unsafe" math.
 GTNODE(ADDEX,             GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Add with sign/zero extension.
 GTNODE(BFIZ             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
+GTNODE(CS_NEG_MI        , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Conditional select, negate, minus result
 #endif
 
 //-----------------------------------------------------------------------------

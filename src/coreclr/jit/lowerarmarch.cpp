@@ -612,6 +612,79 @@ void Lowering::LowerRotate(GenTree* tree)
     ContainCheckShiftRotate(tree->AsOp());
 }
 
+#ifdef TARGET_ARM64
+GenTree* Lowering::LowerModPow2(GenTree* node)
+{
+    assert(node->OperGet() == GT_MOD);
+    GenTree* mod      = node;
+    GenTree* dividend = mod->gtGetOp1();
+    GenTree* divisor  = mod->gtGetOp2();
+
+    assert(divisor->IsIntegralConstPow2());
+
+    const var_types type = mod->TypeGet();
+    assert((type == TYP_INT) || (type == TYP_LONG));
+
+    // a % cns
+
+    // let a = {expr}
+    // if a > 0 then (a & ({cns} - 1)) else -(-a & ({cns} - 1))
+
+    // neg
+    // and
+    // and
+    // csneg
+
+    LIR::Use use;
+    if (!BlockRange().TryGetUse(node, &use))
+    {
+        return nullptr;
+    }
+
+    size_t cnsValue = divisor->AsIntCon()->IconValue() - 1;
+
+    BlockRange().Remove(divisor);
+
+    LIR::Use opDividend(BlockRange(), &mod->AsOp()->gtOp1, mod);
+    dividend = ReplaceWithLclVar(opDividend);
+
+    GenTree* dividend2 = comp->gtClone(dividend);
+    BlockRange().InsertAfter(dividend, dividend2);
+
+    GenTreeIntCon* cns = comp->gtNewIconNode(cnsValue, type);
+    BlockRange().InsertAfter(dividend2, cns);
+
+    GenTree* const trueExpr = comp->gtNewOperNode(GT_AND, type, dividend, cns);
+    BlockRange().InsertAfter(cns, trueExpr);
+
+    GenTree* const neg = comp->gtNewOperNode(GT_NEG, type, dividend2);
+    neg->gtFlags |= GTF_SET_FLAGS;
+    BlockRange().InsertAfter(trueExpr, neg);
+
+    GenTreeIntCon* cns1 = comp->gtNewIconNode(cnsValue, type);
+    BlockRange().InsertAfter(neg, cns1);
+
+    GenTree* const falseExpr = comp->gtNewOperNode(GT_AND, type, neg, cns1);
+    BlockRange().InsertAfter(cns1, falseExpr);
+
+    GenTree* const cc = comp->gtNewOperNode(GT_CS_NEG_MI, type, trueExpr, falseExpr);
+    cc->gtFlags |= GTF_USE_FLAGS;
+
+    JITDUMP("Lower: optimize X MOD POW2");
+    DISPNODE(mod);
+    JITDUMP("to:\n");
+    DISPNODE(cc);
+
+    BlockRange().InsertBefore(mod, cc);
+    ContainCheckNode(cc);
+    BlockRange().Remove(mod);
+
+    use.ReplaceWith(cc);
+
+    return cc->gtNext;
+}
+#endif
+
 #ifdef FEATURE_SIMD
 //----------------------------------------------------------------------------------------------
 // Lowering::LowerSIMD: Perform containment analysis for a SIMD intrinsic node.

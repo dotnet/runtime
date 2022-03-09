@@ -1338,6 +1338,7 @@ protected:
     void genCodeForMadd(GenTreeOp* tree);
     void genCodeForBfiz(GenTreeOp* tree);
     void genCodeForAddEx(GenTreeOp* tree);
+    void genCodeForCond(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_EH_FUNCLETS)
