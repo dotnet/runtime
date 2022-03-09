@@ -24,7 +24,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public static void Converters_AndTypeInfoCreator_NotRooted_WhenMetadataNotPresent()
         {
             RemoteExecutor.Invoke(
-                () =>
+                static () =>
                 {
                     object[] objArr = new object[] { new MyStruct() };
 
