@@ -10154,10 +10154,10 @@ void CodeGen::genCodeForAddEx(GenTreeOp* tree)
 
 //------------------------------------------------------------------------
 // genCodeForCond: Generates the code sequence for a GenTree node that
-// represents an addition with sign or zero extended
+// represents a conditional instruction.
 //
 // Arguments:
-//    tree - the add with extend node.
+//    tree - conditional op
 //
 void CodeGen::genCodeForCond(GenTreeOp* tree)
 {
@@ -10166,13 +10166,13 @@ void CodeGen::genCodeForCond(GenTreeOp* tree)
     genConsumeOperands(tree);
 
     instruction ins;
-    insCond     insc;
+    insCond     cond;
     switch (tree->OperGet())
     {
         case GT_CS_NEG_MI:
         {
             ins = INS_csneg;
-            insc = INS_COND_MI;
+            cond = INS_COND_MI;
             break;
         }
 
@@ -10190,7 +10190,7 @@ void CodeGen::genCodeForCond(GenTreeOp* tree)
     regNumber op1Reg = op1->GetRegNum();
     regNumber op2Reg = op2->GetRegNum();
 
-    GetEmitter()->emitIns_R_R_R_COND(ins, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, insc);
+    GetEmitter()->emitIns_R_R_R_COND(ins, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, cond);
     genProduceReg(tree);
 }
 
