@@ -774,13 +774,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_Dot:
 	case SN_Sum: {
 #ifdef TARGET_ARM64
-		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
-		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
+		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 
-		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		gboolean is_float = arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8;
-		gboolean is_unsigned = arg0_type == MONO_TYPE_U1 || arg0_type == MONO_TYPE_U2 || arg0_type == MONO_TYPE_U4 || arg0_type == MONO_TYPE_U8 || arg0_type == MONO_TYPE_U;
 
 		MonoInst *ins;
 		switch (id) {
@@ -789,7 +786,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_Dot: {
 			g_assert (fsig->param_count == 2);
 			int instc0 = is_float ? OP_FMUL : OP_IMUL;
-			ins = emit_simd_ins_for_sig (cfg, arg_class, OP_XBINOP, instc0, arg0_type, fsig, args);
+			ins = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
 			break;
 		}
 		// In the case of Sum, we don't need to process the single input vector in any way
@@ -806,6 +803,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (is_float) {
 			op = OP_ARM64_FADDV;
 		} else {
+			gboolean is_unsigned = arg0_type == MONO_TYPE_U1 || arg0_type == MONO_TYPE_U2 || arg0_type == MONO_TYPE_U4 || arg0_type == MONO_TYPE_U8 || arg0_type == MONO_TYPE_U;
 			op = is_unsigned ? OP_ARM64_UADDV : OP_ARM64_SADDV;
 		}
 
