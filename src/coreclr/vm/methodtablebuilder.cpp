@@ -7053,7 +7053,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
     }
     _ASSERTE(offset == sizeof(MethodDescChunk) + sizeOfMethodDescs);
 
-    pChunk->SetSizeAndCount((ULONG)sizeOfMethodDescs, methodDescCount);
+    pChunk->SetSizeAndCount(sizeOfMethodDescs, methodDescCount);
 
     GetHalfBakedClass()->AddChunk(pChunk);
 }
