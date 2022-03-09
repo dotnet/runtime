@@ -185,11 +185,11 @@ jobs:
           displayName: 'iOS Sample App LLVM'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: $(Build.SourcesDirectory)/MauiiOSDefault
+          unpackFolder: $(Build.SourcesDirectory)/MauiiOSDefaultIPA
           cleanUnpackFolder: false
-          artifactFileName: 'MauiiOSDefault.tar.gz'
-          artifactName: 'MauiiOSDefault'
-          displayName: 'Maui iOS App'
+          artifactFileName: 'MauiiOSDefaultIPA.tar.gz'
+          artifactName: 'MauiiOSDefaultIPA'
+          displayName: 'Maui iOS IPA'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/MauiMacCatalystDefault
