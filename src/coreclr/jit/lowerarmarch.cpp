@@ -625,15 +625,15 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
     const var_types type = mod->TypeGet();
     assert((type == TYP_INT) || (type == TYP_LONG));
 
-    // {expr} % cns
-
-    // let a = {expr}
-    // if a > 0 then (a & ({cns} - 1)) else -(-a & ({cns} - 1))
-
-    // and
-    // negs
-    // and
-    // csneg
+    // {expr} % {cns}
+    // Logically turns into:
+    //     let a = {expr}
+    //     if a > 0 then (a & ({cns} - 1)) else -(-a & ({cns} - 1))
+    // which then turns into:
+    //     and   reg1, reg0, #({cns} - 1)
+    //     negs  reg0, reg0
+    //     and   reg0, reg0, #({cns} - 1)
+    //     csneg reg0, reg1, reg0, mi
 
     LIR::Use use;
     if (!BlockRange().TryGetUse(node, &use))
@@ -645,6 +645,8 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
 
     BlockRange().Remove(divisor);
 
+    // We need to use the dividend node multiple times so its value needs to be
+    // computed once and stored in a temp variable.
     LIR::Use opDividend(BlockRange(), &mod->AsOp()->gtOp1, mod);
     dividend = ReplaceWithLclVar(opDividend);
 
