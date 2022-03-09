@@ -111,7 +111,7 @@ namespace System.Net.Http.Headers
             }
             else
             {
-                foreach (var item in storeValues)
+                foreach (object item in storeValues)
                 {
                     if (item is not HttpHeaders.InvalidValue)
                     {
