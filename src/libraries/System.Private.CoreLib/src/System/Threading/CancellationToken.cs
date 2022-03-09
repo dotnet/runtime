@@ -351,8 +351,6 @@ namespace System.Threading
         /// </code>
         /// </remarks>
         /// <exception cref="System.OperationCanceledException">The token has had cancellation requested.</exception>
-        /// <exception cref="System.ObjectDisposedException">The associated <see
-        /// cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
         public void ThrowIfCancellationRequested()
         {
             if (IsCancellationRequested)
