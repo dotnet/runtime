@@ -513,7 +513,7 @@ namespace System.Net.Http.Headers
                     if (parsedValue is not InvalidValue)
                     {
                         Debug.Assert(parsedValue.GetType() == value.GetType(),
-                        "Stored value does not have the same type as 'value'.");
+                            "Stored value does not have the same type as 'value'.");
 
                         return AreEqual(value, parsedValue, comparer);
                     }
@@ -1354,7 +1354,7 @@ namespace System.Net.Http.Headers
             }
 
             [Conditional("DEBUG")]
-            public void AssertContainsSingleParsedValue(List<object> list)
+            private static void AssertContainsSingleParsedValue(List<object> list)
             {
                 int count = 0;
                 foreach (object item in list)
@@ -1367,6 +1367,7 @@ namespace System.Net.Http.Headers
 
                 Debug.Assert(count <= 1, "only allow single parsed value");
             }
+
             internal bool IsEmpty => RawValue == null && ParsedAndInvalidValues == null;
         }
 
