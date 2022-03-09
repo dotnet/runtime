@@ -673,11 +673,11 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
     neg->gtFlags |= GTF_SET_FLAGS;
     BlockRange().InsertAfter(trueExpr, neg);
 
-    GenTreeIntCon* cns1 = comp->gtNewIconNode(cnsValue, type);
-    BlockRange().InsertAfter(neg, cns1);
+    GenTreeIntCon* cns2 = comp->gtNewIconNode(cnsValue, type);
+    BlockRange().InsertAfter(neg, cns2);
 
-    GenTree* const falseExpr = comp->gtNewOperNode(GT_AND, type, neg, cns1);
-    MakeSrcContained(falseExpr, cns1);
+    GenTree* const falseExpr = comp->gtNewOperNode(GT_AND, type, neg, cns2);
+    MakeSrcContained(falseExpr, cns2);
     BlockRange().InsertAfter(cns1, falseExpr);
 
     GenTree* const cc = comp->gtNewOperNode(GT_CS_NEG_MI, type, trueExpr, falseExpr);
