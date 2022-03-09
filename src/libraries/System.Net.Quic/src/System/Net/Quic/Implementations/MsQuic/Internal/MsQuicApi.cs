@@ -154,25 +154,25 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         private static bool IsTls13Disabled()
         {
-            const string SChannelTLS13ClientRegKey = @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client";
-            const string SChannelTLS13ServerRegKey = @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server";
-
-            static bool IsKeyDisabled(string key)
-            {
 #if TARGET_WINDOWS
+            string[] SChannelTLS13RegKeys = {
+                @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client",
+                @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server"
+            };
+
+            foreach (var key in SChannelTLS13RegKeys)
+            {
                 using var regKey = Registry.LocalMachine.OpenSubKey(key);
 
                 if (regKey is null) return false;
 
-                if (regKey.GetValue("Enabled") is int enabled)
+                if (regKey.GetValue("Enabled") is int enabled && enabled == 0)
                 {
-                    return enabled == 0;
+                    return true;
                 }
-#endif
-                return false;
             }
-
-            return IsKeyDisabled(SChannelTLS13ClientRegKey) || IsKeyDisabled(SChannelTLS13ServerRegKey);
+#endif
+            return false;
         }
 
         // TODO: Consider updating all of these delegates to instead use function pointers.
