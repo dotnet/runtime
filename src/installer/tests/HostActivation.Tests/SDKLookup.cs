@@ -1040,7 +1040,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             return ExecutableDotNet.Exec(command)
                 .WorkingDirectory(SharedState.CurrentWorkingDir)
-                .WithUserProfile(SharedState.UserDir)
                 .EnableTracingAndCaptureOutputs()
                 .MultilevelLookup(false)
                 .Execute();
@@ -1055,8 +1054,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public string BaseDir { get; }
 
             public string CurrentWorkingDir { get; }
-
-            public string UserDir { get; }
 
             public string TestAssetsPath { get; }
 
@@ -1080,11 +1077,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .AddMockSDK("10000.0.0", "9999.0.0")
                     .Build();
                 CurrentWorkingDir = currentWorkingSdk.BinPath;
-
-                UserDir = Path.Combine(BaseDir, "user");
-                var userSdk = new DotNetBuilder(Path.Combine(UserDir, ".dotnet", RepoDirectories.BuildArchitecture), BuiltDotNet.BinPath, null)
-                    .AddMockSDK("9999.0.200", "9999.0.0")
-                    .Build();
 
                 TestAssetsPath = Path.Combine(RepoDirectories.TestAssetsFolder, "TestUtils", "SDKLookup");
             }

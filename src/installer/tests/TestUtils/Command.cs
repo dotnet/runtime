@@ -260,22 +260,6 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return this;
         }
 
-        public Command WithUserProfile(string userprofile)
-        {
-            string userDir;
-            if (OperatingSystem.IsWindows())
-            {
-                userDir = "USERPROFILE";
-            }
-            else
-            {
-                userDir = "HOME";
-            }
-
-            Process.StartInfo.Environment[userDir] = userprofile;
-            return this;
-        }
-
         public Command EnvironmentVariable(string name, string value)
         {
             if (value == null)

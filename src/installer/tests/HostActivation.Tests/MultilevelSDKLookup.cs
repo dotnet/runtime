@@ -18,11 +18,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         private readonly DotNetCli DotNet;
 
         private readonly string _currentWorkingDir;
-        private readonly string _userDir;
         private readonly string _exeDir;
         private readonly string _regDir;
         private readonly string _cwdSdkBaseDir;
-        private readonly string _userSdkBaseDir;
         private readonly string _exeSdkBaseDir;
         private readonly string _regSdkBaseDir;
         private readonly string _exeSelectedMessage;
@@ -43,7 +41,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // The tested locations will be the cwd, user folder, exe dir, and registered directory. cwd and user are no longer supported.
             //     All dirs will be placed inside the multilevel folder
             _currentWorkingDir = Path.Combine(_multilevelDir, "cwd");
-            _userDir = Path.Combine(_multilevelDir, "user");
             _exeDir = Path.Combine(_multilevelDir, "exe");
             _regDir = Path.Combine(_multilevelDir, "reg");
 
@@ -55,13 +52,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // SdkBaseDirs contain all available version folders
             _cwdSdkBaseDir = Path.Combine(_currentWorkingDir, "sdk");
-            _userSdkBaseDir = Path.Combine(_userDir, ".dotnet", RepoDirectories.BuildArchitecture, "sdk");
             _exeSdkBaseDir = Path.Combine(_exeDir, "sdk");
             _regSdkBaseDir = Path.Combine(_regDir, "sdk");
 
             // Create directories
             Directory.CreateDirectory(_cwdSdkBaseDir);
-            Directory.CreateDirectory(_userSdkBaseDir);
             Directory.CreateDirectory(_exeSdkBaseDir);
             Directory.CreateDirectory(_regSdkBaseDir);
 
@@ -366,7 +361,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 // Expected: 9999.0.4 from reg dir
                 DotNet.Exec("help")
                     .WorkingDirectory(_currentWorkingDir)
-                    .WithUserProfile(_userDir)
                     .MultilevelLookup(true)
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
                     .EnableTracingAndCaptureOutputs()
@@ -409,7 +403,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.3", _dotnetSdkDllMessageTerminator));
 
             // Add SDK versions
-            AddAvailableSdkVersions(_userSdkBaseDir, "9999.0.200");
             AddAvailableSdkVersions(_cwdSdkBaseDir, "10000.0.0");
             AddAvailableSdkVersions(_regSdkBaseDir, "9999.0.100");
 
@@ -562,12 +555,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             return DotNet.Exec(command)
                 .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
                 .MultilevelLookup(multiLevelLookup)
                 .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath, _regDir)
                 .EnvironmentVariable( // Redirect the default install location to an invalid location so that a machine-wide install is not used
                     Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
-                    System.IO.Path.Combine(_userDir, "invalid"))
+                    System.IO.Path.Combine(_currentWorkingDir, "invalid"))
                 .EnableTracingAndCaptureOutputs()
                 .Execute();
         }
