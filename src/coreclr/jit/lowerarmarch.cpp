@@ -625,13 +625,13 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
     const var_types type = mod->TypeGet();
     assert((type == TYP_INT) || (type == TYP_LONG));
 
-    // a % cns
+    // {expr} % cns
 
     // let a = {expr}
     // if a > 0 then (a & ({cns} - 1)) else -(-a & ({cns} - 1))
 
-    // neg
     // and
+    // negs
     // and
     // csneg
 
@@ -655,6 +655,7 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
     BlockRange().InsertAfter(dividend2, cns);
 
     GenTree* const trueExpr = comp->gtNewOperNode(GT_AND, type, dividend, cns);
+    MakeSrcContained(trueExpr, cns);
     BlockRange().InsertAfter(cns, trueExpr);
 
     GenTree* const neg = comp->gtNewOperNode(GT_NEG, type, dividend2);
@@ -665,6 +666,7 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
     BlockRange().InsertAfter(neg, cns1);
 
     GenTree* const falseExpr = comp->gtNewOperNode(GT_AND, type, neg, cns1);
+    MakeSrcContained(falseExpr, cns1);
     BlockRange().InsertAfter(cns1, falseExpr);
 
     GenTree* const cc = comp->gtNewOperNode(GT_CS_NEG_MI, type, trueExpr, falseExpr);
