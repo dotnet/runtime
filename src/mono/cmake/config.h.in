@@ -122,14 +122,6 @@
 /* Define to 1 if you have the <syslog.h> header file. */
 #cmakedefine HAVE_SYSLOG_H 1
 
-/* Define to 1 if `major', `minor', and `makedev' are declared in <mkdev.h>.
-   */
-#cmakedefine MAJOR_IN_MKDEV 1
-
-/* Define to 1 if `major', `minor', and `makedev' are declared in
-   <sysmacros.h>. */
-#cmakedefine MAJOR_IN_SYSMACROS 1
-
 /* Define to 1 if you have the <sys/filio.h> header file. */
 #cmakedefine HAVE_SYS_FILIO_H 1
 
