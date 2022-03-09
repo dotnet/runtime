@@ -283,6 +283,21 @@ emit_xzero (MonoCompile *cfg, MonoClass *klass)
 	return emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
 }
 
+#ifdef TARGET_ARM64
+static MonoInst*
+emit_arm64_addv (MonoCompile *cfg, MonoClass *klass, MonoInst *arg)
+{
+	int op = -1;
+	if (type_is_float (arg)) {
+		op = OP_ARM64_FADDV;
+	} else {
+		op = type_is_unsigned (arg) ? OP_ARM64_UADDV : OP_ARM64_SADDV;
+	}
+
+	return emit_simd_ins (cfg, klass, op, arg->dreg, -1);
+}
+#endif
+
 static gboolean
 is_intrinsics_vector_type (MonoType *vector_type)
 {
@@ -771,43 +786,15 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		}
 		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
 	}
-	case SN_Dot:
-	case SN_Sum: {
+	case SN_Dot: {
 #ifdef TARGET_ARM64
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 
-		gboolean is_float = arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8;
+		int instc0 = type_is_float (args [0]) ? OP_FMUL : OP_IMUL;
+		MonoInst *pariwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
 
-		MonoInst *ins;
-		switch (id) {
-		// In the case of the dot product, we need to first pairwise multiply the elements
-		// of the two input vectors
-		case SN_Dot: {
-			g_assert (fsig->param_count == 2);
-			int instc0 = is_float ? OP_FMUL : OP_IMUL;
-			ins = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
-			break;
-		}
-		// In the case of Sum, we don't need to process the single input vector in any way
-		case SN_Sum: { 
-			g_assert (fsig->param_count == 1);
-			ins = args [0];
-			break;
-		}
-		default:
-			g_assert_not_reached ();
-		}
-
-		int op = -1;
-		if (is_float) {
-			op = OP_ARM64_FADDV;
-		} else {
-			gboolean is_unsigned = arg0_type == MONO_TYPE_U1 || arg0_type == MONO_TYPE_U2 || arg0_type == MONO_TYPE_U4 || arg0_type == MONO_TYPE_U8 || arg0_type == MONO_TYPE_U;
-			op = is_unsigned ? OP_ARM64_UADDV : OP_ARM64_SADDV;
-		}
-
-		return emit_simd_ins (cfg, klass, op, ins->dreg, -1);
+		return emit_arm64_addv (cfg, klass, pairwise_multiply);
 #else
 		return NULL;
 #endif
@@ -984,11 +971,20 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	case SN_Negate:
 	case SN_OnesComplement: {
+#ifdef TARGET_ARM64
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-#ifdef TARGET_ARM64
 		int op = id == SN_Negate ? OP_ARM64_XNEG : OP_ARM64_MVN;
 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
+#else
+		return NULL;
+#endif
+	}
+	case SN_Sum: {
+#ifdef TARGET_ARM64
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		return emit_arm64_addv (cfg, klass, args [0]);
 #else
 		return NULL;
 #endif
