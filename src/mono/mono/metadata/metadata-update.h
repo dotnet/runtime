@@ -70,6 +70,9 @@ mono_metadata_update_get_field_idx (MonoClassField *field);
 MonoClassField *
 mono_metadata_update_get_field (MonoClass *klass, uint32_t fielddef_token);
 
+gboolean
+mono_metadata_update_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_method_idx, uint32_t *method_count,  uint32_t *first_field_idx, uint32_t *field_count);
+
 gpointer
 mono_metadata_update_get_static_field_addr (MonoClassField *field);
 
