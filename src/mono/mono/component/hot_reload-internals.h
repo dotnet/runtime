@@ -17,7 +17,7 @@ typedef struct _MonoClassRuntimeMetadataUpdateInfo {
 	gboolean inited;
 } MonoClassRuntimeMetadataUpdateInfo;
 
-/* Class-specific metadata update info.  See
+/* Class-specific metadata update info for an existing class.  See
  * mono_class_get_metadata_update_info() Note that this info is associated with
  * class _definitions_ that can be edited, so primitives, generic instances,
  * arrays, pointers, etc do not have this info.
@@ -31,6 +31,29 @@ struct _MonoClassMetadataUpdateInfo {
 
 	MonoClassRuntimeMetadataUpdateInfo runtime;
 };
+
+/*
+ * Added type skeleton.
+ *
+ * When a hot reload delta is adding brand new class, the runtime allows a lot more leeway than when
+ * new members are added to existing classes.  Anything that is possible to write in a baseline
+ * assembly is possible with an added class.  One complication is that the EnCLog first contains a
+ * row with a new TypeDef table token, but that table row has zeros for the field and method token
+ * ids.  Instead, each method and field is added by an EnCLog entry with a ENC_FUNC_ADD_METHOD or
+ * ENC_FUNC_ADD_FIELD function code.  We don't want to materialzie the MonoClass for the new type
+ * definition until we've see all the added methods and fields.  Instead when we process the log we
+ * collect a skeleton for the new class and then use it to create the MonoClass.
+ *
+ * We assume that the new methods and fields for a given class form a contiguous run (ie first and
+ * count are sufficient to identify all the rows belonging to the new class).
+ */
+typedef struct _MonoAddedDefSkeleton {
+	uint32_t typedef_token; /* which type is it */
+	uint32_t first_method_idx, first_field_idx;
+	uint32_t method_count;
+	uint32_t field_count;
+	/* TODO: metadata-update: property and event adds. */
+} MonoAddedDefSkeleton;
 
 
 /* Keep in sync with Mono.HotReload.FieldStore in managed */

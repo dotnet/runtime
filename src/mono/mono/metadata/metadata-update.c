@@ -182,3 +182,9 @@ mono_metadata_update_find_method_by_name (MonoClass *klass, const char *name, in
 {
 	return mono_component_hot_reload()->find_method_by_name (klass, name, param_count, flags, error);
 }
+
+gboolean
+mono_metadata_update_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_method_idx, uint32_t *method_count,  uint32_t *first_field_idx, uint32_t *field_count)
+{
+	return mono_component_hot_reload()->get_typedef_skeleton (base_image, typedef_token, first_method_idx, method_count, first_field_idx, field_count);
+}
