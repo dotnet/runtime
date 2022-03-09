@@ -652,22 +652,6 @@ type_to_xextract_op (MonoTypeEnum type)
 	}
 }
 
-static MonoClass *
-create_class_instance (MonoCompile *cfg, MonoMethodSignature *fsig, const char* name_space, const char *name)
-{
-	MonoClass *ivector128 = mono_class_load_from_name (mono_defaults.corlib, name_space, name);
-	MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
-	MonoType *param_type = mono_class_get_generic_class (arg_class)->context.class_inst->type_argv [0];
-	MonoType *args [ ] = { param_type };
-	MonoGenericContext *ctx = mono_method_get_context (cfg->method);
-	ctx->class_inst = mono_metadata_get_generic_inst (1, args);
-	ERROR_DECL (error);
-	MonoClass *ivector128_inst = mono_class_inflate_generic_class_checked (ivector128, ctx, error);
-	mono_error_assert_ok (error); /* FIXME don't swallow the error */
-
-	return ivector128_inst;
-}
-
 static int
 type_to_extract_op (MonoTypeEnum type)
 {
@@ -686,6 +670,28 @@ type_to_extract_op (MonoTypeEnum type)
 #endif
 	default: g_assert_not_reached ();
 	}
+}
+
+static MonoClass *
+create_class_instance (MonoCompile *cfg, MonoMethodSignature *fsig, const char* name_space, const char *name, gboolean same_type, MonoType *param_type)
+{
+	MonoClass *ivector128 = mono_class_load_from_name (mono_defaults.corlib, name_space, name);
+	if (same_type) {
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		param_type = mono_class_get_generic_class (arg_class)->context.class_inst->type_argv [0];
+	} else {
+		g_assert(param_type != NULL);
+	}
+
+	MonoType *args [ ] = { param_type };
+	MonoGenericContext ctx;
+	memset (&ctx, 0, sizeof (ctx));
+	ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+	ERROR_DECL (error);
+	MonoClass *ivector128_inst = mono_class_inflate_generic_class_checked (ivector128, &ctx, error);
+	mono_error_assert_ok (error); /* FIXME don't swallow the error */
+
+	return ivector128_inst;
 }
 
 static guint16 sri_vector_methods [] = {
@@ -1105,12 +1111,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			case MONO_TYPE_R8: {
 				MonoInst *ins1 = emit_simd_ins (cfg, arg_class, OP_XWIDEN_UNSAFE, args [0]->dreg, -1);
 				int tmp = alloc_ireg (cfg);
-				MONO_EMIT_NEW_ICONST (cfg, tmp, 16);
+				MONO_EMIT_NEW_ICONST (cfg, tmp, 1);
 				MonoInst *ins2 = emit_simd_ins (cfg, arg_class, OP_EXTRACT_R8, args [1]->dreg, -1);
 				ins2->inst_c0 = 0;
 				ins2->inst_c1 = arg0_type;
 
-				MonoClass *ivector128_inst = create_class_instance (cfg, fsig, "System.Runtime.Intrinsics", "Vector128`1");
+				MonoClass *ivector128_inst = create_class_instance (cfg, fsig, "System.Runtime.Intrinsics", "Vector128`1", TRUE, NULL);
 
 				ins1 = emit_simd_ins (cfg, ivector128_inst, OP_XINSERT_R8, ins1->dreg, ins2->dreg);
 				ins1->sreg3 = tmp;
@@ -1123,21 +1129,26 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			case MONO_TYPE_U2:
 			case MONO_TYPE_U4:
 			case MONO_TYPE_U8: {
-				MonoInst *ins1 = emit_simd_ins (cfg, arg_class, OP_XWIDEN_UNSAFE, args [0]->dreg, -1);
+				MonoInst *arg0 = emit_simd_ins (cfg, arg_class, OP_XWIDEN_UNSAFE, args [0]->dreg, -1);
+
+				MonoType *type_uint64 = m_class_get_byval_arg (mono_defaults.uint64_class);
+				MonoClass *ivector128_uint64_inst = create_class_instance (cfg, fsig, "System.Runtime.Intrinsics", "Vector128`1", FALSE, type_uint64);
+				arg0 = emit_simd_ins (cfg, ivector128_uint64_inst, OP_XCAST, arg0->dreg, -1);
+				MonoClass *ivector64_uint64_inst = create_class_instance (cfg, fsig, "System.Runtime.Intrinsics", "Vector64`1", FALSE, type_uint64);
+				MonoInst *arg1 = emit_simd_ins (cfg, ivector64_uint64_inst, OP_XCAST, args [1]->dreg, -1);
+
 				int tmp = alloc_ireg (cfg);
-				MONO_EMIT_NEW_ICONST (cfg, tmp, 16);
-				int insert_op = type_to_xinsert_op (arg0_type);
-				int extract_op = type_to_extract_op (arg0_type);
-				MonoInst *ins2 = emit_simd_ins (cfg, arg_class, extract_op, args [1]->dreg, -1);
-				ins2->inst_c0 = 0;
-				ins2->inst_c1 = arg0_type;
-
-				MonoClass *ivector128_inst = create_class_instance (cfg, fsig, "System.Runtime.Intrinsics", "Vector128`1");
-
-				ins1 = emit_simd_ins (cfg, ivector128_inst, insert_op, ins1->dreg, ins2->dreg);
-				ins1->sreg3 = tmp;
-				ins1->inst_c1 = arg0_type;
-				return emit_simd_ins (cfg, arg_class, OP_ARM64_XTN, ins1->dreg, -1);
+				MONO_EMIT_NEW_ICONST (cfg, tmp, 1);
+				arg1 = emit_simd_ins (cfg, ivector64_uint64_inst, OP_EXTRACT_I8, arg1->dreg, -1);
+				arg1->inst_c0 = 0;
+				arg1->inst_c1 = MONO_TYPE_U8;
+				MonoClass *ivector128_inst = create_class_instance (cfg, fsig, "System.Runtime.Intrinsics", "Vector128`1", TRUE, NULL);
+				MonoInst *ins = emit_simd_ins (cfg, ivector128_uint64_inst, OP_XINSERT_I8, arg0->dreg, arg1->dreg);
+				ins->sreg3 = tmp;
+				ins->inst_c1 = MONO_TYPE_U8;
+				ins = emit_simd_ins (cfg, ivector128_uint64_inst, OP_ARM64_XTN, ins->dreg, -1);
+				MonoClass *ret_class = mono_class_from_mono_type_internal (fsig->ret);
+				return emit_simd_ins (cfg, ret_class, OP_XCAST, ins->dreg, -1);
 			}
 			default:
 				return NULL;
