@@ -109,16 +109,23 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         private const int MsQuicVersion = 1;
 
+        internal static bool Tls13MayBeDisabled { get; }
+
         static MsQuicApi()
         {
-            if (OperatingSystem.IsWindows() && !IsWindowsVersionSupported())
+            if (OperatingSystem.IsWindows())
             {
-                if (NetEventSource.Log.IsEnabled())
+                if (!IsWindowsVersionSupported())
                 {
-                    NetEventSource.Info(null, $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {MinWindowsVersion}");
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Info(null, $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {MinWindowsVersion}");
+                    }
+
+                    return;
                 }
 
-                return;
+                Tls13MayBeDisabled = IsTls13Disabled();
             }
 
             if (NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle) ||
