@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.Tests
@@ -191,36 +192,35 @@ namespace System.IO.Tests
         [SkipOnPlatform(TestPlatforms.Android, "OOM on Android could be uncatchable & kill the test runner")]
         public unsafe void WriteChars_VeryLargeArray_DoesNotOverflow()
         {
-            const nuint INPUT_LEN_IN_CHARS = 1_500_000_000;
-            const nuint OUTPUT_LEN_IN_BYTES = 3_500_000_000; // overallocate
+            const nuint INT32_OVERFLOW_SIZE = (nuint)int.MaxValue + 3;
 
-            SafeBuffer unmanagedInputBuffer = null;
-            SafeBuffer unmanagedOutputBufer = null;
+            SafeBuffer unmanagedBuffer = null;
             try
             {
                 try
                 {
-                    unmanagedInputBuffer = SafeBufferUtil.CreateSafeBuffer(INPUT_LEN_IN_CHARS * sizeof(char));
-                    unmanagedOutputBufer = SafeBufferUtil.CreateSafeBuffer(OUTPUT_LEN_IN_BYTES * sizeof(byte));
+                    unmanagedBuffer = SafeBufferUtil.CreateSafeBuffer(INT32_OVERFLOW_SIZE * sizeof(byte));
                 }
                 catch (OutOfMemoryException)
                 {
                     return; // skip test in low-mem conditions
                 }
 
-                Span<char> inputSpan = new Span<char>((char*)unmanagedInputBuffer.DangerousGetHandle(), (int)INPUT_LEN_IN_CHARS);
-                inputSpan.Fill('\u0224'); // LATIN CAPITAL LETTER Z WITH HOOK
-                Stream outStream = new UnmanagedMemoryStream(unmanagedOutputBufer, 0, (long)unmanagedOutputBufer.ByteLength, FileAccess.ReadWrite);
+                Assert.True((long)unmanagedBuffer.ByteLength > int.MaxValue);
+
+                // reuse same memory for input and output to avoid allocating more memory and OOMs
+                Span<char> span = new Span<char>((char*)unmanagedBuffer.DangerousGetHandle(), (int)(INT32_OVERFLOW_SIZE / sizeof(char)));
+                span.Fill('\u0224'); // LATIN CAPITAL LETTER Z WITH HOOK
+                Stream outStream = new UnmanagedMemoryStream(unmanagedBuffer, 0, (long)unmanagedBuffer.ByteLength, FileAccess.ReadWrite);
                 BinaryWriter writer = new BinaryWriter(outStream);
 
-                writer.Write(inputSpan); // will write 3 billion bytes to the output
+                writer.Write(span); // will write slightly more than int.MaxValue bytes to the output
 
-                Assert.Equal(3_000_000_000, outStream.Position);
+                Assert.Equal((long)INT32_OVERFLOW_SIZE, outStream.Position);
             }
             finally
             {
-                unmanagedInputBuffer?.Dispose();
-                unmanagedOutputBufer?.Dispose();
+                unmanagedBuffer?.Dispose();
             }
         }
 
