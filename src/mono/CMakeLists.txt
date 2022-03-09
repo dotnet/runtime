@@ -436,6 +436,9 @@ elseif(TARGET_ARCH MATCHES "arm")
   set(SIZEOF_REGISTER 4)
   # fixme: use separate defines for host/target
   set(NO_UNALIGNED_ACCESS 1)
+  set(HAVE_ARMV5 1)
+  set(HAVE_ARMV6 1)
+  #set(HAVE_ARMV7 1) # TODO: figure out if we should set this
 elseif(TARGET_ARCH STREQUAL "s390x")
   set(TARGET_S390X 1)
   set(MONO_ARCHITECTURE "\"s390x\"")
