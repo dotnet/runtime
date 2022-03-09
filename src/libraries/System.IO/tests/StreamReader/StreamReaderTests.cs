@@ -132,6 +132,7 @@ namespace System.IO.Tests
             Assert.Equal(token, ex.CancellationToken);
         }
 
+        [OuterLoop("It creates 1GB file")]
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
         public async Task ReadToEndAsync_WithCancellation()
