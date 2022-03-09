@@ -8215,7 +8215,7 @@ public:
     CORINFO_CLASS_HANDLE eeGetArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE list);
     CORINFO_CLASS_HANDLE eeGetClassFromContext(CORINFO_CONTEXT_HANDLE context);
     unsigned eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig);
-    static unsigned eeGetArgAlignment(var_types type, bool isFloatHfa);
+    static unsigned eeGetArgSizeAlignment(var_types type, bool isFloatHfa);
 
     // VOM info, method sigs
 
