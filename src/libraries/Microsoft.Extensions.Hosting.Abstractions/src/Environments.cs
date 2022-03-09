@@ -8,8 +8,8 @@ namespace Microsoft.Extensions.Hosting
     /// </summary>
     public static class Environments
     {
-        public static readonly string Development = "Development";
-        public static readonly string Staging = "Staging";
-        public static readonly string Production = "Production";
+        public const string Development = "Development";
+        public const string Staging = "Staging";
+        public const string Production = "Production";
     }
 }
