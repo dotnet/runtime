@@ -8,14 +8,11 @@ namespace System.Net.Security
         public SslConnectionInfo(SecPkgContext_ConnectionInfo interopConnectionInfo, TlsCipherSuite cipherSuite)
         {
             Protocol = interopConnectionInfo.Protocol;
-            DataCipherAlg = interopConnectionInfo.DataCipherAlg;
-            DataKeySize = interopConnectionInfo.DataKeySize;
-            DataHashAlg = interopConnectionInfo.DataHashAlg;
-            DataHashKeySize = interopConnectionInfo.DataHashKeySize;
-            KeyExchangeAlg = interopConnectionInfo.KeyExchangeAlg;
-            KeyExchKeySize = interopConnectionInfo.KeyExchKeySize;
 
-            TlsCipherSuite = cipherSuite;
+            MapCipherSuite(cipherSuite);
+
+            // TlsCipherSuiteData does not provide KeyExchKeySize, but WinAPI does
+            KeyExchKeySize = interopConnectionInfo.KeyExchKeySize;
         }
     }
 }
