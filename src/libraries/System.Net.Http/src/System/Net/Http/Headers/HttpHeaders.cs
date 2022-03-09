@@ -1354,7 +1354,7 @@ namespace System.Net.Http.Headers
             }
 
             [Conditional("DEBUG")]
-            public void AssertContainsSingleParsedValue(List<object> list)
+            private static void AssertContainsSingleParsedValue(List<object> list)
             {
                 int count = 0;
                 foreach (object item in list)
