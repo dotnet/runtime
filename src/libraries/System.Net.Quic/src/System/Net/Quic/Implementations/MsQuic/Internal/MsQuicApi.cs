@@ -3,9 +3,11 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-#if WINDOWS
+
+#if TARGET_WINDOWS
 using Microsoft.Win32;
 #endif
+
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
@@ -109,22 +111,11 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         static MsQuicApi()
         {
-            bool isWindows = OperatingSystem.IsWindows();
-            if (isWindows && !IsWindowsVersionSupported())
+            if (OperatingSystem.IsWindows() && !IsWindowsVersionSupported())
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(null, $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {MinWindowsVersion}");
-                }
-
-                return;
-            }
-
-            if (isWindows && IsTls1_3Disabled())
-            {
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Info(null, $"TLS 1.3 has been disabled via registry. TLS 1.3 is required for QUIC.");
                 }
 
                 return;
@@ -159,23 +150,29 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         }
 
         private static bool IsWindowsVersionSupported() => OperatingSystem.IsWindowsVersionAtLeast(MinWindowsVersion.Major,
-            MinWindowsVersion.Minor, MinWindowsVersion.Build, MinWindowsVersion.Revision);
+            MinWindowsVersion.Minor, MinWindowsVersion.Build, MinWindowsVersion.Revision) && !IsTls13Disabled();
 
-        private static bool IsTls1_3Disabled()
+        private static bool IsTls13Disabled()
         {
-#if WINDOWS
-            const string SChannelTLS1_3RegKey = @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3";
+            const string SChannelTLS13ClientRegKey = @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client";
+            const string SChannelTLS13ServerRegKey = @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server";
 
-            using var tls13Key = Registry.LocalMachine.OpenSubKey(SChannelTLS1_3RegKey);
-
-            if (tls13Key is null) return false;
-
-            if (tls13Key.GetValue("Enabled") is int enabled)
+            static bool IsKeyDisabled(string key)
             {
-                return enabled == 0;
-            }
+#if TARGET_WINDOWS
+                using var regKey = Registry.LocalMachine.OpenSubKey(key);
+
+                if (regKey is null) return false;
+
+                if (regKey.GetValue("Enabled") is int enabled)
+                {
+                    return enabled == 0;
+                }
 #endif
-            return false;
+                return false;
+            }
+
+            return IsKeyDisabled(SChannelTLS13ClientRegKey) || IsKeyDisabled(SChannelTLS13ServerRegKey);
         }
 
         // TODO: Consider updating all of these delegates to instead use function pointers.
