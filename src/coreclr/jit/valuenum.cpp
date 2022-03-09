@@ -3955,7 +3955,7 @@ ValueNum ValueNumStore::VNApplySelectors(ValueNumKind  vnk,
                                          FieldSeqNode* fieldSeq,
                                          size_t*       wbFinalStructSize)
 {
-    for (FieldSeqNode* field = fieldSeq; field != nullptr; field = field->m_next)
+    for (FieldSeqNode* field = fieldSeq; field != nullptr; field = field->GetNext())
     {
         assert(field != FieldSeqStore::NotAField());
         assert(!field->IsPseudoField());
@@ -4119,7 +4119,7 @@ ValueNum ValueNumStore::VNApplySelectorsAssign(
         assert(fieldSeq != FieldSeqStore::NotAField());
         assert(!fieldSeq->IsPseudoField());
 
-        if (fieldSeq->m_next == nullptr)
+        if (fieldSeq->GetNext() == nullptr)
         {
             JITDUMP("  VNApplySelectorsAssign:\n");
         }
@@ -4128,10 +4128,10 @@ ValueNum ValueNumStore::VNApplySelectorsAssign(
         ValueNum  fldHndVN = VNForFieldSelector(fieldSeq->GetFieldHandle(), &fieldType);
 
         ValueNum valueAfter;
-        if (fieldSeq->m_next != nullptr)
+        if (fieldSeq->GetNext() != nullptr)
         {
             ValueNum fseqMap = VNForMapSelect(vnk, fieldType, map, fldHndVN);
-            valueAfter       = VNApplySelectorsAssign(vnk, fseqMap, fieldSeq->m_next, value, dstIndType);
+            valueAfter       = VNApplySelectorsAssign(vnk, fseqMap, fieldSeq->GetNext(), value, dstIndType);
         }
         else
         {
@@ -4182,7 +4182,7 @@ bool ValueNumStore::IsVNNotAField(ValueNum vn)
 //
 // Return Value:
 //    "VNForNull" if the sequence is empty ("nullptr").
-//    "IsVNNotAField" VN if is a "NotAField"
+//    "IsVNNotAField" VN if it is a "NotAField".
 //    "GTF_FIELD_SEQ_PTR" handle VN otherwise.
 //
 ValueNum ValueNumStore::VNForFieldSeq(FieldSeqNode* fieldSeq)
@@ -8006,7 +8006,7 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                         ValueNum newFirstFieldValueVN = ValueNumStore::NoVN;
                         // Optimization: avoid traversting the maps for the value of the first field if
                         // we do not need it, which is the case if the rest of the field sequence is empty.
-                        if (fldSeq->m_next == nullptr)
+                        if (fldSeq->GetNext() == nullptr)
                         {
                             newFirstFieldValueVN = vnStore->VNApplySelectorsAssignTypeCoerce(storeVal, indType);
                         }
@@ -8018,8 +8018,9 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                                                                                  firstFieldValueSelectorVN);
 
                             // Construct the maps updating the struct fields in the sequence.
-                            newFirstFieldValueVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, firstFieldValueVN,
-                                                                                   fldSeq->m_next, storeVal, indType);
+                            newFirstFieldValueVN =
+                                vnStore->VNApplySelectorsAssign(VNK_Liberal, firstFieldValueVN, fldSeq->GetNext(),
+                                                                storeVal, indType);
                         }
 
                         // Finally, construct the new field map...
@@ -8942,7 +8943,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                         // Finally, account for the rest of the fields in the sequence.
                         valueVN =
-                            vnStore->VNApplySelectors(VNK_Liberal, firstFieldValueVN, fldSeq->m_next, &structSize);
+                            vnStore->VNApplySelectors(VNK_Liberal, firstFieldValueVN, fldSeq->GetNext(), &structSize);
                     }
                     else
                     {
@@ -11080,7 +11081,7 @@ void Compiler::fgDebugCheckValueNumberedTree(GenTree* tree)
                         break;
                     }
 
-                    fldSeq = fldSeq->m_next;
+                    fldSeq = fldSeq->GetNext();
                 }
 
                 assert(zeroOffsetFldSeqFound);
