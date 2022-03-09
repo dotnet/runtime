@@ -613,6 +613,25 @@ void Lowering::LowerRotate(GenTree* tree)
 }
 
 #ifdef TARGET_ARM64
+//------------------------------------------------------------------------
+// LowerModPow2: Lower GT_MOD if the second operand is a constant power of 2.
+//
+// Arguments:
+//    tree - the node to lower
+//
+// Return Value:
+//    A new tree node if it changed.
+//
+// Notes:
+//     {expr} % {cns}
+//     Logically turns into:
+//         let a = {expr}
+//         if a > 0 then (a & ({cns} - 1)) else -(-a & ({cns} - 1))
+//     which then turns into:
+//         and   reg1, reg0, #({cns} - 1)
+//         negs  reg0, reg0
+//         and   reg0, reg0, #({cns} - 1)
+//         csneg reg0, reg1, reg0, mi
 GenTree* Lowering::LowerModPow2(GenTree* node)
 {
     assert(node->OperGet() == GT_MOD);
@@ -624,16 +643,6 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
 
     const var_types type = mod->TypeGet();
     assert((type == TYP_INT) || (type == TYP_LONG));
-
-    // {expr} % {cns}
-    // Logically turns into:
-    //     let a = {expr}
-    //     if a > 0 then (a & ({cns} - 1)) else -(-a & ({cns} - 1))
-    // which then turns into:
-    //     and   reg1, reg0, #({cns} - 1)
-    //     negs  reg0, reg0
-    //     and   reg0, reg0, #({cns} - 1)
-    //     csneg reg0, reg1, reg0, mi
 
     LIR::Use use;
     if (!BlockRange().TryGetUse(node, &use))
