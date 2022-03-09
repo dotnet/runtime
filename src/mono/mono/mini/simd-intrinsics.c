@@ -758,14 +758,13 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			g_assert_not_reached ();
 		}
 
-		// int op = -1;
-		// if (is_float) {
-		// 	op = OP_ARM64_FADDV;
-		// } else {
-		// 	op = is_unsigned ? OP_ARM64_UADDV : OP_ARM64_SADDV;
-		// }
+		int op = -1;
+		if (is_float) {
+			op = OP_ARM64_FADDV;
+		} else {
+			op = is_unsigned ? OP_ARM64_UADDV : OP_ARM64_SADDV;
+		}
 
-		int op = is_unsigned ? OP_ARM64_UADDV : OP_ARM64_SADDV;
 		return emit_simd_ins (cfg, arg_class, op, ins->dreg, -1);
 #else
 		return NULL;

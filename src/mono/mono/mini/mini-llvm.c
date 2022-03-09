@@ -10924,15 +10924,15 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ARM64_SADDV:
-		case OP_ARM64_UADDV: {
-		// case OP_ARM64_FADDV: {
-			// llvm_ovr_tag_t ovr_tag = INTRIN_vector128 | INTRIN_int64;
-			llvm_ovr_tag_t ovr_tag = INTRIN_vector128;
+		case OP_ARM64_UADDV:
+		case OP_ARM64_FADDV: {
+			LLVMTypeRef arg_t = LLVMTypeOf (lhs);
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (arg_t);
 			int iid = -1;
 			switch (ins->opcode) {
 				case OP_ARM64_SADDV: iid = INTRINS_AARCH64_ADV_SIMD_SADDV; break;
 				case OP_ARM64_UADDV: iid = INTRINS_AARCH64_ADV_SIMD_UADDV; break;
-				// case OP_ARM64_FADDV: iid = INTRINS_AARCH64_ADV_SIMD_FADDV; break;
+				case OP_ARM64_FADDV: iid = INTRINS_AARCH64_ADV_SIMD_FADDV; break;
 				default: g_assert_not_reached ();
 			}
 
