@@ -170,7 +170,7 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
                                         CORINFO_SIG_INFO*     sig,
                                         GenTree*              newobjThis)
 {
-    if (!featureSIMD)
+    if (!supportSIMDTypes())
     {
         // We can't support SIMD intrinsics if the JIT doesn't support the feature
         return nullptr;
@@ -356,7 +356,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 {
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
 
-    assert(featureSIMD);
+    assert(supportSIMDTypes());
     assert(retType != TYP_UNKNOWN);
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
