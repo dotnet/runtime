@@ -1021,6 +1021,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		}
 	}
 	case SN_Narrow: {
+#ifdef TARGET_ARM64
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 
@@ -1038,6 +1039,9 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		MonoInst *upper = emit_simd_ins (cfg, arg_class, upper_op, lower->dreg, args [1]->dreg);
 
 		return upper;
+#else
+		return NULL;
+#endif
 	}
 	case SN_Negate:
 	case SN_OnesComplement: {
