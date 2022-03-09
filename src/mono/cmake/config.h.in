@@ -844,6 +844,9 @@
 /* The JIT/AOT targets Apple platforms */
 #cmakedefine TARGET_MACH 1
 
+/* The JIT/AOT targets Apple mobile platforms */
+#cmakedefine TARGET_APPLE_MOBILE 1
+
 /* byte order of target */
 #define TARGET_BYTE_ORDER @TARGET_BYTE_ORDER@
 
