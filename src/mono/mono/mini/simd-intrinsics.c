@@ -133,6 +133,43 @@ lookup_intrins_info (SimdIntrinsic *intrinsics, int size, MonoMethod *cmethod)
 	return (SimdIntrinsic *)mono_binary_search (cmethod->name, intrinsics, size / sizeof (SimdIntrinsic), sizeof (SimdIntrinsic), &simd_intrinsic_info_compare_by_name);
 }
 
+static gboolean
+has_intrinsic_cattr (MonoMethod *method)
+{
+	ERROR_DECL (error);
+	MonoCustomAttrInfo *cattr;
+	gboolean res = FALSE;
+
+	cattr = mono_custom_attrs_from_method_checked (method, error);
+	mono_error_assert_ok (error);
+
+	if (cattr) {
+		for (int i = 0; i < cattr->num_attrs; ++i) {
+			MonoCustomAttrEntry *attr = &cattr->attrs [i];
+
+			g_assert (attr->ctor);
+
+			if (!strcmp (m_class_get_name_space (attr->ctor->klass), "System.Runtime.CompilerServices") &&
+				!strcmp (m_class_get_name (attr->ctor->klass), "Intrinsic")) {
+				res = TRUE;
+				break;
+			}
+		}
+		mono_custom_attrs_free (cattr);
+	}
+
+	return res;
+}
+
+static G_GNUC_UNUSED void
+check_no_intrinsic_cattr (MonoMethod *method)
+{
+	if (has_intrinsic_cattr (method)) {
+		printf ("%s\n", mono_method_get_full_name (method));
+		g_assert_not_reached ();
+	}
+}
+
 /*
  * Return a simd vreg for the simd value represented by SRC.
  * SRC is the 'this' argument to methods.
@@ -741,8 +778,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 
 	int id = lookup_intrins (sri_vector_methods, sizeof (sri_vector_methods), cmethod);
-	if (id == -1)
+	if (id == -1) {
+		//check_no_intrinsic_cattr (cmethod);
 		return NULL;
+	}
 
 	if (!strcmp (m_class_get_name (cfg->method->klass), "Vector256"))
 		return NULL; // TODO: Fix Vector256.WithUpper/WithLower
@@ -1100,8 +1139,10 @@ static MonoInst*
 emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	int id = lookup_intrins (vector64_vector128_t_methods, sizeof (vector64_vector128_t_methods), cmethod);
-	if (id == -1)
+	if (id == -1) {
+		//check_no_intrinsic_cattr (cmethod);
 		return NULL;
+	}
 
 	MonoClass *klass = cmethod->klass;
 	MonoType *type = m_class_get_byval_arg (klass);
@@ -1186,7 +1227,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64)
 
 static guint16 vector_methods [] = {
 	SN_ConvertToDouble,
@@ -1209,8 +1250,10 @@ emit_sys_numerics_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 	MonoType *etype;
 
 	id = lookup_intrins (vector_methods, sizeof (vector_methods), cmethod);
-	if (id == -1)
+	if (id == -1) {
+		//check_no_intrinsic_cattr (cmethod);
 		return NULL;
+	}
 
 	//printf ("%s\n", mono_method_full_name (cmethod, 1));
 
@@ -1295,8 +1338,10 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	static const double r8_one = 1.0;
 
 	id = lookup_intrins (vector_t_methods, sizeof (vector_t_methods), cmethod);
-	if (id == -1)
+	if (id == -1) {
+		//check_no_intrinsic_cattr (cmethod);
 		return NULL;
+	}
 
 	klass = cmethod->klass;
 	type = m_class_get_byval_arg (klass);
@@ -3330,8 +3375,10 @@ emit_vector256_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 	int size, len, id;
 
 	id = lookup_intrins (vector_256_t_methods, sizeof (vector_256_t_methods), cmethod);
-	if (id == -1)
+	if (id == -1) {
+		//check_no_intrinsic_cattr (cmethod);
 		return NULL;
+	}
 
 	klass = cmethod->klass;
 	etype = mono_class_get_context (klass)->class_inst->type_argv [0];
