@@ -11399,7 +11399,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             if (!optValnumCSE_phase)
             {
 #ifdef TARGET_ARM64
-                if ((tree->OperGet() == GT_UMOD) && op2->IsIntegralConstPow2())
+                if (tree->OperIs(GT_UMOD) && op2->IsIntegralConstAbsPow2())
                 {
                     // Transformation: a % b = a & (b - 1);
                     tree = fgMorphUModToAndSub(tree->AsOp());
@@ -11415,7 +11415,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 // when 'b' is not a power of 2 constant and mod operator is signed.
                 // Lowering for XARCH does this optimization already,
                 // but is also done here to take advantage of CSE.
-                if ((tree->OperGet() == GT_MOD) && op2->IsIntegralConst() && !op2->IsIntegralConstAbsPow2())
+                if (tree->OperIs(GT_MOD) && op2->IsIntegralConst() && !op2->IsIntegralConstAbsPow2())
 #endif
                 {
                     // Transformation: a % b = a - (a / b) * b;
@@ -14733,21 +14733,15 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
 {
     JITDUMP("\nMorphing UMOD [%06u] to And/Sub\n", dspTreeID(tree));
 
-    if (tree->OperGet() != GT_UMOD)
-    {
-        noway_assert(!"Illegal gtOper in fgMorphUModToAndSub");
-    }
+    assert(tree->OperIs(GT_UMOD));
+    assert(tree->gtOp2->IsIntegralConstAbsPow2());
 
-    assert(tree->gtOp2->IsIntegralConstPow2());
-
-    var_types type = tree->gtType;
+    var_types type = tree->TypeGet();
 
     GenTree* const sub    = gtNewOperNode(GT_SUB, type, tree->gtOp2, gtNewOneConNode(type));
     GenTree* const andSub = gtNewOperNode(GT_AND, type, tree->gtOp1, sub);
 
-#ifdef DEBUG
-    andSub->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
+    INDEBUG(andSub->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
     DEBUG_DESTROY_NODE(tree);
 
