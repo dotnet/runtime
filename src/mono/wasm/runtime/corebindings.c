@@ -22,8 +22,6 @@ extern void mono_wasm_typed_array_to_array_ref (int js_handle, int *is_exception
 extern void mono_wasm_typed_array_copy_to_ref (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception, MonoObject** result);
 extern void mono_wasm_typed_array_from_ref (int ptr, int begin, int end, int bytes_per_element, int type, int *is_exception, MonoObject** result);
 extern void mono_wasm_typed_array_copy_from_ref (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception, MonoObject** result);
-extern MonoString* mono_wasm_add_event_listener (int jsObjHandle, MonoString *name, int weakDelegateHandle, int optionsObjHandle);
-extern MonoString* mono_wasm_remove_event_listener (int jsObjHandle, MonoString *name, int weakDelegateHandle, int capture);
 extern MonoString* mono_wasm_cancel_promise (int thenable_js_handle, int *is_exception);
 extern void mono_wasm_web_socket_open (MonoString *uri, MonoArray *subProtocols, MonoDelegate *on_close, int *web_socket_js_handle, int *thenable_js_handle, int *is_exception, MonoObject **result);
 extern void mono_wasm_web_socket_send (int webSocket_js_handle, void* buffer_ptr, int offset, int length, int message_type, int end_of_message, int *thenable_js_handle, int *is_exception, MonoObject **result);
@@ -47,8 +45,6 @@ void core_initialize_internals ()
 	mono_add_internal_call ("Interop/Runtime::TypedArrayFromRef", mono_wasm_typed_array_from_ref);
 	mono_add_internal_call ("Interop/Runtime::TypedArrayCopyFromRef", mono_wasm_typed_array_copy_from_ref);
 	mono_add_internal_call ("Interop/Runtime::CompileFunction", mono_wasm_compile_function);
-	mono_add_internal_call ("Interop/Runtime::AddEventListener", mono_wasm_add_event_listener);
-	mono_add_internal_call ("Interop/Runtime::RemoveEventListener", mono_wasm_remove_event_listener);
 	mono_add_internal_call ("Interop/Runtime::WebSocketOpen", mono_wasm_web_socket_open);
 	mono_add_internal_call ("Interop/Runtime::WebSocketSend", mono_wasm_web_socket_send);
 	mono_add_internal_call ("Interop/Runtime::WebSocketReceive", mono_wasm_web_socket_receive);

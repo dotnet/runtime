@@ -43,10 +43,6 @@ internal static partial class Interop
         internal static extern void TypedArrayCopyFromRef(int jsHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult, out object result);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern string? AddEventListener(int jsHandle, string name, int gcHandle, int optionsJsHandle);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern string? RemoveEventListener(int jsHandle, string name, int gcHandle, bool capture);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void WebSocketSend(int webSocketJSHandle, IntPtr messagePtr, int offset, int length, int messageType, bool endOfMessage, out int promiseJSHandle, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void WebSocketReceive(int webSocketJSHandle, IntPtr bufferPtr, int offset, int length, IntPtr responsePtr, out int promiseJSHandle, out int exceptionalResult, out object result);

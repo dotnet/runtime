@@ -45,67 +45,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return res;
         }
 
-        public struct EventListenerOptions {
-            public bool Capture;
-            public bool Once;
-            public bool Passive;
-            public object? Signal;
-        }
-
-        public int AddEventListener(string name, Action<JSObject> listener, EventListenerOptions? options = null)
-        {
-            AssertNotDisposed();
-
-            var optionsDict = options.HasValue
-                ? new JSObject()
-                : null;
-
-            try {
-                if (options?.Signal != null)
-                    throw new NotImplementedException("EventListenerOptions.Signal");
-
-                var jsfunc = Runtime.GetJSOwnedObjectGCHandleRef(listener);
-                // int exception;
-                if (options.HasValue) {
-                    // TODO: Optimize this
-                    var _options = options.Value;
-                    optionsDict?.SetObjectProperty("capture", _options.Capture, true, true);
-                    optionsDict?.SetObjectProperty("once", _options.Once, true, true);
-                    optionsDict?.SetObjectProperty("passive", _options.Passive, true, true);
-                }
-
-                // TODO: Pass options explicitly instead of using the object
-                // TODO: Handle errors
-                // We can't currently do this because adding any additional parameters or a return value causes
-                //  a signature mismatch at runtime
-                var ret = Interop.Runtime.AddEventListener(JSHandle, name, jsfunc, optionsDict?.JSHandle ?? 0);
-                if (ret != null)
-                    throw new JSException(ret);
-                return jsfunc;
-            } finally {
-                optionsDict?.Dispose();
-            }
-        }
-
-        public void RemoveEventListener(string name, Action<JSObject>? listener, EventListenerOptions? options = null)
-        {
-            AssertNotDisposed();
-
-            if (listener == null)
-                return;
-            var jsfunc = Runtime.GetJSOwnedObjectGCHandleRef(listener);
-            RemoveEventListener(name, jsfunc, options);
-        }
-
-        public void RemoveEventListener(string name, int listenerGCHandle, EventListenerOptions? options = null)
-        {
-            AssertNotDisposed();
-
-            var ret = Interop.Runtime.RemoveEventListener(JSHandle, name, listenerGCHandle, options?.Capture ?? false);
-            if (ret != null)
-                throw new JSException(ret);
-        }
-
         /// <summary>
         ///   Returns the named property from the object, or throws a JSException on error.
         /// </summary>
