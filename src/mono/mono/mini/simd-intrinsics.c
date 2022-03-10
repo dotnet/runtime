@@ -347,14 +347,15 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 		return ins;
 	}
 
-	int op = -1;
+	MonoInst *ins = emit_simd_ins (cfg, vector_class, OP_ARM64_XADDV, arg->dreg, -1);
+
 	if (type_enum_is_float (element_type)) {
-		op = OP_ARM64_FADDV;
+		ins->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FADDV;
 	} else {
-		op = type_enum_is_unsigned (element_type) ? OP_ARM64_UADDV : OP_ARM64_SADDV;
+		ins->inst_c0 = type_enum_is_unsigned (element_type) ? INTRINS_AARCH64_ADV_SIMD_UADDV : INTRINS_AARCH64_ADV_SIMD_SADDV;
 	}
 
-	return emit_simd_ins (cfg, vector_class, op, arg->dreg, -1);
+	return ins;
 }
 #endif
 
