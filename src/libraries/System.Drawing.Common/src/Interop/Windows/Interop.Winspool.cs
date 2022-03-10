@@ -11,10 +11,10 @@ internal static partial class Interop
 {
     internal static partial class Winspool
     {
-        [GeneratedDllImport(Libraries.Winspool, EntryPoint = "DeviceCapabilitiesW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Winspool, EntryPoint = "DeviceCapabilitiesW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DeviceCapabilities(string pDevice, string pPort, short fwCapabilities, IntPtr pOutput, IntPtr /*DEVMODE*/ pDevMode);
 
-        [GeneratedDllImport(Libraries.Winspool, EntryPoint = "DocumentPropertiesW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Winspool, EntryPoint = "DocumentPropertiesW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DocumentProperties(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -29,7 +29,7 @@ internal static partial class Interop
 #endif
             HandleRef /*DEVMODE*/ pDevModeInput, int fMode);
 
-        [GeneratedDllImport(Libraries.Winspool, EntryPoint = "DocumentPropertiesW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Winspool, EntryPoint = "DocumentPropertiesW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DocumentProperties(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -40,7 +40,7 @@ internal static partial class Interop
 #endif
             HandleRef hPrinter, string pDeviceName, IntPtr /*DEVMODE*/ pDevModeOutput, IntPtr /*DEVMODE*/ pDevModeInput, int fMode);
 
-        [GeneratedDllImport(Libraries.Winspool, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Winspool, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int EnumPrinters(int flags, string? name, int level, IntPtr pPrinterEnum/*buffer*/, int cbBuf, out int pcbNeeded, out int pcReturned);
     }
 }

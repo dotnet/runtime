@@ -1,9 +1,9 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
-$interopFolder = Split-Path $PSScriptRoot -Parent
-$testsFolder = Split-Path $interopFolder -Parent
-$srcFolder = Split-Path $testsFolder -Parent
-$repoRoot = Split-Path $srcFolder -Parent
+
+$engNativeFolder = Split-Path $PSScriptRoot -Parent
+$engFolder = Split-Path $engNativeFolder -Parent
+$repoRoot = Split-Path $engFolder -Parent
 
 $versionPropsFile = "$repoRoot/eng/Versions.props"
 
@@ -15,7 +15,7 @@ $refPackPath = "$repoRoot/artifacts/bin/ref/net$majorVersion.$minorVersion"
 if (-not (Test-Path $refPackPath))
 {
     Write-Error "Reference assemblies not found in the artifacts folder at '$refPackPath'. Did you invoke 'build.cmd libs.sfx+libs.oob /p:RefOnly=true' to make sure that refs are built? Did the repo layout change?"
-    return 1
+    exit 1
 }
 
 Write-Output "refPackPath=$refPackPath"

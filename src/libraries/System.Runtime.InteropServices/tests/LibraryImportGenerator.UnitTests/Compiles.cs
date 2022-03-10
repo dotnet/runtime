@@ -24,7 +24,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.NestedTypes };
             yield return new[] { CodeSnippets.UnsafeContext };
             yield return new[] { CodeSnippets.UserDefinedEntryPoint };
-            yield return new[] { CodeSnippets.AllGeneratedDllImportNamedArguments };
+            yield return new[] { CodeSnippets.AllLibraryImportNamedArguments };
             yield return new[] { CodeSnippets.DefaultParameters };
             yield return new[] { CodeSnippets.UseCSharpFeaturesForConstants };
 
@@ -277,7 +277,7 @@ namespace LibraryImportGenerator.UnitTests
 
             // Confirm that all unsupported target frameworks can be generated.
             {
-                string code = CodeSnippets.BasicParametersAndModifiers<byte>(CodeSnippets.GeneratedDllImportAttributeDeclaration);
+                string code = CodeSnippets.BasicParametersAndModifiers<byte>(CodeSnippets.LibraryImportAttributeDeclaration);
                 yield return new object[] { code, TestTargetFramework.Net5, false };
                 yield return new object[] { code, TestTargetFramework.Core, false };
                 yield return new object[] { code, TestTargetFramework.Standard, false };
@@ -286,7 +286,7 @@ namespace LibraryImportGenerator.UnitTests
 
             // Confirm that all unsupported target frameworks fallback to a forwarder.
             {
-                string code = CodeSnippets.BasicParametersAndModifiers<byte[]>(CodeSnippets.GeneratedDllImportAttributeDeclaration);
+                string code = CodeSnippets.BasicParametersAndModifiers<byte[]>(CodeSnippets.LibraryImportAttributeDeclaration);
                 yield return new object[] { code, TestTargetFramework.Net5, true };
                 yield return new object[] { code, TestTargetFramework.Core, true };
                 yield return new object[] { code, TestTargetFramework.Standard, true };
@@ -295,7 +295,7 @@ namespace LibraryImportGenerator.UnitTests
 
             // Confirm that all unsupported target frameworks fallback to a forwarder.
             {
-                string code = CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf16, CodeSnippets.GeneratedDllImportAttributeDeclaration);
+                string code = CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf16, CodeSnippets.LibraryImportAttributeDeclaration);
                 yield return new object[] { code, TestTargetFramework.Net5, true };
                 yield return new object[] { code, TestTargetFramework.Core, true };
                 yield return new object[] { code, TestTargetFramework.Standard, true };
@@ -369,7 +369,7 @@ namespace LibraryImportGenerator.UnitTests
 
         public static IEnumerable<object[]> SnippetsWithBlittableTypesButNonBlittableDataToCompile()
         {
-            yield return new[] { CodeSnippets.AllGeneratedDllImportNamedArguments };
+            yield return new[] { CodeSnippets.AllLibraryImportNamedArguments };
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<int>() };
             yield return new[] { CodeSnippets.SetLastErrorTrue<int>() };
         }
