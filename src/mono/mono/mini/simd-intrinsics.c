@@ -1263,6 +1263,8 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 	case SN_op_OnesComplement:
 	case SN_op_UnaryNegation:
+		if (fsig->param_count != 1 )
+			return NULL;
 		return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
 	default:
 		break;
