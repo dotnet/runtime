@@ -44,7 +44,7 @@ import {
     call_static_method, mono_bind_static_method, mono_call_assembly_entry_point,
     mono_method_resolve,
     mono_wasm_compile_function,
-    mono_wasm_get_by_index_ref, mono_wasm_get_global_object, mono_wasm_get_object_property_ref,
+    mono_wasm_get_by_index_ref, mono_wasm_get_global_object_ref, mono_wasm_get_object_property_ref,
     mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
     mono_wasm_invoke_js_with_args, mono_wasm_set_by_index_ref, mono_wasm_set_object_property_ref
@@ -291,7 +291,7 @@ export const __linker_exports: any = {
     mono_wasm_set_object_property_ref,
     mono_wasm_get_by_index_ref,
     mono_wasm_set_by_index_ref,
-    mono_wasm_get_global_object,
+    mono_wasm_get_global_object_ref,
     mono_wasm_create_cs_owned_object_ref,
     mono_wasm_release_cs_owned_object,
     mono_wasm_typed_array_to_array_ref,

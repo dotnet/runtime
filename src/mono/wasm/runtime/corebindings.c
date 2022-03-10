@@ -11,11 +11,11 @@
 
 //JS funcs
 extern MonoObject* mono_wasm_invoke_js_with_args (int js_handle, MonoString *method, MonoArray *args, int *is_exception);
-extern void mono_wasm_get_object_property_ref (int js_handle, MonoString *propertyName, int *is_exception, MonoObject **result);
+extern void mono_wasm_get_object_property_ref (int js_handle, MonoString **propertyName, int *is_exception, MonoObject **result);
 extern void mono_wasm_get_by_index_ref (int js_handle, int property_index, int *is_exception, MonoObject **result);
-extern void mono_wasm_set_object_property_ref (int js_handle, MonoString *propertyName, MonoObject **value, int createIfNotExist, int hasOwnProperty, int *is_exception, MonoObject **result);
+extern void mono_wasm_set_object_property_ref (int js_handle, MonoString **propertyName, MonoObject **value, int createIfNotExist, int hasOwnProperty, int *is_exception, MonoObject **result);
 extern void mono_wasm_set_by_index_ref (int js_handle, int property_index, MonoObject **value, int *is_exception, MonoObject **result);
-extern MonoObject* mono_wasm_get_global_object (MonoString *global_name, int *is_exception);
+extern void mono_wasm_get_global_object_ref (MonoString **global_name, int *is_exception, MonoObject **result);
 extern void mono_wasm_release_cs_owned_object (int js_handle);
 extern void mono_wasm_create_cs_owned_object_ref (MonoString *core_name, MonoArray *args, int *is_exception, MonoObject** result);
 extern void mono_wasm_typed_array_to_array_ref (int js_handle, int *is_exception, MonoObject **result);
@@ -37,7 +37,7 @@ void core_initialize_internals ()
 	mono_add_internal_call ("Interop/Runtime::GetByIndexRef", mono_wasm_get_by_index_ref);
 	mono_add_internal_call ("Interop/Runtime::SetObjectPropertyRef", mono_wasm_set_object_property_ref);
 	mono_add_internal_call ("Interop/Runtime::SetByIndexRef", mono_wasm_set_by_index_ref);
-	mono_add_internal_call ("Interop/Runtime::GetGlobalObject", mono_wasm_get_global_object);
+	mono_add_internal_call ("Interop/Runtime::GetGlobalObjectRef", mono_wasm_get_global_object_ref);
 	mono_add_internal_call ("Interop/Runtime::CreateCSOwnedObjectRef", mono_wasm_create_cs_owned_object_ref);
 	mono_add_internal_call ("Interop/Runtime::ReleaseCSOwnedObject", mono_wasm_release_cs_owned_object);
 	mono_add_internal_call ("Interop/Runtime::TypedArrayToArrayRef", mono_wasm_typed_array_to_array_ref);

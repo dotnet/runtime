@@ -328,8 +328,8 @@ export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: 
     }
 }
 
-export function mono_wasm_get_object_property_ref(js_handle: JSHandle, property_name: MonoString, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
-    const nameRoot = mono_wasm_new_root(property_name),
+export function mono_wasm_get_object_property_ref(js_handle: JSHandle, property_name: MonoObjectRef, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    const nameRoot = mono_wasm_new_external_root<MonoString>(property_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
         const js_name = conv_string_root(nameRoot);
@@ -354,9 +354,9 @@ export function mono_wasm_get_object_property_ref(js_handle: JSHandle, property_
     }
 }
 
-export function mono_wasm_set_object_property_ref(js_handle: JSHandle, property_name: MonoString, value: MonoObjectRef, createIfNotExist: boolean, hasOwnProperty: boolean, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+export function mono_wasm_set_object_property_ref(js_handle: JSHandle, property_name: MonoObjectRef, value: MonoObjectRef, createIfNotExist: boolean, hasOwnProperty: boolean, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const valueRoot = mono_wasm_new_external_root<MonoObject>(value),
-        nameRoot = mono_wasm_new_root(property_name),
+        nameRoot = mono_wasm_new_external_root<MonoString>(property_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
 
@@ -448,8 +448,9 @@ export function mono_wasm_set_by_index_ref(js_handle: JSHandle, property_index: 
     }
 }
 
-export function mono_wasm_get_global_object(global_name: MonoString, is_exception: Int32Ptr): MonoObject {
-    const nameRoot = mono_wasm_new_root(global_name);
+export function mono_wasm_get_global_object_ref(global_name: MonoObjectRef, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    const nameRoot = mono_wasm_new_external_root<MonoString>(global_name),
+        resultRoot = mono_wasm_new_external_root(result_address);
     try {
         const js_name = conv_string_root(nameRoot);
 
@@ -464,11 +465,15 @@ export function mono_wasm_get_global_object(global_name: MonoString, is_exceptio
 
         // TODO returning null may be useful when probing for browser features
         if (globalObj === null || typeof globalObj === undefined) {
-            return wrap_error(is_exception, "Global object '" + js_name + "' not found.");
+            wrap_error_root(is_exception, "Global object '" + js_name + "' not found.", resultRoot);
+            return;
         }
 
-        return _js_to_mono_obj_unsafe(true, globalObj);
+        _js_to_mono_obj_root(true, globalObj, resultRoot);
+    } catch (ex) {
+        wrap_error_root(is_exception, ex, resultRoot);
     } finally {
+        resultRoot.release();
         nameRoot.release();
     }
 }

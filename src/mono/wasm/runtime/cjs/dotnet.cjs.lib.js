@@ -47,7 +47,7 @@ const linked_functions = [
     "mono_wasm_set_object_property_ref",
     "mono_wasm_get_by_index_ref",
     "mono_wasm_set_by_index_ref",
-    "mono_wasm_get_global_object",
+    "mono_wasm_get_global_object_ref",
     "mono_wasm_create_cs_owned_object_ref",
     "mono_wasm_release_cs_owned_object",
     "mono_wasm_typed_array_to_array_ref",

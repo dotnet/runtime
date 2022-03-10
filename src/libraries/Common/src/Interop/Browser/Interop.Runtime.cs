@@ -21,15 +21,15 @@ internal static partial class Interop
         // FIXME: All of these signatures need to be object? in various places and not object, but the nullability
         //  warnings will take me hours and hours to fix so I'm not doing that right now since they're already broken
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void GetObjectPropertyRef(int jsHandle, string propertyName, out int exceptionalResult, out object result);
+        internal static extern void GetObjectPropertyRef(int jsHandle, in string propertyName, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void SetObjectPropertyRef(int jsHandle, string propertyName, in object? value, bool createIfNotExists, bool hasOwnProperty, out int exceptionalResult, out object result);
+        internal static extern void SetObjectPropertyRef(int jsHandle, in string propertyName, in object? value, bool createIfNotExists, bool hasOwnProperty, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void GetByIndexRef(int jsHandle, int index, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void SetByIndexRef(int jsHandle, int index, in object? value, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object GetGlobalObject(string? globalName, out int exceptionalResult);
+        internal static extern void GetGlobalObjectRef(in string? globalName, out int exceptionalResult, out object result);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void ReleaseCSOwnedObject(int jsHandle);
@@ -82,7 +82,7 @@ internal static partial class Interop
         public static object GetGlobalObject(string? str = null)
         {
             int exception;
-            object jsObj = GetGlobalObject(str, out exception);
+            GetGlobalObjectRef(str, out exception, out object jsObj);
 
             if (exception != 0)
                 throw new JSException($"Error obtaining a handle to global {str}");
