@@ -96,18 +96,20 @@ namespace System.Text.RegularExpressions.Generator
             {
                 ImmutableArray<object?> results = compilationDataAndResults.Left;
 
-                // Any top-level results that are diagnostics indicate failure that should stop compilation.
-                // Report all such diagnostics and then bail if there were any.
-                bool failure = false;
+                // Report any top-level diagnostics.
+                bool allFailures = true;
                 foreach (object? result in results)
                 {
                     if (result is Diagnostic d)
                     {
                         context.ReportDiagnostic(d);
-                        failure = true;
+                    }
+                    else
+                    {
+                        allFailures = false;
                     }
                 }
-                if (failure || results.IsEmpty)
+                if (allFailures)
                 {
                     return;
                 }
@@ -208,12 +210,13 @@ namespace System.Text.RegularExpressions.Generator
                     if (result is ValueTuple<RegexType, string, Diagnostic> limitedSupportResult)
                     {
                         EmitRegexLimitedBoilerplate(writer, limitedSupportResult.Item1.Method, limitedSupportResult.Item1.GeneratedId, limitedSupportResult.Item2);
+                        writer.WriteLine();
                     }
                     else if (result is ValueTuple<RegexType, string, Dictionary<string, string[]>> regexImpl)
                     {
                         EmitRegexDerivedImplementation(writer, regexImpl.Item1.Method, regexImpl.Item1.GeneratedId, regexImpl.Item2);
+                        writer.WriteLine();
                     }
-                    writer.WriteLine();
                 }
                 writer.Indent -= 2;
 
