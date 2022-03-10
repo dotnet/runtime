@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.Hosting
     }
     public partial interface IHostBuilder
     {
-        System.Collections.Generic.IDictionary<object, object?> Properties { get; }
+        System.Collections.Generic.IDictionary<object, object> Properties { get; }
         Microsoft.Extensions.Hosting.IHost Build();
         Microsoft.Extensions.Hosting.IHostBuilder ConfigureAppConfiguration(System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.Configuration.IConfigurationBuilder> configureDelegate);
         Microsoft.Extensions.Hosting.IHostBuilder ConfigureContainer<TContainerBuilder>(System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, TContainerBuilder> configureDelegate);
