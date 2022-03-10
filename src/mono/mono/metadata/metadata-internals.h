@@ -335,7 +335,7 @@ struct _MonoImage {
 
 	/* The module name reported in the file for this image (could be NULL for a malformed file) */
 	const char *module_name;
-	guint32 time_date_stamp;
+	guint32 time_date_stamp; // deprecated: not set anymore
 
 	char *version;
 	gint16 md_version_major, md_version_minor;
