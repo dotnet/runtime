@@ -1110,10 +1110,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		} else {
 			switch (arg0_type) {
 			case MONO_TYPE_R8: {
-				//widen arg0
+				//Widen arg0
 				MonoInst *ins1 = emit_simd_ins (cfg, arg_class, OP_XWIDEN_UNSAFE, args [0]->dreg, -1);
 
-				//insert arg1 to arg0
+				//Insert arg1 to arg0
 				int tmp = alloc_ireg (cfg);
 				MONO_EMIT_NEW_ICONST (cfg, tmp, 1);
 				MonoInst *ins2 = emit_simd_ins (cfg, arg_class, OP_EXTRACT_R8, args [1]->dreg, -1);
@@ -1135,10 +1135,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			case MONO_TYPE_U2:
 			case MONO_TYPE_U4:
 			case MONO_TYPE_U8: {
-				//widen arg0
+				//Widen arg0
 				MonoInst *arg0 = emit_simd_ins (cfg, arg_class, OP_XWIDEN_UNSAFE, args [0]->dreg, -1);
 
-				//cast arg0 and arg1 to u/int64
+				//Cast arg0 and arg1 to u/int64
 				MonoType *type_new;
 				MonoTypeEnum type_enum_new;
 				if (type_enum_is_unsigned (arg0_type)) {
@@ -1153,7 +1153,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				MonoClass *ivector64_64_inst = create_class_instance (cfg, fsig, "System.Runtime.Intrinsics", "Vector64`1", FALSE, type_new);
 				MonoInst *arg1 = emit_simd_ins (cfg, ivector64_64_inst, OP_XCAST, args [1]->dreg, -1);
 
-				//insert arg1 to arg0
+				//Insert arg1 to arg0
 				int tmp = alloc_ireg (cfg);
 				MONO_EMIT_NEW_ICONST (cfg, tmp, 1);
 				arg1 = emit_simd_ins (cfg, ivector64_64_inst, OP_EXTRACT_I8, arg1->dreg, -1);
@@ -1164,7 +1164,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				ins->sreg3 = tmp;
 				ins->inst_c1 = type_enum_new;
 
-				//cast arg0 back to its original element type (arg0_type)
+				//Cast arg0 back to its original element type (arg0_type)
 				ins = emit_simd_ins (cfg, ivector128_inst, OP_XCAST, ins->dreg, -1);
 
 				//ExtractNarrowingLower
