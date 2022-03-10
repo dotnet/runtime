@@ -14,23 +14,29 @@ namespace System.Net.Http
         private const string DefaultMediaType = "text/plain";
 
         public StringContent(string content)
-            : this(content, null, null)
+            : this(content, DefaultStringEncoding, DefaultMediaType)
+        {
+        }
+
+        public StringContent(string content, MediaTypeHeaderValue mediaType)
+            : this(content, DefaultStringEncoding, mediaType)
         {
         }
 
         public StringContent(string content, Encoding? encoding)
-            : this(content, encoding, null)
+            : this(content, encoding, DefaultMediaType)
         {
         }
 
-        public StringContent(string content, Encoding? encoding, string? mediaType)
+        public StringContent(string content, Encoding? encoding, string mediaType)
+            : this(content, encoding, new MediaTypeHeaderValue(mediaType, (encoding ?? DefaultStringEncoding).WebName))
+        {
+        }
+
+        public StringContent(string content, Encoding? encoding, MediaTypeHeaderValue mediaType)
             : base(GetContentByteArray(content, encoding))
         {
-            // Initialize the 'Content-Type' header with information provided by parameters.
-            MediaTypeHeaderValue headerValue = new MediaTypeHeaderValue((mediaType == null) ? DefaultMediaType : mediaType);
-            headerValue.CharSet = (encoding == null) ? HttpContent.DefaultStringEncoding.WebName : encoding.WebName;
-
-            Headers.ContentType = headerValue;
+            Headers.ContentType = mediaType;
         }
 
         // A StringContent is essentially a ByteArrayContent. We serialize the string into a byte-array in the

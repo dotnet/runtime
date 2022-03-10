@@ -3076,7 +3076,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             // Arm64 Apple has a special ABI for passing small size arguments on stack,
             // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
             // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
-            argAlignBytes = eeGetArgAlignment(argType, isFloatHfa);
+            argAlignBytes = eeGetArgSizeAlignment(argType, isFloatHfa);
         }
 
         //
@@ -5896,8 +5896,9 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         fgMorphImplicitByRefArgs(objRef);
     }
 
-    noway_assert(((objRef != nullptr) && (objRef->IsLocalAddrExpr() != nullptr)) ||
-                 ((tree->gtFlags & GTF_GLOB_REF) != 0));
+    noway_assert(((objRef != nullptr) && ((objRef->IsLocalAddrExpr() != nullptr) ||
+                                          (objRef->IsImplicitByrefParameterValue(this) != nullptr))) ||
+                 (tree->gtFlags & GTF_GLOB_REF) != 0);
 
     if (tree->AsField()->gtFldMayOverlap)
     {

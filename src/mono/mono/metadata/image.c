@@ -2219,7 +2219,9 @@ mono_image_close_except_pools (MonoImage *image)
 	free_hash (image->wrapper_param_names);
 	free_hash (image->native_func_wrapper_cache);
 	mono_conc_hashtable_destroy (image->typespec_cache);
+#ifdef ENABLE_WEAK_ATTR
 	free_hash (image->weak_field_indexes);
+#endif
 
 	mono_wrapper_caches_free (&image->wrapper_caches);
 

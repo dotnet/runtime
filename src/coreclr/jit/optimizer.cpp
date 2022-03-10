@@ -13,7 +13,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jitpch.h"
 #ifdef _MSC_VER
 #pragma hdrstop
-#pragma warning(disable : 4701)
 #endif
 
 /*****************************************************************************/
@@ -7365,9 +7364,9 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
             if (allValidProfileWeights)
             {
-                weight_t loopEnteredCount;
-                weight_t loopSkippedCount;
-                bool     useEdgeWeights = fgHaveValidEdgeWeights;
+                weight_t loopEnteredCount = 0;
+                weight_t loopSkippedCount = 0;
+                bool     useEdgeWeights   = fgHaveValidEdgeWeights;
 
                 if (useEdgeWeights)
                 {

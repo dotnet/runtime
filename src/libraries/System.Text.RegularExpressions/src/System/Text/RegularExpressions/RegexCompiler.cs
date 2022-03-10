@@ -2198,13 +2198,6 @@ namespace System.Text.RegularExpressions
                     MarkLabel(backtrack);
                     EmitStackPop();
                     Stloc(startingPos);
-                    if (!childBacktracks)
-                    {
-                        // pos = startingPos
-                        Ldloc(startingPos);
-                        Stloc(pos);
-                        SliceInputSpan();
-                    }
 
                     // goto doneLabel;
                     BrFar(doneLabel);
@@ -3987,7 +3980,7 @@ namespace System.Text.RegularExpressions
                         default:
                             Ldstr(setChars.Slice(0, numSetChars).ToString());
                             Call(s_stringAsSpanMethod);
-                            Call(s_spanIndexOfSpan);
+                            Call(s_spanIndexOfAnySpan);
                             break;
                     }
                     Stloc(iterationLocal);

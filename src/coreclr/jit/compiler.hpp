@@ -1114,14 +1114,6 @@ inline GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDL
         LclVarDsc* varDsc = lvaGetDesc(obj->AsUnOp()->gtOp1->AsLclVarCommon());
 
         varDsc->lvFieldAccessed = 1;
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-        // These structs are passed by reference; we should probably be able to treat these
-        // as non-global refs, but downstream logic expects these to be marked this way.
-        if (varDsc->lvIsParam)
-        {
-            fieldNode->gtFlags |= GTF_GLOB_REF;
-        }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
     }
     else
     {
