@@ -2433,7 +2433,7 @@ hot_reload_table_num_rows_slow (MonoImage *base, int table_index)
 {
 	BaselineInfo *base_info = baseline_info_lookup (base);
 	if (!base_info)
-		return FALSE;
+		return 0;
 
 	uint32_t current_gen = hot_reload_get_thread_generation ();
 

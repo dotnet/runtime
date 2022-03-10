@@ -7104,7 +7104,7 @@ mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *o
 	locator_t loc;
 
 	g_assert (owner);
-	if (!tdef->base)
+	if (!tdef->base && !image->has_updates)
 		return 0;
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_TYPEDEF)
@@ -7123,8 +7123,14 @@ mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *o
 
 	/* FIXME: metadata-update */
 
-	if (!mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator))
+	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
+	if (!found && !image->has_updates)
 		return 0;
+
+	if (G_UNLIKELY (image->has_updates)) {
+		if (!found && !mono_metadata_update_metadata_linear_search (image, tdef, &loc, table_locator))
+			return 0;
+	}
 
 	/* Find the first entry by searching backwards */
 	while ((loc.result > 0) && (mono_metadata_decode_row_col (tdef, loc.result - 1, MONO_GENERICPARAM_OWNER) == loc.idx))
