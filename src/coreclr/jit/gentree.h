@@ -8349,9 +8349,6 @@ inline bool GenTree::IsIntegralConst() const
 // IsIntegralConstAbsPow2: Determines whether the absolute value of
 //                         an integral constant is the power of 2.
 //
-// Arguments:
-//     None
-//
 // Return Value:
 //     Returns true if the absolute value of a GenTree's integral constant
 //     is the power of 2.
