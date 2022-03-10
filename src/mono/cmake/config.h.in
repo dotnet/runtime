@@ -319,12 +319,6 @@
 /* Disable MONO_LOG_DEST */
 #cmakedefine DISABLE_LOG_DEST
 
-/* GC description */
-#cmakedefine DEFAULT_GC_NAME 1
-
-/* No GC support. */
-#cmakedefine HAVE_NULL_GC 1
-
 /* Length of zero length arrays */
 #define MONO_ZERO_LEN_ARRAY @MONO_ZERO_LEN_ARRAY@
 

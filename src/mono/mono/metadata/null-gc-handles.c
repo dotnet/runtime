@@ -116,7 +116,7 @@ handle_data_alloc_entries (HandleData *handles)
 		handles->entries = (void **)g_malloc0 (sizeof (*handles->entries) * handles->size);
 		handles->domain_ids = (guint16 *)g_malloc0 (sizeof (*handles->domain_ids) * handles->size);
 	} else {
-		handles->entries = (void **)mono_gc_alloc_fixed (sizeof (*handles->entries) * handles->size, NULL, MONO_ROOT_SOURCE_GC_HANDLE, "GC Handle Table (Null)");
+		handles->entries = (void **)mono_gc_alloc_fixed (sizeof (*handles->entries) * handles->size, NULL, MONO_ROOT_SOURCE_GC_HANDLE, NULL, "GC Handle Table (Null)");
 	}
 	handles->bitmap = (guint32 *)g_malloc0 (handles->size / CHAR_BIT);
 }
@@ -183,7 +183,7 @@ handle_data_grow (HandleData *handles, gboolean track)
 		handles->domain_ids = domain_ids;
 	} else {
 		gpointer *entries;
-		entries = (void **)mono_gc_alloc_fixed (sizeof (*handles->entries) * new_size, NULL, MONO_ROOT_SOURCE_GC_HANDLE, "GC Handle Table (Null)");
+		entries = (void **)mono_gc_alloc_fixed (sizeof (*handles->entries) * new_size, NULL, MONO_ROOT_SOURCE_GC_HANDLE, NULL, "GC Handle Table (Null)");
 		mono_gc_memmove_aligned (entries, handles->entries, sizeof (*handles->entries) * handles->size);
 		mono_gc_free_fixed (handles->entries);
 		handles->entries = entries;
@@ -224,7 +224,7 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 #endif
 	unlock_handles (handles);
 	res = MONO_GC_HANDLE (slot, handles->type);
-	mono_profiler_gc_handle (MONO_PROFILER_GC_HANDLE_CREATED, handles->type, res, obj);
+	MONO_PROFILER_RAISE (gc_handle_created, (res, (MonoGCHandleType)handles->type, obj));
 	return res;
 }
 
@@ -245,10 +245,10 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
  * \returns a handle that can be used to access the object from
  * unmanaged code.
  */
-guint32
+MonoGCHandle
 mono_gchandle_new_internal (MonoObject *obj, gboolean pinned)
 {
-	return alloc_handle (&gc_handles [pinned? HANDLE_PINNED: HANDLE_NORMAL], obj, FALSE);
+	return MONO_GC_HANDLE_FROM_UINT(alloc_handle (&gc_handles [pinned? HANDLE_PINNED: HANDLE_NORMAL], obj, FALSE));
 }
 
 /**
@@ -272,10 +272,10 @@ mono_gchandle_new_internal (MonoObject *obj, gboolean pinned)
  * \returns a handle that can be used to access the object from
  * unmanaged code.
  */
-guint32
+MonoGCHandle
 mono_gchandle_new_weakref_internal (MonoObject *obj, gboolean track_resurrection)
 {
-	return alloc_handle (&gc_handles [track_resurrection? HANDLE_WEAK_TRACK: HANDLE_WEAK], obj, track_resurrection);
+	return MONO_GC_HANDLE_FROM_UINT (alloc_handle (&gc_handles [track_resurrection? HANDLE_WEAK_TRACK: HANDLE_WEAK], obj, track_resurrection));
 }
 
 /**
@@ -289,8 +289,9 @@ mono_gchandle_new_weakref_internal (MonoObject *obj, gboolean track_resurrection
  * NULL for a collected object if using a weakref handle.
  */
 MonoObject*
-mono_gchandle_get_target_internal (guint32 gchandle)
+mono_gchandle_get_target_internal (MonoGCHandle gch)
 {
+	guint32 gchandle = MONO_GC_HANDLE_TO_UINT (gch);
 	guint slot = MONO_GC_HANDLE_SLOT (gchandle);
 	guint type = MONO_GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = &gc_handles [type];
@@ -314,8 +315,9 @@ mono_gchandle_get_target_internal (guint32 gchandle)
 }
 
 void
-mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
+mono_gchandle_set_target (MonoGCHandle gch, MonoObject *obj)
 {
+	guint32 gchandle = MONO_GC_HANDLE_TO_UINT (gch);
 	guint slot = MONO_GC_HANDLE_SLOT (gchandle);
 	guint type = MONO_GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = &gc_handles [type];
@@ -343,46 +345,6 @@ mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 }
 
 /**
- * mono_gchandle_is_in_domain:
- * \param gchandle a GCHandle's handle.
- * \param domain An application domain.
- *
- * Use this function to determine if the \p gchandle points to an
- * object allocated in the specified \p domain.
- *
- * \returns TRUE if the object wrapped by the \p gchandle belongs to the specific \p domain.
- */
-gboolean
-mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
-{
-	guint slot = MONO_GC_HANDLE_SLOT (gchandle);
-	guint type = MONO_GC_HANDLE_TYPE (gchandle);
-	HandleData *handles = &gc_handles [type];
-	gboolean result = FALSE;
-
-	if (type >= HANDLE_TYPE_MAX)
-		return FALSE;
-
-	lock_handles (handles);
-	if (slot < handles->size && slot_occupied (handles, slot)) {
-		if (MONO_GC_HANDLE_TYPE_IS_WEAK (handles->type)) {
-			result = domain->domain_id == handles->domain_ids [slot];
-		} else {
-			MonoObject *obj;
-			obj = (MonoObject *)handles->entries [slot];
-			if (obj == NULL)
-				result = TRUE;
-			else
-				result = domain == mono_object_domain (obj);
-		}
-	} else {
-		/* print a warning? */
-	}
-	unlock_handles (handles);
-	return result;
-}
-
-/**
  * mono_gchandle_free:
  * \param gchandle a GCHandle's handle.
  *
@@ -391,8 +353,9 @@ mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
  * object wrapped.
  */
 void
-mono_gchandle_free_internal (guint32 gchandle)
+mono_gchandle_free_internal (MonoGCHandle gch)
 {
+	guint32 gchandle = MONO_GC_HANDLE_TO_UINT (gch);
 	if (!gchandle)
 		return;
 
@@ -419,45 +382,9 @@ mono_gchandle_free_internal (guint32 gchandle)
 #endif
 	/*g_print ("freed entry %d of type %d\n", slot, handles->type);*/
 	unlock_handles (handles);
-	mono_profiler_gc_handle (MONO_PROFILER_GC_HANDLE_DESTROYED, handles->type, gchandle, NULL);
+	MONO_PROFILER_RAISE (gc_handle_deleted, (gchandle, (MonoGCHandleType)handles->type));
 }
 
-/**
- * mono_gchandle_free_domain:
- * \param domain domain that is unloading
- *
- * Function used internally to cleanup any GC handle for objects belonging
- * to the specified domain during appdomain unload.
- */
-void
-mono_gchandle_free_domain (MonoDomain *domain)
-{
-	guint type;
-
-	for (type = HANDLE_TYPE_MIN; type < HANDLE_PINNED; ++type) {
-		guint slot;
-		HandleData *handles = &gc_handles [type];
-		lock_handles (handles);
-		for (slot = 0; slot < handles->size; ++slot) {
-			if (!slot_occupied (handles, slot))
-				continue;
-			if (MONO_GC_HANDLE_TYPE_IS_WEAK (type)) {
-				if (domain->domain_id == handles->domain_ids [slot]) {
-					vacate_slot (handles, slot);
-					if (handles->entries [slot])
-						mono_gc_weak_link_remove (&handles->entries [slot], handles->type == HANDLE_WEAK_TRACK);
-				}
-			} else {
-				if (handles->entries [slot] && mono_object_domain (handles->entries [slot]) == domain) {
-					vacate_slot (handles, slot);
-					handles->entries [slot] = NULL;
-				}
-			}
-		}
-		unlock_handles (handles);
-	}
-
-}
 #else
 
 MONO_EMPTY_SOURCE_FILE (null_gc_handles);

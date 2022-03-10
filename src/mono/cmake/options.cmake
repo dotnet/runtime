@@ -54,6 +54,7 @@ option (ENABLE_CHECKED_BUILD_METADATA "Enable runtime checks of mempool referenc
 option (ENABLE_MSCORDBI "Generate mscordbi to support icordbg interface")
 option (STATIC_COMPONENTS "Compile mono runtime components as static (not dynamic) libraries")
 
+set (MONO_GC "sgen" CACHE STRING "Garbage collector implementation (sgen, boehm, null). Default: sgen")
 set (GC_SUSPEND "default" CACHE STRING "GC suspend method (default, preemptive, coop, hybrid)")
 set (CHECKED_BUILD "" CACHE STRING "Set ENABLE_CHECKED_BUILD_ options at once.  Comma-separated list of lowercase ENABLE_CHECKED_BUILD_ options ie. 'gc,threads,private_types' etc.")
 set (ENABLE_MINIMAL "" CACHE STRING "Set many DISABLE_ options at once. Comma-separated list of lowercase DISABLE_ options ie. 'jit,simd' etc.")

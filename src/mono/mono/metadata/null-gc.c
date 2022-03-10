@@ -322,7 +322,7 @@ mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src)
 {
 	/* do not copy the sync state */
 	mono_gc_memmove_aligned (mono_object_get_data (obj), (char*)src + MONO_ABI_SIZEOF (MonoObject),
-			mono_object_class (obj)->instance_size - MONO_ABI_SIZEOF (MonoObject));
+				m_class_get_instance_size (mono_object_class (obj)) - MONO_ABI_SIZEOF (MonoObject));
 }
 
 gboolean
@@ -436,7 +436,7 @@ mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data)
 char*
 mono_gc_get_description (void)
 {
-	return g_strdup (DEFAULT_GC_NAME);
+	return g_strdup ("null");
 }
 
 void
@@ -633,6 +633,12 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
 guint64 mono_gc_get_total_allocated_bytes (MonoBoolean precise)
 {
 	return 0;
+}
+
+void
+mono_gc_register_obj_with_weak_fields (void *obj)
+{
+	g_error ("Weak fields not supported by null gc");
 }
 
 void

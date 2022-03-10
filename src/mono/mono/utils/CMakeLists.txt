@@ -94,7 +94,6 @@ set(utils_common_sources
     freebsd-elf64.h
     freebsd-dwarf.h
     dtrace.h
-    gc_wrapper.h
     mono-error.c
     mono-error-internals.h
     monobitset.h

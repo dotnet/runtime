@@ -687,6 +687,10 @@ endif()
 # GC CHECKS
 ######################################
 
+if(NOT MONO_GC STREQUAL "sgen" AND NOT MONO_GC STREQUAL "boehm" AND NOT MONO_GC STREQUAL "null")
+  message(FATAL_ERROR "MONO_GC (set to '${MONO_GC}') must be one of sgen, boehm or null")
+endif()
+
 if (GC_SUSPEND STREQUAL "coop")
   set(ENABLE_COOP_SUSPEND 1)
 elseif(GC_SUSPEND STREQUAL "hybrid")
@@ -704,7 +708,7 @@ elseif(GC_SUSPEND STREQUAL "default")
     set(ENABLE_HYBRID_SUSPEND 1)
   endif()
 else()
-  message(FATAL_ERROR "GC_SUSPEND (set to '${GC_SUSPEND}') must be one of coop, hybrid or preemptive")
+  message(FATAL_ERROR "GC_SUSPEND (set to '${GC_SUSPEND}') must be one of coop, hybrid, preemptive or default")
 endif()
 
 ######################################
