@@ -38,7 +38,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         private int portBrowser;
         private TcpClient ide;
         private TcpClient browser;
-        private bool pausedOnWasm;
         private string actorName = "";
         private string threadName = "";
         private string globalName = "";
@@ -204,7 +203,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (!await AcceptCommand(id, parms, token))
                 {
-                    await SendCommandInternal(id, parms["type"]?.Value<string>(), parms, token);
+                    var ret = await SendCommandInternal(id, parms["type"]?.Value<string>(), parms, token);
+                    await SendEvent(id, "", ret.FullContent, token);
                 }
             }
             catch (Exception e)
@@ -273,8 +273,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     var id = int.Parse(res["resultID"].Value<string>().Split('-')[1]);
                     var msgId = new MessageIdFirefox(null, id + 1, "");
-
-                    OnResponse(msgId, Result.FromJsonFirefox(res));
+                    if (pending_cmds.ContainsKey(msgId))
+                        OnResponse(msgId, Result.FromJsonFirefox(res));
+                    else
+                        return SendCommandInternal(msgId, "", res, token);
                     return null;
                 }
                 //{"type":"evaluationResult","resultID":"1634575904746-0","hasException":false,"input":"ret = 10","result":10,"startTime":1634575904746,"timestamp":1634575904748,"from":"server1.conn21.child10/consoleActor2"}
@@ -372,17 +374,18 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 case "paused":
                     {
+                        ExecutionContext ctx = GetContext(sessionId);
                         var topFunc = args["frame"]["displayName"].Value<string>();
                         switch (topFunc)
                         {
                             case "mono_wasm_fire_debugger_agent_message":
                             case "_mono_wasm_fire_debugger_agent_message":
                                 {
-                                    pausedOnWasm = true;
+                                    ctx.PausedOnWasm = true;
                                     return await OnReceiveDebuggerAgentEvent(sessionId, args, token);
                                 }
                             default:
-                                pausedOnWasm = false;
+                                ctx.PausedOnWasm = false;
                                 return false;
                         }
                     }
@@ -392,6 +395,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var messages = args["resources"].Value<JArray>();
                         foreach (var message in messages)
                         {
+                            if (message["resourceType"].Value<string>() == "thread-state" && message["state"].Value<string>() == "paused")
+                            {
+                                ExecutionContext ctx = GetContext(sessionId);
+                                if (ctx.PausedOnWasm)
+                                {
+                                    await SendPauseToBrowser(sessionId, args, token);
+                                    return true;
+                                }
+                            }
                             if (message["resourceType"].Value<string>() != "console-message")
                                 continue;
                             var messageArgs = message["message"]?["arguments"]?.Value<JArray>();
@@ -428,6 +440,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
                             return false;
+                        context.PausedOnWasm = false;
                         if (context.CallStack == null)
                             return false;
                         if (args["resumeLimit"] == null || args["resumeLimit"].Type == JTokenType.Null)
@@ -521,12 +534,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                             Log("verbose", $"BP req {args}");
                             await SetBreakpoint(sessionId, store, request, !loaded, token);
                         }
-
-                        var o = JObject.FromObject(new
-                        {
-                            from = args["to"].Value<string>()
-                        });
-                        //SendEventInternal(id, "", o, token);
                         return true;
                     }
                 case "removeBreakpoint":
@@ -664,11 +671,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 case "frames":
                     {
-                        if (pausedOnWasm)
+                        ExecutionContext ctx = GetContext(sessionId);
+                        if (ctx.PausedOnWasm)
                         {
                             try
                             {
-                                ExecutionContext ctx = GetContext(sessionId);
                                 await GetFrames(sessionId, ctx, args, token);
                                 return true;
                             }
@@ -678,7 +685,55 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 return true;
                             }
                         }
+                        //var ret = await SendCommand(sessionId, "frames", args, token);
+                        //await SendEvent(sessionId, "", ret.Value["result"]["fullContent"] as JObject, token);
                         return false;
+                    }
+                case "evaluateJSAsync":
+                    {
+                        ExecutionContext context = GetContext(sessionId);
+                        if (context.CallStack != null)
+                        {
+                            var resultID = $"runtimeResult-{context.GetResultID()}";
+                            var o = JObject.FromObject(new
+                            {
+                                resultID,
+                                from = args["to"].Value<string>()
+                            });
+                            await SendEvent(sessionId, "", o, token);
+
+                            Frame scope = context.CallStack.First<Frame>();
+
+                            var resolver = new MemberReferenceResolver(this, context, sessionId, scope.Id, logger);
+
+                            JObject retValue = await resolver.Resolve(args?["text"]?.Value<string>(), token);
+                            if (retValue == null)
+                            {
+                                retValue = await EvaluateExpression.CompileAndRunTheExpression(args?["text"]?.Value<string>(), resolver, token);
+                            }
+                            var osend = JObject.FromObject(new
+                            {
+                                type = "evaluationResult",
+                                resultID,
+                                hasException = false,
+                                input = args?["text"],
+                                result = retValue["value"],
+                                from = args["to"].Value<string>()
+                            });
+                            await SendEvent(sessionId, "", osend, token);
+                        }
+                        else
+                        {
+                            var ret = await SendCommand(sessionId, "evaluateJSAsync", args, token);
+                            var o = JObject.FromObject(new
+                            {
+                                resultID = ret.FullContent["resultID"],
+                                from = args["to"].Value<string>()
+                            });
+                            await SendEvent(sessionId, "", o, token);
+                            await SendEvent(sessionId, "", ret.FullContent, token);
+                        }
+                        return true;
                     }
                 case "DotnetDebugger.getMethodLocation":
                     {
@@ -691,6 +746,29 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return false;
             }
             return false;
+        }
+
+        private async Task<bool> SendPauseToBrowser(SessionId sessionId, JObject args, CancellationToken token)
+        {
+            Result res = await SendMonoCommand(sessionId, MonoCommands.GetDebuggerAgentBufferReceived(RuntimeId), token);
+            if (!res.IsOk)
+                return false;
+
+            ExecutionContext context = GetContext(sessionId);
+            byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
+            using var retDebuggerCmdReader = new MonoBinaryReader(newBytes);
+            retDebuggerCmdReader.ReadBytes(11);
+            retDebuggerCmdReader.ReadByte();
+            var number_of_events = retDebuggerCmdReader.ReadInt32();
+            var event_kind = (EventKind)retDebuggerCmdReader.ReadByte();
+            if (event_kind == EventKind.Step)
+                context.PauseKind = "resumeLimit";
+            else if (event_kind == EventKind.Breakpoint)
+                context.PauseKind = "breakpoint";
+
+            args["resources"][0]["why"]["type"] = context.PauseKind;
+            await SendEvent(sessionId, "", args, token);
+            return true;
         }
 
         private JObject GetPrototype(DotnetObjectId objectId, JObject args)
@@ -874,7 +952,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 await SendResume(sessionId, token);
                 return true;
             }
-            return false;
+
+            args["why"]["type"] = context.PauseKind;
+
+            await SendEvent(sessionId, "", args, token);
+            return true;
         }
 
         protected async Task<bool> GetFrames(SessionId sessionId, ExecutionContext context, JObject args, CancellationToken token)
@@ -944,6 +1026,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 frames = callFrames,
                 from = threadName
             });
+
             await SendEvent(sessionId, "", o, token);
             return false;
         }

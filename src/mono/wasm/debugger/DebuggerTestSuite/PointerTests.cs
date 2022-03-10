@@ -22,7 +22,7 @@ namespace DebuggerTests
                 { $"invoke_static_method_async ('[debugger-test] DebuggerTests.PointerTests:LocalPointersAsync');", "DebuggerTests.PointerTests", "LocalPointersAsync", 32, "LocalPointersAsync", true }
             };
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersTestData))]
         public async Task InspectLocalPointersToPrimitiveTypes(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,

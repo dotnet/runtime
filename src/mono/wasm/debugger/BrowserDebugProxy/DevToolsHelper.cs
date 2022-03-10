@@ -124,10 +124,11 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         public JObject Value { get; private set; }
         public JObject Error { get; private set; }
+        public JObject FullContent { get; private set; }
 
         public bool IsOk => Error == null;
 
-        private Result(JObject resultOrError, bool isError)
+        private Result(JObject resultOrError, bool isError, JObject fullContent = null)
         {
             bool resultHasError = isError || string.Equals((resultOrError?["result"] as JObject)?["subtype"]?.Value<string>(), "error");
             if (resultHasError)
@@ -140,6 +141,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 Value = resultOrError;
                 Error = null;
             }
+            FullContent = fullContent;
         }
         public static Result FromJson(JObject obj)
         {
@@ -214,9 +216,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             bool resultHasError = obj["hasException"] != null && obj["hasException"].Value<bool>();
             if (resultHasError)
             {
-                return new Result(obj["hasException"]["result"] as JObject, resultHasError);
+                return new Result(obj["exception"] as JObject, resultHasError, obj);
             }
-            return new Result(o, false);
+            return new Result(o, false, obj);
         }
 
         public static Result Ok(JObject ok) => new Result(ok, false);
@@ -390,6 +392,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool IsResumedAfterBp { get; set; }
         public int ThreadId { get; set; }
         public int Id { get; set; }
+
+        private int evaluateExpressionResultId;
+
+        public bool PausedOnWasm { get; set; }
+
+        public string PauseKind { get; set; }
+
         public object AuxData { get; set; }
 
         public PauseOnExceptionsKind PauseOnExceptions { get; set; }
@@ -414,6 +423,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 return store;
             }
+        }
+
+        public int GetResultID()
+        {
+            return Interlocked.Increment(ref evaluateExpressionResultId);
         }
 
         public PerScopeCache GetCacheForScope(int scopeId)
