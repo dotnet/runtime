@@ -35,7 +35,8 @@
 #define ALLOW_CLASS_ADD
 #define ALLOW_METHOD_ADD
 #define ALLOW_FIELD_ADD
-#undef ALLOW_INSTANCE_FIELD_ADD
+#define ALLOW_PROPERTY_ADD
+#define ALLOW_INSTANCE_FIELD_ADD
 
 typedef struct _BaselineInfo BaselineInfo;
 typedef struct _DeltaInfo DeltaInfo;
@@ -1434,10 +1435,31 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			unsupported_edits = TRUE;
 			break;
 #endif
+		case MONO_TABLE_PROPERTYMAP: {
+#ifdef ALLOW_PROPERTY_ADD
+			if (func_code == ENC_FUNC_ADD_PROPERTY) {
+				g_assert (i + 1 < rows);
+				i++; /* skip to the next record */
+				continue;
+			}
+#endif
+			if (!is_addition) {
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support patching of existing table cols.", i, log_token);
+				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing table cols. token=0x%08x", log_token);
+				unsupported_edits = TRUE;
+				continue;
+			}
+			/* new rows, ok */
+			break;
+		}
 		case MONO_TABLE_PROPERTY: {
 			/* modifying a property, ok */
 			if (!is_addition)
 				break;
+#ifdef ALLOW_PROPERTY_ADD
+			if (func_code == ENC_FUNC_DEFAULT)
+				continue; /* ok, allowed */
+#endif
 			/* adding a property */
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support adding new properties.", i, log_token);
 			mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support adding new properties. token=0x%08x", log_token);
@@ -1446,31 +1468,8 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 		}
 		case MONO_TABLE_METHODSEMANTICS: {
 			if (is_addition) {
-				/* new rows are fine, as long as they point at existing methods */
-				guint32 sema_cols [MONO_METHOD_SEMA_SIZE];
-				int mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, mono_metadata_make_token (token_table, token_index));
-				g_assert (mapped_token != -1);
-				mono_metadata_decode_row (&image_dmeta->tables [MONO_TABLE_METHODSEMANTICS], mapped_token - 1, sema_cols, MONO_METHOD_SEMA_SIZE);
-
-				switch (sema_cols [MONO_METHOD_SEMA_SEMANTICS]) {
-				case METHOD_SEMANTIC_GETTER:
-				case METHOD_SEMANTIC_SETTER: {
-					int prop_method_index = sema_cols [MONO_METHOD_SEMA_METHOD];
-					/* ok, if it's pointing to an existing getter/setter */
-					gboolean is_prop_method_add = prop_method_index-1 >= delta_info->count[MONO_TABLE_METHOD].prev_gen_rows;
-					if (!is_prop_method_add)
-						break;
-					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x adding new getter/setter method 0x%08x to a property is not supported", i, log_token, prop_method_index);
-					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support adding a new getter or setter to a property, token=0x%08x", log_token);
-					unsupported_edits = TRUE;
-					continue;
-				}
-				default:
-					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x adding new non-getter/setter property or event methods is not supported.", i, log_token);
-					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support adding new non-getter/setter property or event methods. token=0x%08x", log_token);
-					unsupported_edits = TRUE;
-					continue;
-				}
+				/* new rows are fine */
+				break;
 			} else {
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support patching of existing table cols.", i, log_token);
 				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing table cols. token=0x%08x", log_token);
@@ -1842,6 +1841,9 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 #if defined(ALLOW_METHOD_ADD) || defined(ALLOW_FIELD_ADD)
 	uint32_t add_member_typedef = 0;
 #endif
+#if defined(ALLOW_PROPERTY_ADD)
+	uint32_t add_property_propertymap = 0;
+#endif
 
 	gboolean assemblyref_updated = FALSE;
 	for (int i = 0; i < rows ; ++i) {
@@ -1883,6 +1885,13 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			break;
 		}
 #endif
+
+		case ENC_FUNC_ADD_PROPERTY: {
+			g_assert (token_table == MONO_TABLE_PROPERTYMAP);
+			add_property_propertymap = log_token;
+			break;
+		}
+
 		default:
 			g_error ("EnC: unsupported FuncCode, should be caught by pass1");
 			break;
@@ -2044,7 +2053,6 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 					 * especially since from the next generation's point of view
 					 * that's what adding a field/method will be. */
 					break;
-				case ENC_FUNC_ADD_PROPERTY:
 				case ENC_FUNC_ADD_EVENT:
 					g_assert_not_reached (); /* FIXME: implement me */
 				default:
@@ -2062,10 +2070,56 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 #endif
 			break;
 		}
+		case MONO_TABLE_PROPERTYMAP: {
+			switch (func_code) {
+			case ENC_FUNC_DEFAULT:
+				/* adding a new property map - parent could be new or existing class, but it didn't have a propertymap before */
+				g_assert (is_addition);
+				break;
+			case ENC_FUNC_ADD_PROPERTY:
+				/* adding a new property to a propertymap.  could be new or existing propertymap. */
+				break;
+			default:
+				g_assert_not_reached (); /* unexpected func code */
+			}
+			uint32_t cols[MONO_PROPERTY_MAP_SIZE];
+			mono_metadata_decode_row (&image_base->tables [MONO_TABLE_PROPERTYMAP], token_index - 1, cols, MONO_PROPERTY_MAP_SIZE);
+
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: propertymap parent = 0x%08x, props = 0x%08x\n", cols[MONO_PROPERTY_MAP_PARENT], cols [MONO_PROPERTY_MAP_PROPERTY_LIST]);
+			break;
+		}
 		case MONO_TABLE_PROPERTY: {
 			/* allow updates to existing properties. */
-			/* FIXME: use DeltaInfo:prev_gen_rows instead of image_base */
-			g_assert (token_index <= table_info_get_rows (&image_base->tables [token_table]));
+			if (!is_addition)
+				/* FIXME: use DeltaInfo:prev_gen_rows instead of image_base */
+				g_assert (token_index <= table_info_get_rows (&image_base->tables [token_table]));
+			else {
+				/* TODO: adding a property. */
+				g_assert (add_property_propertymap != 0);
+
+				uint32_t parent_type_token = mono_metadata_decode_row_col (&image_base->tables [MONO_TABLE_PROPERTYMAP], mono_metadata_token_index (add_property_propertymap) - 1, MONO_PROPERTY_MAP_PARENT);
+				parent_type_token = mono_metadata_make_token (MONO_TABLE_TYPEDEF, parent_type_token);
+
+				g_assert (parent_type_token != 0);
+
+				if (pass2_context_is_skeleton (ctx, parent_type_token)) {
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new property 0x%08x to new class 0x%08x", log_token, parent_type_token);
+					/* nothing to do, actually.  the metadata lookup machinery will find it by doing a linear scan of the table. */
+					break;
+				} else {
+					MonoClass *add_property_klass = mono_class_get_checked (image_base, parent_type_token, error);
+					if (!is_ok (error)) {
+						mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Can't get class with token 0x%08x due to: %s", parent_type_token, mono_error_get_message (error));
+						return FALSE;
+					}
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new property 0x%08x to class %s.%s", log_token, m_class_get_name_space (add_property_klass), m_class_get_name (add_property_klass));
+
+					/* TODO: metadata-update: add a new MonoPropertyInfo to the bag on the class? */
+					break;
+				}
+
+				add_property_propertymap = 0;
+			}
 			/* assuming that property attributes and type haven't changed. */
 			break;
 		}
