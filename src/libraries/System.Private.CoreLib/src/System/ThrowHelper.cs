@@ -41,6 +41,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Serialization;
 
@@ -533,7 +534,17 @@ namespace System
         [DoesNotReturn]
         internal static void ThrowApplicationException(int hr)
         {
-            var ex = new ApplicationException();
+            // Get a message for this HR
+            Exception? ex = Marshal.GetExceptionForHR(hr);
+            if (ex != null && !string.IsNullOrEmpty(ex.Message))
+            {
+                ex = new ApplicationException(ex.Message);
+            }
+            else
+            {
+                ex = new ApplicationException();
+            }
+
             ex.HResult = hr;
             throw ex;
         }

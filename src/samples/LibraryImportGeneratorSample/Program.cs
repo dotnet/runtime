@@ -10,13 +10,13 @@ namespace Demo
     {
         public const string NativeExportsNE_Binary = "Microsoft.Interop.Tests." + nameof(NativeExportsNE);
 
-        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sumi")]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sumi")]
         public static partial int Sum(int a, int b);
 
-        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sumouti")]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sumouti")]
         public static partial void Sum(int a, int b, out int c);
 
-        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sumrefi")]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sumrefi")]
         public static partial void Sum(int a, ref int b);
     }
 

@@ -36,11 +36,6 @@
 #include "clrtocomcall.h"
 #endif
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4244)
-#endif // _MSC_VER
-
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 GVAL_IMPL(DWORD, g_MiniMetaDataBuffMaxSize);
 GVAL_IMPL(TADDR, g_MiniMetaDataBuffAddress);
@@ -1730,7 +1725,7 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
 
     _ASSERTE((oneSize & MethodDesc::ALIGNMENT_MASK) == 0);
 
-    DWORD maxMethodDescsPerChunk = MethodDescChunk::MaxSizeOfMethodDescs / oneSize;
+    DWORD maxMethodDescsPerChunk = (DWORD)(MethodDescChunk::MaxSizeOfMethodDescs / oneSize);
 
     if (methodDescCount == 0)
         methodDescCount = maxMethodDescsPerChunk;
@@ -4113,7 +4108,3 @@ void MethodDesc::PrepareForUseAsAFunctionPointer()
     SetValueTypeParametersLoaded();
 }
 #endif //!DACCESS_COMPILE
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif // _MSC_VER: warning C4244
