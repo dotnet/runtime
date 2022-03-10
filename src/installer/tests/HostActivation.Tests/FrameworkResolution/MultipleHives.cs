@@ -146,8 +146,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             if (!OperatingSystem.IsWindows() && multiLevelLookup != false)
                 return;
 
-            string expectedOutput = String.Join(
-                String.Empty,
+            string expectedOutput = string.Join(
+                string.Empty,
                 GetExpectedFrameworks(multiLevelLookup)
                     .Select(t => $"{MicrosoftNETCoreApp} {t.Version} [{Path.Combine(t.Path, "shared", MicrosoftNETCoreApp)}]{Environment.NewLine}"));
 

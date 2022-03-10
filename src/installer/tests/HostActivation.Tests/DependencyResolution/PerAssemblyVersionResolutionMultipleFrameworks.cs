@@ -64,7 +64,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
         [Theory]
         [InlineData("1.1.1")]  // Exact match - no roll forward
-        [InlineData("1.1.0")]  // Path roll forward
+        [InlineData("1.1.0")]  // Patch roll forward
         [InlineData("1.0.0")]  // Minor
         [InlineData("0.0.0")]  // Major
         public void AppWithExactlySameAssemblyAsFrameworkWithRollForward(string frameworkReferenceVersion)
