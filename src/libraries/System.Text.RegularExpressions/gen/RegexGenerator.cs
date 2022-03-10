@@ -45,8 +45,8 @@ namespace System.Text.RegularExpressions.Generator
         {
             // Produces one entry per generated regex.  This may be:
             // - Diagnostic in the case of a failure that should end the compilation
-            // - (RegexType regexType, string runnerFactoryImplementation, Dictionary<string, string[]> requiredHelpers) in the case of valid regex
-            // - (RegexType regexType, string reason, Diagnostic diagnostic) in the case of a limited-support regex
+            // - (RegexMethod regexMethod, string runnerFactoryImplementation, Dictionary<string, string[]> requiredHelpers) in the case of valid regex
+            // - (RegexMethod regexMethod, string reason, Diagnostic diagnostic) in the case of a limited-support regex
             IncrementalValueProvider<ImmutableArray<object?>> codeOrDiagnostics =
                 context.SyntaxProvider
 
@@ -57,7 +57,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Generate the RunnerFactory for each regex, if possible.  This is where the bulk of the implementation occurs.
                 .Select((state, _) =>
                 {
-                    if (state is not RegexType regexType)
+                    if (state is not RegexMethod regexMethod)
                     {
                         Debug.Assert(state is Diagnostic);
                         return state;
@@ -65,9 +65,9 @@ namespace System.Text.RegularExpressions.Generator
 
                     // If we're unable to generate a full implementation for this regex, report a diagnostic.
                     // We'll still output a limited implementation that just caches a new Regex(...).
-                    if (!regexType.Method.Tree.Root.SupportsCompilation(out string? reason))
+                    if (!regexMethod.Tree.Root.SupportsCompilation(out string? reason))
                     {
-                        return (regexType, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, regexType.Method.MethodSyntax.GetLocation()));
+                        return (regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.MethodSyntax.GetLocation()));
                     }
 
                     // Generate the core logic for the regex.
@@ -76,9 +76,9 @@ namespace System.Text.RegularExpressions.Generator
                     var writer = new IndentedTextWriter(sw);
                     writer.Indent += 3;
                     writer.WriteLine();
-                    EmitRegexDerivedTypeRunnerFactory(writer, regexType.Method, requiredHelpers);
+                    EmitRegexDerivedTypeRunnerFactory(writer, regexMethod, requiredHelpers);
                     writer.Indent -= 3;
-                    return (regexType, sw.ToString(), requiredHelpers);
+                    return (regexMethod, sw.ToString(), requiredHelpers);
                 })
                 .Collect();
 
@@ -128,37 +128,28 @@ namespace System.Text.RegularExpressions.Generator
                 // For every generated type, we give it an incrementally increasing ID, in order to create
                 // unique type names even in situations where method names were the same, while also keeping
                 // the type names short.  Note that this is why we only generate the RunnerFactory implementations
-                // earlier in the pipeline... we wait to avoid generating code that relies on the class names
+                // earlier in the pipeline... we want to avoid generating code that relies on the class names
                 // until we're able to iterate through them linearly keeping track of a deterministic ID
                 // used to name them.  The boilerplate code generation that happens here is minimal when compared to
                 // the work required to generate the actual matching code for the regex.
                 int id = 0;
                 string generatedClassName = $"__{ComputeStringHash(compilationDataAndResults.Right.AssemblyName ?? ""):x}";
 
-                // If we have any (RegexType regexType, string generatedName, string reason, Diagnostic diagnostic), these are regexes for which we have
-                // limited support and need to simply output boilerplate. For now assign an ID, emit the diagnostic, and emit the partial method.
-                foreach (object? result in results)
-                {
-                    if (result is ValueTuple<RegexType, string, Diagnostic> limitedSupportResult)
-                    {
-                        context.ReportDiagnostic(limitedSupportResult.Item3);
-                        limitedSupportResult.Item1.GeneratedId = id++;
-
-                        EmitRegexPartialMethod(limitedSupportResult.Item1, writer, generatedClassName, limitedSupportResult.Item1.GeneratedId);
-                        writer.WriteLine();
-                    }
-                }
-
-                // If we have any (RegexType regexType, string generatedName, string runnerFactoryImplementation, Dictionary<string, string[]> requiredHelpers),
-                // those are generated implementations to be emitted. For now, assign an ID, and emit the partial method.  We also gather up all of the helpers
-                // these methods will need emitted.
+                // If we have any (RegexMethod regexMethod, string generatedName, string reason, Diagnostic diagnostic), these are regexes for which we have
+                // limited support and need to simply output boilerplate.  We need to emit their diagnostics.
+                // If we have any (RegexMethod regexMethod, string generatedName, string runnerFactoryImplementation, Dictionary<string, string[]> requiredHelpers),
+                // those are generated implementations to be emitted.  We need to gather up their required helpers.
                 Dictionary<string, string[]> requiredHelpers = new();
                 foreach (object? result in results)
                 {
-                    if (result is ValueTuple<RegexType, string, Dictionary<string, string[]>> regexImpl)
+                    RegexMethod? regexMethod = null;
+                    if (result is ValueTuple<RegexMethod, string, Diagnostic> limitedSupportResult)
                     {
-                        regexImpl.Item1.GeneratedId = id++;
-
+                        context.ReportDiagnostic(limitedSupportResult.Item3);
+                        regexMethod = limitedSupportResult.Item1;
+                    }
+                    else if (result is ValueTuple<RegexMethod, string, Dictionary<string, string[]>> regexImpl)
+                    {
                         foreach (KeyValuePair<string, string[]> helper in regexImpl.Item3)
                         {
                             if (!requiredHelpers.ContainsKey(helper.Key))
@@ -167,7 +158,13 @@ namespace System.Text.RegularExpressions.Generator
                             }
                         }
 
-                        EmitRegexPartialMethod(regexImpl.Item1, writer, generatedClassName, regexImpl.Item1.GeneratedId);
+                        regexMethod = regexImpl.Item1;
+                    }
+
+                    if (regexMethod is not null)
+                    {
+                        regexMethod.GeneratedId = id++;
+                        EmitRegexPartialMethod(regexMethod, writer, generatedClassName);
                         writer.WriteLine();
                     }
                 }
@@ -207,14 +204,14 @@ namespace System.Text.RegularExpressions.Generator
                 writer.Indent += 2;
                 foreach (object? result in results)
                 {
-                    if (result is ValueTuple<RegexType, string, Diagnostic> limitedSupportResult)
+                    if (result is ValueTuple<RegexMethod, string, Diagnostic> limitedSupportResult)
                     {
-                        EmitRegexLimitedBoilerplate(writer, limitedSupportResult.Item1.Method, limitedSupportResult.Item1.GeneratedId, limitedSupportResult.Item2);
+                        EmitRegexLimitedBoilerplate(writer, limitedSupportResult.Item1, limitedSupportResult.Item1.GeneratedId, limitedSupportResult.Item2);
                         writer.WriteLine();
                     }
-                    else if (result is ValueTuple<RegexType, string, Dictionary<string, string[]>> regexImpl)
+                    else if (result is ValueTuple<RegexMethod, string, Dictionary<string, string[]>> regexImpl)
                     {
-                        EmitRegexDerivedImplementation(writer, regexImpl.Item1.Method, regexImpl.Item1.GeneratedId, regexImpl.Item2);
+                        EmitRegexDerivedImplementation(writer, regexImpl.Item1, regexImpl.Item1.GeneratedId, regexImpl.Item2);
                         writer.WriteLine();
                     }
                 }

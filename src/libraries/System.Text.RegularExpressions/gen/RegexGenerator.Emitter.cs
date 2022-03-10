@@ -25,23 +25,23 @@ namespace System.Text.RegularExpressions.Generator
     public partial class RegexGenerator
     {
         /// <summary>Emits the definition of the partial method. This method just delegates to the property cache on the generated Regex-derived type.</summary>
-        private static void EmitRegexPartialMethod(RegexType regexClass, IndentedTextWriter writer, string generatedClassName, int id)
+        private static void EmitRegexPartialMethod(RegexMethod regexMethod, IndentedTextWriter writer, string generatedClassName)
         {
-            // Emit the namespace
-            if (!string.IsNullOrWhiteSpace(regexClass.Namespace))
+            // Emit the namespace.
+            RegexType? parent = regexMethod.DeclaringType;
+            if (!string.IsNullOrWhiteSpace(parent.Namespace))
             {
-                writer.WriteLine($"namespace {regexClass.Namespace}");
+                writer.WriteLine($"namespace {parent.Namespace}");
                 writer.WriteLine("{");
                 writer.Indent++;
             }
 
-            // Emit containing types
-            RegexType? parent = regexClass.ParentClass;
+            // Emit containing types.
             var parentClasses = new Stack<string>();
             while (parent is not null)
             {
                 parentClasses.Push($"partial {parent.Keyword} {parent.Name}");
-                parent = parent.ParentClass;
+                parent = parent.Parent;
             }
             while (parentClasses.Count != 0)
             {
@@ -50,12 +50,11 @@ namespace System.Text.RegularExpressions.Generator
                 writer.Indent++;
             }
 
-            // Emit the direct parent type, including the partial method definition
-            writer.WriteLine($"partial {regexClass.Keyword} {regexClass.Name}");
-            writer.WriteLine("{");
-            writer.Indent++;
+            // Emit the partial method definition.
             writer.WriteLine($"[global::System.CodeDom.Compiler.{s_generatedCodeAttribute}]");
-            writer.WriteLine($"{regexClass.Method.Modifiers} global::System.Text.RegularExpressions.Regex {regexClass.Method.MethodName}() => global::{GeneratedNamespace}.{generatedClassName}.{regexClass.Method.MethodName}_{id}.Instance;");
+            writer.WriteLine($"{regexMethod.Modifiers} global::System.Text.RegularExpressions.Regex {regexMethod.MethodName}() => global::{GeneratedNamespace}.{generatedClassName}.{regexMethod.GeneratedName}.Instance;");
+
+            // Unwind all scopes
             while (writer.Indent != 0)
             {
                 writer.Indent--;
@@ -69,7 +68,7 @@ namespace System.Text.RegularExpressions.Generator
         {
             writer.WriteLine($"/// <summary>Caches a <see cref=\"Regex\"/> instance for the {rm.MethodName} method.</summary>");
             writer.WriteLine($"/// <remarks>A custom Regex-derived type could not be generated because {reason}.</remarks>");
-            writer.WriteLine($"internal sealed class {rm.MethodName}_{id} : Regex");
+            writer.WriteLine($"internal sealed class {rm.GeneratedName} : Regex");
             writer.WriteLine($"{{");
             writer.WriteLine($"    /// <summary>Cached, thread-safe singleton instance.</summary>");
             writer.WriteLine($"    internal static Regex Instance {{ get; }} = new({Literal(rm.Pattern)}, {Literal(rm.Options)}, {GetTimeoutExpression(rm.MatchTimeout)});");
@@ -81,13 +80,13 @@ namespace System.Text.RegularExpressions.Generator
             IndentedTextWriter writer, RegexMethod rm, int id, string runnerFactoryImplementation)
         {
             writer.WriteLine($"/// <summary>Custom <see cref=\"Regex\"/>-derived type for the {rm.MethodName} method.</summary>");
-            writer.WriteLine($"internal sealed class {rm.MethodName}_{id} : Regex");
+            writer.WriteLine($"internal sealed class {rm.GeneratedName} : Regex");
             writer.WriteLine($"{{");
             writer.WriteLine($"    /// <summary>Cached, thread-safe singleton instance.</summary>");
-            writer.WriteLine($"    internal static {rm.MethodName}_{id} Instance {{ get; }} = new();");
+            writer.WriteLine($"    internal static {rm.GeneratedName} Instance {{ get; }} = new();");
             writer.WriteLine($"");
             writer.WriteLine($"    /// <summary>Initializes the instance.</summary>");
-            writer.WriteLine($"    private {rm.MethodName}_{id}()");
+            writer.WriteLine($"    private {rm.GeneratedName}()");
             writer.WriteLine($"    {{");
             writer.WriteLine($"        base.pattern = {Literal(rm.Pattern)};");
             writer.WriteLine($"        base.roptions = {Literal(rm.Options)};");
