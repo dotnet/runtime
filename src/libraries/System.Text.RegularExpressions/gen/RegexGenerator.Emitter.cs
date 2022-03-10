@@ -1021,6 +1021,9 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Whether the node has RegexOptions.IgnoreCase set.
+            // TODO: https://github.com/dotnet/runtime/issues/61048. We should be able to delete this and all usage sites once
+            // IgnoreCase is erradicated from the tree.  The only place it should possibly be left after that work is in a Backreference,
+            // and that can do this check directly as needed.
             static bool IsCaseInsensitive(RegexNode node) => (node.Options & RegexOptions.IgnoreCase) != 0;
 
             // Slices the inputSpan starting at pos until end and stores it into slice.
@@ -1127,7 +1130,7 @@ namespace System.Text.RegularExpressions.Generator
                         // If it's not a One, Multi, or Set, we can't apply this optimization.
                         // If it's IgnoreCase (and wasn't reduced to a non-IgnoreCase set), also ignore it to keep the logic simple.
                         if (node.Child(i).FindBranchOneMultiOrSetStart() is not RegexNode oneMultiOrSet ||
-                            (oneMultiOrSet.Options & RegexOptions.IgnoreCase) != 0) // TODO: https://github.com/dotnet/runtime/issues/61048
+                            IsCaseInsensitive(oneMultiOrSet))
                         {
                             useSwitchedBranches = false;
                             break;
@@ -1208,7 +1211,7 @@ namespace System.Text.RegularExpressions.Generator
 
                             RegexNode? childStart = child.FindBranchOneMultiOrSetStart();
                             Debug.Assert(childStart is not null, "Unexpectedly couldn't find the branch starting node.");
-                            Debug.Assert((childStart.Options & RegexOptions.IgnoreCase) == 0, "Expected only to find non-IgnoreCase branch starts");
+                            Debug.Assert(!IsCaseInsensitive(childStart), "Expected only to find non-IgnoreCase branch starts");
 
                             if (childStart.Kind is RegexNodeKind.Set)
                             {
@@ -2051,14 +2054,15 @@ namespace System.Text.RegularExpressions.Generator
                     TransferSliceStaticPosToPos();
                 }
 
-                // Separate out several node types that, for conciseness, don't need a header and scope written into the source.
+                // Separate out several node types that, for conciseness, don't need a header nor scope written into the source.
+                // Effectively these either evaporate, are completely self-explanatory, or only exist for their children to be rendered.
                 switch (node.Kind)
                 {
-                    // Nothing is written for an empty
+                    // Nothing is written for an empty.
                     case RegexNodeKind.Empty:
                         return;
 
-                    // A match failure doesn't need a scope.
+                    // A single-line goto for a failure doesn't need a scope or comment.
                     case RegexNodeKind.Nothing:
                         Goto(doneLabel);
                         return;
@@ -2075,79 +2079,95 @@ namespace System.Text.RegularExpressions.Generator
                         return;
                 }
 
-                // Put the node's code into its own scope. If the node contains labels that may need to
-                // be visible outside of its scope, the scope is still emitted for clarity but is commented out.
-                using (EmitScope(writer, DescribeNode(node, analysis), faux: analysis.MayBacktrack(node)))
+                // For everything else, output a comment about what the node is.
+                writer.WriteLine($"// {DescribeNode(node, analysis)}");
+
+                // Separate out several node types that, for conciseness, don't need a scope written into the source as they're
+                // always a single statement / block.
+                switch (node.Kind)
+                {
+                    case RegexNodeKind.Beginning:
+                    case RegexNodeKind.Start:
+                    case RegexNodeKind.Bol:
+                    case RegexNodeKind.Eol:
+                    case RegexNodeKind.End:
+                    case RegexNodeKind.EndZ:
+                        EmitAnchors(node);
+                        return;
+
+                    case RegexNodeKind.Boundary:
+                    case RegexNodeKind.NonBoundary:
+                    case RegexNodeKind.ECMABoundary:
+                    case RegexNodeKind.NonECMABoundary:
+                        EmitBoundary(node);
+                        return;
+
+                    case RegexNodeKind.One:
+                    case RegexNodeKind.Notone:
+                    case RegexNodeKind.Set:
+                        EmitSingleChar(node, emitLengthChecksIfRequired);
+                        return;
+
+                    case RegexNodeKind.Multi when !IsCaseInsensitive(node) && (node.Options & RegexOptions.RightToLeft) == 0:
+                        EmitMultiChar(node, emitLengthChecksIfRequired);
+                        return;
+
+                    case RegexNodeKind.UpdateBumpalong:
+                        EmitUpdateBumpalong(node);
+                        return;
+                }
+
+                // For everything else, put the node's code into its own scope, purely for readability. If the node contains labels
+                // that may need to be visible outside of its scope, the scope is still emitted for clarity but is commented out.
+                using (EmitScope(writer, null, faux: analysis.MayBacktrack(node)))
                 {
                     switch (node.Kind)
                     {
-                        case RegexNodeKind.Beginning:
-                        case RegexNodeKind.Start:
-                        case RegexNodeKind.Bol:
-                        case RegexNodeKind.Eol:
-                        case RegexNodeKind.End:
-                        case RegexNodeKind.EndZ:
-                            EmitAnchors(node);
-                            break;
-
-                        case RegexNodeKind.Boundary:
-                        case RegexNodeKind.NonBoundary:
-                        case RegexNodeKind.ECMABoundary:
-                        case RegexNodeKind.NonECMABoundary:
-                            EmitBoundary(node);
-                            break;
-
                         case RegexNodeKind.Multi:
                             EmitMultiChar(node, emitLengthChecksIfRequired);
-                            break;
-
-                        case RegexNodeKind.One:
-                        case RegexNodeKind.Notone:
-                        case RegexNodeKind.Set:
-                            EmitSingleChar(node, emitLengthChecksIfRequired);
-                            break;
+                            return;
 
                         case RegexNodeKind.Oneloop:
                         case RegexNodeKind.Notoneloop:
                         case RegexNodeKind.Setloop:
                             EmitSingleCharLoop(node, subsequent, emitLengthChecksIfRequired);
-                            break;
+                            return;
 
                         case RegexNodeKind.Onelazy:
                         case RegexNodeKind.Notonelazy:
                         case RegexNodeKind.Setlazy:
                             EmitSingleCharLazy(node, subsequent, emitLengthChecksIfRequired);
-                            break;
+                            return;
 
                         case RegexNodeKind.Oneloopatomic:
                         case RegexNodeKind.Notoneloopatomic:
                         case RegexNodeKind.Setloopatomic:
                             EmitSingleCharAtomicLoop(node, emitLengthChecksIfRequired);
-                            break;
+                            return;
 
                         case RegexNodeKind.Loop:
                             EmitLoop(node);
-                            break;
+                            return;
 
                         case RegexNodeKind.Lazyloop:
                             EmitLazy(node);
-                            break;
+                            return;
 
                         case RegexNodeKind.Alternate:
                             EmitAlternation(node);
-                            break;
+                            return;
 
                         case RegexNodeKind.Backreference:
                             EmitBackreference(node);
-                            break;
+                            return;
 
                         case RegexNodeKind.BackreferenceConditional:
                             EmitBackreferenceConditional(node);
-                            break;
+                            return;
 
                         case RegexNodeKind.ExpressionConditional:
                             EmitExpressionConditional(node);
-                            break;
+                            return;
 
                         case RegexNodeKind.Atomic:
                             Debug.Assert(analysis.MayBacktrack(node.Child(0)));
@@ -2156,25 +2176,20 @@ namespace System.Text.RegularExpressions.Generator
 
                         case RegexNodeKind.Capture:
                             EmitCapture(node, subsequent);
-                            break;
+                            return;
 
                         case RegexNodeKind.PositiveLookaround:
                             EmitPositiveLookaroundAssertion(node);
-                            break;
+                            return;
 
                         case RegexNodeKind.NegativeLookaround:
                             EmitNegativeLookaroundAssertion(node);
-                            break;
-
-                        case RegexNodeKind.UpdateBumpalong:
-                            EmitUpdateBumpalong(node);
-                            break;
-
-                        default:
-                            Debug.Fail($"Unexpected node type: {node.Kind}");
-                            break;
+                            return;
                     }
                 }
+
+                // All nodes should have been handled.
+                Debug.Fail($"Unexpected node type: {node.Kind}");
             }
 
             // Emits the node for an atomic.
@@ -2230,7 +2245,8 @@ namespace System.Text.RegularExpressions.Generator
                 for (int i = 0; i < childCount; i++)
                 {
                     // If we can find a subsequence of fixed-length children, we can emit a length check once for that sequence
-                    // and then skip the individual length checks for each.  We also want to minimize the repetition of if blocks,
+                    // and then skip the individual length checks for each.  We can also discover case-insensitive sequences that
+                    // can be checked efficiently with methods like StartsWith. We also want to minimize the repetition of if blocks,
                     // and so we try to emit a series of clauses all part of the same if block rather than one if block per child.
                     if ((node.Options & RegexOptions.RightToLeft) == 0 &&
                         emitLengthChecksIfRequired &&
@@ -2243,7 +2259,7 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             for (; i < exclusiveEnd; i++)
                             {
-                                void WriteSingleCharChild(RegexNode child, bool includeDescription = true)
+                                void WritePrefix()
                                 {
                                     if (wroteClauses)
                                     {
@@ -2254,31 +2270,41 @@ namespace System.Text.RegularExpressions.Generator
                                     {
                                         writer.Write("if (");
                                     }
-                                    EmitSingleChar(child, emitLengthCheck: false, clauseOnly: true);
-                                    prevDescription = includeDescription ? DescribeNode(child, analysis) : null;
-                                    wroteClauses = true;
                                 }
 
                                 RegexNode child = node.Child(i);
-                                if (child.Kind is RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set)
+                                if (node.TryGetOrdinalCaseInsensitiveString(i, exclusiveEnd, out int nodesConsumed, out string? caseInsensitiveString))
                                 {
-                                    WriteSingleCharChild(child);
+                                    WritePrefix();
+                                    string sourceSpan = sliceStaticPos > 0 ? $"{sliceSpan}.Slice({sliceStaticPos})" : sliceSpan;
+                                    writer.Write($"!global::System.MemoryExtensions.StartsWith({sourceSpan}, {Literal(caseInsensitiveString)}, global::System.StringComparison.OrdinalIgnoreCase)");
+                                    prevDescription = $"Match the string {Literal(caseInsensitiveString)} (ordinal case-insensitive)";
+                                    wroteClauses = true;
+
+                                    sliceStaticPos += caseInsensitiveString.Length;
+                                    i += nodesConsumed - 1;
                                 }
-                                else if (child.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Onelazy or RegexNodeKind.Oneloopatomic or
-                                                       RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic or
-                                                       RegexNodeKind.Notoneloop or RegexNodeKind.Notonelazy or RegexNodeKind.Notoneloopatomic &&
+                                else if (child.Kind is RegexNodeKind.Multi && !IsCaseInsensitive(child))
+                                {
+                                    WritePrefix();
+                                    EmitMultiCharString(child.Str!, caseInsensitive: false, emitLengthCheck: false, clauseOnly: true, rightToLeft: false);
+                                    prevDescription = DescribeNode(child, analysis);
+                                    wroteClauses = true;
+                                }
+                                else if ((child.IsOneFamily || child.IsNotoneFamily || child.IsSetFamily) &&
                                          child.M == child.N &&
                                          child.M <= MaxUnrollSize)
                                 {
-                                    for (int c = 0; c < child.M; c++)
+                                    int repeatCount = child.Kind is RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set ? 1 : child.M;
+                                    for (int c = 0; c < repeatCount; c++)
                                     {
-                                        WriteSingleCharChild(child, includeDescription: c == 0);
+                                        WritePrefix();
+                                        EmitSingleChar(child, emitLengthCheck: false, clauseOnly: true);
+                                        prevDescription = c == 0 ? DescribeNode(child, analysis) : null;
+                                        wroteClauses = true;
                                     }
                                 }
-                                else
-                                {
-                                    break;
-                                }
+                                else break;
                             }
 
                             if (wroteClauses)
@@ -2486,12 +2512,13 @@ namespace System.Text.RegularExpressions.Generator
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Multi, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.Str is not null);
-                EmitMultiCharString(node.Str, IsCaseInsensitive(node), emitLengthCheck, (node.Options & RegexOptions.RightToLeft) != 0);
+                EmitMultiCharString(node.Str, IsCaseInsensitive(node), emitLengthCheck, clauseOnly: false, (node.Options & RegexOptions.RightToLeft) != 0);
             }
 
-            void EmitMultiCharString(string str, bool caseInsensitive, bool emitLengthCheck, bool rightToLeft)
+            void EmitMultiCharString(string str, bool caseInsensitive, bool emitLengthCheck, bool clauseOnly, bool rightToLeft)
             {
                 Debug.Assert(str.Length >= 2);
+                Debug.Assert(!clauseOnly || (!emitLengthCheck && !caseInsensitive && !rightToLeft));
 
                 if (rightToLeft)
                 {
@@ -2534,9 +2561,17 @@ namespace System.Text.RegularExpressions.Generator
                 else
                 {
                     string sourceSpan = sliceStaticPos > 0 ? $"{sliceSpan}.Slice({sliceStaticPos})" : sliceSpan;
-                    using (EmitBlock(writer, $"if (!global::System.MemoryExtensions.StartsWith({sourceSpan}, {Literal(str)}))"))
+                    string clause = $"!global::System.MemoryExtensions.StartsWith({sourceSpan}, {Literal(str)})";
+                    if (clauseOnly)
                     {
-                        Goto(doneLabel);
+                        writer.Write(clause);
+                    }
+                    else
+                    {
+                        using (EmitBlock(writer, $"if ({clause})"))
+                        {
+                            Goto(doneLabel);
+                        }
                     }
                 }
 
@@ -3061,7 +3096,7 @@ namespace System.Text.RegularExpressions.Generator
                     case <= RegexNode.MultiVsRepeaterLimit when node.IsOneFamily && !IsCaseInsensitive(node):
                         // This is a repeated case-sensitive character; emit it as a multi in order to get all the optimizations
                         // afforded to a multi, e.g. unrolling the loop with multi-char reads/comparisons at a time.
-                        EmitMultiCharString(new string(node.Ch, iterations), caseInsensitive: false, emitLengthCheck, rtl);
+                        EmitMultiCharString(new string(node.Ch, iterations), caseInsensitive: false, emitLengthCheck, clauseOnly: false, rtl);
                         return;
                 }
 

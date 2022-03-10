@@ -17,14 +17,14 @@ namespace System.Runtime.InteropServices
 #else
     internal
 #endif
-    sealed class GeneratedDllImportAttribute : Attribute
+    sealed class LibraryImportAttribute : Attribute
     {
         public string? EntryPoint { get; set; }
         public bool SetLastError { get; set; }
         public StringMarshalling StringMarshalling { get; set; }
         public Type? StringMarshallingCustomType { get; set; }
 
-        public GeneratedDllImportAttribute(string dllName)
+        public LibraryImportAttribute(string dllName)
         {
             LibraryName = dllName;
         }
