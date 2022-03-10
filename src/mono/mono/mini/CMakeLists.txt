@@ -416,8 +416,10 @@ if(HOST_WASM)
 # Add two static libs containing llvm-runtime.cpp compiled for JS based/WASM EH
 # This is the only source file which contains a c++ throw or catch
 add_library(mono-wasm-eh-js STATIC llvm-runtime.cpp)
+target_link_libraries (mono-wasm-eh-js PRIVATE monoapi)
 install(TARGETS mono-wasm-eh-js LIBRARY)
 add_library(mono-wasm-eh-wasm STATIC llvm-runtime.cpp)
+target_link_libraries (mono-wasm-eh-wasm PRIVATE monoapi)
 set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions")
 install(TARGETS mono-wasm-eh-wasm LIBRARY)
 endif()
