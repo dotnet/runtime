@@ -28,16 +28,16 @@ All builds are
 
 - Windows 10 x64 Client VS2019
   - x64 Release
-  - Cross x86 Release
-  - Cross arm32 Release
-  - Cross arm64 Release
+  - x86 Release
+  - arm32 Release
+  - arm64 Release
 - Ubuntu 18.04 x64
   - Linux x64 Release
-  - Cross Linux arm64 Release
-  - Cross Linux arm64 musl Release
-  - Cross Linux arm32 Release
-  - Cross Linux arm32 musl Release
-  - Cross FreeBSD x64 (build only)
+  - Linux arm64 Release
+  - Linux arm64 musl Release
+  - Linux arm32 Release
+  - Linux arm32 musl Release
+  - FreeBSD x64 (build only)
 - MacOS 11.6.4 x64
   - x64 Release
   - arm64 Release
