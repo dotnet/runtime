@@ -1083,11 +1083,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	case SN_Narrow: {
 #ifdef TARGET_ARM64
-		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
-		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
+		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
+
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int size = mono_class_value_size (arg_class, NULL);
+
 		if (size == 16) {
 			switch (arg0_type) {
 			case MONO_TYPE_R8: {
@@ -1109,7 +1110,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		} else {
 			switch (arg0_type) {
 			case MONO_TYPE_R8: {
+				//widen arg0
 				MonoInst *ins1 = emit_simd_ins (cfg, arg_class, OP_XWIDEN_UNSAFE, args [0]->dreg, -1);
+
+				//insert arg1 to arg0
 				int tmp = alloc_ireg (cfg);
 				MONO_EMIT_NEW_ICONST (cfg, tmp, 1);
 				MonoInst *ins2 = emit_simd_ins (cfg, arg_class, OP_EXTRACT_R8, args [1]->dreg, -1);
@@ -1121,6 +1125,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				ins1 = emit_simd_ins (cfg, ivector128_inst, OP_XINSERT_R8, ins1->dreg, ins2->dreg);
 				ins1->sreg3 = tmp;
 				ins1->inst_c1 = arg0_type;
+
+				//ConvertToSingleLower
 				return emit_simd_ins (cfg, arg_class, OP_ARM64_FCVTN, ins1->dreg, -1);
 			}
 			case MONO_TYPE_I2:
@@ -1129,8 +1135,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			case MONO_TYPE_U2:
 			case MONO_TYPE_U4:
 			case MONO_TYPE_U8: {
+				//widen arg0
 				MonoInst *arg0 = emit_simd_ins (cfg, arg_class, OP_XWIDEN_UNSAFE, args [0]->dreg, -1);
 
+				//cast arg0 and arg1 to u/int64
 				MonoType *type_new;
 				MonoTypeEnum type_enum_new;
 				if (type_enum_is_unsigned (arg0_type)) {
@@ -1145,6 +1153,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				MonoClass *ivector64_64_inst = create_class_instance (cfg, fsig, "System.Runtime.Intrinsics", "Vector64`1", FALSE, type_new);
 				MonoInst *arg1 = emit_simd_ins (cfg, ivector64_64_inst, OP_XCAST, args [1]->dreg, -1);
 
+				//insert arg1 to arg0
 				int tmp = alloc_ireg (cfg);
 				MONO_EMIT_NEW_ICONST (cfg, tmp, 1);
 				arg1 = emit_simd_ins (cfg, ivector64_64_inst, OP_EXTRACT_I8, arg1->dreg, -1);
@@ -1155,7 +1164,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				ins->sreg3 = tmp;
 				ins->inst_c1 = type_enum_new;
 
+				//cast arg0 back to its original element type (arg0_type)
 				ins = emit_simd_ins (cfg, ivector128_inst, OP_XCAST, ins->dreg, -1);
+
+				//ExtractNarrowingLower
 				return emit_simd_ins (cfg, ivector128_inst, OP_ARM64_XTN, ins->dreg, -1);
 			}
 			default:
