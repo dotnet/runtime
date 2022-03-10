@@ -5,7 +5,6 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <PackageDescription>Implementation of key-value pair based configuration for Microsoft.Extensions.Configuration. Includes the memory configuration provider.</PackageDescription>
     <ServicingVersion>1</ServicingVersion>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>

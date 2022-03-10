@@ -701,8 +701,8 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal class MonoSDBHelper
     {
         private static int debuggerObjectId;
-        private static int cmdId;
-        private static int GetId() {return cmdId++;}
+        private static int cmdId = 1; //cmdId == 0 is used by events which come from runtime
+        private static int GetNewId() {return cmdId++;}
         private static int MINOR_VERSION = 61;
         private static int MAJOR_VERSION = 2;
 
@@ -869,7 +869,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal async Task<MonoBinaryReader> SendDebuggerAgentCommandInternal(SessionId sessionId, int command_set, int command, MemoryStream parms, CancellationToken token)
         {
-            Result res = await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(GetId(), command_set, command, Convert.ToBase64String(parms.ToArray())), token);
+            Result res = await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(GetNewId(), command_set, command, Convert.ToBase64String(parms.ToArray())), token);
             byte[] newBytes = Array.Empty<byte>();
             if (!res.IsErr) {
                 newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
@@ -907,7 +907,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal async Task<MonoBinaryReader> SendDebuggerAgentCommandWithParmsInternal(SessionId sessionId, int command_set, int command, MemoryStream parms, int type, string extraParm, CancellationToken token)
         {
-            Result res = await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommandWithParms(GetId(), command_set, command, Convert.ToBase64String(parms.ToArray()), parms.ToArray().Length, type, extraParm), token);
+            Result res = await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommandWithParms(GetNewId(), command_set, command, Convert.ToBase64String(parms.ToArray()), parms.ToArray().Length, type, extraParm), token);
             byte[] newBytes = Array.Empty<byte>();
             if (!res.IsErr) {
                 newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
@@ -2253,7 +2253,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 commandSet = CommandSet.Vm,
                                 command = CmdVM.InvokeMethod,
                                 buffer = Convert.ToBase64String(command_params_to_proxy.ToArray()),
-                                length = command_params_to_proxy.ToArray().Length
+                                length = command_params_to_proxy.ToArray().Length,
+                                id = GetNewId()
                                 }),
                             name = propertyNameStr
                         }));
@@ -2470,7 +2471,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                         command = CmdObject.RefSetValues,
                                         buffer = Convert.ToBase64String(command_params_to_set.ToArray()),
                                         valtype,
-                                        length = command_params_to_set.ToArray().Length
+                                        length = command_params_to_set.ToArray().Length,
+                                        id = GetNewId()
                                 }));
                         }
                         objectFields.Add(fieldValue);
@@ -2564,7 +2566,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                         command = CmdVM.InvokeMethod,
                                         buffer = Convert.ToBase64String(command_params_to_set.ToArray()),
                                         valtype = attr["set"]["valtype"],
-                                        length = command_params_to_set.ToArray().Length
+                                        length = command_params_to_set.ToArray().Length,
+                                        id = GetNewId()
                                 });
                         }
                         continue;
@@ -2583,7 +2586,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     commandSet = CommandSet.Vm,
                                     command = CmdVM.InvokeMethod,
                                     buffer = Convert.ToBase64String(command_params_to_get.ToArray()),
-                                    length = command_params_to_get.ToArray().Length
+                                    length = command_params_to_get.ToArray().Length,
+                                    id = GetNewId()
                                     }),
                                 name = propertyNameStr
                             }));

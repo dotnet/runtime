@@ -1878,41 +1878,53 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 
 struct TlsDestructionMonitor
 {
+    bool m_activated = false;
+
+    void Activate()
+    {
+        m_activated = true;
+    }
+
     ~TlsDestructionMonitor()
     {
-        // Don't destroy threads here if we're in shutdown (shutdown will
-        // clean up for us instead).
-
-        Thread* thread = GetThreadNULLOk();
-        if (thread)
+        if (m_activated)
         {
-#ifdef FEATURE_COMINTEROP
-            // reset the CoInitialize state
-            // so we don't call CoUninitialize during thread detach
-            thread->ResetCoInitialized();
-#endif // FEATURE_COMINTEROP
-            // For case where thread calls ExitThread directly, we need to reset the
-            // frame pointer. Otherwise stackwalk would AV. We need to do it in cooperative mode.
-            // We need to set m_GCOnTransitionsOK so this thread won't trigger GC when toggle GC mode
-            if (thread->m_pFrame != FRAME_TOP)
+            Thread* thread = GetThreadNULLOk();
+            if (thread)
             {
+#ifdef FEATURE_COMINTEROP
+                // reset the CoInitialize state
+                // so we don't call CoUninitialize during thread detach
+                thread->ResetCoInitialized();
+#endif // FEATURE_COMINTEROP
+                // For case where thread calls ExitThread directly, we need to reset the
+                // frame pointer. Otherwise stackwalk would AV. We need to do it in cooperative mode.
+                // We need to set m_GCOnTransitionsOK so this thread won't trigger GC when toggle GC mode
+                if (thread->m_pFrame != FRAME_TOP)
+                {
 #ifdef _DEBUG
-                thread->m_GCOnTransitionsOK = FALSE;
+                    thread->m_GCOnTransitionsOK = FALSE;
 #endif
-                GCX_COOP_NO_DTOR();
-                thread->m_pFrame = FRAME_TOP;
-                GCX_COOP_NO_DTOR_END();
+                    GCX_COOP_NO_DTOR();
+                    thread->m_pFrame = FRAME_TOP;
+                    GCX_COOP_NO_DTOR_END();
+                }
+                thread->DetachThread(TRUE);
             }
-            thread->DetachThread(TRUE);
-        }
 
-        ThreadDetaching();
+            ThreadDetaching();
+        }
     }
 };
 
 // This thread local object is used to detect thread shutdown. Its destructor
 // is called when a thread is being shut down.
 thread_local TlsDestructionMonitor tls_destructionMonitor;
+
+void EnsureTlsDestructionMonitor()
+{
+    tls_destructionMonitor.Activate();
+}
 
 #ifdef DEBUGGING_SUPPORTED
 //

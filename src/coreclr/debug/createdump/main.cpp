@@ -57,7 +57,7 @@ int __cdecl main(const int argc, const char* argv[])
     exitCode = PAL_InitializeDLL();
     if (exitCode != 0)
     {
-        fprintf(stderr, "PAL initialization FAILED %d\n", exitCode);
+        printf_error("PAL initialization FAILED %d\n", exitCode);
         return exitCode;
     }
 #endif
@@ -152,13 +152,13 @@ int __cdecl main(const int argc, const char* argv[])
         {
             if (::GetTempPathA(MAX_LONGPATH, tmpPath) == 0)
             {
-                fprintf(stderr, "GetTempPath failed (0x%08x)", ::GetLastError());
+                printf_error("GetTempPath failed (0x%08x)\n", ::GetLastError());
                 return ::GetLastError();
             }
             exitCode = strcat_s(tmpPath, MAX_LONGPATH, DEFAULT_DUMP_TEMPLATE);
             if (exitCode != 0)
             {
-                fprintf(stderr, "strcat_s failed (%d)", exitCode);
+                printf_error("strcat_s failed (%d)\n", exitCode);
                 return exitCode;
             }
             dumpPathTemplate = tmpPath;
@@ -166,7 +166,7 @@ int __cdecl main(const int argc, const char* argv[])
 
         if (CreateDump(dumpPathTemplate, pid, dumpType, minidumpType, crashReport, crashThread, signal))
         {
-            printf("Dump successfully written\n");
+            printf_status("Dump successfully written\n");
         }
         else
         {
@@ -179,7 +179,7 @@ int __cdecl main(const int argc, const char* argv[])
     else
     {
         // if no pid or invalid command line option
-        fprintf(stderr, "%s", g_help);
+        printf_error("%s", g_help);
         exitCode = -1;
     }
 #ifdef HOST_UNIX
@@ -189,12 +189,35 @@ int __cdecl main(const int argc, const char* argv[])
 }
 
 void
+printf_status(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    fprintf(stdout, "[createdump] ");
+    vfprintf(stdout, format, args);
+    fflush(stdout);
+    va_end(args);
+}
+
+void
+printf_error(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    fprintf(stderr, "[createdump] ");
+    vfprintf(stderr, format, args);
+    fflush(stderr);
+    va_end(args);
+}
+
+void
 trace_printf(const char* format, ...)
 {
     if (g_diagnostics)
     {
         va_list args;
         va_start(args, format);
+        fprintf(stdout, "[createdump] ");
         vfprintf(stdout, format, args);
         fflush(stdout);
         va_end(args);
@@ -208,6 +231,7 @@ trace_verbose_printf(const char* format, ...)
     {
         va_list args;
         va_start(args, format);
+        fprintf(stdout, "[createdump] ");
         vfprintf(stdout, format, args);
         fflush(stdout);
         va_end(args);
