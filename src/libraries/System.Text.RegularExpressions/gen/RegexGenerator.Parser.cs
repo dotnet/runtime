@@ -178,10 +178,10 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Parse the input pattern
-            RegexTree tree;
+            RegexTree regexTree;
             try
             {
-                tree = RegexParser.Parse(pattern, regexOptions | RegexOptions.Compiled, culture); // make sure Compiled is included to get all optimizations applied to it
+                regexTree = RegexParser.Parse(pattern, regexOptions | RegexOptions.Compiled, culture); // make sure Compiled is included to get all optimizations applied to it
             }
             catch (Exception e)
             {
@@ -199,7 +199,7 @@ namespace System.Text.RegularExpressions.Generator
                 pattern,
                 regexOptions,
                 matchTimeout ?? Timeout.Infinite,
-                tree);
+                regexTree);
 
             var regexType = new RegexType(
                 regexMethod,
@@ -239,6 +239,7 @@ namespace System.Text.RegularExpressions.Generator
         internal sealed record RegexType(RegexMethod? Method, string Keyword, string Namespace, string Name)
         {
             public RegexType? ParentClass { get; set; }
+            public int GeneratedId { get; set; }
         }
     }
 }
