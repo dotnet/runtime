@@ -491,8 +491,8 @@ namespace System.Runtime.InteropServices
         public string LibraryName { get { throw null; } }
         public string? EntryPoint { get { throw null; } set { } }
         public bool SetLastError { get { throw null; } set { }}
-        public StringMarshalling StringMarshalling { get { throw null; } set { } }
-        public Type? StringMarshallingCustomType { get { throw null; } set { } }
+        public System.Runtime.InteropServices.StringMarshalling StringMarshalling { get { throw null; } set { } }
+        public System.Type? StringMarshallingCustomType { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]
     public sealed partial class ManagedToNativeComInteropStubAttribute : System.Attribute

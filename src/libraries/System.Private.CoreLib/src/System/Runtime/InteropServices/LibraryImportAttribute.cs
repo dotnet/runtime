@@ -9,6 +9,11 @@ namespace System.Runtime.InteropServices
     /// Attribute used to indicate a source generator should create a function for marshaling
     /// arguments instead of relying on the runtime to generate an equivalent marshaling function at run-time.
     /// </summary>
+    /// <remarks>
+    /// This attribute is meaningless if the source generator associated with it is not enabled.
+    /// The associated source generator only supports C# and only supplies an implementation when
+    /// applied to static, partial, non-generic methods.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
 #if SYSTEM_PRIVATE_CORELIB
     public
