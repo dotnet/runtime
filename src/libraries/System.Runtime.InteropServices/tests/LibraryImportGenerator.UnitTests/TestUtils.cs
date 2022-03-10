@@ -183,7 +183,7 @@ namespace LibraryImportGenerator.UnitTests
         {
             // Include the assembly containing the new attribute and all of its references.
             // [TODO] Remove once the attribute has been added to the BCL
-            var attrAssem = typeof(LibraryImportAttribute).GetTypeInfo().Assembly;
+            var attrAssem = typeof(MarshalUsingAttribute).GetTypeInfo().Assembly;
             return MetadataReference.CreateFromFile(attrAssem.Location);
         }
 

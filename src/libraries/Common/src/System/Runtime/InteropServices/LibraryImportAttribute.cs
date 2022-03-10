@@ -3,32 +3,61 @@
 
 #nullable enable
 
-//
-// Types in this file are used for generated p/invokes (docs/design/features/source-generator-pinvokes.md).
-//
 namespace System.Runtime.InteropServices
 {
     /// <summary>
-    /// Indicates that method will be generated at compile time and invoke into an unmanaged library entry point
+    /// Attribute used to indicate a Source Generator should create a function for marshaling
+    /// arguments instead of relying on the CLR to generate an IL Stub at runtime.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-#if LIBRARYIMPORT_GENERATOR_TEST
+#if NET7_0_OR_GREATER
     public
 #else
     internal
 #endif
     sealed class LibraryImportAttribute : Attribute
     {
-        public string? EntryPoint { get; set; }
-        public bool SetLastError { get; set; }
-        public StringMarshalling StringMarshalling { get; set; }
-        public Type? StringMarshallingCustomType { get; set; }
-
-        public LibraryImportAttribute(string dllName)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LibraryImportAttribute"/>.
+        /// </summary>
+        /// <param name="libraryName">Name of the library containing the import</param>
+        public LibraryImportAttribute(string libraryName)
         {
-            LibraryName = dllName;
+            LibraryName = libraryName;
         }
 
+        /// <summary>
+        /// Library to load.
+        /// </summary>
         public string LibraryName { get; private set; }
+
+        /// <summary>
+        /// Indicates the name of the entry point to be called.
+        /// </summary>
+        public string? EntryPoint { get; set; }
+
+        /// <summary>
+        /// Indicates how to marshal string parameters to the method.
+        /// </summary>
+        /// <remarks>
+        /// If this field is set to a value other than <see cref="StringMarshalling.Custom" />,
+        /// <see cref="StringMarshallingCustomType" /> must not be specified.
+        /// </remarks>
+        public StringMarshalling StringMarshalling { get; set; }
+
+        /// <summary>
+        /// Indicates how to marshal string parameters to the method.
+        /// </summary>
+        /// <remarks>
+        /// If this field is specified, <see cref="StringMarshalling" /> must not be specified
+        /// or must be set to <see cref="StringMarshalling.Custom" />.
+        /// </remarks>
+        public Type? StringMarshallingCustomType { get; set; }
+
+        /// <summary>
+        /// Indicates whether the callee sents an error (SetLastError on Windows or errorno
+        /// on other platforms) before returning from the attributed method.
+        /// </summary>
+        public bool SetLastError { get; set; }
     }
 }

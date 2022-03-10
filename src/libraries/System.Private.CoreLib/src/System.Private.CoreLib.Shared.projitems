@@ -1248,6 +1248,12 @@
     <Compile Include="$(CommonPath)System\Runtime\CompilerServices\IsExternalInit.cs">
       <Link>Common\System\Runtime\CompilerServices\IsExternalInit.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\LibraryImportAttribute.cs">
+      <Link>Common\System\Runtime\InteropServices\LibraryImportAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\StringMarshalling.cs">
+      <Link>Common\System\Runtime\InteropServices\StringMarshalling.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs">
       <Link>Common\System\Runtime\Versioning\NonVersionableAttribute.cs</Link>
     </Compile>
