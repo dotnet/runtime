@@ -36,11 +36,11 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object TypedArrayToArray(int jsHandle, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object TypedArrayCopyTo(int jsHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult);
+        internal static extern void TypedArrayCopyToRef(int jsHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object TypedArrayFrom(int arrayPtr, int begin, int end, int bytesPerElement, int type, out int exceptionalResult);
+        internal static extern void TypedArrayFromRef(int arrayPtr, int begin, int end, int bytesPerElement, int type, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object TypedArrayCopyFrom(int jsHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult);
+        internal static extern void TypedArrayCopyFromRef(int jsHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult, out object result);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern string? AddEventListener(int jsHandle, string name, int gcHandle, int optionsJsHandle);

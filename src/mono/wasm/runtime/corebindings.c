@@ -19,9 +19,9 @@ extern MonoObject* mono_wasm_get_global_object (MonoString *global_name, int *is
 extern void mono_wasm_release_cs_owned_object (int js_handle);
 extern void mono_wasm_create_cs_owned_object_ref (MonoString *core_name, MonoArray *args, int *is_exception, MonoObject** result);
 extern MonoObject* mono_wasm_typed_array_to_array (int js_handle, int *is_exception);
-extern MonoObject* mono_wasm_typed_array_copy_to (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception);
-extern MonoObject* mono_wasm_typed_array_from (int ptr, int begin, int end, int bytes_per_element, int type, int *is_exception);
-extern MonoObject* mono_wasm_typed_array_copy_from (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception);
+extern void mono_wasm_typed_array_copy_to_ref (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception, MonoObject** result);
+extern void mono_wasm_typed_array_from_ref (int ptr, int begin, int end, int bytes_per_element, int type, int *is_exception, MonoObject** result);
+extern void mono_wasm_typed_array_copy_from_ref (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception, MonoObject** result);
 extern MonoString* mono_wasm_add_event_listener (int jsObjHandle, MonoString *name, int weakDelegateHandle, int optionsObjHandle);
 extern MonoString* mono_wasm_remove_event_listener (int jsObjHandle, MonoString *name, int weakDelegateHandle, int capture);
 extern MonoString* mono_wasm_cancel_promise (int thenable_js_handle, int *is_exception);
@@ -43,9 +43,9 @@ void core_initialize_internals ()
 	mono_add_internal_call ("Interop/Runtime::CreateCSOwnedObjectRef", mono_wasm_create_cs_owned_object_ref);
 	mono_add_internal_call ("Interop/Runtime::ReleaseCSOwnedObject", mono_wasm_release_cs_owned_object);
 	mono_add_internal_call ("Interop/Runtime::TypedArrayToArray", mono_wasm_typed_array_to_array);
-	mono_add_internal_call ("Interop/Runtime::TypedArrayCopyTo", mono_wasm_typed_array_copy_to);
-	mono_add_internal_call ("Interop/Runtime::TypedArrayFrom", mono_wasm_typed_array_from);
-	mono_add_internal_call ("Interop/Runtime::TypedArrayCopyFrom", mono_wasm_typed_array_copy_from);
+	mono_add_internal_call ("Interop/Runtime::TypedArrayCopyToRef", mono_wasm_typed_array_copy_to_ref);
+	mono_add_internal_call ("Interop/Runtime::TypedArrayFromRef", mono_wasm_typed_array_from_ref);
+	mono_add_internal_call ("Interop/Runtime::TypedArrayCopyFromRef", mono_wasm_typed_array_copy_from_ref);
 	mono_add_internal_call ("Interop/Runtime::CompileFunction", mono_wasm_compile_function);
 	mono_add_internal_call ("Interop/Runtime::AddEventListener", mono_wasm_add_event_listener);
 	mono_add_internal_call ("Interop/Runtime::RemoveEventListener", mono_wasm_remove_event_listener);

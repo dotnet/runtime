@@ -49,7 +49,7 @@ import {
     mono_wasm_invoke_js_blazor,
     mono_wasm_invoke_js_with_args, mono_wasm_set_by_index, mono_wasm_set_object_property
 } from "./method-calls";
-import { mono_wasm_typed_array_copy_to, mono_wasm_typed_array_from, mono_wasm_typed_array_copy_from, mono_wasm_load_bytes_into_heap } from "./buffers";
+import { mono_wasm_typed_array_copy_to_ref, mono_wasm_typed_array_from_ref, mono_wasm_typed_array_copy_from_ref, mono_wasm_load_bytes_into_heap } from "./buffers";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 import { mono_wasm_add_event_listener, mono_wasm_remove_event_listener } from "./event-listener";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
@@ -296,9 +296,9 @@ export const __linker_exports: any = {
     mono_wasm_create_cs_owned_object_ref,
     mono_wasm_release_cs_owned_object,
     mono_wasm_typed_array_to_array,
-    mono_wasm_typed_array_copy_to,
-    mono_wasm_typed_array_from,
-    mono_wasm_typed_array_copy_from,
+    mono_wasm_typed_array_copy_to_ref,
+    mono_wasm_typed_array_from_ref,
+    mono_wasm_typed_array_copy_from_ref,
     mono_wasm_add_event_listener,
     mono_wasm_remove_event_listener,
     mono_wasm_cancel_promise,
