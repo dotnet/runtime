@@ -89,6 +89,10 @@ namespace System.Text.RegularExpressions.Tests
         /// </summary>
         private static string Not(string regex) => $"(?({regex})[0-[0]]|.*)";
 
+        /// <summary>
+        /// When <see cref="Enabled"/> is set to return true, outputs DGML diagrams for the specified pattern.
+        /// This is useful for understanding what graphs the NonBacktracking engine creates for the specified pattern.
+        /// </summary>
         [Fact]
         public void ViewSampleRegexInDGML()
         {

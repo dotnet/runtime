@@ -10,6 +10,7 @@ using System.Net;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
+    [ExcludeFromCodeCoverage(Justification = "Currently only used for testing")]
     internal static class DgmlWriter<T> where T : notnull
     {
         /// <summary>Write the DFA or NFA in DGML format into the TextWriter.</summary>
