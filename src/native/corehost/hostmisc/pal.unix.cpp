@@ -401,7 +401,7 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     }
     else if (errno != EEXIST)
     {
-        trace::error(_X("Failed to create default extraction directory [%s]. %s"), extraction_dir.c_str(), pal::strerror(errno));
+        trace::error(_X("Failed to create default extraction directory [%s]. %s"), extraction_dir.c_str(), pal::strerror(errno).c_str());
         return false;
     }
 
@@ -478,7 +478,7 @@ bool get_install_location_from_file(const pal::string_t& file_path, bool& file_f
         }
         else
         {
-            trace::error(_X("The install_location file ['%s'] failed to open: %s."), file_path.c_str(), pal::strerror(errno));
+            trace::error(_X("The install_location file ['%s'] failed to open: %s."), file_path.c_str(), pal::strerror(errno).c_str());
         }
     }
 
