@@ -42,4 +42,7 @@ mono_create_new_bundled_satellite_assembly (const char *name, const char *cultur
 
 typedef void * (*PInvokeOverrideFn) (const char *libraryName, const char *entrypointName);
 
+MONO_API MONO_RT_EXTERNAL_ONLY void*
+mono_method_get_unmanaged_callers_only_ftnptr (MonoMethod *method, MonoError *error);
+
 #endif /*__MONO_METADATA_MONO_PRIVATE_UNSTABLE_H__*/
