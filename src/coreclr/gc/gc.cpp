@@ -43691,7 +43691,7 @@ HRESULT GCHeap::Initialize()
     }
 
 #ifdef USE_REGIONS
-    gc_heap::regions_range = (size_t)GCConfig::GetGCRegionsRange();
+    gc_heap::regions_range = (size_t)GCConfig::GetGCRegionRange();
 #endif //USE_REGIONS
 
 #ifdef HOST_64BIT
@@ -43942,7 +43942,7 @@ HRESULT GCHeap::Initialize()
 #ifdef MULTIPLE_HEAPS
     gc_heap::soh_segment_size /= 4;
 #endif //MULTIPLE_HEAPS
-    size_t gc_region_size = (size_t)GCConfig::GetGCRegionsSize();
+    size_t gc_region_size = (size_t)GCConfig::GetGCRegionSize();
     if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * 19) > gc_heap::regions_range))
     {
         return E_OUTOFMEMORY;
