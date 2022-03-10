@@ -1137,6 +1137,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 		*/
 		/*printf ("new descriptor: %p 0x%x for %s.%s\n", class->gc_descr, bitmap [0], class->name_space, class->name);*/
 
+#ifdef ENABLE_WEAK_ATTR
 		if (m_class_has_weak_fields (klass)) {
 			gsize *weak_bitmap = NULL;
 			int weak_bitmap_nbits = 0;
@@ -1173,6 +1174,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 			mono_class_set_weak_bitmap (klass, weak_bitmap_nbits, weak_bitmap);
 			mono_loader_unlock ();
 		}
+#endif
 
 		gc_descr = mono_gc_make_descr_for_object (bitmap, max_set + 1, m_class_get_instance_size (klass));
 	}
@@ -4943,8 +4945,10 @@ object_new_common_tail (MonoObject *o, MonoClass *klass, MonoError *error)
 	if (G_UNLIKELY (m_class_has_finalize (klass)))
 		mono_object_register_finalizer (o);
 
+#ifdef ENABLE_WEAK_ATTR
 	if (G_UNLIKELY (m_class_has_weak_fields (klass)))
 		mono_gc_register_obj_with_weak_fields (o);
+#endif
 
 	return o;
 }
@@ -4968,8 +4972,10 @@ object_new_handle_common_tail (MonoObjectHandle o, MonoClass *klass, MonoError *
 	if (G_UNLIKELY (m_class_has_finalize (klass)))
 		mono_object_register_finalizer_handle (o);
 
+#ifdef ENABLE_WEAK_ATTR
 	if (G_UNLIKELY (m_class_has_weak_fields (klass)))
 		mono_gc_register_object_with_weak_fields (o);
+#endif
 
 	return o;
 }

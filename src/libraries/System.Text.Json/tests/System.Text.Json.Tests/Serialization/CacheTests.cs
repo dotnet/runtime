@@ -218,7 +218,7 @@ namespace System.Text.Json.Serialization.Tests
             //
             // If either of them changes, this test will need to be kept in sync.
 
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke(static () =>
                 {
                     var options = new JsonSerializerOptions();
 
@@ -255,6 +255,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/66232", TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(GetJsonSerializerOptions))]
         public static void JsonSerializerOptions_ReuseConverterCaches()

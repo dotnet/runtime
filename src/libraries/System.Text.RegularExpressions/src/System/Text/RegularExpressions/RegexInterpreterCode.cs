@@ -66,8 +66,10 @@ namespace System.Text.RegularExpressions
             }
         }
 
+#if DEBUG
         /// <summary>Gets the number of integers required to store an operation represented by the specified opcode (including the opcode).</summary>
         /// <returns>Values range from 1 (just the opcode) to 3 (the opcode plus up to two operands).</returns>
+        [ExcludeFromCodeCoverage]
         public static int OpcodeSize(RegexOpcode opcode)
         {
             opcode &= RegexOpcode.OperatorMask;
@@ -134,7 +136,6 @@ namespace System.Text.RegularExpressions
             }
         }
 
-#if DEBUG
         [ExcludeFromCodeCoverage]
         public override string ToString()
         {

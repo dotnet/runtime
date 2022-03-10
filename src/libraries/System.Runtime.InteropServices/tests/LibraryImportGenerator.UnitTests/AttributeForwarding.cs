@@ -13,7 +13,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace DllImportGenerator.UnitTests
+namespace LibraryImportGenerator.UnitTests
 {
     public class AttributeForwarding
     {
@@ -29,7 +29,7 @@ using System.Runtime.InteropServices;
 partial class C
 {{
     [{attributeSourceName}]
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method1();
 }}
 
@@ -45,7 +45,7 @@ struct Native
 }}
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(newComp.GetDiagnostics());
 
             ITypeSymbol attributeType = newComp.GetTypeByMetadataName(attributeMetadataName)!;
@@ -70,7 +70,7 @@ using System.Runtime.InteropServices;
 partial class C
 {
     [UnmanagedCallConv(CallConvs = new Type[0])]
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method1();
 }
 
@@ -86,7 +86,7 @@ struct Native
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(newComp.GetDiagnostics());
 
             ITypeSymbol attributeType = newComp.GetTypeByMetadataName("System.Runtime.InteropServices.UnmanagedCallConvAttribute")!;
@@ -113,7 +113,7 @@ using System.Runtime.InteropServices;
 partial class C
 {
     [UnmanagedCallConv(CallConvs = new[]{typeof(CallConvStdcall)})]
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method1();
 }
 
@@ -129,7 +129,7 @@ struct Native
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(newComp.GetDiagnostics());
 
             ITypeSymbol attributeType = newComp.GetTypeByMetadataName("System.Runtime.InteropServices.UnmanagedCallConvAttribute")!;
@@ -160,7 +160,7 @@ using System.Runtime.InteropServices;
 partial class C
 {
     [UnmanagedCallConv(CallConvs = new[]{typeof(CallConvStdcall), typeof(CallConvSuppressGCTransition)})]
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method1();
 }
 
@@ -176,7 +176,7 @@ struct Native
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(newComp.GetDiagnostics());
 
             ITypeSymbol attributeType = newComp.GetTypeByMetadataName("System.Runtime.InteropServices.UnmanagedCallConvAttribute")!;
@@ -211,7 +211,7 @@ using System.Runtime.InteropServices;
 partial class C
 {{
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32 | DllImportSearchPath.UserDirectories)]
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method1();
 }}
 
@@ -227,7 +227,7 @@ struct Native
 }}
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(newComp.GetDiagnostics());
 
             ITypeSymbol attributeType = newComp.GetTypeByMetadataName("System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute")!;
@@ -259,7 +259,7 @@ class OtherAttribute : Attribute {}
 partial class C
 {
     [Other]
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method1();
 }
 
@@ -275,7 +275,7 @@ struct Native
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
             Assert.Empty(newComp.GetDiagnostics());
 
@@ -298,13 +298,13 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 partial class C
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool Method1([In, Out] int[] a);
 }
-" + CodeSnippets.GeneratedDllImportAttributeDeclaration;
+" + CodeSnippets.LibraryImportAttributeDeclaration;
             Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
             IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
 
@@ -341,13 +341,13 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 partial class C
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool Method1([MarshalAs(UnmanagedType.I2)] int a);
 }
-" + CodeSnippets.GeneratedDllImportAttributeDeclaration;
+" + CodeSnippets.LibraryImportAttributeDeclaration;
             Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
             IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
 
@@ -370,13 +370,13 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 partial class C
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool Method1([MarshalAs(UnmanagedType.LPArray, SizeConst = 10, SizeParamIndex = 1, ArraySubType = UnmanagedType.I4)] int[] a, int b);
 }
-" + CodeSnippets.GeneratedDllImportAttributeDeclaration;
+" + CodeSnippets.LibraryImportAttributeDeclaration;
             Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
             IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
 

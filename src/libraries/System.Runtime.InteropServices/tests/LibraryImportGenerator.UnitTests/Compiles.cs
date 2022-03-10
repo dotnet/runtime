@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace DllImportGenerator.UnitTests
+namespace LibraryImportGenerator.UnitTests
 {
     public class Compiles
     {
@@ -24,7 +24,7 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.NestedTypes };
             yield return new[] { CodeSnippets.UnsafeContext };
             yield return new[] { CodeSnippets.UserDefinedEntryPoint };
-            yield return new[] { CodeSnippets.AllGeneratedDllImportNamedArguments };
+            yield return new[] { CodeSnippets.AllLibraryImportNamedArguments };
             yield return new[] { CodeSnippets.DefaultParameters };
             yield return new[] { CodeSnippets.UseCSharpFeaturesForConstants };
 
@@ -238,7 +238,7 @@ namespace DllImportGenerator.UnitTests
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(generatorDiags);
 
             var newCompDiags = newComp.GetDiagnostics();
@@ -264,7 +264,7 @@ namespace DllImportGenerator.UnitTests
             Compilation comp = await TestUtils.CreateCompilation(source, preprocessorSymbols: preprocessorSymbols);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(generatorDiags);
 
             var newCompDiags = newComp.GetDiagnostics();
@@ -277,7 +277,7 @@ namespace DllImportGenerator.UnitTests
 
             // Confirm that all unsupported target frameworks can be generated.
             {
-                string code = CodeSnippets.BasicParametersAndModifiers<byte>(CodeSnippets.GeneratedDllImportAttributeDeclaration);
+                string code = CodeSnippets.BasicParametersAndModifiers<byte>(CodeSnippets.LibraryImportAttributeDeclaration);
                 yield return new object[] { code, TestTargetFramework.Net5, false };
                 yield return new object[] { code, TestTargetFramework.Core, false };
                 yield return new object[] { code, TestTargetFramework.Standard, false };
@@ -286,7 +286,7 @@ namespace DllImportGenerator.UnitTests
 
             // Confirm that all unsupported target frameworks fallback to a forwarder.
             {
-                string code = CodeSnippets.BasicParametersAndModifiers<byte[]>(CodeSnippets.GeneratedDllImportAttributeDeclaration);
+                string code = CodeSnippets.BasicParametersAndModifiers<byte[]>(CodeSnippets.LibraryImportAttributeDeclaration);
                 yield return new object[] { code, TestTargetFramework.Net5, true };
                 yield return new object[] { code, TestTargetFramework.Core, true };
                 yield return new object[] { code, TestTargetFramework.Standard, true };
@@ -295,7 +295,7 @@ namespace DllImportGenerator.UnitTests
 
             // Confirm that all unsupported target frameworks fallback to a forwarder.
             {
-                string code = CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf16, CodeSnippets.GeneratedDllImportAttributeDeclaration);
+                string code = CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf16, CodeSnippets.LibraryImportAttributeDeclaration);
                 yield return new object[] { code, TestTargetFramework.Net5, true };
                 yield return new object[] { code, TestTargetFramework.Core, true };
                 yield return new object[] { code, TestTargetFramework.Standard, true };
@@ -313,7 +313,7 @@ namespace DllImportGenerator.UnitTests
             var newComp = TestUtils.RunGenerators(
                 comp,
                 out var generatorDiags,
-                new Microsoft.Interop.DllImportGenerator());
+                new Microsoft.Interop.LibraryImportGenerator());
 
             Assert.Empty(generatorDiags);
 
@@ -350,7 +350,7 @@ namespace DllImportGenerator.UnitTests
             var newComp = TestUtils.RunGenerators(
                 comp,
                 out var generatorDiags,
-                new Microsoft.Interop.DllImportGenerator());
+                new Microsoft.Interop.LibraryImportGenerator());
 
             Assert.Empty(generatorDiags);
 
@@ -369,7 +369,7 @@ namespace DllImportGenerator.UnitTests
 
         public static IEnumerable<object[]> SnippetsWithBlittableTypesButNonBlittableDataToCompile()
         {
-            yield return new[] { CodeSnippets.AllGeneratedDllImportNamedArguments };
+            yield return new[] { CodeSnippets.AllLibraryImportNamedArguments };
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<int>() };
             yield return new[] { CodeSnippets.SetLastErrorTrue<int>() };
         }
@@ -384,7 +384,7 @@ namespace DllImportGenerator.UnitTests
             var newComp = TestUtils.RunGenerators(
                 comp,
                 out var generatorDiags,
-                new Microsoft.Interop.DllImportGenerator());
+                new Microsoft.Interop.LibraryImportGenerator());
 
             Assert.Empty(generatorDiags);
 
@@ -422,9 +422,9 @@ namespace DllImportGenerator.UnitTests
 
             var newComp = TestUtils.RunGenerators(
                 comp,
-                new DllImportGeneratorOptionsProvider(useMarshalType: true, generateForwarders: false),
+                new LibraryImportGeneratorOptionsProvider(useMarshalType: true, generateForwarders: false),
                 out var generatorDiags,
-                new Microsoft.Interop.DllImportGenerator());
+                new Microsoft.Interop.LibraryImportGenerator());
 
             Assert.Empty(generatorDiags);
 
@@ -451,7 +451,7 @@ namespace DllImportGenerator.UnitTests
             Compilation comp = await TestUtils.CreateCompilation(sources);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(generatorDiags);
 
             var newCompDiags = newComp.GetDiagnostics();

@@ -370,6 +370,11 @@ merge_mch_parser.add_argument("-pattern", required=True, help=merge_mch_pattern_
 ################################################################################
 # Helper functions
 ################################################################################
+def get_time_prefix():
+    """ Return a string to use as a print prefix for output. Currently, a time string for the current time.
+    """
+    return "{} ".format(datetime.datetime.now().strftime("[%H:%M:%S]"))
+
 def run_and_log(command, log_level=logging.DEBUG):
     """ Return a command and log its output to the debug logger
 
@@ -381,7 +386,8 @@ def run_and_log(command, log_level=logging.DEBUG):
         Process return code
     """
 
-    logging.log(log_level, "Invoking: %s", " ".join(command))
+    print_prefix = get_time_prefix()
+    logging.log(log_level, "%sInvoking: %s", print_prefix, " ".join(command))
     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     stdout_output, _ = proc.communicate()
     for line in stdout_output.decode('utf-8', errors='replace').splitlines():  # There won't be any stderr output since it was piped to stdout
@@ -402,7 +408,7 @@ def write_file_to_log(filepath, log_level=logging.DEBUG):
     if not os.path.exists(filepath):
         return
 
-    logging.log(log_level, "============== Contents of %s", filepath)
+    logging.log(log_level, "%s============== Contents of %s", get_time_prefix(), filepath)
 
     with open(filepath) as file_handle:
         lines = file_handle.readlines()
@@ -410,7 +416,7 @@ def write_file_to_log(filepath, log_level=logging.DEBUG):
         for line in lines:
             logging.log(log_level, line)
 
-    logging.log(log_level, "============== End contents of %s", filepath)
+    logging.log(log_level, "%s============== End contents of %s", get_time_prefix(), filepath)
 
 # Functions to verify the OS and architecture. They take an instance of CoreclrArguments,
 # which is used to find the list of legal OS and architectures
@@ -502,7 +508,7 @@ class AsyncSubprocessHelper:
 
         print_prefix = ""
         if self.verbose:
-            print_prefix = "[{}:{}]: ".format(index, size)
+            print_prefix = "{}[{}:{}]: ".format(get_time_prefix(), index, size)
 
         await async_callback(print_prefix, item, *extra_args)
 
@@ -531,7 +537,7 @@ class AsyncSubprocessHelper:
             tasks.append(self.__get_item__(item, count, size, async_callback, *extra_args))
             count += 1
 
-        # Inovke all the calls to __get_item__ concurrently and wait for them all to finish.
+        # Invoke all the calls to __get_item__ concurrently and wait for them all to finish.
         await asyncio.gather(*tasks)
 
     def run_to_completion(self, async_callback, *extra_args):
@@ -731,7 +737,7 @@ class SuperPMICollect:
                 complus_env["ZapDisable"] = "1"
                 complus_env["ReadyToRun"] = "0"
 
-            logging.debug("Starting collection.")
+            logging.debug("%sStarting collection.", get_time_prefix())
             logging.debug("")
 
             def set_and_report_env(env, root_env, complus_env = None):
@@ -760,7 +766,7 @@ class SuperPMICollect:
 
             ################################################################################################ Do collection using given collection command (e.g., script)
             if self.collection_command is not None:
-                logging.debug("Starting collection using command")
+                logging.debug("%sStarting collection using command", get_time_prefix())
 
                 collection_command_env = env_copy.copy()
                 collection_complus_env = complus_env.copy()
@@ -782,7 +788,7 @@ class SuperPMICollect:
 
             ################################################################################################ Do collection using PMI
             if self.coreclr_args.pmi is True:
-                logging.debug("Starting collection using PMI")
+                logging.debug("%sStarting collection using PMI", get_time_prefix())
 
                 async def run_pmi(print_prefix, assembly, self):
                     """ Run pmi over all dlls
@@ -854,7 +860,7 @@ class SuperPMICollect:
 
             ################################################################################################ Do collection using crossgen2
             if self.coreclr_args.crossgen2 is True:
-                logging.debug("Starting collection using crossgen2")
+                logging.debug("%sStarting collection using crossgen2", get_time_prefix())
 
                 async def run_crossgen2(print_prefix, assembly, self):
                     """ Run crossgen2 over all dlls

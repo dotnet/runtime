@@ -342,15 +342,15 @@ namespace System
         public static void Copy(System.Array sourceArray, long sourceIndex, System.Array destinationArray, long destinationIndex, long length) { }
         public void CopyTo(System.Array array, int index) { }
         public void CopyTo(System.Array array, long index) { }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public static System.Array CreateInstance(System.Type elementType, int length) { throw null; }
         public static System.Array CreateInstance(System.Type elementType, int length1, int length2) { throw null; }
         public static System.Array CreateInstance(System.Type elementType, int length1, int length2, int length3) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public static System.Array CreateInstance(System.Type elementType, params int[] lengths) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public static System.Array CreateInstance(System.Type elementType, int[] lengths, int[] lowerBounds) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public static System.Array CreateInstance(System.Type elementType, params long[] lengths) { throw null; }
         public static T[] Empty<T>() { throw null; }
         public static bool Exists<T>(T[] array, System.Predicate<T> match) { throw null; }
@@ -2085,6 +2085,7 @@ namespace System
         public Decimal(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public Decimal(ulong value) { throw null; }
+        public byte Scale { get { throw null; } }
         public static System.Decimal Add(System.Decimal d1, System.Decimal d2) { throw null; }
         public static System.Decimal Ceiling(System.Decimal d) { throw null; }
         public static int Compare(System.Decimal d1, System.Decimal d2) { throw null; }
@@ -6904,9 +6905,9 @@ namespace System
         protected abstract bool IsPrimitiveImpl();
         public virtual bool IsSubclassOf(System.Type c) { throw null; }
         protected virtual bool IsValueTypeImpl() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public virtual System.Type MakeArrayType() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public virtual System.Type MakeArrayType(int rank) { throw null; }
         public virtual System.Type MakeByRefType() { throw null; }
         public static System.Type MakeGenericMethodParameter(int position) { throw null; }
@@ -8337,7 +8338,7 @@ namespace System.Collections
         public static System.Collections.ArrayList Synchronized(System.Collections.ArrayList list) { throw null; }
         public static System.Collections.IList Synchronized(System.Collections.IList list) { throw null; }
         public virtual object?[] ToArray() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public virtual System.Array ToArray(System.Type type) { throw null; }
         public virtual void TrimToSize() { }
     }
@@ -9043,6 +9044,8 @@ namespace System.Diagnostics
         public long ElapsedTicks { get { throw null; } }
         public bool IsRunning { get { throw null; } }
         public static long GetTimestamp() { throw null; }
+        public static System.TimeSpan GetElapsedTime(long startingTimestamp) { throw null; }
+        public static System.TimeSpan GetElapsedTime(long startingTimestamp, long endingTimestamp) { throw null; }
         public void Reset() { }
         public void Restart() { }
         public void Start() { }
