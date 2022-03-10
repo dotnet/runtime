@@ -1,8 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
-using System.Collections.Generic;
+using System.IO.Enumeration;
 using System.Threading;
 
 namespace System.IO
@@ -21,62 +20,49 @@ namespace System.IO
         internal static bool Copy(string sourcePath, string destinationPath, bool recursive,
             bool skipExistingFiles, CancellationToken cancellationToken)
         {
-            SearchOption searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-            IEnumerable<string> directoryEnumeration;
             bool success = true;
-
-            try
+            if (!DirectoryExists(sourcePath))
             {
-                EnumerationOptions enumerationOptions = EnumerationOptions.Compatible;
-
-                if (recursive)
-                {
-                    enumerationOptions = EnumerationOptions.CompatibleRecursive;
-                }
-
-                directoryEnumeration = Directory.EnumerateDirectories(sourcePath, "*", enumerationOptions);
-            }
-            catch (IOException)
-            {
-                // Return false if Enumeration is not possible
-                return false;
+                throw new DirectoryNotFoundException(sourcePath);
             }
 
-            foreach (string enumeratedDirectory in directoryEnumeration)
+            if (!DirectoryExists(destinationPath))
             {
-                string newDirectoryPath = enumeratedDirectory.Replace(sourcePath, destinationPath);
-                Directory.CreateDirectory(newDirectoryPath);
+                CreateDirectory(destinationPath);
+            }
 
+            var fse = new FileSystemEnumerable<(string childPath, bool isDirectory)>(sourcePath,
+                static (ref FileSystemEntry entry) => (entry.ToFullPath(), entry.IsDirectory),
+                recursive ? EnumerationOptions.CompatibleRecursive : EnumerationOptions.Compatible);
+
+            foreach ((string childPath, bool isDirectory) in fse)
+            {
                 cancellationToken.ThrowIfCancellationRequested();
-            }
-
-            foreach (string enumeratedFile in Directory.GetFiles(sourcePath, "*.*", searchOption))
-            {
-                if (skipExistingFiles && File.Exists(enumeratedFile))
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    continue;
-                }
-
                 try
                 {
-                    CopyFile(enumeratedFile, enumeratedFile.Replace(sourcePath, destinationPath), true);
-                }
-                catch (IOException ex)
-                {
-                    switch (ex.HResult)
+                    string destFilePath = Path.Join(destinationPath, childPath);
+                    if (isDirectory && !DirectoryExists(destFilePath))
                     {
-                        // success = false for read failures,
-                        // throw for everything else
-                        case Interop.Errors.ERROR_ACCESS_DENIED:
-                            success = false;
-                            break;
-                        default:
-                            throw;
+                        Directory.CreateDirectory(destFilePath);
+                    }
+                    else
+                    {
+                        string sourceFilePath = Path.Join(sourcePath, childPath);
+
+                        // If parent directory was not created in previous case, create it
+                        DirectoryInfo? parentDir = Directory.GetParent(destFilePath);
+                        if (parentDir is { Exists: false })
+                        {
+                            CreateDirectory(parentDir.FullName);
+                        }
+
+                        CopyFile(sourceFilePath, destFilePath, true);
                     }
                 }
-
-                cancellationToken.ThrowIfCancellationRequested();
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    success = false;
+                }
             }
 
             return success;
