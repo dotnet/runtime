@@ -776,15 +776,15 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             // Anything that follows will also be on the stack. However, if something from
             // floating point regs has been spilled to the stack, we can still use r0-r3 until they are full.
 
-            if (varDscInfo->canEnreg(TYP_INT, 1) &&      // The beginning of the struct can go in a register
-                !varDscInfo->canEnreg(TYP_INT, cSlots))  // The end of the struct can't fit in a register
+            if (varDscInfo->canEnreg(TYP_INT, 1) &&     // The beginning of the struct can go in a register
+                !varDscInfo->canEnreg(TYP_INT, cSlots)) // The end of the struct can't fit in a register
             {
                 // This is a candidate for being split assuming we pre spill
                 // this and that we did not already have float args.
                 if (varDscInfo->existAnyFloatStackArgs())
                 {
                     varDscInfo->setAllRegArgUsed(TYP_INT); // Prevent all future use of integer registers
-                    preSpill = false;                      // This struct won't be prespilled, since it will go on the stack
+                    preSpill = false; // This struct won't be prespilled, since it will go on the stack
                 }
                 else if (preSpill)
                 {
