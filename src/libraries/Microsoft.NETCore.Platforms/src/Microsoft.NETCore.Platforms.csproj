@@ -19,7 +19,8 @@
     
     <!-- When building from source, ensure the RID we're building for is part of the RID graph -->
     <AdditionalRuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalRuntimeIdentifiers);$(OutputRID)</AdditionalRuntimeIdentifiers>
-    <ServicingVersion>2</ServicingVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>3</ServicingVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
