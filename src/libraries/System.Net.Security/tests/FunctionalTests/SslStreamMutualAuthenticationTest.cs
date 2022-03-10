@@ -38,7 +38,7 @@ namespace System.Net.Security.Tests
                 {
                     ClientCertificates = useClientSelectionCallback ? null : new X509CertificateCollection() { _clientCertificate },
                     LocalCertificateSelectionCallback = useClientSelectionCallback ? ClientCertSelectionCallback : null,
-                    TargetHost = _clientCertificate.GetNameInfo(X509NameType.SimpleName, false)
+                    TargetHost = Guid.NewGuid().ToString("N")
                 });
                 Task t1 = server.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                 {

@@ -6555,15 +6555,18 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
     if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__AS_POINTER)->GetMemberDef())
     {
         // Return the argument that was passed in.
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_CONV_U, CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_CONV_U,
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 1);
+
         return true;
     }
-    if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__SIZEOF)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__SIZEOF)->GetMemberDef())
     {
         _ASSERTE(ftn->HasMethodInstantiation());
         Instantiation inst = ftn->GetMethodInstantiation();
@@ -6571,18 +6574,14 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
         mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
-        static BYTE ilcode[] = { CEE_PREFIX1, (CEE_SIZEOF & 0xFF), 0,0,0,0, CEE_RET };
+        static const BYTE ilcode[] =
+        {
+            CEE_PREFIX1, (CEE_SIZEOF & 0xFF), (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_RET
+        };
 
-        ilcode[2] = (BYTE)(tokGenericArg);
-        ilcode[3] = (BYTE)(tokGenericArg >> 8);
-        ilcode[4] = (BYTE)(tokGenericArg >> 16);
-        ilcode[5] = (BYTE)(tokGenericArg >> 24);
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 1);
 
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_AS)->GetMemberDef() ||
@@ -6591,12 +6590,14 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
              tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__AS_REF_IN)->GetMemberDef())
     {
         // Return the argument that was passed in.
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 1);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_ADD)->GetMemberDef() ||
@@ -6604,101 +6605,165 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
     {
         mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
-        static BYTE ilcode[] = { CEE_LDARG_1,
-            CEE_PREFIX1, (CEE_SIZEOF & 0xFF), 0,0,0,0,
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_PREFIX1, (CEE_SIZEOF & 0xFF), (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
             CEE_CONV_I,
             CEE_MUL,
-            CEE_LDARG_0,
             CEE_ADD,
-            CEE_RET };
+            CEE_RET
+        };
 
-        ilcode[3] = (BYTE)(tokGenericArg);
-        ilcode[4] = (BYTE)(tokGenericArg >> 8);
-        ilcode[5] = (BYTE)(tokGenericArg >> 16);
-        ilcode[6] = (BYTE)(tokGenericArg >> 24);
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
 
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INTPTR_ADD)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INTPTR_ADD)->GetMemberDef() ||
+             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_UINTPTR_ADD)->GetMemberDef())
     {
         mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
-        static BYTE ilcode[] = { CEE_LDARG_1,
-            CEE_PREFIX1, (CEE_SIZEOF & 0xFF), 0,0,0,0,
-            CEE_MUL,
+        static const BYTE ilcode[] =
+        {
             CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_PREFIX1, (CEE_SIZEOF & 0xFF), (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_MUL,
             CEE_ADD,
-            CEE_RET };
+            CEE_RET
+        };
 
-        ilcode[3] = (BYTE)(tokGenericArg);
-        ilcode[4] = (BYTE)(tokGenericArg >> 8);
-        ilcode[5] = (BYTE)(tokGenericArg >> 16);
-        ilcode[6] = (BYTE)(tokGenericArg >> 24);
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
 
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_ADD_BYTE_OFFSET)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INTPTR_ADD_BYTE_OFFSET)->GetMemberDef() ||
+        tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_UINTPTR_ADD_BYTE_OFFSET)->GetMemberDef())
     {
-        static BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_ADD, CEE_RET };
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_ADD,
+            CEE_RET
+        };
 
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_ARE_SAME)->GetMemberDef())
     {
         // Compare the two arguments
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (CEE_CEQ & 0xFF), CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_PREFIX1, (CEE_CEQ & 0xFF),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_BYREF_COPY)->GetMemberDef() ||
+        tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_PTR_COPY)->GetMemberDef())
+    {
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
+
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_LDOBJ, (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_STOBJ, (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_COPY_BLOCK)->GetMemberDef() ||
+        tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_COPY_BLOCK)->GetMemberDef())
+    {
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_LDARG_2,
+            CEE_PREFIX1, (CEE_CPBLK & 0xFF),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_COPY_BLOCK_UNALIGNED)->GetMemberDef() ||
+        tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_COPY_BLOCK_UNALIGNED)->GetMemberDef())
+    {
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_LDARG_2,
+            CEE_PREFIX1, (CEE_UNALIGNED & 0xFF), 0x01,
+            CEE_PREFIX1, (CEE_CPBLK & 0xFF),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_IS_ADDRESS_GREATER_THAN)->GetMemberDef())
     {
         // Compare the two arguments
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (CEE_CGT_UN & 0xFF), CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_PREFIX1, (CEE_CGT_UN & 0xFF),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_IS_ADDRESS_LESS_THAN)->GetMemberDef())
     {
         // Compare the two arguments
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (CEE_CLT_UN & 0xFF), CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_PREFIX1, (CEE_CLT_UN & 0xFF),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_NULLREF)->GetMemberDef())
     {
-        static const BYTE ilcode[] = { CEE_LDC_I4_0, CEE_CONV_U, CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        static const BYTE ilcode[] =
+        {
+            CEE_LDC_I4_0,
+            CEE_CONV_U,
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 1);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_IS_NULL)->GetMemberDef())
@@ -6706,22 +6771,50 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         // 'ldnull' opcode would produce type o, and we can't compare & against o (ECMA-335, Table III.4).
         // However, we can compare & against native int, so we'll use that instead.
 
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDC_I4_0, CEE_CONV_U, CEE_PREFIX1, (CEE_CEQ & 0xFF), CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDC_I4_0,
+            CEE_CONV_U,
+            CEE_PREFIX1, (CEE_CEQ & 0xFF),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INIT_BLOCK_UNALIGNED)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INIT_BLOCK)->GetMemberDef() ||
+            tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_INIT_BLOCK)->GetMemberDef())
     {
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_PREFIX1, (CEE_UNALIGNED & 0xFF), 0x01, CEE_PREFIX1, (CEE_INITBLK & 0xFF), CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 3;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_LDARG_2,
+            CEE_PREFIX1, (CEE_INITBLK & 0xFF),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INIT_BLOCK_UNALIGNED)->GetMemberDef() ||
+            tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_INIT_BLOCK_UNALIGNED)->GetMemberDef())
+    {
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_LDARG_2,
+            CEE_PREFIX1, (CEE_UNALIGNED & 0xFF), 0x01,
+            CEE_PREFIX1, (CEE_INITBLK & 0xFF),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_BYTE_OFFSET)->GetMemberDef())
@@ -6734,11 +6827,8 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
             CEE_RET
         };
 
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_READ_UNALIGNED)->GetMemberDef() ||
@@ -6749,7 +6839,7 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
         mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
-        static const BYTE ilcode[]
+        static const BYTE ilcode[] =
         {
             CEE_LDARG_0,
             CEE_PREFIX1, (CEE_UNALIGNED & 0xFF), 1,
@@ -6757,11 +6847,8 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
             CEE_RET
         };
 
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_WRITE_UNALIGNED)->GetMemberDef() ||
@@ -6772,7 +6859,7 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
         mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
-        static const BYTE ilcode[]
+        static const BYTE ilcode[] =
         {
             CEE_LDARG_0,
             CEE_LDARG_1,
@@ -6781,22 +6868,128 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
             CEE_RET
         };
 
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__READ)->GetMemberDef())
+    {
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
+
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDOBJ, (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__SKIPINIT)->GetMemberDef())
     {
-        static BYTE ilcode[] = { CEE_RET };
+        static const BYTE ilcode[] =
+        {
+            CEE_RET
+        };
 
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 0;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 0);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INT_SUBTRACT)->GetMemberDef() ||
+             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_INT_SUBTRACT)->GetMemberDef())
+    {
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
+
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_PREFIX1, (CEE_SIZEOF & 0xFF), (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_CONV_I,
+            CEE_MUL,
+            CEE_SUB,
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT)->GetMemberDef() ||
+             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT)->GetMemberDef())
+    {
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
+
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_PREFIX1, (CEE_SIZEOF & 0xFF), (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_MUL,
+            CEE_SUB,
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT_BYTE_OFFSET)->GetMemberDef() ||
+        tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT_BYTE_OFFSET)->GetMemberDef())
+    {
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_SUB,
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__WRITE)->GetMemberDef())
+    {
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
+
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_STOBJ, (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__UNBOX)->GetMemberDef())
+    {
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
+
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_UNBOX, (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
         return true;
     }
 
@@ -7216,6 +7409,15 @@ bool getILIntrinsicImplementationForActivator(MethodDesc* ftn,
     *pSig = SigPointer(header.LocalVarSig, header.cbLocalVarSig);
 
     return true;
+}
+
+void setILIntrinsicMethodInfo(CORINFO_METHOD_INFO* methInfo,uint8_t* ilcode, int ilsize, int maxstack)
+{
+    methInfo->ILCode = ilcode;
+    methInfo->ILCodeSize = ilsize;
+    methInfo->maxStack = maxstack;
+    methInfo->EHcount = 0;
+    methInfo->options = (CorInfoOptions)0;
 }
 
 //---------------------------------------------------------------------------------------

@@ -20,10 +20,10 @@ internal static partial class Interop
             internal byte* Shell;
         }
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPwUidR", SetLastError = false)]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPwUidR", SetLastError = false)]
         internal static unsafe partial int GetPwUidR(uint uid, out Passwd pwd, byte* buf, int bufLen);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPwNamR", CharSet = CharSet.Ansi, SetLastError = false)]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPwNamR", StringMarshalling = StringMarshalling.Utf8, SetLastError = false)]
         internal static unsafe partial int GetPwNamR(string name, out Passwd pwd, byte* buf, int bufLen);
     }
 }

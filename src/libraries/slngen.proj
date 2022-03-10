@@ -3,11 +3,12 @@
     <ScriptExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.cmd</ScriptExt>
     <ScriptExt Condition="!$([MSBuild]::IsOSPlatform('WINDOWS'))">.sh</ScriptExt>
     <ProjTemplatePath>$(RepositoryEngineeringDir)slngen.template.proj</ProjTemplatePath>
+    <SolutionNameOverride Condition="'$(SolutionNameOverride)' == ''">*</SolutionNameOverride>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Unless a "/p:SolutionName" property is passed in, glob all solutions under src/libraries. -->
-    <SolutionFile Include="$(MSBuildThisFileDirectory)$([MSBuild]::ValueOrDefault('$(SolutionName)', '%2A'))\*.sln" />
+    <!-- Unless a "/p:SolutionNameOverride" property is passed in, glob all solutions under src/libraries. -->
+    <SolutionFile Include="$(MSBuildThisFileDirectory)$(SolutionNameOverride)\*.sln" />
   </ItemGroup>
 
   <Target Name="UpdateSolutionFile"

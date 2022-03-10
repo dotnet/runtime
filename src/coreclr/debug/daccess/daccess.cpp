@@ -209,15 +209,8 @@ GetFullMethodNameFromMetadata(IMDInternalImport* mdImport,
 
     LPCUTF8 methodName;
     IfFailRet(mdImport->GetNameOfMethodDef(methodToken, &methodName));
-// Review conversion of size_t to ULONG32.
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4267)
-#endif
+
     len = strlen(methodName);
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
     if (len >= bufferChars)
     {
         return E_OUTOFMEMORY;

@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Linq;
@@ -90,7 +91,7 @@ namespace System.Security.Cryptography.Pkcs
                     if (choice.Certificate.HasValue)
                     {
                         coll.Add(new X509Certificate2(choice.Certificate.Value
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
                             .Span
 #else
                             .ToArray()
@@ -289,6 +290,7 @@ namespace System.Security.Cryptography.Pkcs
             return wrappedContent;
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void ComputeSignature() => ComputeSignature(new CmsSigner(_signerIdentifierType), true);
 
         public void ComputeSignature(CmsSigner signer) => ComputeSignature(signer, true);

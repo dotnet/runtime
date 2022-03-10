@@ -156,6 +156,9 @@
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
+      <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
+      <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == ''">false</WasmEmitSymbolMap>
+
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
       <_WasmRuntimeICallTablePath>$(_WasmIntermediateOutputPath)runtime-icall-table.h</_WasmRuntimeICallTablePath>
       <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)pinvoke-table.h</_WasmPInvokeTablePath>
@@ -182,7 +185,8 @@
       <_EmccCompileBitcodeRsp>$(_WasmIntermediateOutputPath)emcc-compile-bc.rsp</_EmccCompileBitcodeRsp>
       <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
 
-      <EmccTotalMemory Condition="'$(EmccTotalMemory)' == ''">536870912</EmccTotalMemory>
+      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
+      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">536870912</EmccInitialHeapSize>
     </PropertyGroup>
 
     <ItemGroup>
@@ -219,7 +223,7 @@
       <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
       <_EmccLDFlags Include="-Wl,--allow-undefined" />
-      <_EmccLDSFlags Include="-s TOTAL_MEMORY=$(EmccTotalMemory)" />
+      <_EmccLDSFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
 
       <!-- ILLinker should have removed unused imports, so error for Publish -->
       <_EmccLDSFlags Include="-s ERROR_ON_UNDEFINED_SYMBOLS=0" Condition="'$(WasmBuildingForNestedPublish)' != 'true'" />
@@ -375,6 +379,7 @@
 
       <_EmccLinkStepArgs Include="@(_EmccLDFlags)" />
       <_EmccLinkStepArgs Include="@(_EmccLDSFlags)" />
+      <_EmccLinkStepArgs Include="--emit-symbol-map" Condition="'$(WasmEmitSymbolMap)' == 'true'" />
 
       <_EmccLinkStepArgs Include="--%(_WasmExtraJSFile.Kind) &quot;%(_WasmExtraJSFile.Identity)&quot;" Condition="'%(_WasmExtraJSFile.Kind)' != ''" />
       <_WasmLinkDependencies Include="@(_WasmExtraJSFile)" />
@@ -406,16 +411,21 @@
     <ItemGroup>
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.js" />
+      <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true'" />
     </ItemGroup>
 
-    <Message Text="Optimizing dotnet.wasm ..." Importance="High" />
-    <Exec Command='wasm-opt$(_ExeExt) --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <Message Text="Stripping symbols from dotnet.wasm ..." Importance="High" Condition="'$(WasmNativeStrip)' == 'true'" />
+    <Exec Command='wasm-opt$(_ExeExt) --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"'
+          Condition="'$(WasmNativeStrip)' == 'true'"
+          IgnoreStandardErrorWarningFormat="true"
+          EnvironmentVariables="@(EmscriptenEnvVars)" />
   </Target>
 
   <Target Name="_CompleteWasmBuildNative">
     <ItemGroup>
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.js" />
+      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true' and Exists('$(_WasmIntermediateOutputPath)dotnet.js.symbols')" />
     </ItemGroup>
   </Target>
 
@@ -462,10 +472,13 @@
     </ItemGroup>
     <PropertyGroup>
       <ActualEmccVersionRaw>%(_ReversedVersionLines.Identity)</ActualEmccVersionRaw>
+      <_VersionMismatchMessage>Emscripten version mismatch. The runtime pack in $(MicrosoftNetCoreAppRuntimePackDir) expects '$(RuntimeEmccVersionRaw)', but emcc being used has version '$(ActualEmccVersionRaw)'. This might cause build failures.</_VersionMismatchMessage>
     </PropertyGroup>
 
-    <Warning Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)'"
-             Text="Emscripten version mismatch. The runtime pack in $(MicrosoftNetCoreAppRuntimePackDir) expects '$(RuntimeEmccVersionRaw)', but emcc being used has version '$(ActualEmccVersionRaw)'. This might cause build failures." />
+    <Warning Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)' and '$(_WasmStrictVersionMatch)' != 'true'"
+             Text="$(_VersionMismatchMessage)" />
+    <Error Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)' and '$(_WasmStrictVersionMatch)' == 'true'"
+           Text="$(_VersionMismatchMessage)" />
   </Target>
 
   <!--

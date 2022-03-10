@@ -204,7 +204,7 @@ namespace Internal.Reflection
             return RuntimeTypeTable.Table.GetOrAdd(new RuntimeTypeHandleKey(typeHandle));
         }
 
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType()
         {
             // We support enough of MakeArrayType to make enum operations work

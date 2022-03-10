@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tests;
 
 using Microsoft.DotNet.XUnitExtensions;
 
@@ -1066,7 +1067,7 @@ namespace System.IO.Tests
                 watcher.Filters.Add(fileTwo.Name);
 
                 var cts = new CancellationTokenSource();
-                Task modifier = Task.Run(() =>
+                Thread thread = ThreadTestHelpers.CreateGuardedThread(out Action waitForThread, () =>
                 {
                     string otherFilter = Guid.NewGuid().ToString("N");
                     while (!cts.IsCancellationRequested)
@@ -1075,13 +1076,15 @@ namespace System.IO.Tests
                         watcher.Filters.RemoveAt(2);
                     }
                 });
+                thread.IsBackground = true;
+                thread.Start();
 
                 ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileOne.Create().Dispose(), cleanup: null, expectedPath: fileOne.FullName);
                 ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileTwo.Create().Dispose(), cleanup: null, expectedPath: fileTwo.FullName);
                 ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => fileThree.Create().Dispose(), cleanup: null, expectedPath: fileThree.FullName);
 
                 cts.Cancel();
-                modifier.Wait();
+                waitForThread();
             }
         }
     }

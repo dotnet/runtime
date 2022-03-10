@@ -3076,7 +3076,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             // Arm64 Apple has a special ABI for passing small size arguments on stack,
             // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
             // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
-            argAlignBytes = eeGetArgAlignment(argType, isFloatHfa);
+            argAlignBytes = eeGetArgSizeAlignment(argType, isFloatHfa);
         }
 
         //
@@ -4916,12 +4916,6 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, GenTreeCall::Use* 
     // Create a reference to the temp
     GenTree* dest = gtNewLclvNode(tmp, lvaTable[tmp].lvType);
     dest->gtFlags |= (GTF_DONT_CSE | GTF_VAR_DEF); // This is a def of the local, "entire" by construction.
-
-    if (argx->gtOper == GT_OBJ)
-    {
-        argx->gtFlags &= ~(GTF_ALL_EFFECT) | (argx->AsBlk()->Addr()->gtFlags & GTF_ALL_EFFECT);
-        argx->SetIndirExceptionFlags(this);
-    }
 
     // Copy the valuetype to the temp
     GenTree* copyBlk = gtNewBlkOpNode(dest, argx, false /* not volatile */, true /* copyBlock */);
@@ -12176,6 +12170,14 @@ DONE_MORPHING_CHILDREN:
         case GT_GE:
         case GT_GT:
 
+            if (!optValnumCSE_phase && (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST)))
+            {
+                tree = fgOptimizeRelationalComparisonWithCasts(tree->AsOp());
+                oper = tree->OperGet();
+                op1  = tree->gtGetOp1();
+                op2  = tree->gtGetOp2();
+            }
+
             // op2's value may be changed, so it cannot be a CSE candidate.
             if (op2->IsIntegralConst() && !gtIsActiveCSE_Candidate(op2))
             {
@@ -12411,19 +12413,22 @@ DONE_MORPHING_CHILDREN:
             break;
 
         case GT_OBJ:
-            // If we have GT_OBJ(GT_ADDR(X)) and X has GTF_GLOB_REF, we must set GTF_GLOB_REF on
-            // the GT_OBJ. Note that the GTF_GLOB_REF will have been cleared on ADDR(X) where X
-            // is a local or clsVar, even if it has been address-exposed.
-            if (op1->OperGet() == GT_ADDR)
-            {
-                GenTreeUnOp* addr   = op1->AsUnOp();
-                GenTree*     addrOp = addr->gtGetOp1();
-                tree->gtFlags |= (addrOp->gtFlags & GTF_GLOB_REF);
-            }
-            break;
-
+        case GT_BLK:
         case GT_IND:
         {
+            // If we have IND(ADDR(X)) and X has GTF_GLOB_REF, we must set GTF_GLOB_REF on
+            // the OBJ. Note that the GTF_GLOB_REF will have been cleared on ADDR(X) where X
+            // is a local or CLS_VAR, even if it has been address-exposed.
+            if (op1->OperIs(GT_ADDR))
+            {
+                tree->gtFlags |= (op1->AsUnOp()->gtGetOp1()->gtFlags & GTF_GLOB_REF);
+            }
+
+            if (!tree->OperIs(GT_IND))
+            {
+                break;
+            }
+
             // Can not remove a GT_IND if it is currently a CSE candidate.
             if (gtIsActiveCSE_Candidate(tree))
             {
@@ -12841,7 +12846,7 @@ DONE_MORPHING_CHILDREN:
                 // Perform the transform ADDR(COMMA(x, ..., z)) == COMMA(x, ..., ADDR(z)).
                 // (Be sure to mark "z" as an l-value...)
 
-                GenTreePtrStack commas(getAllocator(CMK_ArrayStack));
+                ArrayStack<GenTree*> commas(getAllocator(CMK_ArrayStack));
                 for (GenTree* comma = op1; comma != nullptr && comma->gtOper == GT_COMMA; comma = comma->gtGetOp2())
                 {
                     commas.Push(comma);
@@ -13966,6 +13971,145 @@ GenTree* Compiler::fgOptimizeBitwiseAnd(GenTreeOp* andOp)
     }
 
     return nullptr;
+}
+
+//------------------------------------------------------------------------
+// fgOptimizeRelationalComparisonWithCasts: Recognizes comparisons against
+//   various cast operands and tries to remove them. E.g.:
+//
+//   *  GE        int
+//   +--*  CAST      long <- ulong <- uint
+//   |  \--*  X         int
+//   \--*  CNS_INT   long
+//
+//   to:
+//
+//   *  GE_un     int
+//   +--*  X         int
+//   \--*  CNS_INT   int
+//
+//   same for:
+//
+//   *  GE        int
+//   +--*  CAST      long <- ulong <- uint
+//   |  \--*  X         int
+//   \--*  CAST      long <- [u]long <- int
+//      \--*  ARR_LEN   int
+//
+//   These patterns quite often show up along with index checks
+//
+// Arguments:
+//   cmp - the GT_LE/GT_LT/GT_GE/GT_GT tree to morph.
+//
+// Return Value:
+//   Returns the same tree where operands might have narrower types
+//
+// Notes:
+//   TODO-Casts: consider unifying this function with "optNarrowTree"
+//
+GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
+{
+    assert(cmp->OperIs(GT_LE, GT_LT, GT_GE, GT_GT));
+    assert(!optValnumCSE_phase);
+
+    GenTree* op1 = cmp->gtGetOp1();
+    GenTree* op2 = cmp->gtGetOp2();
+
+    // Caller is expected to call this function only if we have CAST nodes
+    assert(op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST));
+
+    if (!op1->TypeIs(TYP_LONG))
+    {
+        // We can extend this logic to handle small types as well, but currently it's done mostly to
+        // assist range check elimination
+        return cmp;
+    }
+
+    GenTree* castOp;
+    GenTree* knownPositiveOp;
+
+    bool knownPositiveIsOp2;
+    if (op2->IsIntegralConst() || ((op2->OperIs(GT_CAST) && op2->AsCast()->CastOp()->OperIs(GT_ARR_LENGTH))))
+    {
+        // op2 is either a LONG constant or (T)ARR_LENGTH
+        knownPositiveIsOp2 = true;
+        castOp             = cmp->gtGetOp1();
+        knownPositiveOp    = cmp->gtGetOp2();
+    }
+    else
+    {
+        // op1 is either a LONG constant (yes, it's pretty normal for relops)
+        // or (T)ARR_LENGTH
+        castOp             = cmp->gtGetOp2();
+        knownPositiveOp    = cmp->gtGetOp1();
+        knownPositiveIsOp2 = false;
+    }
+
+    if (castOp->OperIs(GT_CAST) && varTypeIsLong(castOp->CastToType()) && castOp->AsCast()->CastOp()->TypeIs(TYP_INT) &&
+        castOp->IsUnsigned() && !castOp->gtOverflow())
+    {
+        bool knownPositiveFitsIntoU32 = false;
+        if (knownPositiveOp->IsIntegralConst() && FitsIn<UINT32>(knownPositiveOp->AsIntConCommon()->IntegralValue()))
+        {
+            // BTW, we can fold the whole condition if op2 doesn't fit into UINT_MAX.
+            knownPositiveFitsIntoU32 = true;
+        }
+        else if (knownPositiveOp->OperIs(GT_CAST) && varTypeIsLong(knownPositiveOp->CastToType()) &&
+                 knownPositiveOp->AsCast()->CastOp()->OperIs(GT_ARR_LENGTH))
+        {
+            knownPositiveFitsIntoU32 = true;
+            // TODO-Casts: recognize Span.Length here as well.
+        }
+
+        if (!knownPositiveFitsIntoU32)
+        {
+            return cmp;
+        }
+
+        JITDUMP("Removing redundant cast(s) for:\n")
+        DISPTREE(cmp)
+        JITDUMP("\n\nto:\n\n")
+
+        cmp->SetUnsigned();
+
+        // Drop cast from castOp
+        if (knownPositiveIsOp2)
+        {
+            cmp->gtOp1 = castOp->AsCast()->CastOp();
+        }
+        else
+        {
+            cmp->gtOp2 = castOp->AsCast()->CastOp();
+        }
+        DEBUG_DESTROY_NODE(castOp);
+
+        if (knownPositiveOp->OperIs(GT_CAST))
+        {
+            // Drop cast from knownPositiveOp too
+            if (knownPositiveIsOp2)
+            {
+                cmp->gtOp2 = knownPositiveOp->AsCast()->CastOp();
+            }
+            else
+            {
+                cmp->gtOp1 = knownPositiveOp->AsCast()->CastOp();
+            }
+            DEBUG_DESTROY_NODE(knownPositiveOp);
+        }
+        else
+        {
+            // Change type for constant from LONG to INT
+            knownPositiveOp->ChangeType(TYP_INT);
+#ifndef TARGET_64BIT
+            assert(knownPositiveOp->OperIs(GT_CNS_LNG));
+            knownPositiveOp->BashToConst(static_cast<int>(knownPositiveOp->AsIntConCommon()->IntegralValue()));
+#endif
+            fgUpdateConstTreeValueNumber(knownPositiveOp);
+        }
+        DISPTREE(cmp)
+        JITDUMP("\n")
+    }
+    return cmp;
 }
 
 //------------------------------------------------------------------------
@@ -18353,8 +18497,8 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
         return tree;
     }
 
-    int          foldCount = 0;
-    unsigned int lclNum    = op2->AsLclVarCommon()->GetLclNum();
+    int      foldCount = 0;
+    unsigned lclNum    = op2->AsLclVarCommon()->GetLclNum();
 
     // Search for pattern of shape ADD(ADD(ADD(lclNum, lclNum), lclNum), lclNum).
     while (true)
@@ -18383,7 +18527,7 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
 
     // V0 + V0 ... + V0 becomes V0 * foldCount, where postorder transform will optimize
     // accordingly
-    consTree->BashToConst(foldCount, lclVarTree->TypeGet());
+    consTree->BashToConst(foldCount, tree->TypeGet());
 
     GenTree* morphed = gtNewOperNode(GT_MUL, tree->TypeGet(), lclVarTree, consTree);
     DEBUG_DESTROY_NODE(tree);

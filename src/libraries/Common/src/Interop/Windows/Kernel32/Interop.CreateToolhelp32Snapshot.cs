@@ -21,8 +21,8 @@ internal static partial class Interop
             NoHeaps = 0x40000000
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        internal struct PROCESSENTRY32
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        internal unsafe struct PROCESSENTRY32
         {
             internal int dwSize;
             internal int cntUsage;
@@ -33,23 +33,21 @@ internal static partial class Interop
             internal int th32ParentProcessID;
             internal int pcPriClassBase;
             internal int dwFlags;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = MAX_PATH)]
-            internal string szExeFile;
+            internal fixed char szExeFile[MAX_PATH];
         }
 
         // https://docs.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-createtoolhelp32snapshot
-        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         internal static partial IntPtr CreateToolhelp32Snapshot(SnapshotFlags dwFlags, uint th32ProcessID);
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable types.
         // https://docs.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-process32first
-        [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        internal static extern bool Process32First(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "Process32FirstW", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool Process32First(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
 
         // https://docs.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-process32next
-        [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        internal static extern bool Process32Next(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
-#pragma warning restore DLLIMPORTGENANALYZER015
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "Process32NextW", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool Process32Next(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
     }
 }
