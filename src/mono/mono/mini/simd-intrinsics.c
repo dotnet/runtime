@@ -675,7 +675,7 @@ type_to_extract_op (MonoTypeEnum type)
 static MonoClass *
 create_class_instance (MonoCompile *cfg, MonoMethodSignature *fsig, const char* name_space, const char *name, gboolean same_type, MonoType *param_type)
 {
-	MonoClass *ivector128 = mono_class_load_from_name (mono_defaults.corlib, name_space, name);
+	MonoClass *ivector = mono_class_load_from_name (mono_defaults.corlib, name_space, name);
 	if (same_type) {
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		param_type = mono_class_get_generic_class (arg_class)->context.class_inst->type_argv [0];
@@ -688,10 +688,10 @@ create_class_instance (MonoCompile *cfg, MonoMethodSignature *fsig, const char* 
 	memset (&ctx, 0, sizeof (ctx));
 	ctx.class_inst = mono_metadata_get_generic_inst (1, args);
 	ERROR_DECL (error);
-	MonoClass *ivector128_inst = mono_class_inflate_generic_class_checked (ivector128, &ctx, error);
+	MonoClass *ivector_inst = mono_class_inflate_generic_class_checked (ivector, &ctx, error);
 	mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
-	return ivector128_inst;
+	return ivector_inst;
 }
 
 static guint16 sri_vector_methods [] = {
