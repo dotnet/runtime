@@ -72,11 +72,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return _stringResource;
         }
 
-        internal static string _marshalledString;
+        internal static string _marshaledString;
         private static string InvokeMarshalString()
         {
-            _marshalledString = "Hic Sunt Dracones";
-            return _marshalledString;
+            _marshaledString = "Hic Sunt Dracones";
+            return _marshaledString;
         }
 
         internal static object _object1;
@@ -93,16 +93,16 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return obj;
         }
 
-        internal static object _marshalledObject;
+        internal static object _marshaledObject;
         private static object InvokeMarshalObj()
         {
-            _marshalledObject = new object();
-            return _marshalledObject;
+            _marshaledObject = new object();
+            return _marshaledObject;
         }
 
         private static object InvokeReturnMarshalObj()
         {
-            return _marshalledObject;
+            return _marshaledObject;
         }
 
         internal static int _valOne, _valTwo;

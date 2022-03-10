@@ -34,11 +34,5 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(from.Length == 50);
             Assert.Equal("[object Uint8Array]", objectPrototype.Call(from));
         }
-
-        [Fact]
-        public static void TypedArrayTypeUint8Array()
-        {
-            Assert.Equal(TypedArrayTypeCode.Uint8Array, new Uint8Array().GetTypedArrayType());
-        }
     }
 }

@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         private static object JSOwnedObjectLock = new object();
         // we use this to maintain identity of GCHandle for a managed object
-        private static Dictionary<object, IntPtr> GCHandleFromJSOwnedObject = new Dictionary<object, IntPtr>();
+        private static Dictionary<object, IntPtr> GCHandleFromJSOwnedObject = new Dictionary<object, IntPtr>(ReferenceEqualityComparer.Instance);
 
 
         public static object GetJSOwnedObjectByGCHandle(int gcHandle)

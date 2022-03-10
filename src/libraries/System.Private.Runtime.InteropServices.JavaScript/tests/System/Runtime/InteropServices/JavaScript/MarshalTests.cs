@@ -76,13 +76,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void MarshalStringToJS()
         {
-            HelperMarshal._marshalledString = HelperMarshal._stringResource = null;
+            HelperMarshal._marshaledString = HelperMarshal._stringResource = null;
             Runtime.InvokeJS(@"
                 var str = App.call_test_method (""InvokeMarshalString"");
                 App.call_test_method (""InvokeString"", [ str ]);
             ");
-            Assert.NotNull(HelperMarshal._marshalledString);
-            Assert.Equal(HelperMarshal._marshalledString, HelperMarshal._stringResource);
+            Assert.NotNull(HelperMarshal._marshaledString);
+            Assert.Equal(HelperMarshal._marshaledString, HelperMarshal._stringResource);
         }
 
         [Fact]
@@ -102,7 +102,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void CSObjectKeepIdentityAcrossCalls()
         {
-            HelperMarshal._marshalledObject = HelperMarshal._object1 = HelperMarshal._object2 = null;
+            HelperMarshal._marshaledObject = HelperMarshal._object1 = HelperMarshal._object2 = null;
             Runtime.InvokeJS(@"
                 var obj = App.call_test_method (""InvokeMarshalObj"");
                 var res = App.call_test_method (""InvokeObj1"", [ obj ]);
@@ -110,7 +110,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             ");
 
             Assert.NotNull(HelperMarshal._object1);
-            Assert.Same(HelperMarshal._marshalledObject, HelperMarshal._object1);
+            Assert.Same(HelperMarshal._marshaledObject, HelperMarshal._object1);
             Assert.Same(HelperMarshal._object1, HelperMarshal._object2);
         }
 
@@ -127,7 +127,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [InlineData(double.MinValue)]
         public static void InvokeUnboxNumberString(object o)
         {
-            HelperMarshal._marshalledObject = o;
+            HelperMarshal._marshaledObject = o;
             HelperMarshal._object1 = HelperMarshal._object2 = null;
             var value = Runtime.InvokeJS(@"
                 var obj = App.call_test_method (""InvokeReturnMarshalObj"");
@@ -150,7 +150,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [InlineData(double.MinValue)]
         public static void InvokeUnboxNumber(object o, object expected = null)
         {
-            HelperMarshal._marshalledObject = o;
+            HelperMarshal._marshaledObject = o;
             HelperMarshal._object1 = HelperMarshal._object2 = null;
             Runtime.InvokeJS(@"
                 var obj = App.call_test_method (""InvokeReturnMarshalObj"");
@@ -173,7 +173,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [InlineData(double.MinValue)]
         public static void InvokeUnboxStringNumber(object o, object expected = null)
         {
-            HelperMarshal._marshalledObject = HelperMarshal._object1 = HelperMarshal._object2 = null;
+            HelperMarshal._marshaledObject = HelperMarshal._object1 = HelperMarshal._object2 = null;
             Runtime.InvokeJS(String.Format(@"
                 var res = App.call_test_method (""InvokeObj1"", [ {0} ]);
             ", o));

@@ -222,7 +222,7 @@ namespace System.Net.Http
 
                 abortRegistration = cancellationToken.Register(() =>
                 {
-                    if (!abortController.IsDisposed())
+                    if (!abortController.IsDisposed)
                     {
                         abortController.Invoke("abort");
                         abortController?.Dispose();
@@ -378,7 +378,7 @@ namespace System.Net.Http
                 _abortRegistration.Dispose();
 
                 _fetchResponse?.Dispose();
-                if (_abortController != null && !_abortController.IsDisposed())
+                if (_abortController != null && !_abortController.IsDisposed)
                 {
                     _abortController.Invoke("abort");
                 }

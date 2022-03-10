@@ -14,7 +14,6 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSObject.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\DataView.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Uint8Array.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\TypedArray.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Array.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\ArrayBuffer.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Function.cs" />

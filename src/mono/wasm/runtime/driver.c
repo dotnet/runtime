@@ -74,7 +74,7 @@ char *mono_method_get_full_name (MonoMethod *method);
 #define MARSHAL_TYPE_URI 22
 #define MARSHAL_TYPE_SAFEHANDLE 23
 
-// typed array marshalling
+// typed array marshaling
 #define MARSHAL_ARRAY_BYTE 10
 #define MARSHAL_ARRAY_UBYTE 11
 #define MARSHAL_ARRAY_UBYTE_C 12

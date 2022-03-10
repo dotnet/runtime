@@ -15,7 +15,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             var arr1 = new Uint8Array(50);
             Assert.Equal(50, arr1.Length);
-            Assert.Equal(TypedArrayTypeCode.Uint8Array, arr1.GetTypedArrayType());
         }
 
         [Fact]

@@ -39,7 +39,7 @@ namespace System.Net.WebSockets
 
         public override WebSocketCloseStatus? CloseStatus => _closeStatus;
         public override string? CloseStatusDescription => _closeStatusDescription;
-        public override string? SubProtocol => _innerWebSocket != null && !_innerWebSocket.IsDisposed() ? _innerWebSocket!.GetObjectProperty("protocol")?.ToString() : null;
+        public override string? SubProtocol => _innerWebSocket != null && !_innerWebSocket.IsDisposed ? _innerWebSocket!.GetObjectProperty("protocol")?.ToString() : null;
 
         #endregion Properties
 

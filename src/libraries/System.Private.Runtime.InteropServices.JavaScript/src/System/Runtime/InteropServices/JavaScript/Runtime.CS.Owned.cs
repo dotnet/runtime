@@ -7,13 +7,13 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public static partial class Runtime
     {
-        private static readonly Dictionary<IntPtr, WeakReference<JSObject>> _csOwnedObjects = new Dictionary<IntPtr, WeakReference<JSObject>>();
+        private static readonly Dictionary<int, WeakReference<JSObject>> _csOwnedObjects = new Dictionary<int, WeakReference<JSObject>>();
 
         public static JSObject? GetCSOwnedObjectByJSHandle(IntPtr jsHandle, int shouldAddInflight)
         {
             lock (_csOwnedObjects)
             {
-                if (_csOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
+                if (_csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference))
                 {
                     reference.TryGetTarget(out JSObject? jsObject);
                     if (shouldAddInflight != 0 && jsObject != null)
@@ -54,9 +54,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
             lock (_csOwnedObjects)
             {
-                if (!_csOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference) ||
+                if (!_csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
                     !reference.TryGetTarget(out jsObject) ||
-                    jsObject.IsDisposed())
+                    jsObject.IsDisposed)
                 {
                     jsObject = mappedType switch
                     {
@@ -68,7 +68,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         MappedType.Uint8Array => new Uint8Array(jsHandle),
                         _ => throw new ArgumentOutOfRangeException(nameof(mappedType))
                     };
-                    _csOwnedObjects[jsHandle] = new WeakReference<JSObject>(jsObject, trackResurrection: true);
+                    _csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(jsObject, trackResurrection: true);
                 }
             }
             if (shouldAddInflight != 0)
@@ -87,7 +87,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             lock (_csOwnedObjects)
             {
-                _csOwnedObjects.Remove(objToRelease.JSHandle);
+                _csOwnedObjects.Remove((int)objToRelease.JSHandle);
                 Interop.Runtime.ReleaseCSOwnedObject(objToRelease.JSHandle);
             }
             return true;
@@ -104,7 +104,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             lock (_csOwnedObjects)
             {
-                _csOwnedObjects[jsHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
+                _csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
             }
 
             return (IntPtr)jsHandle;

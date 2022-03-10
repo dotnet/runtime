@@ -13,11 +13,7 @@ namespace System.Runtime.InteropServices.JavaScript
         private GCHandle? InFlight;
         private int InFlightCounter;
         public IntPtr JSHandle => handle;
-        private bool _isDisposed;
-        public bool IsDisposed()
-        {
-            return _isDisposed;
-        }
+        public bool IsDisposed { get; private set; }
 
         public JSObject() : base(true)
         {
@@ -84,7 +80,7 @@ namespace System.Runtime.InteropServices.JavaScript
         internal void AssertNotDisposed()
 #endif
         {
-            if (IsDisposed()) throw new ObjectDisposedException($"Cannot access a disposed {GetType().Name}.");
+            if (IsDisposed) throw new ObjectDisposedException($"Cannot access a disposed {GetType().Name}.");
         }
 
 #if DEBUG
@@ -98,7 +94,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Runtime.ReleaseCSOwnedObject(this);
             SetHandleAsInvalid();
-            _isDisposed = true;
+            IsDisposed = true;
             return true;
         }
 
