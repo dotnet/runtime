@@ -5,7 +5,7 @@
 
 //
 // THIS FILE IS GENERATED. DO NOT HAND EDIT.
-// IF YOU NEED TO UPDATE UNICODE VERSION FOLLOW THE GUIDE AT src\coreclr\System.Private.CoreLib\Tools\GenUnicodeProp\Updating-Unicode-Versions.md
+// IF YOU NEED TO UPDATE UNICODE VERSION FOLLOW THE GUIDE AT src/libraries/System.Private.CoreLib/Tools/GenUnicodeProp/Updating-Unicode-Versions.md
 //
 
 CONST UnicodeDataRec UnicodeData[] = {
