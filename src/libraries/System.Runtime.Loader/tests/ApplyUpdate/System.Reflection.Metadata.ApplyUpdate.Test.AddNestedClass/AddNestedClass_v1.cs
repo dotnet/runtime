@@ -13,16 +13,18 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
 
         public string TestMethod()
         {
-            var n = new Nested();
+            var n = new Nested<string, int>();
             n.f = "123";
+	    n.g = 456;
             return n.M();
         }
 
-        private class Nested {
+        private class Nested<T, U> {
             public Nested() { }
-            internal string f;
+            internal T f;
+	    internal U g;
             public string M () {
-                return f + "456";
+                return f.ToString() + g.ToString();
             }
         }
     }
