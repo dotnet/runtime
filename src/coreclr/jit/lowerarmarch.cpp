@@ -634,12 +634,12 @@ void Lowering::LowerRotate(GenTree* tree)
 //         csneg reg0, reg1, reg0, mi
 GenTree* Lowering::LowerModPow2(GenTree* node)
 {
-    assert(node->OperGet() == GT_MOD);
+    assert(node->OperIs(GT_MOD));
     GenTree* mod      = node;
     GenTree* dividend = mod->gtGetOp1();
     GenTree* divisor  = mod->gtGetOp2();
 
-    assert(divisor->IsIntegralConstPow2());
+    assert(divisor->IsIntegralConstAbsPow2());
 
     const var_types type = mod->TypeGet();
     assert((type == TYP_INT) || (type == TYP_LONG));
@@ -666,8 +666,8 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
     BlockRange().InsertAfter(dividend2, cns);
 
     GenTree* const trueExpr = comp->gtNewOperNode(GT_AND, type, dividend, cns);
-    MakeSrcContained(trueExpr, cns);
     BlockRange().InsertAfter(cns, trueExpr);
+    LowerNode(trueExpr);
 
     GenTree* const neg = comp->gtNewOperNode(GT_NEG, type, dividend2);
     neg->gtFlags |= GTF_SET_FLAGS;
@@ -677,8 +677,8 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
     BlockRange().InsertAfter(neg, cns2);
 
     GenTree* const falseExpr = comp->gtNewOperNode(GT_AND, type, neg, cns2);
-    MakeSrcContained(falseExpr, cns2);
     BlockRange().InsertAfter(cns2, falseExpr);
+    LowerNode(falseExpr);
 
     GenTree* const cc = comp->gtNewOperNode(GT_CS_NEG_MI, type, trueExpr, falseExpr);
     cc->gtFlags |= GTF_USE_FLAGS;

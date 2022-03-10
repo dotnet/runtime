@@ -11408,7 +11408,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 }
                 // ARM64 architecture manual suggests this transformation
                 // for the mod operator.
-                else if (!((tree->OperGet() == GT_MOD) && op2->IsIntegralConstPow2()))
+                else if (!((tree->OperGet() == GT_MOD) && op2->IsIntegralConstAbsPow2()))
 #else
                 // XARCH only applies this transformation if we know
                 // that magic division will be used - which is determined
