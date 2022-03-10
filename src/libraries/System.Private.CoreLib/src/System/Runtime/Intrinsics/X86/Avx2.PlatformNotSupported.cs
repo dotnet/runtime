@@ -1186,6 +1186,42 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static unsafe Vector128<int> GatherVector128(int* baseAddress, Vector128<int> index, byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
+        /// 32-bit:
+        /// __m256 _mm256_i32gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERDPD ymm, vm32y, ymm
+        ///
+        /// 64-bit:
+        /// __m256 _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERDPD ymm, vm32y, ymm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<int> GatherVector128(int* baseAddress, Vector256<nint> index, byte scale) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// 32-bit:
+        /// __m256 _mm256_i32gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERDPD ymm, vm32y, ymm
+        ///
+        /// 64-bit:
+        /// __m256 _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERDPD ymm, vm32y, ymm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<uint> GatherVector128(uint* baseAddress, Vector256<nint> index, byte scale) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// 32-bit:
+        /// __m256 _mm256_i32gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERDPD ymm, vm32y, ymm
+        ///
+        /// 64-bit:
+        /// __m256 _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERDPD ymm, vm32y, ymm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector256<nint> index, byte scale) { throw new PlatformNotSupportedException(); }
+        /// <summary>
         /// __m128i _mm_i32gather_epi32 (int const* base_addr, __m128i vindex, const int scale)
         ///   VPGATHERDD xmm, vm32x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
@@ -1243,6 +1279,12 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static unsafe Vector128<double> GatherVector128(double* baseAddress, Vector128<int> index, byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
+        /// __m256d _mm256_i32gather_pd (double const* base_addr, __m128i vindex, const int scale)
+        ///   VGATHERDPD ymm, vm32y, ymm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector256<double> GatherVector256(double* baseAddress, Vector256<nint> index, byte scale) { throw new PlatformNotSupportedException(); }
+        /// <summary>
         /// __m128i _mm_i64gather_epi32 (int const* base_addr, __m128i vindex, const int scale)
         ///   VPGATHERQD xmm, vm64x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
@@ -1265,7 +1307,43 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPGATHERQQ xmm, vm64x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
+        public static unsafe Vector256<nint> GatherVector256(long* baseAddress, Vector256<nint> index, byte scale) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m256d _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERQPD ymm, vm64y, ymm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector256<nint> GatherVector256(nint* baseAddress, Vector256<nint> index, byte scale) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m256d _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERQPD ymm, vm64y, ymm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector256<nint> GatherVector256(nint* baseAddress, Vector256<int> index, byte scale) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m256d _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERQPD ymm, vm64y, ymm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector256<nuint> GatherVector256(nuint* baseAddress, Vector256<int> index, byte scale) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m256d _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERQPD ymm, vm64y, ymm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector256<nuint> GatherVector256(nuint* baseAddress, Vector256<nint> index, byte scale) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128i _mm_i64gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERQQ xmm, vm64x, xmm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
         public static unsafe Vector128<ulong> GatherVector128(ulong* baseAddress, Vector128<long> index, byte scale) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m256d _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERQPD ymm, vm64y, ymm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector256<nuint> GatherVector256(ulong* baseAddress, Vector256<nint> index, byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128 _mm_i64gather_ps (float const* base_addr, __m128i vindex, const int scale)
         ///   VGATHERQPS xmm, vm64x, xmm
@@ -1496,7 +1574,6 @@ namespace System.Runtime.Intrinsics.X86
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
         public static unsafe Vector128<nuint> GatherMaskVector128(Vector128<nuint> source, nuint* baseAddress, Vector128<int> index, Vector128<nuint> mask, byte scale) { throw new PlatformNotSupportedException(); }
-
         /// <summary>
         /// 32-bit:
         /// __m128i _mm_mask_i32gather_epi32 (__m128i src, int const* base_addr, __m128i vindex, __m128i mask, const int scale)

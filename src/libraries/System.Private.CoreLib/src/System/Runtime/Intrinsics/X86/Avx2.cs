@@ -1603,6 +1603,75 @@ namespace System.Runtime.Intrinsics.X86
         }
 
         /// <summary>
+        /// 32-bit:
+        /// __m256 _mm256_i32gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERDPD ymm, vm32y, ymm
+        ///
+        /// 64-bit:
+        /// __m256 _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERDPD ymm, vm32y, ymm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<int> GatherVector128(int* baseAddress, Vector256<nint> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector128(baseAddress, index, 1),
+                2 => GatherVector128(baseAddress, index, 2),
+                4 => GatherVector128(baseAddress, index, 4),
+                8 => GatherVector128(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256 _mm256_i32gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERDPD ymm, vm32y, ymm
+        ///
+        /// 64-bit:
+        /// __m256 _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERDPD ymm, vm32y, ymm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<uint> GatherVector128(uint* baseAddress, Vector256<nint> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector128(baseAddress, index, 1),
+                2 => GatherVector128(baseAddress, index, 2),
+                4 => GatherVector128(baseAddress, index, 4),
+                8 => GatherVector128(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256 _mm256_i32gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERDPD ymm, vm32y, ymm
+        ///
+        /// 64-bit:
+        /// __m256 _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERDPD ymm, vm32y, ymm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector256<nint> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector128(baseAddress, index, 1),
+                2 => GatherVector128(baseAddress, index, 2),
+                4 => GatherVector128(baseAddress, index, 4),
+                8 => GatherVector128(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
         /// __m256i _mm256_i32gather_epi32 (int const* base_addr, __m256i vindex, const int scale)
         ///   VPGATHERDD ymm, vm32y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
@@ -1746,6 +1815,22 @@ namespace System.Runtime.Intrinsics.X86
             };
         }
         /// <summary>
+        /// __m256d _mm256_i32gather_pd (double const* base_addr, __m128i vindex, const int scale)
+        ///   VGATHERDPD ymm, vm32y, ymm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector256<double> GatherVector256(double* baseAddress, Vector256<nint> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector256(baseAddress, index, 1),
+                2 => GatherVector256(baseAddress, index, 2),
+                4 => GatherVector256(baseAddress, index, 4),
+                8 => GatherVector256(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+        /// <summary>
         /// __m128i _mm256_i64gather_epi32 (int const* base_addr, __m256i vindex, const int scale)
         ///   VPGATHERQD xmm, vm64y, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
@@ -1825,12 +1910,115 @@ namespace System.Runtime.Intrinsics.X86
                 _ => throw new ArgumentOutOfRangeException(nameof(scale)),
             };
         }
+
         /// <summary>
         /// __m256d _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
         ///   VGATHERQPD ymm, vm64y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
         public static unsafe Vector256<double> GatherVector256(double* baseAddress, Vector256<long> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector256(baseAddress, index, 1),
+                2 => GatherVector256(baseAddress, index, 2),
+                4 => GatherVector256(baseAddress, index, 4),
+                8 => GatherVector256(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// __m256d _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERQPD ymm, vm64y, ymm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector256<nint> GatherVector256(long* baseAddress, Vector256<nint> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector256(baseAddress, index, 1),
+                2 => GatherVector256(baseAddress, index, 2),
+                4 => GatherVector256(baseAddress, index, 4),
+                8 => GatherVector256(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// __m256d _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERQPD ymm, vm64y, ymm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector256<nuint> GatherVector256(ulong* baseAddress, Vector256<nint> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector256(baseAddress, index, 1),
+                2 => GatherVector256(baseAddress, index, 2),
+                4 => GatherVector256(baseAddress, index, 4),
+                8 => GatherVector256(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// __m256d _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERQPD ymm, vm64y, ymm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector256<nint> GatherVector256(nint* baseAddress, Vector256<nint> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector256(baseAddress, index, 1),
+                2 => GatherVector256(baseAddress, index, 2),
+                4 => GatherVector256(baseAddress, index, 4),
+                8 => GatherVector256(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// __m256d _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERQPD ymm, vm64y, ymm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector256<nint> GatherVector256(nint* baseAddress, Vector256<int> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector256(baseAddress, index, 1),
+                2 => GatherVector256(baseAddress, index, 2),
+                4 => GatherVector256(baseAddress, index, 4),
+                8 => GatherVector256(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// __m256d _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERQPD ymm, vm64y, ymm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector256<nuint> GatherVector256(nuint* baseAddress, Vector256<int> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector256(baseAddress, index, 1),
+                2 => GatherVector256(baseAddress, index, 2),
+                4 => GatherVector256(baseAddress, index, 4),
+                8 => GatherVector256(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// __m256d _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERQPD ymm, vm64y, ymm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector256<nuint> GatherVector256(nuint* baseAddress, Vector256<nint> index, byte scale)
         {
             return scale switch
             {
@@ -2119,6 +2307,39 @@ namespace System.Runtime.Intrinsics.X86
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
         public static unsafe Vector128<ulong> GatherMaskVector128(Vector128<ulong> source, ulong* baseAddress, Vector128<long> index, Vector128<ulong> mask, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherMaskVector128(source, baseAddress, index, mask, 1),
+                2 => GatherMaskVector128(source, baseAddress, index, mask, 2),
+                4 => GatherMaskVector128(source, baseAddress, index, mask, 4),
+                8 => GatherMaskVector128(source, baseAddress, index, mask, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+        /// <summary>
+        /// __m128i _mm_mask_i64gather_epi64 (__m128i src, __int64 const* base_addr, __m128i vindex, __m128i mask, const int scale)
+        ///   VPGATHERQQ xmm, vm64x, xmm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<nint> GatherMaskVector128(Vector128<nint> source, nint* baseAddress,
+            Vector128<nint> index, Vector128<nint> mask, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherMaskVector128(source, baseAddress, index, mask, 1),
+                2 => GatherMaskVector128(source, baseAddress, index, mask, 2),
+                4 => GatherMaskVector128(source, baseAddress, index, mask, 4),
+                8 => GatherMaskVector128(source, baseAddress, index, mask, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }        /// <summary>
+        /// __m128i _mm_mask_i64gather_epi64 (__m128i src, __int64 const* base_addr, __m128i vindex, __m128i mask, const int scale)
+        ///   VPGATHERQQ xmm, vm64x, xmm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<nuint> GatherMaskVector128(Vector128<nuint> source, nuint* baseAddress,
+            Vector128<nint> index, Vector128<nuint> mask, byte scale)
         {
             return scale switch
             {

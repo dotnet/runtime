@@ -8,6 +8,7 @@ namespace System.Runtime.Intrinsics.Tests.X86;
 
 public sealed partial class Avx2Tests
 {
+    /*
     [Theory]
     [InlineData(0)]
     [InlineData(uint.MaxValue)]
@@ -79,4 +80,5 @@ public sealed partial class Avx2Tests
             }
         }
     }
+    */
 }

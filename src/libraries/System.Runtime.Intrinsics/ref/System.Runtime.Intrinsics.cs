@@ -3761,6 +3761,7 @@ namespace System.Runtime.Intrinsics.X86
         public unsafe static System.Runtime.Intrinsics.Vector128<int> GatherVector128(int* baseAddress, System.Runtime.Intrinsics.Vector128<long> index, byte scale) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<int> GatherVector128(int* baseAddress, System.Runtime.Intrinsics.Vector128<nint> index, byte scale) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<int> GatherVector128(int* baseAddress, System.Runtime.Intrinsics.Vector256<long> index, byte scale) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<int> GatherVector128(int* baseAddress, System.Runtime.Intrinsics.Vector256<nint> index, byte scale) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<long> GatherVector128(long* baseAddress, System.Runtime.Intrinsics.Vector128<int> index, byte scale) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<long> GatherVector128(long* baseAddress, System.Runtime.Intrinsics.Vector128<long> index, byte scale) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<long> GatherVector128(long* baseAddress, System.Runtime.Intrinsics.Vector128<nint> index, byte scale) { throw null; }
@@ -3770,10 +3771,12 @@ namespace System.Runtime.Intrinsics.X86
         public unsafe static System.Runtime.Intrinsics.Vector128<float> GatherVector128(float* baseAddress, System.Runtime.Intrinsics.Vector128<long> index, byte scale) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<float> GatherVector128(float* baseAddress, System.Runtime.Intrinsics.Vector128<nint> index, byte scale) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<float> GatherVector128(float* baseAddress, System.Runtime.Intrinsics.Vector256<long> index, byte scale) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<float> GatherVector128(float* baseAddress, System.Runtime.Intrinsics.Vector256<nint> index, byte scale) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<uint> GatherVector128(uint* baseAddress, System.Runtime.Intrinsics.Vector128<int> index, byte scale) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<uint> GatherVector128(uint* baseAddress, System.Runtime.Intrinsics.Vector128<long> index, byte scale) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<uint> GatherVector128(uint* baseAddress, System.Runtime.Intrinsics.Vector128<nint> index, byte scale) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<uint> GatherVector128(uint* baseAddress, System.Runtime.Intrinsics.Vector256<long> index, byte scale) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<uint> GatherVector128(uint* baseAddress, System.Runtime.Intrinsics.Vector256<nint> index, byte scale) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<ulong> GatherVector128(ulong* baseAddress, System.Runtime.Intrinsics.Vector128<int> index, byte scale) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<ulong> GatherVector128(ulong* baseAddress, System.Runtime.Intrinsics.Vector128<long> index, byte scale) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<ulong> GatherVector128(ulong* baseAddress, System.Runtime.Intrinsics.Vector128<nint> index, byte scale) { throw null; }
