@@ -585,13 +585,20 @@ image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, gconstpo
 static DeltaInfo*
 image_append_delta (MonoImage *base, BaselineInfo *base_info, MonoImage *delta, DeltaInfo *delta_info);
 
+
+/* Add member->parent reverse lookup for newly-added classes */
+static void
+add_member_parent (BaselineInfo *base_info, uint32_t typedef_token, uint32_t member_token);
+
 /* common method, don't use directly, use add_method_to_baseline, add_field_to_baseline, etc */
 static void
 add_member_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClass *klass, uint32_t member_token);
 
+/* Add method->parent reverse lookup for existing classes */
 static void
 add_method_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClass *klass, uint32_t method_token, MonoDebugInformationEnc* pdb_address);
 
+/* Add field->parent reverse lookup for existing classes */
 static void
 add_field_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClass *klass, uint32_t field_token);
 
@@ -1933,6 +1940,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 				if (pass2_context_is_skeleton (ctx, add_member_typedef)) {
 					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new method 0x%08x to new class 0x%08x", log_token, add_member_typedef);
 					pass2_context_add_skeleton_member (ctx, add_member_typedef, log_token);
+ 					add_member_parent (base_info, add_member_typedef, log_token);
 				} else {
 					MonoClass *add_member_klass = mono_class_get_checked (image_base, add_member_typedef, error);
 					if (!is_ok (error)) {
@@ -1979,6 +1987,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			if (pass2_context_is_skeleton (ctx, add_member_typedef)) {
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new field 0x%08x to new class 0x%08x", log_token, add_member_typedef);
 				pass2_context_add_skeleton_member (ctx, add_member_typedef, log_token);
+				add_member_parent (base_info, add_member_typedef, log_token);
 			} else {
 				MonoClass *add_member_klass = mono_class_get_checked (image_base, add_member_typedef, error);
 				if (!is_ok (error)) {
@@ -2443,19 +2452,27 @@ hot_reload_table_num_rows_slow (MonoImage *base, int table_index)
 }
 
 static void
+add_member_parent (BaselineInfo *base_info, uint32_t typedef_token, uint32_t member_token)
+{
+	if (!base_info->member_parent) {
+		base_info->member_parent = g_hash_table_new (g_direct_hash, g_direct_equal);
+	}
+	g_hash_table_insert (base_info->member_parent, GUINT_TO_POINTER (member_token), GUINT_TO_POINTER (typedef_token));
+}
+
+
+static void
 add_member_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClass *klass, uint32_t member_token)
 {
 	/* Check they really passed a table token, not just a table row index */
 	g_assert (mono_metadata_token_table (member_token) != 0);
 
-	if (!base_info->member_parent) {
-		base_info->member_parent = g_hash_table_new (g_direct_hash, g_direct_equal);
-	}
 	MonoClassMetadataUpdateInfo *klass_info = mono_class_get_or_add_metadata_update_info (klass);
 	GSList *members = klass_info->added_members;
 	klass_info->added_members = g_slist_prepend_mem_manager (m_class_get_mem_manager (klass), members, GUINT_TO_POINTER (member_token));
-	g_hash_table_insert (base_info->member_parent, GUINT_TO_POINTER (member_token), GUINT_TO_POINTER (m_class_get_type_token (klass)));
+	add_member_parent (base_info, m_class_get_type_token (klass), member_token);
 }
+
 
 static void
 add_method_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClass *klass, uint32_t method_token, MonoDebugInformationEnc* pdb_address)
