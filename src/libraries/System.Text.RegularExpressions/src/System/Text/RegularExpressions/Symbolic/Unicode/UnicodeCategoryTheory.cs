@@ -1,77 +1,75 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Globalization;
+using System.Threading;
+
 namespace System.Text.RegularExpressions.Symbolic.Unicode
 {
-    internal sealed class UnicodeCategoryTheory<TPredicate> where TPredicate : class
+    /// <summary>Utility class providing singleton <see cref="BDD"/>s for evaluating whether a character is part of a particular Unicode category.</summary>
+    internal static class UnicodeCategoryConditions
     {
-        internal readonly ICharAlgebra<TPredicate> _solver;
-        private readonly TPredicate[] _catConditions = new TPredicate[30];
+        /// <summary>The number of values in <see cref="UnicodeCategory"/>.</summary>
+        private const int UnicodeCategoryValueCount = 30;
 
-        private TPredicate? _whiteSpaceCondition;
-        private TPredicate? _wordLetterCondition;
-        private TPredicate? _wordLetterConditionForAnchors;
+        /// <summary>Array containing lazily-initialized BDDs per defined UnicodeCategory value.</summary>
+        private static readonly BDD?[] s_categories = new BDD[UnicodeCategoryValueCount];
+        /// <summary>Lazily-initialized BDD for \s.</summary>
+        private static volatile BDD? s_whiteSpace;
+        /// <summary>Lazily-initialized BDD for \w.</summary>
+        private static volatile BDD? s_wordLetter;
+        /// <summary>Lazily-initialized BDD for \b.</summary>
+        private static volatile BDD? s_wordLetterForAnchors;
 
-        public UnicodeCategoryTheory(ICharAlgebra<TPredicate> solver) => _solver = solver;
-
-        public TPredicate CategoryCondition(int i)
+#if DEBUG
+        static UnicodeCategoryConditions()
         {
-            if (_catConditions[i] is not TPredicate condition)
-            {
-                BDD bdd = BDD.Deserialize(UnicodeCategoryRanges.AllCategoriesSerializedBDD[i], _solver.CharSetProvider);
-                _catConditions[i] = condition = _solver.ConvertFromCharSet(_solver.CharSetProvider, bdd);
-            }
-
-            return condition;
+            // The implementation caches a BDD per defined UnicodeCategory.  If the enum ever gets
+            // additional named values, the constant will need to be updated to reflect that.
+            Debug.Assert(Enum.GetValues<UnicodeCategory>().Length == UnicodeCategoryValueCount);
         }
+#endif
 
-        public TPredicate WhiteSpaceCondition
-        {
-            get
-            {
-                if (_whiteSpaceCondition is not TPredicate condition)
-                {
-                    BDD bdd = BDD.Deserialize(UnicodeCategoryRanges.WhitespaceSerializedBDD, _solver.CharSetProvider);
-                    _whiteSpaceCondition = condition = _solver.ConvertFromCharSet(_solver.CharSetProvider, bdd);
-                }
+        /// <summary>Gets a <see cref="BDD"/> that represents the specified <see cref="UnicodeCategory"/>.</summary>
+        public static BDD GetCategory(UnicodeCategory category) =>
+            Volatile.Read(ref s_categories[(int)category]) ??
+            Interlocked.CompareExchange(ref s_categories[(int)category], BDD.Deserialize(UnicodeCategoryRanges.AllCategoriesSerializedBDD[(int)category], CharSetSolver.Instance), null) ??
+            s_categories[(int)category]!;
 
-                return condition;
-            }
-        }
+        /// <summary>Gets a <see cref="BDD"/> that represents the \s character class.</summary>
+        public static BDD WhiteSpace =>
+            s_whiteSpace ??
+            Interlocked.CompareExchange(ref s_whiteSpace, BDD.Deserialize(UnicodeCategoryRanges.WhitespaceSerializedBDD, CharSetSolver.Instance), null) ??
+            s_whiteSpace;
 
-        public TPredicate WordLetterCondition
-        {
-            get
-            {
-                if (_wordLetterCondition is not TPredicate condition)
-                {
-                    // \w is the union of the 8 categories: 0,1,2,3,4,5,8,18
-                    TPredicate[] predicates = new TPredicate[] {
-                        CategoryCondition(0), CategoryCondition(1), CategoryCondition(2), CategoryCondition(3),
-                        CategoryCondition(4), CategoryCondition(5), CategoryCondition(8), CategoryCondition(18)};
-                    _wordLetterCondition = condition = _solver.Or(predicates);
-                }
+        /// <summary>Gets a <see cref="BDD"/> that represents the \w character class.</summary>
+        /// <remarks>\w is the union of the 8 categories: 0,1,2,3,4,5,8,18</remarks>
+        public static BDD WordLetter =>
+            s_wordLetter ??
+            Interlocked.CompareExchange(ref s_wordLetter,
+                                        CharSetSolver.Instance.Or(new[]
+                                        {
+                                            GetCategory(UnicodeCategory.UppercaseLetter),
+                                            GetCategory(UnicodeCategory.LowercaseLetter),
+                                            GetCategory(UnicodeCategory.TitlecaseLetter),
+                                            GetCategory(UnicodeCategory.ModifierLetter),
+                                            GetCategory(UnicodeCategory.OtherLetter),
+                                            GetCategory(UnicodeCategory.NonSpacingMark),
+                                            GetCategory(UnicodeCategory.DecimalDigitNumber),
+                                            GetCategory(UnicodeCategory.ConnectorPunctuation),
+                                        }),
+                                        null) ??
+            s_wordLetter;
 
-                return condition;
-            }
-        }
-
-        public TPredicate WordLetterConditionForAnchors
-        {
-            get
-            {
-                if (_wordLetterConditionForAnchors is not TPredicate condition)
-                {
-                    // Create the condition from WordLetterCondition together with the characters
-                    // \u200C (zero width non joiner) and \u200D (zero width joiner) that are treated
-                    // as if they were word characters in the context of the anchors \b and \B
-                    BDD extra_bdd = _solver.CharSetProvider.CreateCharSetFromRange('\u200C', '\u200D');
-                    TPredicate extra_pred = _solver.ConvertFromCharSet(_solver.CharSetProvider, extra_bdd);
-                    _wordLetterConditionForAnchors = condition = _solver.Or(WordLetterCondition, extra_pred);
-                }
-
-                return condition;
-            }
-        }
+        /// <summary>
+        /// Gets a <see cref="BDD"/> that represents <see cref="WordLetter"/> together with the characters
+        /// \u200C (zero width non joiner) and \u200D (zero width joiner) that are treated as if they were
+        /// word characters in the context of the anchors \b and \B.
+        /// </summary>
+        public static BDD WordLetterForAnchors =>
+            s_wordLetterForAnchors ??
+            Interlocked.CompareExchange(ref s_wordLetterForAnchors, CharSetSolver.Instance.Or(WordLetter, CharSetSolver.Instance.CreateCharSetFromRange('\u200C', '\u200D')), null) ??
+            s_wordLetterForAnchors;
     }
 }

@@ -36,11 +36,6 @@
 #include "clrtocomcall.h"
 #endif
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4244)
-#endif // _MSC_VER
-
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 GVAL_IMPL(DWORD, g_MiniMetaDataBuffMaxSize);
 GVAL_IMPL(TADDR, g_MiniMetaDataBuffAddress);
@@ -1318,7 +1313,7 @@ DWORD MethodDesc::GetAttrs() const
     if (IsArray())
         return dac_cast<PTR_ArrayMethodDesc>(this)->GetAttrs();
     else if (IsNoMetadata())
-        return dac_cast<PTR_DynamicMethodDesc>(this)->GetAttrs();;
+        return dac_cast<PTR_DynamicMethodDesc>(this)->GetAttrs();
 
     DWORD dwAttributes;
     if (FAILED(GetMDImport()->GetMethodDefProps(GetMemberDef(), &dwAttributes)))
@@ -1662,7 +1657,7 @@ UINT MethodDesc::CbStackPop()
     {
         msig.ClearHasThis();
     }
-    
+
     return argit.CbStackPop();
 }
 #endif // TARGET_X86
@@ -1730,7 +1725,7 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
 
     _ASSERTE((oneSize & MethodDesc::ALIGNMENT_MASK) == 0);
 
-    DWORD maxMethodDescsPerChunk = MethodDescChunk::MaxSizeOfMethodDescs / oneSize;
+    DWORD maxMethodDescsPerChunk = (DWORD)(MethodDescChunk::MaxSizeOfMethodDescs / oneSize);
 
     if (methodDescCount == 0)
         methodDescCount = maxMethodDescsPerChunk;
@@ -3606,7 +3601,9 @@ BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
 
     if (IsILStub())
     {
-        return AsDynamicMethodDesc()->IsUnmanagedCallersOnlyStub();
+        // Stubs generated for being called from native code are equivalent to
+        // managed methods marked with UnmanagedCallersOnly.
+        return AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubNativeToCLRInterop;
     }
 
     HRESULT hr = GetCustomAttribute(
@@ -4111,7 +4108,3 @@ void MethodDesc::PrepareForUseAsAFunctionPointer()
     SetValueTypeParametersLoaded();
 }
 #endif //!DACCESS_COMPILE
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif // _MSC_VER: warning C4244

@@ -144,6 +144,7 @@ void CryptoNative_EnsureLibSslInitialized()
 
 const SSL_METHOD* CryptoNative_SslV2_3Method()
 {
+    // No error queue impact.
     const SSL_METHOD* method = TLS_method();
     assert(method != NULL);
     return method;
@@ -151,6 +152,8 @@ const SSL_METHOD* CryptoNative_SslV2_3Method()
 
 SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
 {
+    ERR_clear_error();
+
     SSL_CTX* ctx = SSL_CTX_new(method);
 
     if (ctx != NULL)
@@ -246,6 +249,8 @@ static void ResetCtxProtocolRestrictions(SSL_CTX* ctx)
 
 void CryptoNative_SslCtxSetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 {
+    // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
+
     // Ensure that ECDHE is available
     if (TrySetECDHNamedCurve(ctx) == 0)
     {
@@ -303,19 +308,12 @@ void CryptoNative_SslCtxSetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 
 SSL* CryptoNative_SslCreate(SSL_CTX* ctx)
 {
+    ERR_clear_error();
     return SSL_new(ctx);
 }
 
 int32_t CryptoNative_SslGetError(SSL* ssl, int32_t ret)
 {
-    // This pops off "old" errors left by other operations
-    // until the first error is equal to the last one,
-    // this should be looked at again when OpenSsl 1.1 is migrated to
-    while (ERR_peek_error() != ERR_peek_last_error())
-    {
-        ERR_get_error();
-    }
-
     // The error queue should be cleaned outside, if done here there will be no info
     // for managed exception.
     return SSL_get_error(ssl, ret);
@@ -339,21 +337,26 @@ void CryptoNative_SslCtxDestroy(SSL_CTX* ctx)
 
 void CryptoNative_SslSetConnectState(SSL* ssl)
 {
+    // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
     SSL_set_connect_state(ssl);
 }
 
 void CryptoNative_SslSetAcceptState(SSL* ssl)
 {
+    // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
     SSL_set_accept_state(ssl);
 }
 
 const char* CryptoNative_SslGetVersion(SSL* ssl)
 {
+    // No error queue impact.
     return SSL_get_version(ssl);
 }
 
 int32_t CryptoNative_SslGetFinished(SSL* ssl, void* buf, int32_t count)
 {
+    // No error queue impact.
+
     size_t result = SSL_get_finished(ssl, buf, (size_t)count);
     assert(result <= INT32_MAX);
     return (int32_t)result;
@@ -361,6 +364,8 @@ int32_t CryptoNative_SslGetFinished(SSL* ssl, void* buf, int32_t count)
 
 int32_t CryptoNative_SslGetPeerFinished(SSL* ssl, void* buf, int32_t count)
 {
+    // No error queue impact.
+
     size_t result = SSL_get_peer_finished(ssl, buf, (size_t)count);
     assert(result <= INT32_MAX);
     return (int32_t)result;
@@ -368,12 +373,17 @@ int32_t CryptoNative_SslGetPeerFinished(SSL* ssl, void* buf, int32_t count)
 
 int32_t CryptoNative_SslSessionReused(SSL* ssl)
 {
+    // No error queue impact.
+
     return SSL_session_reused(ssl) == 1;
 }
 
 int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num, int32_t* error)
 {
+    ERR_clear_error();
+
     int32_t result = SSL_write(ssl, buf, num);
+
     if (result > 0)
     {
         *error = SSL_ERROR_NONE;
@@ -388,7 +398,10 @@ int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num, int32_t* e
 
 int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num, int32_t* error)
 {
+    ERR_clear_error();
+
     int32_t result = SSL_read(ssl, buf, num);
+
     if (result > 0)
     {
         *error = SSL_ERROR_NONE;
@@ -411,6 +424,29 @@ static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
 
 int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
 {
+    ERR_clear_error();
+
+#ifdef NEED_OPENSSL_1_1
+    // TLS1.3 uses different API for renegotiation/delayed client cert request
+    #ifndef TLS1_3_VERSION
+    #define TLS1_3_VERSION 0x0304
+    #endif
+    if (SSL_version(ssl) == TLS1_3_VERSION)
+    {
+        // this is just a sanity check, if TLS 1.3 was negotiated, then the function must be available
+        if (API_EXISTS(SSL_verify_client_post_handshake))
+        {
+            // Post-handshake auth reqires SSL_VERIFY_PEER to be set
+            CryptoNative_SslSetVerifyPeer(ssl);
+            return SSL_verify_client_post_handshake(ssl);
+        }
+        else
+        {
+            return 0;
+        }
+    }
+#endif
+
     // The openssl context is destroyed so we can't use ticket or session resumption.
     SSL_set_options(ssl, SSL_OP_NO_TICKET | SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
 
@@ -434,6 +470,8 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
 
 int32_t CryptoNative_IsSslRenegotiatePending(SSL* ssl)
 {
+    ERR_clear_error();
+
     SSL_peek(ssl, NULL, 0);
     return SSL_renegotiate_pending(ssl) != 0;
 }
@@ -446,6 +484,7 @@ int32_t CryptoNative_SslShutdown(SSL* ssl)
 
 void CryptoNative_SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio)
 {
+    // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
     SSL_set_bio(ssl, rbio, wbio);
 }
 
@@ -467,66 +506,80 @@ int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* error)
 
 int32_t CryptoNative_IsSslStateOK(SSL* ssl)
 {
+    // No error queue impact.
     return SSL_is_init_finished(ssl);
 }
 
 X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
 {
+    // No error queue impact.
     return SSL_get1_peer_certificate(ssl);
 }
 
 X509Stack* CryptoNative_SslGetPeerCertChain(SSL* ssl)
 {
+    // No error queue impact.
     return SSL_get_peer_cert_chain(ssl);
 }
 
 int32_t CryptoNative_SslUseCertificate(SSL* ssl, X509* x)
 {
+    ERR_clear_error();
     return SSL_use_certificate(ssl, x);
 }
 
 int32_t CryptoNative_SslUsePrivateKey(SSL* ssl, EVP_PKEY* pkey)
 {
+    ERR_clear_error();
     return SSL_use_PrivateKey(ssl, pkey);
 }
 
 int32_t CryptoNative_SslCtxUseCertificate(SSL_CTX* ctx, X509* x)
 {
+    ERR_clear_error();
     return SSL_CTX_use_certificate(ctx, x);
 }
 
 int32_t CryptoNative_SslCtxUsePrivateKey(SSL_CTX* ctx, EVP_PKEY* pkey)
 {
+    ERR_clear_error();
     return SSL_CTX_use_PrivateKey(ctx, pkey);
 }
 
 int32_t CryptoNative_SslCtxCheckPrivateKey(SSL_CTX* ctx)
 {
+    ERR_clear_error();
     return SSL_CTX_check_private_key(ctx);
 }
 
 void CryptoNative_SslCtxSetQuietShutdown(SSL_CTX* ctx)
 {
+    // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
     SSL_CTX_set_quiet_shutdown(ctx, 1);
 }
 
 void CryptoNative_SslSetQuietShutdown(SSL* ssl, int mode)
 {
+    // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
     SSL_set_quiet_shutdown(ssl, mode);
 }
 
 X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl)
 {
+    // No error queue impact.
     return SSL_get_client_CA_list(ssl);
 }
 
 void CryptoNative_SslSetVerifyPeer(SSL* ssl)
 {
+    // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
     SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
 }
 
 void CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode)
 {
+    // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
+
     // We never reuse same CTX for both client and server
     SSL_CTX_ctrl(ctx, SSL_CTRL_SET_SESS_CACHE_MODE,  mode ? SSL_SESS_CACHE_BOTH : SSL_SESS_CACHE_OFF, NULL);
     if (mode == 0)
@@ -537,6 +590,8 @@ void CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode)
 
 int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
 {
+    // No error queue impact.
+
     switch (policy)
     {
         case AllowNoEncryption:
@@ -554,6 +609,8 @@ int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy po
 
 int32_t CryptoNative_SslCtxSetCiphers(SSL_CTX* ctx, const char* cipherList, const char* cipherSuites)
 {
+    ERR_clear_error();
+
     int32_t ret = true;
 
     // for < TLS 1.3
@@ -581,6 +638,8 @@ int32_t CryptoNative_SslCtxSetCiphers(SSL_CTX* ctx, const char* cipherList, cons
 
 int32_t CryptoNative_SetCiphers(SSL* ssl, const char* cipherList, const char* cipherSuites)
 {
+    ERR_clear_error();
+
     int32_t ret = true;
 
     // for < TLS 1.3
@@ -608,6 +667,8 @@ int32_t CryptoNative_SetCiphers(SSL* ssl, const char* cipherList, const char* ci
 
 const char* CryptoNative_GetOpenSslCipherSuiteName(SSL* ssl, int32_t cipherSuite, int32_t* isTls12OrLower)
 {
+    // No error queue impact.
+
 #if HAVE_OPENSSL_SET_CIPHERSUITES
     unsigned char cs[2];
     const SSL_CIPHER* cipher;
@@ -668,6 +729,8 @@ const char* CryptoNative_GetOpenSslCipherSuiteName(SSL* ssl, int32_t cipherSuite
 
 int32_t CryptoNative_Tls13Supported()
 {
+    // No error queue impact.
+
 #if HAVE_OPENSSL_SET_CIPHERSUITES
     return API_EXISTS(SSL_CTX_set_ciphersuites);
 #else
@@ -677,6 +740,8 @@ int32_t CryptoNative_Tls13Supported()
 
 int32_t CryptoNative_SslCtxAddExtraChainCert(SSL_CTX* ctx, X509* x509)
 {
+    ERR_clear_error();
+
     if (!x509 || !ctx)
     {
         return 0;
@@ -692,6 +757,8 @@ int32_t CryptoNative_SslCtxAddExtraChainCert(SSL_CTX* ctx, X509* x509)
 
 int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509)
 {
+    ERR_clear_error();
+
     if (!x509 || !ssl)
     {
         return 0;
@@ -705,8 +772,29 @@ int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509)
     return 0;
 }
 
+int32_t CryptoNative_SslAddClientCAs(SSL* ssl, X509** x509s, uint32_t count)
+{
+    if (!x509s || !ssl)
+    {
+        return 0;
+    }
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        int res = SSL_add_client_CA(ssl, x509s[i]);
+        if (res != 1)
+        {
+            return res;
+        }
+    }
+
+    return 1;
+}
+
 void CryptoNative_SslCtxSetAlpnSelectCb(SSL_CTX* ctx, SslCtxSetAlpnCallback cb, void* arg)
 {
+    // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
+
 #if HAVE_OPENSSL_ALPN
     if (API_EXISTS(SSL_CTX_set_alpn_select_cb))
     {
@@ -730,21 +818,40 @@ static int client_certificate_cb(SSL *ssl, void* state)
 
 void CryptoNative_SslSetClientCertCallback(SSL* ssl, int set)
 {
+    // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
+
     SSL_set_cert_cb(ssl, set ? client_certificate_cb : NULL, NULL);
+}
+
+void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val)
+{
+#ifdef NEED_OPENSSL_1_1
+    if (API_EXISTS(SSL_set_post_handshake_auth))
+    {
+        SSL_set_post_handshake_auth(ssl, val);
+    }
+#else
+    (void)ssl;
+    (void)val;
+#endif
 }
 
 int32_t CryptoNative_SslSetData(SSL* ssl, void *ptr)
 {
+    ERR_clear_error();
     return SSL_set_ex_data(ssl, 0, ptr);
 }
 
 void* CryptoNative_SslGetData(SSL* ssl)
 {
+    // No error queue impact.
     return SSL_get_ex_data(ssl, 0);
 }
 
 int32_t CryptoNative_SslSetAlpnProtos(SSL* ssl, const uint8_t* protos, uint32_t protos_len)
 {
+    ERR_clear_error();
+
 #if HAVE_OPENSSL_ALPN
     if (API_EXISTS(SSL_CTX_set_alpn_protos))
     {
@@ -763,6 +870,8 @@ int32_t CryptoNative_SslSetAlpnProtos(SSL* ssl, const uint8_t* protos, uint32_t 
 
 void CryptoNative_SslGet0AlpnSelected(SSL* ssl, const uint8_t** protocol, uint32_t* len)
 {
+    // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
+
 #if HAVE_OPENSSL_ALPN
     if (API_EXISTS(SSL_get0_alpn_selected))
     {
@@ -780,11 +889,14 @@ void CryptoNative_SslGet0AlpnSelected(SSL* ssl, const uint8_t** protocol, uint32
 
 int32_t CryptoNative_SslSetTlsExtHostName(SSL* ssl, uint8_t* name)
 {
+    ERR_clear_error();
     return (int32_t)SSL_set_tlsext_host_name(ssl, name);
 }
 
 int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
 {
+    // No error queue impact.
+
     const SSL_CIPHER* cipher = SSL_get_current_cipher(ssl);
     if (!cipher)
     {
@@ -854,6 +966,9 @@ static int MakeSelfSignedCertificate(X509 * cert, EVP_PKEY* evp)
 
 int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol)
 {
+    // Many of these helpers already clear the error queue, and we unconditionally
+    // clear it at the end.
+
     int ret = 0;
 
     SSL_CTX* clientCtx = CryptoNative_SslCtxCreate(TLS_method());

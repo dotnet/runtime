@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="name">The name of the option.</param>
         [RequiresUnreferencedCode("The implementation of Validate method on this type will walk through all properties of the passed in options object, and its type cannot be " +
             "statically analyzed so its members may be trimmed.")]
-        public DataAnnotationValidateOptions(string name)
+        public DataAnnotationValidateOptions(string? name)
         {
             Name = name;
         }
@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// The options name.
         /// </summary>
-        public string Name { get; }
+        public string? Name { get; }
 
         /// <summary>
         /// Validates a specific named options instance (or all when <paramref name="name"/> is null).
@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Options
         /// <returns>The <see cref="ValidateOptionsResult"/> result.</returns>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Suppressing the warnings on this method since the constructor of the type is annotated as RequiresUnreferencedCode.")]
-        public ValidateOptionsResult Validate(string name, TOptions options)
+        public ValidateOptionsResult Validate(string? name, TOptions options)
         {
             // Null name is used to configure all named options.
             if (Name != null && Name != name)

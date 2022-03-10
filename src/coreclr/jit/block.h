@@ -551,6 +551,8 @@ enum BasicBlockFlags : unsigned __int64
     BBF_HAS_ALIGN            = MAKE_BBFLAG(39), // BB ends with 'align' instruction
     BBF_TAILCALL_SUCCESSOR   = MAKE_BBFLAG(40), // BB has pred that has potential tail call
 
+    BBF_BACKWARD_JUMP_SOURCE = MAKE_BBFLAG(41), // Block is a source of a backward jump
+
     // The following are sets of flags.
 
     // Flags that relate blocks to loop structure.

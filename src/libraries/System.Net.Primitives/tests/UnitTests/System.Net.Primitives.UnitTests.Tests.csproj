@@ -4,7 +4,7 @@
     <NoWarn>169,649</NoWarn>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <PropertyGroup>
     <!-- SYSTEM_NET_PRIMITIVES_DLL is required to allow source-level code sharing for types defined within the
@@ -77,7 +77,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.ErrorCodes.cs"
              Link="ProductionCode\Common\Interop\Windows\WinSock\Interop.ErrorCodes.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition=" '$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="..\..\src\System\Net\SocketException.Windows.cs"
              Link="ProductionCode\System\Net\SocketException.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Windows.cs"
@@ -89,7 +89,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="ProductionCode\Common\Interop\Windows\Interop.Libraries.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="..\..\src\System\Net\SocketException.Unix.cs"
              Link="ProductionCode\System\Net\SocketException.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Unix.cs"

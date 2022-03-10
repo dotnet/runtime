@@ -231,13 +231,8 @@ namespace System.Xml
         // XmlReader Helper Methods
 
         // Writes out all the attributes found at the current position in the specified XmlReader.
-        public virtual async Task WriteAttributesAsync(XmlReader reader, bool defattr)
+        public virtual async Task WriteAttributesAsync(XmlReader reader!!, bool defattr)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             if (reader.NodeType is XmlNodeType.Element or XmlNodeType.XmlDeclaration)
             {
                 if (reader.MoveToFirstAttribute())
@@ -279,13 +274,8 @@ namespace System.Xml
 
         // Copies the current node from the given reader to the writer (including child nodes), and if called on an element moves the XmlReader
         // to the corresponding end element.
-        public virtual Task WriteNodeAsync(XmlReader reader, bool defattr)
+        public virtual Task WriteNodeAsync(XmlReader reader!!, bool defattr)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             if (reader.Settings is { Async: true })
             {
                 return WriteNodeAsync_CallAsyncReader(reader, defattr);
@@ -421,12 +411,8 @@ namespace System.Xml
         }
 
         // Copies the current node from the given XPathNavigator to the writer (including child nodes).
-        public virtual async Task WriteNodeAsync(XPathNavigator navigator, bool defattr)
+        public virtual async Task WriteNodeAsync(XPathNavigator navigator!!, bool defattr)
         {
-            if (navigator == null)
-            {
-                throw new ArgumentNullException(nameof(navigator));
-            }
             int iLevel = 0;
 
             navigator = navigator.Clone();

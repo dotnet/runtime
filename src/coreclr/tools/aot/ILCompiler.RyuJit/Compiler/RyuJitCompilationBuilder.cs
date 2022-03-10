@@ -115,7 +115,10 @@ namespace ILCompiler
                 options |= RyuJitCompilationOptions.MethodBodyFolding;
 
             if ((_mitigationOptions & SecurityMitigationOptions.ControlFlowGuardAnnotations) != 0)
+            {
+                jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_ENABLE_CFG);
                 options |= RyuJitCompilationOptions.ControlFlowGuardAnnotations;
+            }
 
             if (_useDwarf5)
                 options |= RyuJitCompilationOptions.UseDwarf5;

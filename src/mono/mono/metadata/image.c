@@ -18,15 +18,15 @@
 #include <errno.h>
 #include <time.h>
 #include <string.h>
-#include "image.h"
+#include <mono/metadata/image.h>
 #include "cil-coff.h"
 #include "mono-endian.h"
 #include "tabledefs.h"
-#include "tokentype.h"
+#include <mono/metadata/tokentype.h>
 #include "metadata-internals.h"
 #include "metadata-update.h"
 #include "profiler-private.h"
-#include "loader.h"
+#include <mono/metadata/loader.h>
 #include "marshal.h"
 #include "coree.h"
 #include <mono/metadata/exception-internals.h>
@@ -2219,7 +2219,9 @@ mono_image_close_except_pools (MonoImage *image)
 	free_hash (image->wrapper_param_names);
 	free_hash (image->native_func_wrapper_cache);
 	mono_conc_hashtable_destroy (image->typespec_cache);
+#ifdef ENABLE_WEAK_ATTR
 	free_hash (image->weak_field_indexes);
+#endif
 
 	mono_wrapper_caches_free (&image->wrapper_caches);
 

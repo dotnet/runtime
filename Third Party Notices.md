@@ -3,7 +3,7 @@ This package contains third-party software components governed by the license(s)
 
 Component Name: ASP.NET
 
-License Type: Apache License, Version 2.0. 
+License Type: Apache License, Version 2.0.
 
 Copyright © .NET Foundation. All rights reserved.
 
@@ -36,7 +36,7 @@ SOFTWARE.
 
 Component Name: Slicing-by-8
 
-License Type: BSD 
+License Type: BSD
 
 Copyright © 2004-2006 Intel Corporation - All Rights Reserved
 
@@ -167,7 +167,7 @@ License notice for Mono
 
 Component Name: International Organization for Standardization
 
-License Type: [Provide license type, i.e. "MIT", "Apache 2.0"] 
+License Type: [Provide license type, i.e. "MIT", "Apache 2.0"]
 
 Copyright © 1986 International Organization for Standardization
 
@@ -494,7 +494,7 @@ MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
 
 Component Name: Algorithm from Internet Draft document "UUIDs and GUIDs"
 
-License Type: Multiple 
+License Type: Multiple
 
 Copyright © 1990- 1993, 1996 Open Software Foundation, Inc.
 Copyright © 1989 by Hewlett-Packard Company, Palo Alto, Ca. & Digital Equipment Corporation, Maynard, Mass.
@@ -546,7 +546,7 @@ PARTICULAR PURPOSE.
 
 Component Name: Algorithm from RFC 4122 - A Universally Unique IDentifier (UUID) URN Namespace
 
-License Type: Multiple 
+License Type: Multiple
 
 Copyright © 1990- 1993, 1996 Open Software Foundation, Inc.
 Copyright © 1989 by Hewlett-Packard Company, Palo Alto, Ca. & Digital Equipment Corporation, Maynard, Mass.
@@ -698,7 +698,7 @@ Copyright © 2014 Ryan Juckett
 
 Component Name: Printing Floating-point Numbers (Grisu3)
 
-License Type: [Provide license type, i.e. "MIT", "Apache 2.0"] 
+License Type: [Provide license type, i.e. "MIT", "Apache 2.0"]
 
 Copyright © 2012 the V8 project authors.
 
@@ -811,7 +811,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Component Name: xoshiro RNGs
 
-License Type: Public Domain 
+License Type: Public Domain
 
 http://creativecommons.org/publicdomain/zero/1.0/
 
@@ -850,7 +850,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 ```
 ---------
 
-Component Name: sse4-strstr 
+Component Name: sse4-strstr
 
 License Type: BSD 2-Clause
 
@@ -1098,7 +1098,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 Component Name: vectorized sorting code
 
-License Type: MIT 
+License Type: MIT
 
 Copyright © 2020 Dan Shechter
 ```
@@ -1269,4 +1269,24 @@ a. No trademark or patent rights held by Affirmer are waived, abandoned, surrend
 b. Affirmer offers the Work as-is and makes no representations or warranties of any kind concerning the Work, express, implied, statutory or otherwise, including without limitation warranties of title, merchantability, fitness for a particular purpose, non infringement, or the absence of latent or other defects, accuracy, or the present or absence of errors, whether or not discoverable, all to the greatest extent permissible under applicable law.
 c. Affirmer disclaims responsibility for clearing rights of other persons that may apply to the Work or any use thereof, including without limitation any person's Copyright and Related Rights in the Work. Further, Affirmer disclaims responsibility for obtaining any necessary consents, permissions or other rights required for any use of the Work.
 d. Affirmer understands and acknowledges that Creative Commons is not a party to this document and has no duty or obligation with respect to this CC0 or use of the Work.
+
+License notice for FastFloat algorithm
+-------------------------------------
+MIT License
+Copyright (c) 2021 csFastFloat authors
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```

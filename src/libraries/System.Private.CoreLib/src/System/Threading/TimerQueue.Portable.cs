@@ -23,9 +23,11 @@ namespace System.Threading
         private bool _isScheduled;
         private long _scheduledDueTimeMs;
 
+#pragma warning disable IDE0060
         private TimerQueue(int id)
         {
         }
+#pragma warning restore IDE0060
 
         private static List<TimerQueue> InitializeScheduledTimerManager_Locked()
         {
@@ -126,7 +128,7 @@ namespace System.Threading
                 {
                     foreach (TimerQueue timerToFire in timersToFire)
                     {
-                        ThreadPool.UnsafeQueueTimeSensitiveWorkItem(timerToFire);
+                        ThreadPool.UnsafeQueueHighPriorityWorkItemInternal(timerToFire);
                     }
                     timersToFire.Clear();
                 }

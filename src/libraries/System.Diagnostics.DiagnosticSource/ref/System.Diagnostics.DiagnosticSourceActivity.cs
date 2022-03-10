@@ -244,6 +244,7 @@ namespace System.Diagnostics
         public System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? Links  { get { throw null; } }
         public System.Diagnostics.ActivityTagsCollection SamplingTags { get { throw null; } }
         public System.Diagnostics.ActivityTraceId TraceId { get { throw null; } }
+        public string? TraceState { get { throw null; } init { throw null; } }
     }
     public delegate System.Diagnostics.ActivitySamplingResult SampleActivity<T>(ref System.Diagnostics.ActivityCreationOptions<T> options);
     public sealed class ActivityListener : IDisposable

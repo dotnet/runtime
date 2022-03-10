@@ -120,15 +120,10 @@ namespace System.Security.Cryptography.Pkcs
 
         public bool VerifySignatureForHash(
             ReadOnlySpan<byte> hash,
-            Oid hashAlgorithmId,
+            Oid hashAlgorithmId!!,
             [NotNullWhen(true)] out X509Certificate2? signerCertificate,
             X509Certificate2Collection? extraCandidates = null)
         {
-            if (hashAlgorithmId == null)
-            {
-                throw new ArgumentNullException(nameof(hashAlgorithmId));
-            }
-
             signerCertificate = null;
 
             X509Certificate2? cert = GetSignerCertificate(extraCandidates);
@@ -152,15 +147,10 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         public bool VerifySignatureForSignerInfo(
-            SignerInfo signerInfo,
+            SignerInfo signerInfo!!,
             [NotNullWhen(true)] out X509Certificate2? signerCertificate,
             X509Certificate2Collection? extraCandidates = null)
         {
-            if (signerInfo == null)
-            {
-                throw new ArgumentNullException(nameof(signerInfo));
-            }
-
             return VerifySignatureForData(
                 signerInfo.GetSignatureMemory().Span,
                 out signerCertificate,

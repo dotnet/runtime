@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "stdafx.h"
 
-// Enable building with older SDKs that don't have IMAGE_FILE_MACHINE_ARM64 defined.
-#ifndef IMAGE_FILE_MACHINE_ARM64
-#define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
-#endif
-
 #include "blobfetcher.h"
 #include "pedecoder.h"
 

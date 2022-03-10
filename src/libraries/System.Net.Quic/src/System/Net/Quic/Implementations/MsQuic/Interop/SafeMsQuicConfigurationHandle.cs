@@ -44,10 +44,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ClientAuthenticationOptions.CipherSuitesPolicy)));
                 }
 
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 if (options.ClientAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
                 {
                     throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ClientAuthenticationOptions.EncryptionPolicy)));
                 }
+#pragma warning restore SYSLIB0040
 
                 if (options.ClientAuthenticationOptions.ClientCertificates != null)
                 {
@@ -82,10 +84,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(serverAuthenticationOptions.CipherSuitesPolicy)));
                 }
 
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 if (serverAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
                 {
                     throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(serverAuthenticationOptions.EncryptionPolicy)));
                 }
+#pragma warning restore SYSLIB0040
 
                 if (serverAuthenticationOptions.ClientCertificateRequired)
                 {

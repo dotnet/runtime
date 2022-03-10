@@ -164,10 +164,18 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         isWrite = true;
         node    = node->gtGetOp1();
     }
-    else if (node->OperIsStore())
+    else if (node->OperIsStore() || node->OperIs(GT_MEMORYBARRIER))
     {
         isWrite = true;
     }
+#ifdef FEATURE_HW_INTRINSICS
+    else if (node->OperIsHWIntrinsic() && node->AsHWIntrinsic()->OperIsMemoryStore())
+    {
+        isWrite = true;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    assert(isWrite || !node->OperRequiresAsgFlag());
 
     // `node` is the location being accessed. Determine whether or not it is a memory or local variable access, and if
     // it is the latter, get the number of the lclVar.

@@ -258,6 +258,11 @@ public:
                     }
                 }
             }
+        }
+
+        if (node->OperIsLocal())
+        {
+            unsigned const lclNum = node->AsLclVarCommon()->GetLclNum();
 
             // Uses of address-exposed locals are modelled as global refs.
             //
@@ -370,7 +375,7 @@ public:
         GenTree* const node = *use;
         m_flags |= node->gtFlags & GTF_ALL_EFFECT;
 
-        if (node->OperIs(GT_LCL_VAR))
+        if (node->OperIsLocal())
         {
             unsigned const   lclNum = node->AsLclVarCommon()->GetLclNum();
             LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
@@ -631,7 +636,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // If fwdSubNode is an address-exposed local, forwarding it may lose optimizations.
     // (maybe similar for dner?)
     //
-    if (fwdSubNode->OperIs(GT_LCL_VAR))
+    if (fwdSubNode->IsLocal())
     {
         unsigned const   fwdLclNum = fwdSubNode->AsLclVarCommon()->GetLclNum();
         LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);
@@ -649,8 +654,9 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // Not doing so can lead to regressions...
     //
     // Hold off on doing this for call args for now (per issue #51569).
+    // Hold off on OBJ(GT_LCL_ADDR).
     //
-    if (fwdSubNode->OperIs(GT_OBJ) && !fsv.IsCallArg())
+    if (fwdSubNode->OperIs(GT_OBJ) && !fsv.IsCallArg() && fwdSubNode->gtGetOp1()->OperIs(GT_ADDR))
     {
         const bool     destroyNodes = false;
         GenTree* const optTree      = fgMorphTryFoldObjAsLclVar(fwdSubNode->AsObj(), destroyNodes);

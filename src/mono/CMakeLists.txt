@@ -66,7 +66,6 @@ if(ENABLE_MINIMAL)
   process_enable_minimal()
 endif()
 
-set(DISABLE_MDB 1)
 set(DISABLE_COM 1)
 set(DISABLE_PERFCOUNTERS 1)
 
@@ -485,6 +484,11 @@ if(GCC)
     # We require C99 with some GNU extensions, e.g. `linux` macro
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
   endif()
+
+  # Turn off floating point expression contraction because it is considered a value changing
+  # optimization in the IEEE 754 specification and is therefore considered unsafe.
+  add_compile_options(-ffp-contract=off)
+
   # The runtime code does not respect ANSI C strict aliasing rules
   append("-fno-strict-aliasing" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
   # We rely on signed overflow to behave
@@ -503,6 +507,12 @@ if(GCC)
   check_c_compiler_flag("-Werror=incompatible-pointer-types" WERROR_INCOMPATIBLE_POINTER_TYPES)
   if(WERROR_INCOMPATIBLE_POINTER_TYPES)
     set(WERROR_C "${WERROR_C} -Werror=incompatible-pointer-types")
+  endif()
+
+  if(HOST_WASI)
+    # When building under WASI SDK, it's stricter about discarding 'const' qualifiers, causing some existing
+    # code (e.g., mono-rand.c:315) to be rejected
+    set(WERROR_C "${WERROR_C} -Wno-incompatible-pointer-types-discards-qualifiers")
   endif()
 
   append("${WARNINGS} ${WARNINGS_C} ${WERROR} ${WERROR_C}" CMAKE_C_FLAGS)
@@ -732,7 +742,7 @@ else()
   set(EGLIB_SEARCHSEP ":")
   set(EGLIB_OS "UNIX")
   set(EGLIB_PIDTYPE "int")
-  set(EGLIB_GSIZE_FORMAT "\"lu\"")
+  set(EGLIB_GSIZE_FORMAT "\"zu\"")
 endif()
 
 set(EGLIB_GSIZE "size_t")
@@ -852,6 +862,12 @@ endif()
 ### End of OS specific checks
 
 include_directories("${CLR_SRC_NATIVE_DIR}")
+
+if(NOT DISABLE_LIBS)
+  set(INSTALL_MONO_API 1)
+endif()
+add_subdirectory("${CLR_SRC_NATIVE_DIR}/public" public_apis)
+
 add_subdirectory(mono)
 if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT HOST_MACCAT)
   add_subdirectory(dlls/mscordbi)

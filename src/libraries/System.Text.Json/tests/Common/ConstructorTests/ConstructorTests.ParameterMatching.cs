@@ -1340,12 +1340,12 @@ namespace System.Text.Json.Serialization.Tests
             var obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
             Assert.Equal(43, obj.A);
             Assert.Equal(0, obj.B);
-            
+
             json = @"{""A"":0,""B"":44}";
             obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
             Assert.Equal(0, obj.A);
             Assert.Equal(44, obj.B);
-            
+
             json = @"{""B"":45}";
             obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
             Assert.Equal(42, obj.A); // JSON doesn't set A property so it's expected to be 42
@@ -1354,6 +1354,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public struct StructWithPropertyInit
         {
+            public StructWithPropertyInit() { B = 0; }
             public long A { get; set; } = 42;
             public long B { get; set; }
         }
@@ -1369,6 +1370,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public struct StructWithFieldInit
         {
+            public StructWithFieldInit() { A = 0; }
             public long A;
             public long B = 42;
         }

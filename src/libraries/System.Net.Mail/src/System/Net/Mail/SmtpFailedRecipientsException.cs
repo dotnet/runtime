@@ -34,28 +34,17 @@ namespace System.Net.Mail
             _innerExceptions = (SmtpFailedRecipientException[])info.GetValue("innerExceptions", typeof(SmtpFailedRecipientException[]))!;
         }
 
-        public SmtpFailedRecipientsException(string? message, SmtpFailedRecipientException[] innerExceptions) :
-            base(message, innerExceptions != null && innerExceptions.Length > 0 ? innerExceptions[0].FailedRecipient : null,
-            innerExceptions != null && innerExceptions.Length > 0 ? innerExceptions[0] : null)
+        public SmtpFailedRecipientsException(string? message, SmtpFailedRecipientException[] innerExceptions!!) :
+            base(message, innerExceptions.Length > 0 ? innerExceptions[0].FailedRecipient : null, innerExceptions.Length > 0 ? innerExceptions[0] : null)
         {
-            if (innerExceptions == null)
-            {
-                throw new ArgumentNullException(nameof(innerExceptions));
-            }
-
             _innerExceptions = innerExceptions == null ? Array.Empty<SmtpFailedRecipientException>() : innerExceptions;
         }
 
-        internal SmtpFailedRecipientsException(List<SmtpFailedRecipientException> innerExceptions, bool allFailed) :
+        internal SmtpFailedRecipientsException(List<SmtpFailedRecipientException> innerExceptions!!, bool allFailed) :
             base(allFailed ? SR.SmtpAllRecipientsFailed : SR.SmtpRecipientFailed,
-            innerExceptions != null && innerExceptions.Count > 0 ? innerExceptions[0].FailedRecipient : null,
-            innerExceptions != null && innerExceptions.Count > 0 ? innerExceptions[0] : null)
+            innerExceptions.Count > 0 ? innerExceptions[0].FailedRecipient : null,
+            innerExceptions.Count > 0 ? innerExceptions[0] : null)
         {
-            if (innerExceptions == null)
-            {
-                throw new ArgumentNullException(nameof(innerExceptions));
-            }
-
             _innerExceptions = innerExceptions.ToArray();
         }
 

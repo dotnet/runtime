@@ -872,26 +872,28 @@ namespace Internal.TypeSystem.Interop
         internal static MarshallerKind GetDisabledMarshallerKind(
             TypeDesc type)
         {
-            if (type.Category == TypeFlags.Void)
+            // Get the underlying type for enum types.
+            TypeDesc underlyingType = type.UnderlyingType;
+            if (underlyingType.Category == TypeFlags.Void)
             {
                 return MarshallerKind.VoidReturn;
             }
-            else if (type.IsByRef)
+            else if (underlyingType.IsByRef)
             {
                 // Managed refs are not supported when runtime marshalling is disabled.
                 return MarshallerKind.Invalid;
             }
-            else if (type.IsPrimitive)
+            else if (underlyingType.IsPrimitive)
             {
                 return MarshallerKind.BlittableValue;
             }
-            else if (type.IsPointer || type.IsFunctionPointer)
+            else if (underlyingType.IsPointer || underlyingType.IsFunctionPointer)
             {
                 return MarshallerKind.BlittableValue;
             }
-            else if (type.IsValueType)
+            else if (underlyingType.IsValueType)
             {
-                var defType = (DefType)type;
+                var defType = (DefType)underlyingType;
                 if (!defType.ContainsGCPointers && !defType.IsAutoLayoutOrHasAutoLayoutFields)
                 {
                     return MarshallerKind.BlittableValue;

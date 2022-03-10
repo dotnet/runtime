@@ -226,13 +226,8 @@ namespace System.Drawing
         /// graphics context.
         /// </summary>
         [Obsolete("FontFamily.GetFamilies has been deprecated. Use Families instead.")]
-        public static FontFamily[] GetFamilies(Graphics graphics)
+        public static FontFamily[] GetFamilies(Graphics graphics!!)
         {
-            if (graphics == null)
-            {
-                throw new ArgumentNullException(nameof(graphics));
-            }
-
             return new InstalledFontCollection().Families;
         }
 

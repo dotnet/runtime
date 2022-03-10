@@ -1634,6 +1634,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
     }
 
     ThumbEmitTailCallManagedMethod(pSharedMD);
+    SetTargetMethod(pSharedMD);
 }
 
 

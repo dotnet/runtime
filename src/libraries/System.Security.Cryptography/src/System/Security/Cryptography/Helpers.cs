@@ -12,14 +12,6 @@ namespace Internal.Cryptography
 {
     internal static partial class Helpers
     {
-        internal static ReadOnlySpan<byte> AsSpanParameter(this byte[] array, string paramName)
-        {
-            if (array == null)
-                throw new ArgumentNullException(paramName);
-
-            return new ReadOnlySpan<byte>(array);
-        }
-
         internal static void AddRange<T>(this ICollection<T> coll, IEnumerable<T> newData)
         {
             foreach (T datum in newData)
@@ -329,6 +321,11 @@ namespace Internal.Cryptography
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
+        }
+
+        public static int GetPaddingSize(this SymmetricAlgorithm algorithm, CipherMode mode, int feedbackSizeInBits)
+        {
+            return (mode == CipherMode.CFB ? feedbackSizeInBits : algorithm.BlockSize) / 8;
         }
     }
 }
