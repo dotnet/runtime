@@ -84,7 +84,7 @@ jobs:
       - Linux_x64
       jobParameters:
         testGroup: perf
-        liveLibrariesBuildConfig: Release
+        #liveLibrariesBuildConfig: Release
         runtimeType: wasm
         codeGenType: 'wasm'
         projectFile: microbenchmarks.proj
@@ -103,7 +103,7 @@ jobs:
       - linux_x64
       jobparameters:
         testgroup: perf
-        livelibrariesbuildconfig: Release
+        #livelibrariesbuildconfig: Release
         runtimetype: wasm
         codegentype: 'aot'
         projectfile: microbenchmarks.proj
@@ -139,14 +139,9 @@ jobs:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         nameSuffix: wasm
         isOfficialBuild: false
-        extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
+        extraStepsTemplate: /eng/pipelines/coreclr/perf-wasm-prepare-artifacts-steps.yml
         extraStepsParameters:
-          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-          includeRootFolder: true
-          displayName: Browser Wasm Artifacts
-          artifactName: BrowserWasm
-          archiveType: zip
-          archiveExtension: .zip
+          buildConfig: release
 
   # build mono for AOT
   - template: /eng/pipelines/common/platform-matrix.yml
