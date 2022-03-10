@@ -2678,7 +2678,7 @@ namespace System.Threading.Tasks
             cancellationToken.ThrowIfCancellationRequested();
 
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if (totalMilliseconds is < (-1) or > int.MaxValue)
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.timeout);
             }
