@@ -343,7 +343,7 @@ function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: Message
         });
     }
     if (promise_queue.getLength() && event_queue.getLength() > 1) {
-        throw new Error("ERR20: Invalid WS state");// assert
+        throw new Error("ERR21: Invalid WS state");// assert
     }
     while (promise_queue.getLength() && event_queue.getLength()) {
         const promise_control = promise_queue.dequeue()!;

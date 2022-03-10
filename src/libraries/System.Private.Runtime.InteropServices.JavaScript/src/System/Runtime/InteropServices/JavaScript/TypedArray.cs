@@ -47,7 +47,7 @@ namespace System.Runtime.InteropServices.JavaScript
     /// <summary>
     /// Represents a JavaScript TypedArray.
     /// </summary>
-    public abstract class TypedArray<T, U> : CoreObject, ITypedArray, ITypedArray<T, U>
+    public abstract class TypedArray<T, U> : JSObject, ITypedArray, ITypedArray<T, U>
         where U : struct
         where T: JSObject
     {
@@ -66,15 +66,6 @@ namespace System.Runtime.InteropServices.JavaScript
         protected TypedArray(ArrayBuffer buffer, int byteOffset, int length) : base(typeof(T).Name, buffer, byteOffset, length)
         { }
 
-        protected TypedArray(SharedArrayBuffer buffer) : base(typeof(T).Name, buffer)
-        { }
-
-        protected TypedArray(SharedArrayBuffer buffer, int byteOffset) : base(typeof(T).Name, buffer, byteOffset)
-        { }
-
-        protected TypedArray(SharedArrayBuffer buffer, int byteOffset, int length) : base(typeof(T).Name, buffer, byteOffset, length)
-        { }
-
         internal TypedArray(IntPtr jsHandle) : base(jsHandle)
         { }
 
@@ -82,24 +73,8 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             switch (this)
             {
-                case Int8Array _:
-                    return TypedArrayTypeCode.Int8Array;
                 case Uint8Array _:
                     return TypedArrayTypeCode.Uint8Array;
-                case Uint8ClampedArray _:
-                    return TypedArrayTypeCode.Uint8ClampedArray;
-                case Int16Array _:
-                    return TypedArrayTypeCode.Int16Array;
-                case Uint16Array _:
-                    return TypedArrayTypeCode.Uint16Array;
-                case Int32Array _:
-                    return TypedArrayTypeCode.Int32Array;
-                case Uint32Array _:
-                    return TypedArrayTypeCode.Uint32Array;
-                case Float32Array _:
-                    return TypedArrayTypeCode.Float32Array;
-                case Float64Array _:
-                    return TypedArrayTypeCode.Float64Array;
                 default:
                     throw new ArrayTypeMismatchException(SR.TypedArrayNotCorrectType);
             }
@@ -153,6 +128,16 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        /// <summary>
+        /// Gets or sets the length.
+        /// </summary>
+        /// <value>The length.</value>
+        public int Length
+        {
+            get => Convert.ToInt32(GetObjectProperty("length"));
+            set => SetObjectProperty("length", value, false);
+        }
+
         private U? UnBoxValue(object jsValue)
         {
             if (jsValue == null)
@@ -181,9 +166,6 @@ namespace System.Runtime.InteropServices.JavaScript
             }
 
             TypedArrayTypeCode type = (TypedArrayTypeCode)Type.GetTypeCode(typeof(U));
-            // Special case for Uint8ClampedArray, a clamped array which represents an array of 8-bit unsigned integers clamped to 0-255;
-            if (type == TypedArrayTypeCode.Uint8Array && typeof(T) == typeof(Uint8ClampedArray))
-                type = TypedArrayTypeCode.Uint8ClampedArray;  // This is only passed to the JavaScript side so it knows it will be a Uint8ClampedArray
 
             ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(span);
             fixed (byte* ptr = bytes)

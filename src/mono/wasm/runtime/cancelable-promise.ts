@@ -7,7 +7,7 @@ import { JSHandle, MonoString } from "./types";
 import { Int32Ptr } from "./types/emscripten";
 
 export const _are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
-const promise_control_symbol = Symbol.for("wasm promise_control");
+export const promise_control_symbol = Symbol.for("wasm promise_control");
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function isThenable(js_obj: any): boolean {
@@ -31,7 +31,7 @@ export function mono_wasm_cancel_promise(thenable_js_handle: JSHandle, is_except
 export interface PromiseControl {
     isDone: boolean;
     resolve: (data?: any) => void;
-    reject: (reason: string) => void;
+    reject: (reason: any) => void;
 }
 
 export function _create_cancelable_promise(afterResolve?: () => void, afterReject?: () => void): {
@@ -50,7 +50,7 @@ export function _create_cancelable_promise(afterResolve?: () => void, afterRejec
                     }
                 }
             },
-            reject: (reason: string) => {
+            reject: (reason: any) => {
                 if (!promise_control!.isDone) {
                     promise_control!.isDone = true;
                     reject(reason);

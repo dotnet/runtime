@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 namespace System.Runtime.InteropServices.JavaScript
 {
     public sealed class Uint8Array : TypedArray<Uint8Array, byte>
@@ -23,15 +21,6 @@ namespace System.Runtime.InteropServices.JavaScript
         { }
 
         public Uint8Array(ArrayBuffer buffer, int byteOffset, int length) : base(buffer, byteOffset, length)
-        { }
-
-        public Uint8Array(SharedArrayBuffer buffer) : base(buffer)
-        { }
-
-        public Uint8Array(SharedArrayBuffer buffer, int byteOffset) : base(buffer, byteOffset)
-        { }
-
-        public Uint8Array(SharedArrayBuffer buffer, int byteOffset, int length) : base(buffer, byteOffset, length)
         { }
 
         internal Uint8Array(IntPtr jsHandle) : base(jsHandle)

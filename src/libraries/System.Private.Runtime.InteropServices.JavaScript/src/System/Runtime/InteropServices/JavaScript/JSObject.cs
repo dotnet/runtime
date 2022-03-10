@@ -3,17 +3,11 @@
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    public interface IJSObject
-    {
-        int JSHandle { get; }
-        int Length { get; }
-    }
-
     /// <summary>
     ///   JSObjects are wrappers for a native JavaScript object, and
     ///   they retain a reference to the JavaScript object for the lifetime of this C# object.
     /// </summary>
-    public partial class JSObject : IJSObject, IDisposable
+    public partial class JSObject : IDisposable
     {
         /// <summary>
         ///   Invoke a named method of the object, or throws a JSException on error.
@@ -43,67 +37,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 throw new JSException((string)res);
             Interop.Runtime.ReleaseInFlight(res);
             return res;
-        }
-
-        public struct EventListenerOptions {
-            public bool Capture;
-            public bool Once;
-            public bool Passive;
-            public object? Signal;
-        }
-
-        public int AddEventListener(string name, Action<JSObject> listener, EventListenerOptions? options = null)
-        {
-            AssertNotDisposed();
-
-            var optionsDict = options.HasValue
-                ? new JSObject()
-                : null;
-
-            try {
-                if (options?.Signal != null)
-                    throw new NotImplementedException("EventListenerOptions.Signal");
-
-                var jsfunc = Runtime.GetJSOwnedObjectGCHandle(listener);
-                // int exception;
-                if (options.HasValue) {
-                    // TODO: Optimize this
-                    var _options = options.Value;
-                    optionsDict?.SetObjectProperty("capture", _options.Capture, true, true);
-                    optionsDict?.SetObjectProperty("once", _options.Once, true, true);
-                    optionsDict?.SetObjectProperty("passive", _options.Passive, true, true);
-                }
-
-                // TODO: Pass options explicitly instead of using the object
-                // TODO: Handle errors
-                // We can't currently do this because adding any additional parameters or a return value causes
-                //  a signature mismatch at runtime
-                var ret = Interop.Runtime.AddEventListener(JSHandle, name, jsfunc, optionsDict?.JSHandle ?? 0);
-                if (ret != null)
-                    throw new JSException(ret);
-                return jsfunc;
-            } finally {
-                optionsDict?.Dispose();
-            }
-        }
-
-        public void RemoveEventListener(string name, Action<JSObject>? listener, EventListenerOptions? options = null)
-        {
-            AssertNotDisposed();
-
-            if (listener == null)
-                return;
-            var jsfunc = Runtime.GetJSOwnedObjectGCHandle(listener);
-            RemoveEventListener(name, jsfunc, options);
-        }
-
-        public void RemoveEventListener(string name, int listenerGCHandle, EventListenerOptions? options = null)
-        {
-            AssertNotDisposed();
-
-            var ret = Interop.Runtime.RemoveEventListener(JSHandle, name, listenerGCHandle, options?.Capture ?? false);
-            if (ret != null)
-                throw new JSException(ret);
         }
 
         /// <summary>
@@ -157,16 +90,6 @@ namespace System.Runtime.InteropServices.JavaScript
             Interop.Runtime.SetObjectProperty(JSHandle, name, value, createIfNotExists, hasOwnProperty, out int exception);
             if (exception != 0)
                 throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}')");
-        }
-
-        /// <summary>
-        /// Gets or sets the length.
-        /// </summary>
-        /// <value>The length.</value>
-        public int Length
-        {
-            get => Convert.ToInt32(GetObjectProperty("length"));
-            set => SetObjectProperty("length", value, false);
         }
 
         /// <summary>

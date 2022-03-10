@@ -26,8 +26,6 @@ extern MonoObject* mono_wasm_typed_array_to_array (int js_handle, int *is_except
 extern MonoObject* mono_wasm_typed_array_copy_to (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception);
 extern MonoObject* mono_wasm_typed_array_from (int ptr, int begin, int end, int bytes_per_element, int type, int *is_exception);
 extern MonoObject* mono_wasm_typed_array_copy_from (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception);
-extern MonoString* mono_wasm_add_event_listener (int jsObjHandle, MonoString *name, int weakDelegateHandle, int optionsObjHandle);
-extern MonoString* mono_wasm_remove_event_listener (int jsObjHandle, MonoString *name, int weakDelegateHandle, int capture);
 extern MonoString* mono_wasm_cancel_promise (int thenable_js_handle, int *is_exception);
 extern MonoObject* mono_wasm_web_socket_open (MonoString *uri, MonoArray *subProtocols, MonoDelegate *on_close, int *web_socket_js_handle, int *thenable_js_handle, int *is_exception);
 extern MonoObject* mono_wasm_web_socket_send (int webSocket_js_handle, void* buffer_ptr, int offset, int length, int message_type, int end_of_message, int *thenable_js_handle, int *is_exception);
@@ -51,8 +49,6 @@ void core_initialize_internals ()
 	mono_add_internal_call ("Interop/Runtime::TypedArrayFrom", mono_wasm_typed_array_from);
 	mono_add_internal_call ("Interop/Runtime::TypedArrayCopyFrom", mono_wasm_typed_array_copy_from);
 	mono_add_internal_call ("Interop/Runtime::CompileFunction", mono_wasm_compile_function);
-	mono_add_internal_call ("Interop/Runtime::AddEventListener", mono_wasm_add_event_listener);
-	mono_add_internal_call ("Interop/Runtime::RemoveEventListener", mono_wasm_remove_event_listener);
 	mono_add_internal_call ("Interop/Runtime::WebSocketOpen", mono_wasm_web_socket_open);
 	mono_add_internal_call ("Interop/Runtime::WebSocketSend", mono_wasm_web_socket_send);
 	mono_add_internal_call ("Interop/Runtime::WebSocketReceive", mono_wasm_web_socket_receive);
@@ -70,7 +66,7 @@ void core_initialize_internals ()
 // Uint32Array		| uint32_t	| uint (unsigned integer)
 // Float32Array		| float		| float
 // Float64Array		| double	| double
-// typed array marshalling
+// typed array marshaling
 #define MARSHAL_ARRAY_BYTE 10
 #define MARSHAL_ARRAY_UBYTE 11
 #define MARSHAL_ARRAY_UBYTE_C 12 // alias of MARSHAL_ARRAY_UBYTE

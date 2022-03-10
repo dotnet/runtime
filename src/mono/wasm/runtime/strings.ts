@@ -30,7 +30,7 @@ export class StringDecoder {
             pLengthBytes = <any>this.mono_wasm_string_decoder_buffer + 4,
             pIsInterned = <any>this.mono_wasm_string_decoder_buffer + 8;
 
-        cwraps.mono_wasm_string_get_data(mono_string, <any>ppChars, <any>pLengthBytes, <any>pIsInterned);
+        cwraps.mono_wasm_string_get_data(this.mono_wasm_string_root.value, <any>ppChars, <any>pLengthBytes, <any>pIsInterned);
 
         let result = mono_wasm_empty_string;
         const lengthBytes = getI32(pLengthBytes),
@@ -38,18 +38,16 @@ export class StringDecoder {
             isInterned = getI32(pIsInterned);
 
         if (pLengthBytes && pChars) {
-            if (
-                isInterned &&
+            if (isInterned) {
+                result = interned_string_table.get(<any>this.mono_wasm_string_root.value)!;
+            }
 
-                interned_string_table.has(<any>mono_string) //TODO remove 2x lookup
-            ) {
-                result = interned_string_table.get(<any>mono_string)!;
-                // console.log(`intern table cache hit ${mono_string} ${result.length}`);
-            } else {
+            if (!result) {
                 result = this.decode(<any>pChars, <any>pChars + lengthBytes);
                 if (isInterned) {
                     // console.log("interned", mono_string, result.length);
-                    interned_string_table.set(<any>mono_string, result);
+                    interned_string_table.set(<any>this.mono_wasm_string_root.value, result);
+                    interned_js_string_table.set(result, <any>this.mono_wasm_string_root.value);
                 }
             }
         }
@@ -81,7 +79,7 @@ export class StringDecoder {
 }
 
 const interned_string_table = new Map<MonoString, string>();
-const interned_js_string_table = new Map<string, MonoString>();
+export const interned_js_string_table = new Map<string, MonoString>();
 let _empty_string_ptr: MonoString = <any>0;
 const _interned_string_full_root_buffers = [];
 let _interned_string_current_root_buffer: WasmRootBuffer | null = null;

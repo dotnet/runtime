@@ -155,7 +155,7 @@ export function call_method(method: MonoMethod, this_arg: MonoObject | undefined
     let buffer = VoidPtrNull, converter = undefined, argsRootBuffer = undefined;
     let is_result_marshaled = true;
 
-    // TODO: Only do this if the signature needs marshalling
+    // TODO: Only do this if the signature needs marshaling
     _create_temp_frame();
 
     // check if the method signature needs argument mashalling
@@ -482,7 +482,8 @@ export function mono_method_get_call_signature(method: MonoMethod, mono_obj?: Mo
     }
 }
 
-export function mono_method_resolve(fqn: string): MonoMethod {
+export function parseFQN(fqn: string)
+    : { assembly: string, namespace: string, classname: string, methodname: string } {
     const assembly = fqn.substring(fqn.indexOf("[") + 1, fqn.indexOf("]")).trim();
     fqn = fqn.substring(fqn.indexOf("]") + 1).trim();
 
@@ -503,6 +504,11 @@ export function mono_method_resolve(fqn: string): MonoMethod {
         throw new Error("No class name specified");
     if (!methodname.trim())
         throw new Error("No method name specified");
+    return { assembly, namespace, classname, methodname };
+}
+
+export function mono_method_resolve(fqn: string): MonoMethod {
+    const { assembly, namespace, classname, methodname } = parseFQN(fqn);
 
     const asm = cwraps.mono_wasm_assembly_load(assembly);
     if (!asm)

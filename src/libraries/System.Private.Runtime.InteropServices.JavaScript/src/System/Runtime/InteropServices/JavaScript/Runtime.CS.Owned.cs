@@ -7,9 +7,9 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public static partial class Runtime
     {
-        private static readonly Dictionary<int, WeakReference<JSObject>> _csOwnedObjects = new Dictionary<int, WeakReference<JSObject>>();
+        private static readonly Dictionary<IntPtr, WeakReference<JSObject>> _csOwnedObjects = new Dictionary<IntPtr, WeakReference<JSObject>>();
 
-        public static JSObject? GetCSOwnedObjectByJSHandle(int jsHandle, int shouldAddInflight)
+        public static JSObject? GetCSOwnedObjectByJSHandle(IntPtr jsHandle, int shouldAddInflight)
         {
             lock (_csOwnedObjects)
             {
@@ -27,17 +27,17 @@ namespace System.Runtime.InteropServices.JavaScript
 
         }
 
-        public static int TryGetCSOwnedObjectJSHandle(object rawObj, int shouldAddInflight)
+        public static IntPtr TryGetCSOwnedObjectJSHandle(object rawObj, int shouldAddInflight)
         {
             JSObject? jsObject = rawObj as JSObject;
             if (jsObject != null && shouldAddInflight != 0)
             {
                 jsObject.AddInFlight();
             }
-            return jsObject?.JSHandle ?? 0;
+            return jsObject?.JSHandle ?? IntPtr.Zero;
         }
 
-        public static int GetCSOwnedObjectJSHandle(JSObject jsObject, int shouldAddInflight)
+        public static IntPtr GetCSOwnedObjectJSHandle(JSObject jsObject, int shouldAddInflight)
         {
             jsObject.AssertNotDisposed();
 
@@ -54,9 +54,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
             lock (_csOwnedObjects)
             {
-                if (!_csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
+                if (!_csOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference) ||
                     !reference.TryGetTarget(out jsObject) ||
-                    jsObject.IsDisposed)
+                    jsObject.IsDisposed())
                 {
                     jsObject = mappedType switch
                     {
@@ -65,20 +65,10 @@ namespace System.Runtime.InteropServices.JavaScript
                         MappedType.ArrayBuffer => new ArrayBuffer(jsHandle),
                         MappedType.DataView => new DataView(jsHandle),
                         MappedType.Function => new Function(jsHandle),
-                        MappedType.Map => new Map(jsHandle),
-                        MappedType.SharedArrayBuffer => new SharedArrayBuffer(jsHandle),
-                        MappedType.Int8Array => new Int8Array(jsHandle),
                         MappedType.Uint8Array => new Uint8Array(jsHandle),
-                        MappedType.Uint8ClampedArray => new Uint8ClampedArray(jsHandle),
-                        MappedType.Int16Array => new Int16Array(jsHandle),
-                        MappedType.Uint16Array => new Uint16Array(jsHandle),
-                        MappedType.Int32Array => new Int32Array(jsHandle),
-                        MappedType.Uint32Array => new Uint32Array(jsHandle),
-                        MappedType.Float32Array => new Float32Array(jsHandle),
-                        MappedType.Float64Array => new Float64Array(jsHandle),
                         _ => throw new ArgumentOutOfRangeException(nameof(mappedType))
                     };
-                    _csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(jsObject, trackResurrection: true);
+                    _csOwnedObjects[jsHandle] = new WeakReference<JSObject>(jsObject, trackResurrection: true);
                 }
             }
             if (shouldAddInflight != 0)
@@ -106,10 +96,11 @@ namespace System.Runtime.InteropServices.JavaScript
         internal static IntPtr CreateCSOwnedObject(JSObject proxy, string typeName, params object[] parms)
         {
             object res = Interop.Runtime.CreateCSOwnedObject(typeName, parms, out int exception);
+
             if (exception != 0)
                 throw new JSException((string)res);
 
-            var jsHandle = (int)res;
+            var jsHandle = (IntPtr)(int)res;
 
             lock (_csOwnedObjects)
             {
@@ -130,17 +121,7 @@ namespace System.Runtime.InteropServices.JavaScript
             ArrayBuffer = 2,
             DataView = 3,
             Function = 4,
-            Map = 5,
-            SharedArrayBuffer = 6,
-            Int8Array = 10,
             Uint8Array = 11,
-            Uint8ClampedArray = 12,
-            Int16Array = 13,
-            Uint16Array = 14,
-            Int32Array = 15,
-            Uint32Array = 16,
-            Float32Array = 17,
-            Float64Array = 18,
         }
     }
 }
