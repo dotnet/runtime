@@ -134,7 +134,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		static TypePreserve GetTypePreserve (XPathNavigator nav)
+		protected static TypePreserve GetTypePreserve (XPathNavigator nav)
 		{
 			string attribute = GetAttribute (nav, _preserve);
 			if (string.IsNullOrEmpty (attribute))
