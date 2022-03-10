@@ -862,6 +862,7 @@ endif()
 ### End of OS specific checks
 
 include_directories("${CLR_SRC_NATIVE_DIR}")
+include_directories("${CLR_SRC_NATIVE_DIR}/public")
 
 if(NOT DISABLE_LIBS)
   set(INSTALL_MONO_API 1)

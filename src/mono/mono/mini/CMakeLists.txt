@@ -286,7 +286,7 @@ endif()
 if(ENABLE_LLVM)
 set(llvm_runtime_sources
     llvm-runtime.cpp)
-elseif(ENABLE_LLVM_RUNTIME)
+elseif(ENABLE_LLVM_RUNTIME AND NOT HOST_WASM)
 set(llvm_runtime_sources
     llvm-runtime.cpp)
 else()
@@ -410,6 +410,16 @@ if(NOT DISABLE_SHARED_LIBS)
       endforeach()
     endif()
   endif()
+endif()
+
+if(HOST_WASM)
+# Add two static libs containing llvm-runtime.cpp compiled for JS based/WASM EH
+# This is the only source file which contains a c++ throw or catch
+add_library(mono-wasm-eh-js STATIC llvm-runtime.cpp)
+install(TARGETS mono-wasm-eh-js LIBRARY)
+add_library(mono-wasm-eh-wasm STATIC llvm-runtime.cpp)
+set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions")
+install(TARGETS mono-wasm-eh-wasm LIBRARY)
 endif()
 
 find_package(Python3 COMPONENTS Interpreter)
