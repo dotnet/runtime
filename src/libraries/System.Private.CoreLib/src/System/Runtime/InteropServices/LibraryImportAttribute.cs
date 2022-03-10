@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices
     /// arguments instead of relying on the CLR to generate an IL Stub at runtime.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-#if NET7_0_OR_GREATER
+#if SYSTEM_PRIVATE_CORELIB
     public
 #else
     internal
