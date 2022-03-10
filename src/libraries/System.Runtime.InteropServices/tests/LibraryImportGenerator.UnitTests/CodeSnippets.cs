@@ -8,7 +8,7 @@ namespace LibraryImportGenerator.UnitTests
     internal static class CodeSnippets
     {
         /// <summary>
-        /// Partially define attribute for pre-.NET 6.0
+        /// Partially define attribute for pre-.NET 7.0
         /// </summary>
         public static readonly string LibraryImportAttributeDeclaration = @"
 namespace System.Runtime.InteropServices
