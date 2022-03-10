@@ -692,15 +692,14 @@ private:
         {
             if (varTypeIsStruct(varDsc) && varDsc->lvIsTemp)
             {
-                if ((callTree != nullptr) && callTree->HasRetBufArg() && val.Node() == callTree->gtCallArgs->GetNode())
+                // We rely here on the fact that the return buffer, if present, is always first in the arg list.
+                if ((callTree != nullptr) && callTree->HasRetBufArg() &&
+                    (val.Node() == callTree->gtCallArgs->GetNode()))
                 {
-                    // Mark the local variable associated as being defined at this position.
                     assert(!exposeParentLcl);
-
 #ifdef DEBUG
                     m_compiler->lvaSetHiddenBufferStructArg(val.LclNum());
 #endif
-
                     hasHiddenStructArg = true;
                     callTree->SetLclRetBufArg(callTree->gtCallArgs);
                 }

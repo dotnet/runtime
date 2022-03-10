@@ -7967,7 +7967,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
         GenTree* copyArgNode = gtCloneExpr(argNode, addFlags, deepVarNum, deepVarVal);
         *argsTail            = gtNewCallArgs(copyArgNode);
 
-        if (tree->GetLclRetBufArgNode() == argNode)
+        if (tree->gtRetBufArg == &use)
         {
             // Set the return buffer arg, if any.
             assert(copy->gtRetBufArg == nullptr);
@@ -7984,7 +7984,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
         GenTree* copyArgNode = gtCloneExpr(argNode, addFlags, deepVarNum, deepVarVal);
         *argsTail            = gtNewCallArgs(copyArgNode);
 
-        if (tree->GetLclRetBufArgNode() == argNode)
+        if (tree->gtRetBufArg == &use)
         {
             // Set the return buffer arg, if any.
             assert(copy->gtRetBufArg == nullptr);

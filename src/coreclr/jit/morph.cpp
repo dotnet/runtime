@@ -15303,9 +15303,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             {
                 tree->gtFlags &= ~GTF_EXCEPT;
             }
-
             tree = fgMorphCall(tree->AsCall());
-
             break;
 
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)

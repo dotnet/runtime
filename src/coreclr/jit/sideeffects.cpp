@@ -140,15 +140,10 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
 {
     if (node->IsCall())
     {
-        // For calls having return buffer, update the local number that is written after his call.
+        // For calls having return buffer, update the local number that is written after this call.
         GenTree* retBufArgNode = node->AsCall()->GetLclRetBufArgNode();
         if (retBufArgNode != nullptr)
         {
-            if (retBufArgNode->OperIsPutArg())
-            {
-                retBufArgNode = retBufArgNode->AsOp()->gtGetOp1();
-            }
-
             m_flags |= ALIAS_WRITES_LCL_VAR;
             m_lclNum  = retBufArgNode->AsLclVarCommon()->GetLclNum();
             m_lclOffs = retBufArgNode->AsLclVarCommon()->GetLclOffs();

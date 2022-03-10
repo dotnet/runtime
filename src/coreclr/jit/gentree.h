@@ -4852,7 +4852,25 @@ struct GenTreeCall final : public GenTree
         }
 
         assert(HasRetBufArg());
-        return gtRetBufArg->GetNode()->OperIs(GT_ASG) ? gtRetBufArg->GetNode()->gtGetOp2() : gtRetBufArg->GetNode();
+        GenTree* lclRetBufArgNode = gtRetBufArg->GetNode();
+
+        switch (lclRetBufArgNode->OperGet())
+        {
+            // Get the true value from setup args
+            case GT_ASG:
+                return lclRetBufArgNode->AsOp()->gtGetOp2();
+            case GT_STORE_LCL_VAR:
+                return lclRetBufArgNode->AsUnOp()->gtGetOp1();
+
+            // Get the value from putarg wrapper nodes
+            case GT_PUTARG_REG:
+            case GT_PUTARG_STK:
+                return lclRetBufArgNode->AsOp()->gtGetOp1();
+
+            // Otherwise the node should be in the Use*
+            default:
+                return lclRetBufArgNode;
+        }
     }
 
     void SetLclRetBufArg(Use* retBufArg);
