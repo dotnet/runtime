@@ -9,6 +9,7 @@
     <Nullable>disable</Nullable>
     <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
     <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
+    <EnableRegexGenerator>true</EnableRegexGenerator>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(FeatureGenericMath)' == 'true'">$(DefineConstants);FEATURE_GENERIC_MATH</DefineConstants>

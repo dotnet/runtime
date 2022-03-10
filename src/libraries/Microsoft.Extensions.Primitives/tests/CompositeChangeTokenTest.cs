@@ -148,5 +148,66 @@ namespace Microsoft.Extensions.Primitives
             // Assert
             Assert.Equal(1, count);
         }
+        
+        [Fact]
+        public void ShouldNotCollectDisposablesIfChangedTokenEncountered()
+        {
+            // Arrange
+            var firstCancellationTokenSource = new CancellationTokenSource();
+            var secondCancellationTokenSource = new CancellationTokenSource();
+            var thirdCancellationTokenSource = new CancellationTokenSource();
+            var count = 0;
+            var compositeChangeToken = new CompositeChangeToken(new List<IChangeToken> {
+                new ProxyCancellationChangeToken(firstCancellationTokenSource.Token, disposing: () => count++),
+                new ProxyCancellationChangeToken(secondCancellationTokenSource.Token, disposing: () => count++),
+                new ProxyCancellationChangeToken(thirdCancellationTokenSource.Token, disposing: () => count++) });
+
+            // Act
+            firstCancellationTokenSource.Cancel();
+            compositeChangeToken.RegisterChangeCallback(_ => { }, null);
+            secondCancellationTokenSource.Cancel();
+
+            // Assert
+            Assert.Equal(1, count);
+        }
+    }
+
+    internal class ProxyCancellationChangeToken : IChangeToken
+    {
+        private readonly CancellationChangeToken _cancellationChangeToken;
+        private readonly Action _disposing;
+
+        public ProxyCancellationChangeToken(CancellationToken cancellationToken, Action disposing)
+        {
+            _cancellationChangeToken = new CancellationChangeToken(cancellationToken);
+            _disposing = disposing;
+        }
+        public bool ActiveChangeCallbacks => _cancellationChangeToken.ActiveChangeCallbacks;
+
+        public bool HasChanged => _cancellationChangeToken.HasChanged;
+
+        public IDisposable RegisterChangeCallback(Action<object?> callback, object? state)
+        {
+            IDisposable registration = _cancellationChangeToken.RegisterChangeCallback(callback, state);
+            return new Registration(_disposing, registration);
+        }
+
+        private class Registration : IDisposable
+        {
+            private readonly Action _disposing;
+            private readonly IDisposable _registration;
+
+            public Registration(Action disposing, IDisposable registration)
+            {
+                _disposing = disposing;
+                _registration = registration;
+            }
+
+            public void Dispose()
+            {
+                _registration?.Dispose();
+                _disposing();
+            }
+        }
     }
 }

@@ -139,6 +139,7 @@ namespace System.Reflection.Emit
 
         #region DefineDynamicAssembly
 
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
@@ -149,6 +150,7 @@ namespace System.Reflection.Emit
                                                  null);
         }
 
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
         public static AssemblyBuilder DefineDynamicAssembly(
             AssemblyName name,
@@ -162,7 +164,7 @@ namespace System.Reflection.Emit
                                                  assemblyAttributes);
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AppDomain_CreateDynamicAssembly")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppDomain_CreateDynamicAssembly")]
         private static partial void CreateDynamicAssembly(ObjectHandleOnStack name,
                                                          int access,
                                                          ObjectHandleOnStack assemblyLoadContext,

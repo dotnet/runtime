@@ -18,9 +18,9 @@ namespace System.Text.Json
             Debug.Assert(runtimeType != null);
 
             options ??= JsonSerializerOptions.Default;
-            if (!JsonSerializerOptions.IsInitializedForReflectionSerializer)
+            if (!options.IsInitializedForReflectionSerializer)
             {
-                JsonSerializerOptions.InitializeForReflectionSerializer();
+                options.InitializeForReflectionSerializer();
             }
 
             return options.GetOrAddJsonTypeInfoForRootType(runtimeType);

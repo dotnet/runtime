@@ -21,9 +21,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD)
 
-#pragma warning(push)
-#pragma warning(disable : 4701) // difficult to get rid of C4701 with 'sig' below
-
 /*****************************************************************************/
 
 /*****************************************************************************
@@ -245,8 +242,6 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
 
     return (retName);
 }
-
-#pragma warning(pop)
 
 #endif // defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD)
 

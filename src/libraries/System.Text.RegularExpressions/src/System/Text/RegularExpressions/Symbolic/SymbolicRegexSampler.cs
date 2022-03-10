@@ -47,7 +47,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Initially there is no previous character
                 // Here one could also consider previous characters for example for \b, \B, and ^ anchors
                 // and initialize input_so_far accordingly
-                uint prevCharKind = CharKind.StartStop;
+                uint prevCharKind = CharKind.BeginningEnd;
 
                 // This flag is set to false in the unlikely situation that generation ends up in a dead-end
                 bool generationSucceeded = true;
@@ -68,7 +68,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     if (CanBeFinal(states))
                     {
                         // Unconditionally final state or end of the input due to \Z anchor for example
-                        if (IsFinal(states) || IsFinal(states, CharKind.Context(prevCharKind, CharKind.StartStop)))
+                        if (IsFinal(states) || IsFinal(states, CharKind.Context(prevCharKind, CharKind.BeginningEnd)))
                         {
                             possible_endings.Add("");
                         }
@@ -177,7 +177,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        private BDD ToBDD(S pred) => _solver.ConvertToCharSet(CharSetSolver.Instance, pred);
+        private BDD ToBDD(S pred) => _solver.ConvertToCharSet(pred);
 
         private T Choose<T>(IList<T> elems) => elems[_random.Next(elems.Count)];
 
@@ -194,7 +194,7 @@ namespace System.Text.RegularExpressions.Symbolic
         private bool ChooseRandomlyTrueOrFalse() => _random.Next(100) < 50;
         /// <summary>Returns true if some state is unconditionally final</summary>
 
-        private bool IsFinal(IEnumerable<SymbolicRegexNode<S>> states)
+        private bool IsFinal(List<SymbolicRegexNode<S>> states)
         {
             foreach (SymbolicRegexNode<S> state in states)
             {
@@ -206,12 +206,12 @@ namespace System.Text.RegularExpressions.Symbolic
             return false;
         }
 
-        /// <summary>Returns true if some state can be final</summary>
-        private bool CanBeFinal(IEnumerable<SymbolicRegexNode<S>> states)
+        /// <summary>Returns true if some state is final in the given context</summary>
+        private bool IsFinal(List<SymbolicRegexNode<S>> states, uint context)
         {
             foreach (SymbolicRegexNode<S> state in states)
             {
-                if (state.CanBeNullable)
+                if (state.IsNullableFor(context))
                 {
                     return true;
                 }
@@ -219,12 +219,12 @@ namespace System.Text.RegularExpressions.Symbolic
             return false;
         }
 
-        /// <summary>Returns true if some state is final in the given context</summary>
-        private bool IsFinal(IEnumerable<SymbolicRegexNode<S>> states, uint context)
+        /// <summary>Returns true if some state can be final</summary>
+        private bool CanBeFinal(List<SymbolicRegexNode<S>> states)
         {
             foreach (SymbolicRegexNode<S> state in states)
             {
-                if (state.IsNullableFor(context))
+                if (state.CanBeNullable)
                 {
                     return true;
                 }

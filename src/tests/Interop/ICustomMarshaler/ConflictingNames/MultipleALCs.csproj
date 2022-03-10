@@ -9,7 +9,7 @@
     <Compile Include="RunInALC.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
     <ProjectReference Include="CustomMarshaler.csproj" />
   </ItemGroup>
 </Project>

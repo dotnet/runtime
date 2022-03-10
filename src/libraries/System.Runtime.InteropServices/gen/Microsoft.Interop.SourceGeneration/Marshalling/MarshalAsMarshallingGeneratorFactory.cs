@@ -76,7 +76,10 @@ namespace Microsoft.Interop
                     return s_blittable;
 
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: NoMarshallingInfo }:
-                    return s_winBool; // [Compat] Matching the default for the built-in runtime marshallers.
+                    throw new MarshallingNotSupportedException(info, context)
+                    {
+                        NotSupportedDetails = Resources.MarshallingBoolAsUndefinedNotSupported
+                    };
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1 or UnmanagedType.U1, _) }:
                     return s_byteBool;
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.U4 or UnmanagedType.Bool, _) }:

@@ -955,6 +955,23 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             {
                 varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_INT));
             }
+
+#if FEATURE_FASTTAILCALL
+            // Check if arg was split between registers and stack.
+            if (!varTypeUsesFloatReg(argType))
+            {
+                unsigned firstRegArgNum = genMapIntRegNumToRegArgNum(varDsc->GetArgReg());
+                unsigned lastRegArgNum  = firstRegArgNum + cSlots - 1;
+                if (lastRegArgNum >= varDscInfo->maxIntRegArgNum)
+                {
+                    assert(varDscInfo->stackArgSize == 0);
+                    unsigned numEnregistered = varDscInfo->maxIntRegArgNum - firstRegArgNum;
+                    varDsc->SetStackOffset(-(int)numEnregistered * REGSIZE_BYTES);
+                    varDscInfo->stackArgSize += (cSlots - numEnregistered) * REGSIZE_BYTES;
+                    JITDUMP("set user arg V%02u offset to %d\n", varDscInfo->varNum, varDsc->GetStackOffset());
+                }
+            }
+#endif
 #endif // TARGET_ARM
 
 #ifdef DEBUG
@@ -1057,14 +1074,17 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #endif // TARGET_XXX
 
 #if FEATURE_FASTTAILCALL
-            const unsigned argAlignment = eeGetArgAlignment(origArgType, (hfaType == TYP_FLOAT));
-            if (compMacOsArm64Abi())
-            {
-                varDscInfo->stackArgSize = roundUp(varDscInfo->stackArgSize, argAlignment);
-            }
-
-            assert((argSize % argAlignment) == 0);
-            assert((varDscInfo->stackArgSize % argAlignment) == 0);
+#ifdef TARGET_ARM
+            unsigned argAlignment = cAlign * TARGET_POINTER_SIZE;
+#else
+            unsigned argAlignment = eeGetArgSizeAlignment(origArgType, (hfaType == TYP_FLOAT));
+            // We expect the following rounding operation to be a noop on all
+            // ABIs except ARM (where we have 8-byte aligned args) and macOS
+            // ARM64 (that allows to pack multiple smaller parameters in a
+            // single stack slot).
+            assert(compMacOsArm64Abi() || ((varDscInfo->stackArgSize % argAlignment) == 0));
+#endif
+            varDscInfo->stackArgSize = roundUp(varDscInfo->stackArgSize, argAlignment);
 
             JITDUMP("set user arg V%02u offset to %u\n", varDscInfo->varNum, varDscInfo->stackArgSize);
             varDsc->SetStackOffset(varDscInfo->stackArgSize);
@@ -1685,13 +1705,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     structPromotionInfo.fieldCnt = (unsigned char)fieldCnt;
     DWORD typeFlags              = compHandle->getClassAttribs(typeHnd);
 
-    if (StructHasNoPromotionFlagSet(typeFlags))
-    {
-        // In AOT ReadyToRun compilation, don't try to promote fields of types
-        // outside of the current version bubble.
-        return false;
-    }
-
     bool overlappingFields = StructHasOverlappingFields(typeFlags);
     if (overlappingFields)
     {
@@ -1708,6 +1721,26 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     // On ARM, we have a requirement on the struct alignment; see below.
     unsigned structAlignment = roundUp(compHandle->getClassAlignmentRequirement(typeHnd), TARGET_POINTER_SIZE);
 #endif // TARGET_ARM
+
+    // If we have "Custom Layout" then we might have an explicit Size attribute
+    // Managed C++ uses this for its structs, such C++ types will not contain GC pointers.
+    //
+    // The current VM implementation also incorrectly sets the CORINFO_FLG_CUSTOMLAYOUT
+    // whenever a managed value class contains any GC pointers.
+    // (See the comment for VMFLAG_NOT_TIGHTLY_PACKED in class.h)
+    //
+    // It is important to struct promote managed value classes that have GC pointers
+    // So we compute the correct value for "CustomLayout" here
+    //
+    if (StructHasCustomLayout(typeFlags) && ((typeFlags & CORINFO_FLG_CONTAINS_GC_PTR) == 0))
+    {
+        structPromotionInfo.customLayout = true;
+    }
+
+    if (StructHasDontDigFieldsFlagSet(typeFlags))
+    {
+        return CanConstructAndPromoteField(&structPromotionInfo);
+    }
 
     unsigned fieldsSize = 0;
 
@@ -1760,21 +1793,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     noway_assert((containsGCpointers == false) ||
                  ((typeFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) != 0));
 
-    // If we have "Custom Layout" then we might have an explicit Size attribute
-    // Managed C++ uses this for its structs, such C++ types will not contain GC pointers.
-    //
-    // The current VM implementation also incorrectly sets the CORINFO_FLG_CUSTOMLAYOUT
-    // whenever a managed value class contains any GC pointers.
-    // (See the comment for VMFLAG_NOT_TIGHTLY_PACKED in class.h)
-    //
-    // It is important to struct promote managed value classes that have GC pointers
-    // So we compute the correct value for "CustomLayout" here
-    //
-    if (StructHasCustomLayout(typeFlags) && ((typeFlags & CORINFO_FLG_CONTAINS_GC_PTR) == 0))
-    {
-        structPromotionInfo.customLayout = true;
-    }
-
     // Check if this promoted struct contains any holes.
     assert(!overlappingFields);
     if (fieldsSize != structSize)
@@ -1787,6 +1805,62 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     // Cool, this struct is promotable.
 
     structPromotionInfo.canPromote = true;
+    return true;
+}
+
+//--------------------------------------------------------------------------------------------
+// CanConstructAndPromoteField - checks if we can construct field types without asking about them directly.
+//
+// Arguments:
+//   structPromotionInfo - struct promotion candidate information.
+//
+// Return value:
+//   true if we can figure out the fields from available knowledge.
+//
+// Notes:
+//   This is needed for AOT R2R compilation when we can't cross compilation bubble borders
+//   so we should not ask about fields that are not directly referenced. If we do VM will have
+//   to emit a type check for this field type but it does not have enough information about it.
+//   As a workaround for perfomance critical corner case: struct with 1 gcref, we try to construct
+//   the field information from indirect observations.
+//
+bool Compiler::StructPromotionHelper::CanConstructAndPromoteField(lvaStructPromotionInfo* structPromotionInfo)
+{
+    const CORINFO_CLASS_HANDLE typeHnd    = structPromotionInfo->typeHnd;
+    const COMP_HANDLE          compHandle = compiler->info.compCompHnd;
+    const DWORD                typeFlags  = compHandle->getClassAttribs(typeHnd);
+    if (structPromotionInfo->fieldCnt != 1)
+    {
+        // Can't find out values for several fields.
+        return false;
+    }
+    if ((typeFlags & CORINFO_FLG_CONTAINS_GC_PTR) == 0)
+    {
+        // Can't find out type of a non-gc field.
+        return false;
+    }
+
+    const unsigned structSize = compHandle->getClassSize(typeHnd);
+    if (structSize != TARGET_POINTER_SIZE)
+    {
+        return false;
+    }
+
+    assert(!structPromotionInfo->containsHoles);
+    assert(!structPromotionInfo->customLayout);
+    lvaStructFieldInfo& fldInfo = structPromotionInfo->fields[0];
+
+    fldInfo.fldHnd = compHandle->getFieldInClass(typeHnd, 0);
+
+    // We should not read it anymore.
+    fldInfo.fldTypeHnd = 0;
+
+    fldInfo.fldOffset  = 0;
+    fldInfo.fldOrdinal = 0;
+    fldInfo.fldSize    = TARGET_POINTER_SIZE;
+    fldInfo.fldType    = TYP_BYREF;
+
+    structPromotionInfo->canPromote = true;
     return true;
 }
 
@@ -1826,13 +1900,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     if (!compiler->lvaEnregMultiRegVars && varDsc->lvIsMultiRegArgOrRet())
     {
         JITDUMP("  struct promotion of V%02u is disabled because lvIsMultiRegArgOrRet()\n", lclNum);
-        return false;
-    }
-
-    // TODO-CQ: enable promotion for OSR locals
-    if (compiler->lvaIsOSRLocal(lclNum))
-    {
-        JITDUMP("  struct promotion of V%02u is disabled because it is an OSR local\n", lclNum);
         return false;
     }
 
@@ -2768,7 +2835,7 @@ void Compiler::makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int lev
     assert(structHandle != NO_CLASS_HANDLE);
     (void)typGetObjLayout(structHandle);
     DWORD typeFlags = info.compCompHnd->getClassAttribs(structHandle);
-    if (StructHasNoPromotionFlagSet(typeFlags))
+    if (StructHasDontDigFieldsFlagSet(typeFlags))
     {
         // In AOT ReadyToRun compilation, don't query fields of types
         // outside of the current version bubble.
@@ -3612,9 +3679,9 @@ unsigned LclVarDsc::lvSize() const // Size needed for storage representation. On
     if (lvIsParam)
     {
         assert(varTypeIsStruct(lvType));
-        const bool     isFloatHfa   = (lvIsHfa() && (GetHfaType() == TYP_FLOAT));
-        const unsigned argAlignment = Compiler::eeGetArgAlignment(lvType, isFloatHfa);
-        return roundUp(lvExactSize, argAlignment);
+        const bool     isFloatHfa       = (lvIsHfa() && (GetHfaType() == TYP_FLOAT));
+        const unsigned argSizeAlignment = Compiler::eeGetArgSizeAlignment(lvType, isFloatHfa);
+        return roundUp(lvExactSize, argSizeAlignment);
     }
 
 #if defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
@@ -5902,7 +5969,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         }
 #endif // TARGET_ARM
         const bool     isFloatHfa   = (varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_FLOAT));
-        const unsigned argAlignment = eeGetArgAlignment(varDsc->lvType, isFloatHfa);
+        const unsigned argAlignment = eeGetArgSizeAlignment(varDsc->lvType, isFloatHfa);
         if (compMacOsArm64Abi())
         {
             argOffs = roundUp(argOffs, argAlignment);
@@ -5934,6 +6001,11 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
         {
             LclVarDsc* fieldVarDsc = lvaGetDesc(firstFieldNum + i);
+
+            JITDUMP("Adjusting offset of dependent V%02u of arg V%02u: parent %u field %u net %u\n", lclNum,
+                    firstFieldNum + i, varDsc->GetStackOffset(), fieldVarDsc->lvFldOffset,
+                    varDsc->GetStackOffset() + fieldVarDsc->lvFldOffset);
+
             fieldVarDsc->SetStackOffset(varDsc->GetStackOffset() + fieldVarDsc->lvFldOffset);
         }
     }
@@ -6409,7 +6481,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                In other words, we will not calculate the "base" address of the struct local if
                the promotion type is PROMOTION_TYPE_FIELD_DEPENDENT.
             */
-            if (!opts.IsOSR() && lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+            if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
             {
                 continue;
             }
@@ -6436,21 +6508,34 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             // will refer to their memory homes.
             if (lvaIsOSRLocal(lclNum))
             {
-                // TODO-CQ: enable struct promotion for OSR locals; when that
-                // happens, figure out how to properly refer to the original
-                // frame slots for the promoted fields.
-                assert(!varDsc->lvIsStructField);
+                if (varDsc->lvIsStructField)
+                {
+                    const unsigned parentLclNum         = varDsc->lvParentLcl;
+                    const int      parentOriginalOffset = info.compPatchpointInfo->Offset(parentLclNum);
+                    const int      offset = originalFrameStkOffs + parentOriginalOffset + varDsc->lvFldOffset;
 
-                // Add frampointer-relative offset of this OSR live local in the original frame
-                // to the offset of original frame in our new frame.
-                int originalOffset = info.compPatchpointInfo->Offset(lclNum);
-                int offset         = originalFrameStkOffs + originalOffset;
+                    JITDUMP("---OSR--- V%02u (promoted field of V%02u; on tier0 frame) tier0 FP-rel offset %d tier0 "
+                            "frame offset %d field offset %d new virt offset "
+                            "%d\n",
+                            lclNum, parentLclNum, parentOriginalOffset, originalFrameStkOffs, varDsc->lvFldOffset,
+                            offset);
 
-                JITDUMP("---OSR--- V%02u (on tier0 frame) tier0 FP-rel offset %d tier0 frame offset %d new virt offset "
+                    lvaTable[lclNum].SetStackOffset(offset);
+                }
+                else
+                {
+                    // Add frampointer-relative offset of this OSR live local in the original frame
+                    // to the offset of original frame in our new frame.
+                    const int originalOffset = info.compPatchpointInfo->Offset(lclNum);
+                    const int offset         = originalFrameStkOffs + originalOffset;
+
+                    JITDUMP(
+                        "---OSR--- V%02u (on tier0 frame) tier0 FP-rel offset %d tier0 frame offset %d new virt offset "
                         "%d\n",
                         lclNum, originalOffset, originalFrameStkOffs, offset);
 
-                lvaTable[lclNum].SetStackOffset(offset);
+                    lvaTable[lclNum].SetStackOffset(offset);
+                }
                 continue;
             }
 
@@ -7091,18 +7176,25 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
         // This is not true for the System V systems since there is no
         // outgoing args space. Assign the dependently promoted fields properly.
         //
-        if (varDsc->lvIsStructField
-#if !defined(UNIX_AMD64_ABI) && !defined(TARGET_ARM) && !defined(TARGET_X86)
-            // ARM: lo/hi parts of a promoted long arg need to be updated.
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
-            // For System V platforms there is no outgoing args space.
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86)
+        // ARM: lo/hi parts of a promoted long arg need to be updated.
+        //
+        // For System V platforms there is no outgoing args space.
+        //
+        // For System V and x86, a register passed struct arg is homed on the stack in a separate local var.
+        // The offset of these structs is already calculated in lvaAssignVirtualFrameOffsetToArg methos.
+        // Make sure the code below is not executed for these structs and the offset is not changed.
+        //
+        const bool mustProcessParams = true;
+#else
+        // OSR must also assign offsets here.
+        //
+        const bool mustProcessParams = opts.IsOSR();
+#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86)
 
-            // For System V and x86, a register passed struct arg is homed on the stack in a separate local var.
-            // The offset of these structs is already calculated in lvaAssignVirtualFrameOffsetToArg methos.
-            // Make sure the code below is not executed for these structs and the offset is not changed.
-            && !varDsc->lvIsParam
-#endif // !defined(UNIX_AMD64_ABI) && !defined(TARGET_ARM) && !defined(TARGET_X86)
-            )
+        if (varDsc->lvIsStructField && (!varDsc->lvIsParam || mustProcessParams))
         {
             LclVarDsc*       parentvarDsc  = lvaGetDesc(varDsc->lvParentLcl);
             lvaPromotionType promotionType = lvaGetPromotionType(parentvarDsc);
@@ -7119,6 +7211,9 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
                 noway_assert(varDsc->lvOnFrame);
                 if (parentvarDsc->lvOnFrame)
                 {
+                    JITDUMP("Adjusting offset of dependent V%02u of V%02u: parent %u field %u net %u\n", lclNum,
+                            varDsc->lvParentLcl, parentvarDsc->GetStackOffset(), varDsc->lvFldOffset,
+                            parentvarDsc->GetStackOffset() + varDsc->lvFldOffset);
                     varDsc->SetStackOffset(parentvarDsc->GetStackOffset() + varDsc->lvFldOffset);
                 }
                 else
@@ -7917,6 +8012,24 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     {
         // Ignore arguments and temps
         if (varDsc->lvIsParam || lclNum >= pComp->info.compLocalsCount)
+        {
+            varDsc->lvNoLclFldStress = true;
+            return WALK_SKIP_SUBTREES;
+        }
+
+        // Ignore OSR locals; if in memory, they will live on the
+        // Tier0 frame and so can't have their storage adjusted.
+        //
+        if (pComp->lvaIsOSRLocal(lclNum))
+        {
+            varDsc->lvNoLclFldStress = true;
+            return WALK_SKIP_SUBTREES;
+        }
+
+        // Likewise for Tier0 methods with patchpoints --
+        // if we modify them we'll misreport their locations in the patchpoint info.
+        //
+        if (pComp->doesMethodHavePatchpoints() || pComp->doesMethodHavePartialCompilationPatchpoints())
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_SKIP_SUBTREES;

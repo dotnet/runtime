@@ -53,6 +53,7 @@ namespace System
         public static bool IsArmOrArm64Process => IsArmProcess || IsArm64Process;
         public static bool IsNotArmNorArm64Process => !IsArmOrArm64Process;
         public static bool IsArmv6Process => (int)RuntimeInformation.ProcessArchitecture == 7; // Architecture.Armv6
+        public static bool IsX64Process => RuntimeInformation.ProcessArchitecture == Architecture.X64;
         public static bool IsX86Process => RuntimeInformation.ProcessArchitecture == Architecture.X86;
         public static bool IsNotX86Process => !IsX86Process;
         public static bool IsArgIteratorSupported => IsMonoRuntime || (IsWindows && IsNotArmProcess && !IsNativeAot);
@@ -112,7 +113,7 @@ namespace System
         // Drawing is not supported on non windows platforms in .NET 7.0+.
         public static bool IsDrawingSupported => IsWindows && IsNotWindowsNanoServer && IsNotWindowsServerCore;
 
-        public static bool IsAsyncFileIOSupported => !IsBrowser && !(IsWindows && IsMonoRuntime); // https://github.com/dotnet/runtime/issues/34582
+        public static bool IsAsyncFileIOSupported => !IsBrowser;
 
         public static bool IsLineNumbersSupported => !IsNativeAot;
 

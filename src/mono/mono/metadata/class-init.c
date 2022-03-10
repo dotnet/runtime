@@ -2475,6 +2475,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	// - Disallow on structs/static fields/nonref fields
 	gboolean has_weak_fields = FALSE;
 
+#ifdef ENABLE_WEAK_ATTR
 	if (mono_class_has_static_metadata (klass)) {
 		for (MonoClass *p = klass; p != NULL; p = p->parent) {
 			gpointer iter = NULL;
@@ -2489,6 +2490,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			}
 		}
 	}
+#endif
 
 	/*
 	 * Check that any fields of IsByRefLike type are instance

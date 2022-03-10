@@ -210,6 +210,7 @@ typedef struct {
 	/* Lets interpreter know it has to resume execution after EH */
 	gboolean has_resume_state;
 	/* Frame to resume execution at */
+	/* Can be NULL if the exception is caught in an AOTed frame */
 	InterpFrame *handler_frame;
 	/* IP to resume execution at */
 	const guint16 *handler_ip;
@@ -276,9 +277,8 @@ void
 mono_interp_error_cleanup (MonoError *error);
 
 static inline int
-mint_type(MonoType *type_)
+mint_type(MonoType *type)
 {
-	MonoType *type = mini_native_type_replace_type (type_);
 	if (m_type_is_byref (type))
 		return MINT_TYPE_I;
 enum_type:

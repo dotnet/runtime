@@ -1137,6 +1137,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 		*/
 		/*printf ("new descriptor: %p 0x%x for %s.%s\n", class->gc_descr, bitmap [0], class->name_space, class->name);*/
 
+#ifdef ENABLE_WEAK_ATTR
 		if (m_class_has_weak_fields (klass)) {
 			gsize *weak_bitmap = NULL;
 			int weak_bitmap_nbits = 0;
@@ -1173,6 +1174,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 			mono_class_set_weak_bitmap (klass, weak_bitmap_nbits, weak_bitmap);
 			mono_loader_unlock ();
 		}
+#endif
 
 		gc_descr = mono_gc_make_descr_for_object (bitmap, max_set + 1, m_class_get_instance_size (klass));
 	}
@@ -3912,7 +3914,6 @@ mono_runtime_set_main_args (int argc, char* argv[])
 		utf8_arg = mono_utf8_from_external (argv[i]);
 		if (utf8_arg == NULL) {
 			g_print ("\nCannot determine the text encoding for argument %d (%s).\n", i, argv [i]);
-			g_print ("Please add the correct encoding to MONO_EXTERNAL_ENCODINGS and try again.\n");
 			exit (-1);
 		}
 
@@ -3960,7 +3961,6 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 			 * string.
 			 */
 			g_print ("\nCannot determine the text encoding for the assembly location: %s\n", fullpath);
-			g_print ("Please add the correct encoding to MONO_EXTERNAL_ENCODINGS and try again.\n");
 			exit (-1);
 		}
 
@@ -3970,7 +3970,6 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 		utf8_fullpath = mono_utf8_from_external (argv[0]);
 		if(utf8_fullpath == NULL) {
 			g_print ("\nCannot determine the text encoding for the assembly location: %s\n", argv[0]);
-			g_print ("Please add the correct encoding to MONO_EXTERNAL_ENCODINGS and try again.\n");
 			exit (-1);
 		}
 	}
@@ -3984,7 +3983,6 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 		if(utf8_arg==NULL) {
 			/* Ditto the comment about Invalid UTF-8 here */
 			g_print ("\nCannot determine the text encoding for argument %d (%s).\n", i, argv[i]);
-			g_print ("Please add the correct encoding to MONO_EXTERNAL_ENCODINGS and try again.\n");
 			exit (-1);
 		}
 
@@ -4947,8 +4945,10 @@ object_new_common_tail (MonoObject *o, MonoClass *klass, MonoError *error)
 	if (G_UNLIKELY (m_class_has_finalize (klass)))
 		mono_object_register_finalizer (o);
 
+#ifdef ENABLE_WEAK_ATTR
 	if (G_UNLIKELY (m_class_has_weak_fields (klass)))
 		mono_gc_register_obj_with_weak_fields (o);
+#endif
 
 	return o;
 }
@@ -4972,8 +4972,10 @@ object_new_handle_common_tail (MonoObjectHandle o, MonoClass *klass, MonoError *
 	if (G_UNLIKELY (m_class_has_finalize (klass)))
 		mono_object_register_finalizer_handle (o);
 
+#ifdef ENABLE_WEAK_ATTR
 	if (G_UNLIKELY (m_class_has_weak_fields (klass)))
 		mono_gc_register_object_with_weak_fields (o);
+#endif
 
 	return o;
 }
@@ -6223,31 +6225,6 @@ mono_string_new_checked (const char *text, MonoError *error)
 
 	g_free (ut);
 
-/*FIXME g_utf8_get_char, g_utf8_next_char and g_utf8_validate are not part of eglib.*/
-#if 0
-	gunichar2 *str;
-	const gchar *end;
-	int len;
-	MonoString *o = NULL;
-
-	if (!g_utf8_validate (text, -1, &end)) {
-		mono_error_set_argument (error, "text", "Not a valid utf8 string");
-		goto leave;
-	}
-
-	len = g_utf8_strlen (text, -1);
-	o = mono_string_new_size_checked (len, error);
-	if (!o)
-		goto leave;
-	str = mono_string_chars_internal (o);
-
-	while (text < end) {
-		*str++ = g_utf8_get_char (text);
-		text = g_utf8_next_char (text);
-	}
-
-leave:
-#endif
 	return o;
 }
 
