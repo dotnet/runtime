@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             string baseMultilevelDir = Path.Combine(TestArtifact.TestArtifactsPath, "dotnetMultilevelSDKLookup");
             _multilevelDir = SharedFramework.CalculateUniqueTestDirectory(baseMultilevelDir);
 
-            // The tested locations will be the cwd, user folder, exe dir, and registered directory. cwd and user are no longer supported.
+            // The tested locations will be the cwd, exe dir, and registered directory. cwd is no longer supported.
             //     All dirs will be placed inside the multilevel folder
             _currentWorkingDir = Path.Combine(_multilevelDir, "cwd");
             _exeDir = Path.Combine(_multilevelDir, "exe");
@@ -86,7 +86,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Cwd: empty
-            // User: empty
             // Exe: empty
             // Reg: empty
             // Expected: no compatible version and a specific error messages
@@ -99,7 +98,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Cwd: empty
-            // User: empty
             // Exe: 9999.4.1, 9999.3.4-dummy
             // Reg: empty
             // Expected: no compatible version and a specific error message
@@ -112,7 +110,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Cwd: empty
-            // User: empty
             // Exe: 9999.4.1, 9999.3.4-dummy
             // Reg: 9999.3.3
             // Expected: no compatible version and a specific error message
@@ -125,7 +122,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Cwd: empty
-            // User: empty
             // Exe: 9999.4.1, 9999.3.4-dummy, 9999.3.4
             // Reg: 9999.3.3
             // Expected: 9999.3.4 from exe dir
@@ -138,7 +134,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Cwd: empty
-            // User: empty
             // Exe: 9999.4.1, 9999.3.4-dummy, 9999.3.4
             // Reg: 9999.3.3, 9999.3.5-dummy
             // Expected: 9999.3.5-dummy from reg dir
@@ -151,7 +146,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Cwd: empty
-            // User: empty
             // Exe: 9999.4.1, 9999.3.4-dummy, 9999.3.4, 9999.3.600
             // Reg: 9999.3.3, 9999.3.5-dummy
             // Expected: 9999.3.5-dummy from reg dir
@@ -164,7 +158,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Cwd: empty
-            // User: empty
             // Exe: 9999.4.1, 9999.3.4-dummy, 9999.3.4, 9999.3.600, 9999.3.4-global-dummy
             // Reg: 9999.3.3, 9999.3.5-dummy
             // Expected: 9999.3.4-global-dummy from exe dir
@@ -193,7 +186,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Cwd: empty
-            // User: empty
             // Exe: empty
             // Reg: empty
             // Expected: no compatible version and a specific error messages
@@ -206,7 +198,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Cwd: empty
-            // User: empty
             // Exe: empty
             // Reg: 9999.3.57, 9999.3.4-dummy
             // Expected: no compatible version and a specific error message
@@ -219,7 +210,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Cwd: empty
-            // User: empty
             // Exe: 9999.3.300, 9999.7.304-global-dummy
             // Reg: 9999.3.57, 9999.3.4-dummy
             // Expected: no compatible version and a specific error message
@@ -232,7 +222,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Cwd: empty
-            // User: empty
             // Exe: 9999.3.300, 9999.7.304-global-dummy
             // Reg: 9999.3.57, 9999.3.4-dummy, 9999.3.304
             // Expected: 9999.3.304 from reg dir
@@ -245,7 +234,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Cwd: empty
-            // User: empty
             // Exe: 9999.3.300, 9999.7.304-global-dummy, 9999.3.399, 9999.3.399-dummy, 9999.3.400
             // Reg: 9999.3.57, 9999.3.4-dummy, 9999.3.304
             // Expected: 9999.3.399 from exe dir
@@ -259,7 +247,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Cwd: empty
-            // User: empty
             // Exe: 9999.3.300, 9999.7.304-global-dummy, 9999.3.399, 9999.3.399-dummy, 9999.3.400, 9999.3.2400, 9999.3.3004
             // Reg: 9999.3.57, 9999.3.4-dummy, 9999.3.304, 9999.3.2400, 9999.3.3004
             // Expected: 9999.3.399 from exe dir
@@ -272,7 +259,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Cwd: empty
-            // User: empty
             // Exe: 9999.3.300, 9999.7.304-global-dummy, 9999.3.399, 9999.3.399-dummy, 9999.3.400, 9999.3.2400, 9999.3.3004
             // Reg: 9999.3.57, 9999.3.4-dummy, 9999.3.304, 9999.3.2400, 9999.3.3004, 9999.3.304-global-dummy
             // Expected: 9999.3.304-global-dummy from reg dir
@@ -307,7 +293,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: none
             // Cwd: empty
-            // User: empty
             // Exe: empty
             // Reg: 9999.0.4
             // Expected: 9999.0.4 from reg dir
@@ -320,7 +305,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: none
             // Cwd: empty
-            // User: empty
             // Exe: 9999.0.4
             // Reg: 9999.0.4
             // Expected: 9999.0.4 from exe dir
@@ -355,7 +339,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 // Specified SDK version: none
                 // Cwd: empty
-                // User: empty
                 // Exe: empty
                 // Reg: 9999.0.4
                 // Expected: 9999.0.4 from reg dir
@@ -381,7 +364,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: none
             // Cwd: empty
-            // User: empty
             // Exe: empty
             // Reg: 9999.0.0, 9999.0.3-dummy
             // Expected: 9999.0.3-dummy from reg dir
@@ -394,7 +376,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: none
             // Cwd: empty
-            // User: empty
             // Exe: 9999.0.3
             // Reg: 9999.0.0, 9999.0.3-dummy
             // Expected: 9999.0.3 from exe dir
@@ -408,7 +389,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: none
             // Cwd: 10000.0.0                 --> should not be picked
-            // User: 9999.0.200               --> should not be picked
             // Exe: 9999.0.3
             // Reg: 9999.0.0, 9999.0.3-dummy, 9999.0.100
             // Expected: 9999.0.100 from reg dir
@@ -421,7 +401,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: none
             // Cwd: 10000.0.0                 --> should not be picked
-            // User: 9999.0.200               --> should not be picked
             // Exe: 9999.0.3, 9999.0.80
             // Reg: 9999.0.0, 9999.0.3-dummy, 9999.0.100
             // Expected: 9999.0.100 from reg dir
@@ -434,7 +413,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: none
             // Cwd: 10000.0.0                 --> should not be picked
-            // User: 9999.0.200               --> should not be picked
             // Exe: 9999.0.3, 9999.0.80, 9999.0.5500000
             // Reg: 9999.0.0, 9999.0.3-dummy, 9999.0.100
             // Expected: 9999.0.5500000 from exe dir
@@ -447,7 +425,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: none
             // Cwd: 10000.0.0                 --> should not be picked
-            // User: 9999.0.200               --> should not be picked
             // Exe: 9999.0.3, 9999.0.80, 9999.0.5500000
             // Reg: 9999.0.0, 9999.0.3-dummy, 9999.0.100, 9999.0.52000000
             // Expected: 9999.0.52000000 from reg dir
@@ -467,7 +444,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining("9999.0.52000000");
         }
 
-        List<(string version, string rootPath)> AddSdkVersionsAndGetExpectedList(bool? multiLevelLookup)
+        private List<(string version, string rootPath)> AddSdkVersionsAndGetExpectedList(bool? multiLevelLookup)
         {
             AddAvailableSdkVersions(_exeSdkBaseDir, "5.0.2");
             AddAvailableSdkVersions(_exeSdkBaseDir, "6.1.1");
@@ -485,7 +462,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 expectedList.Add(("6.2.0", _regSdkBaseDir));
                 expectedList.Add(("7.0.1", _regSdkBaseDir));
             }
-            expectedList.Sort((a, b) => a.version.CompareTo(b.version));
+            expectedList.Sort((a, b) =>
+            {
+                if (!Version.TryParse(a.version, out var aVersion))
+                    return -1;
+
+                if (!Version.TryParse(b.version, out var bVersion))
+                    return 1;
+
+                return aVersion.CompareTo(bVersion);
+            });
             return expectedList;
         }
 
@@ -500,8 +486,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 return;
 
             var expectedList = AddSdkVersionsAndGetExpectedList(multiLevelLookup);
-            string expectedOutput = String.Join(String.Empty, expectedList.Select(t => $"{t.version} [{t.rootPath}]{Environment.NewLine}"));
+            string expectedOutput = string.Join(string.Empty, expectedList.Select(t => $"{t.version} [{t.rootPath}]{Environment.NewLine}"));
 
+            // !!IMPORTANT!!: This test verifies the exact match of the entire output of the command (not a substring!)
+            // This is important as the output of --list-sdks is considered machine readable and thus must not change even in a minor way (unintentionally)
             RunTest("--list-sdks", multiLevelLookup)
                 .Should().Pass()
                 .And.HaveStdOut(expectedOutput);
@@ -522,7 +510,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // When we fail to resolve SDK version, we print out all available SDKs
             var expectedList = AddSdkVersionsAndGetExpectedList(multiLevelLookup);
-            string expectedOutput = String.Join(String.Empty, expectedList.Select(t => $"        {t.version} [{t.rootPath}]{Environment.NewLine}"));
+            string expectedOutput = string.Join(string.Empty, expectedList.Select(t => $"        {t.version} [{t.rootPath}]{Environment.NewLine}"));
 
             RunTest("help", multiLevelLookup)
                 .Should().Fail()
@@ -542,16 +530,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var expectedList = AddSdkVersionsAndGetExpectedList(multiLevelLookup);
             string expectedOutput =
                 $".NET SDKs installed:{Environment.NewLine}" +
-                String.Join(String.Empty, expectedList.Select(t => $"  {t.version} [{t.rootPath}]{Environment.NewLine}"));
+                string.Join(string.Empty, expectedList.Select(t => $"  {t.version} [{t.rootPath}]{Environment.NewLine}"));
 
             RunTest("--info", multiLevelLookup)
                 .Should().Pass()
                 .And.HaveStdOutContaining(expectedOutput);
         }
 
-        CommandResult RunTest() => RunTest("help");
+        private CommandResult RunTest() => RunTest("help");
 
-        CommandResult RunTest(string command, bool? multiLevelLookup = true)
+        private CommandResult RunTest(string command, bool? multiLevelLookup = true)
         {
             return DotNet.Exec(command)
                 .WorkingDirectory(_currentWorkingDir)

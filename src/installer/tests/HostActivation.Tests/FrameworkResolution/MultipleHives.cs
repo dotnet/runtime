@@ -106,7 +106,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
         private record struct FrameworkInfo(string Name, string Version, int Level, string Path);
 
-        List<FrameworkInfo> GetExpectedFrameworks(bool? multiLevelLookup)
+        private List<FrameworkInfo> GetExpectedFrameworks(bool? multiLevelLookup)
         {
             // The runtimes should be ordered by version number
             List<FrameworkInfo> expectedList = new();
@@ -127,7 +127,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 if (result != 0)
                     return result;
 
-                result = a.Version.CompareTo(b.Version);
+                if (!Version.TryParse(a.Version, out var aVersion))
+                    return -1;
+
+                if (!Version.TryParse(b.Version, out var bVersion))
+                    return 1;
+
+                result = aVersion.CompareTo(bVersion);
                 if (result != 0)
                     return result;
 
@@ -151,8 +157,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 GetExpectedFrameworks(multiLevelLookup)
                     .Select(t => $"{MicrosoftNETCoreApp} {t.Version} [{Path.Combine(t.Path, "shared", MicrosoftNETCoreApp)}]{Environment.NewLine}"));
 
-            RunTest(new TestSettings()
-                    .WithCommandLine("--list-runtimes"),
+            // !!IMPORTANT!!: This test verifies the exact match of the entire output of the command (not a substring!)
+            // This is important as the output of --list-runtimes is considered machine readable and thus must not change even in a minor way (unintentionally)
+            RunTest(
+                new TestSettings().WithCommandLine("--list-runtimes"),
                 multiLevelLookup,
                 testApp: null)
                 .Should().HaveStdOut(expectedOutput);
@@ -170,12 +178,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
             string expectedOutput =
                 $".NET runtimes installed:{Environment.NewLine}" +
-                String.Join(String.Empty,
+                string.Join(string.Empty,
                     GetExpectedFrameworks(multiLevelLookup)
                         .Select(t => $"  {MicrosoftNETCoreApp} {t.Version} [{Path.Combine(t.Path, "shared", MicrosoftNETCoreApp)}]{Environment.NewLine}"));
 
-            RunTest(new TestSettings()
-                    .WithCommandLine("--info"),
+            RunTest(
+                new TestSettings().WithCommandLine("--info"),
                 multiLevelLookup,
                 testApp: null)
                 .Should().HaveStdOutContaining(expectedOutput);
@@ -196,7 +204,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
             string expectedOutput =
                 $"The following frameworks were found:{Environment.NewLine}" +
-                String.Join(String.Empty,
+                string.Join(string.Empty,
                     GetExpectedFrameworks(multiLevelLookup)
                         .Select(t => $"      {t.Version} at [{Path.Combine(t.Path, "shared", MicrosoftNETCoreApp)}]{Environment.NewLine}"));
 

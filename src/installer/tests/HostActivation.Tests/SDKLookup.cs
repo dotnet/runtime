@@ -259,7 +259,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: none
             // Cwd: 10000.0.0                 --> should not be picked
-            // User: 9999.0.200               --> should not be picked
             // Exe: 9999.0.0, 9999.0.3-dummy.9, 9999.0.3-dummy.10
             // Expected: 9999.0.3-dummy.10 from exe dir
             RunTest()
@@ -271,7 +270,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: none
             // Cwd: 10000.0.0                 --> should not be picked
-            // User: 9999.0.200               --> should not be picked
             // Exe: 9999.0.0, 9999.0.3-dummy.9, 9999.0.3-dummy.10, 9999.0.3
             // Expected: 9999.0.3 from exe dir
             RunTest()
@@ -283,7 +281,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: none
             // Cwd: 10000.0.0                 --> should not be picked
-            // User: 9999.0.200               --> should not be picked
             // Exe: 9999.0.0, 9999.0.3-dummy.9, 9999.0.3-dummy.10, 9999.0.3, 9999.0.100
             // Expected: 9999.0.100 from exe dir
             RunTest()
@@ -295,7 +292,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: none
             // Cwd: 10000.0.0                 --> should not be picked
-            // User: 9999.0.200               --> should not be picked
             // Exe: 9999.0.0, 9999.0.3-dummy.9, 9999.0.3-dummy.10, 9999.0.3, 9999.0.100, 9999.0.80
             // Expected: 9999.0.100 from exe dir
             RunTest()
@@ -307,7 +303,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: none
             // Cwd: 10000.0.0                 --> should not be picked
-            // User: 9999.0.200               --> should not be picked
             // Exe: 9999.0.0, 9999.0.3-dummy.9, 9999.0.3-dummy.10, 9999.0.3, 9999.0.100, 9999.0.80, 9999.0.5500000
             // Expected: 9999.0.5500000 from exe dir
             RunTest()
@@ -319,7 +314,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: none
             // Cwd: 10000.0.0                 --> should not be picked
-            // User: 9999.0.200               --> should not be picked
             // Exe: 9999.0.0, 9999.0.3-dummy.9, 9999.0.3-dummy.10, 9999.0.3, 9999.0.100, 9999.0.80, 9999.0.5500000, 9999.0.52000000
             // Expected: 9999.0.52000000 from exe dir
             RunTest()
@@ -1064,7 +1058,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 string baseDir = Path.Combine(TestArtifact.TestArtifactsPath, "dotnetSDKLookup");
                 BaseDir = SharedFramework.CalculateUniqueTestDirectory(baseDir);
 
-                // The three tested locations will be the cwd, the user folder and the exe dir. cwd and user are no longer supported.
+                // The three tested locations will be the cwd and the exe dir. cwd is no longer supported.
                 //     All dirs will be placed inside the base folder
 
                 BuiltDotNet = new DotNetCli(Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"));
