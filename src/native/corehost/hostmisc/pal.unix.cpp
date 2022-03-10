@@ -128,7 +128,7 @@ bool pal::getcwd(pal::string_t* recv)
             return false;
         }
 
-        trace::error(_X("getcwd() failed: %s"), strerror(errno));
+        trace::error(_X("getcwd() failed: %s"), strerror(errno).c_str());
         return false;
     }
 
@@ -904,7 +904,7 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
 
         if (!skip_error_logging)
         {
-            trace::error(_X("realpath(%s) failed: %s"), path->c_str(), strerror(errno));
+            trace::error(_X("realpath(%s) failed: %s"), path->c_str(), strerror(errno).c_str());
         }
 
         return false;
@@ -1033,7 +1033,7 @@ bool pal::is_emulating_x64()
         trace::info(_X("Could not determine whether the current process is running under Rosetta."));
         if (errno != ENOENT)
         {
-            trace::info(_X("Call to sysctlbyname failed: %s"), strerror(errno));
+            trace::info(_X("Call to sysctlbyname failed: %s"), strerror(errno).c_str());
         }
 
         return false;
