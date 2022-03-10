@@ -78,6 +78,9 @@
   <data name="Arg_InvalidType" xml:space="preserve">
     <value>Invalid type.</value>
   </data>
+  <data name="Argument_Asn1_InvalidCharacterString" xml:space="preserve">
+    <value>The specified UniversalTagNumber must be a string type.</value>
+  </data>
   <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
     <value>Only single dimensional arrays are supported for the requested action.</value>
   </data>
@@ -92,6 +95,12 @@
   </data>
   <data name="Argument_InvalidNameType" xml:space="preserve">
     <value>The value of 'nameType' is invalid.</value>
+  </data>
+  <data name="Argument_X500_InvalidCountryOrRegion" xml:space="preserve">
+    <value>The country or region code must be exactly two characters.</value>
+  </data>
+  <data name="Argument_X500_EmailTooLong" xml:space="preserve">
+    <value>The email address cannot exceed 255 characters.</value>
   </data>
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
