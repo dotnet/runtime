@@ -542,7 +542,7 @@ namespace System.Net.Mail.Tests
 
                 // Using address with new line breaks the protocol so we cannot easily use LoopbackSmtpServer
                 // Instead we call internal method that does the extra validation.
-                string? host = (string?)typeof(MailAddress).InvokeMember("GetAddress", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod, null, address, new object[] { true });
+                string host = (string)typeof(MailAddress).InvokeMember("GetAddress", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod, null, address, new object[] { true });
                 Assert.Equal(input, host);
             }, input).Dispose();
         }
@@ -562,7 +562,7 @@ namespace System.Net.Mail.Tests
             {
                 if (asyncSend)
                 {
-                    await client.SendMailAsync(msg).WaitAsync(TimeSpan.FromSeconds(30));
+                    await client.SendMailAsync(msg);
                 }
                 else
                 {
