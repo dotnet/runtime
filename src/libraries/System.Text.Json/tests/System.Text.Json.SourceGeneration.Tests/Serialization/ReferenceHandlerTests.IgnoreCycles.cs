@@ -73,6 +73,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TreeNode<Dictionary<string, object>>))]
         [JsonSerializable(typeof(TreeNode<List<string>>))]
         [JsonSerializable(typeof(TreeNode<object>))]
+        [JsonSerializable(typeof(int))]
         internal sealed partial class ReferenceHandlerTests_IgnoreCyclesContext_Metadata : JsonSerializerContext
         {
         }
@@ -140,6 +141,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TreeNode<Dictionary<string, object>>))]
         [JsonSerializable(typeof(TreeNode<List<string>>))]
         [JsonSerializable(typeof(TreeNode<object>))]
+        [JsonSerializable(typeof(int))]
         internal sealed partial class ReferenceHandlerTests_IgnoreCyclesContext_Default : JsonSerializerContext
         {
         }

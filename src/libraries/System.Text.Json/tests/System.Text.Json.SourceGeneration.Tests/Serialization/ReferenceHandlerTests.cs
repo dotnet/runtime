@@ -112,6 +112,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(List<ImmutableArray<int>>))]
         [JsonSerializable(typeof(List<ImmutableArray<int>>))]
         [JsonSerializable(typeof(List<object>))]
+        [JsonSerializable(typeof(StructCollection))]
+        [JsonSerializable(typeof(ImmutableArray<int>))]
         internal sealed partial class ReferenceHandlerTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -227,6 +229,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(List<ImmutableArray<int>>))]
         [JsonSerializable(typeof(List<ImmutableArray<int>>))]
         [JsonSerializable(typeof(List<object>))]
+        [JsonSerializable(typeof(StructCollection))]
+        [JsonSerializable(typeof(ImmutableArray<int>))]
         internal sealed partial class ReferenceHandlerTestsContext_Default : JsonSerializerContext
         {
         }

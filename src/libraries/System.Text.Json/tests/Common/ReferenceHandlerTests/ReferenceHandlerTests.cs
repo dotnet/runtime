@@ -878,11 +878,11 @@ namespace System.Text.Json.Serialization.Tests
             public object? Property { get; set; }
         }
 
-        public struct StructCollection : IBoxedStructWithObjectProperty, IEnumerable<object?>
+        public struct StructCollection : IBoxedStructWithObjectProperty, IEnumerable<object>
         {
-            public object? Property { get; set; }
+            public object Property { get; set; }
 
-            public IEnumerator<object?> GetEnumerator()
+            public IEnumerator<object> GetEnumerator()
             {
                 yield return Property;
             }
