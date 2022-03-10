@@ -16,7 +16,7 @@ internal static partial class Interop
         /// about the data block.</param>
         /// <param name="cbwh">Size, in bytes, of the WaveHeader structure.</param>
         /// <returns>MMSYSERR</returns>
-        [GeneratedDllImport(Libraries.WinMM)]
+        [LibraryImport(Libraries.WinMM)]
         internal static partial MMSYSERR waveOutWrite(IntPtr hwo, IntPtr pwh, int cbwh);
     }
 }

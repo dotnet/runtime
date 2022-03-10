@@ -25,25 +25,25 @@ namespace LibraryImportGenerator.IntegrationTests
             public static NativeExportsSafeHandle CreateNewHandle() => AllocateHandle();
 
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "alloc_handle")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "alloc_handle")]
             private static partial NativeExportsSafeHandle AllocateHandle();
         }
 
-        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "alloc_handle")]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "alloc_handle")]
         public static partial NativeExportsSafeHandle AllocateHandle();
 
-        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "alloc_handle_out")]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "alloc_handle_out")]
         public static partial void AllocateHandle(out NativeExportsSafeHandle handle);
 
-        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "release_handle")]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "release_handle")]
         [return:MarshalAs(UnmanagedType.I1)]
         private static partial bool ReleaseHandle(nint handle);
 
-        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "is_handle_alive")]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "is_handle_alive")]
         [return:MarshalAs(UnmanagedType.I1)]
         public static partial bool IsHandleAlive(NativeExportsSafeHandle handle);
 
-        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "modify_handle")]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "modify_handle")]
         public static partial void ModifyHandle(ref NativeExportsSafeHandle handle, [MarshalAs(UnmanagedType.I1)] bool newHandle);
     }
 

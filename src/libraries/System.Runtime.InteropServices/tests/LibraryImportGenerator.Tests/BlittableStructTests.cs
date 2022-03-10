@@ -11,32 +11,32 @@ namespace LibraryImportGenerator.IntegrationTests
 {
     partial class NativeExportsNE
     {
-        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_return_instance")]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_return_instance")]
         public static partial IntFields DoubleIntFields(IntFields result);
 
-        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_double_intfields_byref")]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_double_intfields_byref")]
         public static partial void DoubleIntFieldsByRef(ref IntFields result);
 
-        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_double_intfields_byref")]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_double_intfields_byref")]
         public static partial void DoubleIntFieldsByRefIn(in IntFields result);
 
-        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_double_intfields_refreturn")]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_double_intfields_refreturn")]
         public static partial void DoubleIntFieldsRefReturn(
             IntFields input,
             ref IntFields result);
 
-        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_double_intfields_refreturn")]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_double_intfields_refreturn")]
         public static partial void DoubleIntFieldsOutReturn(
             IntFields input,
             out IntFields result);
 
-        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_increment_invert_ptrfields_byref")]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_increment_invert_ptrfields_byref")]
         public static partial void IncrementInvertPointerFieldsByRef(ref PointerFields result);
 
-        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_increment_invert_ptrfields_byref")]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_increment_invert_ptrfields_byref")]
         public static partial void IncrementInvertPointerFieldsByRefIn(in PointerFields result);
 
-        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_increment_invert_ptrfields_refreturn")]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_increment_invert_ptrfields_refreturn")]
         public static partial void IncrementInvertPointerFieldsRefReturn(
             PointerFields input,
             ref PointerFields result);

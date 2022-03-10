@@ -17,6 +17,17 @@ namespace ComClient
 
             switch (args[0])
             {
+                case "comhost":
+                {
+                    // args: ... <clsid>
+                    if (args.Length != 2)
+                    {
+                        throw new Exception("Invalid number of arguments passed");
+                    }
+
+                    ComTest(args[1]);
+                    break;
+                }
                 case "ijwhost":
                 {
                     // args: ... <ijw_library_path> <entry_point>
@@ -31,6 +42,17 @@ namespace ComClient
                 default:
                     throw new ArgumentException("Unknown scenario");
             }
+        }
+
+        private static unsafe void ComTest(string clsidString)
+        {
+            Console.WriteLine($"Activating class ID {clsidString}");
+
+            Guid clsid = Guid.Parse(clsidString);
+            Type t = Type.GetTypeFromCLSID(clsid);
+            var server = Activator.CreateInstance(t);
+
+            Console.WriteLine($"Activation of {clsidString} succeeded.");
         }
 
         private static unsafe void IjwTest(string libraryPath, string entryPointName)

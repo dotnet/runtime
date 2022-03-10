@@ -784,11 +784,17 @@ namespace System.Text.RegularExpressions.Symbolic
                         }
                     }
 
-                    // Now run the DFA or NFA traversal from the current point using the current state.
+                    // Now run the DFA or NFA traversal from the current point using the current state. If timeouts are being checked,
+                    // we need to pop out of the inner loop every now and then to do the timeout check in this outer loop.
+                    const int CharsPerTimeoutCheck = 10_000;
+                    ReadOnlySpan<char> inputForInnerLoop = _checkTimeout && input.Length - i > CharsPerTimeoutCheck ?
+                        input.Slice(0, i + CharsPerTimeoutCheck) :
+                        input;
+
                     int finalStatePosition;
                     int findResult = currentState.NfaState is not null ?
-                        FindFinalStatePositionDeltas<NfaStateHandler>(builder, input, ref i, ref currentState, ref matchLength, out finalStatePosition) :
-                        FindFinalStatePositionDeltas<DfaStateHandler>(builder, input, ref i, ref currentState, ref matchLength, out finalStatePosition);
+                        FindFinalStatePositionDeltas<NfaStateHandler>(builder, inputForInnerLoop, ref i, ref currentState, ref matchLength, out finalStatePosition) :
+                        FindFinalStatePositionDeltas<DfaStateHandler>(builder, inputForInnerLoop, ref i, ref currentState, ref matchLength, out finalStatePosition);
 
                     // If we reached a final or deadend state, we're done.
                     if (findResult > 0)
@@ -802,17 +808,20 @@ namespace System.Text.RegularExpressions.Symbolic
                     // find result will be 0, otherwise negative.
                     if (findResult < 0)
                     {
-                        if ((uint)i >= (uint)input.Length)
+                        if (i >= input.Length)
                         {
                             // We ran out of input. No match.
                             break;
                         }
 
-                        // We failed to transition. Upgrade to DFA mode.
-                        Debug.Assert(currentState.DfaState is not null);
-                        NfaMatchingState nfaState = perThreadData.NfaState;
-                        nfaState.InitializeFrom(currentState.DfaState);
-                        currentState = new CurrentState(nfaState);
+                        if (i < inputForInnerLoop.Length)
+                        {
+                            // We failed to transition. Upgrade to DFA mode.
+                            Debug.Assert(currentState.DfaState is not null);
+                            NfaMatchingState nfaState = perThreadData.NfaState;
+                            nfaState.InitializeFrom(currentState.DfaState);
+                            currentState = new CurrentState(nfaState);
+                        }
                     }
 
                     // Check for a timeout before continuing.
