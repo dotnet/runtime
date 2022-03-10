@@ -1784,14 +1784,12 @@ static gboolean
 hot_reload_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_method_idx, uint32_t *method_count,  uint32_t *first_field_idx, uint32_t *field_count)
 {
 	BaselineInfo *info = baseline_info_lookup (base_image);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "skeleton lookup begin - wanted 0x%08x", typedef_token);
 	if (!info || !info->skeletons)
 		return FALSE;
 	gboolean found = FALSE;
 	mono_image_lock (base_image);
 	for (int i = 0; i < info->skeletons->len; ++i) {
 		MonoAddedDefSkeleton *sk = &((MonoAddedDefSkeleton*)info->skeletons->data)[i];
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "skeleton lookup[%d] - wanted 0x%08x got 0x%08x", i, typedef_token, sk->typedef_token);
 		if (sk->typedef_token == typedef_token) {
 			found = TRUE;
 			g_assert (first_method_idx);
