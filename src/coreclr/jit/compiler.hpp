@@ -2100,11 +2100,9 @@ inline
             assert(varDsc->lvIsParam);
 #endif // UNIX_AMD64_ABI
 #else  // !TARGET_AMD64
-#if !FEATURE_FASTTAILCALL
             // For other targets, a stack parameter that is enregistered or prespilled
             // for profiling on ARM will have a stack location.
             assert((varDsc->lvIsParam && !varDsc->lvIsRegArg) || isPrespilledArg);
-#endif // !FEATURE_FASTTAILCALL
 #endif // !TARGET_AMD64
         }
 

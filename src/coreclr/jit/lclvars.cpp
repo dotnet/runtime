@@ -269,6 +269,10 @@ void Compiler::lvaInitTypeRef()
     LclVarDsc*              varDsc    = varDscInfo.varDsc;
     CORINFO_ARG_LIST_HANDLE localsSig = info.compMethodInfo->locals.args;
 
+#ifdef TARGET_ARM
+    compHasSplitParam = varDscInfo.hasSplitParam;
+#endif
+
     for (unsigned i = 0; i < info.compMethodInfo->locals.numArgs;
          i++, varNum++, varDsc++, localsSig = info.compCompHnd->getArgNext(localsSig))
     {
@@ -772,12 +776,20 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             // Anything that follows will also be on the stack. However, if something from
             // floating point regs has been spilled to the stack, we can still use r0-r3 until they are full.
 
-            if (varDscInfo->canEnreg(TYP_INT, 1) &&       // The beginning of the struct can go in a register
-                !varDscInfo->canEnreg(TYP_INT, cSlots) && // The end of the struct can't fit in a register
-                varDscInfo->existAnyFloatStackArgs())     // There's at least one stack-based FP arg already
+            if (varDscInfo->canEnreg(TYP_INT, 1) &&      // The beginning of the struct can go in a register
+                !varDscInfo->canEnreg(TYP_INT, cSlots))  // The end of the struct can't fit in a register
             {
-                varDscInfo->setAllRegArgUsed(TYP_INT); // Prevent all future use of integer registers
-                preSpill = false;                      // This struct won't be prespilled, since it will go on the stack
+                // This is a candidate for being split assuming we pre spill
+                // this and that we did not already have float args.
+                if (varDscInfo->existAnyFloatStackArgs())
+                {
+                    varDscInfo->setAllRegArgUsed(TYP_INT); // Prevent all future use of integer registers
+                    preSpill = false;                      // This struct won't be prespilled, since it will go on the stack
+                }
+                else if (preSpill)
+                {
+                    varDscInfo->hasSplitParam = true;
+                }
             }
         }
 

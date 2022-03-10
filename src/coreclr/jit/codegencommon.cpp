@@ -6653,9 +6653,6 @@ unsigned CodeGen::getFirstArgWithStackSlot()
     // Iterate over all the lvParam variables in the Lcl var table until we find the first one
     // that's passed on the stack.
     LclVarDsc* varDsc = nullptr;
-#ifdef TARGET_ARM
-    int delta = isFramePointerUsed() ? 2 * REGSIZE_BYTES : genTotalFrameSize();
-#endif // TARGET_ARM
     for (unsigned i = 0; i < compiler->info.compArgsCount; i++)
     {
         varDsc = compiler->lvaGetDesc(i);
@@ -6664,11 +6661,7 @@ unsigned CodeGen::getFirstArgWithStackSlot()
         // we find any non-parameters.
         assert(varDsc->lvIsParam);
 
-#ifdef TARGET_ARM
-        if (varDsc->GetStackOffset() == delta)
-#else  // UNIX_AMD64_ABI || TARGET_ARM64
         if (varDsc->GetArgReg() == REG_STK)
-#endif // TARGET_ARM
         {
             baseVarNum = i;
             break;

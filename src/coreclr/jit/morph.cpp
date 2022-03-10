@@ -6825,19 +6825,27 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 
     for (unsigned index = 0; index < argInfo->ArgCount(); ++index)
     {
-        fgArgTabEntry* info = argInfo->GetArgEntry(index, false);
+        fgArgTabEntry* arg = argInfo->GetArgEntry(index, false);
 
-        calleeArgStackSize = roundUp(calleeArgStackSize, info->GetByteAlignment());
-        calleeArgStackSize += info->GetStackByteSize();
+        calleeArgStackSize = roundUp(calleeArgStackSize, arg->GetByteAlignment());
+        calleeArgStackSize += arg->GetStackByteSize();
 #ifdef TARGET_ARM
-        if (info->IsSplit())
+        if (arg->IsSplit())
         {
-            reportFastTailCallDecision("Splitted arguments not supported on ARM");
+            reportFastTailCallDecision("Splitted argument in callee is not supported on ARM32");
             return false;
         }
 #endif // TARGET_ARM
     }
     calleeArgStackSize = GetOutgoingArgByteSize(calleeArgStackSize);
+
+#ifdef TARGET_ARM
+    if (compHasSplitParam)
+    {
+        reportFastTailCallDecision("Splitted argument in caller is not supported on ARM32");
+        return false;
+    }
+#endif
 
     if (!opts.compFastTailCalls)
     {
