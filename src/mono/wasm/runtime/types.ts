@@ -16,6 +16,9 @@ export interface MonoObject extends ManagedPointer {
 export interface MonoString extends MonoObject {
     __brand: "MonoString"
 }
+export interface MonoInternedString extends MonoString {
+    __brandString: "MonoInternedString"
+}
 export interface MonoClass extends MonoObject {
     __brand: "MonoClass"
 }
@@ -32,8 +35,13 @@ export interface MonoAssembly extends MonoObject {
     __brand: "MonoAssembly"
 }
 // Pointer to a MonoObject* (i.e. the address of a root)
-export interface MonoObjectRef extends NativePointer {
-    __brandMonoObject: "MonoObjectRef"
+export interface MonoObjectRef extends ManagedPointer {
+    __brandMonoObjectRef: "MonoObjectRef"
+}
+// This exists for signature clarity, we need it to be structurally equivalent
+//  so that anything requiring MonoObjectRef will work
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface MonoStringRef extends MonoObjectRef {
 }
 export const MonoMethodNull: MonoMethod = <MonoMethod><any>0;
 export const MonoObjectNull: MonoObject = <MonoObject><any>0;
@@ -43,6 +51,7 @@ export const MonoClassNull: MonoClass = <MonoClass><any>0;
 export const MonoTypeNull: MonoType = <MonoType><any>0;
 export const MonoStringNull: MonoString = <MonoString><any>0;
 export const MonoObjectRefNull: MonoObjectRef = <MonoObjectRef><any>0;
+export const MonoStringRefNull: MonoStringRef = <MonoStringRef><any>0;
 export const JSHandleDisposed: JSHandle = <JSHandle><any>-1;
 export const JSHandleNull: JSHandle = <JSHandle><any>0;
 export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;

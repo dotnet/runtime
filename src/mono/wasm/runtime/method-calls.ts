@@ -5,7 +5,8 @@ import { mono_wasm_new_root, mono_wasm_new_root_buffer, WasmRoot, WasmRootBuffer
 import {
     JSHandle, MonoArray, MonoMethod, MonoObject,
     MonoObjectNull, MonoString, coerceNull as coerceNull,
-    VoidPtrNull, MonoStringNull, MonoObjectRef, MonoObjectRefNull
+    VoidPtrNull, MonoStringNull, MonoObjectRef, MonoObjectRefNull,
+    MonoStringRef
 } from "./types";
 import { BINDING, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
 import { _mono_array_root_to_js_array, _unbox_mono_obj_root } from "./cs-to-js";
@@ -328,7 +329,7 @@ export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: 
     }
 }
 
-export function mono_wasm_get_object_property_ref(js_handle: JSHandle, property_name: MonoObjectRef, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+export function mono_wasm_get_object_property_ref(js_handle: JSHandle, property_name: MonoStringRef, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const nameRoot = mono_wasm_new_external_root<MonoString>(property_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
@@ -354,7 +355,7 @@ export function mono_wasm_get_object_property_ref(js_handle: JSHandle, property_
     }
 }
 
-export function mono_wasm_set_object_property_ref(js_handle: JSHandle, property_name: MonoObjectRef, value: MonoObjectRef, createIfNotExist: boolean, hasOwnProperty: boolean, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+export function mono_wasm_set_object_property_ref(js_handle: JSHandle, property_name: MonoStringRef, value: MonoObjectRef, createIfNotExist: boolean, hasOwnProperty: boolean, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const valueRoot = mono_wasm_new_external_root<MonoObject>(value),
         nameRoot = mono_wasm_new_external_root<MonoString>(property_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
@@ -448,7 +449,7 @@ export function mono_wasm_set_by_index_ref(js_handle: JSHandle, property_index: 
     }
 }
 
-export function mono_wasm_get_global_object_ref(global_name: MonoObjectRef, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+export function mono_wasm_get_global_object_ref(global_name: MonoStringRef, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const nameRoot = mono_wasm_new_external_root<MonoString>(global_name),
         resultRoot = mono_wasm_new_external_root(result_address);
     try {

@@ -5,14 +5,14 @@ import { mono_wasm_new_root, WasmRoot, mono_wasm_new_external_root } from "./roo
 import {
     GCHandle, JSHandleDisposed, MarshalError, MarshalType, MonoArray,
     MonoArrayNull, MonoObject, MonoObjectNull, MonoString,
-    MonoType, MonoTypeNull, MonoObjectRef
+    MonoType, MonoTypeNull, MonoObjectRef, MonoStringRef
 } from "./types";
 import { runtimeHelpers } from "./imports";
 import { conv_string_root } from "./strings";
 import corebindings from "./corebindings";
 import cwraps from "./cwraps";
 import { get_js_owned_object_by_gc_handle_ref, js_owned_gc_handle_symbol, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, _js_owned_object_finalized, _js_owned_object_registry, _lookup_js_owned_object, _register_js_owned_object, _use_finalization_registry } from "./gc-handles";
-import { mono_method_get_call_signature, call_method, wrap_error, wrap_error_root } from "./method-calls";
+import { mono_method_get_call_signature, call_method, wrap_error_root } from "./method-calls";
 import { _js_to_mono_obj_root } from "./js-to-cs";
 import { _are_promises_supported, _create_cancelable_promise } from "./cancelable-promise";
 import { getU32, getI32, getF32, getF64 } from "./memory";
@@ -235,9 +235,9 @@ export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle, after_
     return result;
 }
 
-export function mono_wasm_create_cs_owned_object_ref(core_name: MonoString, args: MonoArray, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+export function mono_wasm_create_cs_owned_object_ref(core_name: MonoStringRef, args: MonoArray, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const argsRoot = mono_wasm_new_root(args),
-        nameRoot = mono_wasm_new_root(core_name),
+        nameRoot = mono_wasm_new_external_root<MonoString>(core_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
         const js_name = conv_string_root(nameRoot);

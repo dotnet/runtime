@@ -4,7 +4,7 @@
 import {
     MonoArray, MonoAssembly, MonoClass,
     MonoMethod, MonoObject, MonoString,
-    MonoType, MonoObjectRef
+    MonoType, MonoObjectRef, MonoStringRef
 } from "./types";
 import { Module } from "./imports";
 import { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr } from "./types/emscripten";
@@ -78,7 +78,7 @@ export interface t_Cwraps {
     // MONO
     mono_wasm_register_root(start: VoidPtr, size: number, name: string): number;
     mono_wasm_deregister_root(addr: VoidPtr): void;
-    mono_wasm_string_get_data_ref(stringRef: MonoObjectRef, outChars: CharPtrPtr, outLengthBytes: Int32Ptr, outIsInterned: Int32Ptr): void;
+    mono_wasm_string_get_data_ref(stringRef: MonoStringRef, outChars: CharPtrPtr, outLengthBytes: Int32Ptr, outIsInterned: Int32Ptr): void;
     mono_wasm_set_is_debugger_attached(value: boolean): void;
     mono_wasm_send_dbg_command(id: number, command_set: number, command: number, data: VoidPtr, size: number): boolean;
     mono_wasm_send_dbg_command_with_parms(id: number, command_set: number, command: number, data: VoidPtr, size: number, valtype: number, newvalue: string): boolean;
@@ -116,7 +116,7 @@ export interface t_Cwraps {
     mono_wasm_register_bundled_satellite_assemblies(): void;
     mono_wasm_try_unbox_primitive_and_get_type_ref(obj: MonoObjectRef, buffer: VoidPtr, buffer_size: number): number;
     mono_wasm_box_primitive_ref(klass: MonoClass, value: VoidPtr, value_size: number, result: MonoObjectRef): void;
-    mono_wasm_intern_string_ref(strRef: MonoObjectRef): void;
+    mono_wasm_intern_string_ref(strRef: MonoStringRef): void;
     mono_wasm_assembly_get_entry_point(assembly: MonoAssembly): MonoMethod;
     mono_wasm_string_array_new_ref(size: number, result: MonoObjectRef): void;
     mono_wasm_typed_array_new(arr: VoidPtr, length: number, size: number, type: number): MonoArray;

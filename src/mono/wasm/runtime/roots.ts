@@ -378,11 +378,11 @@ class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
     private __external_address: MonoObjectRef = MonoObjectRefNull;
     private __external_address_32: number = <any>0;
 
-    constructor(address: NativePointer) {
+    constructor(address: NativePointer | ManagedPointer) {
         this._set_address(address);
     }
 
-    _set_address(address: NativePointer): void {
+    _set_address(address: NativePointer | ManagedPointer): void {
         this.__external_address = <MonoObjectRef><any>address;
         this.__external_address_32 = <number><any>address >>> 2;
     }

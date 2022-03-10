@@ -128,8 +128,8 @@ interface MonoString extends MonoObject {
 interface MonoArray extends MonoObject {
     __brand: "MonoArray";
 }
-interface MonoObjectRef extends NativePointer {
-    __brandMonoObject: "MonoObjectRef";
+interface MonoObjectRef extends ManagedPointer {
+    __brandMonoObjectRef: "MonoObjectRef";
 }
 declare type MonoConfig = {
     isError: false;
@@ -259,7 +259,7 @@ declare function mono_call_assembly_entry_point(assembly: string, args?: any[], 
 
 declare function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr;
 
-declare type _MemOffset = number | VoidPtr | NativePointer;
+declare type _MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
 declare type _NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
 declare function setU8(offset: _MemOffset, value: number): void;
 declare function setU16(offset: _MemOffset, value: number): void;
