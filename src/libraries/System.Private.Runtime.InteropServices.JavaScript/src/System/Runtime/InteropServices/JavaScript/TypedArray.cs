@@ -165,7 +165,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             AssertNotDisposed();
 
-            object res = Interop.Runtime.TypedArrayToArray(JSHandle, out int exception);
+            Interop.Runtime.TypedArrayToArrayRef(JSHandle, out int exception, out object res);
 
             if (exception != 0)
                 throw new JSException((string)res);

@@ -10,12 +10,12 @@ import {
 } from "./gc-handles";
 import corebindings from "./corebindings";
 import cwraps from "./cwraps";
-import { mono_wasm_new_root, mono_wasm_release_roots, WasmRoot } from "./roots";
-import { wrap_error } from "./method-calls";
+import { mono_wasm_new_root, mono_wasm_release_roots, WasmRoot, mono_wasm_new_external_root } from "./roots";
+import { wrap_error_root } from "./method-calls";
 import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "./strings";
 import { isThenable } from "./cancelable-promise";
 import { has_backing_array_buffer } from "./buffers";
-import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, wasm_type_symbol, MonoClass } from "./types";
+import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, wasm_type_symbol, MonoClass, MonoObjectRef } from "./types";
 import { setI32, setU32, setF64 } from "./memory";
 import { Int32Ptr, TypedArray } from "./types/emscripten";
 
@@ -263,12 +263,21 @@ export function _wrap_js_thenable_as_task_root(thenable: Promise<any>, resultRoo
     };
 }
 
-export function mono_wasm_typed_array_to_array(js_handle: JSHandle, is_exception: Int32Ptr): MonoArray | MonoString {
-    const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
-    if (!js_obj) {
-        return wrap_error(is_exception, "ERR06: Invalid JS object handle '" + js_handle + "'");
-    }
+export function mono_wasm_typed_array_to_array_ref(js_handle: JSHandle, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    const resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
+    try {
+        const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
+        if (!js_obj) {
+            wrap_error_root(is_exception, "ERR06: Invalid JS object handle '" + js_handle + "'", resultRoot);
+            return;
+        }
 
-    // returns pointer to C# array
-    return js_typed_array_to_array(js_obj);
+        // returns pointer to C# array
+        // FIXME: ref
+        resultRoot.value = js_typed_array_to_array(js_obj);
+    } catch (exc) {
+        wrap_error_root(is_exception, String(exc), resultRoot);
+    } finally {
+        resultRoot.release();
+    }
 }
