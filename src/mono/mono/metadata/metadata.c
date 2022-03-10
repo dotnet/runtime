@@ -7215,7 +7215,9 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 		mono_metadata_decode_row (tdef, i2 - 1, cols, MONO_GENERICPARAM_SIZE);
 	} while (cols [MONO_GENERICPARAM_OWNER] == owner);
 	params = (MonoGenericParamFull *)mono_image_alloc0 (image, sizeof (MonoGenericParamFull) * type_argc);
+
 	/* second pass, fill in the gparam data */
+	mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
 	do {
 		n++;
 		params [n - 1].owner = container;
