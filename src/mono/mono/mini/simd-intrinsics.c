@@ -260,6 +260,9 @@ emit_simd_ins_for_sig (MonoCompile *cfg, MonoClass *klass, int opcode, int instc
 	return ins;
 }
 
+static gboolean type_enum_is_unsigned (MonoTypeEnum type);
+static gboolean type_enum_is_float (MonoTypeEnum type);
+
 static MonoInst*
 emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoInst **args, MonoTypeEnum arg_type, int id)
 {
@@ -390,9 +393,6 @@ get_underlying_type (MonoType* type)
 	else
 		return type->type;
 }
-
-static gboolean type_enum_is_unsigned (MonoTypeEnum type);
-static gboolean type_enum_is_float (MonoTypeEnum type);
 
 static MonoInst*
 emit_xcompare (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum etype, MonoInst *arg1, MonoInst *arg2)
@@ -1172,7 +1172,9 @@ static guint16 vector64_vector128_t_methods [] = {
 	SN_op_ExclusiveOr,
 	SN_op_Inequality,
 	SN_op_Multiply,
+	SN_op_OnesComplement,
 	SN_op_Subtraction,
+	SN_op_UnaryNegation,
 };
 
 static MonoInst*
