@@ -8,7 +8,7 @@
 /*
  * This file defines all the flags/options which can be set at runtime.
  *
- * Options defined here generate a C variable named mono_<flag name> initialized to its default value.
+ * Options defined here generate a C variable named mono_opt_<flag name> initialized to its default value.
  * The variables are exported using MONO_API.
  * The _READONLY variants generate C const variables so the compiler can optimize away their usage.
  * Option types:
@@ -45,9 +45,6 @@
  * List of runtime flags
  */
 
-// FIXME: To avoid empty arrays, remove later
-DEFINE_BOOL(bool_flag, "bool-flag", FALSE, "Example")
-
 /*
 DEFINE_BOOL(bool_flag, "bool-flag", FALSE, "Example")
 DEFINE_INT(int_flag, "int-flag", 0, "Example")
@@ -59,6 +56,8 @@ DEFINE_BOOL(readonly_flag, "readonly-flag", FALSE, "Example")
 DEFINE_BOOL_READONLY(readonly_flag, "readonly-flag", FALSE, "Example")
 #endif
 */
+
+DEFINE_BOOL(wasm_exceptions, "wasm-exceptions", FALSE, "Enable codegen for wasm exceptions")
 
 /* Cleanup */
 #undef DEFINE_OPTION_FULL
