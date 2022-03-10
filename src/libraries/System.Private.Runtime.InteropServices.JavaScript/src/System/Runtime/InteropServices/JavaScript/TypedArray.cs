@@ -133,7 +133,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 AssertNotDisposed();
 
-                object jsValue = Interop.Runtime.GetByIndex(JSHandle, i, out int exception);
+                Interop.Runtime.GetByIndexRef(JSHandle, i, out int exception, out object jsValue);
 
                 if (exception != 0)
                     throw new JSException((string)jsValue);
@@ -145,7 +145,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 AssertNotDisposed();
 
-                object res = Interop.Runtime.SetByIndex(JSHandle, i, value, out int exception);
+                Interop.Runtime.SetByIndexRef(JSHandle, i, value, out int exception, out object res);
 
                 if (exception != 0)
                     throw new JSException((string)res);

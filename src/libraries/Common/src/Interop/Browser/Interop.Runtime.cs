@@ -18,14 +18,16 @@ internal static partial class Interop
         internal static extern object CompileFunction(string str, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object InvokeJSWithArgs(int jsHandle, string method, object?[] parms, out int exceptionalResult);
+        // FIXME: All of these signatures need to be object? in various places and not object, but the nullability
+        //  warnings will take me hours and hours to fix so I'm not doing that right now since they're already broken
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object GetObjectProperty(int jsHandle, string propertyName, out int exceptionalResult);
+        internal static extern void GetObjectPropertyRef(int jsHandle, string propertyName, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object SetObjectProperty(int jsHandle, string propertyName, object value, bool createIfNotExists, bool hasOwnProperty, out int exceptionalResult);
+        internal static extern void SetObjectPropertyRef(int jsHandle, string propertyName, in object? value, bool createIfNotExists, bool hasOwnProperty, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object GetByIndex(int jsHandle, int index, out int exceptionalResult);
+        internal static extern void GetByIndexRef(int jsHandle, int index, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object SetByIndex(int jsHandle, int index, object? value, out int exceptionalResult);
+        internal static extern void SetByIndexRef(int jsHandle, int index, in object? value, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object GetGlobalObject(string? globalName, out int exceptionalResult);
 

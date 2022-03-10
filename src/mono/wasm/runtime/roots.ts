@@ -4,7 +4,7 @@
 import cwraps from "./cwraps";
 import { Module } from "./imports";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types/emscripten";
-import { MonoObjectRef, MonoObjectRefNull } from "./types";
+import { MonoObjectRef, MonoObjectRefNull, MonoObject } from "./types";
 
 const maxScratchRoots = 8192;
 let _scratch_root_buffer: WasmRootBuffer | null = null;
@@ -58,7 +58,7 @@ export function mono_wasm_new_root_buffer_from_pointer(offset: VoidPtr, capacity
  * Allocates a WasmRoot pointing to a root provided and controlled by external code. Typicaly on managed stack.
  * Releasing this root will not de-allocate the root space. You still need to call .release().
  */
-export function mono_wasm_new_external_root<T extends ManagedPointer | NativePointer>(address: VoidPtr | MonoObjectRef): WasmRoot<T> {
+export function mono_wasm_new_external_root<T extends MonoObject>(address: VoidPtr | MonoObjectRef): WasmRoot<T> {
     let result: WasmExternalRoot<T>;
 
     if (!address)
@@ -81,7 +81,7 @@ export function mono_wasm_new_external_root<T extends ManagedPointer | NativePoi
  * The result object has get() and set(value) methods, along with a .value property.
  * When you are done using the root you must call its .release() method.
  */
-export function mono_wasm_new_root<T extends ManagedPointer | NativePointer>(value: T | undefined = undefined): WasmRoot<T> {
+export function mono_wasm_new_root<T extends MonoObject>(value: T | undefined = undefined): WasmRoot<T> {
     let result: WasmRoot<T>;
 
     if (_scratch_root_free_instances.length > 0) {
@@ -111,7 +111,7 @@ export function mono_wasm_new_root<T extends ManagedPointer | NativePointer>(val
  * mono_wasm_new_roots([a, b, ...]) returns an array of new roots initialized with each element.
  * Each root must be released with its release method, or using the mono_wasm_release_roots API.
  */
-export function mono_wasm_new_roots<T extends ManagedPointer | NativePointer>(count_or_values: number | T[]): WasmRoot<T>[] {
+export function mono_wasm_new_roots<T extends MonoObject>(count_or_values: number | T[]): WasmRoot<T>[] {
     let result;
 
     if (Array.isArray(count_or_values)) {
@@ -266,7 +266,7 @@ export class WasmRootBuffer {
     }
 }
 
-export interface WasmRoot<T extends ManagedPointer | NativePointer> {
+export interface WasmRoot<T extends MonoObject> {
     get_address(): MonoObjectRef;
     get_address_32(): number;
     get address(): MonoObjectRef;
@@ -284,7 +284,7 @@ export interface WasmRoot<T extends ManagedPointer | NativePointer> {
     toString(): string;
 }
 
-class WasmJsOwnedRoot<T extends ManagedPointer | NativePointer> implements WasmRoot<T> {
+class WasmJsOwnedRoot<T extends MonoObject> implements WasmRoot<T> {
     private __buffer: WasmRootBuffer;
     private __index: number;
 
@@ -374,7 +374,7 @@ class WasmJsOwnedRoot<T extends ManagedPointer | NativePointer> implements WasmR
     }
 }
 
-class WasmExternalRoot<T extends ManagedPointer | NativePointer> implements WasmRoot<T> {
+class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
     private __external_address: MonoObjectRef = MonoObjectRefNull;
     private __external_address_32: number = <any>0;
 

@@ -80,10 +80,10 @@ const linked_functions = [
 
     // corebindings.c
     "mono_wasm_invoke_js_with_args",
-    "mono_wasm_get_object_property",
-    "mono_wasm_set_object_property",
-    "mono_wasm_get_by_index",
-    "mono_wasm_set_by_index",
+    "mono_wasm_get_object_property_ref",
+    "mono_wasm_set_object_property_ref",
+    "mono_wasm_get_by_index_ref",
+    "mono_wasm_set_by_index_ref",
     "mono_wasm_get_global_object",
     "mono_wasm_create_cs_owned_object_ref",
     "mono_wasm_release_cs_owned_object",

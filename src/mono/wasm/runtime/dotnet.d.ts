@@ -71,7 +71,7 @@ declare function mono_wasm_new_root_buffer(capacity: number, name?: string): Was
  * The result object has get() and set(value) methods, along with a .value property.
  * When you are done using the root you must call its .release() method.
  */
-declare function mono_wasm_new_root<T extends ManagedPointer | NativePointer>(value?: T | undefined): WasmRoot<T>;
+declare function mono_wasm_new_root<T extends MonoObject>(value?: T | undefined): WasmRoot<T>;
 /**
  * Releases 1 or more root or root buffer objects.
  * Multiple objects may be passed on the argument list.
@@ -101,7 +101,7 @@ declare class WasmRootBuffer {
     release(): void;
     toString(): string;
 }
-interface WasmRoot<T extends ManagedPointer | NativePointer> {
+interface WasmRoot<T extends MonoObject> {
     get_address(): MonoObjectRef;
     get_address_32(): number;
     get address(): MonoObjectRef;
