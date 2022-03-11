@@ -211,11 +211,6 @@ elseif(MONO_GC STREQUAL "boehm")
     set(metadata_gc_sources
         boehm-gc.c)
     set(metadata_compile_definitions "HAVE_BOEHM_GC")
-elseif(MONO_GC STREQUAL "null")
-    set(metadata_gc_sources
-        null-gc.c
-        null-gc-handles.c)
-    set(metadata_compile_definitions "HAVE_NULL_GC")
 endif()
 
 addprefix(metadata_gc_dependent_real_sources ../metadata "${metadata_gc_dependent_sources}")

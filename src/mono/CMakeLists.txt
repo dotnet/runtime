@@ -697,8 +697,8 @@ endif()
 # GC CHECKS
 ######################################
 
-if(NOT MONO_GC STREQUAL "sgen" AND NOT MONO_GC STREQUAL "boehm" AND NOT MONO_GC STREQUAL "null")
-  message(FATAL_ERROR "MONO_GC (set to '${MONO_GC}') must be one of sgen, boehm or null")
+if(NOT MONO_GC STREQUAL "sgen" AND NOT MONO_GC STREQUAL "boehm")
+  message(FATAL_ERROR "MONO_GC (set to '${MONO_GC}') must be sgen or boehm")
 endif()
 
 if (GC_SUSPEND STREQUAL "coop")
