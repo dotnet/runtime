@@ -10485,7 +10485,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
             assert(blockWidth == info.compCompHnd->getClassSize(call->gtRetClsHnd));
 #endif
         }
-#ifdef TARGET_ARM64
+#ifdef FEATURE_HW_INTRINSICS
         else if (effectiveVal->OperIsHWIntrinsic())
         {
             needsIndirection = false;
@@ -10495,7 +10495,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
             assert(HWIntrinsicInfo::IsMultiReg(intrinsic->GetHWIntrinsicId()));
 #endif
         }
-#endif // TARGET_ARM64
+#endif // FEATURE_HW_INTRINSICS
 
         if (lclNode != nullptr)
         {

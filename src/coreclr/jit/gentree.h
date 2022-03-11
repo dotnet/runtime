@@ -8146,7 +8146,7 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex) const
 #elif defined(TARGET_XARCH)
         // At this time, the only multi-reg HW intrinsics all return the type of their
         // arguments. If this changes, we will need a way to record or determine this.
-        return gtGetOp1()->TypeGet();
+        return AsHWIntrinsic()->Op(1)->TypeGet();
 #endif
     }
 

@@ -491,8 +491,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     {
         case InstructionSet_Vector256:
         case InstructionSet_Vector128:
-        case InstructionSet_X86Base:
             return impBaseIntrinsic(intrinsic, clsHnd, method, sig, simdBaseJitType, retType, simdSize);
+        case InstructionSet_X86Base:
+            return impX86BaseIntrinsic(intrinsic, method, sig);
         case InstructionSet_SSE:
             return impSSEIntrinsic(intrinsic, method, sig);
         case InstructionSet_SSE2:
@@ -2194,13 +2195,63 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        default:
+        {
+            return nullptr;
+        }
+    }
+
+    return retNode;
+}
+
+
+GenTree* Compiler::impX86BaseIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+{
+    GenTree* retNode = nullptr;
+    GenTree* op1     = nullptr;
+    GenTree* op2     = nullptr;
+    GenTree* op3     = nullptr;
+    GenTree* op4     = nullptr;
+
+    var_types retType = JITtype2varType(sig->retType);
+
+    switch (intrinsic)
+    {
+
         case NI_X86Base_Pause:
         {
             assert(sig->numArgs == 0);
-            assert(JITtype2varType(sig->retType) == TYP_VOID);
-            assert(simdSize == 0);
+            assert(retType == TYP_VOID);
 
             retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
+            break;
+        }
+
+        case NI_X86Base_DivRem:
+        case NI_X86Base_X64_DivRem:
+        {
+            assert(sig->numArgs == 3);
+            assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
+            assert(retType == TYP_STRUCT);
+
+            op3 = impPopStack().val;
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            GenTreeHWIntrinsic* divRemIntrinsic = gtNewScalarHWIntrinsicNode(retType, op1, op2, op3, intrinsic);
+
+            const unsigned lclNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg intrinsic"));
+            impAssignTempGen(lclNum, divRemIntrinsic, sig->retTypeSigClass, (unsigned)CHECK_SPILL_ALL);
+
+            LclVarDsc* varDsc = lvaGetDesc(lclNum);
+            // The following is to exclude the fields of the local to have SSA.
+            varDsc->lvIsMultiRegRet = true;
+
+            GenTreeLclVar* lclVar = gtNewLclvNode(lclNum, varDsc->lvType);
+            lclVar->SetDoNotCSE();
+            lclVar->SetMultiReg();
+
+            retNode = lclVar;
             break;
         }
 

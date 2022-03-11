@@ -2015,7 +2015,23 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
 
     int srcCount = 0;
-    int dstCount = intrinsicTree->IsValue() ? 1 : 0;
+    int dstCount;
+
+    if (intrinsicTree->IsValue())
+    {
+        if (HWIntrinsicInfo::IsMultiReg(intrinsicId))
+        {
+            dstCount = HWIntrinsicInfo::GetMultiRegCount(intrinsicId);
+        }
+        else
+        {
+            dstCount = 1;
+        }
+    }
+    else
+    {
+        dstCount = 0;
+    }
 
     regMaskTP dstCandidates = RBM_NONE;
 
@@ -2192,6 +2208,25 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 #endif // TARGET_X86
+
+            case NI_X86Base_DivRem:
+            case NI_X86Base_X64_DivRem:
+            {
+                assert(numArgs == 3);
+                assert(dstCount == 2);
+
+                // DIV implicitly put op1(lower) to EAX and op2(upper) to EDX
+                srcCount += BuildOperandUses(op1, RBM_EAX);
+                srcCount += BuildOperandUses(op2, RBM_EDX);
+                srcCount += BuildOperandUses(op3);
+
+                // result put in EAX and EDX
+                BuildDef(intrinsicTree, RBM_EAX, 0);
+                BuildDef(intrinsicTree, RBM_EDX, 1);
+
+                buildUses = false;
+                break;
+            }
 
             case NI_BMI2_MultiplyNoFlags:
             case NI_BMI2_X64_MultiplyNoFlags:
@@ -2463,7 +2498,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
     else
     {
-        assert(dstCount == 0);
+        // Currently dstCount = 2 is only used for DivRem, which has special constriants and handled above
+        assert((dstCount == 0) || (dstCount == 2));
     }
 
     *pDstCount = dstCount;
