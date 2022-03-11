@@ -57,6 +57,7 @@ struct SeqPointInfo {
 	gpointer bp_addrs [MONO_ZERO_LEN_ARRAY];
 };
 
+#define MONO_ARCH_SIGSEGV_ON_ALTSTACK			1
 #define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS		1
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS		1
 #define MONO_ARCH_HAVE_IS_INT_OVERFLOW  		1

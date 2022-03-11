@@ -44,6 +44,24 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #undef MONO_ARCH_USE_SIGACTION
 #endif
 
+#ifndef HOST_WIN32
+
+#ifdef HAVE_WORKING_SIGALTSTACK
+/*
+ * solaris doesn't have pthread_getattr_np () needed by the sigaltstack setup
+ * code.
+ */
+#ifndef __sun
+#define MONO_ARCH_SIGSEGV_ON_ALTSTACK
+#endif
+/* Haiku doesn't have SA_SIGINFO */
+#ifndef __HAIKU__
+#define MONO_ARCH_USE_SIGACTION
+#endif /* __HAIKU__ */
+
+#endif /* HAVE_WORKING_SIGALTSTACK */
+#endif /* !HOST_WIN32 */
+
 #define MONO_ARCH_SUPPORT_TASKLETS 1
 
 /* we should lower this size and make sure we don't call heavy stack users in the segv handler */

@@ -312,6 +312,25 @@ add_signal_handler (int signo, MonoSignalHandler handler, int flags)
 	sa.sa_sigaction = handler;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = SA_SIGINFO | flags;
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+
+/*Apple likes to deliver SIGBUS for *0 */
+#ifdef HOST_DARWIN
+	if (signo == SIGSEGV || signo == SIGBUS) {
+#else
+	if (signo == SIGSEGV) {
+#endif
+		sa.sa_flags |= SA_ONSTACK;
+
+		/*
+		 * libgc will crash when trying to do stack marking for threads which are on
+		 * an altstack, so delay the suspend signal after the signal handler has
+		 * executed.
+		 */
+		if (mono_gc_get_suspend_signal () != -1)
+			sigaddset (&sa.sa_mask, mono_gc_get_suspend_signal ());
+	}
+#endif
 	if (signo == SIGSEGV) {
 		/*
 		 * Delay abort signals while handling SIGSEGVs since they could go unnoticed.

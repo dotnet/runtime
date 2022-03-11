@@ -4128,6 +4128,9 @@ mono_emit_stack_alloc (MonoCompile *cfg, guchar *code, MonoInst* tree)
 
 #if defined(TARGET_WIN32)
 	need_touch = TRUE;
+#elif defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
+	if (!(tree->flags & MONO_INST_INIT))
+		need_touch = TRUE;
 #endif
 
 	if (need_touch) {
@@ -7686,12 +7689,59 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #else
 	if (alloc_size) {
 		/* See mono_emit_stack_alloc */
+#if defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
+		guint32 remaining_size = alloc_size;
+
+		/* Use a loop for large sizes */
+		if (remaining_size > 10 * 0x1000) {
+			amd64_mov_reg_imm (code, X86_EAX, remaining_size / 0x1000);
+			guint8 *label = code;
+			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 0x1000);
+			amd64_test_membase_reg (code, AMD64_RSP, 0, AMD64_RSP);
+			amd64_alu_reg_imm (code, X86_SUB, AMD64_RAX, 1);
+			amd64_alu_reg_imm (code, X86_CMP, AMD64_RAX, 0);
+			guint8 *label2 = code;
+			x86_branch8 (code, X86_CC_NE, 0, FALSE);
+			amd64_patch (label2, label);
+			if (cfg->arch.omit_fp) {
+				cfa_offset += (remaining_size / 0x1000) * 0x1000;
+				mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
+			}
+
+			remaining_size = remaining_size % 0x1000;
+			set_code_cursor (cfg, code);
+		}
+
+		guint32 required_code_size = ((remaining_size / 0x1000) + 1) * 11; /*11 is the max size of amd64_alu_reg_imm + amd64_test_membase_reg*/
+		code = realloc_code (cfg, required_code_size);
+
+		while (remaining_size >= 0x1000) {
+			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 0x1000);
+ 			if (cfg->arch.omit_fp) {
+				cfa_offset += 0x1000;
+ 				mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
+			}
+			async_exc_point (code);
+
+			amd64_test_membase_reg (code, AMD64_RSP, 0, AMD64_RSP);
+			remaining_size -= 0x1000;
+		}
+		if (remaining_size) {
+			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, remaining_size);
+ 			if (cfg->arch.omit_fp) {
+				cfa_offset += remaining_size;
+ 				mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
+				async_exc_point (code);
+			}
+		}
+#else
 		amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, alloc_size);
 		if (cfg->arch.omit_fp) {
 			cfa_offset += alloc_size;
 			mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
 			async_exc_point (code);
 		}
+#endif
 	}
 #endif
 

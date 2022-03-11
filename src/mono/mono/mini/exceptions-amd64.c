@@ -829,6 +829,110 @@ mono_arch_ip_from_context (void *sigctx)
 #endif
 }
 
+static MonoObject*
+restore_soft_guard_pages (void)
+{
+	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
+	if (jit_tls->stack_ovf_guard_base)
+		mono_mprotect (jit_tls->stack_ovf_guard_base, jit_tls->stack_ovf_guard_size, MONO_MMAP_NONE);
+
+	if (jit_tls->stack_ovf_pending) {
+		jit_tls->stack_ovf_pending = 0;
+		return (MonoObject *)mini_get_stack_overflow_ex ();
+	}
+
+	return NULL;
+}
+
+/*
+ * this function modifies mctx so that when it is restored, it
+ * won't execcute starting at mctx.eip, but in a function that
+ * will restore the protection on the soft-guard pages and return back to
+ * continue at mctx.eip.
+ */
+static void
+prepare_for_guard_pages (MonoContext *mctx)
+{
+	gpointer *sp;
+	sp = (gpointer *)(mctx->gregs [AMD64_RSP]);
+	sp -= 1;
+	/* the return addr */
+	sp [0] = (gpointer)(mctx->gregs [AMD64_RIP]);
+	mctx->gregs [AMD64_RIP] = (guint64)restore_soft_guard_pages;
+	mctx->gregs [AMD64_RSP] = (guint64)sp;
+}
+
+static void
+altstack_handle_and_restore (MonoContext *ctx, MonoObject *obj, guint32 flags)
+{
+	MonoContext mctx;
+	MonoJitInfo *ji = mini_jit_info_table_find (MONO_CONTEXT_GET_IP (ctx));
+	gboolean stack_ovf = (flags & 1) != 0;
+	gboolean nullref = (flags & 2) != 0;
+
+	if (!ji || (!stack_ovf && !nullref)) {
+		mono_handle_native_crash (mono_get_signame (SIGSEGV), ctx, NULL);
+		// if couldn't dump or if mono_handle_native_crash returns, abort
+		abort ();
+	}
+
+	mctx = *ctx;
+
+	mono_handle_exception (&mctx, obj);
+	if (stack_ovf) {
+		MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
+		jit_tls->stack_ovf_pending = 1;
+		prepare_for_guard_pages (&mctx);
+	}
+	mono_restore_context (&mctx);
+}
+
+void
+mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, gpointer fault_addr, gboolean stack_ovf)
+{
+#if defined(MONO_ARCH_USE_SIGACTION)
+	MonoException *exc = NULL;
+	gpointer *sp;
+	MonoJitTlsData *jit_tls = NULL;
+	MonoContext *copied_ctx = NULL;
+	gboolean nullref = TRUE;
+
+	jit_tls = mono_tls_get_jit_tls ();
+	g_assert (jit_tls);
+
+	/* use TLS as temporary storage as we want to avoid
+	 * (1) stack allocation on the application stack
+	 * (2) calling malloc, because it is not async-safe
+	 * (3) using a global storage, because this function is not reentrant
+	 *
+	 * tls->orig_ex_ctx is used by the stack walker, which shouldn't be running at this point.
+	 */
+	copied_ctx = &jit_tls->orig_ex_ctx;
+
+	if (!mono_is_addr_implicit_null_check (fault_addr))
+		nullref = FALSE;
+
+	if (stack_ovf)
+		exc = mini_get_stack_overflow_ex ();
+
+	/* setup the call frame on the application stack so that control is
+	 * returned there and exception handling can continue. we want the call
+	 * frame to be minimal as possible, for example no argument passing that
+	 * requires allocation on the stack, as this wouldn't be encoded in unwind
+	 * information for the caller frame.
+	 */
+	sp = (gpointer *) ALIGN_DOWN_TO (UCONTEXT_REG_RSP (sigctx), 16);
+	sp [-1] = (gpointer)UCONTEXT_REG_RIP (sigctx);
+	mono_sigctx_to_monoctx (sigctx, copied_ctx);
+	/* at the return from the signal handler execution starts in altstack_handle_and_restore() */
+	UCONTEXT_REG_RIP (sigctx) = (unsigned long)altstack_handle_and_restore;
+	UCONTEXT_REG_RSP (sigctx) = (unsigned long)(sp - 1);
+	UCONTEXT_REG_RDI (sigctx) = (unsigned long)(copied_ctx);
+	UCONTEXT_REG_RSI (sigctx) = (guint64)exc;
+	UCONTEXT_REG_RDX (sigctx) = (stack_ovf ? 1 : 0) | (nullref ? 2 : 0);
+#endif
+}
+
 #ifndef DISABLE_JIT
 GSList*
 mono_amd64_get_exception_trampolines (gboolean aot)

@@ -940,6 +940,8 @@ setup_jit_tls_data (gpointer stack_start, MonoAbortFunction abort_func)
 	mono_arch_tls_init ();
 #endif
 
+	mono_setup_altstack (jit_tls);
+
 	return jit_tls;
 }
 
@@ -949,6 +951,7 @@ free_jit_tls_data (MonoJitTlsData *jit_tls)
 	//This happens during AOT cuz the thread is never attached
 	if (!jit_tls)
 		return;
+	mono_free_altstack (jit_tls);
 
 	if (jit_tls->interp_context)
 		mini_get_interp_callbacks ()->free_context (jit_tls->interp_context);
@@ -3618,7 +3621,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	gpointer fault_addr = NULL;
 	MonoContext mctx;
 
-#if defined(HAVE_SIG_INFO)
+#if defined(HAVE_SIG_INFO) || defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 #endif
 #ifdef HAVE_SIG_INFO
@@ -3669,6 +3672,43 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		ji = mono_jit_info_table_find_internal (ip, TRUE, TRUE);
 	}
 
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+	if (mono_handle_soft_stack_ovf (jit_tls, ji, ctx, info, (guint8*)info->si_addr))
+		return;
+
+	/* info->si_addr seems to be NULL on some kernels when handling stack overflows */
+	fault_addr = info->si_addr;
+	if (fault_addr == NULL) {
+		fault_addr = MONO_CONTEXT_GET_SP (&mctx);
+	}
+
+	if (jit_tls && jit_tls->stack_size &&
+		ABS ((guint8*)fault_addr - ((guint8*)jit_tls->end_of_stack - jit_tls->stack_size)) < 8192 * sizeof (gpointer)) {
+		/*
+		 * The hard-guard page has been hit: there is not much we can do anymore
+		 * Print a hopefully clear message and abort.
+		 */
+		mono_handle_hard_stack_ovf (jit_tls, ji, &mctx, (guint8*)info->si_addr);
+		g_assert_not_reached ();
+	} else {
+		/* The original handler might not like that it is executed on an altstack... */
+		if (!ji && mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
+			return;
+
+#ifdef TARGET_AMD64
+		/* exceptions-amd64.c handles the check itself */
+		mono_arch_handle_altstack_exception (ctx, info, info->si_addr, FALSE);
+#else
+		if (mono_is_addr_implicit_null_check (info->si_addr)) {
+			mono_arch_handle_altstack_exception (ctx, info, info->si_addr, FALSE);
+		} else {
+			// FIXME: This shouldn't run on the altstack
+			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, info);
+		}
+#endif
+	}
+#else
+
 	if (!ji) {
 		if (!mono_do_crash_chaining && mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
@@ -3690,6 +3730,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 			return;
 		}
 	}
+#endif
 }
 
 #ifdef MONO_SIG_HANDLER_DEBUG

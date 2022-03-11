@@ -1058,6 +1058,116 @@ mono_arch_handle_exception (void *sigctx, gpointer obj)
 #endif
 }
 
+#if defined (MONO_ARCH_USE_SIGACTION) && !defined (MONO_CROSS_COMPILE)
+static MonoObject*
+restore_soft_guard_pages (void)
+{
+	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
+
+	if (jit_tls->stack_ovf_guard_base)
+		mono_mprotect (jit_tls->stack_ovf_guard_base, jit_tls->stack_ovf_guard_size, MONO_MMAP_NONE);
+
+	if (jit_tls->stack_ovf_pending) {
+		jit_tls->stack_ovf_pending = 0;
+		return (MonoObject *) mini_get_stack_overflow_ex ();
+	}
+	return NULL;
+}
+
+/*
+ * this function modifies mctx so that when it is restored, it
+ * won't execcute starting at mctx.eip, but in a function that
+ * will restore the protection on the soft-guard pages and return back to
+ * continue at mctx.eip.
+ */
+static void
+prepare_for_guard_pages (MonoContext *mctx)
+{
+	gpointer *sp;
+	sp = (gpointer*)(mctx->esp);
+	sp -= 1;
+	/* the return addr */
+	sp [0] = (gpointer)(mctx->eip);
+	mctx->eip = (gsize)restore_soft_guard_pages;
+	mctx->esp = (gsize)sp;
+}
+
+static void
+altstack_handle_and_restore (MonoContext *ctx, gpointer obj, gboolean stack_ovf)
+{
+	MonoContext mctx;
+
+	mctx = *ctx;
+
+	mono_handle_exception (&mctx, (MonoObject*)obj);
+	if (stack_ovf) {
+		MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
+		jit_tls->stack_ovf_pending = 1;
+		prepare_for_guard_pages (&mctx);
+	}
+	mono_restore_context (&mctx);
+}
+#endif
+
+void
+mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, gpointer fault_addr, gboolean stack_ovf)
+{
+#if defined (MONO_ARCH_USE_SIGACTION) && !defined (MONO_CROSS_COMPILE)
+	MonoException *exc = NULL;
+	ucontext_t *ctx = (ucontext_t*)sigctx;
+	MonoJitInfo *ji = mini_jit_info_table_find ((gpointer)UCONTEXT_REG_EIP (ctx));
+	gpointer *sp;
+	int frame_size;
+
+	/* if we didn't find a managed method for the ip address and it matches the fault
+	 * address, we assume we followed a broken pointer during an indirect call, so
+	 * we try the lookup again with the return address pushed on the stack
+	 */
+	if (!ji && fault_addr == (gpointer)UCONTEXT_REG_EIP (ctx)) {
+		glong *sp = (glong*)UCONTEXT_REG_ESP (ctx);
+		ji = mini_jit_info_table_find ((gpointer)sp [0]);
+		if (ji)
+			UCONTEXT_REG_EIP (ctx) = sp [0];
+	}
+	if (stack_ovf)
+		exc = mini_get_stack_overflow_ex ();
+	if (!ji) {
+		MonoContext mctx;
+		mono_sigctx_to_monoctx (sigctx, &mctx);
+		mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, siginfo);
+		abort ();
+	}
+	/* setup a call frame on the real stack so that control is returned there
+	 * and exception handling can continue.
+	 * If this was a stack overflow the caller already ensured the stack pages
+	 * needed have been unprotected.
+	 * The frame looks like:
+	 *   ucontext struct
+	 *   test_only arg
+	 *   exception arg
+	 *   ctx arg
+	 *   return ip
+	 */
+	// FIXME: test_only is no more.
+ 	frame_size = sizeof (MonoContext) + sizeof (gpointer) * 4;
+	frame_size += 15;
+	frame_size &= ~15;
+	sp = (gpointer*)(UCONTEXT_REG_ESP (ctx) & ~15);
+	sp = (gpointer*)((char*)sp - frame_size);
+	/* the incoming arguments are aligned to 16 bytes boundaries, so the return address IP
+	 * goes at sp [-1]
+	 */
+	sp [-1] = (gpointer)UCONTEXT_REG_EIP (ctx);
+	sp [0] = sp + 4;
+	sp [1] = exc;
+	sp [2] = (gpointer)stack_ovf;
+	mono_sigctx_to_monoctx (sigctx, (MonoContext*)(sp + 4));
+	/* at the return form the signal handler execution starts in altstack_handle_and_restore() */
+	UCONTEXT_REG_EIP (ctx) = (unsigned long)altstack_handle_and_restore;
+	UCONTEXT_REG_ESP (ctx) = (unsigned long)(sp - 1);
+#endif
+}
+
 /*
  * mono_arch_setup_resume_sighandler_ctx:
  *

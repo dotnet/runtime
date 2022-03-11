@@ -92,6 +92,7 @@ typedef VOID (NTAPI* RtlDeleteGrowableFunctionTablePtr)(
 #endif /* HOST_WIN32 */
 
 #ifdef sun    // Solaris x86
+#  undef SIGSEGV_ON_ALTSTACK
 #  define MONO_ARCH_NOMAP32BIT
 
 struct sigcontext {
@@ -380,6 +381,12 @@ typedef struct {
 #if !defined( HOST_WIN32 ) && !defined(__HAIKU__) && defined (HAVE_SIGACTION)
 
 #define MONO_ARCH_USE_SIGACTION 1
+
+#ifdef HAVE_WORKING_SIGALTSTACK
+
+#define MONO_ARCH_SIGSEGV_ON_ALTSTACK
+
+#endif
 
 #endif /* !HOST_WIN32 */
 

@@ -2115,7 +2115,7 @@ mono_emit_stack_alloc (MonoCompile *cfg, guchar *code, MonoInst* tree)
 	int sreg = tree->sreg1;
 	int need_touch = FALSE;
 
-#if defined (TARGET_WIN32)
+#if defined (TARGET_WIN32) || defined (MONO_ARCH_SIGSEGV_ON_ALTSTACK)
 	need_touch = TRUE;
 #endif
 
@@ -5123,7 +5123,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (alloc_size) {
 		/* See mono_emit_stack_alloc */
-#if defined (TARGET_WIN32)
+#if defined (TARGET_WIN32) || defined (MONO_ARCH_SIGSEGV_ON_ALTSTACK)
 		guint32 remaining_size = alloc_size;
 		/*FIXME handle unbounded code expansion, we should use a loop in case of more than X interactions*/
 		guint32 required_code_size = ((remaining_size / 0x1000) + 1) * 8; /*8 is the max size of x86_alu_reg_imm + x86_test_membase_reg*/

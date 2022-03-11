@@ -2861,6 +2861,12 @@ mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data)
 	return result;
 }
 
+void
+mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer altstack, gint32 altstack_size)
+{
+	// FIXME:
+}
+
 guint8*
 mono_gc_get_card_table (int *shift_bits, gpointer *mask)
 {
