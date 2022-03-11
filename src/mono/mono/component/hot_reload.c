@@ -1413,7 +1413,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 		case MONO_TABLE_PROPERTYMAP: {
 			if (func_code == ENC_FUNC_ADD_PROPERTY) {
 				g_assert (i + 1 < rows);
-				i++; /* skip to the next record */
+				i++; /* skip the next record */
 				continue;
 			}
 			if (!is_addition) {
@@ -1428,6 +1428,21 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 		case MONO_TABLE_PROPERTY: {
 			/* ok */
 			g_assert (func_code == ENC_FUNC_DEFAULT);
+			break;
+		}
+		case MONO_TABLE_EVENTMAP: {
+			if (func_code == ENC_FUNC_ADD_EVENT) {
+				g_assert (i + 1 < rows);
+				i++; /* skip the next record */
+				continue;
+			}
+			if (!is_addition) {
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support patching of existing table cols.", i, log_token);
+				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing table cols. token=0x%08x", log_token);
+				unsupported_edits = TRUE;
+				continue;
+			}
+			/* new rows, ok */
 			break;
 		}
 		case MONO_TABLE_METHODSEMANTICS: {
@@ -1796,6 +1811,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 
 	uint32_t add_member_typedef = 0;
 	uint32_t add_property_propertymap = 0;
+	uint32_t add_event_eventmap = 0;
 
 	gboolean assemblyref_updated = FALSE;
 	for (int i = 0; i < rows ; ++i) {
@@ -1837,6 +1853,12 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 		case ENC_FUNC_ADD_PROPERTY: {
 			g_assert (token_table == MONO_TABLE_PROPERTYMAP);
 			add_property_propertymap = log_token;
+			break;
+		}
+
+		case ENC_FUNC_ADD_EVENT: {
+			g_assert (token_table = MONO_TABLE_EVENTMAP);
+			add_event_eventmap = log_token;
 			break;
 		}
 
@@ -2055,6 +2077,59 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 				add_property_propertymap = 0;
 			}
 			/* assuming that property attributes and type haven't changed. */
+			break;
+		}
+		case MONO_TABLE_EVENTMAP: {
+			switch (func_code) {
+			case ENC_FUNC_DEFAULT:
+				/* adding a new eventmap - parent could be new or existing class, but it didn't have an eventmap before */
+				g_assert (is_addition);
+				break;
+			case ENC_FUNC_ADD_EVENT:
+				/* adding a new event to an eventmap. could be new or existing eventmap. */
+				break;
+			default:
+				g_assert_not_reached (); /* unexpected func code */
+			}
+			uint32_t cols[MONO_EVENT_MAP_SIZE];
+			mono_metadata_decode_row (&image_base->tables [MONO_TABLE_EVENTMAP], token_index - 1, cols, MONO_EVENT_MAP_SIZE);
+
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: eventmap parent = 0x%08x, evts = 0x%08x\n", cols[MONO_EVENT_MAP_PARENT], cols [MONO_EVENT_MAP_EVENTLIST]);
+			break;
+			
+		}
+		case MONO_TABLE_EVENT: {
+			if (!is_addition)
+				/* FIXME: use DeltaInfo:prev_gen_rows instead of image_base */
+				g_assert (token_index <= table_info_get_rows (&image_base->tables [token_table]));
+			else {
+				/* TODO: adding a event. */
+				g_assert (add_event_eventmap != 0);
+
+				uint32_t parent_type_token = mono_metadata_decode_row_col (&image_base->tables [MONO_TABLE_EVENTMAP], mono_metadata_token_index (add_event_eventmap) - 1, MONO_EVENT_MAP_PARENT);
+				parent_type_token = mono_metadata_make_token (MONO_TABLE_TYPEDEF, parent_type_token);
+
+				g_assert (parent_type_token != 0);
+
+				if (pass2_context_is_skeleton (ctx, parent_type_token)) {
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new event 0x%08x to new class 0x%08x", log_token, parent_type_token);
+					/* nothing to do, actually.  the metadata lookup machinery will find it by doing a linear scan of the table. */
+					break;
+				} else {
+					MonoClass *add_event_klass = mono_class_get_checked (image_base, parent_type_token, error);
+					if (!is_ok (error)) {
+						mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Can't get class with token 0x%08x due to: %s", parent_type_token, mono_error_get_message (error));
+						return FALSE;
+					}
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new event 0x%08x to class %s.%s", log_token, m_class_get_name_space (add_event_klass), m_class_get_name (add_event_klass));
+
+					/* TODO: metadata-update: add a new MonoEventInfo to the bag on the class? */
+					break;
+				}
+
+				add_event_eventmap = 0;
+			}
+			/* assuming that event attributes and type haven't changed. */
 			break;
 		}
 		case MONO_TABLE_CUSTOMATTRIBUTE: {
