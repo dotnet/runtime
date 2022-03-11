@@ -40,7 +40,7 @@ namespace
         pal::dll_t _dll;
     };
 
-    HRESULT activate_class(comhost_exports &comhost, REFCLSID clsid)
+    HRESULT activate_class(const comhost_exports &comhost, REFCLSID clsid)
     {
         IClassFactory *classFactory;
         HRESULT hr = comhost.get_class_obj_fn(clsid, __uuidof(IClassFactory), (void**)&classFactory);
