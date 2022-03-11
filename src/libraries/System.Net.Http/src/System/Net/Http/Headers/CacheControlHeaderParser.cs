@@ -27,9 +27,9 @@ namespace System.Net.Http.Headers
             bool isInvalidValue = true;
             if (storeValue is not null)
             {
-                if (storeValue is List<object> list)
+                foreach (object item in list)
                 {
-                    foreach (object item in list)
+                    if (item is CacheControlHeaderValue cacheControl)
                     {
                         if (item is not HttpHeaders.InvalidValue)
                         {
