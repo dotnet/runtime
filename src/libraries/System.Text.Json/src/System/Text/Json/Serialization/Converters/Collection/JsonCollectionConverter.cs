@@ -83,6 +83,7 @@ namespace System.Text.Json.Serialization
 
                 CreateCollection(ref reader, ref state, options);
 
+                state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
                 JsonConverter<TElement> elementConverter = GetElementConverter(elementTypeInfo);
                 if (elementConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
                 {
@@ -141,6 +142,8 @@ namespace System.Text.Json.Serialization
                     {
                         ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
                     }
+
+                    state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
                 }
 
                 // Handle the metadata properties.
@@ -165,7 +168,6 @@ namespace System.Text.Json.Serialization
                 if (state.Current.ObjectState < StackFrameObjectState.CreatedObject)
                 {
                     CreateCollection(ref reader, ref state, options);
-                    state.Current.JsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
                 }
 

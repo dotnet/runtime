@@ -28,10 +28,6 @@
     <!-- During an official build, build the identity package only in the allconfigurations build, otherwise always. -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\runtime.native.*.proj"
                       Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' or '$(BuildAllConfigurations)' == 'true'" />
-    <!-- During an official Build, build the rid specific package matching the OutputRid only outside of an allconfigurations build and only when targeting the CoreCLR runtime.
-         The limitation on the CoreCLR runtime is entirely artificial but avoids duplicate assets being publish. -->
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\runtime.$(OutputRid).*.proj"
-                      Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' or ('$(BuildAllConfigurations)' != 'true' and '$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)')" />
   </ItemGroup>
 
 </Project>

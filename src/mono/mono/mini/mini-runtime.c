@@ -4461,7 +4461,9 @@ mini_init (const char *filename, const char *runtime_version)
 	callbacks.get_ftnptr = get_ftnptr_for_method;
 #endif
 	callbacks.is_interpreter_enabled = mini_is_interpreter_enabled;
+#if ENABLE_WEAK_ATTR
 	callbacks.get_weak_field_indexes = mono_aot_get_weak_field_indexes;
+#endif
 
 	callbacks.metadata_update_published = mini_invalidate_transformed_interp_methods;
 	callbacks.interp_jit_info_foreach = mini_interp_jit_info_foreach;
@@ -4771,12 +4773,6 @@ register_icalls (void)
 	register_opcode_emulation (OP_FCONV_TO_U4, __emul_fconv_to_u4, mono_icall_sig_uint32_double, mono_fconv_u4, FALSE);
 	register_opcode_emulation (OP_FCONV_TO_U8, __emul_fconv_to_u8, mono_icall_sig_ulong_double, mono_fconv_u8, FALSE);
 
-#if TARGET_SIZEOF_VOID_P == 4
-	register_opcode_emulation (OP_FCONV_TO_I, __emul_fconv_to_i, mono_icall_sig_int32_double, mono_fconv_i4, FALSE);
-#else
-	register_opcode_emulation (OP_FCONV_TO_I, __emul_fconv_to_i, mono_icall_sig_long_double, mono_fconv_i8, FALSE);
-#endif
-
 	register_opcode_emulation (OP_FCONV_TO_OVF_I1, __emul_fconv_to_ovf_i1, mono_icall_sig_int8_double, mono_fconv_ovf_i1, FALSE);
 	register_opcode_emulation (OP_FCONV_TO_OVF_I2, __emul_fconv_to_ovf_i2, mono_icall_sig_int16_double, mono_fconv_ovf_i2, FALSE);
 	register_opcode_emulation (OP_FCONV_TO_OVF_I4, __emul_fconv_to_ovf_i4, mono_icall_sig_int32_double, mono_fconv_ovf_i4, FALSE);
@@ -4803,12 +4799,6 @@ register_icalls (void)
 	register_opcode_emulation (OP_RCONV_TO_U2, __emul_rconv_to_u2, mono_icall_sig_uint16_float, mono_rconv_u2, FALSE);
 	register_opcode_emulation (OP_RCONV_TO_U4, __emul_rconv_to_u4, mono_icall_sig_uint32_float, mono_rconv_u4, FALSE);
 	register_opcode_emulation (OP_RCONV_TO_U8, __emul_rconv_to_u8, mono_icall_sig_ulong_float, mono_rconv_u8, FALSE);
-
-#if TARGET_SIZEOF_VOID_P == 4
-	register_opcode_emulation (OP_RCONV_TO_I, __emul_rconv_to_i, mono_icall_sig_int32_float, mono_rconv_i4, FALSE);
-#else
-	register_opcode_emulation (OP_RCONV_TO_I, __emul_rconv_to_i, mono_icall_sig_long_float, mono_rconv_i8, FALSE);
-#endif
 
 	register_opcode_emulation (OP_RCONV_TO_OVF_I1, __emul_rconv_to_ovf_i1, mono_icall_sig_int8_float, mono_rconv_ovf_i1, FALSE);
 	register_opcode_emulation (OP_RCONV_TO_OVF_I2, __emul_rconv_to_ovf_i2, mono_icall_sig_int16_float, mono_rconv_ovf_i2, FALSE);
