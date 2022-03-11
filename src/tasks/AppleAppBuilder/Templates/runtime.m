@@ -203,7 +203,7 @@ unhandled_exception_handler (MonoObject *exc, void *user_data)
     free (type_name);
 
     os_log_info (OS_LOG_DEFAULT, "%@", msg);
-    os_log_info (OS_LOG_DEFAULT, "%s: %d", EXIT_CODE_TAG, 1);
+    os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", 1);
     exit (1);
 }
 
@@ -212,7 +212,7 @@ log_callback (const char *log_domain, const char *log_level, const char *message
 {
     os_log_info (OS_LOG_DEFAULT, "(%{public}s %{public}s) %{public}s", log_domain, log_level, message);
     if (fatal) {
-        os_log_info (OS_LOG_DEFAULT, "%s: %d", EXIT_CODE_TAG, 1);
+        os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", 1);
         exit (1);
     }
 }
@@ -369,7 +369,7 @@ mono_ios_runtime_init (void)
 
     res = mono_jit_exec (mono_domain_get (), assembly, argi, managed_argv);
     // Print this so apps parsing logs can detect when we exited
-    os_log_info (OS_LOG_DEFAULT, "%s: %d", EXIT_CODE_TAG, res);
+    os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", res);
 
     mono_jit_cleanup (domain);
 
