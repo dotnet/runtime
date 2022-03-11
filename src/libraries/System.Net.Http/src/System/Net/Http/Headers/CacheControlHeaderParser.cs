@@ -24,6 +24,7 @@ namespace System.Net.Http.Headers
             out object? parsedValue)
         {
             CacheControlHeaderValue? temp = null;
+            bool isInvalidValue = true;
             if (storeValue is not null)
             {
                 if (storeValue is List<object> list)
@@ -32,6 +33,7 @@ namespace System.Net.Http.Headers
                     {
                         if (item is not HttpHeaders.InvalidValue)
                         {
+                            isInvalidValue = false;
                             temp = item as CacheControlHeaderValue;
                             break;
                         }
@@ -41,11 +43,12 @@ namespace System.Net.Http.Headers
                 {
                     if (storeValue is not HttpHeaders.InvalidValue)
                     {
+                        isInvalidValue = false;
                         temp = storeValue as CacheControlHeaderValue;
                     }
                 }
             }
-            Debug.Assert(storeValue == null || temp != null, "'storeValue' is not of type CacheControlHeaderValue");
+            Debug.Assert(isInvalidValue || storeValue == null || temp != null, "'storeValue' is not of type CacheControlHeaderValue");
 
             int resultLength = CacheControlHeaderValue.GetCacheControlLength(value, startIndex, temp, out temp);
 
