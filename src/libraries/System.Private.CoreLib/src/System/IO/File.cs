@@ -322,6 +322,13 @@ namespace System.IO
             return ReadLinesIterator.CreateIterator(path, encoding);
         }
 
+        public static IAsyncEnumerable<string> ReadLinesAsync(string path, Encoding encoding, CancellationToken cancellationToken = default)
+        {
+            Validate(path, encoding);
+
+            return new AsyncReadLinesEnumerable(path, encoding, AsyncStreamReader(path, encoding), cancellationToken);
+        }
+
         public static void WriteAllLines(string path, string[] contents)
             => WriteAllLines(path, (IEnumerable<string>)contents);
 
