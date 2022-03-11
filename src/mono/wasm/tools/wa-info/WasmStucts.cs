@@ -14,6 +14,8 @@ namespace WebAssemblyInfo
         public Instruction[] Block;
         public Instruction[] Block2;
 
+        public bool TryDelegate;
+
         public UInt32 Idx;
         public UInt32 Idx2;
         public Int32 I32;
@@ -41,11 +43,17 @@ namespace WebAssemblyInfo
                 case Opcode.Block:
                 case Opcode.Loop:
                 case Opcode.If:
+                case Opcode.Try:
                     var str = $"{opStr}\n{BlockToString(Block, reader)}";
-                    return str + ((Block2 == null || Block2.Length < 1) ? "" : $"else\n{BlockToString(Block2, reader)}");
+                    str += ((Block2 == null || Block2.Length < 1) ? "" : $"else\n{BlockToString(Block2, reader)}");
+                    if (Opcode == Opcode.Try && TryDelegate)
+                        str += $"\n{prefix}{Opcode.Delegate.ToString().ToLower().Replace("_", ".")} {Idx}";
+
+                    return str;
                 case Opcode.Local_Get:
                 case Opcode.Local_Set:
                 case Opcode.Local_Tee:
+                case Opcode.Rethrow:
                     return $"{opStr} ${Idx}";
                 case Opcode.Global_Get:
                 case Opcode.Global_Set:
@@ -55,6 +63,8 @@ namespace WebAssemblyInfo
                 case Opcode.Call_Indirect:
                     var table = Idx2 == 0 ? "" : $" table:{Idx2}";
                     return $"{opStr} {FunctionType(Idx, reader)}{table}";
+                case Opcode.Catch:
+                case Opcode.Throw:
                 case Opcode.I32_Const:
                     return $"{opStr} {I32}";
                 case Opcode.I64_Const:

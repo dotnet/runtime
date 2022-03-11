@@ -271,6 +271,7 @@ namespace WebAssemblyInfo
 
         public void DumpBytes(int count)
         {
+            var pos = Reader.BaseStream.Position;
             Console.WriteLine("bytes");
 
             for (int i = 0; i < count; i++)
@@ -279,6 +280,7 @@ namespace WebAssemblyInfo
             }
 
             Console.WriteLine();
+            Reader.BaseStream.Position = pos;
         }
 
         Instruction ReadInstruction(Opcode opcode)
@@ -287,19 +289,47 @@ namespace WebAssemblyInfo
             instruction.Opcode = opcode;
             Opcode op;
 
+            // Console.WriteLine($"read opcode: 0x{opcode:x} {opcode}");
             switch (opcode)
             {
                 case Opcode.Block:
                 case Opcode.Loop:
                 case Opcode.If:
-                    //DumpBytes(16);
+                case Opcode.Try:
+                    // DumpBytes(64);
                     instruction.BlockType = ReadBlockType();
 
-                    //Console.WriteLine($"if blocktype: {instruction.BlockType.Kind}");
+                    // Console.WriteLine($"blocktype: {instruction.BlockType.Kind}");
+                    var end = opcode switch
+                    {
+                        Opcode.If => Opcode.Else,
+                        Opcode.Try => Opcode.Delegate,
+                        _ => Opcode.End,
+                    };
+                    (instruction.Block, op) = ReadBlock(end);
 
-                    (instruction.Block, op) = ReadBlock(opcode == Opcode.If ? Opcode.Else : Opcode.End);
                     if (op == Opcode.Else)
                         (instruction.Block2, _) = ReadBlock();
+                    else if (op == Opcode.Delegate)
+                    {
+                        instruction.TryDelegate = true;
+                        instruction.Idx = ReadU32();
+                    }
+                    break;
+                case Opcode.Catch:
+                case Opcode.Catch_All:
+                    // DumpBytes(16);
+                    if (opcode != Opcode.Catch_All)
+                    {
+                        instruction.I32 = ReadI32();
+                        Console.WriteLine($"i32: {instruction.I32}");
+                    }
+                    break;
+                case Opcode.Throw:
+                    instruction.I32 = ReadI32();
+                    break;
+                case Opcode.Rethrow:
+                    instruction.Idx = ReadU32();
                     break;
                 case Opcode.Memory_Size:
                 case Opcode.Memory_Grow:
@@ -1121,6 +1151,7 @@ namespace WebAssemblyInfo
             if (string.IsNullOrEmpty(name))
                 name = $"idx:{idx}";
 
+            //Console.WriteLine($"read func {name}");
             Console.WriteLine($"{functionTypes[functions[idx].TypeIdx].ToString(name)}\n{funcsCode[idx].ToString(this)}");
         }
 
