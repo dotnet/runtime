@@ -126,6 +126,13 @@ namespace Microsoft.Extensions.Caching.Memory
         public long? Size { get { throw null; } set { } }
         public System.TimeSpan? SlidingExpiration { get { throw null; } set { } }
     }
+    public partial struct MemoryCacheStatistics
+    {
+        public long CurrentEntryCount { get { throw null; } init { throw null; } }
+        public long? CurrentSize { get { throw null; } init { throw null; } }
+        public long TotalHits { get { throw null; } init { throw null; } }
+        public long TotalRequests { get { throw null; } init { throw null; } }
+    }
     public partial class PostEvictionCallbackRegistration
     {
         public PostEvictionCallbackRegistration() { }

@@ -33,6 +33,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~MemoryCache() { }
+        public Microsoft.Extensions.Caching.Memory.MemoryCacheStatistics GetCurrentStatistics() { throw null; }
         public void Remove(object key) { }
         public bool TryGetValue(object key, out object? result) { throw null; }
     }

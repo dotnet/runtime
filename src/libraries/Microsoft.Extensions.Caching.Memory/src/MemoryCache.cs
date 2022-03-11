@@ -27,6 +27,9 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private CoherentState _coherentState;
         private bool _disposed;
+        private readonly object _sync = new object();
+        private long _totalHits;
+        private long _totalRequests;
         private DateTimeOffset _lastExpirationScan;
 
         /// <summary>
@@ -197,6 +200,22 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <inheritdoc />
         public bool TryGetValue(object key!!, out object? result)
         {
+            bool gotValue = TryGetValueInternal(key, out result);
+            lock (_sync)
+            {
+                _totalRequests++;
+                if (gotValue)
+                {
+                    _totalHits++;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool TryGetValueInternal(object key!!, out object? result)
+        {
             CheckDisposed();
 
             DateTimeOffset utcNow = _options.Clock!.UtcNow;
@@ -268,6 +287,22 @@ namespace Microsoft.Extensions.Caching.Memory
                 entry.Value.SetExpired(EvictionReason.Removed);
                 entry.Value.InvokeEvictionCallbacks();
             }
+        }
+
+        public MemoryCacheStatistics GetCurrentStatistics()
+        {
+            lock (_sync)
+            {
+                var currentStatistics = new MemoryCacheStatistics()
+                {
+                    TotalRequests = _totalRequests,
+                    TotalHits = _totalHits,
+                    CurrentEntryCount = Count,
+                    CurrentSize = Size
+                };
+                return currentStatistics;
+            }
+
         }
 
         internal void EntryExpired(CacheEntry entry)
