@@ -21,13 +21,6 @@
     <type fullname="System.SZArrayHelper">
       <method name=".ctor" />
     </type>
-
-    <!-- Enables the .NET IJW host to load an in-memory module as a .NET assembly.
-         These are always rooted to ensure native calls get trimmer related errors
-         but will be trimmed away by the related feature switch -->
-    <type fullname="Internal.Runtime.InteropServices.InMemoryAssemblyLoader">
-      <method name="LoadInMemoryAssembly" />
-    </type>
   </assembly>
 
   <!-- The private Event methods are accessed by private reflection in the base EventSource class. -->

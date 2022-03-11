@@ -10,5 +10,13 @@
       <method name="RegisterClassForTypeInternal" />
       <method name="UnregisterClassForTypeInternal" />
     </type>
+
+    <!-- Enables the .NET IJW host to load an in-memory module as a .NET assembly.
+        These are always rooted to ensure native calls get trimmer related errors
+        but will be trimmed away by the related feature switch -->
+    <type fullname="Internal.Runtime.InteropServices.InMemoryAssemblyLoader">
+      <method name="LoadInMemoryAssembly" />
+      <method name="LoadInMemoryAssemblyInContext" />
+    </type>
   </assembly>
 </linker>

@@ -34,7 +34,7 @@ namespace
 HANDLE g_heapHandle;
 
 bool patch_vtable_entries(PEDecoder& pe)
-{    
+{
     size_t numFixupRecords;
     IMAGE_COR_VTABLEFIXUP* pFixupTable = pe.GetVTableFixups(&numFixupRecords);
 
@@ -68,7 +68,7 @@ bool patch_vtable_entries(PEDecoder& pe)
     }
 
     trace::setup();
-    
+
     error_writer_scope_t writer_scope(swallow_trace);
 
     size_t currentThunk = 0;
@@ -115,7 +115,7 @@ extern "C" std::uintptr_t __stdcall start_runtime_and_get_target_address(std::ui
 {
     trace::setup();
     error_writer_scope_t writer_scope(swallow_trace);
-    
+
     bootstrap_thunk *pThunk = bootstrap_thunk::get_thunk_from_cookie(cookie);
     load_in_memory_assembly_fn loadInMemoryAssembly;
     pal::dll_t moduleHandle = pThunk->get_dll_handle();
@@ -145,7 +145,7 @@ extern "C" std::uintptr_t __stdcall start_runtime_and_get_target_address(std::ui
 #pragma warning (pop)
     }
 
-    loadInMemoryAssembly(moduleHandle, app_path.c_str());
+    loadInMemoryAssembly(moduleHandle, app_path.c_str(), nullptr);
 
     std::uintptr_t thunkAddress = *(pThunk->get_slot_address());
 

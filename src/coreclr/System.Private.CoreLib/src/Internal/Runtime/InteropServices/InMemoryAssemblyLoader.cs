@@ -19,7 +19,8 @@ namespace Internal.Runtime.InteropServices
         private static bool InitializeIsSupported() => AppContext.TryGetSwitch("System.Runtime.InteropServices.EnableCppCLIHostActivation", out bool isSupported) ? isSupported : true;
 
         /// <summary>
-        /// Loads into an isolated AssemblyLoadContext an assembly that has already been loaded into memory by the OS loader as a native module.
+        /// Loads an assembly that has already been loaded into memory by the OS loader as a native module
+        /// into an isolated AssemblyLoadContext.
         /// </summary>
         /// <param name="moduleHandle">The native module handle for the assembly.</param>
         /// <param name="assemblyPath">The path to the assembly (as a pointer to a UTF-16 C string).</param>
@@ -29,29 +30,57 @@ namespace Internal.Runtime.InteropServices
             if (!IsSupported)
                 throw new NotSupportedException("This API is not enabled in trimmed scenarios. see https://aka.ms/dotnet-illink/nativehost for more details");
 
+            LoadInMemoryAssemblyInContextImpl(moduleHandle, assemblyPath);
+        }
+
+        /// <summary>
+        /// Loads into an assembly that has already been loaded into memory by the OS loader as a native module
+        /// into the specified load context.
+        /// </summary>
+        /// <param name="moduleHandle">The native module handle for the assembly.</param>
+        /// <param name="assemblyPath">The path to the assembly (as a pointer to a UTF-16 C string).</param>
+        /// <param name="loadContext">Load context (currently must be IntPtr.Zero)</param>
+        [UnmanagedCallersOnly]
+        [RequiresUnreferencedCode("C++/CLI is not trim-compatible", Url = "https://aka.ms/dotnet-illink/nativehost")]
+        internal static unsafe void LoadInMemoryAssemblyInContext(IntPtr moduleHandle, IntPtr assemblyPath, IntPtr loadContext)
+        {
+            if (!IsSupported)
+                throw new NotSupportedException("This API is not enabled in trimmed scenarios. see https://aka.ms/dotnet-illink/nativehost for more details");
+
+            if (loadContext != IntPtr.Zero)
+                throw new ArgumentOutOfRangeException(nameof(loadContext));
+
+            LoadInMemoryAssemblyInContextImpl(moduleHandle, assemblyPath, AssemblyLoadContext.Default);
+        }
+
+        [RequiresUnreferencedCode("C++/CLI is not trim-compatible", Url = "https://aka.ms/dotnet-illink/nativehost")]
+        private static void LoadInMemoryAssemblyInContextImpl(IntPtr moduleHandle, IntPtr assemblyPath, AssemblyLoadContext? alc = null)
+        {
             string? assemblyPathString = Marshal.PtrToStringUni(assemblyPath);
             if (assemblyPathString == null)
-            {
                 throw new ArgumentOutOfRangeException(nameof(assemblyPath));
+
+            // We don't cache the ALCs or resolvers here since each IJW assembly will call this method at most once
+            // (the load process rewrites the stubs that call here to call the actual methods they're supposed to)
+            if (alc is null)
+            {
+                alc = new IsolatedComponentLoadContext(assemblyPathString);
+            }
+            else if (alc == AssemblyLoadContext.Default)
+            {
+                var resolver = new AssemblyDependencyResolver(assemblyPathString);
+                AssemblyLoadContext.Default.Resolving +=
+                    [RequiresUnreferencedCode("C++/CLI is not trim-compatible", Url = "https://aka.ms/dotnet-illink/nativehost")]
+                    (context, assemblyName) =>
+                    {
+                        string? assemblyPath = resolver.ResolveAssemblyToPath(assemblyName);
+                        return assemblyPath != null
+                            ? context.LoadFromAssemblyPath(assemblyPath)
+                            : null;
+                    };
             }
 
-            // We don't cache the resolvers here since each IJW assembly will call this method at most once
-            // (the load process rewrites the stubs that call here to call the actual methods they're supposed to)
-            var resolver = new AssemblyDependencyResolver(assemblyPathString);
-            AssemblyLoadContext.Default.Resolving +=
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                    Justification = "The trimmer warning is on the method that adds this handler")]
-                (context, assemblyName) =>
-                {
-                    string? assemblyPath = resolver.ResolveAssemblyToPath(assemblyName);
-#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
-                    return assemblyPath != null
-                        ? context.LoadFromAssemblyPath(assemblyPath)
-                        : null;
-#pragma warning restore IL2026
-                };
-
-            AssemblyLoadContext.Default.LoadFromInMemoryModule(moduleHandle);
+            alc.LoadFromInMemoryModule(moduleHandle);
         }
     }
 }
