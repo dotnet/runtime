@@ -2493,8 +2493,20 @@ mono_main (int argc, char* argv[])
 				exit (1);
 			}
 
+			int orig_argc = argc;
+
 			mono_parse_response_options (response_options, &argc, &argv, FALSE);
 			g_free (response_content);
+
+			/* Parse newly added options */
+			int n = argc;
+			mono_options_parse_options ((const char**)(argv + orig_argc), argc - orig_argc, &n, error);
+			if (!is_ok (error)) {
+				g_printerr ("%s", mono_error_get_message (error));
+				mono_error_cleanup (error);
+				return 1;
+			}
+			argc -= (argc - orig_argc) - n;
 		} else if (argv [i][0] == '-' && argv [i][1] == '-' && mini_parse_debug_option (argv [i] + 2)) {
 		} else if (strcmp (argv [i], "--use-map-jit") == 0){
 			mono_setmmapjit (TRUE);
