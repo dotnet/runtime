@@ -32,10 +32,6 @@
 
 #include <mono/utils/mono-compiler.h>
 
-#define ALLOW_CLASS_ADD
-#define ALLOW_METHOD_ADD
-#define ALLOW_FIELD_ADD
-#define ALLOW_PROPERTY_ADD
 #define ALLOW_INSTANCE_FIELD_ADD
 
 typedef struct _BaselineInfo BaselineInfo;
@@ -1382,21 +1378,9 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 		if (token_table != MONO_TABLE_METHOD)
 			continue;
 
-#ifndef ALLOW_METHOD_ADD
-
-		if (is_addition) {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "\tcannot add new method with token 0x%08x", log_token);
-			mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: cannot add new method with token 0x%08x", log_token);
-			unsupported_edits = TRUE;
-		}
-
-#endif
-
-#ifdef ALLOW_METHOD_ADD
 		/* adding a new parameter to a new method is ok */
 		if (func_code == ENC_FUNC_ADD_PARAM && is_addition)
 			continue;
-#endif
 
 		g_assert (func_code == 0); /* anything else doesn't make sense here */
 	}
@@ -1418,31 +1402,20 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			/* okay, supported */
 			break;
 		case MONO_TABLE_METHOD:
-#ifdef ALLOW_METHOD_ADD
 			if (func_code == ENC_FUNC_ADD_PARAM)
 				continue; /* ok, allowed */
-#endif
 			/* handled above */
 			break;
 		case MONO_TABLE_FIELD:
-#ifdef ALLOW_FIELD_ADD
-			if (func_code == ENC_FUNC_DEFAULT)
-				continue; /* ok, allowed */
-#else
-			/* adding or modifying a field */
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support adding or modifying fields.", i, log_token);
-			mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support adding or modifying fields. token=0x%08x", log_token);
-			unsupported_edits = TRUE;
+			/* ok */
+			g_assert (func_code == ENC_FUNC_DEFAULT);
 			break;
-#endif
 		case MONO_TABLE_PROPERTYMAP: {
-#ifdef ALLOW_PROPERTY_ADD
 			if (func_code == ENC_FUNC_ADD_PROPERTY) {
 				g_assert (i + 1 < rows);
 				i++; /* skip to the next record */
 				continue;
 			}
-#endif
 			if (!is_addition) {
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support patching of existing table cols.", i, log_token);
 				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing table cols. token=0x%08x", log_token);
@@ -1453,18 +1426,9 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			break;
 		}
 		case MONO_TABLE_PROPERTY: {
-			/* modifying a property, ok */
-			if (!is_addition)
-				break;
-#ifdef ALLOW_PROPERTY_ADD
-			if (func_code == ENC_FUNC_DEFAULT)
-				continue; /* ok, allowed */
-#endif
-			/* adding a property */
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support adding new properties.", i, log_token);
-			mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support adding new properties. token=0x%08x", log_token);
-			unsupported_edits = TRUE;
-			continue;
+			/* ok */
+			g_assert (func_code == ENC_FUNC_DEFAULT);
+			break;
 		}
 		case MONO_TABLE_METHODSEMANTICS: {
 			if (is_addition) {
@@ -1543,14 +1507,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				break; /* added a row. ok */
 		}
 		case MONO_TABLE_TYPEDEF: {
-			gboolean new_class G_GNUC_UNUSED = is_addition;
-#ifdef ALLOW_METHOD_ADD
-			/* only allow adding methods to existing classes for now */
-			if (
-#ifndef ALLOW_CLASS_ADD
-				!new_class &&
-#endif
-				func_code == ENC_FUNC_ADD_METHOD) {
+			if (func_code == ENC_FUNC_ADD_METHOD) {
 				/* next record should be a MONO_TABLE_METHOD addition (func == default) */
 				g_assert (i + 1 < rows);
 				guint32 next_cols [MONO_ENCLOG_SIZE];
@@ -1565,13 +1522,8 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				i++; /* skip the next record */
 				continue;
 			}
-#endif
-#ifdef ALLOW_FIELD_ADD
-			if (
-#ifndef ALLOW_CLASS_ADD
-				!new_class &&
-#endif
-				func_code == ENC_FUNC_ADD_FIELD) {
+
+			if (func_code == ENC_FUNC_ADD_FIELD) {
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x AddField to klass 0x%08x, skipping next EnClog record", i, log_token, token_index);
 				g_assert (i + 1 < rows);
 				guint32 next_cols [MONO_ENCLOG_SIZE];
@@ -1586,7 +1538,6 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				i++; /* skip the next record */
 				continue;
 			}
-#endif
 			/* fallthru */
 		}
 		default:
@@ -1838,12 +1789,8 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Pass 2 begin: base '%s' delta image=%p", image_base->name, image_dmeta);
 
-#if defined(ALLOW_METHOD_ADD) || defined(ALLOW_FIELD_ADD)
 	uint32_t add_member_typedef = 0;
-#endif
-#if defined(ALLOW_PROPERTY_ADD)
 	uint32_t add_property_propertymap = 0;
-#endif
 
 	gboolean assemblyref_updated = FALSE;
 	for (int i = 0; i < rows ; ++i) {
@@ -1866,7 +1813,6 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 		switch (func_code) {
 		case ENC_FUNC_DEFAULT: /* default */
 			break;
-#ifdef ALLOW_METHOD_ADD
 		case ENC_FUNC_ADD_METHOD: {
 			g_assert (token_table == MONO_TABLE_TYPEDEF);
 			add_member_typedef = log_token;
@@ -1877,14 +1823,11 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			g_assert (token_table == MONO_TABLE_METHOD);
 			break;
 		}
-#endif
-#ifdef ALLOW_FIELD_ADD
 		case ENC_FUNC_ADD_FIELD: {
 			g_assert (token_table == MONO_TABLE_TYPEDEF);
 			add_member_typedef = log_token;
 			break;
 		}
-#endif
 
 		case ENC_FUNC_ADD_PROPERTY: {
 			g_assert (token_table == MONO_TABLE_PROPERTYMAP);
@@ -1937,7 +1880,6 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			break;
 		}
 		case MONO_TABLE_METHOD: {
-#ifdef ALLOW_METHOD_ADD
 			/* if adding a param, handle it with the next record */
 			if (func_code == ENC_FUNC_ADD_PARAM)
 				break;
@@ -1962,7 +1904,6 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 				}
 				add_member_typedef = 0;
 			}
-#endif
 
 			if (!base_info->method_table_update)
 				base_info->method_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
@@ -1982,13 +1923,10 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 				/* rva points probably into image_base IL stream. can this ever happen? */
 				g_print ("TODO: this case is still a bit contrived. token=0x%08x with rva=0x%04x\n", log_token, rva);
 			}
-#if defined(ALLOW_METHOD_ADD) || defined(ALLOW_FIELD_ADD)
 			add_member_typedef = 0;
-#endif
 			break;
 		}
 		case MONO_TABLE_FIELD: {
-#ifdef ALLOW_FIELD_ADD
 			g_assert (is_addition);
 			g_assert (add_member_typedef);
 			if (pass2_context_is_skeleton (ctx, add_member_typedef)) {
@@ -2030,13 +1968,9 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			}
 			
 			add_member_typedef = 0;
-#else
-			g_assert_not_reached ();
-#endif
 			break;
 		}
 		case MONO_TABLE_TYPEDEF: {
-#ifdef ALLOW_CLASS_ADD
 			if (is_addition) {
 				/* Adding a new class. ok */
 				switch (func_code) {
@@ -2060,14 +1994,9 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 				}
 				break;
 			}
-#endif
 			/* modifying an existing class by adding a method or field, etc. */
 			g_assert (!is_addition);
-#if !defined(ALLOW_METHOD_ADD) && !defined(ALLOW_FIELD_ADD)
-			g_assert_not_reached ();
-#else
 			g_assert (func_code != ENC_FUNC_DEFAULT);
-#endif
 			break;
 		}
 		case MONO_TABLE_PROPERTYMAP: {
@@ -2129,7 +2058,6 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 		}
 		case MONO_TABLE_PARAM: {
 			/* ok, pass1 checked for disallowed modifications */
-			/* ALLOW_METHOD_ADD: FIXME: here we would really like to update the method's paramlist column to point to the new params. */
 			/* if there were multiple added methods, this comes in as several method
 			 * additions, followed by the parameter additions.
 			 *
