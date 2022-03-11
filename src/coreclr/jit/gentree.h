@@ -8360,14 +8360,11 @@ inline bool GenTree::IsIntegralConst() const
 //     user code.
 inline bool GenTree::IsIntegralConstAbsPow2() const
 {
-    if ((gtOper == GT_CNS_INT) && isPow2(abs(AsIntConCommon()->IconValue())))
+    if (IsIntegralConst())
     {
-        return true;
-    }
-
-    if ((gtOper == GT_CNS_LNG) && isPow2(abs(AsIntConCommon()->LngValue())))
-    {
-        return true;
+        INT64 svalue = AsIntConCommon()->IntegralValue();
+        size_t value  = (svalue == SSIZE_T_MIN) ? static_cast<size_t>(svalue) : static_cast<size_t>(abs(svalue));
+        return isPow2(value);
     }
 
     return false;
