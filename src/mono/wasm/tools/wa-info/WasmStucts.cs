@@ -94,8 +94,19 @@ namespace WebAssemblyInfo
                     opStr = prefix + SIMDOpcode.ToString().ToLower().Replace("_", ".");
                     offset = MemArg.Offset != 0 ? $" offset:{MemArg.Offset}" : null;
                     align = MemArg.Align != 0 ? $" align:{MemArg.Align}" : null;
+                    string? optional = null;
 
-                    return $"{opStr}{offset}{align}    [SIMD]";
+                    switch(SIMDOpcode)
+                    {
+                        case SIMDOpcode.V128_Const:
+                            var sb = new StringBuilder(" 0x");
+                            for (var i = 15; i >= 0; i--)
+                                sb.Append($"{SIMDImmByteArray[i]:x2}");
+                            optional = sb.ToString();
+                            break;
+                    }
+
+                    return $"{opStr}{offset}{align}{optional}    [SIMD]";
                 case Opcode.Nop:
                 default:
                     return opStr;
