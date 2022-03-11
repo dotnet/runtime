@@ -3,6 +3,7 @@
 
 using System.IO.Enumeration;
 using System.Threading;
+using Internal;
 
 namespace System.IO
 {
@@ -26,11 +27,13 @@ namespace System.IO
                 throw new DirectoryNotFoundException(sourcePath);
             }
 
+            // Create destination directory if not exists
             if (!DirectoryExists(destinationPath))
             {
                 CreateDirectory(destinationPath);
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             var fse = new FileSystemEnumerable<(string childPath, bool isDirectory)>(sourcePath,
                 static (ref FileSystemEntry entry) => (entry.ToFullPath(), entry.IsDirectory),
                 recursive ? EnumerationOptions.CompatibleRecursive : EnumerationOptions.Compatible);
@@ -40,15 +43,19 @@ namespace System.IO
                 cancellationToken.ThrowIfCancellationRequested();
                 try
                 {
-                    string destFilePath = Path.Join(destinationPath, childPath);
+                    string basePath = childPath[sourcePath.Length..];
+                    if (PathInternal.IsDirectorySeparator(basePath[0]))
+                    {
+                        basePath = basePath[1..];
+                    }
+
+                    string destFilePath = Path.Join(destinationPath, basePath);
                     if (isDirectory && !DirectoryExists(destFilePath))
                     {
                         Directory.CreateDirectory(destFilePath);
                     }
                     else
                     {
-                        string sourceFilePath = Path.Join(sourcePath, childPath);
-
                         // If parent directory was not created in previous case, create it
                         DirectoryInfo? parentDir = Directory.GetParent(destFilePath);
                         if (parentDir is { Exists: false })
@@ -56,7 +63,13 @@ namespace System.IO
                             CreateDirectory(parentDir.FullName);
                         }
 
-                        CopyFile(sourceFilePath, destFilePath, true);
+                        // Don't copy if file already exists
+                        if (skipExistingFiles && File.Exists(destFilePath))
+                        {
+                            continue;
+                        }
+
+                        CopyFile(childPath, destFilePath, true);
                     }
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
