@@ -38,6 +38,7 @@ METHOD(op_Multiply)
 METHOD(op_OnesComplement)
 METHOD(op_Subtraction)
 METHOD(op_UnaryNegation)
+METHOD(op_UnaryPlus)
 // Vector
 METHOD(ConvertToInt32)
 METHOD(ConvertToInt32WithTruncation)
