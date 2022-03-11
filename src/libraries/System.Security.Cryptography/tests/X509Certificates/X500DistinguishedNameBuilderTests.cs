@@ -179,6 +179,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void AddEncoded_InvalidDer()
+        {
+            X500DistinguishedNameBuilder builder = new();
+            AssertExtensions.Throws<ArgumentException>(
+                "encodedValue",
+                () => builder.AddEncoded(TestOid, new byte[] { 0xFF, 0xFF, 0xFF }));
+            AssertExtensions.Throws<ArgumentException>(
+                "encodedValue",
+                () => builder.AddEncoded(TestOid, stackalloc byte[] { 0xFF, 0xFF, 0xFF }));
+            AssertExtensions.Throws<ArgumentException>(
+                "encodedValue",
+                () => builder.AddEncoded(new Oid(TestOid), new byte[] { 0xFF, 0xFF, 0xFF }));
+            AssertExtensions.Throws<ArgumentException>(
+                "encodedValue",
+                () => builder.AddEncoded(new Oid(TestOid), stackalloc byte[] { 0xFF, 0xFF, 0xFF }));
+        }
+
+        [Fact]
         public static void AddEncoded_StringOid_NullOrEmpty_Fails()
         {
             X500DistinguishedNameBuilder builder = new();
@@ -188,18 +206,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             AssertExtensions.Throws<ArgumentException>(
                 "oidValue",
                 () => builder.AddEncoded("", Array.Empty<byte>()));
-        }
-
-        [Fact]
-        public static void Add_InvalidUniversalTagNumber()
-        {
-            X500DistinguishedNameBuilder builder = new();
-            AssertExtensions.Throws<ArgumentException>(
-                "stringEncodingType",
-                () => builder.Add(TestOid, "True", UniversalTagNumber.Boolean));
-            AssertExtensions.Throws<ArgumentException>(
-                "stringEncodingType",
-                () => builder.Add(new Oid(TestOid, null), "True", UniversalTagNumber.Boolean));
         }
 
         [Fact]
@@ -227,6 +233,39 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             AssertExtensions.Throws<ArgumentNullException>(
                 "encodedValue",
                 () => builder.AddEncoded(new Oid(TestOid, null), (byte[])null));
+        }
+
+        [Fact]
+        public static void Add_InvalidUniversalTagNumber()
+        {
+            X500DistinguishedNameBuilder builder = new();
+            AssertExtensions.Throws<ArgumentException>(
+                "stringEncodingType",
+                () => builder.Add(TestOid, "True", UniversalTagNumber.Boolean));
+            AssertExtensions.Throws<ArgumentException>(
+                "stringEncodingType",
+                () => builder.Add(new Oid(TestOid, null), "True", UniversalTagNumber.Boolean));
+        }
+
+        [Fact]
+        public static void Add_OidString_NullOrEmpty_Fails()
+        {
+            X500DistinguishedNameBuilder builder = new();
+            AssertExtensions.Throws<ArgumentNullException>(
+                "oidValue",
+                () => builder.Add((string)null, "banana"));
+            AssertExtensions.Throws<ArgumentException>(
+                "oidValue",
+                () => builder.Add("", "banana"));
+        }
+
+        [Fact]
+        public static void Add_OidString_NotAnOid_Fails()
+        {
+            X500DistinguishedNameBuilder builder = new();
+            AssertExtensions.Throws<ArgumentException>(
+                "oidValue",
+                () => builder.Add("strawberry", "banana"));
         }
 
         [Theory]
@@ -309,6 +348,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     "0123456789",
                     UniversalTagNumber.NumericString,
                     "302531233021061369F487D9C7B5D0AEA2CCCBE8C8C7F2F6F2BE27120A30313233343536373839",
+                };
+                yield return new object[]
+                {
+                    TestOid,
+                    "",
+                    UniversalTagNumber.UTF8String,
+                    "301B31193017061369F487D9C7B5D0AEA2CCCBE8C8C7F2F6F2BE270C00",
                 };
             }
         }
