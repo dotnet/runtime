@@ -518,6 +518,52 @@ namespace System.Text.RegularExpressions.Tests
             ", compile: true));
         }
 
+        [Fact]
+        public async Task Valid_SameMethodNameInMultipleTypes()
+        {
+            Assert.Empty(await RegexGeneratorHelper.RunGenerator(@"
+                using System.Text.RegularExpressions;
+                namespace A
+                {
+                    public partial class B<U>
+                    {
+                        private partial class C<T>
+                        {
+                            [RegexGenerator(""1"")]
+                            public partial Regex Valid();
+                        }
+
+                        private partial class C<T1,T2>
+                        {
+                            [RegexGenerator(""2"")]
+                            private static partial Regex Valid();
+
+                            private partial class D
+                            {
+                                [RegexGenerator(""3"")]
+                                internal partial Regex Valid();
+                            }
+                        }
+
+                        private partial class E
+                        {
+                            [RegexGenerator(""4"")]
+                            private static partial Regex Valid();
+                        }
+                    }
+                }
+
+                partial class F
+                {
+                    [RegexGenerator(""5"")]
+                    public partial Regex Valid();
+
+                    [RegexGenerator(""6"")]
+                    public partial Regex Valid2();
+                }
+            ", compile: true));
+        }
+
         public static IEnumerable<object[]> Valid_Modifiers_MemberData()
         {
             foreach (string type in new[] { "class", "struct", "record", "record struct", "record class", "interface" })

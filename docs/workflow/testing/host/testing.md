@@ -69,7 +69,7 @@ dotnet test artifacts/bin/HostActivation.Tests/Debug/net5.0/HostActivation.Tests
 
 To filter to specific tests within the test library, use the [filter options](https://docs.microsoft.com/dotnet/core/tools/dotnet-test#filter-option-details) available for `dotnet test`. For example:
 ```
-dotnet test artifacts/bin/HostActivation.Tests/Debug/net5.0/HostActivation.Tests.dll --filter DependencyResolution&category!=failing
+dotnet test artifacts/bin/HostActivation.Tests/Debug/net5.0/HostActivation.Tests.dll --filter "DependencyResolution&category!=failing"
 ```
 
 The `category!=failing` is to respect the [filtering traits](../libraries/filtering-tests.md) used by the runtime repo.

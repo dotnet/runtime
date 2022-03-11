@@ -4413,17 +4413,37 @@ protected:
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
     GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
 
+    // Mirrors StringComparison.cs
+    enum StringComparison
+    {
+        Ordinal           = 4,
+        OrdinalIgnoreCase = 5
+    };
+    enum StringComparisonJoint
+    {
+        Eq,  // (d1 == cns1) && (s2 == cns2)
+        Xor, // (d1 ^ cns1) | (s2 ^ cns2)
+    };
     GenTree* impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags);
     GenTree* impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags);
-    GenTree* impExpandHalfConstEquals(GenTreeLclVar* data,
-                                      GenTree*       lengthFld,
-                                      bool           checkForNull,
-                                      bool           startsWith,
-                                      WCHAR*         cnsData,
-                                      int            len,
-                                      int            dataOffset);
-    GenTree* impExpandHalfConstEqualsSWAR(GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset);
-    GenTree* impExpandHalfConstEqualsSIMD(GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset);
+    GenTree* impExpandHalfConstEquals(GenTreeLclVar*   data,
+                                      GenTree*         lengthFld,
+                                      bool             checkForNull,
+                                      bool             startsWith,
+                                      WCHAR*           cnsData,
+                                      int              len,
+                                      int              dataOffset,
+                                      StringComparison cmpMode);
+    GenTree* impCreateCompareInd(GenTreeLclVar*        obj,
+                                 var_types             type,
+                                 ssize_t               offset,
+                                 ssize_t               value,
+                                 StringComparison      ignoreCase,
+                                 StringComparisonJoint joint = Eq);
+    GenTree* impExpandHalfConstEqualsSWAR(
+        GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode);
+    GenTree* impExpandHalfConstEqualsSIMD(
+        GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode);
     GenTreeStrCon* impGetStrConFromSpan(GenTree* span);
 
     GenTree* impIntrinsic(GenTree*                newobjThis,

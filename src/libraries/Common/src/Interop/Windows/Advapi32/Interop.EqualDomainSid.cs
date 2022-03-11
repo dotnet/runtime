@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [GeneratedDllImport(Interop.Libraries.Advapi32)]
+        [LibraryImport(Interop.Libraries.Advapi32)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool EqualDomainSid(IntPtr pSid1, IntPtr pSid2, [MarshalAs(UnmanagedType.Bool)] ref bool equal);
     }

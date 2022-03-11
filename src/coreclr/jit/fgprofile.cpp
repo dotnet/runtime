@@ -1448,7 +1448,7 @@ public:
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
         GenTree* const node = *use;
-        if (node->IsCall())
+        if (node->IsCall() && (node->AsCall()->gtClassProfileCandidateInfo != nullptr))
         {
             GenTreeCall* const call = node->AsCall();
             if (call->IsVirtual() && (call->gtCallType != CT_INDIRECT))

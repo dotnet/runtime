@@ -7124,7 +7124,7 @@ HRESULT DacDbiInterfaceImpl::GetTypeIDForType(VMPTR_TypeHandle vmTypeHandle, COR
 
 HRESULT DacDbiInterfaceImpl::GetObjectFields(COR_TYPEID id, ULONG32 celt, COR_FIELD *layout, ULONG32 *pceltFetched)
 {
-    if (layout == NULL || pceltFetched == NULL)
+    if (pceltFetched == NULL)
         return E_POINTER;
 
     if (id.token1 == 0)

@@ -326,6 +326,11 @@ namespace System
             _flags = flags;
         }
 
+        /// <summary>
+        /// Gets the scaling factor of the decimal, which is a number from 0 to 28 that represents the number of decimal digits.
+        /// </summary>
+        public byte Scale => (byte)(_flags >> ScaleShift);
+
         // Returns the absolute value of the given Decimal. If d is
         // positive, the result is d. If d is negative, the result
         // is -d.

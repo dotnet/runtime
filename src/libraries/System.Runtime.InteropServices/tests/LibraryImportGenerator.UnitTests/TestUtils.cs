@@ -75,8 +75,8 @@ namespace LibraryImportGenerator.UnitTests
             var allowedDiagnostics = new HashSet<string>()
             {
                 "CS8795", // Partial method impl missing
-                "CS0234", // Missing type or namespace - GeneratedDllImportAttribute
-                "CS0246", // Missing type or namespace - GeneratedDllImportAttribute
+                "CS0234", // Missing type or namespace - LibraryImportAttribute
+                "CS0246", // Missing type or namespace - LibraryImportAttribute
                 "CS8019", // Unnecessary using
             };
 
@@ -183,7 +183,7 @@ namespace LibraryImportGenerator.UnitTests
         {
             // Include the assembly containing the new attribute and all of its references.
             // [TODO] Remove once the attribute has been added to the BCL
-            var attrAssem = typeof(GeneratedDllImportAttribute).GetTypeInfo().Assembly;
+            var attrAssem = typeof(LibraryImportAttribute).GetTypeInfo().Assembly;
             return MetadataReference.CreateFromFile(attrAssem.Location);
         }
 
