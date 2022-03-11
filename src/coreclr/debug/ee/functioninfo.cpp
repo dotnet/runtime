@@ -2326,12 +2326,13 @@ void DebuggerMethodInfoTable::DeleteEntryDMI(DebuggerMethodInfoEntry *entry)
 
 #endif // #ifndef DACCESS_COMPILE
 
-DebuggerJitInfo *DebuggerJitInfo::GetJitInfoByAddress(const BYTE *pbAddr )
+DebuggerJitInfo *DebuggerJitInfo::GetJitInfoByAddress(const BYTE *pbAddr)
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
+        PRECONDITION(g_pDebugger->HasDebuggerDataLock());
     }
     CONTRACTL_END;
 

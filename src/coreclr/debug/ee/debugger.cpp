@@ -2719,58 +2719,58 @@ DebuggerJitInfo *Debugger::GetJitInfoWorker(MethodDesc *fd, const BYTE *pbAddr, 
     // This may take the lock and lazily create an entry, so we do it up front.
     dji = dmi->GetLatestJitInfo(fd);
 
-
-    DebuggerDataLockHolder debuggerDataLockHolder(this);
-
-    // Note the call to GetLatestJitInfo() will lazily create the first DJI if we don't already have one.
-    for (; dji != NULL; dji = dji->m_prevJitInfo)
     {
-        if (PTR_TO_TADDR(dji->m_nativeCodeVersion.GetMethodDesc()) == PTR_HOST_TO_TADDR(fd))
+        DebuggerDataLockHolder debuggerDataLockHolder(this);
+
+        // Note the call to GetLatestJitInfo() will lazily create the first DJI if we don't already have one.
+        for (; dji != NULL; dji = dji->m_prevJitInfo)
         {
-            break;
+            if (PTR_TO_TADDR(dji->m_nativeCodeVersion.GetMethodDesc()) == PTR_HOST_TO_TADDR(fd))
+            {
+                break;
+            }
+        }
+
+        LOG((LF_CORDB, LL_INFO1000, "D::GJI: for md:0x%p (%s::%s), got dmi:0x%p, dji:0x%p, latest dji:0x%p, latest fd:0x%p, prev dji:0x%p\n",
+            fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
+            dmi, dji, (dmi ? dmi->GetLatestJitInfo_NoCreate() : 0),
+            ((dmi && dmi->GetLatestJitInfo_NoCreate()) ? dmi->GetLatestJitInfo_NoCreate()->m_nativeCodeVersion.GetMethodDesc():0),
+            (dji?dji->m_prevJitInfo:0)));
+
+        if ((dji != NULL) && (pbAddr != NULL))
+        {
+            dji = dji->GetJitInfoByAddress(pbAddr);
         }
     }
 
-    LOG((LF_CORDB, LL_INFO1000, "D::GJI: for md:0x%p (%s::%s), got dmi:0x%p, dji:0x%p, latest dji:0x%p, latest fd:0x%p, prev dji:0x%p\n",
-        fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
-        dmi, dji, (dmi ? dmi->GetLatestJitInfo_NoCreate() : 0),
-        ((dmi && dmi->GetLatestJitInfo_NoCreate()) ? dmi->GetLatestJitInfo_NoCreate()->m_nativeCodeVersion.GetMethodDesc():0),
-        (dji?dji->m_prevJitInfo:0)));
-
-    if ((dji != NULL) && (pbAddr != NULL))
-    {
-        dji = dji->GetJitInfoByAddress(pbAddr);
-
-        // XXX Microsoft - dac doesn't support stub tracing
-        // so this just results in not-impl exceptions.
+    // dac doesn't support stub tracing so this just results in not-impl exceptions.
 #ifndef DACCESS_COMPILE
-        if (dji == NULL) //may have been given address of a thunk
+    if (dji == NULL) //may have been given address of a thunk
+    {
+        LOG((LF_CORDB,LL_INFO1000,"Couldn't find a DJI by address 0x%p, "
+            "so it might be a stub or thunk\n", pbAddr));
+        TraceDestination trace;
+
+        g_pEEInterface->TraceStub((const BYTE *)pbAddr, &trace);
+
+        if ((trace.GetTraceType() == TRACE_MANAGED) && (pbAddr != (const BYTE *)trace.GetAddress()))
         {
-            LOG((LF_CORDB,LL_INFO1000,"Couldn't find a DJI by address 0x%p, "
-                "so it might be a stub or thunk\n", pbAddr));
-            TraceDestination trace;
-
-            g_pEEInterface->TraceStub((const BYTE *)pbAddr, &trace);
-
-            if ((trace.GetTraceType() == TRACE_MANAGED) && (pbAddr != (const BYTE *)trace.GetAddress()))
-            {
-                LOG((LF_CORDB,LL_INFO1000,"Address thru thunk"
-                    ": 0x%p\n", trace.GetAddress()));
-                dji = GetJitInfo(fd, dac_cast<PTR_CBYTE>(trace.GetAddress()));
-            }
-#ifdef LOGGING
-            else
-            {
-                _ASSERTE(trace.GetTraceType() != TRACE_UNJITTED_METHOD ||
-                    (fd == trace.GetMethodDesc()));
-                LOG((LF_CORDB,LL_INFO1000,"Address not thunked - "
-                    "must be to unJITted method, or normal managed "
-                    "method lacking a DJI!\n"));
-            }
-#endif //LOGGING
+            LOG((LF_CORDB,LL_INFO1000,"Address thru thunk"
+                ": 0x%p\n", trace.GetAddress()));
+            dji = GetJitInfo(fd, dac_cast<PTR_CBYTE>(trace.GetAddress()));
         }
-#endif // #ifndef DACCESS_COMPILE
+#ifdef LOGGING
+        else
+        {
+            _ASSERTE(trace.GetTraceType() != TRACE_UNJITTED_METHOD ||
+                (fd == trace.GetMethodDesc()));
+            LOG((LF_CORDB,LL_INFO1000,"Address not thunked - "
+                "must be to unJITted method, or normal managed "
+                "method lacking a DJI!\n"));
+        }
+#endif //LOGGING
     }
+#endif // #ifndef DACCESS_COMPILE
 
     if (pMethInfo)
     {
@@ -3093,12 +3093,12 @@ CodeRegionInfo CodeRegionInfo::GetCodeRegionInfo(DebuggerJitInfo *dji, MethodDes
 
     if (dji && dji->m_addrOfCode)
     {
-        LOG((LF_CORDB, LL_EVERYTHING, "CRI::GCRI: simple case\n"));
+        LOG((LF_CORDB, LL_INFO10000, "CRI::GCRI: simple case: CodeRegionInfo* 0x%p\n", &dji->m_codeRegionInfo));
         return dji->m_codeRegionInfo;
     }
     else
     {
-        LOG((LF_CORDB, LL_EVERYTHING, "CRI::GCRI: more complex case\n"));
+        LOG((LF_CORDB, LL_INFO10000, "CRI::GCRI: more complex case\n"));
         CodeRegionInfo codeRegionInfo;
 
         // Use method desc from dji if present
@@ -3119,6 +3119,7 @@ CodeRegionInfo CodeRegionInfo::GetCodeRegionInfo(DebuggerJitInfo *dji, MethodDes
                      (addr == dac_cast<PTR_CORDB_ADDRESS_TYPE>(g_pEEInterface->GetFunctionAddress(md))));
         }
 
+        LOG((LF_CORDB, LL_INFO10000, "CRI::GCRI: Initializing CodeRegionInfo from 0x%p, md=0x%p\n", addr, md));
         if (addr)
         {
             PCODE pCode = PINSTRToPCODE(dac_cast<TADDR>(addr));
