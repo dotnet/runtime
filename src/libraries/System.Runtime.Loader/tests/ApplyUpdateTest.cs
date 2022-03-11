@@ -324,7 +324,7 @@ namespace System.Reflection.Metadata
 
                 r = x.TestMethod();
 
-                Assert.Equal("123456", r);
+                Assert.Equal("123456789", r);
             });
         }
 
