@@ -116,6 +116,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 			ValidateDiagnostics (node, node.AttributeLists);
 		}
 
+		public override void VisitSimpleLambdaExpression (SimpleLambdaExpressionSyntax node)
+		{
+			base.VisitSimpleLambdaExpression (node);
+			ValidateDiagnostics (node, node.AttributeLists);
+		}
+
+		public override void VisitParenthesizedLambdaExpression (ParenthesizedLambdaExpressionSyntax node)
+		{
+			base.VisitParenthesizedLambdaExpression (node);
+			ValidateDiagnostics (node, node.AttributeLists);
+		}
+
 		public override void VisitAccessorDeclaration (AccessorDeclarationSyntax node)
 		{
 			base.VisitAccessorDeclaration (node);
