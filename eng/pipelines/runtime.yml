@@ -210,6 +210,7 @@ jobs:
     - iOS_arm64
     - MacCatalyst_x64
     jobParameters:
+      isOfficialBuild: ${{ variables.isOfficialBuild }}
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),

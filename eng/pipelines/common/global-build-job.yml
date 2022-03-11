@@ -60,6 +60,9 @@ jobs:
         - ${{ parameters.dependsOn }}
 
     variables:
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - group: DotNet-HelixApi-Access
+
       - name: _osParameter
         value: -os ${{ parameters.osGroup }}
 
