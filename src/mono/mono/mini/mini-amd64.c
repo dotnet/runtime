@@ -49,12 +49,6 @@
 #include "mini-runtime.h"
 #include "aot-runtime.h"
 
-#ifdef MONO_XEN_OPT
-static gboolean optimize_for_xen = TRUE;
-#else
-#define optimize_for_xen 0
-#endif
-
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (math, "System", "Math")
 
 
@@ -3134,9 +3128,6 @@ emit_call (MonoCompile *cfg, MonoCallInst *call, guint8 *code, MonoJitICallId ji
 #ifdef MONO_ARCH_NOMAP32BIT
 		near_call = FALSE;
 #endif
-		/* The 64bit XEN kernel does not honour the MAP_32BIT flag. (#522894) */
-		if (optimize_for_xen)
-			near_call = FALSE;
 
 		if (cfg->compile_aot) {
 			near_call = TRUE;
@@ -4419,14 +4410,8 @@ mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset)
 	x86_prefix (code, X86_GS_PREFIX);
 	amd64_mov_reg_mem (code, dreg, tls_gs_offset + (tls_offset * 8), 8);
 #else
-	if (optimize_for_xen) {
-		x86_prefix (code, X86_FS_PREFIX);
-		amd64_mov_reg_mem (code, dreg, 0, 8);
-		amd64_mov_reg_membase (code, dreg, dreg, tls_offset, 8);
-	} else {
-		x86_prefix (code, X86_FS_PREFIX);
-		amd64_mov_reg_mem (code, dreg, tls_offset, 8);
-	}
+	x86_prefix (code, X86_FS_PREFIX);
+	amd64_mov_reg_mem (code, dreg, tls_offset, 8);
 #endif
 	return code;
 }
@@ -4440,7 +4425,6 @@ mono_amd64_emit_tls_set (guint8 *code, int sreg, int tls_offset)
 	x86_prefix (code, X86_GS_PREFIX);
 	amd64_mov_mem_reg (code, tls_gs_offset + (tls_offset * 8), sreg, 8);
 #else
-	g_assert (!optimize_for_xen);
 	x86_prefix (code, X86_FS_PREFIX);
 	amd64_mov_mem_reg (code, tls_offset, sreg, 8);
 #endif
@@ -8674,9 +8658,6 @@ mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod
 void
 mono_arch_finish_init (void)
 {
-#if !defined(HOST_WIN32) && defined(MONO_XEN_OPT)
-	optimize_for_xen = access ("/proc/xen", F_OK) == 0;
-#endif
 }
 
 #define CMP_SIZE (6 + 1)

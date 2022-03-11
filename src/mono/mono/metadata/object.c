@@ -5549,15 +5549,6 @@ mono_array_clone_checked (MonoArray *array_raw, MonoError *error)
 }
 
 /* helper macros to check for overflow when calculating the size of arrays */
-#ifdef MONO_BIG_ARRAYS
-#define MYGUINT64_MAX 0x0000FFFFFFFFFFFFUL
-#define MYGUINT_MAX MYGUINT64_MAX
-#define CHECK_ADD_OVERFLOW_UN(a,b) \
-	    (G_UNLIKELY ((guint64)(MYGUINT64_MAX) - (guint64)(b) < (guint64)(a)))
-#define CHECK_MUL_OVERFLOW_UN(a,b) \
-	    (G_UNLIKELY (((guint64)(a) > 0) && ((guint64)(b) > 0) &&	\
-					 ((guint64)(b) > ((MYGUINT64_MAX) / (guint64)(a)))))
-#else
 #define MYGUINT32_MAX 4294967295U
 #define MYGUINT_MAX MYGUINT32_MAX
 #define CHECK_ADD_OVERFLOW_UN(a,b) \
@@ -5565,7 +5556,6 @@ mono_array_clone_checked (MonoArray *array_raw, MonoError *error)
 #define CHECK_MUL_OVERFLOW_UN(a,b) \
 	    (G_UNLIKELY (((guint32)(a) > 0) && ((guint32)(b) > 0) &&			\
 					 ((guint32)(b) > ((MYGUINT32_MAX) / (guint32)(a)))))
-#endif
 
 gboolean
 mono_array_calc_byte_len (MonoClass *klass, uintptr_t len, uintptr_t *res)

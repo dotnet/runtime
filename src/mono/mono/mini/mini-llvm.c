@@ -7331,7 +7331,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			// 256 == GS segment register
 			LLVMTypeRef ptrtype = LLVMPointerType (IntPtrType (), 256);
 #endif
-			// FIXME: XEN
 			values [ins->dreg] = LLVMBuildLoad (builder, LLVMBuildIntToPtr (builder, LLVMConstInt (IntPtrType (), ins->inst_offset, TRUE), ptrtype, ""), "");
 #elif defined(TARGET_AMD64) && defined(TARGET_OSX)
 			/* See mono_amd64_emit_tls_get () */
