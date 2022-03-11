@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Formats.Asn1;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -169,11 +171,146 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             AssertBuilder(
                 "301C311A3018061369F487D9C7B5D0AEA2CCCBE8C8C7F2F6F2BE27130141",
-                builder => builder.AddEncoded(new Oid(TestOid), new byte[] { 0x13, 0x01, 65 }));
+                builder => builder.AddEncoded(new Oid(TestOid, null), new byte[] { 0x13, 0x01, 65 }));
 
             AssertBuilder(
                 "301C311A3018061369F487D9C7B5D0AEA2CCCBE8C8C7F2F6F2BE27130141",
-                builder => builder.AddEncoded(new Oid(TestOid), stackalloc byte[] { 0x13, 0x01, 65 }));
+                builder => builder.AddEncoded(new Oid(TestOid, null), stackalloc byte[] { 0x13, 0x01, 65 }));
+        }
+
+        [Fact]
+        public static void AddEncoded_StringOid_NullOrEmpty_Fails()
+        {
+            X500DistinguishedNameBuilder builder = new();
+            AssertExtensions.Throws<ArgumentNullException>(
+                "oidValue",
+                () => builder.AddEncoded((string)null, Array.Empty<byte>()));
+            AssertExtensions.Throws<ArgumentException>(
+                "oidValue",
+                () => builder.AddEncoded("", Array.Empty<byte>()));
+        }
+
+        [Fact]
+        public static void Add_InvalidUniversalTagNumber()
+        {
+            X500DistinguishedNameBuilder builder = new();
+            AssertExtensions.Throws<ArgumentException>(
+                "stringEncodingType",
+                () => builder.Add(TestOid, "True", UniversalTagNumber.Boolean));
+            AssertExtensions.Throws<ArgumentException>(
+                "stringEncodingType",
+                () => builder.Add(new Oid(TestOid, null), "True", UniversalTagNumber.Boolean));
+        }
+
+        [Fact]
+        public static void AddEncoded_Oid_NullOrEmptyValue_Fails()
+        {
+            X500DistinguishedNameBuilder builder = new();
+            AssertExtensions.Throws<ArgumentNullException>(
+                "oid",
+                () => builder.AddEncoded((Oid)null, Array.Empty<byte>()));
+            AssertExtensions.Throws<ArgumentException>(
+                "oid",
+                () => builder.AddEncoded(new Oid(), Array.Empty<byte>()));
+            AssertExtensions.Throws<ArgumentException>(
+                "oid",
+                () => builder.AddEncoded(new Oid("", null), Array.Empty<byte>()));
+        }
+
+        [Fact]
+        public static void AddEncoded_Value_Null_Fails()
+        {
+            X500DistinguishedNameBuilder builder = new();
+            AssertExtensions.Throws<ArgumentNullException>(
+                "encodedValue",
+                () => builder.AddEncoded(TestOid, (byte[])null));
+            AssertExtensions.Throws<ArgumentNullException>(
+                "encodedValue",
+                () => builder.AddEncoded(new Oid(TestOid, null), (byte[])null));
+        }
+
+        [Theory]
+        [MemberData(nameof(AddStringTheories))]
+        public static void Add_StringOid_Success(string oid, string value, UniversalTagNumber? tag, string expectedHex)
+        {
+            AssertBuilder(expectedHex, builder => builder.Add(oid, value, tag));
+        }
+
+        [Theory]
+        [MemberData(nameof(AddStringTheories))]
+        public static void Add_Oid_Success(string oid, string value, UniversalTagNumber? tag, string expectedHex)
+        {
+            AssertBuilder(expectedHex, builder => builder.Add(new Oid(oid, null), value, tag));
+        }
+
+        public static IEnumerable<object[]> AddStringTheories
+        {
+            get
+            {
+                yield return new object[]
+                {
+                    TestOid,
+                    "banana",
+                    UniversalTagNumber.UTF8String,
+                    "3021311F301D061369F487D9C7B5D0AEA2CCCBE8C8C7F2F6F2BE270C0662616E616E61",
+                };
+                yield return new object[]
+                {
+                    TestOid,
+                    "banana",
+                    null,
+                    "3021311F301D061369F487D9C7B5D0AEA2CCCBE8C8C7F2F6F2BE270C0662616E616E61",
+                };
+                yield return new object[]
+                {
+                    TestOid,
+                    "banana",
+                    UniversalTagNumber.PrintableString,
+                    "3021311F301D061369F487D9C7B5D0AEA2CCCBE8C8C7F2F6F2BE27130662616E616E61",
+                };
+                yield return new object[]
+                {
+                    TestOid,
+                    "banana",
+                    UniversalTagNumber.VisibleString,
+                    "3021311F301D061369F487D9C7B5D0AEA2CCCBE8C8C7F2F6F2BE271A0662616E616E61",
+                };
+                yield return new object[]
+                {
+                    TestOid,
+                    "banana",
+                    UniversalTagNumber.IA5String,
+                    "3021311F301D061369F487D9C7B5D0AEA2CCCBE8C8C7F2F6F2BE27160662616E616E61",
+                };
+                yield return new object[]
+                {
+                    TestOid,
+                    "banana",
+                    UniversalTagNumber.PrintableString,
+                    "3021311F301D061369F487D9C7B5D0AEA2CCCBE8C8C7F2F6F2BE27130662616E616E61",
+                };
+                yield return new object[]
+                {
+                    TestOid,
+                    "\u0411\u0430\u043d\u0430\u043d",
+                    UniversalTagNumber.BMPString,
+                    "302531233021061369F487D9C7B5D0AEA2CCCBE8C8C7F2F6F2BE271E0A04110430043D0430043D",
+                };
+                yield return new object[]
+                {
+                    TestOid,
+                    "\u0411\u0430\u043d\u0430\u043d",
+                    UniversalTagNumber.UTF8String,
+                    "302531233021061369F487D9C7B5D0AEA2CCCBE8C8C7F2F6F2BE270C0AD091D0B0D0BDD0B0D0BD",
+                };
+                yield return new object[]
+                {
+                    TestOid,
+                    "0123456789",
+                    UniversalTagNumber.NumericString,
+                    "302531233021061369F487D9C7B5D0AEA2CCCBE8C8C7F2F6F2BE27120A30313233343536373839",
+                };
+            }
         }
 
         private static void AssertAddThrowsOnNullAndEmpty(string paramName, Func<X500DistinguishedNameBuilder, Action<string>> adder)

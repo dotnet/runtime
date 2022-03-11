@@ -48,7 +48,6 @@
     <Compile Include="X500DistinguishedNameEncodingTests.cs" />
     <Compile Include="X509Certificate2PemTests.cs" />
     <Compile Include="X500DistinguishedNameTests.cs" />
-    <Compile Include="X500DistinguishedNameBuilderTests.cs" />
     <Compile Include="X509StoreTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
              Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />

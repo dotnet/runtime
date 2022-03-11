@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void Add(Oid oid!!, string value!!, UniversalTagNumber? stringEncodingType = null)
         {
-            if (oid.Value is null)
+            if (string.IsNullOrEmpty(oid.Value))
                 throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "oid.Value"), nameof(oid));
 
             UniversalTagNumber tag = GetAndValidateTagNumber(stringEncodingType);
@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void AddEncoded(Oid oid!!, byte[] encodedValue!!)
         {
-            if (oid.Value is null)
+            if (string.IsNullOrEmpty(oid.Value))
                 throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "oid.Value"), nameof(oid));
 
             EncodeComponent(oid.Value, encodedValue);
@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void AddEncoded(Oid oid!!, ReadOnlySpan<byte> encodedValue)
         {
-            if (oid.Value is null)
+            if (string.IsNullOrEmpty(oid.Value))
                 throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "oid.Value"), nameof(oid));
 
             EncodeComponent(oid.Value, encodedValue);
