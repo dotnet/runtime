@@ -192,12 +192,6 @@ steps:
       displayName: Build MAUI iOS
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
-      ../dotnet build -bl:MauiiOS.binlog -f net6.0-ios -c Release
-      mv ./bin/Release/net6.0-ios/iossimulator-x64/MauiTesting.app ./MauiiOSDefault.app
-    displayName: Build MAUI iOS
-  workingDirectory: $(Build.SourcesDirectory)/MauiTesting
-
-
   - script: |
       chmod -R a+r .
       ../dotnet publish -bl:MauiMacCatalyst.binlog -f net6.0-maccatalyst -c Release
