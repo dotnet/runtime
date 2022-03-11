@@ -1470,11 +1470,16 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				 * (its parent is set to 0).  Once we support custom attribute
 				 * changes, we will support this kind of deletion for real.
 				 */
+				/* FIXME: https://github.com/dotnet/roslyn/issues/60125
+				 * Roslyn seems to emit CA rows out of order which puts rows with unexpected Parent values in the wrong place.
+				 */
+#ifdef DISALLOW_BROKEN_PARENT
 				if (ca_base_cols [MONO_CUSTOM_ATTR_PARENT] != ca_upd_cols [MONO_CUSTOM_ATTR_PARENT] && ca_upd_cols [MONO_CUSTOM_ATTR_PARENT] != 0) {
 					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing CA table cols with a different Parent. token=0x%08x", log_token);
 					unsupported_edits = TRUE;
 					continue;
 				}
+#endif
 				break;
 			} else  {
 				/* Added a row. ok */
