@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DivRem.Int32.Tuple3Op.cs" />
+    <Compile Include="DivRem.UInt32.Tuple3Op.cs" />
+    <Compile Include="DivRem.nint.Tuple3Op.cs" />
+    <Compile Include="DivRem.nuint.Tuple3Op.cs" />
+    <Compile Include="Program.X86Base.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>
