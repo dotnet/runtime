@@ -159,6 +159,8 @@ stages:
       - tvOS_arm64
       - iOS_arm64
       - MacCatalyst_x64
+      jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
 
   #
   # Build Mono release AOT cross-compilers
@@ -374,6 +376,8 @@ stages:
       - windows_x86
       - Linux_x64
       jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        signBinaries: false
         testGroup: innerloop
         pgoType: 'PGO'
 
