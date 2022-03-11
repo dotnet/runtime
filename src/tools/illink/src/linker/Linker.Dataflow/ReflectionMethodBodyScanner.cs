@@ -289,7 +289,8 @@ namespace Mono.Linker.Dataflow
 			case IntrinsicId.Type_GetMethod:
 			case IntrinsicId.Type_GetNestedType:
 			case IntrinsicId.Expression_Property when calledMethod.HasParameterOfType (1, "System.Reflection.MethodInfo"):
-			case var fieldOrPropertyInstrinsic when fieldOrPropertyInstrinsic == IntrinsicId.Expression_Field || fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property: {
+			case var fieldOrPropertyInstrinsic when fieldOrPropertyInstrinsic == IntrinsicId.Expression_Field || fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property:
+			case IntrinsicId.Type_get_BaseType: {
 					var instanceValue = MultiValueLattice.Top;
 					IReadOnlyList<MultiValue> parameterValues = methodParams;
 					if (calledMethodDefinition.HasImplicitThis ()) {
@@ -571,55 +572,6 @@ namespace Mono.Linker.Dataflow
 
 							var targetValue = GetMethodParameterValue (calledMethodDefinition, 0, requiredMemberTypes);
 							RequireDynamicallyAccessedMembers (analysisContext, value, targetValue);
-						}
-					}
-				}
-				break;
-
-			//
-			// Type.BaseType
-			//
-			case IntrinsicId.Type_get_BaseType: {
-					foreach (var value in methodParams[0]) {
-						if (value is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers) {
-							DynamicallyAccessedMemberTypes propagatedMemberTypes = DynamicallyAccessedMemberTypes.None;
-							if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.All)
-								propagatedMemberTypes = DynamicallyAccessedMemberTypes.All;
-							else {
-								// PublicConstructors are not propagated to base type
-
-								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicEvents))
-									propagatedMemberTypes |= DynamicallyAccessedMemberTypes.PublicEvents;
-
-								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicFields))
-									propagatedMemberTypes |= DynamicallyAccessedMemberTypes.PublicFields;
-
-								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicMethods))
-									propagatedMemberTypes |= DynamicallyAccessedMemberTypes.PublicMethods;
-
-								// PublicNestedTypes are not propagated to base type
-
-								// PublicParameterlessConstructor is not propagated to base type
-
-								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicProperties))
-									propagatedMemberTypes |= DynamicallyAccessedMemberTypes.PublicProperties;
-
-								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.Interfaces))
-									propagatedMemberTypes |= DynamicallyAccessedMemberTypes.Interfaces;
-							}
-
-							methodReturnValue = MultiValueLattice.Meet (methodReturnValue, GetMethodReturnValue (calledMethodDefinition, propagatedMemberTypes));
-						} else if (value is SystemTypeValue systemTypeValue) {
-							if (systemTypeValue.RepresentedType.Type.BaseType is TypeReference baseTypeRef && _context.TryResolve (baseTypeRef) is TypeDefinition baseTypeDefinition)
-								methodReturnValue = MultiValueLattice.Meet (methodReturnValue, new SystemTypeValue (baseTypeDefinition));
-							else
-								methodReturnValue = MultiValueLattice.Meet (methodReturnValue, GetMethodReturnValue (calledMethodDefinition));
-						} else if (value == NullValue.Instance) {
-							// Ignore nulls - null.BaseType will fail at runtime, but it has no effect on static analysis
-							continue;
-						} else {
-							// Unknown input - propagate a return value without any annotation - we know it's a Type but we know nothing about it
-							methodReturnValue = MultiValueLattice.Meet (methodReturnValue, GetMethodReturnValue (calledMethodDefinition));
 						}
 					}
 				}
