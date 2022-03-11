@@ -292,6 +292,17 @@ namespace System.IO
         /// <param name="sourcePath">The source path</param>
         /// <param name="destinationPath">The destination path</param>
         /// <param name="recursive"><see langword="true" /> to copy directories, subdirectories, and files in <paramref name="sourcePath"/>; otherwise, <see langword="false" />.</param>
+        /// <returns><see langword="true"/> if the operation succeeded in copying all the specified files and directories; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="IOException">A write operation fails</exception>
+        public static bool Copy(string sourcePath, string destinationPath, bool recursive) =>
+            Copy(sourcePath, destinationPath, recursive, true);
+
+        /// <summary>
+        /// Copies a directory into another directory.
+        /// </summary>
+        /// <param name="sourcePath">The source path</param>
+        /// <param name="destinationPath">The destination path</param>
+        /// <param name="recursive"><see langword="true" /> to copy directories, subdirectories, and files in <paramref name="sourcePath"/>; otherwise, <see langword="false" />.</param>
         /// <param name="skipExistingFiles"><see langword="true" /> to skip overwrite of existing files in <paramref name="destinationPath"/>; otherwise, <see langword="false" />.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" /></param>
         /// <returns><see langword="true"/> if the operation succeeded in copying all the specified files and directories; otherwise, <see langword="false"/>.</returns>
