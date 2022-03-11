@@ -16,15 +16,13 @@ namespace System.Text.RegularExpressions.Symbolic
     {
 #if DEBUG
         /// <summary>Unwind the regex of the matcher and save the resulting state graph in DGML</summary>
-        /// <param name="bound">roughly the maximum number of states, 0 means no bound</param>
-        /// <param name="hideStateInfo">if true then hide state info</param>
-        /// <param name="addDotStar">if true then pretend that there is a .* at the beginning</param>
-        /// <param name="inReverse">if true then unwind the regex backwards (addDotStar is then ignored)</param>
-        /// <param name="onlyDFAinfo">if true then compute and save only genral DFA info</param>
-        /// <param name="writer">dgml output is written here</param>
+        /// <param name="writer">Writer to which the DGML is written.</param>
+        /// <param name="nfa">True to create an NFA instead of a DFA.</param>
+        /// <param name="addDotStar">True to prepend .*? onto the pattern (outside of the implicit root capture).</param>
+        /// <param name="reverse">If true, then unwind the regex backwards.</param>
+        /// <param name="maxStates">The approximate maximum number of states to include; less than or equal to 0 for no maximum.</param>
         /// <param name="maxLabelLength">maximum length of labels in nodes anything over that length is indicated with .. </param>
-        /// <param name="asNFA">if true creates NFA instead of DFA</param>
-        public abstract void SaveDGML(TextWriter writer, int bound, bool hideStateInfo, bool addDotStar, bool inReverse, bool onlyDFAinfo, int maxLabelLength, bool asNFA);
+        public abstract void SaveDGML(TextWriter writer, bool nfa, bool addDotStar, bool reverse, int maxStates, int maxLabelLength);
 
         /// <summary>
         /// Generates up to k random strings matched by the regex
@@ -1276,12 +1274,8 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
 #if DEBUG
-        public override void SaveDGML(TextWriter writer, int bound, bool hideStateInfo, bool addDotStar, bool inReverse, bool onlyDFAinfo, int maxLabelLength, bool asNFA)
-        {
-            var graph = new DGML.RegexAutomaton<TSetType>(this, bound, addDotStar, inReverse, asNFA);
-            var dgml = new DGML.DgmlWriter(writer, hideStateInfo, maxLabelLength, onlyDFAinfo);
-            dgml.Write(graph);
-        }
+        public override void SaveDGML(TextWriter writer, bool nfa, bool addDotStar, bool reverse, int maxStates, int maxLabelLength) =>
+            DgmlWriter<TSetType>.Write(writer, this, nfa, addDotStar, reverse, maxStates, maxLabelLength);
 
         public override IEnumerable<string> GenerateRandomMembers(int k, int randomseed, bool negative) =>
             new SymbolicRegexSampler<TSetType>(_pattern, randomseed, negative).GenerateRandomMembers(k);

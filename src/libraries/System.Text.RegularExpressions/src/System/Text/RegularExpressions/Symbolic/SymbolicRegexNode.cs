@@ -1582,9 +1582,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 case SymbolicRegexNodeKind.OrderedOr:
                     Debug.Assert(_left is not null && _right is not null);
+                    sb.Append('(');
                     _left.ToString(sb);
                     sb.Append('|');
                     _right.ToString(sb);
+                    sb.Append(')');
                     return;
 
                 case SymbolicRegexNodeKind.Concat:

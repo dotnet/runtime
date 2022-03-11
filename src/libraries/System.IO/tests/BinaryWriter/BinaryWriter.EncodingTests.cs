@@ -192,7 +192,7 @@ namespace System.IO.Tests
         }
 
         [OuterLoop("Allocates a lot of memory")]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [SkipOnPlatform(TestPlatforms.Android, "OOM on Android could be uncatchable & kill the test runner")]
         public unsafe void WriteChars_VeryLargeArray_DoesNotOverflow()
         {
