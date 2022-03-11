@@ -26,7 +26,7 @@ internal class WasmSymbolicator
     public WasmSymbolicator(string? symbolsMapFile, string? symbolPatternsFile, bool throwOnMissing, ILogger logger)
     {
         _logger = logger;
-        if (string.IsNullOrEmpty(symbolsMapFile) && !File.Exists(symbolsMapFile))
+        if (string.IsNullOrEmpty(symbolsMapFile) || !File.Exists(symbolsMapFile))
         {
             if (throwOnMissing)
                 throw new ArgumentException($"Cannot find symbols file: {symbolsMapFile}");
