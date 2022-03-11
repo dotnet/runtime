@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Formats.Asn1;
+using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -172,7 +174,11 @@ namespace System.Security.Cryptography.X509Certificates
             return name;
         }
 
-        private void EncodeComponent(string oid, string value, UniversalTagNumber stringEncodingType)
+        private void EncodeComponent(
+            string oid,
+            string value,
+            UniversalTagNumber stringEncodingType,
+            [CallerArgumentExpression("value")] string? paramName = null)
         {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
@@ -180,7 +186,15 @@ namespace System.Security.Cryptography.X509Certificates
             using (writer.PushSequence())
             {
                 writer.WriteObjectIdentifier(oid);
-                writer.WriteCharacterString(stringEncodingType, value);
+
+                try
+                {
+                    writer.WriteCharacterString(stringEncodingType, value);
+                }
+                catch (EncoderFallbackException)
+                {
+                    throw new ArgumentException(SR.Format(SR.Argument_Asn1_InvalidStringContents, stringEncodingType), paramName);
+                }
             }
 
             _encodedComponents.Add(writer.Encode());

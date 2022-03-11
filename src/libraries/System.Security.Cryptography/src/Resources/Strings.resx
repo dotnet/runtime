@@ -81,6 +81,9 @@
   <data name="Argument_Asn1_InvalidCharacterString" xml:space="preserve">
     <value>The specified UniversalTagNumber must be a string type.</value>
   </data>
+  <data name="Argument_Asn1_InvalidStringContents" xml:space="preserve">
+    <value>The contents of the string are not valid for the '{0}' ASN.1 encoding.</value>
+  </data>
   <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
     <value>Only single dimensional arrays are supported for the requested action.</value>
   </data>
