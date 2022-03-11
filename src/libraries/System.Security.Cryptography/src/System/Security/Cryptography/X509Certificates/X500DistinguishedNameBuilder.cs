@@ -28,17 +28,17 @@ namespace System.Security.Cryptography.X509Certificates
         /// <paramref name="oidValue" /> or <paramref name="value" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// <p>
+        /// <para>
         ///   <paramref name="oidValue" /> is an empty string or not a valid OID.
-        /// </p>
-        /// <p>-or-</p>
-        /// <p>
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>
         ///   <paramref name="stringEncodingType" /> is not a type for character strings.
-        /// </p>
-        /// <p>-or-</p>
-        /// <p>
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>
         ///   <paramref name="value" /> is not encodable as defined by <paramref name="stringEncodingType" />.
-        /// </p>
+        /// </para>
         /// </exception>
         public void Add(string oidValue, string value!!, UniversalTagNumber? stringEncodingType = null)
         {
@@ -61,17 +61,17 @@ namespace System.Security.Cryptography.X509Certificates
         /// <paramref name="oid" /> or <paramref name="value" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// <p>
+        /// <para>
         ///   <paramref name="oid" /> does not contain a valid OID.
-        /// </p>
-        /// <p>-or-</p>
-        /// <p>
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>
         ///   <paramref name="stringEncodingType" /> is not a type for character strings.
-        /// </p>
-        /// <p>-or-</p>
-        /// <p>
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>
         ///   <paramref name="value" /> is not encodable as defined by <paramref name="stringEncodingType" />.
-        /// </p>
+        /// </para>
         /// </exception>
         public void Add(Oid oid!!, string value!!, UniversalTagNumber? stringEncodingType = null)
         {
@@ -91,13 +91,13 @@ namespace System.Security.Cryptography.X509Certificates
         /// <paramref name="oidValue" /> or <paramref name="encodedValue" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// <p>
+        /// <para>
         ///   <paramref name="oidValue" /> is an empty string or not a valid OID.
-        /// </p>
-        /// <p>-or-</p>
-        /// <p>
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>
         ///   <paramref name="encodedValue" /> does not contain valid ASN.1 as defined by the Distinguished Encoding Rules (DER).
-        /// </p>
+        /// </para>
         /// </exception>
         public void AddEncoded(string oidValue, byte[] encodedValue!!)
         {
@@ -114,13 +114,13 @@ namespace System.Security.Cryptography.X509Certificates
         /// <paramref name="oidValue" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// <p>
+        /// <para>
         ///   <paramref name="oidValue" /> is an empty string or not a valid OID.
-        /// </p>
-        /// <p>-or-</p>
-        /// <p>
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>
         ///   <paramref name="encodedValue" /> does not contain valid ASN.1 as defined by the Distinguished Encoding Rules (DER).
-        /// </p>
+        /// </para>
         /// </exception>
         public void AddEncoded(string oidValue, ReadOnlySpan<byte> encodedValue)
         {
@@ -137,13 +137,13 @@ namespace System.Security.Cryptography.X509Certificates
         /// <paramref name="oid" /> or <paramref name="encodedValue" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// <p>
+        /// <para>
         ///   <paramref name="oid" /> does not contain a valid OID.
-        /// </p>
-        /// <p>-or-</p>
-        /// <p>
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>
         ///   <paramref name="encodedValue" /> does not contain valid ASN.1 as defined by the Distinguished Encoding Rules (DER).
-        /// </p>
+        /// </para>
         /// </exception>
         public void AddEncoded(Oid oid!!, byte[] encodedValue!!)
         {
@@ -162,13 +162,13 @@ namespace System.Security.Cryptography.X509Certificates
         /// <paramref name="oid" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// <p>
+        /// <para>
         ///   <paramref name="oid" /> does not contain a valid OID.
-        /// </p>
-        /// <p>-or-</p>
-        /// <p>
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>
         ///   <paramref name="encodedValue" /> does not contain valid ASN.1 as defined by the Distinguished Encoding Rules (DER).
-        /// </p>
+        /// </para>
         /// </exception>
         public void AddEncoded(Oid oid!!, ReadOnlySpan<byte> encodedValue)
         {
