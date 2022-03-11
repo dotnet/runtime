@@ -25,27 +25,25 @@ namespace System.Net.Http.Headers
         {
             CacheControlHeaderValue? temp = null;
             bool isInvalidValue = true;
-            if (storeValue is not null)
+
+            foreach (object item in list)
             {
-                foreach (object item in list)
+                if (item is CacheControlHeaderValue cacheControl)
                 {
-                    if (item is CacheControlHeaderValue cacheControl)
-                    {
-                        if (item is not HttpHeaders.InvalidValue)
-                        {
-                            isInvalidValue = false;
-                            temp = item as CacheControlHeaderValue;
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    if (storeValue is not HttpHeaders.InvalidValue)
+                    if (item is not HttpHeaders.InvalidValue)
                     {
                         isInvalidValue = false;
-                        temp = storeValue as CacheControlHeaderValue;
+                        temp = item as CacheControlHeaderValue;
+                        break;
                     }
+                }
+            }
+            else
+            {
+                if (storeValue is not HttpHeaders.InvalidValue)
+                {
+                    isInvalidValue = false;
+                    temp = storeValue as CacheControlHeaderValue;
                 }
             }
             Debug.Assert(isInvalidValue || storeValue == null || temp != null, "'storeValue' is not of type CacheControlHeaderValue");
