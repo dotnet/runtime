@@ -11004,6 +11004,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = result;
 			break;
 		}
+		case OP_ARM64_XADDV: {
+			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			LLVMTypeRef arg_t = LLVMTypeOf (lhs);
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (arg_t);
+			LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, &lhs, "arm64_xaddv");
+			values [ins->dreg] = result;
+			break;
+		}
 		case OP_ARM64_SXTL:
 		case OP_ARM64_SXTL2:
 		case OP_ARM64_UXTL:
