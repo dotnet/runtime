@@ -164,6 +164,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task TypeBaseTypeUseViaReflection ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task TypeHierarchyReflectionWarnings ()
 		{
 			// https://github.com/dotnet/linker/issues/2578

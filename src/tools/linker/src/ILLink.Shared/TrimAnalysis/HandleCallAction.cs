@@ -540,6 +540,55 @@ namespace ILLink.Shared.TrimAnalysis
 				}
 				break;
 
+			//
+			// Type.BaseType
+			//
+			case IntrinsicId.Type_get_BaseType: {
+					foreach (var value in instanceValue) {
+						if (value is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers) {
+							DynamicallyAccessedMemberTypes propagatedMemberTypes = DynamicallyAccessedMemberTypes.None;
+							if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.All)
+								propagatedMemberTypes = DynamicallyAccessedMemberTypes.All;
+							else {
+								// PublicConstructors are not propagated to base type
+
+								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicEvents))
+									propagatedMemberTypes |= DynamicallyAccessedMemberTypes.PublicEvents;
+
+								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicFields))
+									propagatedMemberTypes |= DynamicallyAccessedMemberTypes.PublicFields;
+
+								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicMethods))
+									propagatedMemberTypes |= DynamicallyAccessedMemberTypes.PublicMethods;
+
+								// PublicNestedTypes are not propagated to base type
+
+								// PublicParameterlessConstructor is not propagated to base type
+
+								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicProperties))
+									propagatedMemberTypes |= DynamicallyAccessedMemberTypes.PublicProperties;
+
+								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.Interfaces))
+									propagatedMemberTypes |= DynamicallyAccessedMemberTypes.Interfaces;
+							}
+
+							AddReturnValue (GetMethodReturnValue (calledMethod, propagatedMemberTypes));
+						} else if (value is SystemTypeValue systemTypeValue) {
+							if (TryGetBaseType (systemTypeValue.RepresentedType, out var baseType))
+								AddReturnValue (new SystemTypeValue (baseType.Value));
+							else
+								AddReturnValue (GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes));
+						} else if (value == NullValue.Instance) {
+							// Ignore nulls - null.BaseType will fail at runtime, but it has no effect on static analysis
+							continue;
+						} else {
+							// Unknown input - propagate a return value without any annotation - we know it's a Type but we know nothing about it
+							AddReturnValue (GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes));
+						}
+					}
+				}
+				break;
+
 			case IntrinsicId.None:
 				methodReturnValue = MultiValueLattice.Top;
 				return false;
@@ -685,6 +734,8 @@ namespace ILLink.Shared.TrimAnalysis
 		private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags);
 
 		private partial IEnumerable<SystemTypeValue> GetNestedTypesOnType (TypeProxy type, string name, BindingFlags? bindingFlags);
+
+		private partial bool TryGetBaseType (TypeProxy type, [NotNullWhen (true)] out TypeProxy? baseType);
 
 		private partial void MarkStaticConstructor (TypeProxy type);
 
