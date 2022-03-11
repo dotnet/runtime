@@ -136,7 +136,7 @@ jobs:
               - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h2.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64-20200904200251-272704c
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             - Windows.81.Amd64.Open
-            - Windows.10.Amd64.Server19H1.ES.Open
+            - Windows.10.Amd64.Server2022.ES.Open
             - Windows.11.Amd64.ClientPre.Open
             - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
               - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h2.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64-20200904200251-272704c
@@ -161,7 +161,7 @@ jobs:
             - Windows.10.Amd64.ServerRS5.Open
             - Windows.Amd64.Server2022.Open
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-            - Windows.10.Amd64.Server19H1.ES.Open
+            - Windows.10.Amd64.Server2022.ES.Open
             - Windows.7.Amd64.Open
 
       # .NETFramework
