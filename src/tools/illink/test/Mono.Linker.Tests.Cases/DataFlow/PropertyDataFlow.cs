@@ -292,15 +292,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[CompilerGenerated]
 			Type PropertyWithExistingAttributes_Field;
 
+			[ExpectedWarning ("IL2043", "PropertyWithExistingAttributes", "PropertyWithExistingAttributes.get", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2043", "PropertyWithExistingAttributes", "PropertyWithExistingAttributes.set", ProducedBy = ProducedBy.Analyzer)]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 			Type PropertyWithExistingAttributes {
-				// Analyzer doesn't try to detect backing fields of properties: https://github.com/dotnet/linker/issues/2273
+				// On property/accessor mismatch, linker warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
 				[ExpectedWarning ("IL2043", "PropertyWithExistingAttributes", "PropertyWithExistingAttributes.get",
 					ProducedBy = ProducedBy.Trimmer)]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 				get { return PropertyWithExistingAttributes_Field; }
 
-				// Analyzer doesn't try to detect backing fields of properties: https://github.com/dotnet/linker/issues/2273
+				// On property/accessor mismatch, linker warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
 				[ExpectedWarning ("IL2043", "PropertyWithExistingAttributes", "PropertyWithExistingAttributes.set",
 					ProducedBy = ProducedBy.Trimmer)]
 				[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
@@ -328,15 +330,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[CompilerGenerated]
 			Type PropertyWithConflictingAttributes_Field;
 
+			[ExpectedWarning ("IL2043", "PropertyWithConflictingAttributes", "PropertyWithConflictingAttributes.get", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2043", "PropertyWithConflictingAttributes", "PropertyWithConflictingAttributes.set", ProducedBy = ProducedBy.Analyzer)]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 			Type PropertyWithConflictingAttributes {
-				// Analyzer doesn't try to detect backing fields of properties: https://github.com/dotnet/linker/issues/2273
+				// On property/accessor mismatch, linker warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
 				[ExpectedWarning ("IL2043", "PropertyWithConflictingAttributes", "PropertyWithConflictingAttributes.get",
 					ProducedBy = ProducedBy.Trimmer)]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 				get { return PropertyWithConflictingAttributes_Field; }
 
-				// Analyzer doesn't try to detect backing fields of properties: https://github.com/dotnet/linker/issues/2273
+				// On property/accessor mismatch, linker warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
 				[ExpectedWarning ("IL2043", "PropertyWithConflictingAttributes", "PropertyWithConflictingAttributes.set",
 					ProducedBy = ProducedBy.Trimmer)]
 				[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicConstructors)]
