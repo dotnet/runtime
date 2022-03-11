@@ -7205,10 +7205,21 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 		else
 			container->owner.klass = (MonoClass*)real_owner;
 	}
+	/* first pass over the gparam table - just count how many params we own */
+	uint32_t type_argc = 0;
+	uint32_t i2 = i;
+	do {
+		type_argc++;
+		if (++i2 > mono_metadata_table_num_rows (image, MONO_TABLE_GENERICPARAM))
+			break;
+		mono_metadata_decode_row (tdef, i2 - 1, cols, MONO_GENERICPARAM_SIZE);
+	} while (cols [MONO_GENERICPARAM_OWNER] == owner);
+	params = (MonoGenericParamFull *)mono_image_alloc0 (image, sizeof (MonoGenericParamFull) * type_argc);
+
+	/* second pass, fill in the gparam data */
+	mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
 	do {
 		n++;
-		params = (MonoGenericParamFull *)g_realloc (params, sizeof (MonoGenericParamFull) * n);
-		memset (&params [n - 1], 0, sizeof (MonoGenericParamFull));
 		params [n - 1].owner = container;
 		params [n - 1].num = cols [MONO_GENERICPARAM_NUMBER];
 		params [n - 1].info.token = i | MONO_TOKEN_GENERIC_PARAM;
@@ -7216,16 +7227,13 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 		params [n - 1].info.name = mono_metadata_string_heap (image, cols [MONO_GENERICPARAM_NAME]);
 		if (params [n - 1].num != n - 1)
 			g_warning ("GenericParam table unsorted or hole in generic param sequence: token %d", i);
-		/* FIXME: metadata-update */
-		if (++i > table_info_get_rows (tdef))
+		if (++i > mono_metadata_table_num_rows (image, MONO_TABLE_GENERICPARAM))
 			break;
 		mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
 	} while (cols [MONO_GENERICPARAM_OWNER] == owner);
 
-	container->type_argc = n;
-	container->type_params = (MonoGenericParamFull *)mono_image_alloc0 (image, sizeof (MonoGenericParamFull) * n);
-	memcpy (container->type_params, params, sizeof (MonoGenericParamFull) * n);
-	g_free (params);
+	container->type_argc = type_argc;
+	container->type_params = params;
 	container->parent = parent_container;
 
 	if (is_method)
