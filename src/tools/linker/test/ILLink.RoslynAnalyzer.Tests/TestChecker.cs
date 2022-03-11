@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -283,43 +284,68 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		private bool TryValidateLogContainsAttribute (AttributeSyntax attribute, List<Diagnostic> diagnostics, out int? matchIndex, out string? missingDiagnosticMessage)
 		{
-			missingDiagnosticMessage = null;
-			matchIndex = null;
+			if (!LogContains (attribute, diagnostics, out matchIndex, out string text)) {
+				missingDiagnosticMessage = $"Could not find text:\n{text}\nIn diagnostics:\n{string.Join (Environment.NewLine, _diagnostics)}";
+				return false;
+			} else {
+				missingDiagnosticMessage = null;
+				return true;
+			}
+		}
+
+		private void ValidateLogDoesNotContainAttribute (AttributeSyntax attribute, IReadOnlyList<Diagnostic> diagnosticMessages)
+		{
 			var args = LinkerTestBase.GetAttributeArguments (attribute);
-			var text = LinkerTestBase.GetStringFromExpression (args["#0"], _semanticModel);
+			var arg = args["#0"];
+			Assert.False (args.ContainsKey ("#1"));
+			_ = LinkerTestBase.GetStringFromExpression (arg, _semanticModel);
+			if (LogContains (attribute, diagnosticMessages, out var matchIndex, out var findText)) {
+				Assert.True (false, $"LogDoesNotContain failure: Text\n\"{findText}\"\nfound in diagnostic:\n {diagnosticMessages[(int) matchIndex]}");
+			}
+		}
+
+		private bool LogContains (AttributeSyntax attribute, IReadOnlyList<Diagnostic> diagnostics, [NotNullWhen (true)] out int? matchIndex, out string findText)
+		{
+
+			var args = LinkerTestBase.GetAttributeArguments (attribute);
+			findText = LinkerTestBase.GetStringFromExpression (args["#0"], _semanticModel);
 
 			// If the text starts with `warning IL...` then it probably follows the pattern
 			//	'warning <diagId>: <location>:'
 			// We don't want to repeat the location in the error message for the analyzer, so
 			// it's better to just trim here. We've already filtered by diagnostic location so
 			// the text location shouldn't matter
-			if (text.StartsWith ("warning IL")) {
-				var firstColon = text.IndexOf (": ");
+			if (findText.StartsWith ("warning IL")) {
+				var firstColon = findText.IndexOf (": ");
 				if (firstColon > 0) {
-					var secondColon = text.IndexOf (": ", firstColon + 1);
+					var secondColon = findText.IndexOf (": ", firstColon + 1);
 					if (secondColon > 0) {
-						text = text.Substring (secondColon + 2);
+						findText = findText.Substring (secondColon + 2);
 					}
 				}
 			}
 
-			for (int i = 0; i < diagnostics.Count; i++) {
-				if (diagnostics[i].GetMessage ().Contains (text)) {
-					matchIndex = i;
-					return true;
+			bool isRegex = args.TryGetValue ("regexMatch", out var regexMatchExpr)
+					&& regexMatchExpr.GetLastToken ().Value is bool regexMatch
+					&& regexMatch;
+			if (isRegex) {
+				var regex = new Regex (findText);
+				for (int i = 0; i < diagnostics.Count; i++) {
+					if (regex.IsMatch (diagnostics[i].GetMessage ())) {
+						matchIndex = i;
+						return true;
+					}
+				}
+			} else {
+				for (int i = 0; i < diagnostics.Count; i++) {
+					if (diagnostics[i].GetMessage ().Contains (findText)) {
+						matchIndex = i;
+						return true;
+					}
 				}
 			}
-
-			missingDiagnosticMessage = $"Could not find text:\n{text}\nIn diagnostics:\n{string.Join (Environment.NewLine, _diagnostics)}";
+			matchIndex = null;
 			return false;
-		}
-
-		private void ValidateLogDoesNotContainAttribute (AttributeSyntax attribute, IReadOnlyList<Diagnostic> diagnosticMessages)
-		{
-			var arg = Assert.Single (LinkerTestBase.GetAttributeArguments (attribute));
-			var text = LinkerTestBase.GetStringFromExpression (arg.Value, _semanticModel);
-			foreach (var diagnostic in diagnosticMessages)
-				Assert.DoesNotContain (text, diagnostic.GetMessage ());
 		}
 	}
 }

@@ -511,6 +511,7 @@ class C
 
 using System.Globalization;
 using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
@@ -534,6 +535,8 @@ namespace System
 
 		public override string Name => throw new NotImplementedException ();
 
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors
+			| DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 		public override ConstructorInfo[] GetConstructors (BindingFlags bindingAttr)
 		{
 			throw new NotImplementedException ();
@@ -554,61 +557,76 @@ namespace System
 			throw new NotImplementedException ();
 		}
 
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents
+		| DynamicallyAccessedMemberTypes.NonPublicEvents)]
 		public override EventInfo GetEvent (string name, BindingFlags bindingAttr)
 		{
 			throw new NotImplementedException ();
 		}
 
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
 		public override EventInfo[] GetEvents (BindingFlags bindingAttr)
 		{
 			throw new NotImplementedException ();
 		}
 
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
 		public override FieldInfo GetField (string name, BindingFlags bindingAttr)
 		{
 			throw new NotImplementedException ();
 		}
 
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields
+			| DynamicallyAccessedMemberTypes.NonPublicFields)]
 		public override FieldInfo[] GetFields (BindingFlags bindingAttr)
 		{
 			throw new NotImplementedException ();
 		}
 
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+		[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
 		public override Type GetInterface (string name, bool ignoreCase)
 		{
 			throw new NotImplementedException ();
 		}
 
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
 		public override Type[] GetInterfaces ()
 		{
 			throw new NotImplementedException ();
 		}
 
+		[DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)0x1FFF)]
 		public override MemberInfo[] GetMembers (BindingFlags bindingAttr)
 		{
 			throw new NotImplementedException ();
 		}
 
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
 		public override MethodInfo[] GetMethods (BindingFlags bindingAttr)
 		{
 			throw new NotImplementedException ();
 		}
 
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
 		public override Type GetNestedType (string name, BindingFlags bindingAttr)
 		{
 			throw new NotImplementedException ();
 		}
 
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
 		public override Type[] GetNestedTypes (BindingFlags bindingAttr)
 		{
 			throw new NotImplementedException ();
 		}
 
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
 		public override PropertyInfo[] GetProperties (BindingFlags bindingAttr)
 		{
 			throw new NotImplementedException ();
 		}
 
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
 		public override object InvokeMember (string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters)
 		{
 			throw new NotImplementedException ();
@@ -624,16 +642,20 @@ namespace System
 			throw new NotImplementedException ();
 		}
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors
+		| DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 		protected override ConstructorInfo GetConstructorImpl (BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
 		{
 			throw new NotImplementedException ();
 		}
 
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
 		protected override MethodInfo GetMethodImpl (string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
 		{
 			throw new NotImplementedException ();
 		}
 
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
 		protected override PropertyInfo GetPropertyImpl (string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers)
 		{
 			throw new NotImplementedException ();
@@ -698,12 +720,12 @@ namespace System
     }
 }";
 
-			// (178,16): warning IL2082: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.C.M2(Type)'.
+			// (200,16): warning IL2082: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.C.M2(Type)'.
 			// The implicit 'this' argument of method 'System.C.M1()' does not have matching annotations.
 			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
 			return VerifyDynamicallyAccessedMembersAnalyzer (string.Concat (GetSystemTypeBase (), TargetParameterWithAnnotations),
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsParameter)
-				.WithSpan (178, 13, 178, 21)
+				.WithSpan (200, 13, 200, 21)
 				.WithArguments ("type", "System.C.M2(Type)", "System.C.M1()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 
@@ -740,7 +762,7 @@ namespace System
 
 			return VerifyDynamicallyAccessedMembersAnalyzer (string.Concat (GetSystemTypeBase (), ConversionOperation),
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter)
-				.WithSpan (183, 13, 183, 37)
+				.WithSpan (205, 13, 205, 37)
 				.WithArguments ("type", "System.C.M2(Type)", "System.ConvertsToType.implicit operator Type(ConvertsToType)", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 
@@ -780,7 +802,7 @@ namespace System
 
 			return VerifyDynamicallyAccessedMembersAnalyzer (string.Concat (GetSystemTypeBase (), AnnotatedConversionOperation),
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter)
-				.WithSpan (185, 13, 185, 37)
+				.WithSpan (207, 13, 207, 37)
 				.WithArguments ("type", "System.C.M2(Type)", "System.ConvertsToType.implicit operator Type(ConvertsToType)", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 
@@ -843,12 +865,12 @@ namespace System
     }
 }";
 
-			// (180,13): warning IL2083: 'System.C.M()' method return value does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
+			// (202,13): warning IL2083: 'System.C.M()' method return value does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
 			// The implicit 'this' argument of method 'System.C.M()' does not have matching annotations.
 			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
 			return VerifyDynamicallyAccessedMembersAnalyzer (string.Concat (GetSystemTypeBase (), TargetMethodReturnTypeWithAnnotations),
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsMethodReturnType)
-				.WithSpan (180, 20, 180, 24)
+				.WithSpan (202, 20, 202, 24)
 				.WithArguments ("System.C.M()", "System.C.M()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 
@@ -876,12 +898,12 @@ namespace System
     }
 }";
 
-			// (178,13): warning IL2084: value stored in field 'System.C.f' does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
+			// (200,13): warning IL2084: value stored in field 'System.C.f' does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
 			// The implicit 'this' argument of method 'System.C.M()' does not have matching annotations.
 			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
 			return VerifyDynamicallyAccessedMembersAnalyzer (string.Concat (GetSystemTypeBase (), TargetFieldWithAnnotations),
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsField)
-				.WithSpan (178, 13, 178, 21)
+				.WithSpan (200, 13, 200, 21)
 				.WithArguments ("System.C.f",
 					"System.C.M()",
 					"'DynamicallyAccessedMemberTypes.PublicMethods'"));
@@ -907,12 +929,12 @@ namespace System
     }
 }";
 
-			// (178,13): warning IL2085: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.Type.GetMethods()'.
+			// (200,13): warning IL2085: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.Type.GetMethods()'.
 			// The implicit 'this' argument of method 'System.C.M()' does not have matching annotations.
 			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
 			return VerifyDynamicallyAccessedMembersAnalyzer (string.Concat (GetSystemTypeBase (), TargetMethodWithAnnotations),
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsThisParameter)
-				.WithSpan (178, 13, 178, 30)
+				.WithSpan (200, 13, 200, 30)
 				.WithArguments ("System.Type.GetMethods()", "System.C.M()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 		#endregion
