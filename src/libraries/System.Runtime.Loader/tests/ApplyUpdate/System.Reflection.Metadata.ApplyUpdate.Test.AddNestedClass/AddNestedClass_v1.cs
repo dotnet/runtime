@@ -14,7 +14,7 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
         public string TestMethod()
         {
             var n = new Nested<string, int>();
-            n.f = "123";
+            n.Eff = "123";
 	    n.g = 456;
             return n.M();
         }
@@ -23,8 +23,12 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
             public Nested() { }
             internal T f;
 	    internal U g;
+	    public T Eff {
+		get => f;
+		set { f = value; }
+	    }
             public string M () {
-                return f.ToString() + g.ToString();
+                return Eff.ToString() + g.ToString();
             }
         }
     }
