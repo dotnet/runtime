@@ -2283,6 +2283,9 @@ region_allocator global_region_allocator;
 uint8_t*(*initial_regions)[total_generation_count][2] = nullptr;
 size_t      gc_heap::region_count = 0;
 
+uint8_t* gc_heap::map_region_to_generation = nullptr;
+uint8_t* gc_heap::map_region_to_generation_skewed = nullptr;
+
 #endif //USE_REGIONS
 
 #ifdef BACKGROUND_GC
@@ -13106,6 +13109,12 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 
         if (!allocate_initial_regions(number_of_heaps))
             return E_OUTOFMEMORY;
+
+        size_t num_region_units = (g_gc_highest_address - g_gc_lowest_address) >> min_segment_size_shr;
+        map_region_to_generation = new (nothrow) uint8_t[num_region_units];
+        if (map_region_to_generation == nullptr)
+            return E_OUTOFMEMORY;
+        map_region_to_generation_skewed = map_region_to_generation - ((size_t)g_gc_lowest_address >> min_segment_size_shr);
     }
     else
     {
@@ -25569,6 +25578,27 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
         special_sweep_p = false;
         region_count = global_region_allocator.get_used_region_count();
         grow_mark_list_piece();
+
+        memset (map_region_to_generation, 0x22, region_count*sizeof(map_region_to_generation[0]));
+        for (int gen_number = soh_gen0; gen_number <= soh_gen1; gen_number++)
+        {
+#ifdef MULTIPLE_HEAPS
+            for (int i = 0; i < n_heaps; i++)
+            {
+                gc_heap* hp = g_heaps[i];
+#else //MULTIPLE_HEAPS
+            {
+                gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+                generation *gen = generation_of (gen_number);
+                for (heap_segment *region = generation_start_segment (gen); region != nullptr; region = heap_segment_next (region))
+                {
+                    uint8_t* addr = heap_segment_mem (region);
+                    size_t index = (size_t)addr >> gc_heap::min_segment_size_shr;
+                    map_region_to_generation_skewed[index] = 0xf0 | (uint8_t)gen_number;
+                }
+            }
+        }
 #endif //USE_REGIONS
 
         GCToEEInterface::BeforeGcScanRoots(condemned_gen_number, /* is_bgc */ false, /* is_concurrent */ false);
@@ -32267,6 +32297,29 @@ void gc_heap::relocate_phase (int condemned_gen_number,
         }
 #endif //FEATURE_EVENT_TRACE
 
+#ifdef USE_REGIONS
+        for (int gen_number = soh_gen0; gen_number <= soh_gen2; gen_number++)
+        {
+#ifdef MULTIPLE_HEAPS
+            for (int i = 0; i < n_heaps; i++)
+            {
+                gc_heap* hp = g_heaps[i];
+#else //MULTIPLE_HEAPS
+            {
+                gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+                generation *gen = generation_of (gen_number);
+                for (heap_segment *region = generation_start_segment (gen); region != nullptr; region = heap_segment_next (region))
+                {
+                    uint8_t* addr = heap_segment_mem (region);
+                    size_t index = (size_t)addr >> gc_heap::min_segment_size_shr;
+                    int plan_gen = heap_segment_plan_gen_num (region);
+                    map_region_to_generation_skewed[index] = (uint8_t)((plan_gen<<4) | (map_region_to_generation_skewed[index] & 0x0f));
+                }
+            }
+        }
+#endif //USE_REGIONS
+
 #ifdef MULTIPLE_HEAPS
         //join all threads to make sure they are synchronized
         dprintf(3, ("Restarting for relocation"));
@@ -36733,7 +36786,10 @@ gc_heap::mark_through_cards_helper (uint8_t** poo, size_t& n_gen,
     uint8_t* child_object = *poo;
     if (!is_in_heap_range (child_object))
         return;
-    int child_object_gen = get_region_gen_num (child_object);
+
+    size_t child_region_index = (size_t)child_object >> gc_heap::min_segment_size_shr;
+    int child_object_gen = map_region_to_generation_skewed[child_region_index] & 0x0f;
+    assert (child_object_gen == get_region_gen_num (child_object));
     int saved_child_object_gen = child_object_gen;
     uint8_t* saved_child_object = child_object;
 
@@ -36745,14 +36801,16 @@ gc_heap::mark_through_cards_helper (uint8_t** poo, size_t& n_gen,
 
     if (fn == &gc_heap::relocate_address)
     {
-        child_object_gen = get_region_plan_gen_num (*poo);
+        size_t new_child_region_index = (size_t)*poo >> gc_heap::min_segment_size_shr;
+        child_object_gen = map_region_to_generation_skewed[new_child_region_index] >> 4;
+        assert (child_object_gen == get_region_plan_gen_num (*poo));
     }
 
     if (child_object_gen < current_gen)
     {
         cg_pointers_found++;
         dprintf (4, ("cg pointer %Ix found, %Id so far",
-                     (size_t)*poo, cg_pointers_found ));
+                        (size_t)*poo, cg_pointers_found ));
     }
 #else //USE_REGIONS
     assert (condemned_gen == -1);

@@ -1441,6 +1441,13 @@ public:
     // This relocates the SIP regions and return the next non SIP region.
     PER_HEAP
     heap_segment* relocate_advance_to_non_sip (heap_segment* region);
+
+    PER_HEAP_ISOLATED
+    int generation_of_addr (uint8_t* addr);
+
+    PER_HEAP_ISOLATED
+    int plan_generation_of_addr (uint8_t* addr);
+
 #ifdef STRESS_REGIONS
     PER_HEAP
     void pin_by_gc (uint8_t* object);
@@ -3662,6 +3669,17 @@ public:
     size_t* old_card_survived_per_region;
     PER_HEAP_ISOLATED
     size_t region_count;
+
+    // table mapping region number to generation
+    // there are actually two generation numbers per entry:
+    // - the region's current generation
+    // - the region's planned generation, i.e. after the GC
+    PER_HEAP_ISOLATED
+    uint8_t* map_region_to_generation;
+    // same table as above, but skewed so that we can index
+    // directly with address >> min_segment_size_shr
+    PER_HEAP_ISOLATED
+    uint8_t* map_region_to_generation_skewed;
 #endif //USE_REGIONS
 
 #define max_oom_history_count 4
