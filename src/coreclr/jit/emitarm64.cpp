@@ -12275,7 +12275,7 @@ void emitter::emitDispIns(
 
     emitDispInsOffs(offset, doffs);
 
-    byte* pCodeRW = nullptr;
+    BYTE* pCodeRW = nullptr;
     if (pCode != nullptr)
     {
         /* Display the instruction hex code */
