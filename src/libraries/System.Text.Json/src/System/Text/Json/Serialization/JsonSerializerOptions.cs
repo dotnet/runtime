@@ -610,7 +610,9 @@ namespace System.Text.Json
                 return null!;
             }
 
-            Debug.Assert(s_typeInfoCreationFunc != null);
+            Debug.Assert(
+                s_typeInfoCreationFunc != null,
+                "Reflection-based JsonTypeInfo creator should be initialized if IsInitializedForReflectionSerializer is true.");
             return s_typeInfoCreationFunc(type, this);
         }
 
