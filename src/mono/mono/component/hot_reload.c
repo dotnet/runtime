@@ -35,7 +35,7 @@
 #define ALLOW_CLASS_ADD
 #define ALLOW_METHOD_ADD
 #define ALLOW_FIELD_ADD
-#define ALLOW_INSTANCE_FIELD_ADD
+#undef ALLOW_INSTANCE_FIELD_ADD
 
 typedef struct _BaselineInfo BaselineInfo;
 typedef struct _DeltaInfo DeltaInfo;
