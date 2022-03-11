@@ -16,7 +16,9 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
             var n = new Nested<string, int>();
             n.Eff = "123";
 	    n.g = 456;
-            return n.M();
+	    n.Evt += new Action<string> (n.DefaultHandler);
+	    n.RaiseEvt();
+            return n.M() + n.buf;
         }
 
         private class Nested<T, U> {
@@ -30,6 +32,18 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
             public string M () {
                 return Eff.ToString() + g.ToString();
             }
+
+	    public event Action<string> Evt;
+
+	    public void RaiseEvt () {
+		Evt ("789");
+	    }
+
+	    public string buf;
+
+	    public void DefaultHandler (string s) {
+		this.buf = s;
+	    }
         }
     }
 }
