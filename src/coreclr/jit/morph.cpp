@@ -6845,6 +6845,12 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         reportFastTailCallDecision("Splitted argument in caller is not supported on ARM32");
         return false;
     }
+
+    if (compIsProfilerHookNeeded())
+    {
+        reportFastTailCallDecision("Profiler is not supported on ARM32");
+        return false;
+    }
 #endif
 
     if (!opts.compFastTailCalls)

@@ -2134,21 +2134,15 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
 #ifdef TARGET_ARM
             if (tmpTyp == TYP_LONG)
             {
-                GenTree* loResult = comp->gtNewLclLNode(lclNum, TYP_INT);
-                loResult->SetOper(GT_LCL_FLD);
-                loResult->AsLclFld()->SetLclOffs(0);
-                loResult->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
-
-                GenTree* hiResult = comp->gtNewLclLNode(lclNum, TYP_INT);
-                hiResult->SetOper(GT_LCL_FLD);
-                hiResult->AsLclFld()->SetLclOffs(4);
-                hiResult->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
-
-                value = new (comp, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, loResult, hiResult);
+                GenTree* loResult = comp->gtNewLclFldNode(lclNum, TYP_INT, 0);
+                GenTree* hiResult = comp->gtNewLclFldNode(lclNum, TYP_INT, 4);
+                value             = new (comp, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, loResult, hiResult);
             }
             else
 #endif // TARGET_ARM
+            {
                 value = comp->gtNewLclvNode(lclNum, tmpTyp);
+            }
 
             if (tmpTyp == TYP_STRUCT)
             {
