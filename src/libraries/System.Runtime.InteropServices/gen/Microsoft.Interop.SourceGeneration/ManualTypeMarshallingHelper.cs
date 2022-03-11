@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    public readonly record struct CustomTypeMarshallerData(CustomTypeMarshallerKind Kind, int? BufferSize);
+    public readonly record struct CustomTypeMarshallerData(CustomTypeMarshallerKind Kind, CustomTypeMarshallerDirection Direction, CustomTypeMarshallerFeatures Features, int? BufferSize);
 
     public static class ShapeMemberNames
     {
@@ -36,6 +36,8 @@ namespace Microsoft.Interop
         public static class CustomMarshallerAttributeFields
         {
             public const string BufferSize = nameof(BufferSize);
+            public const string Direction = nameof(Direction);
+            public const string Features = nameof(Features);
         }
 
         public static class MarshalUsingProperties
@@ -67,12 +69,10 @@ namespace Microsoft.Interop
                 kind = (CustomTypeMarshallerKind)i;
             }
             var namedArguments = attr.NamedArguments.ToImmutableDictionary();
-            int? bufferSize = null;
-            if (namedArguments.TryGetValue(CustomMarshallerAttributeFields.BufferSize, out TypedConstant bufferSizeConstant))
-            {
-                bufferSize = bufferSizeConstant.Value as int?;
-            }
-            return (true, managedType, new CustomTypeMarshallerData(kind, bufferSize));
+            int? bufferSize = namedArguments.TryGetValue(CustomMarshallerAttributeFields.BufferSize, out TypedConstant bufferSizeConstant) ? bufferSizeConstant.Value as int? : null;
+            CustomTypeMarshallerDirection direction = namedArguments.TryGetValue(CustomMarshallerAttributeFields.Direction, out TypedConstant directionConstant) ? (CustomTypeMarshallerDirection)directionConstant.Value : CustomTypeMarshallerDirection.Ref;
+            CustomTypeMarshallerFeatures features = namedArguments.TryGetValue(CustomMarshallerAttributeFields.Features, out TypedConstant featuresConstant) ? (CustomTypeMarshallerFeatures)featuresConstant.Value : CustomTypeMarshallerFeatures.None;
+            return (true, managedType, new CustomTypeMarshallerData(kind, direction, features, bufferSize));
         }
 
         /// <summary>

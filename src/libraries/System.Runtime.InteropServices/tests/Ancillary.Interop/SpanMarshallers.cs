@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
     // Stack-alloc threshold set to 256 bytes to enable small arrays to be passed on the stack.
     // Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
     // blow the stack since this is a new optimization in the code-generated interop.
-    [CustomTypeMarshaller(typeof(ReadOnlySpan<>), CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200)]
+    [CustomTypeMarshaller(typeof(ReadOnlySpan<>), CustomTypeMarshallerKind.LinearCollection, Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.CallerAllocatedBuffer | CustomTypeMarshallerFeatures.TwoStageMarshalling, BufferSize = 0x200)]
     public unsafe ref struct ReadOnlySpanMarshaller<T>
     {
         private ReadOnlySpan<T> _managedSpan;
@@ -66,7 +66,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         }
     }
 
-    [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200)]
+    [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.LinearCollection, Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.CallerAllocatedBuffer | CustomTypeMarshallerFeatures.TwoStageMarshalling, BufferSize = 0x200)]
     public unsafe ref struct SpanMarshaller<T>
     {
         private Span<T> _managedSpan;
@@ -128,7 +128,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         }
     }
 
-    [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200)]
+    [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.LinearCollection, Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.CallerAllocatedBuffer | CustomTypeMarshallerFeatures.TwoStageMarshalling, BufferSize = 0x200)]
     public unsafe ref struct NeverNullSpanMarshaller<T>
     {
         private SpanMarshaller<T> _inner;
@@ -166,7 +166,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         }
     }
 
-    [CustomTypeMarshaller(typeof(ReadOnlySpan<>), CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200)]
+    [CustomTypeMarshaller(typeof(ReadOnlySpan<>), CustomTypeMarshallerKind.LinearCollection, Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.CallerAllocatedBuffer | CustomTypeMarshallerFeatures.TwoStageMarshalling, BufferSize = 0x200)]
     public unsafe ref struct NeverNullReadOnlySpanMarshaller<T>
     {
         private ReadOnlySpanMarshaller<T> _inner;
@@ -199,7 +199,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
     }
 
     // Stack-alloc threshold set to 0 so that the generator can use the constructor that takes a stackSpace to let the marshaller know that the original data span can be used and safely pinned.
-    [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.LinearCollection, BufferSize = 0)]
+    [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.LinearCollection, Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.CallerAllocatedBuffer | CustomTypeMarshallerFeatures.TwoStageMarshalling, BufferSize = 0)]
     public unsafe ref struct DirectSpanMarshaller<T>
         where T : unmanaged
     {

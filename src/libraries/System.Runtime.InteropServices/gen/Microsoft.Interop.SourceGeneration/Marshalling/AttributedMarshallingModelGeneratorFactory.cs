@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -179,7 +180,7 @@ namespace Microsoft.Interop
 
             if (marshalInfo.NativeValueType is not null)
             {
-                marshallingStrategy = DecorateWithValuePropertyStrategy(marshalInfo, marshallingStrategy);
+                marshallingStrategy = DecorateWithTwoStageMarshallingStrategy(marshalInfo, marshallingStrategy);
             }
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
@@ -243,7 +244,7 @@ namespace Microsoft.Interop
             }
         }
 
-        private ICustomNativeTypeMarshallingStrategy DecorateWithValuePropertyStrategy(NativeMarshallingAttributeInfo marshalInfo, ICustomNativeTypeMarshallingStrategy nativeTypeMarshaller)
+        private ICustomNativeTypeMarshallingStrategy DecorateWithTwoStageMarshallingStrategy(NativeMarshallingAttributeInfo marshalInfo, ICustomNativeTypeMarshallingStrategy nativeTypeMarshaller)
         {
             TypeSyntax valuePropertyTypeSyntax = marshalInfo.NativeValueType!.Syntax;
 
@@ -289,7 +290,7 @@ namespace Microsoft.Interop
             // Explicitly insert the Value property handling here (before numElements handling) so that the numElements handling will be emitted before the Value property handling in unmarshalling.
             if (collectionInfo.NativeValueType is not null)
             {
-                marshallingStrategy = DecorateWithValuePropertyStrategy(collectionInfo, marshallingStrategy);
+                marshallingStrategy = DecorateWithTwoStageMarshallingStrategy(collectionInfo, marshallingStrategy);
             }
 
             marshallingStrategy = new SizeOfElementMarshalling(

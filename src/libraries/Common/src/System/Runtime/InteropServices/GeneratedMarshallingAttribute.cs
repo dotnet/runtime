@@ -81,6 +81,8 @@ namespace System.Runtime.InteropServices
         public Type ManagedType { get; }
         public CustomTypeMarshallerKind MarshallerKind { get; }
         public int BufferSize { get; set; }
+        public CustomTypeMarshallerDirection Direction { get; set; } = CustomTypeMarshallerDirection.Ref;
+        public CustomTypeMarshallerFeatures Features { get; set; }
 
         /// <summary>
         /// This type is used as a placeholder for the first generic parameter when generic parameters cannot be used

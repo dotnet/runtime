@@ -677,7 +677,7 @@ struct S
     public bool b;
 }
 
-[CustomTypeMarshaller(typeof(S), BufferSize = 1)]
+[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 1)]
 struct Native
 {
     private int i;
@@ -696,7 +696,7 @@ struct S
     public bool b;
 }
 
-[CustomTypeMarshaller(typeof(S), BufferSize = 1)]
+[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.Out, Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 1)]
 struct Native
 {
     private int i;
@@ -715,7 +715,7 @@ struct S
     public bool b;
 }
 
-[CustomTypeMarshaller(typeof(S), BufferSize = 1)]
+[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 1)]
 struct Native
 {
     private int i;
@@ -739,7 +739,7 @@ struct S
     public bool b;
 }
 
-[CustomTypeMarshaller(typeof(S), BufferSize = 1)]
+[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer | CustomTypeMarshallerFeatures.TwoStageMarshalling, BufferSize = 1)]
 struct Native
 {
     public Native(S s, System.Span<byte> b)
@@ -759,7 +759,7 @@ struct S
     public bool b;
 }
 
-[CustomTypeMarshaller(typeof(S))]
+[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
 struct Native
 {
     public Native(S s)
@@ -781,7 +781,7 @@ class S
     public ref int GetPinnableReference() => ref i;
 }
 
-[CustomTypeMarshaller(typeof(S))]
+[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
 unsafe struct Native
 {
     private int* ptr;
@@ -812,7 +812,7 @@ class S
     public byte c;
 }
 
-[CustomTypeMarshaller(typeof(S), BufferSize = 1)]
+[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer | CustomTypeMarshallerFeatures.TwoStageMarshalling, BufferSize = 1)]
 unsafe ref struct Native
 {
     private byte* ptr;
@@ -867,7 +867,7 @@ class S
     public byte c = 0;
 }
 
-[CustomTypeMarshaller(typeof(S))]
+[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
 unsafe struct Native
 {
     private S value;
@@ -918,7 +918,7 @@ struct S
     public bool b;
 }
 
-[CustomTypeMarshaller(typeof(S))]
+[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.In)]
 struct Native
 {
     private int i;
@@ -937,7 +937,7 @@ struct S
     public bool b;
 }
 
-[CustomTypeMarshaller(typeof(S))]
+[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.In)]
 struct Native
 {
     private int i;
@@ -956,6 +956,7 @@ struct S
 }
 
 [StructLayout(LayoutKind.Sequential)]
+[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.Out)]
 struct Native
 {
     private int i;
@@ -970,7 +971,7 @@ public struct IntStructWrapper
     public int Value;
 }
 
-[CustomTypeMarshaller(typeof(IntStructWrapper))]
+[CustomTypeMarshaller(typeof(IntStructWrapper), Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
 public struct IntStructWrapperNative
 {
     public IntStructWrapperNative(IntStructWrapper managed)
@@ -1117,7 +1118,7 @@ struct RecursiveStruct2
 [NativeMarshalling(typeof(Marshaller<>))]
 class TestCollection<T> {}
 
-[CustomTypeMarshaller(typeof(TestCollection<>), CustomTypeMarshallerKind.LinearCollection)]
+[CustomTypeMarshaller(typeof(TestCollection<>), CustomTypeMarshallerKind.LinearCollection, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
 ref struct Marshaller<T>
 {
     public Marshaller(int nativeElementSize) : this() {}
@@ -1156,7 +1157,7 @@ partial class Test
             string nativeMarshallingAttribute = enableDefaultMarshalling ? "[NativeMarshalling(typeof(Marshaller<>))]" : string.Empty;
             return nativeMarshallingAttribute + @"class TestCollection<T> {}
 
-[CustomTypeMarshaller(typeof(TestCollection<>), CustomTypeMarshallerKind.LinearCollection)]
+[CustomTypeMarshaller(typeof(TestCollection<>), CustomTypeMarshallerKind.LinearCollection, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
 ref struct Marshaller<T>
 {
     public Marshaller(int nativeElementSize) : this() {}
@@ -1255,7 +1256,7 @@ partial class Test
 [NativeMarshalling(typeof(Marshaller<,>))]
 class TestCollection<T> {}
 
-[CustomTypeMarshaller(typeof(TestCollection<>), CustomTypeMarshallerKind.LinearCollection)]
+[CustomTypeMarshaller(typeof(TestCollection<>), CustomTypeMarshallerKind.LinearCollection, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
 ref struct Marshaller<T, U>
 {
     public Marshaller(TestCollection<T> managed, int nativeElementSize) : this() {}

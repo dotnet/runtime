@@ -6,7 +6,7 @@
 
 namespace System.Runtime.InteropServices.GeneratedMarshalling
 {
-    [CustomTypeMarshaller(typeof(HandleRef))]
+    [CustomTypeMarshaller(typeof(HandleRef), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
     internal struct HandleRefMarshaller
     {
         private HandleRef _handle;

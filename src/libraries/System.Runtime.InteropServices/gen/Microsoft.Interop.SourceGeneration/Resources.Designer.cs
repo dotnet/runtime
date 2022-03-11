@@ -223,14 +223,14 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Marshalling bool without explicit marshalling information is not supported. Specify either &apos;MarshalUsingAttribute&apos; or &apos;MarshalAsAttribute&apos;..
+        ///   Looks up a localized string similar to Marshalling bool without explicit marshalling information is not supported. Specify either &apos;MarshalUsingAttribute&apos; or &apos;MarshalAsAttribute&apos;..
         /// </summary>
         internal static string MarshallingBoolAsUndefinedNotSupported {
             get {
                 return ResourceManager.GetString("MarshallingBoolAsUndefinedNotSupported", resourceCulture);
             }
-        }     
-           
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to Marshalling char with &apos;CharSet.{0}&apos; is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke..
         /// </summary>
@@ -259,24 +259,6 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The native type must have at least one of the two marshalling methods to enable marshalling the managed type..
-        /// </summary>
-        internal static string NativeTypeMustHaveRequiredShapeDescription {
-            get {
-                return ResourceManager.GetString("NativeTypeMustHaveRequiredShapeDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be a value type and have a constructor that takes one parameter of type &apos;{1}&apos; or a parameterless instance method named &apos;ToManaged&apos; that returns &apos;{1}&apos;.
-        /// </summary>
-        internal static string NativeTypeMustHaveRequiredShapeMessage {
-            get {
-                return ResourceManager.GetString("NativeTypeMustHaveRequiredShapeMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to The &apos;[Out]&apos; attribute is only supported on array parameters..
         /// </summary>
         internal static string OutByValueNotSupportedDescription {
@@ -291,24 +273,6 @@ namespace Microsoft.Interop {
         internal static string OutByValueNotSupportedMessage {
             get {
                 return ResourceManager.GetString("OutByValueNotSupportedMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The &apos;Value&apos; property must not be a &apos;ref&apos; or &apos;readonly ref&apos; property..
-        /// </summary>
-        internal static string RefValuePropertyUnsupportedDescription {
-            get {
-                return ResourceManager.GetString("RefValuePropertyUnsupportedDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The &apos;Value&apos; property on the native type &apos;{0}&apos; must not be a &apos;ref&apos; or &apos;readonly ref&apos; property..
-        /// </summary>
-        internal static string RefValuePropertyUnsupportedMessage {
-            get {
-                return ResourceManager.GetString("RefValuePropertyUnsupportedMessage", resourceCulture);
             }
         }
         
@@ -336,51 +300,6 @@ namespace Microsoft.Interop {
         internal static string TypeNotSupportedTitle {
             get {
                 return ResourceManager.GetString("TypeNotSupportedTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Marshalling a value between managed and native with a native type with a &apos;Value&apos; property requires extra state, which is not supported in this context..
-        /// </summary>
-        internal static string ValuePropertyMarshallingRequiresAdditionalState {
-            get {
-                return ResourceManager.GetString("ValuePropertyMarshallingRequiresAdditionalState", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The native type&apos;s &apos;Value&apos; property must have a getter to support marshalling from managed to native..
-        /// </summary>
-        internal static string ValuePropertyMustHaveGetterDescription {
-            get {
-                return ResourceManager.GetString("ValuePropertyMustHaveGetterDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The &apos;Value&apos; property on the native type &apos;{0}&apos; must have a getter.
-        /// </summary>
-        internal static string ValuePropertyMustHaveGetterMessage {
-            get {
-                return ResourceManager.GetString("ValuePropertyMustHaveGetterMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The native type&apos;s &apos;Value&apos; property must have a setter to support marshalling from native to managed..
-        /// </summary>
-        internal static string ValuePropertyMustHaveSetterDescription {
-            get {
-                return ResourceManager.GetString("ValuePropertyMustHaveSetterDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The &apos;Value&apos; property on the native type &apos;{0}&apos; must have a setter.
-        /// </summary>
-        internal static string ValuePropertyMustHaveSetterMessage {
-            get {
-                return ResourceManager.GetString("ValuePropertyMustHaveSetterMessage", resourceCulture);
             }
         }
     }

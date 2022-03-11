@@ -97,7 +97,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal string AppName;
             internal QUIC_EXECUTION_PROFILE ExecutionProfile;
 
-            [CustomTypeMarshaller(typeof(RegistrationConfig))]
+            [CustomTypeMarshaller(typeof(RegistrationConfig), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
             [StructLayout(LayoutKind.Sequential)]
             public struct Native
             {
@@ -251,7 +251,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             // TODO: define delegate for AsyncHandler and make proper use of it.
             internal IntPtr AsyncHandler;
 
-            [CustomTypeMarshaller(typeof(CredentialConfig))]
+            [CustomTypeMarshaller(typeof(CredentialConfig), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
             [StructLayout(LayoutKind.Sequential)]
             public struct Native
             {

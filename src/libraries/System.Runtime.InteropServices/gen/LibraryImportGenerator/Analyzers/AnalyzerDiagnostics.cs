@@ -16,20 +16,20 @@ namespace Microsoft.Interop.Analyzers
 
             // ManualTypeMarshalling
             public const string MarshallerTypeMustSpecifyManagedType = Prefix + "001";
-            public const string MarshallerKindMustBeValid = Prefix + "002";
+            public const string CustomTypeMarshallerAttributeMustBeValid = Prefix + "002";
             public const string NativeTypeMustHaveCustomTypeMarshallerAttribute = Prefix + "003";
             public const string NativeTypeMustBeBlittable = Prefix + "004";
             public const string GetPinnableReferenceReturnTypeBlittable = Prefix + "005";
             public const string NativeTypeMustBePointerSized = Prefix + "006";
-            public const string NativeTypeMustHaveRequiredShape = Prefix + "007";
-            public const string ValuePropertyMustHaveSetter = Prefix + "008";
-            public const string ValuePropertyMustHaveGetter = Prefix + "009";
+            public const string CustomMarshallerTypeMustHaveRequiredShape = Prefix + "007";
+            public const string CustomMarshallerTypeMustSupportDirection = Prefix + "008";
+            public const string Unused = Prefix + "009";
             public const string GetPinnableReferenceShouldSupportAllocatingMarshallingFallback = Prefix + "010";
             public const string CallerAllocMarshallingShouldSupportAllocatingMarshallingFallback = Prefix + "011";
             public const string CallerAllocConstructorMustHaveStackBufferSize = Prefix + "012";
             public const string RefValuePropertyUnsupported = Prefix + "014";
             public const string NativeGenericTypeMustBeClosedOrMatchArity = Prefix + "016";
-            public const string MarshallerGetPinnableReferenceRequiresValueProperty = Prefix + "018";
+            public const string MarshallerGetPinnableReferenceRequiresTwoStageMarshalling = Prefix + "018";
 
             // Migration from DllImport to LibraryImport
             public const string ConvertToLibraryImport = Prefix + "015";

@@ -45,7 +45,7 @@ namespace System.DirectoryServices.Protocols
         public int packageListLength;
 
 #if NET7_0_OR_GREATER
-        [CustomTypeMarshaller(typeof(SEC_WINNT_AUTH_IDENTITY_EX))]
+        [CustomTypeMarshaller(typeof(SEC_WINNT_AUTH_IDENTITY_EX), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
 #endif
         [StructLayout(LayoutKind.Sequential)]
         internal struct Native
@@ -176,7 +176,7 @@ namespace System.DirectoryServices.Protocols
         public IntPtr bv_val = IntPtr.Zero;
 
 #if NET7_0_OR_GREATER
-        [CustomTypeMarshaller(typeof(BerVal))]
+        [CustomTypeMarshaller(typeof(BerVal), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
         internal unsafe struct PinningMarshaller
         {
             private readonly BerVal _managed;
@@ -215,7 +215,7 @@ namespace System.DirectoryServices.Protocols
 #if NET7_0_OR_GREATER
         public static readonly unsafe int Size = sizeof(Marshaller.Native);
 
-        [CustomTypeMarshaller(typeof(LdapReferralCallback))]
+        [CustomTypeMarshaller(typeof(LdapReferralCallback), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
         public unsafe struct Marshaller
         {
             public unsafe struct Native

@@ -46,6 +46,8 @@
                         and '$(IncludeLibraryImportGeneratorSources)' == 'true'">
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\GeneratedDllImportAttribute.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\CustomTypeMarshallerKind.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\CustomTypeMarshallerDirection.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\CustomTypeMarshallerFeatures.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\StringMarshalling.cs" />
 
     <!-- Only add the following files if we are on the latest TFM (that is, net7). -->

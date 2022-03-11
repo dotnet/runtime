@@ -396,7 +396,7 @@ namespace System.Drawing.Imaging
         internal ref float GetPinnableReference() => ref _matrix00;
 
 #if NET7_0_OR_GREATER
-        [CustomTypeMarshaller(typeof(ColorMatrix))]
+        [CustomTypeMarshaller(typeof(ColorMatrix), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
         internal unsafe struct PinningMarshaller
         {
             private readonly ColorMatrix _managed;

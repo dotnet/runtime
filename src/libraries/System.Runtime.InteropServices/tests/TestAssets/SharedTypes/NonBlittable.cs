@@ -17,7 +17,7 @@ namespace SharedTypes
         public string str2;
     }
 
-    [CustomTypeMarshaller(typeof(StringContainer))]
+    [CustomTypeMarshaller(typeof(StringContainer), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
     public struct StringContainerNative
     {
         public IntPtr str1;
@@ -45,7 +45,7 @@ namespace SharedTypes
         }
     }
 
-    [CustomTypeMarshaller(typeof(double))]
+    [CustomTypeMarshaller(typeof(double), Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
     public struct DoubleToLongMarshaler
     {
         public long l;
@@ -102,7 +102,7 @@ namespace SharedTypes
         public ref int GetPinnableReference() => ref i;
     }
 
-    [CustomTypeMarshaller(typeof(IntWrapper))]
+    [CustomTypeMarshaller(typeof(IntWrapper), Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
     public unsafe struct IntWrapperMarshaler
     {
         public IntWrapperMarshaler(IntWrapper managed)
@@ -124,7 +124,7 @@ namespace SharedTypes
         }
     }
 
-    [CustomTypeMarshaller(typeof(string), BufferSize = 0x100)]
+    [CustomTypeMarshaller(typeof(string), Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 0x100)]
     public unsafe ref struct Utf16StringMarshaller
     {
         private ushort* allocated;
@@ -193,7 +193,7 @@ namespace SharedTypes
         }
     }
     
-    [CustomTypeMarshaller(typeof(string), BufferSize = 0x100)]
+    [CustomTypeMarshaller(typeof(string), Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 0x100)]
     public unsafe ref struct Utf8StringMarshaller
     {
         private byte* allocated;
@@ -249,7 +249,7 @@ namespace SharedTypes
         public IntStructWrapper ToManaged() => new IntStructWrapper { Value = value };
     }
 
-    [CustomTypeMarshaller(typeof(List<>), CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200)]
+    [CustomTypeMarshaller(typeof(List<>), CustomTypeMarshallerKind.LinearCollection, Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 0x200)]
     public unsafe ref struct ListMarshaller<T>
     {
         private List<T> managedList;
