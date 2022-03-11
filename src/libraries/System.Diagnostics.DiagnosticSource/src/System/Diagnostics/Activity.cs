@@ -98,7 +98,7 @@ namespace System.Diagnostics
         public string? StatusDescription => _statusDescription;
 
         /// <summary>
-        /// Indicate if the parent context is created from remote propagation.
+        /// Gets whether the parent context was created from remote propagation.
         /// </summary>
         public bool HasRemoteParent { get; private set; }
 
