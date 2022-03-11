@@ -5550,10 +5550,11 @@ Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* dat
         GenTree* dest = nullptr;
         if (tree->OperIs(GT_CALL))
         {
+            desc->ivaMaskCall = optCallInterf(tree->AsCall());
+
             dest = tree->AsCall()->GetLclRetBufArgNode();
             if (dest == nullptr)
             {
-                desc->ivaMaskCall = optCallInterf(tree->AsCall());
                 return WALK_CONTINUE;
             }
 
