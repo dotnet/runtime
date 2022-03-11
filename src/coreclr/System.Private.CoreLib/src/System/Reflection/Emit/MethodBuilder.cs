@@ -130,14 +130,10 @@ namespace System.Reflection.Emit
 
         #region Internal Members
 
-        internal void CreateMethodBodyHelper(ILGenerator il)
+        internal void CreateMethodBodyHelper(ILGenerator il!!)
         {
             // Sets the IL of the method.  An ILGenerator is passed as an argument and the method
             // queries this instance to get all of the information which it needs.
-            if (il == null)
-            {
-                throw new ArgumentNullException(nameof(il));
-            }
 
             __ExceptionInfo[] excp;
             int counter = 0;
@@ -511,17 +507,15 @@ namespace System.Reflection.Emit
 
         public override Type[] GetGenericArguments() => m_inst ?? Type.EmptyTypes;
 
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
             return MethodBuilderInstantiation.MakeGenericMethod(this, typeArguments);
         }
 
-        public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
+        public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names!!)
         {
-            if (names == null)
-                throw new ArgumentNullException(nameof(names));
-
             if (names.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
 
@@ -529,8 +523,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_GenericParametersAlreadySet);
 
             for (int i = 0; i < names.Length; i++)
-                if (names[i] == null)
-                    throw new ArgumentNullException(nameof(names));
+                ArgumentNullException.ThrowIfNull(names[i], nameof(names));
 
             if (m_token != 0)
                 throw new InvalidOperationException(SR.InvalidOperation_MethodBuilderBaked);
@@ -734,13 +727,8 @@ namespace System.Reflection.Emit
             return GetModuleBuilder();
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
         {
-            if (con is null)
-                throw new ArgumentNullException(nameof(con));
-            if (binaryAttribute is null)
-                throw new ArgumentNullException(nameof(binaryAttribute));
-
             ThrowIfGeneric();
 
             TypeBuilder.DefineCustomAttribute(m_module, MetadataToken,
@@ -751,11 +739,8 @@ namespace System.Reflection.Emit
                 ParseCA(con);
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
-
             ThrowIfGeneric();
 
             customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, MetadataToken);

@@ -491,6 +491,7 @@
       <_MonoCMakeBuildCommand Condition="'$(_MonoUseNinja)' != 'true'">$(_MonoCMakeBuildCommand) --parallel $([System.Environment]::ProcessorCount)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(HostOS)' != 'windows'">@(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
+      <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
     </PropertyGroup>
 
     <MakeDir Directories="$(MonoObjDir)" />
@@ -601,9 +602,9 @@
       <MonoUseCrossTool>true</MonoUseCrossTool>
       <MonoAotAbi>wasm32-unknown-none</MonoAotAbi>
       <MonoAotOffsetsFile>$(MonoObjCrossDir)offsets-wasm32-unknown-none.h</MonoAotOffsetsFile>
-      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(EMSDK_PATH)/upstream/lib/libclang.dylib</MonoLibClang>
-      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(EMSDK_PATH)/upstream/lib/libclang.so</MonoLibClang>
-      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'upstream', 'bin', 'libclang.dll'))</MonoLibClang>
+      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(MonoAOTLLVMDir)/lib/libclang.dylib</MonoLibClang>
+      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(MonoAOTLLVMDir)/lib/libclang.so</MonoLibClang>
+      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$([MSBuild]::NormalizePath('$(MonoAOTLLVMDir)', 'bin', 'libclang.dll'))</MonoLibClang>
       <PythonCmd Condition="'$(HostOS)' == 'windows'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
       <_ForceRelease Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(TargetArchitecture)' == 'wasm' and '$(Configuration)' == 'Debug'">true</_ForceRelease>
     </PropertyGroup>
@@ -667,6 +668,7 @@
       <MonoAotCrossOffsetsToolParams Include="--netcore" />
       <MonoAotCrossOffsetsToolParams Include="--targetdir=&quot;$(MonoObjDir.TrimEnd('\/'))&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--monodir=&quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;" />
+      <MonoAotCrossOffsetsToolParams Include="--nativedir=&quot;$(SharedNativeRoot.TrimEnd('\/'))&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--outfile=&quot;$(MonoAotOffsetsFile)&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(MonoLibClang)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotOffsetsPrefix)' != ''" Include="--prefix=&quot;$(MonoAotOffsetsPrefix)&quot;" />

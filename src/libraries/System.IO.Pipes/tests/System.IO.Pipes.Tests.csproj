@@ -4,13 +4,13 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateServer.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateClient.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CrossProcess.cs" />
@@ -23,7 +23,7 @@
     <Compile Include="PipeStreamConformanceTests.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs" Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.Windows.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.Windows.cs" />
@@ -35,7 +35,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetNamedPipeHandleState.cs" Link="Common\Interop\Windows\Interop.GetNamedPipeHandleState.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MaxLengths.cs" Link="Common\Interop\Windows\Interop.MaxLengths.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
     <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.Unix.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.UnixDomainSockets.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.Unix.cs" />

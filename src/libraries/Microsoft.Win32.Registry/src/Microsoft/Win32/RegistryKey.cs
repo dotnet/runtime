@@ -323,12 +323,8 @@ namespace Microsoft.Win32
             return OpenRemoteBaseKey(hKey, machineName, RegistryView.Default);
         }
 
-        public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, string machineName, RegistryView view)
+        public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, string machineName!!, RegistryView view)
         {
-            if (machineName == null)
-            {
-                throw new ArgumentNullException(nameof(machineName));
-            }
             ValidateKeyView(view);
 
             return OpenRemoteBaseKeyCore(hKey, machineName, view);
@@ -405,10 +401,7 @@ namespace Microsoft.Win32
         public void SetAccessControl(RegistrySecurity registrySecurity)
         {
             EnsureWriteable();
-            if (registrySecurity == null)
-            {
-                throw new ArgumentNullException(nameof(registrySecurity));
-            }
+            ArgumentNullException.ThrowIfNull(registrySecurity);
 
             registrySecurity.Persist(Handle, Name);
         }
@@ -447,9 +440,8 @@ namespace Microsoft.Win32
             return FromHandle(handle, RegistryView.Default);
         }
 
-        public static RegistryKey FromHandle(SafeRegistryHandle handle, RegistryView view)
+        public static RegistryKey FromHandle(SafeRegistryHandle handle!!, RegistryView view)
         {
-            if (handle == null) throw new ArgumentNullException(nameof(handle));
             ValidateKeyView(view);
 
             return new RegistryKey(handle, writable: true, view: view);
@@ -557,13 +549,8 @@ namespace Microsoft.Win32
             SetValue(name, value, RegistryValueKind.Unknown);
         }
 
-        public void SetValue(string? name, object value, RegistryValueKind valueKind)
+        public void SetValue(string? name, object value!!, RegistryValueKind valueKind)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             if (name != null && name.Length > MaxValueLength)
             {
                 throw new ArgumentException(SR.Arg_RegValStrLenBug, nameof(name));
@@ -721,13 +708,8 @@ namespace Microsoft.Win32
             }
         }
 
-        private static void ValidateKeyName(string name)
+        private static void ValidateKeyName(string name!!)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             int nextSlash = name.IndexOf('\\');
             int current = 0;
             while (nextSlash >= 0)

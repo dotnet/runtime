@@ -209,7 +209,7 @@ namespace System.Globalization
         }
 
         // no support to lookup by region name, other than the hard-coded list in CultureData
-        private static CultureData? IcuGetCultureDataFromRegionName(string? regionName) => null;
+        private static CultureData? IcuGetCultureDataFromRegionName() => null;
 
         private string IcuGetLanguageDisplayName(string cultureName) => IcuGetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name);
 

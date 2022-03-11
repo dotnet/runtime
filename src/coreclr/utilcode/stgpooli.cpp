@@ -309,9 +309,6 @@ ULONG CPackedLen::GetLength(			// Length or -1 on error.
 //*****************************************************************************
 // Encode a length.
 //*****************************************************************************
-#ifdef _MSC_VER
-#pragma warning(disable:4244) // conversion from unsigned long to unsigned char
-#endif
 void* CPackedLen::PutLength(			// First byte past length.
 	void		*pData, 				// Pack the length here.
 	ULONG		iLen)					// The length.
@@ -323,13 +320,13 @@ void* CPackedLen::PutLength(			// First byte past length.
 
 	if (iLen <= 0x7F)
 	{
-		*pBytes = iLen;
+		*pBytes = (BYTE)iLen;
 		return pBytes + 1;
 	}
 
 	if (iLen <= 0x3FFF)
 	{
-		*pBytes = (iLen >> 8) | 0x80;
+		*pBytes = (BYTE)((iLen >> 8) | 0x80);
 		*(pBytes+1) = iLen & 0xFF;
 		return pBytes + 2;
 	}
@@ -341,7 +338,3 @@ void* CPackedLen::PutLength(			// First byte past length.
 	*(pBytes+3) = iLen & 0xFF;
 	return pBytes + 4;
 } // void* CPackedLen::PutLength()
-#ifdef _MSC_VER
-#pragma warning(default:4244) // conversion from unsigned long to unsigned char
-#endif
-

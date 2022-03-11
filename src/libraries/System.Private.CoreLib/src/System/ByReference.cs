@@ -16,6 +16,7 @@ namespace System
         private readonly IntPtr _value;
 #pragma warning restore CA1823, 169
 
+#pragma warning disable IDE0060
         [Intrinsic]
         public ByReference(ref T value)
         {
@@ -24,6 +25,7 @@ namespace System
             // or if intrinsic is missed.
             throw new PlatformNotSupportedException();
         }
+#pragma warning restore IDE0060
 
 #pragma warning disable CA1822 // Mark members as static
         public ref T Value

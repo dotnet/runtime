@@ -14,14 +14,12 @@ namespace Microsoft.Interop
         private readonly IMarshallingGenerator _manualMarshallingGenerator;
         private readonly TypeSyntax _elementType;
         private readonly bool _enablePinning;
-        private readonly InteropGenerationOptions _options;
 
-        public ArrayMarshaller(IMarshallingGenerator manualMarshallingGenerator, TypeSyntax elementType, bool enablePinning, InteropGenerationOptions options)
+        public ArrayMarshaller(IMarshallingGenerator manualMarshallingGenerator, TypeSyntax elementType, bool enablePinning)
         {
             _manualMarshallingGenerator = manualMarshallingGenerator;
             _elementType = elementType;
             _enablePinning = enablePinning;
-            _options = options;
         }
 
         public bool IsSupported(TargetFramework target, Version version)
@@ -138,7 +136,7 @@ namespace Microsoft.Interop
                                 PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
                                 InvocationExpression(
                                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                        ParseTypeName(TypeNames.Unsafe(_options)),
+                                        ParseTypeName(TypeNames.System_Runtime_CompilerServices_Unsafe),
                                         GenericName("As").AddTypeArgumentListArguments(
                                             arrayElementType,
                                             PredefinedType(Token(SyntaxKind.ByteKeyword)))))

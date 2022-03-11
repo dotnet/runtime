@@ -18,15 +18,10 @@ namespace System.Security.Cryptography.X509Certificates
         internal Collection<X501Attribute> Attributes { get; } = new Collection<X501Attribute>();
 
         internal Pkcs10CertificationRequestInfo(
-            X500DistinguishedName subject,
-            PublicKey publicKey,
+            X500DistinguishedName subject!!,
+            PublicKey publicKey!!,
             IEnumerable<X501Attribute> attributes)
         {
-            if (subject == null)
-                throw new ArgumentNullException(nameof(subject));
-            if (publicKey == null)
-                throw new ArgumentNullException(nameof(publicKey));
-
             Subject = subject;
             PublicKey = publicKey;
 

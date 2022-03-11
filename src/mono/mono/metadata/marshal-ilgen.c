@@ -10,15 +10,15 @@
 
 #include "metadata/method-builder-ilgen.h"
 #include "metadata/method-builder-ilgen-internals.h"
-#include "object.h"
-#include "loader.h"
+#include <mono/metadata/object.h>
+#include <mono/metadata/loader.h>
 #include "cil-coff.h"
 #include "metadata/marshal.h"
 #include "metadata/marshal-internals.h"
 #include "metadata/marshal-ilgen.h"
 #include "metadata/tabledefs.h"
-#include "metadata/exception.h"
-#include "metadata/appdomain.h"
+#include <mono/metadata/exception.h>
+#include <mono/metadata/appdomain.h>
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/class-abi-details.h"
 #include "mono/metadata/class-init.h"
@@ -3224,6 +3224,10 @@ emit_marshal_scalar_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_stloc (mb, 3);
 		break;
 
+	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
+		mono_mb_emit_stloc (mb, 3);
+		break;
+
 	default:
 		break;
 	}
@@ -6317,7 +6321,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	/* ret = method (...) */
 	mono_mb_emit_managed_call (mb, method, NULL);
 
-	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+	if (MONO_TYPE_ISSTRUCT (sig->ret) && sig->ret->type != MONO_TYPE_GENERICINST) {
 		MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
 		mono_class_init_internal (klass);
 		if (!(mono_class_is_explicit_layout (klass) || m_class_is_blittable (klass))) {
@@ -6361,6 +6365,10 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		case MONO_TYPE_SZARRAY:
 			mono_emit_marshal (m, 0, sig->ret, mspecs [0], 0, NULL, MARSHAL_ACTION_MANAGED_CONV_RESULT);
 			break;
+		case MONO_TYPE_GENERICINST: {
+			mono_mb_emit_byte (mb, CEE_POP);
+			break;
+		}
 		default:
 			g_warning ("return type 0x%02x unknown", sig->ret->type);
 			g_assert_not_reached ();

@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SearchPath_TempDirectory")]
-        internal static extern string SearchPathTempDirectory();
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SearchPath_TempDirectory", StringMarshalling = StringMarshalling.Utf8)]
+        internal static partial string SearchPathTempDirectory();
     }
 }

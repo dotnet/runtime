@@ -61,7 +61,7 @@ internal static partial class Interop
             public const uint BCRYPT_KEY_DATA_BLOB_VERSION1 = 0x1;
         }
 
-        [GeneratedDllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
+        [LibraryImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
         private static unsafe partial NTSTATUS BCryptImportKey(SafeAlgorithmHandle hAlgorithm, IntPtr hImportKey, string pszBlobType, out SafeKeyHandle hKey, IntPtr pbKeyObject, int cbKeyObject, byte* pbInput, int cbInput, int dwFlags);
     }
 }

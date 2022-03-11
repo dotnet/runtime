@@ -1176,8 +1176,7 @@ delta_info_compute_table_records (MonoImage *image_dmeta, MonoImage *image_base,
 		g_assert (table != MONO_TABLE_ENCLOG);
 		g_assert (table != MONO_TABLE_ENCMAP);
 		g_assert (table >= prev_table);
-		/* FIXME: check bounds - is it < or <=. */
-		if (rid < delta_info->count[table].prev_gen_rows) {
+		if (rid <= delta_info->count[table].prev_gen_rows) {
 			base_info->any_modified_rows[table] = TRUE;
 			delta_info->count[table].modified_rows++;
 		} else
@@ -1483,7 +1482,13 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				 * still resolves to the same MonoMethod* (but we can't check it in
 				 * pass1 because we haven't added the new AssemblyRefs yet.
 				 */
-				if (ca_base_cols [MONO_CUSTOM_ATTR_PARENT] != ca_upd_cols [MONO_CUSTOM_ATTR_PARENT]) {
+				/* NOTE: Apparently Roslyn sometimes sends NullableContextAttribute
+				 * deletions even if the ChangeCustomAttribute capability is unset.
+				 * So tacitly accept updates where a custom attribute is deleted
+				 * (its parent is set to 0).  Once we support custom attribute
+				 * changes, we will support this kind of deletion for real.
+				 */
+				if (ca_base_cols [MONO_CUSTOM_ATTR_PARENT] != ca_upd_cols [MONO_CUSTOM_ATTR_PARENT] && ca_upd_cols [MONO_CUSTOM_ATTR_PARENT] != 0) {
 					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing CA table cols with a different Parent. token=0x%08x", log_token);
 					unsupported_edits = TRUE;
 					continue;
@@ -1799,6 +1804,7 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 				g_assert (add_member_klass);
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new method 0x%08x to class %s.%s", log_token, m_class_get_name_space (add_member_klass), m_class_get_name (add_member_klass));
 				MonoDebugInformationEnc *method_debug_information = hot_reload_get_method_debug_information (delta_info->ppdb_file, token_index);
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Debug info for method 0x%08x has ppdb idx 0x%08x", log_token, method_debug_information ? method_debug_information->idx : 0);
 				add_method_to_baseline (base_info, delta_info, add_member_klass, log_token, method_debug_information);
 				add_member_klass = NULL;
 			}
@@ -1941,6 +1947,21 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 	return TRUE;
 }
 
+static void
+dump_methodbody (MonoImage *image)
+{
+	if (!mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
+		return;
+	MonoTableInfo *t = &image->tables [MONO_TABLE_METHODBODY];
+	uint32_t rows = table_info_get_rows (t);
+	for (uint32_t i = 0; i < rows; ++i)
+	{
+		uint32_t cols[MONO_METHODBODY_SIZE];
+		mono_metadata_decode_row (t, i, cols, MONO_METHODBODY_SIZE);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, " row[%02d] = doc: 0x%08x seq: 0x%08x", i + 1, cols [MONO_METHODBODY_DOCUMENT], cols [MONO_METHODBODY_SEQ_POINTS]);
+	}
+}
+
 /**
  *
  * LOCKING: Takes the publish_lock
@@ -2002,7 +2023,10 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pdb image user string size: 0x%08x", image_dpdb->heap_us.size);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pdb image blob heap addr: %p", image_dpdb->heap_blob.data);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pdb image blob heap size: 0x%08x", image_dpdb->heap_blob.size);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "ppdb methodbody: ");
+		dump_methodbody (image_dpdb);
 		ppdb_file = mono_create_ppdb_file (image_dpdb, FALSE);
+		g_assert (ppdb_file->image == image_dpdb);
 	}
 
 	BaselineInfo *base_info = baseline_info_lookup_or_add (image_base);

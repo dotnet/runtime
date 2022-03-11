@@ -115,13 +115,8 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         ///   <paramref name="options"/> contains unsupported options.
         /// </exception>
-        public static JsonDocument Parse(Stream utf8Json, JsonDocumentOptions options = default)
+        public static JsonDocument Parse(Stream utf8Json!!, JsonDocumentOptions options = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
             ArraySegment<byte> drained = ReadToEnd(utf8Json);
             Debug.Assert(drained.Array != null);
             try
@@ -196,15 +191,10 @@ namespace System.Text.Json
         ///   <paramref name="options"/> contains unsupported options.
         /// </exception>
         public static Task<JsonDocument> ParseAsync(
-            Stream utf8Json,
+            Stream utf8Json!!,
             JsonDocumentOptions options = default,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
             return ParseAsyncCore(utf8Json, options, cancellationToken);
         }
 
@@ -311,13 +301,8 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         ///   <paramref name="options"/> contains unsupported options.
         /// </exception>
-        public static JsonDocument Parse([StringSyntax(StringSyntaxAttribute.Json)] string json, JsonDocumentOptions options = default)
+        public static JsonDocument Parse([StringSyntax(StringSyntaxAttribute.Json)] string json!!, JsonDocumentOptions options = default)
         {
-            if (json == null)
-            {
-                throw new ArgumentNullException(nameof(json));
-            }
-
             return Parse(json.AsMemory(), options);
         }
 

@@ -152,5 +152,5 @@ if(CLR_CMAKE_HOST_UNIX)
     )
 endif()
 
-target_link_libraries(mscordbi ${COREDBI_LIBRARIES} )
+target_link_libraries(mscordbi ${COREDBI_LIBRARIES} monoapi)
 install(TARGETS mscordbi DESTINATION lib)

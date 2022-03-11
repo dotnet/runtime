@@ -13,7 +13,7 @@ internal static partial class Interop
     {
         internal delegate int NegativeSizeReadMethod<in THandle>(THandle handle, byte[]? buf, int cBuf);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioTell")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioTell")]
         internal static partial int CryptoNative_BioTell(SafeBioHandle bio);
 
         internal static int BioTell(SafeBioHandle bio)
@@ -27,44 +27,44 @@ internal static partial class Interop
             return ret;
         }
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioSeek")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioSeek")]
         internal static partial int BioSeek(SafeBioHandle bio, int pos);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509Thumbprint")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509Thumbprint")]
         private static partial int GetX509Thumbprint(SafeX509Handle x509, byte[]? buf, int cBuf);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameRawBytes")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameRawBytes")]
         private static partial int GetX509NameRawBytes(IntPtr x509Name, byte[]? buf, int cBuf);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ReadX509AsDerFromBio")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ReadX509AsDerFromBio")]
         internal static partial SafeX509Handle ReadX509AsDerFromBio(SafeBioHandle bio);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509CrlNextUpdate")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509CrlNextUpdate")]
         internal static partial IntPtr GetX509CrlNextUpdate(SafeX509CrlHandle crl);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509Version")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509Version")]
         internal static partial int GetX509Version(SafeX509Handle x509);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509PublicKeyParameterBytes")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509PublicKeyParameterBytes")]
         private static partial int GetX509PublicKeyParameterBytes(SafeX509Handle x509, byte[]? buf, int cBuf);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509EkuFieldCount")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509EkuFieldCount")]
         internal static partial int GetX509EkuFieldCount(SafeEkuExtensionHandle eku);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509EkuField")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509EkuField")]
         internal static partial IntPtr GetX509EkuField(SafeEkuExtensionHandle eku, int loc);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameInfo")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameInfo")]
         internal static partial SafeBioHandle GetX509NameInfo(SafeX509Handle x509, int nameType, [MarshalAs(UnmanagedType.Bool)] bool forIssuer);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetAsn1StringBytes")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetAsn1StringBytes")]
         private static partial int GetAsn1StringBytes(IntPtr asn1, byte[]? buf, int cBuf);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PushX509StackField")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PushX509StackField")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool PushX509StackField(SafeX509StackHandle stack, SafeX509Handle x509);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PushX509StackField")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PushX509StackField")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool PushX509StackField(SafeSharedX509StackHandle stack, SafeX509Handle x509);
 
@@ -82,13 +82,13 @@ internal static partial class Interop
             return Marshal.PtrToStringAnsi(GetX509RootStoreFile_private(&unused));
         }
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStorePath")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStorePath")]
         private static unsafe partial IntPtr GetX509RootStorePath_private(byte* defaultPath);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStoreFile")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStoreFile")]
         private static unsafe partial IntPtr GetX509RootStoreFile_private(byte* defaultPath);
 
-        [GeneratedDllImport(Libraries.CryptoNative)]
+        [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_X509StoreSetVerifyTime(
             SafeX509StoreHandle ctx,
             int year,
@@ -99,10 +99,10 @@ internal static partial class Interop
             int second,
             [MarshalAs(UnmanagedType.Bool)] bool isDst);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_CheckX509IpAddress", CharSet = CharSet.Ansi)]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_CheckX509IpAddress", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial int CheckX509IpAddress(SafeX509Handle x509, byte[] addressBytes, int addressLen, string hostname, int cchHostname);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_CheckX509Hostname", CharSet = CharSet.Ansi)]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_CheckX509Hostname", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial int CheckX509Hostname(SafeX509Handle x509, string hostname, int cchHostname);
 
         internal static byte[] GetAsn1StringBytes(IntPtr asn1)

@@ -532,14 +532,6 @@ void DomainAssembly::EagerFixups()
     {
         GetModule()->RunEagerFixups();
 
-        PEImageLayout * pLayout = GetModule()->GetReadyToRunInfo()->GetImage();
-
-        TADDR base = dac_cast<TADDR>(pLayout->GetBase());
-
-        ExecutionManager::AddCodeRange(base, base + (TADDR)pLayout->GetVirtualSize(),
-                                        ExecutionManager::GetReadyToRunJitManager(),
-                                         RangeSection::RANGE_SECTION_READYTORUN,
-                                         GetModule() /* (void *)pLayout */);
     }
 #endif // FEATURE_READYTORUN
 }

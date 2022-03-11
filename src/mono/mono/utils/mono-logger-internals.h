@@ -7,7 +7,7 @@
 
 #include <glib.h>
 #include <mono/utils/mono-compiler.h>
-#include "mono-logger.h"
+#include <mono/utils/mono-logger.h>
 
 typedef enum {
 	MONO_TRACE_ASSEMBLY           = 1 << 0,

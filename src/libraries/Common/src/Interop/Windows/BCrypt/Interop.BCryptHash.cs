@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class BCrypt
     {
-        [GeneratedDllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
+        [LibraryImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial NTSTATUS BCryptHash(nuint hAlgorithm, byte* pbSecret, int cbSecret, byte* pbInput, int cbInput, byte* pbOutput, int cbOutput);
     }
 }

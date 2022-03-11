@@ -182,21 +182,15 @@ namespace System
             DecCalc.VarDecFromR8(value, out AsMutable(ref this));
         }
 
-        private Decimal(SerializationInfo info, StreamingContext context)
+        private Decimal(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
             _flags = info.GetInt32("flags");
             _hi32 = (uint)info.GetInt32("hi");
             _lo64 = (uint)info.GetInt32("lo") + ((ulong)info.GetInt32("mid") << 32);
         }
 
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
             // Serialize both the old and the new format
             info.AddValue("flags", _flags);
             info.AddValue("hi", (int)High);
@@ -266,8 +260,8 @@ namespace System
         // The possible binary representations of a particular value are all
         // equally valid, and all are numerically equivalent.
         //
-        public Decimal(int[] bits) :
-            this((ReadOnlySpan<int>)(bits ?? throw new ArgumentNullException(nameof(bits))))
+        public Decimal(int[] bits!!) :
+            this((ReadOnlySpan<int>)bits)
         {
         }
 
@@ -331,6 +325,11 @@ namespace System
             this = d;
             _flags = flags;
         }
+
+        /// <summary>
+        /// Gets the scaling factor of the decimal, which is a number from 0 to 28 that represents the number of decimal digits.
+        /// </summary>
+        public byte Scale => (byte)(_flags >> ScaleShift);
 
         // Returns the absolute value of the given Decimal. If d is
         // positive, the result is d. If d is negative, the result

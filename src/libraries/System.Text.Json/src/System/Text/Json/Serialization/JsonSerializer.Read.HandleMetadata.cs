@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
@@ -398,7 +399,7 @@ namespace System.Text.Json
         internal static bool TryGetReferenceFromJsonElement(
             ref ReadStack state,
             JsonElement element,
-            out object? referenceValue)
+            [NotNullWhen(true)] out object? referenceValue)
         {
             bool refMetadataFound = false;
             referenceValue = default;

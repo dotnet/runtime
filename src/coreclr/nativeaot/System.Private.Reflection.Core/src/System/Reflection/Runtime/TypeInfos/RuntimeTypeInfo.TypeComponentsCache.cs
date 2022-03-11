@@ -11,7 +11,7 @@ using System.Reflection.Runtime.BindingFlagSupport;
 
 using Internal.Reflection.Core.Execution;
 
-using Unsafe = Internal.Runtime.CompilerServices.Unsafe;
+using Unsafe = System.Runtime.CompilerServices.Unsafe;
 
 namespace System.Reflection.Runtime.TypeInfos
 {

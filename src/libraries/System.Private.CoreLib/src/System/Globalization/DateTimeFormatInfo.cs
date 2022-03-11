@@ -372,10 +372,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 ClearTokenHashTable();
                 amDesignator = value;
@@ -396,10 +393,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 if (value == calendar)
                 {
@@ -482,13 +476,8 @@ namespace System.Globalization
         /// <summary>
         /// Get the era value by parsing the name of the era.
         /// </summary>
-        public int GetEra(string eraName)
+        public int GetEra(string eraName!!)
         {
-            if (eraName == null)
-            {
-                throw new ArgumentNullException(nameof(eraName));
-            }
-
             // The Era Name and Abbreviated Era Name
             // for Taiwan Calendar on non-Taiwan SKU returns empty string (which
             // would be matched below) but we don't want the empty string to give
@@ -621,10 +610,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 ClearTokenHashTable();
                 dateSeparator = value;
@@ -701,10 +687,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 fullDateTimePattern = value;
             }
@@ -725,10 +708,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 // Remember the new string
                 longDatePattern = value;
@@ -762,10 +742,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 // Remember the new string
                 longTimePattern = value;
@@ -807,10 +784,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 monthDayPattern = value;
             }
@@ -834,10 +808,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 ClearTokenHashTable();
                 pmDesignator = value;
@@ -865,10 +836,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 // Remember the new string
                 shortDatePattern = value;
@@ -904,10 +872,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 // Remember the new string
                 shortTimePattern = value;
@@ -1021,10 +986,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 ClearTokenHashTable();
                 timeSeparator = value;
@@ -1049,10 +1011,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 // Remember the new string
                 yearMonthPattern = value;
@@ -1092,10 +1051,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.Length != 7)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 7), nameof(value));
@@ -1120,10 +1076,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.Length != 7)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 7), nameof(value));
@@ -1143,10 +1096,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.Length != 7)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 7), nameof(value));
@@ -1168,10 +1118,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.Length != 13)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), nameof(value));
@@ -1192,10 +1139,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.Length != 13)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), nameof(value));
@@ -1639,13 +1583,8 @@ namespace System.Globalization
             }
         }
 
-        public static DateTimeFormatInfo ReadOnly(DateTimeFormatInfo dtfi)
+        public static DateTimeFormatInfo ReadOnly(DateTimeFormatInfo dtfi!!)
         {
-            if (dtfi == null)
-            {
-                throw new ArgumentNullException(nameof(dtfi));
-            }
-
             if (dtfi.IsReadOnly)
             {
                 return dtfi;
@@ -1694,10 +1633,7 @@ namespace System.Globalization
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
             }
-            if (patterns == null)
-            {
-                throw new ArgumentNullException(nameof(patterns));
-            }
+            ArgumentNullException.ThrowIfNull(patterns);
 
             if (patterns.Length == 0)
             {
@@ -1760,10 +1696,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.Length != 13)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), nameof(value));
@@ -1784,10 +1717,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.Length != 13)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), nameof(value));

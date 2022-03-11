@@ -76,22 +76,16 @@ namespace System.Diagnostics
         /// <summary>
         /// Constructs a stack trace from the current location.
         /// </summary>
-        public StackTrace(Exception e)
+        public StackTrace(Exception e!!)
         {
-            if (e == null)
-                throw new ArgumentNullException(nameof(e));
-
             InitializeForException(e, METHODS_TO_SKIP, false);
         }
 
         /// <summary>
         /// Constructs a stack trace from the current location.
         /// </summary>
-        public StackTrace(Exception e, bool fNeedFileInfo)
+        public StackTrace(Exception e!!, bool fNeedFileInfo)
         {
-            if (e == null)
-                throw new ArgumentNullException(nameof(e));
-
             InitializeForException(e, METHODS_TO_SKIP, fNeedFileInfo);
         }
 
@@ -99,11 +93,8 @@ namespace System.Diagnostics
         /// Constructs a stack trace from the current location, in a caller's
         /// frame
         /// </summary>
-        public StackTrace(Exception e, int skipFrames)
+        public StackTrace(Exception e!!, int skipFrames)
         {
-            if (e == null)
-                throw new ArgumentNullException(nameof(e));
-
             if (skipFrames < 0)
                 throw new ArgumentOutOfRangeException(nameof(skipFrames),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -115,11 +106,8 @@ namespace System.Diagnostics
         /// Constructs a stack trace from the current location, in a caller's
         /// frame
         /// </summary>
-        public StackTrace(Exception e, int skipFrames, bool fNeedFileInfo)
+        public StackTrace(Exception e!!, int skipFrames, bool fNeedFileInfo)
         {
-            if (e == null)
-                throw new ArgumentNullException(nameof(e));
-
             if (skipFrames < 0)
                 throw new ArgumentOutOfRangeException(nameof(skipFrames),
                     SR.ArgumentOutOfRange_NeedNonNegNum);

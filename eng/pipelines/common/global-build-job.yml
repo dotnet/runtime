@@ -49,6 +49,10 @@ jobs:
     enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
     testResultsFormat: ${{ parameters.testResultsFormat }}
 
+    # Component governance does not work on musl machines
+    ${{ if eq(parameters.osSubGroup, '_musl') }}:
+      disableComponentGovernance: true
+
     workspace:
       clean: all
     enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
@@ -65,6 +69,9 @@ jobs:
         - ${{ parameters.dependsOn }}
 
     variables:
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - group: DotNet-HelixApi-Access
+
       - name: _osParameter
         value: -os ${{ parameters.osGroup }}
 
@@ -124,7 +131,7 @@ jobs:
         inputs:
           artifact: Mono_Offsets_${{monoCrossAOTTargetOS}}
           path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
-    
+
     - ${{ if eq(parameters.buildingOnSourceBuildImage, true) }}:
       - template: /eng/common/templates/steps/source-build.yml
         parameters:
@@ -147,9 +154,6 @@ jobs:
         displayName: Update machine certs
         inputs:
           filePath: $(Build.SourcesDirectory)/eng/pipelines/mono/update-machine-certs.ps1
-
-      - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
-        displayName: Install native dependencies
 
     # Build
     - ${{ if eq(parameters.buildingOnSourceBuildImage, false) }}:

@@ -92,7 +92,7 @@ namespace System.Threading
             }
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Start")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Start")]
         private static unsafe partial void StartInternal(ThreadHandle t, int stackSize, int priority, char* pThreadName);
 
         // Called from the runtime
@@ -119,7 +119,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void SleepInternal(int millisecondsTimeout);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_UninterruptibleSleep0")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_UninterruptibleSleep0")]
         internal static partial void UninterruptibleSleep0();
 
         /// <summary>
@@ -132,7 +132,7 @@ namespace System.Threading
 
         public static void SpinWait(int iterations) => SpinWaitInternal(iterations);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_YieldThread")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_YieldThread")]
         private static partial Interop.BOOL YieldInternal();
 
         public static bool Yield() => YieldInternal() != Interop.BOOL.FALSE;
@@ -157,7 +157,7 @@ namespace System.Threading
             InformThreadNameChange(GetNativeHandle(), value, value?.Length ?? 0);
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_InformThreadNameChange", CharSet = CharSet.Unicode)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_InformThreadNameChange", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void InformThreadNameChange(ThreadHandle t, string? name, int len);
 
         /// <summary>Returns true if the thread has been started and is not dead.</summary>
@@ -219,7 +219,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void SetPriorityNative(int priority);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentOSThreadId")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentOSThreadId")]
         private static partial ulong GetCurrentOSThreadId();
 
         /// <summary>
