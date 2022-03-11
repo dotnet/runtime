@@ -26,7 +26,7 @@ internal static partial class Interop
 
             internal void PopulateFrom(ref BY_HANDLE_FILE_INFORMATION fileInformationData)
             {
-                dwFileAttributes = (int) fileInformationData.dwFileAttributes;
+                dwFileAttributes = (int)fileInformationData.dwFileAttributes;
                 ftCreationTime = fileInformationData.ftCreationTime;
                 ftLastAccessTime = fileInformationData.ftLastAccessTime;
                 ftLastWriteTime = fileInformationData.ftLastWriteTime;
