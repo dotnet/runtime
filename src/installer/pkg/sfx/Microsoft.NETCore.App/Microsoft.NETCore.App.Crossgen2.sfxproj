@@ -3,7 +3,8 @@
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup>
-    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
+    <!-- Crossgen is not used for Mono, and does not currently create freebsd packages -->
+    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono' or ('$(DotNetBuildFromSource)' != 'true' and '$(RuntimeIdentifier)' == 'freebsd-x64')">true</SkipBuild>
     <PlatformPackageType>ToolPack</PlatformPackageType>
     <SharedFrameworkName>$(SharedFrameworkName).Crossgen2</SharedFrameworkName>
     <PgoSuffix Condition="'$(PgoInstrument)' != ''">.PGO</PgoSuffix>
