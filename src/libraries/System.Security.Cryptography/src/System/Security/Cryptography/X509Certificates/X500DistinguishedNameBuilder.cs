@@ -193,12 +193,14 @@ namespace System.Security.Cryptography.X509Certificates
         /// </remarks>
         public void AddEmailAddress(string emailAddress)
         {
-            //RFC 5912:
-            // id-emailAddress          AttributeType ::= { pkcs-9 1 }
-            //   at-emailAddress ATTRIBUTE ::= {TYPE IA5String
-            //       (SIZE (1..ub-emailaddress-length)) IDENTIFIED BY
-            //       id-emailAddress }
-            // ub-emailaddress-length INTEGER ::= 255
+            //RFC 2585:
+            // emailAddress ATTRIBUTE ::= {
+            //   WITH SYNTAX IA5String (SIZE(1..pkcs-9-ub-emailAddress))
+            //   EQUALITY MATCHING RULE pkcs9CaseIgnoreMatch
+            //   ID pkcs-9-at-emailAdress
+            // }
+            // pkcs-9-ub-pkcs9String  INTEGER ::= 255
+            // pkcs-9-ub-emailAddress INTEGER ::= pkcs-9-ub-pkcs9String
 
             ArgumentException.ThrowIfNullOrEmpty(emailAddress);
 
