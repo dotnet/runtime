@@ -2501,7 +2501,6 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReaso
     lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::AddrExposed));
 }
 
-#ifdef DEBUG
 //------------------------------------------------------------------------
 // lvaSetHiddenBufferStructArg: Set the local var "varNum" as hidden buffer struct arg.
 //
@@ -2531,7 +2530,9 @@ void Compiler::lvaSetHiddenBufferStructArg(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
 
+#ifdef DEBUG
     varDsc->SetHiddenBufferStructArg(true);
+#endif
 
     if (varDsc->lvPromoted)
     {
@@ -2540,14 +2541,16 @@ void Compiler::lvaSetHiddenBufferStructArg(unsigned varNum)
         for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
         {
             noway_assert(lvaTable[i].lvIsStructField);
+#ifdef DEBUG
             lvaTable[i].SetHiddenBufferStructArg(true);
+#endif
+
             lvaSetVarDoNotEnregister(i DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
         }
     }
 
     lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
 }
-#endif
 
 //------------------------------------------------------------------------
 // lvaSetVarLiveInOutOfHandler: Set the local varNum as being live in and/or out of a handler

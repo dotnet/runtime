@@ -697,9 +697,8 @@ private:
                     (val.Node() == callTree->gtCallArgs->GetNode()))
                 {
                     assert(!exposeParentLcl);
-#ifdef DEBUG
+
                     m_compiler->lvaSetHiddenBufferStructArg(val.LclNum());
-#endif
                     hasHiddenStructArg = true;
                     callTree->SetLclRetBufArg(callTree->gtCallArgs);
                 }
