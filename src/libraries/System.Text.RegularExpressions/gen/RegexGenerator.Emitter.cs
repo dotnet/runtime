@@ -588,22 +588,22 @@ namespace System.Text.RegularExpressions.Generator
             void EmitIndexOf_LeftToRight(string prefix)
             {
                 writer.WriteLine($"int i = inputSpan.Slice(pos).IndexOf({Literal(prefix)});");
-                writer.WriteLine("if (i >= 0)");
-                writer.WriteLine("{");
-                writer.WriteLine("    base.runtextpos = pos + i;");
-                writer.WriteLine("    return true;");
-                writer.WriteLine("}");
+                using (EmitBlock(writer, "if (i >= 0)"))
+                {
+                    writer.WriteLine("base.runtextpos = pos + i;");
+                    writer.WriteLine("return true;");
+                }
             }
 
             // Emits a case-sensitive right-to-left prefix search for a string at the beginning of the pattern.
             void EmitIndexOf_RightToLeft(string prefix)
             {
                 writer.WriteLine($"pos = inputSpan.Slice(0, pos).LastIndexOf({Literal(prefix)});");
-                writer.WriteLine("if (pos >= 0)");
-                writer.WriteLine("{");
-                writer.WriteLine($"    base.runtextpos = pos + {prefix.Length};");
-                writer.WriteLine("    return true;");
-                writer.WriteLine("}");
+                using (EmitBlock(writer, "if (pos >= 0)"))
+                {
+                    writer.WriteLine($"base.runtextpos = pos + {prefix.Length};");
+                    writer.WriteLine($"return true;");
+                }
             }
 
             // Emits a search for a set at a fixed position from the start of the pattern,
@@ -732,11 +732,11 @@ namespace System.Text.RegularExpressions.Generator
                 if (set.Chars is { Length: 1 } && !set.CaseInsensitive)
                 {
                     writer.WriteLine($"pos = inputSpan.Slice(0, pos).LastIndexOf({Literal(set.Chars[0])});");
-                    writer.WriteLine("if (pos >= 0)");
-                    writer.WriteLine("{");
-                    writer.WriteLine("    base.runtextpos = pos + 1;");
-                    writer.WriteLine("    return true;");
-                    writer.WriteLine("}");
+                    using (EmitBlock(writer, "if (pos >= 0)"))
+                    {
+                        writer.WriteLine("base.runtextpos = pos + 1;");
+                        writer.WriteLine("return true;");
+                    }
                 }
                 else
                 {
@@ -785,18 +785,19 @@ namespace System.Text.RegularExpressions.Generator
                     // We found the literal.  Walk backwards from it finding as many matches as we can against the loop.
                     writer.WriteLine("int prev = i;");
                     writer.WriteLine($"while ((uint)--prev < (uint)slice.Length && {MatchCharacterClass(hasTextInfo, options, "slice[prev]", target.LoopNode.Str!, caseInsensitive: false, negate: false, additionalDeclarations, requiredHelpers)});");
+                    writer.WriteLine();
 
                     if (target.LoopNode.M > 0)
                     {
                         // If we found fewer than needed, loop around to try again.  The loop doesn't overlap with the literal,
                         // so we can start from after the last place the literal matched.
-                        writer.WriteLine($"if ((i - prev - 1) < {target.LoopNode.M})");
-                        writer.WriteLine("{");
-                        writer.WriteLine("    pos += i + 1;");
-                        writer.WriteLine("    continue;");
-                        writer.WriteLine("}");
+                        using (EmitBlock(writer, $"if ((i - prev - 1) < {target.LoopNode.M})"))
+                        {
+                            writer.WriteLine("pos += i + 1;");
+                            writer.WriteLine("continue;");
+                        }
+                        writer.WriteLine();
                     }
-                    writer.WriteLine();
 
                     // We have a winner.  The starting position is just after the last position that failed to match the loop.
                     // TODO: It'd be nice to be able to communicate i as a place the matching engine can start matching
