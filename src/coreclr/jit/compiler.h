@@ -8878,8 +8878,10 @@ private:
 
 #ifdef FEATURE_SIMD
 
+#ifndef TARGET_ARM64
     // Should we support SIMD intrinsics?
     bool featureSIMD;
+#endif
 
     // Should we recognize SIMD types?
     // We always do this on ARM64 to support HVA types.
