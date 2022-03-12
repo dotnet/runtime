@@ -12,6 +12,23 @@ namespace System.Security.Cryptography.X509Certificates
     /// <summary>
     /// This class facilitates building a distinguished name for an X.509 certificate.
     /// </summary>
+    /// <remarks>
+    /// When constructing the SEQUENCE OF Relative Distinguished Names, this builder
+    /// constructs the SEQUENCE OF in the opposite order which they were added to the
+    /// builder. For example:
+    /// <code>
+    /// builder.AddCommonName("Contoso");
+    /// builder.AddCountryOrRegion("US");
+    /// </code>
+    /// Will produce a SEQUENCE OF with the country or region first, and the common
+    /// name second. Because <see cref="X500DistinguishedName" /> follows RFC 4514
+    /// when converting a Distinguished Name to a string, it starts with the last
+    /// Relative Distinuished Name component, moving backward toward the first.
+    /// Because the builder creates the SEQUENCE OF in reverse, and
+    /// <see cref="X500DistinguishedName" /> is also in reverse, it gives the appearence
+    /// of the added attributes and the string representation of the Distinguished Name in
+    /// the same order.
+    /// </remarks>
     public sealed class X500DistinguishedNameBuilder
     {
         private readonly List<byte[]> _encodedComponents = new List<byte[]>();
@@ -471,9 +488,8 @@ namespace System.Security.Cryptography.X509Certificates
             ReadOnlySpan<byte> value,
             [CallerArgumentExpression("value")] string? valueParamName = null)
         {
-            // WriteEncodedValue checks that there is no trailing data, so ignore the bytesConsumed here.
-            // We just want to give a more appropriate error that the contents are not DER.
-            if (!AsnDecoder.TryReadEncodedValue(value, AsnEncodingRules.DER, out _, out _, out _, out _))
+            if (!AsnDecoder.TryReadEncodedValue(value, AsnEncodingRules.DER, out _, out _, out _, out int bytesConsumed) ||
+                bytesConsumed != value.Length)
             {
                 throw new ArgumentException(SR.Argument_Asn1_InvalidDer, valueParamName);
             }

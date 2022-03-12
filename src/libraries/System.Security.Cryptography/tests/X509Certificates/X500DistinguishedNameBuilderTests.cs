@@ -183,22 +183,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 builder => builder.AddEncoded(new Oid(TestOid, null), stackalloc byte[] { 0x13, 0x01, 65 }));
         }
 
-        [Fact]
-        public static void AddEncoded_InvalidDer()
+        [Theory]
+        [InlineData(new byte[] { 0xFF, 0xFF, 0xFF })] /// Nonsense data
+        [InlineData(new byte[] { 0x0C, 0x04, 0x74, 0x65, 0x73, 0x74, 0x74 })] /// trailing data
+        public static void AddEncoded_InvalidDer(byte[] der)
         {
             X500DistinguishedNameBuilder builder = new();
             AssertExtensions.Throws<ArgumentException>(
                 "encodedValue",
-                () => builder.AddEncoded(TestOid, new byte[] { 0xFF, 0xFF, 0xFF }));
+                () => builder.AddEncoded(TestOid, der));
             AssertExtensions.Throws<ArgumentException>(
                 "encodedValue",
-                () => builder.AddEncoded(TestOid, stackalloc byte[] { 0xFF, 0xFF, 0xFF }));
+                () => builder.AddEncoded(TestOid, new ReadOnlySpan<byte>(der)));
             AssertExtensions.Throws<ArgumentException>(
                 "encodedValue",
-                () => builder.AddEncoded(new Oid(TestOid), new byte[] { 0xFF, 0xFF, 0xFF }));
+                () => builder.AddEncoded(new Oid(TestOid), der));
             AssertExtensions.Throws<ArgumentException>(
                 "encodedValue",
-                () => builder.AddEncoded(new Oid(TestOid), stackalloc byte[] { 0xFF, 0xFF, 0xFF }));
+                () => builder.AddEncoded(new Oid(TestOid), new ReadOnlySpan<byte>(der)));
         }
 
         [Fact]
