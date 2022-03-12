@@ -427,9 +427,9 @@ namespace System.Security.Cryptography.X509Certificates
 
             using (_writer.PushSequence())
             {
-                foreach (byte[] component in _encodedComponents)
+                for (int i = _encodedComponents.Count - 1; i >= 0; i--)
                 {
-                    _writer.WriteEncodedValue(component);
+                    _writer.WriteEncodedValue(_encodedComponents[i]);
                 }
             }
 

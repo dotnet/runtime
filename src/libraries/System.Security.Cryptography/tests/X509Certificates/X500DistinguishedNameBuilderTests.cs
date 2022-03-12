@@ -88,6 +88,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("[[")] // Boundary case, one above 'Z'.
         [InlineData("``")] // Boundary case, one below 'a'. Also tests not a PrintableString
         [InlineData("{{")] // Boundary case, one above 'z'.
+        [InlineData("\uD83C\uDF4C")] // Surrogate pair for U+1F34C "banana"
         public static void AddCountryOrRegion_Invalid_Fails(string countryOrRegion)
         {
             X500DistinguishedNameBuilder builder = new();
@@ -298,14 +299,52 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             // Make sure the handled exception didn't put the builder in an invalid state.
             builder.AddEmailAddress("k@example.com");
-            X500DistinguishedName dn = builder.Build();
-            Assert.Equal("301E311C301A06092A864886F70D010901160D6B406578616D706C652E636F6D", Convert.ToHexString(dn.RawData));
+            AssertBuilder("301E311C301A06092A864886F70D010901160D6B406578616D706C652E636F6D", builder);
         }
 
         [Fact]
         public static void Build_Empty()
         {
-            AssertBuilder("3000", builder => { });
+            AssertBuilder("3000", new X500DistinguishedNameBuilder());
+        }
+
+        [Fact]
+        public static void Build_UsableAfterBuild()
+        {
+            X500DistinguishedNameBuilder builder = new();
+            builder.AddOrganizationName("GitHub");
+            AssertBuilder("3011310F300D060355040A0C06476974487562", builder);
+            builder.AddOrganizationalUnitName("PSE");
+            AssertBuilder("301F310C300A060355040B0C03505345310F300D060355040A0C06476974487562", builder);
+        }
+
+        [Fact]
+        public static void Build_KitchenSink()
+        {
+            const string ExpectedHex =
+                "3081B9" +
+                    "31133011060A0992268993F22C6401191603636F6D" +
+                    "31163014060A0992268993F22C6401191606676974687562" +
+                    "310C300A060355040B0C03505345" +
+                    "310F300D060355040A0C06476974487562" +
+                    "310B3009060355040613025553" +
+                    "3111300F06035504080C0856697267696E6961" +
+                    "3113301106035504070C0A416C6578616E64726961" +
+                    "3120301E06092A864886F70D01090116116B6576696E406578616D706C652E636F6D" +
+                    "3114301206035504030C0B4B6576696E204A6F6E6573";
+
+            AssertBuilder(ExpectedHex, builder =>
+            {
+                builder.AddCommonName("Kevin Jones");
+                builder.AddEmailAddress("kevin@example.com");
+                builder.AddLocalityName("Alexandria");
+                builder.AddStateOrProvinceName("Virginia");
+                builder.AddCountryOrRegion("US");
+                builder.AddOrganizationName("GitHub");
+                builder.AddOrganizationalUnitName("PSE");
+                builder.AddDomainComponent("github");
+                builder.AddDomainComponent("com");
+            });
         }
 
         public static IEnumerable<object[]> AddStringTheories
@@ -397,8 +436,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             X500DistinguishedNameBuilder builder = new();
             callback(builder);
+            return AssertBuilder(expectedHex, builder);
+        }
+
+        private static X500DistinguishedName AssertBuilder(string expectedHex, X500DistinguishedNameBuilder builder)
+        {
             X500DistinguishedName dn = builder.Build();
-            Assert.Equal(expectedHex, Convert.ToHexString(dn.RawData));
+            string actualHex = Convert.ToHexString(dn.RawData);
+            Assert.Equal(expectedHex, actualHex);
             return dn;
         }
     }
