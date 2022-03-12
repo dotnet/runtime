@@ -8916,7 +8916,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
 
 #ifdef FEATURE_SIMD
-        if (featureSIMD)
+        if (supportSIMDTypes())
         {
             call = impSIMDIntrinsic(opcode, newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token);
             if (call != nullptr)

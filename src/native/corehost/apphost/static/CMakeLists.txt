@@ -45,10 +45,6 @@ include(../../hostpolicy/files.cmake)
 include(../../hostcommon/files.cmake)
 
 if(MSVC)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4267>)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4018>)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4200>)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4244>)
     # Host components don't try to handle asynchronous exceptions
     add_compile_options(/EHsc)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)

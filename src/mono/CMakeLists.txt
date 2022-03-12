@@ -171,6 +171,9 @@ endif()
 message ("CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}")
 message ("CMAKE_SYSTEM_VARIANT=${CMAKE_SYSTEM_VARIANT}")
 
+# TODO: check if we can enable this on more platforms
+# set(MONO_KEYWORD_THREAD "__thread")
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   add_definitions(-D_THREAD_SAFE)
   set(HOST_DARWIN 1)
@@ -199,7 +202,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
   set(DISABLE_EXECUTABLES 1)
-  set(ENABLE_MONOTOUCH 1)
+  set(TARGET_APPLE_MOBILE 1)
   add_definitions("-DSMALL_CONFIG")
   add_definitions("-D_XOPEN_SOURCE")
   add_definitions("-DHAVE_LARGE_FILE_SUPPORT=1")
@@ -220,8 +223,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
   # The normal check fails because it uses --isystem <ndk root>/sysroot/usr/include
   set(HAVE_USR_INCLUDE_MALLOC_H 1)
   set(HOST_ANDROID 1)
-  set(ANDROID_UNIFIED_HEADERS 1)
-  set(ENABLE_MONODROID 1)
   set(DISABLE_EXECUTABLES 1)
   # Force some defines
   set(HAVE_SCHED_GETAFFINITY 0)
@@ -310,7 +311,7 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "iOS" OR TARGET_SYSTEM_NAME STREQUAL "tvOS")
   if(TARGET_SYSTEM_NAME STREQUAL "tvOS")
     set(TARGET_TVOS 1)
   endif()
-  set(ENABLE_MONOTOUCH 1)
+  set(TARGET_APPLE_MOBILE 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "Linux")
   set(TARGET_LINUX 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "Android")
@@ -417,6 +418,10 @@ elseif(TARGET_ARCH STREQUAL "arm64")
   set(MONO_ARCHITECTURE "\"arm64\"")
   set(TARGET_SIZEOF_VOID_P 8)
   set(SIZEOF_REGISTER 8)
+  if(TARGET_SYSTEM_NAME STREQUAL "watchOS")
+    set(TARGET_SIZEOF_VOID_P 4)
+    set(MONO_ARCH_ILP32 1)
+  endif()
 elseif(TARGET_ARCH MATCHES "arm")
   set(TARGET_ARM 1)
   set(MONO_ARCHITECTURE "\"arm\"")
@@ -431,6 +436,9 @@ elseif(TARGET_ARCH MATCHES "arm")
   set(SIZEOF_REGISTER 4)
   # fixme: use separate defines for host/target
   set(NO_UNALIGNED_ACCESS 1)
+  set(HAVE_ARMV5 1)
+  set(HAVE_ARMV6 1)
+  #set(HAVE_ARMV7 1) # TODO: figure out if we should set this
 elseif(TARGET_ARCH STREQUAL "s390x")
   set(TARGET_S390X 1)
   set(MONO_ARCHITECTURE "\"s390x\"")
@@ -441,17 +449,16 @@ elseif(TARGET_ARCH STREQUAL "wasm" OR TARGET_ARCH STREQUAL "wasm32")
   set(MONO_ARCHITECTURE "\"wasm\"")
   set(TARGET_SIZEOF_VOID_P 4)
   set(SIZEOF_REGISTER 4)
+elseif(TARGET_ARCH STREQUAL "ppc64le")
+  # TODO: not complete
+  set(__mono_ppc64__ 1)
 else()
   message(FATAL_ERROR "TARGET_ARCH='${TARGET_ARCH}' not supported.")
 endif()
 
 # arm64 MacCatalyst runtime host or AOT target is more like Apple mobile targets than x64
-if ((HOST_MACCAT AND HOST_ARCH STREQUAL "arm64") OR (TARGET_MACCAT AND TARGET_ARCH STREQUAL "arm64"))
-  set(ENABLE_MONOTOUCH 1)
-endif()
-
-if(ENABLE_MONOTOUCH)
-  add_definitions(-DMONOTOUCH=1)
+if ((HOST_MACCAT AND HOST_ARM64) OR (TARGET_MACCAT AND TARGET_ARM64))
+  set(TARGET_APPLE_MOBILE 1)
 endif()
 
 # Decide if we need zlib, and if so whether we want the system zlib or the in-tree copy.
@@ -690,6 +697,10 @@ endif()
 # GC CHECKS
 ######################################
 
+if(NOT MONO_GC STREQUAL "sgen" AND NOT MONO_GC STREQUAL "boehm")
+  message(FATAL_ERROR "MONO_GC (set to '${MONO_GC}') must be sgen or boehm")
+endif()
+
 if (GC_SUSPEND STREQUAL "coop")
   set(ENABLE_COOP_SUSPEND 1)
 elseif(GC_SUSPEND STREQUAL "hybrid")
@@ -707,7 +718,7 @@ elseif(GC_SUSPEND STREQUAL "default")
     set(ENABLE_HYBRID_SUSPEND 1)
   endif()
 else()
-  message(FATAL_ERROR "GC_SUSPEND (set to '${GC_SUSPEND}') must be one of coop, hybrid or preemptive")
+  message(FATAL_ERROR "GC_SUSPEND (set to '${GC_SUSPEND}') must be one of coop, hybrid, preemptive or default")
 endif()
 
 ######################################
@@ -800,6 +811,11 @@ endif()
 if(HOST_LINUX AND HAVE_SYS_MMAN_H AND HAVE_ELF_H AND HAVE_SYS_SYSCALL_H)
   set(ENABLE_JIT_DUMP 1)
 endif()
+
+if(ENABLE_SMALL_CONFIG)
+  set(MONO_SMALL_CONFIG 1)
+endif()
+
 ### End of other checks
 
 ######################################

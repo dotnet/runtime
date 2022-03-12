@@ -98,61 +98,6 @@
 	#define UCONTEXT_REG_EDI(ctx) (((ucontext_t*)(ctx))->uc_mcontext.gregs [EDI])
 	#define UCONTEXT_REG_EIP(ctx) (((ucontext_t*)(ctx))->uc_mcontext.gregs [EIP])
 #else
-
-#if defined(HOST_ANDROID) && !defined(HAVE_UCONTEXT_H)
-/* No ucontext.h as of NDK v6b */
-typedef int greg_t;
-#define NGREG 19
-typedef greg_t gregset_t [NGREG];
-enum
-{
-  REG_GS = 0,
-# define REG_GS         REG_GS
-  REG_FS,
-# define REG_FS         REG_FS
-  REG_ES,
-# define REG_ES         REG_ES
-  REG_DS,
-# define REG_DS         REG_DS
-  REG_EDI,
-# define REG_EDI        REG_EDI
-  REG_ESI,
-# define REG_ESI        REG_ESI
-  REG_EBP,
-# define REG_EBP        REG_EBP
-  REG_ESP,
-# define REG_ESP        REG_ESP
-  REG_EBX,
-# define REG_EBX        REG_EBX
-  REG_EDX,
-# define REG_EDX        REG_EDX
-  REG_ECX,
-# define REG_ECX        REG_ECX
-  REG_EAX,
-# define REG_EAX        REG_EAX
-  REG_TRAPNO,
-# define REG_TRAPNO     REG_TRAPNO
-  REG_ERR,
-# define REG_ERR        REG_ERR
-  REG_EIP,
-# define REG_EIP        REG_EIP
-};
-
-typedef struct {
-    gregset_t gregs;
-	/* Many missing fields */
-} mcontext_t;
-
-typedef struct ucontext {
-    unsigned long int uc_flags;
-    struct ucontext *uc_link;
-    stack_t uc_stack;
-    mcontext_t uc_mcontext;
-	/* Many missing fields */
-} ucontext_t;
-
-#endif
-
 	#define UCONTEXT_REG_EAX(ctx) (((ucontext_t*)(ctx))->uc_mcontext.gregs [REG_EAX])
 	#define UCONTEXT_REG_EBX(ctx) (((ucontext_t*)(ctx))->uc_mcontext.gregs [REG_EBX])
 	#define UCONTEXT_REG_ECX(ctx) (((ucontext_t*)(ctx))->uc_mcontext.gregs [REG_ECX])

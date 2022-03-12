@@ -910,50 +910,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return ins;
 		}
 
-#ifndef MONO_BIG_ARRAYS
-		/*
-		 * This is an inline version of GetLength/GetLowerBound(0) used frequently in
-		 * Array methods.
-		 */
-		else if (((strcmp (cmethod->name, "GetLength") == 0 && fsig->param_count + fsig->hasthis == 2) ||
-		         (strcmp (cmethod->name, "GetLowerBound") == 0 && fsig->param_count + fsig->hasthis == 2)) &&
-		         args [1]->opcode == OP_ICONST && args [1]->inst_c0 == 0) {
-			int dreg = alloc_ireg (cfg);
-			int bounds_reg = alloc_ireg_mp (cfg);
-			MonoBasicBlock *end_bb, *szarray_bb;
-			gboolean get_length = strcmp (cmethod->name, "GetLength") == 0;
-
-			NEW_BBLOCK (cfg, end_bb);
-			NEW_BBLOCK (cfg, szarray_bb);
-
-			EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, ins, OP_LOAD_MEMBASE, bounds_reg,
-										 args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, bounds));
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, bounds_reg, 0);
-			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBEQ, szarray_bb);
-			/* Non-szarray case */
-			if (get_length)
-				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg,
-									   bounds_reg, MONO_STRUCT_OFFSET (MonoArrayBounds, length));
-			else
-				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg,
-									   bounds_reg, MONO_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
-			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
-			MONO_START_BB (cfg, szarray_bb);
-			/* Szarray case */
-			if (get_length)
-				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg,
-									   args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length));
-			else
-				MONO_EMIT_NEW_ICONST (cfg, dreg, 0);
-			MONO_START_BB (cfg, end_bb);
-
-			EMIT_NEW_UNALU (cfg, ins, OP_MOVE, dreg, dreg);
-			ins->type = STACK_I4;
-
-			return ins;
-		}
-#endif
-
  		if (cmethod->name [0] != 'g')
  			return NULL;
 

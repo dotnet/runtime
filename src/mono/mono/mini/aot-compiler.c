@@ -1225,7 +1225,7 @@ arch_init (MonoAotCompile *acfg)
 
 #endif
 
-#ifdef MONOTOUCH
+#ifdef TARGET_APPLE_MOBILE
 	acfg->global_symbols = TRUE;
 #endif
 
@@ -13939,7 +13939,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	if (!acfg->aot_opts.llvm_path)
 		acfg->aot_opts.llvm_path = g_strdup ("");
 	acfg->aot_opts.temp_path = g_strdup ("");
-#if defined(MONOTOUCH)&& !defined(TARGET_AMD64)
+#if defined(TARGET_APPLE_MOBILE)&& !defined(TARGET_AMD64)
 	acfg->aot_opts.use_trampolines_page = TRUE;
 #endif
 	acfg->aot_opts.clangxx = g_strdup ("clang++");
