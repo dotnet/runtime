@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -192,6 +193,44 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void Remove_EqualityComparer()
+        {
+            var mutable = ImmutableList<double>.Empty.ToBuilder();
+            mutable.Add(1.5);
+            mutable.Add(2.4);
+            mutable.Add(3.6);
+
+            mutable.Remove(2.4, null);
+            Assert.Equal(new[] { 1.5, 3.6 }, mutable);
+
+            mutable.Remove(1.2, new IntegerPartComparer());
+            Assert.Equal(new[] { 3.6 }, mutable);
+        }
+
+        [Fact]
+        public void RemoveRange()
+        {
+            var mutable = ImmutableList<double>.Empty.ToBuilder();
+            mutable.Add(1.5);
+            mutable.Add(2.4);
+            mutable.Add(3.6);
+            mutable.Add(4.7);
+            mutable.Add(5.8);
+            mutable.Add(6.2);
+
+            mutable.RemoveRange(4, 2);
+            Assert.Equal(new[] { 1.5, 2.4, 3.6, 4.7 }, mutable);
+
+            mutable.RemoveRange(new double[] { 2.4, 3.6 });
+            Assert.Equal(new[] { 1.5, 4.7 }, mutable);
+
+            mutable.RemoveRange(new double[] { 1.7 }, new IntegerPartComparer());
+            Assert.Equal(new[] { 4.7 }, mutable);
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => mutable.RemoveRange(2, 3));
+        }
+
+        [Fact]
         public void RemoveAt()
         {
             var mutable = ImmutableList<int>.Empty.ToBuilder();
@@ -211,6 +250,21 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => mutable.RemoveAt(0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => mutable.RemoveAt(-1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => mutable.RemoveAt(1));
+        }
+
+        [Fact]
+        public void Replace()
+        {
+            var mutable = ImmutableList<double>.Empty.ToBuilder();
+            mutable.Add(1.5);
+            mutable.Add(2.4);
+            mutable.Add(3.6);
+
+            mutable.Replace(3.6, 3.8);
+            Assert.Equal(new[] { 1.5, 2.4, 3.8 }, mutable);
+
+            mutable.Replace(1.9, 1.2, new IntegerPartComparer());
+            Assert.Equal(new[] { 1.2, 2.4, 3.8 }, mutable);
         }
 
         [Fact]
@@ -469,6 +523,16 @@ namespace System.Collections.Immutable.Tests
             var builder = list.ToBuilder();
             builder.Sort(index, count, comparer);
             return builder.ToImmutable().ToList();
+        }
+
+        private class IntegerPartComparer : IEqualityComparer<double>
+        {
+            public bool Equals(double x, double y)
+            {
+                return Math.Floor(x) == Math.Floor(y);
+            }
+
+            public int GetHashCode([DisallowNull] double obj) => obj.GetHashCode();
         }
     }
 }
