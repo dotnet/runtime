@@ -344,8 +344,8 @@ namespace System.Text.RegularExpressions.Generator
             Debug.Assert(minRequiredLength >= 0);
             string clause = (minRequiredLength, rtl) switch
                             {
-                                (0, false) => "if (pos <= inputSpan.Length)",
-                                (1, false) => "if (pos < inputSpan.Length)",
+                                (0, false) => "if ((uint)pos <= (uint)inputSpan.Length)",
+                                (1, false) => "if ((uint)pos < (uint)inputSpan.Length)",
                                 (_, false) => $"if (pos <= inputSpan.Length - {minRequiredLength})",
                                 (0, true) => "if (pos >= 0)",
                                 (1, true) => "if (pos > 0)",
