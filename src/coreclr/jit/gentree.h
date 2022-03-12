@@ -8362,7 +8362,9 @@ inline bool GenTree::IsIntegralConstAbsPow2() const
 {
     if (IsIntegralConst())
     {
-        return isPow2(abs(AsIntConCommon()->IntegralValue()));
+        INT64  svalue = AsIntConCommon()->IntegralValue();
+        size_t value  = (svalue == SSIZE_T_MIN) ? static_cast<size_t>(svalue) : static_cast<size_t>(abs(svalue));
+        return isPow2(value);
     }
 
     return false;
