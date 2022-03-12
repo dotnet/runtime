@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -266,10 +267,15 @@ namespace System.Security.Cryptography.X509Certificates
         /// <paramref name="twoLetterCode" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// <paramref name="twoLetterCode" /> is not exactly two characters.
+        /// <paramref name="twoLetterCode" /> is not exactly two characters, or contains
+        /// characters that are not A through Z.
         /// </exception>
         /// <remarks>
-        /// This encodes an attribute with the OID 2.5.4.6 as a PrintableString.
+        /// <para>This encodes an attribute with the OID 2.5.4.6 as a PrintableString.</para>
+        /// <para>
+        /// <paramref name="twoLetterCode" /> should be a two letter ISO 3166 alpha-2 code, and
+        /// will be normalized to upper case characters.
+        /// </para>
         /// </remarks>
         public void AddCountryOrRegion(string twoLetterCode)
         {
@@ -277,18 +283,37 @@ namespace System.Security.Cryptography.X509Certificates
             // id-at-countryName
             // WITH SYNTAX CountryName
             // CountryName ::= PrintableString(SIZE (2))
+            // An attribute value for country name is a string chosen from ISO 3166-1 alpha-2 or ISO 3166-3 alpha-2.
+            // We can't reasonably enforce the ISO 3166 list, but we can ensure it's a two letter ISO code
+            // and consists of alpha characters.
 
             ArgumentException.ThrowIfNullOrEmpty(twoLetterCode);
+            ReadOnlySpan<char> twoLetterCodeSpan = twoLetterCode;
 
             // This could be a surrogate pair, but since we are encoding as a PrintableString,
             // those will be prohibited, so "Length" should be fine for checking the length of
             // the string.
-            if (twoLetterCode.Length != 2)
+            // Input must be A-Z per ISO 3166.
+            if (twoLetterCode.Length != 2 || !IsAlpha(twoLetterCode[0]) || !IsAlpha(twoLetterCode[1]))
             {
                 throw new ArgumentException(SR.Argument_X500_InvalidCountryOrRegion, nameof(twoLetterCode));
             }
 
-            EncodeComponent(Oids.CountryOrRegionName, twoLetterCode, UniversalTagNumber.PrintableString);
+            Span<char> fixupTwoLetterCode = stackalloc char[2];
+            int written = twoLetterCodeSpan.ToUpperInvariant(fixupTwoLetterCode);
+            Debug.Assert(written == 2);
+
+            EncodeComponent(
+                Oids.CountryOrRegionName,
+                fixupTwoLetterCode,
+                UniversalTagNumber.PrintableString,
+                nameof(twoLetterCode));
+
+            static bool IsAlpha(char ch)
+            {
+                uint c = (uint)ch;
+                return c - 'A' < 26 || c - 'a' < 26;
+            }
         }
 
         /// <summary>
@@ -413,7 +438,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         private void EncodeComponent(
             string oid,
-            string value,
+            ReadOnlySpan<char> value,
             UniversalTagNumber stringEncodingType,
             [CallerArgumentExpression("value")] string? paramName = null)
         {

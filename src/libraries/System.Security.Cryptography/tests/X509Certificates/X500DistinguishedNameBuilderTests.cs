@@ -67,31 +67,31 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             AssertAddThrowsOnNullAndEmpty("localityName", builder => builder.AddLocalityName);
         }
 
-        [Fact]
-        public static void AddCountryOrRegion_Success_EncodeToPrintableString()
+        [Theory]
+        [InlineData("US", "300D310B3009060355040613025553")]
+        [InlineData("AA", "300D310B3009060355040613024141")]
+        [InlineData("ZZ", "300D310B3009060355040613025A5A")]
+        [InlineData("aa", "300D310B3009060355040613024141")] // Normalized to AA
+        [InlineData("zz", "300D310B3009060355040613025A5A")] // Normalized to ZZ.
+        public static void AddCountryOrRegion_Success_EncodeToPrintableString(string twoLetterCode, string expectedHex)
         {
-            AssertBuilder("300D310B3009060355040613025553", builder => builder.AddCountryOrRegion("US"));
+            AssertBuilder(expectedHex, builder => builder.AddCountryOrRegion(twoLetterCode));
         }
 
         [Theory]
-        [InlineData("A")]
-        [InlineData("AAA")]
-        public static void AddCountryOrRegion_InvalidLength_Fails(string countryOrRegion)
+        [InlineData("A")] // Not two characters
+        [InlineData("AAA")] // Not two characters
+        [InlineData("01")] // PrintableString, but not alpha.
+        [InlineData("@@")] // Boundary case, one below 'A'.
+        [InlineData("[[")] // Boundary case, one above 'Z'.
+        [InlineData("``")] // Boundary case, one below 'a'. Also tests not a PrintableString
+        [InlineData("{{")] // Boundary case, one above 'z'.
+        public static void AddCountryOrRegion_Invalid_Fails(string countryOrRegion)
         {
             X500DistinguishedNameBuilder builder = new();
             AssertExtensions.Throws<ArgumentException>(
                 "twoLetterCode",
                 () => builder.AddCountryOrRegion(countryOrRegion));
-        }
-
-        [Fact]
-        public static void AddCountryOrRegion_InvalidContents_Fails()
-        {
-            X500DistinguishedNameBuilder builder = new();
-            ArgumentException ex = AssertExtensions.Throws<ArgumentException>(
-                "twoLetterCode",
-                () => builder.AddCountryOrRegion("``"));
-            Assert.Contains("'PrintableString'", ex.Message);
         }
 
         [Fact]
