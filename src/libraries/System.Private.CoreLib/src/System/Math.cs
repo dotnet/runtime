@@ -317,6 +317,12 @@ namespace System
             // Restore to using % and / when the JIT is able to eliminate one of the idivs.
             // In the meantime, a * and - is measurably faster than an extra /.
 
+            if (X86Base.IsSupported)
+            {
+                (int quitient, result) = X86Base.DivRem((uint)a, a >> 31, b);
+                return quitient;
+            }
+
             int div = a / b;
             result = a - (div * b);
             return div;
@@ -324,6 +330,12 @@ namespace System
 
         public static long DivRem(long a, long b, out long result)
         {
+            if (X86Base.X64.IsSupported)
+            {
+                (long quitient, result) = X86Base.X64.DivRem((ulong)a, a >> 63, b);
+                return quitient;
+            }
+
             long div = a / b;
             result = a - (div * b);
             return div;
@@ -338,6 +350,13 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (sbyte Quotient, sbyte Remainder) DivRem(sbyte left, sbyte right)
         {
+            if (X86Base.IsSupported)
+            {
+                int dividend = left;
+                (int quitient, int remainder) = X86Base.DivRem((uint)dividend, dividend >> 31, right);
+                return ((sbyte)quitient, (sbyte)remainder);
+            }
+
             sbyte quotient = (sbyte)(left / right);
             return (quotient, (sbyte)(left - (quotient * right)));
         }
@@ -350,6 +369,12 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (byte Quotient, byte Remainder) DivRem(byte left, byte right)
         {
+            if (X86Base.IsSupported)
+            {
+                (uint quitient, uint remainder) = X86Base.DivRem(left, 0u, right);
+                return ((byte)quitient, (byte)remainder);
+            }
+
             byte quotient = (byte)(left / right);
             return (quotient, (byte)(left - (quotient * right)));
         }
@@ -362,6 +387,13 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (short Quotient, short Remainder) DivRem(short left, short right)
         {
+            if (X86Base.IsSupported)
+            {
+                int dividend = left;
+                (int quitient, int remainder) = X86Base.DivRem((uint)dividend, dividend >> 31, right);
+                return ((short)quitient, (short)remainder);
+            }
+
             short quotient = (short)(left / right);
             return (quotient, (short)(left - (quotient * right)));
         }
@@ -375,6 +407,12 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (ushort Quotient, ushort Remainder) DivRem(ushort left, ushort right)
         {
+            if (X86Base.IsSupported)
+            {
+                (uint quitient, uint remainder) = X86Base.DivRem(left, 0u, right);
+                return ((ushort)quitient, (ushort)remainder);
+            }
+
             ushort quotient = (ushort)(left / right);
             return (quotient, (ushort)(left - (quotient * right)));
         }
@@ -387,6 +425,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (int Quotient, int Remainder) DivRem(int left, int right)
         {
+            if (X86Base.IsSupported)
+            {
+                return X86Base.DivRem((uint)left, left >> 31, right);
+            }
+
             int quotient = left / right;
             return (quotient, left - (quotient * right));
         }
@@ -400,6 +443,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (uint Quotient, uint Remainder) DivRem(uint left, uint right)
         {
+            if (X86Base.IsSupported)
+            {
+                return X86Base.DivRem(left, 0u, right);
+            }
+
             uint quotient = left / right;
             return (quotient, left - (quotient * right));
         }
@@ -412,6 +460,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (long Quotient, long Remainder) DivRem(long left, long right)
         {
+            if (X86Base.X64.IsSupported)
+            {
+                return X86Base.X64.DivRem((ulong)left, left >> 63, right);
+            }
+
             long quotient = left / right;
             return (quotient, left - (quotient * right));
         }
@@ -425,6 +478,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (ulong Quotient, ulong Remainder) DivRem(ulong left, ulong right)
         {
+            if (X86Base.X64.IsSupported)
+            {
+                return X86Base.X64.DivRem(left, 0ul, right);
+            }
+
             ulong quotient = left / right;
             return (quotient, left - (quotient * right));
         }
@@ -437,6 +495,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (nint Quotient, nint Remainder) DivRem(nint left, nint right)
         {
+            if (X86Base.IsSupported)
+            {
+                return X86Base.DivRem((nuint)left, left >> (IntPtr.Size * 8 - 1), right);
+            }
+
             nint quotient = left / right;
             return (quotient, left - (quotient * right));
         }
@@ -450,6 +513,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (nuint Quotient, nuint Remainder) DivRem(nuint left, nuint right)
         {
+            if (X86Base.IsSupported)
+            {
+                return X86Base.DivRem(left, (nuint)0, right);
+            }
+
             nuint quotient = left / right;
             return (quotient, left - (quotient * right));
         }
@@ -1341,45 +1409,45 @@ namespace System
                     // Rounds to the nearest value; if the number falls midway,
                     // it is rounded to the nearest value with an even least significant digit
                     case MidpointRounding.ToEven:
-                    {
-                        value = Round(value);
-                        break;
-                    }
+                        {
+                            value = Round(value);
+                            break;
+                        }
                     // Rounds to the nearest value; if the number falls midway,
                     // it is rounded to the nearest value above (for positive numbers) or below (for negative numbers)
                     case MidpointRounding.AwayFromZero:
-                    {
-                        double fraction = ModF(value, &value);
-
-                        if (Abs(fraction) >= 0.5)
                         {
-                            value += Sign(fraction);
-                        }
+                            double fraction = ModF(value, &value);
 
-                        break;
-                    }
+                            if (Abs(fraction) >= 0.5)
+                            {
+                                value += Sign(fraction);
+                            }
+
+                            break;
+                        }
                     // Directed rounding: Round to the nearest value, toward to zero
                     case MidpointRounding.ToZero:
-                    {
-                        value = Truncate(value);
-                        break;
-                    }
+                        {
+                            value = Truncate(value);
+                            break;
+                        }
                     // Directed Rounding: Round down to the next value, toward negative infinity
                     case MidpointRounding.ToNegativeInfinity:
-                    {
-                        value = Floor(value);
-                        break;
-                    }
+                        {
+                            value = Floor(value);
+                            break;
+                        }
                     // Directed rounding: Round up to the next value, toward positive infinity
                     case MidpointRounding.ToPositiveInfinity:
-                    {
-                        value = Ceiling(value);
-                        break;
-                    }
+                        {
+                            value = Ceiling(value);
+                            break;
+                        }
                     default:
-                    {
-                        throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(MidpointRounding)), nameof(mode));
-                    }
+                        {
+                            throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(MidpointRounding)), nameof(mode));
+                        }
                 }
 
                 value /= power10;
