@@ -37,6 +37,7 @@
     <SelfContained Condition="'$(RunningPublish)' == 'true'">true</SelfContained>
   </PropertyGroup>
 
+  <Import Project="$(R2ROverridePath)" Condition="'$(R2ROverridePath)' != ''" />
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.targets"
           Condition="'$(NativeAotSupported)' == 'true' and '$(RunningPublish)' == 'true'" />
 

@@ -19,11 +19,18 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(NativeAotSupported)' != 'true'">
-    <!-- If we're publishing self-contained, we include all the binaries produced by publish, including facades -->
+    <!-- If we're publishing self-contained, we include all the binaries produced by publish, including facades. -->
     <ExcludeFromClosure Remove="@(ExcludeFromClosure)" />
   </ItemGroup>
-
-  <Import Project="ReadyToRun.targets" />
+  <ItemGroup Condition="'$(NativeAotSupported)' != 'true' and '$(TargetOS)' != 'windows'">
+    <IgnoredReference Include="@(WindowsDesktopCoreAppLibrary)" />
+    <IgnoredReference Include="System.Data.SqlClient" />
+    <IgnoredReference Include="System.Data.Odbc" />
+    <IgnoredReference Include="System.Data.OleDb" />
+    <IgnoredReference Include="System.ServiceModel.Syndication" />
+    <IgnoredReference Include="System.ServiceProcess.ServiceController" />
+    <IgnoredReference Include="System.IO.Ports" />
+  </ItemGroup>
 
   <Target Name="PublishCrossgen"
           BeforeTargets="GetFilesToPackage">
@@ -31,7 +38,8 @@
     <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
              Properties="RunningPublish=true
               ;RuntimeIdentifier=$(RuntimeIdentifier)
-              ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)"
+              ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
+              ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets"
              Targets="Restore;Publish;PublishItemsOutputGroup">
       <Output TaskParameter="TargetOutputs"
               ItemName="_RawCrossgenPublishFiles" />
