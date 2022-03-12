@@ -11,12 +11,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     {
         private const string TestOid = "2.25.77135202736018529853602245419149860647";
 
-        [Fact]
-        public static void AddEmailAddress_Success_EncodedToIA5()
+        [Theory]
+        [InlineData("kevin@example.com", "30223120301E06092A864886F70D01090116116B6576696E406578616D706C652E636F6D")]
+        [InlineData("totes not an email", "30233121301F06092A864886F70D0109011612746F746573206E6F7420616E20656D61696C")]
+        public static void AddEmailAddress_Success_EncodedToIA5(string emailAddress, string expectedHex)
         {
             AssertBuilder(
-                "30223120301E06092A864886F70D01090116116B6576696E406578616D706C652E636F6D",
-                builder => builder.AddEmailAddress("kevin@example.com"));
+                expectedHex,
+                builder => builder.AddEmailAddress(emailAddress));
         }
 
         [Fact]
@@ -121,7 +123,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void AddStateOrProvinceName_Success_EncodeToUTF8String()
         {
-            AssertBuilder("300D310B300906035504080C024341", builder => builder.AddStateOrProvinceName("CA"));
+            AssertBuilder(
+                "30153113301106035504080C0A43616C69666F726E6961",
+                builder => builder.AddStateOrProvinceName("California"));
         }
 
         [Fact]

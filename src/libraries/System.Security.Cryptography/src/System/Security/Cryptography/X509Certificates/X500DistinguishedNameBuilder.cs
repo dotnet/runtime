@@ -203,6 +203,9 @@ namespace System.Security.Cryptography.X509Certificates
             // pkcs-9-ub-pkcs9String  INTEGER ::= 255
             // pkcs-9-ub-emailAddress INTEGER ::= pkcs-9-ub-pkcs9String
 
+            // We don't attempt to do any input validation that the email resembles an email
+            // address, only that it conforms to the ASN.1 syntax.
+
             ArgumentException.ThrowIfNullOrEmpty(emailAddress);
 
             if (emailAddress.Length > 255)
@@ -467,6 +470,8 @@ namespace System.Security.Cryptography.X509Certificates
             ReadOnlySpan<byte> value,
             [CallerArgumentExpression("value")] string? valueParamName = null)
         {
+            // WriteEncodedValue checks that there is no trailing data, so ignore the bytesConsumed here.
+            // We just want to give a more appropriate error that the contents are not DER.
             if (!AsnDecoder.TryReadEncodedValue(value, AsnEncodingRules.DER, out _, out _, out _, out _))
             {
                 throw new ArgumentException(SR.Argument_Asn1_InvalidDer, valueParamName);
