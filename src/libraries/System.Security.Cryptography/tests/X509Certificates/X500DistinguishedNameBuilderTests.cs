@@ -302,6 +302,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal("301E311C301A06092A864886F70D010901160D6B406578616D706C652E636F6D", Convert.ToHexString(dn.RawData));
         }
 
+        [Fact]
+        public static void Build_Empty()
+        {
+            AssertBuilder("3000", builder => { });
+        }
+
         public static IEnumerable<object[]> AddStringTheories
         {
             get
