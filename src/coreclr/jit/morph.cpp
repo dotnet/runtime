@@ -11399,7 +11399,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             if (!optValnumCSE_phase)
             {
 #ifdef TARGET_ARM64
-                if (tree->OperIs(GT_UMOD) && op2->IsIntegralConstAbsPow2())
+                if (tree->OperIs(GT_UMOD) && op2->IsIntegralConstUnsignedPow2())
                 {
                     // Transformation: a % b = a & (b - 1);
                     tree = fgMorphUModToAndSub(tree->AsOp());

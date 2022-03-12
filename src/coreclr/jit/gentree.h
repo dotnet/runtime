@@ -2110,6 +2110,8 @@ public:
 
     inline bool IsIntegralConst() const;
 
+    inline bool IsIntegralConstUnsignedPow2() const;
+
     inline bool IsIntegralConstAbsPow2() const;
 
     inline bool IsIntCnsFitsInI32(); // Constant fits in INT32
@@ -8346,6 +8348,29 @@ inline bool GenTree::IsIntegralConst() const
 }
 
 //-------------------------------------------------------------------------
+// IsIntegralConstUnsignedPow2: Determines whether the unsigned value of
+//                              an integral constant is the power of 2.
+//
+// Return Value:
+//     Returns true if the unsigned value of a GenTree's integral constant
+//     is the power of 2.
+//
+// Notes:
+//     Integral constant nodes store its value in signed form.
+//     This should handle cases where an unsigned-int was logically used in
+//     user code.
+//
+inline bool GenTree::IsIntegralConstUnsignedPow2() const
+{
+    if (IsIntegralConst())
+    {
+        return isPow2((UINT64)AsIntConCommon()->IntegralValue());
+    }
+
+    return false;
+}
+
+//-------------------------------------------------------------------------
 // IsIntegralConstAbsPow2: Determines whether the absolute value of
 //                         an integral constant is the power of 2.
 //
@@ -8353,11 +8378,6 @@ inline bool GenTree::IsIntegralConst() const
 //     Returns true if the absolute value of a GenTree's integral constant
 //     is the power of 2.
 //
-// Notes:
-//     Integral constant nodes store its value in signed form.
-//     Because this function takes the absolute value of the constant's value,
-//     this should handle cases where an unsigned-int was logically used in
-//     user code.
 inline bool GenTree::IsIntegralConstAbsPow2() const
 {
     if (IsIntegralConst())
