@@ -5,15 +5,15 @@ namespace System.Reflection
 {
     internal sealed partial class MethodInvoker
     {
-        public delegate object? InvokeFunc(object? obj, Span<object?> args, BindingFlags invokeAttr);
         internal InvocationFlags _invocationFlags;
+        private readonly RuntimeMethodInfo _methodInfo;
         private readonly bool _hasRefs;
-        private InvokeFunc _invokeFunc;
 
-        public MethodInvoker(InvokeFunc invokeFunc, RuntimeType[] sigTypes)
+        public MethodInvoker(RuntimeMethodInfo methodInfo)
         {
-            _invokeFunc = invokeFunc;
+            _methodInfo = methodInfo;
 
+            RuntimeType[] sigTypes = methodInfo.Signature.Arguments;
             for (int i = 0; i < sigTypes.Length; i++)
             {
                 if (sigTypes[i].IsByRef)
@@ -25,10 +25,5 @@ namespace System.Reflection
         }
 
         public bool HasRefs => _hasRefs;
-
-        public object? Invoke(object? obj, Span<object?> parameters, BindingFlags invokeAttr)
-        {
-            return _invokeFunc(obj, parameters, invokeAttr);
-        }
     }
 }

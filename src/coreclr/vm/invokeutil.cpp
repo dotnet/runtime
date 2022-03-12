@@ -1236,5 +1236,3 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
 
     return obj;
 }
-
-

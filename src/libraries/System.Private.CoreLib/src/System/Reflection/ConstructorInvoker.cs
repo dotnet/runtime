@@ -5,19 +5,18 @@ namespace System.Reflection
 {
     internal sealed partial class ConstructorInvoker
     {
-        public delegate object? InvokeCtorFunc(object? obj, Span<object?> args, BindingFlags invokeAttr);
-
         private readonly bool _hasRefs;
+        private readonly RuntimeConstructorInfo _constructorInfo;
         public InvocationFlags _invocationFlags;
-        private InvokeCtorFunc _invoke;
 
-        public ConstructorInvoker(InvokeCtorFunc invokeFunc, RuntimeType[] sigTypes)
+        public ConstructorInvoker(RuntimeConstructorInfo constructorInfo)
         {
-            _invoke = invokeFunc;
+            _constructorInfo = constructorInfo;
 
-            for (int i = 0; i < sigTypes.Length; i++)
+            RuntimeType[] argTypes = constructorInfo.ArgumentTypes;
+            for (int i = 0; i < argTypes.Length; i++)
             {
-                if (sigTypes[i].IsByRef)
+                if (argTypes[i].IsByRef)
                 {
                     _hasRefs = true;
                     break;
@@ -26,10 +25,5 @@ namespace System.Reflection
         }
 
         public bool HasRefs => _hasRefs;
-
-        public object? Invoke(object? obj, Span<object?> parameters, BindingFlags invokeAttr)
-        {
-            return _invoke(obj, parameters, invokeAttr);
-        }
     }
 }

@@ -979,7 +979,7 @@ namespace System
         [DebuggerStepThrough]
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object? InvokeMethod(object? target, in Span<object?> arguments, Signature sig, bool constructor, out bool rethrow);
+        internal static extern object? InvokeMethod(object? target, void** arguments, Signature sig, bool isConstructor, out bool rethrow);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetMethodInstantiation")]
         private static partial void GetMethodInstantiation(RuntimeMethodHandleInternal method, ObjectHandleOnStack types, Interop.BOOL fAsRuntimeTypeArray);

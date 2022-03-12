@@ -28,7 +28,7 @@ namespace System.Reflection
         private MethodAttributes m_methodAttributes;
         private BindingFlags m_bindingFlags;
         private Signature? m_signature;
-        private ConstructorInvoker? m_reflectionInvoker;
+        private ConstructorInvoker? m_invoker;
 
         internal InvocationFlags InvocationFlags
         {
@@ -49,8 +49,8 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                m_reflectionInvoker ??= new ConstructorInvoker(InvokeNonEmit, ArgumentTypes);
-                return m_reflectionInvoker;
+                m_invoker ??= new ConstructorInvoker(this);
+                return m_invoker;
             }
         }
         #endregion
@@ -74,7 +74,7 @@ namespace System.Reflection
         internal override bool CacheEquals(object? o) =>
             o is RuntimeConstructorInfo m && m.m_handle == m_handle;
 
-        private Signature Signature
+        internal Signature Signature
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
@@ -196,7 +196,7 @@ namespace System.Reflection
 
         public override CallingConventions CallingConvention => Signature.CallingConvention;
 
-        private RuntimeType[] ArgumentTypes => Signature.Arguments;
+        internal RuntimeType[] ArgumentTypes => Signature.Arguments;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2059:RunClassConstructor",
             Justification = "This ConstructorInfo instance represents the static constructor itself, so if this object was created, the static constructor exists.")]
@@ -212,33 +212,6 @@ namespace System.Reflection
             else
             {
                 RuntimeHelpers.RunModuleConstructor(Module.ModuleHandle);
-            }
-        }
-
-        [DebuggerStepThrough]
-        [DebuggerHidden]
-        private object InvokeNonEmit(object? obj, Span<object?> arguments, BindingFlags invokeAttr)
-        {
-            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-            {
-                bool rethrow = false;
-
-                try
-                {
-                    return RuntimeMethodHandle.InvokeMethod(obj, in arguments, Signature, constructor: obj is null, out rethrow)!;
-                }
-                catch (OutOfMemoryException)
-                {
-                    throw; // Re-throw for backward compatibility.
-                }
-                catch (Exception ex) when (rethrow == false)
-                {
-                    throw new TargetInvocationException(ex);
-                }
-            }
-            else
-            {
-                return RuntimeMethodHandle.InvokeMethod(obj, in arguments, Signature, constructor: obj is null, out _)!;
             }
         }
 

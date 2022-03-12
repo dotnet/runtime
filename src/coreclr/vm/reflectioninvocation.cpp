@@ -369,6 +369,46 @@ struct ByRefToNullable  {
     }
 };
 
+static OBJECTREF InvokeArrayConstructor2(TypeHandle th, OBJECTREF** objs, int argCnt)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    // Validate the argCnt an the Rank. Also allow nested SZARRAY's.
+    _ASSERTE(argCnt == (int) th.GetRank() || argCnt == (int) th.GetRank() * 2 ||
+             th.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
+
+    // Validate all of the parameters.  These all typed as integers
+    int allocSize = 0;
+    if (!ClrSafeInt<int>::multiply(sizeof(INT32), argCnt, allocSize))
+        COMPlusThrow(kArgumentException, IDS_EE_SIGTOOCOMPLEX);
+
+    INT32* indexes = (INT32*) _alloca((size_t)allocSize);
+    ZeroMemory(indexes, allocSize);
+
+    for (DWORD i=0; i<(DWORD)argCnt; i++)
+    {
+        if (!objs[i])
+            COMPlusThrowArgumentException(W("parameters"), W("Arg_NullIndex"));
+
+        MethodTable* pMT = (*objs[i])->GetMethodTable();
+        CorElementType oType = TypeHandle(pMT).GetVerifierCorElementType();
+
+        if (!InvokeUtil::IsPrimitiveType(oType) || !InvokeUtil::CanPrimitiveWiden(ELEMENT_TYPE_I4,oType))
+            COMPlusThrow(kArgumentException,W("Arg_PrimWiden"));
+
+        ARG_SLOT value;
+        InvokeUtil::CreatePrimitiveValue(ELEMENT_TYPE_I4, oType, *objs[i], &value);
+        memcpyNoGCRefs(indexes + i, ArgSlotEndianessFixup(&value, sizeof(INT32)), sizeof(INT32));
+    }
+
+    return AllocateArrayEx(th, indexes, argCnt);
+}
+
 static OBJECTREF InvokeArrayConstructor(TypeHandle th, Span<OBJECTREF>* objs, int argCnt)
 {
     CONTRACTL {
@@ -535,6 +575,376 @@ public:
         return (m_dwFlags & METHOD_INVOKE_NEEDS_ACTIVATION) != 0;
     }
 };
+
+FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod2,
+    Object *target,
+    OBJECTREF** objs, // An array of byrefs
+    SignatureNative* pSigUNSAFE,
+    CLR_BOOL fConstructor,
+    CLR_BOOL* pRethrow)
+{
+    FCALL_CONTRACT;
+
+    struct {
+        OBJECTREF target;
+        SIGNATURENATIVEREF pSig;
+        OBJECTREF retVal;
+    } gc;
+
+    gc.target = ObjectToOBJECTREF(target);
+    gc.pSig = (SIGNATURENATIVEREF)pSigUNSAFE;
+    gc.retVal = NULL;
+
+    *pRethrow = TRUE;
+    MethodDesc* pMeth = gc.pSig->GetMethod();
+    TypeHandle ownerType = gc.pSig->GetDeclaringType();
+
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+
+    if (ownerType.IsSharedByGenericInstantiations())
+    {
+        COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
+    }
+
+#ifdef _DEBUG
+    if (g_pConfig->ShouldInvokeHalt(pMeth))
+    {
+        _ASSERTE(!"InvokeHalt");
+    }
+#endif
+
+    BOOL fCtorOfVariableSizedObject = FALSE;
+
+    if (fConstructor)
+    {
+        // If we are invoking a constructor on an array then we must
+        // handle this specially.
+        if (ownerType.IsArray()) {
+            gc.retVal = InvokeArrayConstructor2(ownerType,
+                                               objs,
+                                               gc.pSig->NumFixedArgs());
+            goto Done;
+        }
+
+        // Variable sized objects, like String instances, allocate themselves
+        // so they are a special case.
+        MethodTable * pMT = ownerType.AsMethodTable();
+        fCtorOfVariableSizedObject = pMT->HasComponentSize();
+        if (!fCtorOfVariableSizedObject)
+            gc.retVal = pMT->Allocate();
+    }
+
+    {
+    ArgIteratorForMethodInvoke argit(&gc.pSig, fCtorOfVariableSizedObject);
+
+    if (argit.IsActivationNeeded())
+        pMeth->EnsureActive();
+    CONSISTENCY_CHECK(pMeth->CheckActivated());
+
+    UINT nStackBytes = argit.SizeOfFrameArgumentArray();
+
+    // Note that SizeOfFrameArgumentArray does overflow checks with sufficient margin to prevent overflows here
+    SIZE_T nAllocaSize = TransitionBlock::GetNegSpaceSize() + sizeof(TransitionBlock) + nStackBytes;
+
+    Thread * pThread = GET_THREAD();
+
+    LPBYTE pAlloc = (LPBYTE)_alloca(nAllocaSize);
+
+    LPBYTE pTransitionBlock = pAlloc + TransitionBlock::GetNegSpaceSize();
+
+    CallDescrData callDescrData;
+
+    callDescrData.pSrc = pTransitionBlock + sizeof(TransitionBlock);
+    _ASSERTE((nStackBytes % TARGET_POINTER_SIZE) == 0);
+    callDescrData.numStackSlots = nStackBytes / TARGET_POINTER_SIZE;
+#ifdef CALLDESCR_ARGREGS
+    callDescrData.pArgumentRegisters = (ArgumentRegisters*)(pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters());
+#endif
+#ifdef CALLDESCR_RETBUFFARGREG
+    callDescrData.pRetBuffArg = (UINT64*)(pTransitionBlock + TransitionBlock::GetOffsetOfRetBuffArgReg());
+#endif
+#ifdef CALLDESCR_FPARGREGS
+    callDescrData.pFloatArgumentRegisters = NULL;
+#endif
+#ifdef CALLDESCR_REGTYPEMAP
+    callDescrData.dwRegTypeMap = 0;
+#endif
+    callDescrData.fpReturnSize = argit.GetFPReturnSize();
+
+    // This is duplicated logic from MethodDesc::GetCallTarget
+    PCODE pTarget;
+    if (pMeth->IsVtableMethod())
+    {
+        pTarget = pMeth->GetSingleCallableAddrOfVirtualizedCode(&gc.target, ownerType);
+    }
+    else
+    {
+        pTarget = pMeth->GetSingleCallableAddrOfCode();
+    }
+    callDescrData.pTarget = pTarget;
+
+    // Build the arguments on the stack
+
+    GCStress<cfg_any>::MaybeTrigger();
+
+    FrameWithCookie<ProtectValueClassFrame> *pProtectValueClassFrame = NULL;
+    ValueClassInfo *pValueClasses = NULL;
+    ByRefToNullable* byRefToNullables = NULL;
+
+    // if we have the magic Value Class return, we need to allocate that class
+    // and place a pointer to it on the stack.
+
+    BOOL hasRefReturnAndNeedsBoxing = FALSE; // Indicates that the method has a BYREF return type and the target type needs to be copied into a preallocated boxed object.
+
+    TypeHandle retTH = gc.pSig->GetReturnTypeHandle();
+
+    TypeHandle refReturnTargetTH;  // Valid only if retType == ELEMENT_TYPE_BYREF. Caches the TypeHandle of the byref target.
+    BOOL fHasRetBuffArg = argit.HasRetBuffArg();
+    CorElementType retType = retTH.GetSignatureCorElementType();
+    BOOL hasValueTypeReturn = retTH.IsValueType() && retType != ELEMENT_TYPE_VOID;
+    _ASSERTE(hasValueTypeReturn || !fHasRetBuffArg); // only valuetypes are returned via a return buffer.
+    if (hasValueTypeReturn) {
+        gc.retVal = retTH.GetMethodTable()->Allocate();
+    }
+    else if (retType == ELEMENT_TYPE_BYREF)
+    {
+        refReturnTargetTH = retTH.AsTypeDesc()->GetTypeParam();
+
+        // If the target of the byref is a value type, we need to preallocate a boxed object to hold the managed return value.
+        if (refReturnTargetTH.IsValueType())
+        {
+            _ASSERTE(refReturnTargetTH.GetSignatureCorElementType() != ELEMENT_TYPE_VOID); // Managed Reflection layer has a bouncer for "ref void" returns.
+            hasRefReturnAndNeedsBoxing = TRUE;
+            gc.retVal = refReturnTargetTH.GetMethodTable()->Allocate();
+        }
+    }
+
+    // Copy "this" pointer
+    if (!pMeth->IsStatic() && !fCtorOfVariableSizedObject) {
+        PVOID pThisPtr;
+
+        if (fConstructor)
+        {
+            // Copy "this" pointer: only unbox if type is value type and method is not unboxing stub
+            if (ownerType.IsValueType() && !pMeth->IsUnboxingStub()) {
+                // Note that we create a true boxed nullabe<T> and then convert it to a T below
+                pThisPtr = gc.retVal->GetData();
+            }
+            else
+                pThisPtr = OBJECTREFToObject(gc.retVal);
+        }
+        else
+        if (!pMeth->GetMethodTable()->IsValueType())
+            pThisPtr = OBJECTREFToObject(gc.target);
+        else {
+            if (pMeth->IsUnboxingStub())
+                pThisPtr = OBJECTREFToObject(gc.target);
+            else {
+                    // Create a true boxed Nullable<T> and use that as the 'this' pointer.
+                    // since what is passed in is just a boxed T
+                MethodTable* pMT = pMeth->GetMethodTable();
+                if (Nullable::IsNullableType(pMT)) {
+                    OBJECTREF bufferObj = pMT->Allocate();
+                    void* buffer = bufferObj->GetData();
+                    Nullable::UnBox(buffer, gc.target, pMT);
+                    pThisPtr = buffer;
+                }
+                else
+                    pThisPtr = gc.target->UnBox();
+            }
+        }
+
+        *((LPVOID*) (pTransitionBlock + argit.GetThisOffset())) = pThisPtr;
+    }
+
+    // NO GC AFTER THIS POINT. The object references in the method frame are not protected.
+    //
+    // We have already copied "this" pointer so we do not want GC to happen even sooner. Unfortunately,
+    // we may allocate in the process of copying this pointer that makes it hard to express using contracts.
+    //
+    // If an exception occurs a gc may happen but we are going to dump the stack anyway and we do
+    // not need to protect anything.
+
+    {
+    BEGINFORBIDGC();
+#ifdef _DEBUG
+    GCForbidLoaderUseHolder forbidLoaderUse;
+#endif
+
+    // Take care of any return arguments
+    if (fHasRetBuffArg)
+    {
+        PVOID pRetBuff = gc.retVal->GetData();
+        *((LPVOID*) (pTransitionBlock + argit.GetRetBuffArgOffset())) = pRetBuff;
+    }
+
+    // copy args
+    UINT nNumArgs = gc.pSig->NumFixedArgs();
+    for (UINT i = 0 ; i < nNumArgs; i++) {
+
+        TypeHandle th = gc.pSig->GetArgumentAt(i);
+
+        int ofs = argit.GetNextOffset();
+        _ASSERTE(ofs != TransitionBlock::InvalidOffset);
+
+#ifdef CALLDESCR_REGTYPEMAP
+        FillInRegTypeMap(ofs, argit.GetArgType(), (BYTE *)&callDescrData.dwRegTypeMap);
+#endif
+
+#ifdef CALLDESCR_FPARGREGS
+        // Under CALLDESCR_FPARGREGS -ve offsets indicate arguments in floating point registers. If we have at
+        // least one such argument we point the call worker at the floating point area of the frame (we leave
+        // it null otherwise since the worker can perform a useful optimization if it knows no floating point
+        // registers need to be set up).
+
+        if (TransitionBlock::HasFloatRegister(ofs, argit.GetArgLocDescForStructInRegs()) &&
+            (callDescrData.pFloatArgumentRegisters == NULL))
+        {
+            callDescrData.pFloatArgumentRegisters = (FloatArgumentRegisters*) (pTransitionBlock +
+                                                                               TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+        }
+#endif
+
+        UINT structSize = argit.GetArgSize();
+
+        bool needsStackCopy = false;
+
+        // A boxed Nullable<T> is represented as boxed T. So to pass a Nullable<T> by reference,
+        // we have to create a Nullable<T> on stack, copy the T into it, then pass it to the callee and
+        // after returning from the call, copy the T out of the Nullable<T> back to the boxed T.
+        TypeHandle nullableType = NullableTypeOfByref(th);
+        if (!nullableType.IsNull()) {
+            th = nullableType;
+            structSize = th.GetSize();
+            needsStackCopy = true;
+        }
+#ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
+        else if (argit.IsArgPassedByRef())
+        {
+            needsStackCopy = true;
+        }
+#endif
+
+        ArgDestination argDest(pTransitionBlock, ofs, argit.GetArgLocDescForStructInRegs());
+
+        if(needsStackCopy)
+        {
+            MethodTable * pMT = th.GetMethodTable();
+            _ASSERTE(pMT && pMT->IsValueType());
+
+            PVOID pArgDst = argDest.GetDestinationAddress();
+
+            PVOID pStackCopy = _alloca(structSize);
+            *(PVOID *)pArgDst = pStackCopy;
+            pArgDst = pStackCopy;
+
+            if (!nullableType.IsNull())
+            {
+                byRefToNullables = new(_alloca(sizeof(ByRefToNullable))) ByRefToNullable(i, pStackCopy, nullableType, byRefToNullables);
+            }
+
+            // save the info into ValueClassInfo
+            if (pMT->ContainsPointers())
+            {
+                pValueClasses = new (_alloca(sizeof(ValueClassInfo))) ValueClassInfo(pStackCopy, pMT, pValueClasses);
+            }
+
+            // We need a new ArgDestination that points to the stack copy
+            argDest = ArgDestination(pStackCopy, 0, NULL);
+        }
+
+        InvokeUtil::CopyArg(th, objs[i], &argDest);
+    }
+
+    ENDFORBIDGC();
+    }
+
+    if (pValueClasses != NULL)
+    {
+        pProtectValueClassFrame = new (_alloca (sizeof (FrameWithCookie<ProtectValueClassFrame>)))
+            FrameWithCookie<ProtectValueClassFrame>(pThread, pValueClasses);
+    }
+
+    // Call the method
+    *pRethrow = FALSE;
+    CallDescrWorkerWithHandler(&callDescrData);
+    *pRethrow = TRUE;
+
+    // It is still illegal to do a GC here.  The return type might have/contain GC pointers.
+    if (fConstructor)
+    {
+        // We have a special case for Strings...The object is returned...
+        if (fCtorOfVariableSizedObject) {
+            PVOID pReturnValue = &callDescrData.returnValue;
+            gc.retVal = *(OBJECTREF *)pReturnValue;
+        }
+
+        // If it is a Nullable<T>, box it using Nullable<T> conventions.
+        // TODO: this double allocates on constructions which is wasteful
+        gc.retVal = Nullable::NormalizeBox(gc.retVal);
+    }
+    else
+    if (hasValueTypeReturn || hasRefReturnAndNeedsBoxing)
+    {
+        _ASSERTE(gc.retVal != NULL);
+
+        if (hasRefReturnAndNeedsBoxing)
+        {
+            // Method has BYREF return and the target type is one that needs boxing. We need to copy into the boxed object we have allocated for this purpose.
+            LPVOID pReturnedReference = *(LPVOID*)&callDescrData.returnValue;
+            if (pReturnedReference == NULL)
+            {
+                COMPlusThrow(kNullReferenceException, W("NullReference_InvokeNullRefReturned"));
+            }
+            CopyValueClass(gc.retVal->GetData(), pReturnedReference, gc.retVal->GetMethodTable());
+        }
+        // if the structure is returned by value, then we need to copy in the boxed object
+        // we have allocated for this purpose.
+        else if (!fHasRetBuffArg)
+        {
+            CopyValueClass(gc.retVal->GetData(), &callDescrData.returnValue, gc.retVal->GetMethodTable());
+        }
+        // From here on out, it is OK to have GCs since the return object (which may have had
+        // GC pointers has been put into a GC object and thus protected.
+
+        // TODO this creates two objects which is inefficient
+        // If the return type is a Nullable<T> box it into the correct form
+        gc.retVal = Nullable::NormalizeBox(gc.retVal);
+    }
+    else if (retType == ELEMENT_TYPE_BYREF)
+    {
+        // WARNING: pReturnedReference is an unprotected inner reference so we must not trigger a GC until the referenced value has been safely captured.
+        LPVOID pReturnedReference = *(LPVOID*)&callDescrData.returnValue;
+        if (pReturnedReference == NULL)
+        {
+            COMPlusThrow(kNullReferenceException, W("NullReference_InvokeNullRefReturned"));
+        }
+
+        gc.retVal = InvokeUtil::CreateObjectAfterInvoke(refReturnTargetTH, pReturnedReference);
+    }
+    else
+    {
+        gc.retVal = InvokeUtil::CreateObjectAfterInvoke(retTH, &callDescrData.returnValue);
+    }
+
+    while (byRefToNullables != NULL) {
+        OBJECTREF obj = Nullable::Box(byRefToNullables->data, byRefToNullables->type.GetMethodTable());
+        SetObjectReference(objs[byRefToNullables->argNum], obj);
+        byRefToNullables = byRefToNullables->next;
+    }
+
+    if (pProtectValueClassFrame != NULL)
+        pProtectValueClassFrame->Pop(pThread);
+
+    }
+
+Done:
+    ;
+    HELPER_METHOD_FRAME_END();
+
+    return OBJECTREFToObject(gc.retVal);
+}
+FCIMPLEND
 
 FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     Object *target,

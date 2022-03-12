@@ -17,7 +17,7 @@ namespace System.Reflection
         // lazy caching
         private string? m_name;
         private RuntimeType? m_fieldType;
-        internal FieldAccessor? m_reflectionInvoker;
+        internal FieldAccessor? m_invoker;
 
         internal InvocationFlags InvocationFlags
         {
@@ -31,8 +31,8 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                m_reflectionInvoker ??= new FieldAccessor(InvokeGetterNonEmit, InvokeSetterNonEmit);
-                return m_reflectionInvoker;
+                m_invoker ??= new FieldAccessor(this);
+                return m_invoker;
             }
         }
 
@@ -82,46 +82,6 @@ namespace System.Reflection
 
         #region Private Members
         RuntimeFieldHandleInternal IRuntimeFieldInfo.Value => new RuntimeFieldHandleInternal(m_fieldHandle);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal object? InvokeGetterNonEmit(object? obj)
-        {
-            RuntimeType? declaringType = DeclaringType as RuntimeType;
-            RuntimeType fieldType = (RuntimeType)FieldType;
-            bool domainInitialized = false;
-
-            if (declaringType == null)
-            {
-                return RuntimeFieldHandle.GetValue(this, obj, fieldType, null, ref domainInitialized);
-            }
-            else
-            {
-                domainInitialized = declaringType.DomainInitialized;
-                object? retVal = RuntimeFieldHandle.GetValue(this, obj, fieldType, declaringType, ref domainInitialized);
-                declaringType.DomainInitialized = domainInitialized;
-                return retVal;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void InvokeSetterNonEmit(object? obj, object? value)
-        {
-            RuntimeType? declaringType = DeclaringType as RuntimeType;
-            RuntimeType fieldType = (RuntimeType)FieldType;
-            bool domainInitialized = false;
-
-            if (declaringType == null)
-            {
-                RuntimeFieldHandle.SetValue(this, obj, value, fieldType, m_fieldAttributes, null, ref domainInitialized);
-            }
-            else
-            {
-                domainInitialized = declaringType.DomainInitialized;
-                RuntimeFieldHandle.SetValue(this, obj, value, fieldType, m_fieldAttributes, declaringType, ref domainInitialized);
-                declaringType.DomainInitialized = domainInitialized;
-            }
-        }
-
         #endregion
 
         #region Internal Members

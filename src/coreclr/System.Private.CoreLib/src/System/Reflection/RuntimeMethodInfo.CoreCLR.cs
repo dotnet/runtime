@@ -27,7 +27,7 @@ namespace System.Reflection
         private Signature? m_signature;
         private RuntimeType m_declaringType;
         private object? m_keepalive;
-        private MethodInvoker? m_reflectionInvoker;
+        private MethodInvoker? m_invoker;
 
         internal InvocationFlags InvocationFlags
         {
@@ -48,8 +48,11 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                m_reflectionInvoker ??= new MethodInvoker(InvokeNonEmit, ArgumentTypes);
-                return m_reflectionInvoker;
+                unsafe // todo:remove
+                {
+                    m_invoker ??= new MethodInvoker(this);
+                    return m_invoker;
+                }
             }
         }
         #endregion
@@ -318,32 +321,9 @@ namespace System.Reflection
 
         #endregion
 
-        #region Invocation Logic(On MemberBase)
+        #region Invocation Logic
         [DebuggerStepThrough]
         [DebuggerHidden]
-        private object? InvokeNonEmit(object? obj, Span<object?> arguments, BindingFlags invokeAttr)
-        {
-            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-            {
-                bool rethrow = false;
-
-                try
-                {
-                    return RuntimeMethodHandle.InvokeMethod(obj, in arguments, Signature, constructor: false, out rethrow);
-                }
-                catch (Exception e) when (!rethrow)
-                {
-                    throw new TargetInvocationException(e);
-                }
-            }
-            else
-            {
-                return RuntimeMethodHandle.InvokeMethod(obj, in arguments, Signature, constructor: false, out _);
-            }
-        }
-
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
         internal object? InvokeOneParameter(object? obj, BindingFlags invokeAttr, Binder? binder, object? parameter, CultureInfo? culture)
         {
             // ContainsStackPointers means that the struct (either the declaring type or the return type)
@@ -363,12 +343,29 @@ namespace System.Reflection
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
             }
 
-            Span<object?> parameters = new Span<object?>(ref parameter, 1);
-            StackAllocedArguments stackArgs = default;
             bool _ = false;
-            Span<object?> arguments = CheckArguments(ref stackArgs, parameters, ref _, ArgumentTypes, binder, culture, invokeAttr);
+            object? retValue;
 
-            object? retValue = Invoker.Invoke(obj, arguments, invokeAttr);
+            unsafe
+            {
+                StackAllocatedByRefs byrefStorage = default;
+                IntPtr* unsafeParameters = (IntPtr*)&byrefStorage;
+                StackAllocedArguments argStorage = default;
+                Span<object?> parametersOut = new(ref argStorage._arg0, 1);
+                Span<object?> parameters = new(ref parameter, 1);
+
+                CheckArguments(
+                    ref parametersOut,
+                    unsafeParameters,
+                    ref _,
+                    parameters,
+                    ArgumentTypes,
+                    binder,
+                    culture,
+                    invokeAttr);
+
+                retValue = Invoker.InvokeUnsafe(obj, unsafeParameters, invokeAttr);
+            }
 
             return retValue;
         }

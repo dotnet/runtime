@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using static System.Runtime.CompilerServices.RuntimeHelpers;
 
 namespace System.Reflection
 {
@@ -92,8 +93,8 @@ namespace System.Reflection
             throw new TargetException();
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override object? Invoke(
             object? obj,
             BindingFlags invokeAttr,
@@ -107,8 +108,8 @@ namespace System.Reflection
             ValidateInvokeTarget(obj);
 
             // Correct number of arguments supplied
-            int actualCount = (parameters is null) ? 0 : parameters.Length;
-            if (ArgumentTypes.Length != actualCount)
+            int argCount = (parameters is null) ? 0 : parameters.Length;
+            if (ArgumentTypes.Length != argCount)
             {
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
             }
@@ -122,32 +123,81 @@ namespace System.Reflection
             }
 
             Debug.Assert(obj != null);
-            Span<object?> arguments = default;
-            StackAllocedArguments stackArgs = default; // try to avoid intermediate array allocation if possible
-            bool copyBack = false;
-            if (actualCount != 0)
-            {
-                copyBack = Invoker.HasRefs;
-                arguments = CheckArguments(ref stackArgs, parameters!, ref copyBack, ArgumentTypes, binder, culture, invokeAttr);
-            }
 
-            Invoker.Invoke(obj, arguments, invokeAttr);
-
-            if (copyBack)
+            unsafe
             {
-                // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
-                // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
-                for (int index = 0; index < arguments.Length; index++)
+                if (argCount == 0)
                 {
-                    parameters![index] = arguments[index];
+                    Invoker.InvokeUnsafe(obj, args: default, invokeAttr);
+                }
+                else
+                {
+                    Debug.Assert(parameters != null);
+                    Span<object?> parametersOut;
+                    bool copyBack = Invoker.HasRefs;
+
+                    if (argCount <= MaxStackAllocArgCount)
+                    {
+                        StackAllocatedByRefs byrefStorage = default;
+                        IntPtr* unsafeParameters = (IntPtr*)&byrefStorage;
+                        StackAllocedArguments argStorage = default;
+                        parametersOut = new Span<object?>(ref argStorage._arg0, argCount);
+
+                        CheckArguments(
+                            ref parametersOut,
+                            unsafeParameters,
+                            ref copyBack,
+                            parameters,
+                            ArgumentTypes,
+                            binder,
+                            culture,
+                            invokeAttr);
+
+                        Invoker.InvokeUnsafe(obj, unsafeParameters, invokeAttr);
+                    }
+                    else
+                    {
+                        parametersOut = new Span<object?>(new object[argCount]);
+                        IntPtr* unsafeParameters = stackalloc IntPtr[argCount];
+                        GCFrameRegistration reg = new(unsafeParameters, (uint)argCount, areByRefs: true);
+
+                        try
+                        {
+                            RegisterForGCReporting(&reg);
+                            CheckArguments(
+                                ref parametersOut,
+                                unsafeParameters,
+                                ref copyBack,
+                                parameters,
+                                ArgumentTypes,
+                                binder,
+                                culture,
+                                invokeAttr);
+
+                            Invoker.InvokeUnsafe(obj, unsafeParameters, invokeAttr);
+                        }
+                        finally
+                        {
+                            UnregisterForGCReporting(&reg);
+                        }
+                    }
+
+                    if (copyBack)
+                    {
+                        // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
+                        // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
+                        for (int i = 0; i < argCount; i++)
+                        {
+                            parameters[i] = parametersOut[i];
+                        }
+                    }
                 }
             }
-
             return null;
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override object Invoke(BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             if ((InvocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers | InvocationFlags.NoConstructorInvoke)) != 0)
@@ -159,33 +209,85 @@ namespace System.Reflection
             // JIT will insert the call to .cctor in the instance ctor.
 
             // Correct number of arguments supplied
-            int actualCount = (parameters is null) ? 0 : parameters.Length;
-            if (ArgumentTypes.Length != actualCount)
+            int argCount = (parameters is null) ? 0 : parameters.Length;
+            if (ArgumentTypes.Length != argCount)
             {
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
             }
 
-            StackAllocedArguments stackArgs = default;
-            Span<object?> arguments = default;
-            bool copyBack = false;
-            if (actualCount != 0)
-            {
-                copyBack = Invoker.HasRefs;
-                arguments = CheckArguments(ref stackArgs, parameters!, ref copyBack, ArgumentTypes, binder, culture, invokeAttr);
-            }
+            object? retValue;
 
-            object retValue = Invoker.Invoke(obj: null, arguments, invokeAttr)!;
-
-            if (copyBack)
+            unsafe
             {
-                // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
-                // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
-                for (int index = 0; index < arguments.Length; index++)
+                if (argCount == 0)
                 {
-                    parameters![index] = arguments[index];
+                    retValue = Invoker.InvokeUnsafe(obj: null, args: default, invokeAttr);
+                }
+                else
+                {
+                    Debug.Assert(parameters != null);
+                    Span<object?> parametersOut;
+                    bool copyBack = Invoker.HasRefs;
+
+                    if (argCount <= MaxStackAllocArgCount)
+                    {
+                        StackAllocatedByRefs byrefStorage = default;
+                        IntPtr* unsafeParameters = (IntPtr*)&byrefStorage;
+                        StackAllocedArguments argStorage = default;
+                        parametersOut = new Span<object?>(ref argStorage._arg0, argCount);
+
+                        CheckArguments(
+                            ref parametersOut,
+                            unsafeParameters,
+                            ref copyBack,
+                            parameters,
+                            ArgumentTypes,
+                            binder,
+                            culture,
+                            invokeAttr);
+
+                        retValue = Invoker.InvokeUnsafe(obj: null, unsafeParameters, invokeAttr);
+                    }
+                    else
+                    {
+                        parametersOut = new Span<object?>(new object[argCount]);
+                        IntPtr* unsafeParameters = stackalloc IntPtr[argCount];
+                        GCFrameRegistration reg = new(unsafeParameters, (uint)argCount, areByRefs: true);
+
+                        try
+                        {
+                            RegisterForGCReporting(&reg);
+                            CheckArguments(
+                                ref parametersOut,
+                                unsafeParameters,
+                                ref copyBack,
+                                parameters,
+                                ArgumentTypes,
+                                binder,
+                                culture,
+                                invokeAttr);
+
+                            retValue = Invoker.InvokeUnsafe(obj: null, unsafeParameters, invokeAttr);
+                        }
+                        finally
+                        {
+                            UnregisterForGCReporting(&reg);
+                        }
+                    }
+
+                    if (copyBack)
+                    {
+                        // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
+                        // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
+                        for (int i = 0; i < argCount; i++)
+                        {
+                            parameters[i] = parametersOut[i];
+                        }
+                    }
                 }
             }
 
+            Debug.Assert(retValue != null);
             return retValue;
         }
     }

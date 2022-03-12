@@ -5,27 +5,12 @@ namespace System.Reflection
 {
     internal sealed partial class FieldAccessor
     {
-        public delegate object? InvokeGetterFunc(object? obj);
-        public delegate void InvokeSetterFunc(object? obj, object? value);
-
+        private readonly RtFieldInfo _fieldInfo;
         public InvocationFlags _invocationFlags;
-        private InvokeGetterFunc _invokeGetterFunc;
-        private InvokeSetterFunc _invokeSetterFunc;
 
-        public FieldAccessor(InvokeGetterFunc getterFallback, InvokeSetterFunc setterFallback)
+        public FieldAccessor(RtFieldInfo fieldInfo)
         {
-            _invokeGetterFunc = getterFallback;
-            _invokeSetterFunc = setterFallback;
-        }
-
-        public object? InvokeGetter(object? obj)
-        {
-            return _invokeGetterFunc(obj);
-        }
-
-        public void InvokeSetter(object? obj, object? value)
-        {
-            _invokeSetterFunc(obj, value);
+            _fieldInfo = fieldInfo;
         }
     }
 }

@@ -140,29 +140,18 @@ namespace System.Reflection
             }
         }
 
-        private protected Span<object?> CheckArguments(
-            ref StackAllocedArguments stackArgs,
-            ReadOnlySpan<object?> parameters,
+        private protected unsafe void CheckArguments(
+            ref Span<object?> parametersOut,
+            IntPtr* unsafeParameters,
             ref bool copyBack,
+            ReadOnlySpan<object?> parameters,
             RuntimeType[] sigTypes,
             Binder? binder,
             CultureInfo? culture,
             BindingFlags invokeAttr
         )
         {
-            Debug.Assert(Unsafe.SizeOf<StackAllocedArguments>() == StackAllocedArguments.MaxStackAllocArgCount * Unsafe.SizeOf<object>(),
-                "MaxStackAllocArgCount not properly defined.");
             Debug.Assert(!parameters.IsEmpty);
-
-            // We need to perform type safety validation against the incoming arguments, but we also need
-            // to be resilient against the possibility that some other thread (or even the binder itself!)
-            // may mutate the array after we've validated the arguments but before we've properly invoked
-            // the method. The solution is to copy the arguments to a different, not-user-visible buffer
-            // as we validate them. n.b. This disallows use of ArrayPool, as ArrayPool-rented arrays are
-            // considered user-visible to threads which may still be holding on to returned instances.
-            Span<object?> copyOfParameters = (parameters.Length <= StackAllocedArguments.MaxStackAllocArgCount)
-                    ? MemoryMarshal.CreateSpan(ref stackArgs._arg0, parameters.Length)
-                    : new Span<object?>(new object?[parameters.Length]);
 
             ParameterInfo[]? p = null;
             for (int i = 0; i < parameters.Length; i++)
@@ -181,24 +170,44 @@ namespace System.Reflection
                 }
 
                 sigTypes[i].CheckValue(ref arg, ref copyBack, binder, culture, invokeAttr);
-                copyOfParameters[i] = arg;
-            }
 
-            return copyOfParameters;
+                // We need to perform type safety validation against the incoming arguments, but we also need
+                // to be resilient against the possibility that some other thread (or even the binder itself!)
+                // may mutate the array after we've validated the arguments but before we've properly invoked
+                // the method. The solution is to copy the arguments to a different, not-user-visible buffer
+                // as we validate them. n.b. This disallows use of ArrayPool, as ArrayPool-rented arrays are
+                // considered user-visible to threads which may still be holding on to returned instances.
+                parametersOut[i] = arg;
+
+                unsafeParameters[i] = (IntPtr)Unsafe.AsPointer(ref parametersOut[i]);
+            }
         }
 
+        internal const int MaxStackAllocArgCount = 4;
+
         // Helper struct to avoid intermediate object[] allocation in calls to the native reflection stack.
-        // Typical usage is to define a local of type default(StackAllocedArguments), then pass 'ref theLocal'
-        // as the first parameter to CheckArguments. CheckArguments will try to utilize storage within this
-        // struct instance if there's sufficient space; otherwise CheckArguments will allocate a temp array.
-        private protected struct StackAllocedArguments
+        // When argument count <= MaxStackAllocArgCount, define a local of type default(StackAllocatedByRefs)
+        // and pass it to CheckArguments().
+        // For argument count > MaxStackAllocArgCount, do a stackalloc of void* pointers along with
+        // GCReportingRegistration to safely track references.
+        private protected ref struct StackAllocedArguments
         {
-            internal const int MaxStackAllocArgCount = 4;
             internal object? _arg0;
 #pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
             private object? _arg1;
             private object? _arg2;
             private object? _arg3;
+#pragma warning restore CA1823, CS0169, IDE0051
+        }
+
+        // Helper struct to avoid intermediate IntPtr[] allocation and RegisterForGCReporting in calls to the native reflection stack.
+        private protected ref struct StackAllocatedByRefs
+        {
+            internal ByReference<byte> _arg0;
+#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
+            private ByReference<byte> _arg1;
+            private ByReference<byte> _arg2;
+            private ByReference<byte> _arg3;
 #pragma warning restore CA1823, CS0169, IDE0051
         }
 #endif
