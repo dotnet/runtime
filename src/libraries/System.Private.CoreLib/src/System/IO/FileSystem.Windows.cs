@@ -109,7 +109,7 @@ namespace System.IO
         }
 
         public static FileAttributes GetAttributes(string fullPath) =>
-            (FileAttributes)GetAttributeData(fullPath).dwFileAttributes;
+            (FileAttributes)GetAttributeData(fullPath, returnErrorOnNotFound: true).dwFileAttributes;
 
         public static FileAttributes GetAttributes(SafeFileHandle fileHandle) =>
             (FileAttributes)GetAttributeData(fileHandle).dwFileAttributes;
@@ -139,10 +139,10 @@ namespace System.IO
         public static DateTimeOffset GetLastWriteTime(SafeFileHandle fileHandle) =>
             GetAttributeData(fileHandle).ftLastWriteTime.ToDateTimeOffset();
 
-        internal static Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA GetAttributeData(string? fullPath)
+        internal static Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA GetAttributeData(string? fullPath, bool returnErrorOnNotFound = false)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-            int errorCode = FillAttributeInfo(fullPath, ref data, false);
+            int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound);
             return errorCode != 0
                 ? throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath)
                 : data;
