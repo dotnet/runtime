@@ -650,7 +650,7 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
         return nullptr;
     }
 
-    size_t cnsValue = divisor->AsIntCon()->IconValue() - 1;
+    size_t cnsValue = divisor->AsIntConCommon()->IntegralValue() - 1;
 
     BlockRange().Remove(divisor);
 
