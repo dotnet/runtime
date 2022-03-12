@@ -15,6 +15,7 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed class X500DistinguishedNameBuilder
     {
         private readonly List<byte[]> _encodedComponents = new List<byte[]>();
+        private readonly AsnWriter _writer = new AsnWriter(AsnEncodingRules.DER);
 
         /// <summary>
         /// Adds a Relative Distinguished Name attribute identified by an OID.
@@ -422,18 +423,18 @@ namespace System.Security.Cryptography.X509Certificates
         /// </returns>
         public X500DistinguishedName Build()
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            _writer.Reset();
 
-            using (writer.PushSequence())
+            using (_writer.PushSequence())
             {
                 foreach (byte[] component in _encodedComponents)
                 {
-                    writer.WriteEncodedValue(component);
+                    _writer.WriteEncodedValue(component);
                 }
             }
 
-            byte[] rented = CryptoPool.Rent(writer.GetEncodedLength());
-            int encoded = writer.Encode(rented);
+            byte[] rented = CryptoPool.Rent(_writer.GetEncodedLength());
+            int encoded = _writer.Encode(rented);
             X500DistinguishedName name = new X500DistinguishedName(rented.AsSpan(0, encoded));
             CryptoPool.Return(rented, clearSize: 0); // Distinguished Names do not contain sensitive information.
             return name;
@@ -445,16 +446,16 @@ namespace System.Security.Cryptography.X509Certificates
             UniversalTagNumber stringEncodingType,
             [CallerArgumentExpression("value")] string? paramName = null)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            _writer.Reset();
 
-            using (writer.PushSetOf())
-            using (writer.PushSequence())
+            using (_writer.PushSetOf())
+            using (_writer.PushSequence())
             {
-                writer.WriteObjectIdentifier(oid);
+                _writer.WriteObjectIdentifier(oid);
 
                 try
                 {
-                    writer.WriteCharacterString(stringEncodingType, value);
+                    _writer.WriteCharacterString(stringEncodingType, value);
                 }
                 catch (EncoderFallbackException)
                 {
@@ -462,7 +463,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            _encodedComponents.Add(writer.Encode());
+            _encodedComponents.Add(_writer.Encode());
         }
 
         private void EncodeComponent(
@@ -477,16 +478,16 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentException(SR.Argument_Asn1_InvalidDer, valueParamName);
             }
 
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            _writer.Reset();
 
-            using (writer.PushSetOf())
-            using (writer.PushSequence())
+            using (_writer.PushSetOf())
+            using (_writer.PushSequence())
             {
-                writer.WriteObjectIdentifier(oid);
-                writer.WriteEncodedValue(value);
+                _writer.WriteObjectIdentifier(oid);
+                _writer.WriteEncodedValue(value);
             }
 
-            _encodedComponents.Add(writer.Encode());
+            _encodedComponents.Add(_writer.Encode());
         }
 
         private static UniversalTagNumber GetAndValidateTagNumber(UniversalTagNumber? stringEncodingType)

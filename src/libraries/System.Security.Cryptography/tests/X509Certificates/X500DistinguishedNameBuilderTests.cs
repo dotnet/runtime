@@ -286,6 +286,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             AssertBuilder(expectedHex, builder => builder.Add(new Oid(oid, null), value, tag));
         }
 
+        [Fact]
+        public static void Add_WithException_ValidState()
+        {
+            X500DistinguishedNameBuilder builder = new();
+
+            // Cause an exception to be raised, and handled.
+            AssertExtensions.Throws<ArgumentException>(
+                "emailAddress",
+                () => builder.AddEmailAddress("\u0411\u0430\u043d\u0430\u043d"));
+
+            // Make sure the handled exception didn't put the builder in an invalid state.
+            builder.AddEmailAddress("k@example.com");
+            X500DistinguishedName dn = builder.Build();
+            Assert.Equal("301E311C301A06092A864886F70D010901160D6B406578616D706C652E636F6D", Convert.ToHexString(dn.RawData));
+        }
+
         public static IEnumerable<object[]> AddStringTheories
         {
             get
