@@ -621,7 +621,7 @@ namespace System.Text.RegularExpressions.Generator
                 bool canUseIndexOf = !primarySet.CaseInsensitive && primarySet.Chars is not null;
                 bool needLoop = !canUseIndexOf || setsToUse > 1;
 
-                FinishEmitScope loopBlock = default;
+                FinishEmitBlock loopBlock = default;
                 if (needLoop)
                 {
                     writer.WriteLine("ReadOnlySpan<char> span = inputSpan.Slice(pos);");
@@ -1323,7 +1323,7 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         // If the alternation isn't atomic, backtracking may require our jump table jumping back
                         // into these branches, so we can't use actual scopes, as that would hide the labels.
-                        using (EmitScope(writer, $"Branch {i}", faux: !isAtomic))
+                        using (EmitBlock(writer, $"// Branch {i}", faux: !isAtomic))
                         {
                             bool isLastBranch = i == childCount - 1;
 
@@ -2111,7 +2111,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // For everything else, put the node's code into its own scope, purely for readability. If the node contains labels
                 // that may need to be visible outside of its scope, the scope is still emitted for clarity but is commented out.
-                using (EmitScope(writer, null, faux: analysis.MayBacktrack(node)))
+                using (EmitBlock(writer, null, faux: analysis.MayBacktrack(node)))
                 {
                     switch (node.Kind)
                     {
@@ -4141,9 +4141,7 @@ namespace System.Text.RegularExpressions.Generator
             return style + bounds;
         }
 
-        private static FinishEmitScope EmitScope(IndentedTextWriter writer, string title, bool faux = false) => EmitBlock(writer, $"// {title}", faux: faux);
-
-        private static FinishEmitScope EmitBlock(IndentedTextWriter writer, string? clause, bool faux = false)
+        private static FinishEmitBlock EmitBlock(IndentedTextWriter writer, string? clause, bool faux = false)
         {
             if (clause is not null)
             {
@@ -4151,7 +4149,7 @@ namespace System.Text.RegularExpressions.Generator
             }
             writer.WriteLine(faux ? "//{" : "{");
             writer.Indent++;
-            return new FinishEmitScope(writer, faux);
+            return new FinishEmitBlock(writer, faux);
         }
 
         private static void EmitAdd(IndentedTextWriter writer, string variable, int value)
@@ -4169,12 +4167,12 @@ namespace System.Text.RegularExpressions.Generator
                 $"{variable} += {value.ToString(CultureInfo.InvariantCulture)};");
         }
 
-        private readonly struct FinishEmitScope : IDisposable
+        private readonly struct FinishEmitBlock : IDisposable
         {
             private readonly IndentedTextWriter _writer;
             private readonly bool _faux;
 
-            public FinishEmitScope(IndentedTextWriter writer, bool faux)
+            public FinishEmitBlock(IndentedTextWriter writer, bool faux)
             {
                 _writer = writer;
                 _faux = faux;
