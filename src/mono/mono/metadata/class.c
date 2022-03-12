@@ -1569,7 +1569,7 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error)
 	first_field_idx = mono_class_get_first_field_idx (klass);
 	/*
 	 * metadata-update: adding new enum fields isn't supported, so when this code runs, all the
-	 * fields are cotiguous in metadata.
+	 * fields are contiguous in metadata.
 	 */
 	for (i = 0; i < top; i++){
 		const char *sig;
