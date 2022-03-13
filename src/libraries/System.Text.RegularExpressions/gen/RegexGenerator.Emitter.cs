@@ -921,7 +921,7 @@ namespace System.Text.RegularExpressions.Generator
             // in the input.  When we encounter a variable-length construct, we transfer the static value to
             // pos, slicing the inputSpan appropriately, and then zero out the static position.
             int sliceStaticPos = 0;
-            SliceInputSpan(writer, defineLocal: true);
+            SliceInputSpan(defineLocal: true);
             writer.WriteLine();
 
             // doneLabel starts out as the top-level label for the whole expression failing to match.  However,
@@ -1021,7 +1021,7 @@ namespace System.Text.RegularExpressions.Generator
             static bool IsCaseInsensitive(RegexNode node) => (node.Options & RegexOptions.IgnoreCase) != 0;
 
             // Slices the inputSpan starting at pos until end and stores it into slice.
-            void SliceInputSpan(IndentedTextWriter writer, bool defineLocal = false)
+            void SliceInputSpan(bool defineLocal = false)
             {
                 if (defineLocal)
                 {
@@ -1060,11 +1060,11 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     EmitAdd(writer, "pos", sliceStaticPos);
                     sliceStaticPos = 0;
-                    SliceInputSpan(writer);
+                    SliceInputSpan();
                 }
                 else if (forceSliceReload)
                 {
-                    SliceInputSpan(writer);
+                    SliceInputSpan();
                 }
             }
 
@@ -1386,7 +1386,7 @@ namespace System.Text.RegularExpressions.Generator
                                 writer.WriteLine();
                                 MarkLabel(nextBranch!, emitSemicolon: false);
                                 writer.WriteLine($"pos = {startingPos};");
-                                SliceInputSpan(writer);
+                                SliceInputSpan();
                                 sliceStaticPos = startingSliceStaticPos;
                                 if (startingCapturePos is not null)
                                 {
@@ -1510,7 +1510,7 @@ namespace System.Text.RegularExpressions.Generator
 
                         writer.WriteLine();
                         writer.WriteLine($"pos += matchLength;");
-                        SliceInputSpan(writer);
+                        SliceInputSpan();
                     }
                     else
                     {
@@ -1759,7 +1759,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Do not reset captures, which persist beyond the lookaround.
                 writer.WriteLine("// Condition matched:");
                 writer.WriteLine($"pos = {startingPos};");
-                SliceInputSpan(writer);
+                SliceInputSpan();
                 sliceStaticPos = startingSliceStaticPos;
                 writer.WriteLine();
 
@@ -1780,7 +1780,7 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine("// Condition did not match:");
                 MarkLabel(expressionNotMatched, emitSemicolon: false);
                 writer.WriteLine($"pos = {startingPos};");
-                SliceInputSpan(writer);
+                SliceInputSpan();
                 sliceStaticPos = startingSliceStaticPos;
                 if (startingCapturePos is not null)
                 {
@@ -1968,7 +1968,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Do not reset captures, which persist beyond the lookaround.
                 writer.WriteLine();
                 writer.WriteLine($"pos = {startingPos};");
-                SliceInputSpan(writer);
+                SliceInputSpan();
                 sliceStaticPos = startingSliceStaticPos;
             }
 
@@ -2023,7 +2023,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // After the child completes in failure (success for negative lookaround), reset the text positions.
                 writer.WriteLine($"pos = {startingPos};");
-                SliceInputSpan(writer);
+                SliceInputSpan();
                 sliceStaticPos = startingSliceStaticPos;
 
                 doneLabel = originalDoneLabel;
@@ -2040,7 +2040,7 @@ namespace System.Text.RegularExpressions.Generator
                     Debug.Assert(sliceStaticPos == 0, "This should be the first node and thus static position shouldn't have advanced.");
                     writer.WriteLine("// Skip loop already matched in TryFindNextPossibleStartingPosition.");
                     writer.WriteLine("pos = base.runtrackpos;");
-                    SliceInputSpan(writer);
+                    SliceInputSpan();
                     return;
                 }
 
@@ -2673,7 +2673,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 if (!rtl)
                 {
-                    SliceInputSpan(writer);
+                    SliceInputSpan();
                 }
                 writer.WriteLine();
 
@@ -2775,7 +2775,7 @@ namespace System.Text.RegularExpressions.Generator
                 // just after the last character in this loop was matched, and we need to store the resulting position
                 // for the next time we backtrack.
                 writer.WriteLine($"pos = {startingPos};");
-                SliceInputSpan(writer);
+                SliceInputSpan();
                 EmitSingleChar(node);
                 TransferSliceStaticPosToPos();
 
@@ -2806,7 +2806,7 @@ namespace System.Text.RegularExpressions.Generator
                             Goto(doneLabel);
                         }
                         writer.WriteLine($"pos += {startingPos};");
-                        SliceInputSpan(writer);
+                        SliceInputSpan();
                     }
                     else if (iterationCount is null &&
                         node.Kind is RegexNodeKind.Setlazy &&
@@ -2830,7 +2830,7 @@ namespace System.Text.RegularExpressions.Generator
                             Goto(doneLabel);
                         }
                         writer.WriteLine($"pos += {startingPos};");
-                        SliceInputSpan(writer);
+                        SliceInputSpan();
                     }
                 }
 
@@ -3022,7 +3022,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     EmitUncaptureUntil(StackPop());
                 }
-                SliceInputSpan(writer);
+                SliceInputSpan();
                 if (doneLabel == originalDoneLabel)
                 {
                     Goto(originalDoneLabel);
@@ -3514,7 +3514,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     EmitUncaptureUntil(StackPop());
                 }
-                SliceInputSpan(writer);
+                SliceInputSpan();
 
                 if (minIterations > 0)
                 {
