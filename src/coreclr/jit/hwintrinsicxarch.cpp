@@ -493,6 +493,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case InstructionSet_Vector128:
             return impBaseIntrinsic(intrinsic, clsHnd, method, sig, simdBaseJitType, retType, simdSize);
         case InstructionSet_X86Base:
+        case InstructionSet_X86Base_X64:
             return impX86BaseIntrinsic(intrinsic, method, sig, simdBaseJitType);
         case InstructionSet_SSE:
             return impSSEIntrinsic(intrinsic, method, sig);
