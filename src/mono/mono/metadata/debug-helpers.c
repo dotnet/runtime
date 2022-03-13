@@ -1235,7 +1235,7 @@ mono_class_describe_statics (MonoClass* klass)
 			/* TODO: metadata-update: print something for added fields? */
 			if (m_field_is_from_update (field))
 				continue;
-			
+
 			field_ptr = (const char*)addr + m_field_get_offset (field);
 
 			print_field_value (field_ptr, field, 0);

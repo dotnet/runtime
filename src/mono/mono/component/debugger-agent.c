@@ -1619,7 +1619,7 @@ mono_init_debugger_agent_for_wasm (int log_level_parm, MonoProfilerHandle *prof)
 	mono_profiler_set_jit_done_callback (*prof, jit_done);
 }
 
-void 
+void
 mono_change_log_level (int new_log_level)
 {
 	log_level = new_log_level;
@@ -9717,7 +9717,7 @@ get_field_value:
 
 			/* TODO: metadata-update: implement support for added fields. */
 			g_assert (!m_field_is_from_update (f));
-			
+
 			if (f->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 				guint8 *val;
 				MonoVTable *vtable;

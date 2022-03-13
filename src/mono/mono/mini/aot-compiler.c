@@ -11252,7 +11252,7 @@ emit_weak_field_indexes (MonoAotCompile *acfg)
 
 	encode_int (0, p, &p);
 	emit_aot_data (acfg, MONO_AOT_TABLE_WEAK_FIELD_INDEXES, "weak_field_indexes", buf, p - buf);
-#endif	
+#endif
 }
 
 static void
