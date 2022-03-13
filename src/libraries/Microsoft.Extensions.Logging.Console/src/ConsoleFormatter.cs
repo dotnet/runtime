@@ -12,9 +12,9 @@ namespace Microsoft.Extensions.Logging.Console
     /// </summary>
     public abstract class ConsoleFormatter
     {
-        protected ConsoleFormatter(string name)
+        protected ConsoleFormatter(string name!!)
         {
-            Name = name ?? throw new ArgumentNullException(nameof(name));
+            Name = name;
         }
 
         /// <summary>

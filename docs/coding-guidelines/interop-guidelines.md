@@ -166,7 +166,7 @@ Using enums instead of partial, static classes can lead to needing lots of casts
 
 When defining the P/Invoke signatures and structs, we follow the guidelines in the [interop best practices documentation](https://docs.microsoft.com/en-us/dotnet/standard/native-interop/best-practices).
 
-The runtime repo makes use of [source-generated p/invokes](../design/features/source-generator-pinvokes.md) whenever possible (see [the compatibility doc](../design/libraries/DllImportGenerator/Compatibility.md) for unsupported scenarios). Methods should be marked `GeneratedDllImport` and be `static` and `partial`.
+The runtime repo makes use of [source-generated p/invokes](../design/features/source-generator-pinvokes.md) whenever possible (see [the compatibility doc](../design/libraries/LibraryImportGenerator/Compatibility.md) for unsupported scenarios). Methods should be marked `LibraryImport` and be `static` and `partial`.
 
 If implicit framework references are disabled (as is the case for most libraries projects), explicit references to the below are required for marshalling arrays:
   - `System.Memory`

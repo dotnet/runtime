@@ -4,6 +4,8 @@
 using System;
 using System.Runtime.InteropServices;
 
+#pragma warning disable IDE0060
+
 namespace Internal.Runtime.InteropServices
 {
     public static class ComActivator

@@ -52,9 +52,11 @@ namespace System.Diagnostics
             }
         }
 
+#pragma warning disable IDE0060
         private static bool AppendStackFrameWithoutMethodBase(StringBuilder sb) => false;
+#pragma warning restore IDE0060
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "StackFrame_GetMethodDescFromNativeIP")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StackFrame_GetMethodDescFromNativeIP")]
         private static partial RuntimeMethodHandleInternal GetMethodDescFromNativeIP(IntPtr ip);
 
         /// <summary>

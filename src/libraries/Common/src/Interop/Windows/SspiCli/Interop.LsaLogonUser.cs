@@ -10,25 +10,22 @@ internal static partial class Interop
 {
     internal static partial class SspiCli
     {
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        [DllImport(Libraries.SspiCli)]
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
-        internal static extern int LsaLogonUser(
-            [In]  SafeLsaHandle LsaHandle,
-            [In]  ref Advapi32.LSA_STRING OriginName,
-            [In]  SECURITY_LOGON_TYPE LogonType,
-            [In]  int AuthenticationPackage,
-            [In]  IntPtr AuthenticationInformation,
-            [In]  int AuthenticationInformationLength,
-            [In]  IntPtr LocalGroups,
-            [In]  ref TOKEN_SOURCE SourceContext,
-            [Out] out SafeLsaReturnBufferHandle ProfileBuffer,
-            [Out] out int ProfileBufferLength,
-            [Out] out LUID LogonId,
-            [Out] out SafeAccessTokenHandle Token,
-            [Out] out QUOTA_LIMITS Quotas,
-            [Out] out int SubStatus
+        [LibraryImport(Libraries.SspiCli)]
+        internal static partial int LsaLogonUser(
+            SafeLsaHandle LsaHandle,
+            in Advapi32.LSA_STRING OriginName,
+            SECURITY_LOGON_TYPE LogonType,
+            int AuthenticationPackage,
+            IntPtr AuthenticationInformation,
+            int AuthenticationInformationLength,
+            IntPtr LocalGroups,
+            in TOKEN_SOURCE SourceContext,
+            out SafeLsaReturnBufferHandle ProfileBuffer,
+            out int ProfileBufferLength,
+            out LUID LogonId,
+            out SafeAccessTokenHandle Token,
+            out QUOTA_LIMITS Quotas,
+            out int SubStatus
             );
-#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
     }
 }

@@ -113,49 +113,52 @@ enum HWIntrinsicFlag : unsigned int
     // but may be table-driven in the back-end
     HW_Flag_SpecialImport = 0x100,
 
+    // The intrinsic returns result in multiple registers.
+    HW_Flag_MultiReg = 0x200,
+
 // The below is for defining platform-specific flags
 #if defined(TARGET_XARCH)
     // Full range IMM intrinsic
     // - the immediate value is valid on the full range of imm8 (0-255)
-    HW_Flag_FullRangeIMM = 0x200,
+    HW_Flag_FullRangeIMM = 0x400,
 
     // Maybe IMM
     // the intrinsic has either imm or Vector overloads
-    HW_Flag_MaybeIMM = 0x400,
+    HW_Flag_MaybeIMM = 0x800,
 
     // Copy Upper bits
     // some SIMD scalar intrinsics need the semantics of copying upper bits from the source operand
-    HW_Flag_CopyUpperBits = 0x800,
+    HW_Flag_CopyUpperBits = 0x1000,
 
     // Maybe Memory Load/Store
     // - some intrinsics may have pointer overloads but without HW_Category_MemoryLoad/HW_Category_MemoryStore
-    HW_Flag_MaybeMemoryLoad  = 0x1000,
-    HW_Flag_MaybeMemoryStore = 0x2000,
+    HW_Flag_MaybeMemoryLoad  = 0x2000,
+    HW_Flag_MaybeMemoryStore = 0x4000,
 
     // No Read/Modify/Write Semantics
     // the intrinsic doesn't have read/modify/write semantics in two/three-operand form.
-    HW_Flag_NoRMWSemantics = 0x4000,
+    HW_Flag_NoRMWSemantics = 0x8000,
 
     // NoContainment
     // the intrinsic cannot be handled by containment,
     // all the intrinsic that have explicit memory load/store semantics should have this flag
-    HW_Flag_NoContainment = 0x8000,
+    HW_Flag_NoContainment = 0x10000
 
 #elif defined(TARGET_ARM64)
     // The intrinsic has an immediate operand
     // - the value can be (and should be) encoded in a corresponding instruction when the operand value is constant
-    HW_Flag_HasImmediateOperand = 0x200,
+    HW_Flag_HasImmediateOperand = 0x400,
 
     // The intrinsic has read/modify/write semantics in multiple-operands form.
-    HW_Flag_HasRMWSemantics = 0x400,
+    HW_Flag_HasRMWSemantics = 0x800,
 
     // The intrinsic operates on the lower part of a SIMD register
     // - the upper part of the source registers are ignored
     // - the upper part of the destination register is zeroed
-    HW_Flag_SIMDScalar = 0x800,
+    HW_Flag_SIMDScalar = 0x1000,
 
     // The intrinsic supports some sort of containment analysis
-    HW_Flag_SupportsContainment = 0x1000
+    HW_Flag_SupportsContainment = 0x2000
 
 #else
 #error Unsupported platform
@@ -716,6 +719,34 @@ struct HWIntrinsicInfo
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_SpecialImport) != 0;
+    }
+
+    static bool IsMultiReg(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_MultiReg) != 0;
+    }
+
+    static int GetMultiRegCount(NamedIntrinsic id)
+    {
+        assert(IsMultiReg(id));
+
+        switch (id)
+        {
+#ifdef TARGET_ARM64
+            // TODO-ARM64-NYI: Support hardware intrinsics operating on multiple contiguous registers.
+            case NI_AdvSimd_Arm64_LoadPairScalarVector64:
+            case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
+            case NI_AdvSimd_Arm64_LoadPairVector64:
+            case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+            case NI_AdvSimd_Arm64_LoadPairVector128:
+            case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+                return 2;
+#endif
+
+            default:
+                unreached();
+        }
     }
 
 #ifdef TARGET_ARM64

@@ -69,7 +69,7 @@
 #include "aot-runtime.h"
 #include "jit-icalls.h"
 #include "mini-runtime.h"
-#include "mono-private-unstable.h"
+#include <mono/jit/mono-private-unstable.h>
 #include "llvmonly-runtime.h"
 
 #include <mono/metadata/components.h>
@@ -223,7 +223,7 @@ static gsize aot_code_high_addr = 0;
 /* Stats */
 static gint32 async_jit_info_size;
 
-#ifdef MONOTOUCH
+#ifdef TARGET_APPLE_MOBILE
 #define USE_PAGE_TRAMPOLINES (mscorlib_aot_module->use_page_trampolines)
 #else
 #define USE_PAGE_TRAMPOLINES 0
@@ -1792,7 +1792,7 @@ init_amodule_got (MonoAotModule *amodule, gboolean preinit)
 	mono_loader_unlock ();
 }
 
-#ifdef MONOTOUCH
+#ifdef TARGET_APPLE_MOBILE
 // Follow branch islands on ARM iOS machines.
 static inline guint8 *
 method_address_resolve (guint8 *code_addr)
@@ -2309,7 +2309,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 
 	if (amodule->out_of_date) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: Module %s is unusable because a dependency is out-of-date.", assembly->image->name);
-		if (mono_aot_only)
+		if (mono_aot_only && (mono_aot_mode != MONO_AOT_MODE_LLVMONLY_INTERP))
 			g_error ("Failed to load AOT module '%s' while running in aot-only mode because a dependency cannot be found or it is out of date.\n", found_aot_name);
 	} else {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' found.", found_aot_name);
@@ -2646,6 +2646,7 @@ mono_aot_get_weak_field_indexes (MonoImage *image)
 	if (!amodule)
 		return NULL;
 
+#if ENABLE_WEAK_ATTR
 	/* Initialize weak field indexes from the cached copy */
 	guint32 *indexes = (guint32*)amodule->weak_field_indexes;
 	int len  = indexes [0];
@@ -2653,6 +2654,9 @@ mono_aot_get_weak_field_indexes (MonoImage *image)
 	for (int i = 0; i < len; ++i)
 		g_hash_table_insert (indexes_hash, GUINT_TO_POINTER (indexes [i + 1]), GUINT_TO_POINTER (1));
 	return indexes_hash;
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 /* Compute the boundaries of the LLVM code for AMODULE. */
@@ -2668,7 +2672,7 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 
 #ifdef HOST_WASM
 		gsize min = 1 << 30, max = 0;
-		gsize prev = 0;
+		//gsize prev = 0;
 
 		// FIXME: This depends on emscripten allocating ftnptr ids sequentially
 		for (int i = 0; i < amodule->info.nmethods; ++i) {
@@ -2682,7 +2686,7 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 					min = val;
 				else if (val > max)
 					max = val;
-				prev = val;
+				//prev = val;
 			}
 		}
 		if (max) {
@@ -5169,7 +5173,7 @@ mono_aot_get_plt_entry (host_mgreg_t *regs, guint8 *code)
 	g_assert_not_reached ();
 #endif
 
-#ifdef MONOTOUCH
+#ifdef TARGET_APPLE_MOBILE
 	while (target != NULL) {
 		if ((target >= (guint8*)(amodule->plt)) && (target < (guint8*)(amodule->plt_end)))
 			return target;
@@ -5459,7 +5463,7 @@ read_unwind_info (MonoAotModule *amodule, MonoTrampInfo *info, const char *symbo
 	return (guint32*)symbol_addr + 1;
 }
 
-#ifdef MONOTOUCH
+#ifdef TARGET_APPLE_MOBILE
 #include <mach/mach.h>
 
 static TrampolinePage* trampoline_pages [MONO_AOT_TRAMP_NUM];
@@ -5689,25 +5693,24 @@ get_new_unbox_arbitrary_trampoline_frome_page (gpointer addr)
 static gpointer
 get_numerous_trampoline (MonoAotTrampoline tramp_type, int n_got_slots, MonoAotModule **out_amodule, guint32 *got_offset, guint32 *out_tramp_size)
 {
+#ifndef DISABLE_ASSERT_MESSAGES
 	MonoImage *image;
+#endif
 	MonoAotModule *amodule = get_mscorlib_aot_module ();
 	int index, tramp_size;
 
+#ifndef DISABLE_ASSERT_MESSAGES
 	/* Currently, we keep all trampolines in the mscorlib AOT image */
 	image = mono_defaults.corlib;
+#endif
 
 	*out_amodule = amodule;
 
 	mono_aot_lock ();
 
-#ifdef MONOTOUCH
-#define	MONOTOUCH_TRAMPOLINES_ERROR ". See http://docs.xamarin.com/ios/troubleshooting for instructions on how to fix this condition."
-#else
-#define	MONOTOUCH_TRAMPOLINES_ERROR ""
-#endif
 	if (amodule->trampoline_index [tramp_type] == amodule->info.num_trampolines [tramp_type]) {
-		g_error ("Ran out of trampolines of type %d in '%s' (limit %d)%s\n",
-				 tramp_type, image ? image->name : MONO_ASSEMBLY_CORLIB_NAME, amodule->info.num_trampolines [tramp_type], MONOTOUCH_TRAMPOLINES_ERROR);
+		g_error ("Ran out of trampolines of type %d in '%s' (limit %d)\n",
+				 tramp_type, image ? image->name : MONO_ASSEMBLY_CORLIB_NAME, amodule->info.num_trampolines [tramp_type]);
 	}
 	index = amodule->trampoline_index [tramp_type] ++;
 

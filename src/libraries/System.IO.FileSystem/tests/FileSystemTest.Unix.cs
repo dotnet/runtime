@@ -8,10 +8,10 @@ namespace System.IO.Tests
 {
     public abstract partial class FileSystemTest
     {
-        [DllImport("libc", SetLastError = true)]
-        protected static extern int geteuid();
+        [LibraryImport("libc", SetLastError = true)]
+        protected static partial int geteuid();
 
-        [DllImport("libc", SetLastError = true)]
-        protected static extern int mkfifo(string path, int mode);
+        [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        protected static partial int mkfifo(string path, int mode);
     }
 }

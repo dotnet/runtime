@@ -438,7 +438,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining(String.Format(expectedError, Path.GetFullPath(startupHookMissingDll)));
+                .And.HaveStdErrContaining(string.Format(expectedError, Path.GetFullPath(startupHookMissingDll)));
 
             // Missing dll is detected after previous hooks run
             startupHookVar = startupHookDll + Path.PathSeparator + startupHookMissingDll;
@@ -449,7 +449,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdOutContaining("Hello from startup hook!")
-                .And.HaveStdErrContaining(String.Format(expectedError, Path.GetFullPath((startupHookMissingDll))));
+                .And.HaveStdErrContaining(string.Format(expectedError, Path.GetFullPath((startupHookMissingDll))));
         }
 
         // Run the app with an invalid startup hook assembly
@@ -583,7 +583,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining(String.Format(expectedError, startupHookWithInstanceMethodDll));
+                .And.HaveStdErrContaining(string.Format(expectedError, startupHookWithInstanceMethodDll));
 
             // Initialize method takes parameters
             var startupHookWithParameterFixture = sharedTestState.StartupHookWithParameterFixture.Copy();
@@ -594,7 +594,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining(String.Format(expectedError, startupHookWithParameterDll));
+                .And.HaveStdErrContaining(string.Format(expectedError, startupHookWithParameterDll));
 
             // Initialize method has non-void return type
             var startupHookWithReturnTypeFixture = sharedTestState.StartupHookWithReturnTypeFixture.Copy();
@@ -605,7 +605,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining(String.Format(expectedError, startupHookWithReturnTypeDll));
+                .And.HaveStdErrContaining(string.Format(expectedError, startupHookWithReturnTypeDll));
 
             // Initialize method that has multiple methods with an incorrect signature
             var startupHookWithMultipleIncorrectSignaturesFixture = sharedTestState.StartupHookWithMultipleIncorrectSignaturesFixture.Copy();
@@ -616,7 +616,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining(String.Format(expectedError, startupHookWithMultipleIncorrectSignaturesDll));
+                .And.HaveStdErrContaining(string.Format(expectedError, startupHookWithMultipleIncorrectSignaturesDll));
 
             // Signature problem is caught after previous hooks have run
             var startupHookVar = startupHookDll + Path.PathSeparator + startupHookWithMultipleIncorrectSignaturesDll;
@@ -627,7 +627,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdOutContaining("Hello from startup hook!")
-                .And.HaveStdErrContaining(String.Format(expectedError, startupHookWithMultipleIncorrectSignaturesDll));
+                .And.HaveStdErrContaining(string.Format(expectedError, startupHookWithMultipleIncorrectSignaturesDll));
         }
 
         private static void RemoveLibraryFromDepsJson(string depsJsonPath, string libraryName)

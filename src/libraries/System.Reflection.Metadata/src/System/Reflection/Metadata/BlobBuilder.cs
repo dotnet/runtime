@@ -322,13 +322,8 @@ namespace System.Reflection.Metadata
 
         /// <exception cref="ArgumentNullException"><paramref name="destination"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Content is not available, the builder has been linked with another one.</exception>
-        public void WriteContentTo(Stream destination)
+        public void WriteContentTo(Stream destination!!)
         {
-            if (destination == null)
-            {
-                Throw.ArgumentNull(nameof(destination));
-            }
-
             foreach (var chunk in GetChunks())
             {
                 destination.Write(chunk._buffer, 0, chunk.Length);
@@ -352,13 +347,8 @@ namespace System.Reflection.Metadata
 
         /// <exception cref="ArgumentNullException"><paramref name="destination"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Content is not available, the builder has been linked with another one.</exception>
-        public void WriteContentTo(BlobBuilder destination)
+        public void WriteContentTo(BlobBuilder destination!!)
         {
-            if (destination == null)
-            {
-                Throw.ArgumentNull(nameof(destination));
-            }
-
             foreach (var chunk in GetChunks())
             {
                 destination.WriteBytes(chunk._buffer, 0, chunk.Length);
@@ -367,13 +357,8 @@ namespace System.Reflection.Metadata
 
         /// <exception cref="ArgumentNullException"><paramref name="prefix"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        public void LinkPrefix(BlobBuilder prefix)
+        public void LinkPrefix(BlobBuilder prefix!!)
         {
-            if (prefix == null)
-            {
-                Throw.ArgumentNull(nameof(prefix));
-            }
-
             // TODO: consider copying data from right to left while there is space
 
             if (!prefix.IsHead || !IsHead)
@@ -427,13 +412,8 @@ namespace System.Reflection.Metadata
 
         /// <exception cref="ArgumentNullException"><paramref name="suffix"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        public void LinkSuffix(BlobBuilder suffix)
+        public void LinkSuffix(BlobBuilder suffix!!)
         {
-            if (suffix == null)
-            {
-                throw new ArgumentNullException(nameof(suffix));
-            }
-
             // TODO: consider copying data from right to left while there is space
 
             if (!IsHead || !suffix.IsHead)
@@ -636,13 +616,8 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="byteCount"/> is negative.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        public unsafe void WriteBytes(byte* buffer, int byteCount)
+        public unsafe void WriteBytes(byte* buffer!!, int byteCount)
         {
-            if (buffer == null)
-            {
-                Throw.ArgumentNull(nameof(buffer));
-            }
-
             if (byteCount < 0)
             {
                 Throw.ArgumentOutOfRange(nameof(byteCount));
@@ -678,13 +653,8 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="byteCount"/> is negative.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         /// <returns>Bytes successfully written from the <paramref name="source" />.</returns>
-        public int TryWriteBytes(Stream source, int byteCount)
+        public int TryWriteBytes(Stream source!!, int byteCount)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
             if (byteCount < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(byteCount));
@@ -747,13 +717,8 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Range specified by <paramref name="start"/> and <paramref name="byteCount"/> falls outside of the bounds of the <paramref name="buffer"/>.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        public unsafe void WriteBytes(byte[] buffer, int start, int byteCount)
+        public unsafe void WriteBytes(byte[] buffer!!, int start, int byteCount)
         {
-            if (buffer == null)
-            {
-                Throw.ArgumentNull(nameof(buffer));
-            }
-
             BlobUtilities.ValidateRange(buffer.Length, start, byteCount, nameof(byteCount));
 
             if (!IsHead)
@@ -930,13 +895,8 @@ namespace System.Reflection.Metadata
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        public unsafe void WriteUTF16(char[] value)
+        public unsafe void WriteUTF16(char[] value!!)
         {
-            if (value == null)
-            {
-                Throw.ArgumentNull(nameof(value));
-            }
-
             if (!IsHead)
             {
                 Throw.InvalidOperationBuilderAlreadyLinked();
@@ -968,13 +928,8 @@ namespace System.Reflection.Metadata
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        public unsafe void WriteUTF16(string value)
+        public unsafe void WriteUTF16(string value!!)
         {
-            if (value == null)
-            {
-                Throw.ArgumentNull(nameof(value));
-            }
-
             if (!IsHead)
             {
                 Throw.InvalidOperationBuilderAlreadyLinked();
@@ -1026,13 +981,8 @@ namespace System.Reflection.Metadata
         /// The 1 signifies Unicode characters that require handling beyond that normally provided for 8-bit encoding sets.
         /// </remarks>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        public void WriteUserString(string value)
+        public void WriteUserString(string value!!)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             WriteCompressedInteger(BlobUtilities.GetUserStringByteLength(value.Length));
             WriteUTF16(value);
             WriteByte(BlobUtilities.GetUserStringTrailingByte(value));
@@ -1047,13 +997,8 @@ namespace System.Reflection.Metadata
         /// </param>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        public void WriteUTF8(string value, bool allowUnpairedSurrogates = true)
+        public void WriteUTF8(string value!!, bool allowUnpairedSurrogates = true)
         {
-            if (value == null)
-            {
-                Throw.ArgumentNull(nameof(value));
-            }
-
             WriteUTF8(value, 0, value.Length, allowUnpairedSurrogates, prependSize: false);
         }
 

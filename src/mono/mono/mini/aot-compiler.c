@@ -230,6 +230,7 @@ typedef struct MonoAotOptions {
 	gboolean stats;
 	gboolean verbose;
 	gboolean deterministic;
+	gboolean allow_errors;
 	char *tool_prefix;
 	char *ld_flags;
 	char *ld_name;
@@ -528,7 +529,7 @@ report_loader_error (MonoAotCompile *acfg, MonoError *error, gboolean fatal, con
 	va_end (args);
 	mono_error_cleanup (error);
 
-	if (acfg->is_full_aot && fatal) {
+	if (acfg->is_full_aot && !acfg->aot_opts.allow_errors && fatal) {
 		fprintf (output, "FullAOT cannot continue if there are loader errors.\n");
 		exit (1);
 	}
@@ -1224,7 +1225,7 @@ arch_init (MonoAotCompile *acfg)
 
 #endif
 
-#ifdef MONOTOUCH
+#ifdef TARGET_APPLE_MOBILE
 	acfg->global_symbols = TRUE;
 #endif
 
@@ -2992,6 +2993,7 @@ mono_get_field_token (MonoClassField *field)
 	MonoClass *klass = m_field_get_parent (field);
 	int i;
 
+	g_assert (!m_field_is_from_update (field));
 	int fcount = mono_class_get_field_count (klass);
 	MonoClassField *klass_fields = m_class_get_fields (klass);
 	for (i = 0; i < fcount; ++i) {
@@ -8349,6 +8351,8 @@ parse_cpu_features (const gchar *attr)
 #elif defined(TARGET_WASM)
 	if (!strcmp (attr + prefix, "simd"))
 		feature = MONO_CPU_WASM_SIMD;
+#else
+	(void)prefix; // unused
 #endif
 
 	if (enabled)
@@ -8504,6 +8508,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->profile_only = TRUE;
 		} else if (!strcmp (arg, "verbose")) {
 			opts->verbose = TRUE;
+		} else if (!strcmp (arg, "allow-errors")) {
+			opts->allow_errors = TRUE;
 		} else if (str_begins_with (arg, "llvmopts=")){
 			if (opts->llvm_opts) {
 				char *s = g_strdup_printf ("%s %s", opts->llvm_opts, arg + strlen ("llvmopts="));
@@ -8587,6 +8593,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    threads=\n");
 			printf ("    write-symbols\n");
 			printf ("    verbose\n");
+			printf ("    allow-errors\n");
 			printf ("    no-opt\n");
 			printf ("    llvmopts=\n");
 			printf ("    llvmllc=\n");
@@ -11214,6 +11221,7 @@ emit_image_table (MonoAotCompile *acfg)
 static void
 emit_weak_field_indexes (MonoAotCompile *acfg)
 {
+#ifdef ENABLE_WEAK_ATTR
 	GHashTable *indexes;
 	GHashTableIter iter;
 	gpointer key, value;
@@ -11239,6 +11247,13 @@ emit_weak_field_indexes (MonoAotCompile *acfg)
 	emit_aot_data (acfg, MONO_AOT_TABLE_WEAK_FIELD_INDEXES, "weak_field_indexes", buf, p - buf);
 
 	g_free (buf);
+#else
+	guint8 buf [4];
+	guint8 *p = &buf[0];
+
+	encode_int (0, p, &p);
+	emit_aot_data (acfg, MONO_AOT_TABLE_WEAK_FIELD_INDEXES, "weak_field_indexes", buf, p - buf);
+#endif	
 }
 
 static void
@@ -13462,7 +13477,7 @@ static void aot_dump (MonoAotCompile *acfg)
 static const MonoJitICallId preinited_jit_icalls [] = {
 	MONO_JIT_ICALL_mini_llvm_init_method,
 	MONO_JIT_ICALL_mini_llvmonly_throw_nullref_exception,
-	MONO_JIT_ICALL_mono_llvm_throw_corlib_exception,
+	MONO_JIT_ICALL_mini_llvmonly_throw_corlib_exception,
 	MONO_JIT_ICALL_mono_threads_state_poll,
 	MONO_JIT_ICALL_mini_llvmonly_init_vtable_slot,
 	MONO_JIT_ICALL_mono_helper_ldstr_mscorlib,
@@ -13925,7 +13940,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	if (!acfg->aot_opts.llvm_path)
 		acfg->aot_opts.llvm_path = g_strdup ("");
 	acfg->aot_opts.temp_path = g_strdup ("");
-#if defined(MONOTOUCH)&& !defined(TARGET_AMD64)
+#if defined(TARGET_APPLE_MOBILE)&& !defined(TARGET_AMD64)
 	acfg->aot_opts.use_trampolines_page = TRUE;
 #endif
 	acfg->aot_opts.clangxx = g_strdup ("clang++");

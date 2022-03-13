@@ -40,14 +40,13 @@ MethodDesc * DispatchSlot::GetMethodDesc()
 }
 
 //------------------------------------------------------------------------
-void TypeIDMap::Init(UINT32 idStartValue, UINT32 idIncrementValue)
+void TypeIDMap::Init()
 {
     STANDARD_VM_CONTRACT;
 
     LockOwner lock = {&m_lock, IsOwnerOfCrst};
     m_idMap.Init(11, TRUE, &lock);
     m_mtMap.Init(11, TRUE, &lock);
-    m_idProvider.Init(idStartValue, idIncrementValue);
     m_entryCount = 0;
 }
 
@@ -63,7 +62,6 @@ UINT32 TypeIDMap::LookupTypeID(PTR_MethodTable pMT)
     } CONTRACTL_END;
 
     UINT32 id = (UINT32) m_mtMap.LookupValue((UPTR)dac_cast<TADDR>(pMT), 0);
-    _ASSERTE(!pMT->RequiresFatDispatchTokens() || (DispatchToken::RequiresDispatchTokenFat(id, 0)));
 
     return id;
 }
@@ -77,9 +75,6 @@ PTR_MethodTable TypeIDMap::LookupType(UINT32 id)
         if (GetThread()->PreemptiveGCDisabled()) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
         PRECONDITION(id <= TypeIDProvider::MAX_TYPE_ID);
     } CONTRACTL_END;
-
-    if (!m_idProvider.OwnsID(id))
-        return NULL;
 
     UPTR ret = m_idMap.LookupValue((UPTR)id, 0);
     if (ret == static_cast<UPTR>(INVALIDENTRY))
@@ -115,15 +110,7 @@ UINT32 TypeIDMap::GetTypeID(PTR_MethodTable pMT)
         {
             return id;
         }
-        // Get the next ID
-        if (pMT->RequiresFatDispatchTokens())
-        {
-            id = GetNextFatID();
-        }
-        else
-        {
-            id = GetNextID();
-        }
+        id = GetNextID();
 
         CONSISTENCY_CHECK(id <= TypeIDProvider::MAX_TYPE_ID);
         // Insert the pair, with lookups in both directions

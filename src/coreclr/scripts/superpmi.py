@@ -325,6 +325,7 @@ asm_diff_parser.add_argument("-diff_jit_option", action="append", help="Option t
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, or pass comma-separated values.")
 asm_diff_parser.add_argument("-retainOnlyTopFiles", action="store_true", help="Retain only top .dasm files with largest improvements or regressions and delete remaining files.")
+asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
@@ -369,6 +370,11 @@ merge_mch_parser.add_argument("-pattern", required=True, help=merge_mch_pattern_
 ################################################################################
 # Helper functions
 ################################################################################
+def get_time_prefix():
+    """ Return a string to use as a print prefix for output. Currently, a time string for the current time.
+    """
+    return "{} ".format(datetime.datetime.now().strftime("[%H:%M:%S]"))
+
 def run_and_log(command, log_level=logging.DEBUG):
     """ Return a command and log its output to the debug logger
 
@@ -380,7 +386,8 @@ def run_and_log(command, log_level=logging.DEBUG):
         Process return code
     """
 
-    logging.log(log_level, "Invoking: %s", " ".join(command))
+    print_prefix = get_time_prefix()
+    logging.log(log_level, "%sInvoking: %s", print_prefix, " ".join(command))
     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     stdout_output, _ = proc.communicate()
     for line in stdout_output.decode('utf-8', errors='replace').splitlines():  # There won't be any stderr output since it was piped to stdout
@@ -401,7 +408,7 @@ def write_file_to_log(filepath, log_level=logging.DEBUG):
     if not os.path.exists(filepath):
         return
 
-    logging.log(log_level, "============== Contents of %s", filepath)
+    logging.log(log_level, "%s============== Contents of %s", get_time_prefix(), filepath)
 
     with open(filepath) as file_handle:
         lines = file_handle.readlines()
@@ -409,7 +416,7 @@ def write_file_to_log(filepath, log_level=logging.DEBUG):
         for line in lines:
             logging.log(log_level, line)
 
-    logging.log(log_level, "============== End contents of %s", filepath)
+    logging.log(log_level, "%s============== End contents of %s", get_time_prefix(), filepath)
 
 # Functions to verify the OS and architecture. They take an instance of CoreclrArguments,
 # which is used to find the list of legal OS and architectures
@@ -501,7 +508,7 @@ class AsyncSubprocessHelper:
 
         print_prefix = ""
         if self.verbose:
-            print_prefix = "[{}:{}]: ".format(index, size)
+            print_prefix = "{}[{}:{}]: ".format(get_time_prefix(), index, size)
 
         await async_callback(print_prefix, item, *extra_args)
 
@@ -530,7 +537,7 @@ class AsyncSubprocessHelper:
             tasks.append(self.__get_item__(item, count, size, async_callback, *extra_args))
             count += 1
 
-        # Inovke all the calls to __get_item__ concurrently and wait for them all to finish.
+        # Invoke all the calls to __get_item__ concurrently and wait for them all to finish.
         await asyncio.gather(*tasks)
 
     def run_to_completion(self, async_callback, *extra_args):
@@ -730,7 +737,7 @@ class SuperPMICollect:
                 complus_env["ZapDisable"] = "1"
                 complus_env["ReadyToRun"] = "0"
 
-            logging.debug("Starting collection.")
+            logging.debug("%sStarting collection.", get_time_prefix())
             logging.debug("")
 
             def set_and_report_env(env, root_env, complus_env = None):
@@ -759,7 +766,7 @@ class SuperPMICollect:
 
             ################################################################################################ Do collection using given collection command (e.g., script)
             if self.collection_command is not None:
-                logging.debug("Starting collection using command")
+                logging.debug("%sStarting collection using command", get_time_prefix())
 
                 collection_command_env = env_copy.copy()
                 collection_complus_env = complus_env.copy()
@@ -781,7 +788,7 @@ class SuperPMICollect:
 
             ################################################################################################ Do collection using PMI
             if self.coreclr_args.pmi is True:
-                logging.debug("Starting collection using PMI")
+                logging.debug("%sStarting collection using PMI", get_time_prefix())
 
                 async def run_pmi(print_prefix, assembly, self):
                     """ Run pmi over all dlls
@@ -853,7 +860,7 @@ class SuperPMICollect:
 
             ################################################################################################ Do collection using crossgen2
             if self.coreclr_args.crossgen2 is True:
-                logging.debug("Starting collection using crossgen2")
+                logging.debug("%sStarting collection using crossgen2", get_time_prefix())
 
                 async def run_crossgen2(print_prefix, assembly, self):
                     """ Run crossgen2 over all dlls
@@ -1492,6 +1499,7 @@ class SuperPMIReplayAsmDiffs:
                 with ChangeDir(self.coreclr_args.core_root):
                     command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
+                    logging.debug("return_code: %s", return_code)
 
                 base_metrics = read_csv_metrics(base_metrics_summary_file)
                 diff_metrics = read_csv_metrics(diff_metrics_summary_file)
@@ -1501,32 +1509,31 @@ class SuperPMIReplayAsmDiffs:
 
                 if return_code != 0:
 
-                    # Don't report as replay failure asm diffs (return code 2) or missing data (return code 3).
+                    # Don't report as replay failure asm diffs (return code 2) if not checking diffs with Release build or missing data (return code 3).
                     # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
                     # reported as a replay failure.
-                    if return_code != 2 and return_code != 3:
+                    if (return_code != 2 or self.coreclr_args.diff_with_release) and return_code != 3:
                         result = False
                         files_with_replay_failures.append(mch_file)
 
                         if is_nonzero_length_file(fail_mcl_file):
                             # Unclean replay. Examine the contents of the fail.mcl file to dig into failures.
-                            if return_code == 0:
-                                logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
                             print_fail_mcl_file_method_numbers(fail_mcl_file)
                             repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(altjit_asm_diffs_flags), self.diff_jit_path)
                             save_repro_mc_files(temp_location, self.coreclr_args, artifacts_base_name, repro_base_command_line)
 
+                # This file had asm diffs; keep track of that.
+                if is_nonzero_length_file(diff_mcl_file):
+                    files_with_asm_diffs.append(mch_file)
+
                 # There were diffs. Go through each method that created diffs and
                 # create a base/diff asm file with diffable asm. In addition, create
                 # a standalone .mc for easy iteration.
-                if is_nonzero_length_file(diff_mcl_file):
+                if is_nonzero_length_file(diff_mcl_file) and not self.coreclr_args.diff_with_release:
                     # AsmDiffs. Save the contents of the fail.mcl file to dig into failures.
 
                     if return_code == 0:
                         logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
-
-                    # This file had asm diffs; keep track of that.
-                    files_with_asm_diffs.append(mch_file)
 
                     self.diff_mcl_contents = None
                     with open(diff_mcl_file) as file_handle:
@@ -1711,7 +1718,7 @@ class SuperPMIReplayAsmDiffs:
 
         # Construct an overall Markdown summary file.
 
-        if len(all_md_summary_files) > 0:
+        if len(all_md_summary_files) > 0 and not self.coreclr_args.diff_with_release:
             overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_summary", "md")
             if not os.path.isdir(self.coreclr_args.spmi_location):
                 os.makedirs(self.coreclr_args.spmi_location)
@@ -3310,6 +3317,11 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set retainOnlyTopFiles.")
 
+        coreclr_args.verify(args,
+                            "diff_with_release",
+                            lambda unused: True,
+                            "Unable to set diff_with_release.")
+
         process_base_jit_path_arg(coreclr_args)
 
         jit_in_product_location = False
@@ -3555,6 +3567,8 @@ def main(args):
         base_jit_path = coreclr_args.base_jit_path
         diff_jit_path = coreclr_args.diff_jit_path
 
+        if coreclr_args.diff_with_release:
+            logging.info("Diff between Checked and Release.")
         logging.info("Base JIT Path: %s", base_jit_path)
         logging.info("Diff JIT Path: %s", diff_jit_path)
 

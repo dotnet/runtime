@@ -6,62 +6,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    #region class _IOCompletionCallback
-
-    internal unsafe class _IOCompletionCallback
-    {
-        private readonly IOCompletionCallback _ioCompletionCallback;
-        private readonly ExecutionContext _executionContext;
-        private uint _errorCode; // Error code
-        private uint _numBytes; // No. of bytes transferred
-        private NativeOverlapped* _pNativeOverlapped;
-
-        internal _IOCompletionCallback(IOCompletionCallback ioCompletionCallback, ExecutionContext executionContext)
-        {
-            _ioCompletionCallback = ioCompletionCallback;
-            _executionContext = executionContext;
-        }
-
-        // Context callback: same sig for SendOrPostCallback and ContextCallback
-        internal static ContextCallback s_ccb = new ContextCallback(IOCompletionCallback_Context);
-        private static void IOCompletionCallback_Context(object? state)
-        {
-            _IOCompletionCallback helper = (_IOCompletionCallback)state!;
-            Debug.Assert(helper != null, "_IOCompletionCallback cannot be null");
-            helper._ioCompletionCallback(helper._errorCode, helper._numBytes, helper._pNativeOverlapped);
-        }
-
-        //TODO: call from ThreadPool
-        internal static unsafe void PerformIOCompletionCallback(uint errorCode, uint numBytes, NativeOverlapped* pNativeOverlapped)
-        {
-            do
-            {
-                OverlappedData overlapped = OverlappedData.GetOverlappedFromNative(pNativeOverlapped);
-
-                if (overlapped._callback is IOCompletionCallback iocb)
-                {
-                    // We got here because of UnsafePack (or) Pack with EC flow suppressed
-                    iocb(errorCode, numBytes, pNativeOverlapped);
-                }
-                else
-                {
-                    // We got here because of Pack
-                    var helper = (_IOCompletionCallback)overlapped._callback!;
-                    helper._errorCode = errorCode;
-                    helper._numBytes = numBytes;
-                    helper._pNativeOverlapped = pNativeOverlapped;
-                    ExecutionContext.Run(helper._executionContext, s_ccb, helper);
-                }
-
-                //Quickly check the VM again, to see if a packet has arrived.
-                //OverlappedData.CheckVMForIOPacket(out pOVERLAP, out errorCode, out numBytes);
-                pNativeOverlapped = null;
-            } while (pNativeOverlapped != null);
-        }
-    }
-
-    #endregion class _IOCompletionCallback
-
     #region class OverlappedData
 
     internal sealed unsafe class OverlappedData

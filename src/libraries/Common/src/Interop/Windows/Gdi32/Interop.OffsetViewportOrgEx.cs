@@ -9,11 +9,9 @@ internal static partial class Interop
 {
     internal static partial class Gdi32
     {
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
-        [DllImport(Libraries.Gdi32)]
-        public static extern bool OffsetViewportOrgEx(IntPtr hdc, int x, int y, ref Point lppt);
-#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        [LibraryImport(Libraries.Gdi32)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool OffsetViewportOrgEx(IntPtr hdc, int x, int y, ref Point lppt);
 
         public static bool OffsetViewportOrgEx(HandleRef hdc, int x, int y, ref Point lppt)
         {

@@ -33,6 +33,8 @@ if(CLR_CMAKE_HOST_UNIX)
         set(arch x86)
     elseif(CLR_CMAKE_HOST_ARCH_S390X)
       set(arch s390x)
+    elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
+      set(arch loongarch64)
     endif ()
 
     # Disable warning due to incorrect format specifier in debugging printf via the Debug macro
@@ -75,6 +77,8 @@ if(CLR_CMAKE_HOST_UNIX)
     elseif(CLR_CMAKE_HOST_ARCH_I386)
         # Disable warning for a bug in the libunwind source src/x86/Gos-linux.c, but not in code that we exercise
         add_compile_options(-Wno-incompatible-pointer-types)
+    elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
+        ###TODO: maybe add options for LOONGARCH64
     endif()
 
     if (CLR_CMAKE_HOST_OSX)
@@ -149,11 +153,12 @@ if(CLR_CMAKE_HOST_WIN32)
     # files for cross os compilation
     include_directories(include/win)
 
+    add_definitions(-D_CRT_DECLARE_NONSTDC_NAMES)
+
     # Warnings in release builds
     add_compile_options(-wd4068) # ignore unknown pragma warnings (gcc pragmas)
     add_compile_options(-wd4146) # minus operator applied to unsigned
     add_compile_options(-wd4244) # possible loss of data
-    add_compile_options(-wd4267) # possible loss of data
     add_compile_options(-wd4334) # 32-bit shift implicitly converted to 64 bits
 
     # Disable warning due to incorrect format specifier in debugging printf via the Debug macro

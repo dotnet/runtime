@@ -698,8 +698,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (UseAotDataFile)
         {
             string aotDataFile = Path.ChangeExtension(assembly, ".aotdata");
-            aotArgs.Add($"data-outfile={aotDataFile}");
-            aotAssembly.SetMetadata("AotDataFile", aotDataFile);
+            ProxyFile proxyFile = _cache.NewFile(aotDataFile);
+            proxyFiles.Add(proxyFile);
+            aotArgs.Add($"data-outfile={proxyFile.TempFile}");
+            aotAssembly.SetMetadata("AotDataFile", proxyFile.TargetFile);
         }
 
         if (AotProfilePath?.Length > 0)

@@ -1155,6 +1155,13 @@ mono_test_marshal_icall_delegate (IcallDelegate del)
 	return strcmp (res, "ABC") == 0 ? 0 : 1;
 }
 
+typedef char* (STDCALL *NullableReturnDelegate) (void);
+LIBTEST_API void STDCALL
+mono_test_marshal_nullable_ret_delegate (NullableReturnDelegate del)
+{
+	del ();
+}
+
 LIBTEST_API int STDCALL
 mono_test_marshal_stringbuilder (char *s, int n)
 {

@@ -217,12 +217,8 @@ namespace System.Xml
             return writer.WriteSurrogateCharEntityAsync(lowChar, highChar);
         }
 
-        public override Task WriteCharsAsync(char[] buffer, int index, int count)
+        public override Task WriteCharsAsync(char[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index));

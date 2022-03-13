@@ -65,9 +65,10 @@ namespace System
             // 1- Multicast (m_helperObject is Delegate[])
             // 2- Single-cast delegate, which can be compared with a structural comparision
 
-            if (m_functionPointer == GetThunk(MulticastThunk))
+            IntPtr multicastThunk = GetThunk(MulticastThunk);
+            if (m_functionPointer == multicastThunk)
             {
-                return InvocationListEquals(d);
+                return d.m_functionPointer == multicastThunk && InvocationListEquals(d);
             }
             else
             {

@@ -8,7 +8,7 @@
 #include <sys/types.h>
 
 #include "mini.h"
-#include "mono-private-unstable.h"
+#include <mono/jit/mono-private-unstable.h>
 #include "interp/interp.h"
 
 #ifdef TARGET_WASM

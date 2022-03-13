@@ -22,16 +22,18 @@ namespace System.Runtime
     //            but if a class library wants to factor differently (such as putting the GCHandle methods in an
     //            optional library, those methods can be moved to a different file/namespace/dll
     [ReflectionBlocked]
-    public static class RuntimeImports
+    public static partial class RuntimeImports
     {
         private const string RuntimeLibrary = "*";
 
-        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        [LibraryImport(RuntimeLibrary)]
         [SuppressGCTransition]
-        internal static extern ulong RhpGetTickCount64();
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial ulong RhpGetTickCount64();
 
-        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern IntPtr RhpGetCurrentThread();
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial IntPtr RhpGetCurrentThread();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpInitiateThreadAbort")]
@@ -67,8 +69,8 @@ namespace System.Runtime
         private static extern bool _RhReRegisterForFinalize(object obj);
 
         // Wait for all pending finalizers. This must be a p/invoke to avoid starving the GC.
-        [DllImport(RuntimeLibrary, ExactSpelling = true)]
-        private static extern void RhWaitForPendingFinalizers(int allowReentrantWait);
+        [LibraryImport(RuntimeLibrary)]
+        private static partial void RhWaitForPendingFinalizers(int allowReentrantWait);
 
         // Temporary workaround to unblock shareable assembly bring-up - without shared interop,
         // we must prevent RhWaitForPendingFinalizers from using marshaling because it would
@@ -80,8 +82,8 @@ namespace System.Runtime
             RhWaitForPendingFinalizers(allowReentrantWait ? 1 : 0);
         }
 
-        [DllImport(RuntimeLibrary, ExactSpelling = true)]
-        internal static extern void RhInitializeFinalizerThread();
+        [LibraryImport(RuntimeLibrary)]
+        internal static partial void RhInitializeFinalizerThread();
 
         // Get maximum GC generation number.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -185,18 +187,19 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetTotalAllocatedBytes")]
         internal static extern long RhGetTotalAllocatedBytes();
 
-        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern long RhGetTotalAllocatedBytesPrecise();
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial long RhGetTotalAllocatedBytesPrecise();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetMemoryInfo")]
         internal static extern void RhGetMemoryInfo(ref byte info, GCKind kind);
 
-        [DllImport(RuntimeLibrary, ExactSpelling = true)]
-        internal static unsafe extern void RhAllocateNewArray(IntPtr pArrayEEType, uint numElements, uint flags, void* pResult);
+        [LibraryImport(RuntimeLibrary)]
+        internal static unsafe partial void RhAllocateNewArray(IntPtr pArrayEEType, uint numElements, uint flags, void* pResult);
 
-        [DllImport(RuntimeLibrary, ExactSpelling = true)]
-        internal static unsafe extern void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);
+        [LibraryImport(RuntimeLibrary)]
+        internal static unsafe partial void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCompareObjectContentsAndPadding")]
@@ -365,23 +368,26 @@ namespace System.Runtime
         internal static extern object RhMemberwiseClone(object obj);
 
         // Busy spin for the given number of iterations.
-        [DllImport(RuntimeLibrary, EntryPoint = "RhSpinWait", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        [LibraryImport(RuntimeLibrary, EntryPoint = "RhSpinWait")]
         [SuppressGCTransition]
-        internal static extern void RhSpinWait(int iterations);
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial void RhSpinWait(int iterations);
 
         // Yield the cpu to another thread ready to process, if one is available.
-        [DllImport(RuntimeLibrary, EntryPoint = "RhYield", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        private static extern int _RhYield();
+        [LibraryImport(RuntimeLibrary, EntryPoint = "RhYield")]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        private static partial int _RhYield();
         internal static bool RhYield() { return (_RhYield() != 0); }
 
-        [DllImport(RuntimeLibrary, EntryPoint = "RhFlushProcessWriteBuffers", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern void RhFlushProcessWriteBuffers();
+        [LibraryImport(RuntimeLibrary, EntryPoint = "RhFlushProcessWriteBuffers")]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial void RhFlushProcessWriteBuffers();
 
 #if !TARGET_UNIX
         // Wait for any object to be signalled, in a way that's compatible with the CLR's behavior in an STA.
         // ExactSpelling = 'true' to force MCG to resolve it to default
-        [DllImport(RuntimeLibrary, ExactSpelling = true)]
-        private static extern unsafe int RhCompatibleReentrantWaitAny(int alertable, int timeout, int count, IntPtr* handles);
+        [LibraryImport(RuntimeLibrary)]
+        private static unsafe partial int RhCompatibleReentrantWaitAny(int alertable, int timeout, int count, IntPtr* handles);
 
         // Temporary workaround to unblock shareable assembly bring-up - without shared interop,
         // we must prevent RhCompatibleReentrantWaitAny from using marshaling because it would
@@ -611,8 +617,8 @@ namespace System.Runtime
         internal static extern void RhCallDescrWorker(IntPtr callDescr);
 
         // For Managed to Native calls
-        [DllImport(RuntimeLibrary, EntryPoint = "RhCallDescrWorker", ExactSpelling = true)]
-        internal static extern void RhCallDescrWorkerNative(IntPtr callDescr);
+        [LibraryImport(RuntimeLibrary, EntryPoint = "RhCallDescrWorker")]
+        internal static partial void RhCallDescrWorkerNative(IntPtr callDescr);
 
         // Moves memory from smem to dmem. Size must be a positive value.
         // This copy uses an intrinsic to be safe for copying arbitrary bits of
@@ -929,15 +935,16 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "modff")]
         internal static extern unsafe float modff(float x, float* intptr);
 
-        [DllImport(RuntimeImports.RuntimeLibrary, ExactSpelling = true)]
-        internal static extern unsafe void* memmove(byte* dmem, byte* smem, nuint size);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        internal static unsafe partial void* memmove(byte* dmem, byte* smem, nuint size);
 
-        [DllImport(RuntimeImports.RuntimeLibrary, ExactSpelling = true)]
-        internal static extern unsafe void* memset(byte* mem, int value, nuint size);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        internal static unsafe partial void* memset(byte* mem, int value, nuint size);
 
 #if TARGET_X86 || TARGET_AMD64
-        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern unsafe void RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId);
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static unsafe partial void RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId);
 #endif
 
         internal static RhCorElementTypeInfo GetRhCorElementTypeInfo(CorElementType elementType)

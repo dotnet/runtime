@@ -9,7 +9,7 @@ namespace System.ComponentModel.Design.Serialization
     /// being used as a root object.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true, Inherited = true)]
-    [Obsolete("RootDesignerSerializerAttribute has been deprecated. Use DesignerSerializerAttribute instead. For example, to specify a root designer for CodeDom, use DesignerSerializerAttribute(...,typeof(TypeCodeDomSerializer)).")]
+    [Obsolete("RootDesignerSerializerAttribute has been deprecated. Use DesignerSerializerAttribute instead. For example, to specify a root designer for CodeDom, use DesignerSerializerAttribute(...,typeof(TypeCodeDomSerializer)) instead.")]
     public sealed class RootDesignerSerializerAttribute : Attribute
     {
         private string? _typeId;
@@ -17,17 +17,8 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Creates a new designer serialization attribute.
         /// </summary>
-        public RootDesignerSerializerAttribute(Type serializerType, Type baseSerializerType, bool reloadable)
+        public RootDesignerSerializerAttribute(Type serializerType!!, Type baseSerializerType!!, bool reloadable)
         {
-            if (serializerType == null)
-            {
-                throw new ArgumentNullException(nameof(serializerType));
-            }
-            if (baseSerializerType == null)
-            {
-                throw new ArgumentNullException(nameof(baseSerializerType));
-            }
-
             SerializerTypeName = serializerType.AssemblyQualifiedName;
             SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
             Reloadable = reloadable;
@@ -36,13 +27,8 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Creates a new designer serialization attribute.
         /// </summary>
-        public RootDesignerSerializerAttribute(string serializerTypeName, Type baseSerializerType, bool reloadable)
+        public RootDesignerSerializerAttribute(string serializerTypeName, Type baseSerializerType!!, bool reloadable)
         {
-            if (baseSerializerType == null)
-            {
-                throw new ArgumentNullException(nameof(baseSerializerType));
-            }
-
             SerializerTypeName = serializerTypeName;
             SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
             Reloadable = reloadable;

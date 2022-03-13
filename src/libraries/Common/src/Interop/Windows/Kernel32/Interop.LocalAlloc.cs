@@ -12,13 +12,13 @@ internal static partial class Interop
         internal const uint LMEM_MOVEABLE = 0x0002;
         internal const uint LMEM_ZEROINIT = 0x0040;
 
-        [GeneratedDllImport(Libraries.Kernel32)]
+        [LibraryImport(Libraries.Kernel32)]
         internal static partial IntPtr LocalAlloc(uint uFlags, nuint uBytes);
 
-        [GeneratedDllImport(Libraries.Kernel32)]
+        [LibraryImport(Libraries.Kernel32)]
         internal static partial IntPtr LocalReAlloc(IntPtr hMem, nuint uBytes, uint uFlags);
 
-        [GeneratedDllImport(Libraries.Kernel32)]
+        [LibraryImport(Libraries.Kernel32)]
         internal static partial IntPtr LocalFree(IntPtr hMem);
     }
 }

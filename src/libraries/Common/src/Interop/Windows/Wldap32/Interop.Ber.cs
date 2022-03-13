@@ -9,42 +9,63 @@ internal static partial class Interop
 {
     internal static partial class Ldap
     {
-        [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ber_free", CharSet = CharSet.Unicode)]
+        [LibraryImport(Libraries.Wldap32, EntryPoint = "ber_free", StringMarshalling = StringMarshalling.Utf16)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
         public static partial IntPtr ber_free(IntPtr berelement, int option);
 
-        [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ber_alloc_t", CharSet = CharSet.Unicode)]
+        [LibraryImport(Libraries.Wldap32, EntryPoint = "ber_alloc_t", StringMarshalling = StringMarshalling.Utf16)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
         public static partial IntPtr ber_alloc(int option);
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Requires some varargs support mechanism in generated interop
-        [DllImport(Libraries.Wldap32, EntryPoint = "ber_printf", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int ber_printf(SafeBerHandle berElement, string format, __arglist);
-#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        [LibraryImport(Libraries.Wldap32, EntryPoint = "ber_printf", StringMarshalling = StringMarshalling.Utf16)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        public static partial int ber_printf(SafeBerHandle berElement, string format, IntPtr value);
 
-        [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ber_flatten", CharSet = CharSet.Unicode)]
+        [LibraryImport(Libraries.Wldap32, EntryPoint = "ber_printf", StringMarshalling = StringMarshalling.Utf16)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        public static partial int ber_printf(SafeBerHandle berElement, string format, HGlobalMemHandle value, uint length);
+
+        [LibraryImport(Libraries.Wldap32, EntryPoint = "ber_printf", StringMarshalling = StringMarshalling.Utf16)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        public static partial int ber_printf(SafeBerHandle berElement, string format);
+
+        [LibraryImport(Libraries.Wldap32, EntryPoint = "ber_printf", StringMarshalling = StringMarshalling.Utf16)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        public static partial int ber_printf(SafeBerHandle berElement, string format, int value);
+
+        [LibraryImport(Libraries.Wldap32, EntryPoint = "ber_printf", StringMarshalling = StringMarshalling.Utf16)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        public static partial int ber_printf(SafeBerHandle berElement, string format, uint tag);
+
+        [LibraryImport(Libraries.Wldap32, EntryPoint = "ber_flatten", StringMarshalling = StringMarshalling.Utf16)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
         public static partial int ber_flatten(SafeBerHandle berElement, ref IntPtr value);
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
-        [DllImport(Libraries.Wldap32, EntryPoint = "ber_init", CharSet = CharSet.Unicode)]
+        [LibraryImport(Libraries.Wldap32, EntryPoint = "ber_init", StringMarshalling = StringMarshalling.Utf16)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
-        public static extern IntPtr ber_init(BerVal value);
-#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        public static partial IntPtr ber_init(BerVal value);
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Requires some varargs support mechanism in generated interop
-        [DllImport(Libraries.Wldap32, EntryPoint = "ber_scanf", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int ber_scanf(SafeBerHandle berElement, string format, __arglist);
-#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        [LibraryImport(Libraries.Wldap32, EntryPoint = "ber_scanf", StringMarshalling = StringMarshalling.Utf16)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        public static partial int ber_scanf(SafeBerHandle berElement, string format);
 
-        [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ber_bvfree", CharSet = CharSet.Unicode)]
+        [LibraryImport(Libraries.Wldap32, EntryPoint = "ber_scanf", StringMarshalling = StringMarshalling.Utf16)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        public static partial int ber_scanf(SafeBerHandle berElement, string format, ref IntPtr ptrResult, ref uint bitLength);
+
+        [LibraryImport(Libraries.Wldap32, EntryPoint = "ber_scanf", StringMarshalling = StringMarshalling.Utf16)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        public static partial int ber_scanf(SafeBerHandle berElement, string format, ref int result);
+
+        [LibraryImport(Libraries.Wldap32, EntryPoint = "ber_scanf", StringMarshalling = StringMarshalling.Utf16)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        public static partial int ber_scanf(SafeBerHandle berElement, string format, ref IntPtr value);
+
+        [LibraryImport(Libraries.Wldap32, EntryPoint = "ber_bvfree", StringMarshalling = StringMarshalling.Utf16)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
         public static partial int ber_bvfree(IntPtr value);
 
-        [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ber_bvecfree", CharSet = CharSet.Unicode)]
+        [LibraryImport(Libraries.Wldap32, EntryPoint = "ber_bvecfree", StringMarshalling = StringMarshalling.Utf16)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
         public static partial int ber_bvecfree(IntPtr value);
     }

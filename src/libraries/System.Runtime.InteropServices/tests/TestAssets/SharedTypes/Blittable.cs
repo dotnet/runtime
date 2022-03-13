@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 
 namespace SharedTypes
 {
-    [BlittableType]
     public struct IntFields
     {
         public int a;
@@ -14,7 +13,6 @@ namespace SharedTypes
         public int c;
     }
 
-    [BlittableType]
     public unsafe struct PointerFields
     {
         public int* i;

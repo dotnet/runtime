@@ -1832,6 +1832,50 @@ type_has_references (MonoClass *klass, MonoType *ftype)
 	return FALSE;
 }
 
+static gboolean
+class_has_ref_fields (MonoClass *klass)
+{
+	/*
+	 * has_ref_fields is not set if this is called recursively, but this is not a problem since this is only used
+	 * during field layout, and instance fields are initialized before static fields, and instance fields can't
+	 * embed themselves.
+	 */
+	return klass->has_ref_fields;
+}
+
+static gboolean
+class_is_byreference (MonoClass* klass)
+{
+	const char* klass_name_space = m_class_get_name_space (klass);
+	const char* klass_name = m_class_get_name (klass);
+	MonoImage* klass_image = m_class_get_image (klass);
+	gboolean in_corlib = klass_image == mono_defaults.corlib;
+
+	if (in_corlib &&
+		!strcmp (klass_name_space, "System") &&
+		!strcmp (klass_name, "ByReference`1")) {
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static gboolean
+type_has_ref_fields (MonoType *ftype)
+{
+	if (m_type_is_byref (ftype) || (MONO_TYPE_ISSTRUCT (ftype) && class_has_ref_fields (mono_class_from_mono_type_internal (ftype))))
+		return TRUE;
+
+	/* Check for the ByReference`1 type */
+	if (MONO_TYPE_ISSTRUCT (ftype)) {
+		MonoClass* klass = mono_class_from_mono_type_internal (ftype);
+		return class_is_byreference (klass);
+	}
+
+	return FALSE;
+}
+
+
 /**
  * mono_class_is_gparam_with_nonblittable_parent:
  * \param klass  a generic parameter
@@ -1907,6 +1951,11 @@ validate_struct_fields_overlaps (guint8 *layout_check, int layout_size, MonoClas
 		// try to call mono_class_setup_fields which is what we're doing already
 		field = &m_class_get_fields (klass) [i];
 		field_offset = field_offsets [i];
+		/*
+		 * metadata-update: adding fields to existing structs isn't supported; when a brand
+		 * new struct is added in an update, the fields will be in m_class_get_fields.  so
+		 * nothing new to do here.
+		 */
 
 		if (!field)
 			continue;
@@ -1921,7 +1970,7 @@ validate_struct_fields_overlaps (guint8 *layout_check, int layout_size, MonoClas
 		if (mono_type_is_struct (ftype)) {
 			// recursively check the layout of the embedded struct
 			MonoClass *embedded_class = mono_class_from_mono_type_internal (ftype);
-                        mono_class_setup_fields (embedded_class);
+			mono_class_setup_fields (embedded_class);
 
 			const int embedded_fields_count = mono_class_get_field_count (embedded_class);
 			int *embedded_offsets = g_new0 (int, embedded_fields_count);
@@ -1941,7 +1990,7 @@ validate_struct_fields_overlaps (guint8 *layout_check, int layout_size, MonoClas
 		} else {
 			int align = 0;
 			int size = mono_type_size (field->type, &align);
-			guint8 type = type_has_references (klass, ftype) ? 1 : 2;
+			guint8 type = type_has_references (klass, ftype) ? 1 : (m_type_is_byref (ftype) || class_is_byreference (klass)) ? 2 : 3;
 
 			// Mark the bytes used by this fields type based on if it contains references or not.
 			// Make sure there are no overlaps between object and non-object fields.
@@ -1983,6 +2032,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	gboolean gc_aware_layout = FALSE;
 	gboolean has_static_fields = FALSE;
 	gboolean has_references = FALSE;
+	gboolean has_ref_fields = FALSE;
 	gboolean has_static_refs = FALSE;
 	MonoClassField *field;
 	gboolean blittable;
@@ -2009,6 +2059,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		min_align = klass->parent->min_align;
 		/* we use | since it may have been set already */
 		has_references = klass->has_references | klass->parent->has_references;
+		has_ref_fields = klass->has_ref_fields | klass->parent->has_ref_fields;
 	} else {
 		min_align = 1;
 	}
@@ -2116,7 +2167,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	if (klass == mono_defaults.string_class)
 		blittable = FALSE;
 
-	/* Compute klass->has_references */
+	/* Compute klass->has_references and klass->has_ref_fields */
 	/*
 	 * Process non-static fields first, since static fields might recursively
 	 * refer to the class itself.
@@ -2131,6 +2182,9 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			ftype = mono_type_get_basic_type_from_generic (ftype);
 			if (type_has_references (klass, ftype))
 				has_references = TRUE;
+
+			if (type_has_ref_fields (ftype))
+				has_ref_fields = TRUE;
 		}
 	}
 
@@ -2254,7 +2308,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			}
 			ftype = mono_type_get_underlying_type (field->type);
 			ftype = mono_type_get_basic_type_from_generic (ftype);
-			if (type_has_references (klass, ftype)) {
+			if (type_has_references (klass, ftype) || m_type_is_byref (ftype)) {
 				if (field_offsets [i] % TARGET_SIZEOF_VOID_P) {
 					mono_class_set_type_load_failure (klass, "Reference typed field '%s' has explicit offset that is not pointer-size aligned.", field->name);
 				}
@@ -2268,7 +2322,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 
 		/* check for incorrectly aligned or overlapped by a non-object field */
 		guint8 *layout_check;
-		if (has_references) {
+		if (has_references || has_ref_fields) {
 			layout_check = g_new0 (guint8, real_size);
 			int invalid_field_offset;
 			if (!validate_struct_fields_overlaps (layout_check, real_size, klass, field_offsets, top, &invalid_field_offset)) {
@@ -2320,8 +2374,8 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			/* Emit info to help debugging */
 			g_print ("%s\n", mono_class_full_name (klass));
 			g_print ("%d %d %d %d\n", klass->instance_size, instance_size, klass->blittable, blittable);
-			g_print ("%d %d %d %d\n", klass->has_references, has_references, klass->packing_size, packing_size);
-			g_print ("%d %d\n", klass->min_align, min_align);
+			g_print ("%d %d %d %d\n", klass->has_references, has_references, klass->has_ref_fields, has_ref_fields);
+			g_print ("%d %d %d %d\n", klass->packing_size, packing_size, klass->min_align, min_align);
 			for (i = 0; i < top; ++i) {
 				field = &klass->fields [i];
 				if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
@@ -2334,6 +2388,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	}
 	klass->blittable = blittable;
 	klass->has_references = has_references;
+	klass->has_ref_fields = has_ref_fields;
 	klass->packing_size = packing_size;
 	klass->min_align = min_align;
 	klass->any_field_has_auto_layout = any_field_has_auto_layout;
@@ -2425,6 +2480,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	// - Disallow on structs/static fields/nonref fields
 	gboolean has_weak_fields = FALSE;
 
+#ifdef ENABLE_WEAK_ATTR
 	if (mono_class_has_static_metadata (klass)) {
 		for (MonoClass *p = klass; p != NULL; p = p->parent) {
 			gpointer iter = NULL;
@@ -2439,6 +2495,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			}
 		}
 	}
+#endif
 
 	/*
 	 * Check that any fields of IsByRefLike type are instance
