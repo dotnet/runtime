@@ -434,12 +434,12 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
                         writer.WriteLine("// The pattern leads with a beginning (\\A) anchor.");
-                        using (EmitBlock(writer, "if (pos != 0)"))
+                        using (EmitBlock(writer, "if (pos == 0)"))
                         {
-                            // If we're not currently at the beginning, we'll never be, so fail immediately.
-                            Goto(NoStartingPositionFound);
+                            // If we're at the beginning, we're at a possible match location.  Otherwise,
+                            // we'll never be, so fail immediately.
+                            writer.WriteLine("return true;");
                         }
-                        writer.WriteLine("return true;");
                         return true;
 
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start:
@@ -450,13 +450,13 @@ namespace System.Text.RegularExpressions.Generator
                             writer.Write(" when processed right to left.");
                         }
                         writer.WriteLine(".");
-                        using (EmitBlock(writer, "if (pos != base.runtextstart)"))
+                        using (EmitBlock(writer, "if (pos == base.runtextstart)"))
                         {
-                            // For both left-to-right and right-to-left, if we're not currently at the starting (because
-                            // we've already moved beyond it), then we'll never be, so fail immediately.
-                            Goto(NoStartingPositionFound);
+                            // For both left-to-right and right-to-left, if we're  currently at the start,
+                            // we're at a possible match location.  Otherwise, because we've already moved
+                            // beyond it, we'll never be, so fail immediately.
+                            writer.WriteLine("return true;");
                         }
-                        writer.WriteLine("return true;");
                         return true;
 
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
@@ -495,24 +495,22 @@ namespace System.Text.RegularExpressions.Generator
 
                     case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_EndZ:
                         writer.WriteLine("// The pattern leads with an end (\\Z) anchor when processed right to left.");
-                        using (EmitBlock(writer, "if (pos < inputSpan.Length - 1 || ((uint)pos < (uint)inputSpan.Length && inputSpan[pos] != '\\n'))"))
+                        using (EmitBlock(writer, "if (pos >= inputSpan.Length - 1 && ((uint)pos >= (uint)inputSpan.Length || inputSpan[pos] == '\\n'))"))
                         {
-                            // If we're not currently at the end, we'll never be (we're iterating from end to beginning),
-                            // so fail immediately.
-                            Goto(NoStartingPositionFound);
+                            // If we're currently at the end, we're at a valid position to try.  Otherwise,
+                            // we'll never be (we're iterating from end to beginning), so fail immediately.
+                            writer.WriteLine("return true;");
                         }
-                        writer.WriteLine("return true;");
                         return true;
 
                     case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_End:
                         writer.WriteLine("// The pattern leads with an end (\\z) anchor when processed right to left.");
-                        using (EmitBlock(writer, "if (pos < inputSpan.Length)"))
+                        using (EmitBlock(writer, "if (pos >= inputSpan.Length)"))
                         {
-                            // If we're not currently at the end, we'll never be (we're iterating from end to beginning),
-                            // so fail immediately.
-                            Goto(NoStartingPositionFound);
+                            // If we're currently at the end, we're at a valid position to try.  Otherwise,
+                            // we'll never be (we're iterating from end to beginning), so fail immediately.
+                            writer.WriteLine("return true;");
                         }
-                        writer.WriteLine("return true;");
                         return true;
 
                     case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ:
