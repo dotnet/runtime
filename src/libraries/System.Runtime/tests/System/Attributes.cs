@@ -222,21 +222,20 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnMono("Mono does not support getting DynamicMethod attributes via Attribute.GetCustomAttributes()")]
         public static void GetCustomAttributes_DynamicMethod()
         {
             var dynamicMethod = new DynamicMethod("test", typeof(void), Type.EmptyTypes);
-            dynamicMethod.GetILGenerator().Emit(OpCodes.Ret);
-            var action = (Action)dynamicMethod.CreateDelegate(typeof(Action));
 
-            Attribute[] attributes = Attribute.GetCustomAttributes(action.Method, typeof(NameableAttribute));
+            Attribute[] attributes = Attribute.GetCustomAttributes(dynamicMethod, typeof(NameableAttribute));
             Assert.Empty(attributes);
             Assert.IsType<NameableAttribute[]>(attributes);
 
-            attributes = Attribute.GetCustomAttributes(action.Method);
+            attributes = Attribute.GetCustomAttributes(dynamicMethod);
             Assert.Equal(1, attributes.Length);
             Assert.IsType<MethodImplAttribute>(attributes[0]);
 
-            attributes = Attribute.GetCustomAttributes(action.Method, typeof(MethodImplAttribute));
+            attributes = Attribute.GetCustomAttributes(dynamicMethod, typeof(MethodImplAttribute));
             Assert.Equal(1, attributes.Length);
             Assert.IsType<MethodImplAttribute[]>(attributes);
         }
