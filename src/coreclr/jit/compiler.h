@@ -10536,6 +10536,10 @@ public:
 
     unsigned compArgSize; // total size of arguments in bytes (including register args (lvIsRegArg))
 
+#ifdef TARGET_ARM
+    bool compHasSplitParam;
+#endif
+
     unsigned compMapILargNum(unsigned ILargNum);      // map accounting for hidden args
     unsigned compMapILvarNum(unsigned ILvarNum);      // map accounting for hidden args
     unsigned compMap2ILvarNum(unsigned varNum) const; // map accounting for hidden args
