@@ -12113,7 +12113,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
                 newNode = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffList, gtNewIconNode(oper == GT_EQ ? 1 : 0));
                 newNode->gtFlags |= (sideEffList->gtFlags & GTF_ALL_EFFECT);
             }
-            newNode->gtFlags |= (tree->gtFlags & (GTF_RELOP_QMARK | GTF_RELOP_JMP_USED));
+            newNode->gtFlags |= (tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE));
             return newNode;
         }
     }
@@ -16828,10 +16828,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 {
                     assert(sig.retType == CORINFO_TYPE_CLASS);
                     objClass = sig.retTypeClass;
-                    if ((objClass != NO_CLASS_HANDLE) && impIsClassExact(objClass))
+                    /*if ((objClass != NO_CLASS_HANDLE) && impIsClassExact(objClass))
                     {
                         *pIsExact = true;
-                    }
+                    }*/
                 }
             }
             else if (call->gtCallType == CT_HELPER)
