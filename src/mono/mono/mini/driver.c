@@ -253,7 +253,7 @@ static MonoGraphOptions
 mono_parse_graph_options (const char* p)
 {
 	const char *n;
-	int i, len;
+	size_t i, len;
 
 	for (i = 0; i < G_N_ELEMENTS (graph_names); ++i) {
 		n = graph_names [i].name;
