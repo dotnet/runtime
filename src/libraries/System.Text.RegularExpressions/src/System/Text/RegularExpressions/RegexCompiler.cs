@@ -19,6 +19,7 @@ namespace System.Text.RegularExpressions
     {
         private static readonly FieldInfo s_runtextstartField = RegexRunnerField("runtextstart");
         private static readonly FieldInfo s_runtextposField = RegexRunnerField("runtextpos");
+        private static readonly FieldInfo s_runtrackposField = RegexRunnerField("runtrackpos");
         private static readonly FieldInfo s_runstackField = RegexRunnerField("runstack");
 
         private static readonly MethodInfo s_captureMethod = RegexRunnerMethod("Capture");
@@ -1196,11 +1197,10 @@ namespace System.Text.RegularExpressions
                 }
 
                 // We have a winner.  The starting position is just after the last position that failed to match the loop.
-                // TODO: It'd be nice to be able to communicate i as a place the matching engine can start matching
-                // after the loop, so that it doesn't need to re-match the loop.
+                // We also store the position after the loop into runtrackpos (an extra, unused field on RegexRunner) in order
+                // to communicate this position to the match algorithm such that it can skip the loop.
 
                 // base.runtextpos = pos + prev + 1;
-                // return true;
                 Ldthis();
                 Ldloc(pos);
                 Ldloc(prev);
@@ -1208,6 +1208,15 @@ namespace System.Text.RegularExpressions
                 Ldc(1);
                 Add();
                 Stfld(s_runtextposField);
+
+                // base.runtrackpos = pos + i;
+                Ldthis();
+                Ldloc(pos);
+                Ldloc(i);
+                Add();
+                Stfld(s_runtrackposField);
+
+                // return true;
                 Ldc(1);
                 Ret();
 
@@ -2347,6 +2356,20 @@ namespace System.Text.RegularExpressions
             // Emits the code for the node.
             void EmitNode(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
             {
+                // Before we handle general-purpose matching logic for nodes, handle any special-casing.
+                // -
+                if (_regexTree!.FindOptimizations.FindMode == FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive &&
+                    _regexTree!.FindOptimizations.LiteralAfterLoop?.LoopNode == node)
+                {
+                    Debug.Assert(sliceStaticPos == 0, "This should be the first node and thus static position shouldn't have advanced.");
+
+                    // pos = base.runtrackpos;
+                    Mvfldloc(s_runtrackposField, pos);
+
+                    SliceInputSpan();
+                    return;
+                }
+
                 if (!StackHelper.TryEnsureSufficientExecutionStack())
                 {
                     StackHelper.CallOnEmptyStack(EmitNode, node, subsequent, emitLengthChecksIfRequired);

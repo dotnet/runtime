@@ -800,9 +800,10 @@ namespace System.Text.RegularExpressions.Generator
                     }
 
                     // We have a winner.  The starting position is just after the last position that failed to match the loop.
-                    // TODO: It'd be nice to be able to communicate i as a place the matching engine can start matching
-                    // after the loop, so that it doesn't need to re-match the loop.
+                    // We also store the position after the loop into runtrackpos (an extra, unused field on RegexRunner) in order
+                    // to communicate this position to the match algorithm such that it can skip the loop.
                     writer.WriteLine("base.runtextpos = pos + prev + 1;");
+                    writer.WriteLine("base.runtrackpos = pos + i;");
                     writer.WriteLine("return true;");
                 }
             }
@@ -2031,6 +2032,18 @@ namespace System.Text.RegularExpressions.Generator
             // Emits the code for the node.
             void EmitNode(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
             {
+                // Before we handle general-purpose matching logic for nodes, handle any special-casing.
+                // -
+                if (rm.Tree.FindOptimizations.FindMode == FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive &&
+                    rm.Tree.FindOptimizations.LiteralAfterLoop?.LoopNode == node)
+                {
+                    Debug.Assert(sliceStaticPos == 0, "This should be the first node and thus static position shouldn't have advanced.");
+                    writer.WriteLine("// Skip loop already matched in TryFindNextPossibleStartingPosition.");
+                    writer.WriteLine("pos = base.runtrackpos;");
+                    SliceInputSpan(writer);
+                    return;
+                }
+
                 if (!StackHelper.TryEnsureSufficientExecutionStack())
                 {
                     StackHelper.CallOnEmptyStack(EmitNode, node, subsequent, emitLengthChecksIfRequired);
