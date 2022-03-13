@@ -48,13 +48,13 @@ namespace System.Runtime.Intrinsics.X86
             /// unsigned __int64 _udiv128(unsigned __int64 highdividend, unsigned __int64 lowdividend, unsigned __int64 divisor, unsigned __int64* remainder)
             ///   DIV reg/m64
             /// </summary>
-            public (ulong Quotient, ulong Remainder) DivRem(ulong lower, ulong upper, ulong divisor) { throw new PlatformNotSupportedException(); }
+            public static (ulong Quotient, ulong Remainder) DivRem(ulong lower, ulong upper, ulong divisor) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// __int64 _div128(__int64 highdividend, __int64 lowdividend, __int64 divisor, __int64* remainder)
             ///   DIV reg/m64
             /// </summary>
-            public (long Quotient, long Remainder) DivRem(ulong lower, long upper, long divisor) { throw new PlatformNotSupportedException(); }
+            public static (long Quotient, long Remainder) DivRem(ulong lower, long upper, long divisor) { throw new PlatformNotSupportedException(); }
         }
 
         /// <summary>
@@ -95,22 +95,22 @@ namespace System.Runtime.Intrinsics.X86
         /// unsigned _udiv64(unsigned __int64 dividend, unsigned divisor, unsigned* remainder)
         ///   DIV reg/m32
         /// </summary>
-        public (uint Quotient, uint Remainder) DivRem(uint lower, uint upper, uint divisor) { throw new PlatformNotSupportedException(); }
+        public static (uint Quotient, uint Remainder) DivRem(uint lower, uint upper, uint divisor) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int _div64(__int64 dividend, int divisor, int* remainder)
         ///   IDIV reg/m32
         /// </summary>
-        public (int Quotient, int Remainder) DivRem(uint lower, int upper, int divisor) { throw new PlatformNotSupportedException(); }
+        public static (int Quotient, int Remainder) DivRem(uint lower, int upper, int divisor) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   IDIV reg/m
         /// </summary>
-        public (nuint Quotient, nuint Remainder) DivRem(nuint lower, nuint upper, nuint divisor) { throw new PlatformNotSupportedException(); }
+        public static (nuint Quotient, nuint Remainder) DivRem(nuint lower, nuint upper, nuint divisor) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   IDIV reg/m
         /// </summary>
-        public (nint Quotient, nint Remainder) DivRem(nuint lower, nint upper, nint divisor) { throw new PlatformNotSupportedException(); }
+        public static (nint Quotient, nint Remainder) DivRem(nuint lower, nint upper, nint divisor) { throw new PlatformNotSupportedException(); }
     }
 }
