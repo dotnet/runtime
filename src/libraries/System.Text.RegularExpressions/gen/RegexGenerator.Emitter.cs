@@ -342,6 +342,11 @@ namespace System.Text.RegularExpressions.Generator
             // especially since we want the "return false" code regardless.
             int minRequiredLength = rm.Tree.FindOptimizations.MinRequiredLength;
             Debug.Assert(minRequiredLength >= 0);
+            writer.WriteLine("// Validate that enough room remains in the input to match.");
+            if (minRequiredLength > 0)
+            {
+                writer.WriteLine($"// Any possible match is at least {minRequiredLength} characters.");
+            }
             string clause = (minRequiredLength, rtl) switch
                             {
                                 (0, false) => "if ((uint)pos <= (uint)inputSpan.Length)",
@@ -408,7 +413,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine();
 
             const string NoStartingPositionFound = "NoStartingPositionFound";
-            writer.WriteLine("// No starting position found");
+            writer.WriteLine("// No match found.");
             writer.WriteLine($"{NoStartingPositionFound}:");
             writer.WriteLine($"base.runtextpos = {(!rtl ? "inputSpan.Length" : "0")};");
             writer.WriteLine("return false;");
@@ -428,7 +433,7 @@ namespace System.Text.RegularExpressions.Generator
                 switch (regexTree.FindOptimizations.FindMode)
                 {
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
-                        writer.WriteLine("// Beginning \\A anchor");
+                        writer.WriteLine("// The pattern leads with a beginning (\\A) anchor.");
                         using (EmitBlock(writer, "if (pos != 0)"))
                         {
                             // If we're not currently at the beginning, we'll never be, so fail immediately.
@@ -439,7 +444,12 @@ namespace System.Text.RegularExpressions.Generator
 
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start:
                     case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Start:
-                        writer.WriteLine("// Start \\G anchor");
+                        writer.Write($"// The pattern leads with a start (\\G) anchor");
+                        if (regexTree.FindOptimizations.FindMode == FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Start)
+                        {
+                            writer.Write(" when processed right to left.");
+                        }
+                        writer.WriteLine(".");
                         using (EmitBlock(writer, "if (pos != base.runtextstart)"))
                         {
                             // For both left-to-right and right-to-left, if we're not currently at the starting (because
@@ -450,7 +460,7 @@ namespace System.Text.RegularExpressions.Generator
                         return true;
 
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
-                        writer.WriteLine("// Leading end \\Z anchor");
+                        writer.WriteLine("// The pattern leads with an end (\\Z) anchor.");
                         using (EmitBlock(writer, "if (pos < inputSpan.Length - 1)"))
                         {
                             // If we're not currently at the end (or a newline just before it), skip ahead
@@ -461,7 +471,7 @@ namespace System.Text.RegularExpressions.Generator
                         return true;
 
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
-                        writer.WriteLine("// Leading end \\z anchor");
+                        writer.WriteLine("// The pattern leads with an end (\\z) anchor.");
                         using (EmitBlock(writer, "if (pos < inputSpan.Length)"))
                         {
                             // If we're not currently at the end (or a newline just before it), skip ahead
@@ -472,7 +482,7 @@ namespace System.Text.RegularExpressions.Generator
                         return true;
 
                     case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning:
-                        writer.WriteLine("// Beginning \\A anchor");
+                        writer.WriteLine("// The pattern leads with a beginning (\\A) anchor when processed right to left.");
                         using (EmitBlock(writer, "if (pos != 0)"))
                         {
                             // If we're not currently at the beginning, skip ahead (or, rather, backwards)
@@ -484,7 +494,7 @@ namespace System.Text.RegularExpressions.Generator
                         return true;
 
                     case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_EndZ:
-                        writer.WriteLine("// Leading end \\Z anchor");
+                        writer.WriteLine("// The pattern leads with an end (\\Z) anchor when processed right to left.");
                         using (EmitBlock(writer, "if (pos < inputSpan.Length - 1 || ((uint)pos < (uint)inputSpan.Length && inputSpan[pos] != '\\n'))"))
                         {
                             // If we're not currently at the end, we'll never be (we're iterating from end to beginning),
@@ -495,7 +505,7 @@ namespace System.Text.RegularExpressions.Generator
                         return true;
 
                     case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_End:
-                        writer.WriteLine("// Leading end \\z anchor");
+                        writer.WriteLine("// The pattern leads with an end (\\z) anchor when processed right to left.");
                         using (EmitBlock(writer, "if (pos < inputSpan.Length)"))
                         {
                             // If we're not currently at the end, we'll never be (we're iterating from end to beginning),
@@ -507,7 +517,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ:
                         // Jump to the end, minus the min required length, which in this case is actually the fixed length, minus 1 (for a possible ending \n).
-                        writer.WriteLine("// Trailing end \\Z anchor with fixed-length match");
+                        writer.WriteLine($"// The pattern has a trailing end (\\Z) anchor, and any possible match is exactly {regexTree.FindOptimizations.MinRequiredLength} characters.");
                         using (EmitBlock(writer, $"if (pos < inputSpan.Length - {regexTree.FindOptimizations.MinRequiredLength + 1})"))
                         {
                             writer.WriteLine($"base.runtextpos = inputSpan.Length - {regexTree.FindOptimizations.MinRequiredLength + 1};");
@@ -517,7 +527,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End:
                         // Jump to the end, minus the min required length, which in this case is actually the fixed length.
-                        writer.WriteLine("// Trailing end \\z anchor with fixed-length match");
+                        writer.WriteLine($"// The pattern has a trailing end (\\z) anchor, and any possible match is exactly {regexTree.FindOptimizations.MinRequiredLength} characters.");
                         using (EmitBlock(writer, $"if (pos < inputSpan.Length - {regexTree.FindOptimizations.MinRequiredLength})"))
                         {
                             writer.WriteLine($"base.runtextpos = inputSpan.Length - {regexTree.FindOptimizations.MinRequiredLength};");
@@ -535,7 +545,7 @@ namespace System.Text.RegularExpressions.Generator
                         // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
                         // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
                         // to boost our position to the next line, and then continue normally with any searches.
-                        writer.WriteLine("// Beginning-of-line anchor");
+                        writer.WriteLine($"// The pattern has a leading beginning-of-line anchor.");
                         using (EmitBlock(writer, "if (pos > 0 && inputSpan[pos - 1] != '\\n')"))
                         {
                             writer.WriteLine("int newlinePos = inputSpan.Slice(pos).IndexOf('\\n');");
@@ -563,7 +573,7 @@ namespace System.Text.RegularExpressions.Generator
                 switch (regexTree.FindOptimizations.TrailingAnchor)
                 {
                     case RegexNodeKind.End when regexTree.FindOptimizations.MaxPossibleLength is int maxLength:
-                        writer.WriteLine("// End \\z anchor with maximum-length match");
+                        writer.WriteLine($"// The pattern has a trailing end (\\z) anchor, and any possible match is no more than {maxLength} characters.");
                         using (EmitBlock(writer, $"if (pos < inputSpan.Length - {maxLength})"))
                         {
                             writer.WriteLine($"pos = inputSpan.Length - {maxLength};");
@@ -572,7 +582,7 @@ namespace System.Text.RegularExpressions.Generator
                         break;
 
                     case RegexNodeKind.EndZ when regexTree.FindOptimizations.MaxPossibleLength is int maxLength:
-                        writer.WriteLine("// End \\Z anchor with maximum-length match");
+                        writer.WriteLine($"// The pattern has a trailing end (\\Z) anchor, and any possible match is no more than {maxLength} characters.");
                         using (EmitBlock(writer, $"if (pos < inputSpan.Length - {maxLength + 1})"))
                         {
                             writer.WriteLine($"pos = inputSpan.Length - {maxLength + 1};");
@@ -587,6 +597,8 @@ namespace System.Text.RegularExpressions.Generator
             // Emits a case-sensitive prefix search for a string at the beginning of the pattern.
             void EmitIndexOf_LeftToRight(string prefix)
             {
+                writer.WriteLine($"// The pattern begins with a literal {Literal(prefix)}. Find the next occurrence.");
+                writer.WriteLine($"// If it can't be found, there's no match.");
                 writer.WriteLine($"int i = inputSpan.Slice(pos).IndexOf({Literal(prefix)});");
                 using (EmitBlock(writer, "if (i >= 0)"))
                 {
@@ -598,6 +610,8 @@ namespace System.Text.RegularExpressions.Generator
             // Emits a case-sensitive right-to-left prefix search for a string at the beginning of the pattern.
             void EmitIndexOf_RightToLeft(string prefix)
             {
+                writer.WriteLine($"// The pattern begins with a literal {Literal(prefix)}. Find the next occurrence right-to-left.");
+                writer.WriteLine($"// If it can't be found, there's no match.");
                 writer.WriteLine($"pos = inputSpan.Slice(0, pos).LastIndexOf({Literal(prefix)});");
                 using (EmitBlock(writer, "if (pos >= 0)"))
                 {
@@ -614,6 +628,11 @@ namespace System.Text.RegularExpressions.Generator
                 (char[]? Chars, string Set, int Distance, bool CaseInsensitive) primarySet = sets![0];
                 const int MaxSets = 4;
                 int setsToUse = Math.Min(sets.Count, MaxSets);
+
+                writer.WriteLine(primarySet.Distance == 0 ?
+                   $"// The pattern begins with {DescribeSet(primarySet.Set)}." :
+                   $"// The pattern matches {DescribeSet(primarySet.Set)} at index {primarySet.Distance}.");
+                writer.WriteLine($"// Find the next occurrence. If it can't be found, there's no match.");
 
                 // If we can use IndexOf{Any}, try to accelerate the skip loop via vectorization to match the first prefix.
                 // We can use it if this is a case-sensitive class with a small number of characters in the class.
@@ -729,6 +748,9 @@ namespace System.Text.RegularExpressions.Generator
                 (char[]? Chars, string Set, int Distance, bool CaseInsensitive) set = regexTree.FindOptimizations.FixedDistanceSets![0];
                 Debug.Assert(set.Distance == 0);
 
+                writer.WriteLine($"// The pattern begins with {DescribeSet(set.Set)}.");
+                writer.WriteLine($"// Find the next occurrence. If it can't be found, there's no match.");
+
                 if (set.Chars is { Length: 1 } && !set.CaseInsensitive)
                 {
                     writer.WriteLine($"pos = inputSpan.Slice(0, pos).LastIndexOf({Literal(set.Chars[0])});");
@@ -759,6 +781,13 @@ namespace System.Text.RegularExpressions.Generator
 
                 Debug.Assert(target.LoopNode.Kind is RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic);
                 Debug.Assert(target.LoopNode.N == int.MaxValue);
+
+                writer.Write($"// The pattern begins with an atomic loop for {DescribeSet(target.LoopNode.Str)}, followed by ");
+                writer.WriteLine(
+                    target.Literal.String is not null ? $"the string {Literal(target.Literal.String)}." :
+                    target.Literal.Chars is not null ? $"one of the characters {Literal(new string(target.Literal.Chars))}" :
+                    $"the character {Literal(target.Literal.Char)}.");
+                writer.WriteLine($"// Search for the literal, and then walk backwards to the beginning of the loop.");
 
                 FinishEmitBlock block = default;
                 if (target.LoopNode.M > 0)
