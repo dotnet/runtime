@@ -14738,15 +14738,15 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
 
     const var_types type = tree->TypeGet();
 
-    const size_t cnsValue = ((UINT64)tree->gtOp2->AsIntConCommon()->IntegralValue()) - 1;
-    GenTree* const and    = gtNewOperNode(GT_AND, type, tree->gtOp1, gtNewIconNode(cnsValue, type));
+    const size_t   cnsValue = (static_cast<size_t>(tree->gtOp2->AsIntConCommon()->IntegralValue())) - 1;
+    GenTree* const newTree  = gtNewOperNode(GT_AND, type, tree->gtOp1, gtNewIconNode(cnsValue, type));
 
-    INDEBUG(and->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+    INDEBUG(newTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
     DEBUG_DESTROY_NODE(tree->gtOp2);
     DEBUG_DESTROY_NODE(tree);
 
-    return and;
+    return newTree;
 }
 
 //------------------------------------------------------------------------------
