@@ -6195,7 +6195,7 @@ namespace System.Text.Json.Tests
                 var output = new ArrayBufferWriter<byte>(1024);
                 using var jsonUtf8 = new Utf8JsonWriter(output, options);
                 jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(key, DateTime.Now));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(key, DateTime.UtcNow));
                 Assert.Equal(0, output.WrittenCount);
             }
 
