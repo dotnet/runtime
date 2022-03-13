@@ -16140,17 +16140,18 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
             fldSeq   = AsOp()->gtOp2->AsIntCon()->gtFieldSeq;
             baseAddr = AsOp()->gtOp1;
         }
-
-        if (baseAddr != nullptr)
+        else
         {
-            assert(!baseAddr->TypeIs(TYP_REF) || !comp->GetZeroOffsetFieldMap()->Lookup(baseAddr));
+            return false;
         }
+
+        assert(!baseAddr->TypeIs(TYP_REF) || !comp->GetZeroOffsetFieldMap()->Lookup(baseAddr));
     }
     else if (IsCnsIntOrI() && IsIconHandle(GTF_ICON_STATIC_HDL))
     {
         assert(!comp->GetZeroOffsetFieldMap()->Lookup(this) && (AsIntCon()->gtFieldSeq != nullptr));
         fldSeq   = AsIntCon()->gtFieldSeq;
-        baseAddr = nullptr;
+        baseAddr = this;
     }
     else if (comp->GetZeroOffsetFieldMap()->Lookup(this, &fldSeq))
     {
@@ -16161,7 +16162,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
         return false;
     }
 
-    assert(fldSeq != nullptr);
+    assert((fldSeq != nullptr) && (baseAddr != nullptr));
 
     if ((fldSeq == FieldSeqStore::NotAField()) || fldSeq->IsPseudoField())
     {
@@ -16173,16 +16174,15 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
     // or a static field. To avoid the expense of calling "getFieldClass" here, we will instead
     // rely on the invariant that TYP_REF base addresses can never appear for struct fields - we
     // will effectively treat such cases ("possible" in unsafe code) as undefined behavior.
-    if (comp->eeIsFieldStatic(fldSeq->GetFieldHandle()))
+    if (fldSeq->IsStaticField())
     {
-        // TODO-VNTypes: this code is out of sync w.r.t. boxed statics that are numbered with
-        // VNF_PtrToStatic and treated as "simple" while here we treat them as "complex".
+        // For shared statics, we must encode the logical instantiation argument.
+        if (fldSeq->IsSharedStaticField())
+        {
+            *pBaseAddr = baseAddr;
+        }
 
-        // TODO-VNTypes: we will always return the "baseAddr" here for now, but strictly speaking,
-        // we only need to do that if we have a shared field, to encode the logical "instantiation"
-        // argument. In all other cases, this serves no purpose and just leads to redundant maps.
-        *pBaseAddr = baseAddr;
-        *pFldSeq   = fldSeq;
+        *pFldSeq = fldSeq;
         return true;
     }
 
