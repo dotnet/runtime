@@ -99,6 +99,7 @@ jobs:
       jobparameters:
         testgroup: perf
         livelibrariesbuildconfig: Release
+        skipLiveLibrariesDownload: true
         runtimetype: wasm
         codegentype: 'aot'
         projectfile: microbenchmarks.proj
@@ -316,6 +317,7 @@ jobs:
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
+        skipLiveLibrariesDownload: true
         runtimeType: wasm
         codeGenType: 'wasm'
         projectFile: microbenchmarks.proj
@@ -335,6 +337,7 @@ jobs:
       jobparameters:
         testgroup: perf
         livelibrariesbuildconfig: Release
+        skipLiveLibrariesDownload: true
         runtimetype: wasm
         codegentype: 'aot'
         projectfile: microbenchmarks.proj
@@ -475,6 +478,7 @@ jobs:
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
+        skipLiveLibrariesDownload: true
         runtimeType: wasm
         projectFile: blazor_perf.proj
         runKind: blazor_scenarios
