@@ -139,7 +139,7 @@ test_lpwstr_marshal (unsigned short* chars, int length)
 	res = (unsigned short *)marshal_alloc (2 * (length + 1));
 
 	// printf("test_lpwstr_marshal()\n");
-	
+
 	while ( i < length ) {
 		// printf("X|%u|\n", chars[i]);
 		res [i] = chars[i];
@@ -160,7 +160,7 @@ test_lpwstr_marshal_out (unsigned short** chars)
 	glong len = strlen(abc);
 
 	*chars = (unsigned short *)marshal_alloc (2 * (len + 1));
-	
+
 	while ( i < len ) {
 		(*chars) [i] = abc[i];
 		i++;
@@ -175,19 +175,19 @@ typedef struct {
 	int c;
 } union_test_1_type;
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_union_test_1 (union_test_1_type u1) {
 	// printf ("Got values %d %d %d\n", u1.b, u1.a, u1.c);
 	return u1.a + u1.b + u1.c;
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_return_int (int a) {
 	// printf ("Got value %d\n", a);
 	return a;
 }
 
-LIBTEST_API float STDCALL  
+LIBTEST_API float STDCALL
 mono_test_marshal_pass_return_float (float f) {
 	return f + 1.0;
 }
@@ -197,7 +197,7 @@ struct ss
 	int i;
 };
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_return_int_ss (struct ss a) {
 	// printf ("Got value %d\n", a.i);
 	return a.i;
@@ -228,7 +228,7 @@ struct sc3
 	char c[3];
 };
 
-LIBTEST_API struct sc3 STDCALL 
+LIBTEST_API struct sc3 STDCALL
 mono_return_sc3 (struct sc3 a) {
 	// printf ("Got values %d %d %d\n", a.c[0], a.c[1], a.c[2]);
 	a.c[0]++;
@@ -242,7 +242,7 @@ struct sc5
 	char c[5];
 };
 
-LIBTEST_API struct sc5 STDCALL 
+LIBTEST_API struct sc5 STDCALL
 mono_return_sc5 (struct sc5 a) {
 	// printf ("Got values %d %d %d %d %d\n", a.c[0], a.c[1], a.c[2], a.c[3], a.c[4]);
 	a.c[0]++;
@@ -259,7 +259,7 @@ union su
 	int i2;
 };
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_return_int_su (union su a) {
 	// printf ("Got value %d\n", a.i1);
 	return a.i1;
@@ -306,53 +306,53 @@ mono_return_struct_4_double (void *ptr, struct Rect rect, struct Scalar4 sc4, in
 	return buffer;
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_many_int_arguments (int a, int b, int c, int d, int e,
 							  int f, int g, int h, int i, int j);
-LIBTEST_API short STDCALL 
+LIBTEST_API short STDCALL
 mono_test_many_short_arguments (short a, short b, short c, short d, short e,
 								short f, short g, short h, short i, short j);
-LIBTEST_API char STDCALL 
+LIBTEST_API char STDCALL
 mono_test_many_char_arguments (char a, char b, char c, char d, char e,
 							   char f, char g, char h, char i, char j);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_many_int_arguments (int a, int b, int c, int d, int e, int f, int g, int h, int i, int j)
 {
 	return a + b + c + d + e + f + g + h + i + j;
 }
 
-LIBTEST_API short STDCALL 
+LIBTEST_API short STDCALL
 mono_test_many_short_arguments (short a, short b, short c, short d, short e, short f, short g, short h, short i, short j)
 {
 	return a + b + c + d + e + f + g + h + i + j;
 }
 
-LIBTEST_API char STDCALL 
+LIBTEST_API char STDCALL
 mono_test_many_byte_arguments (char a, char b, char c, char d, char e, char f, char g, char h, char i, char j)
 {
 	return a + b + c + d + e + f + g + h + i + j;
 }
 
-LIBTEST_API float STDCALL 
+LIBTEST_API float STDCALL
 mono_test_many_float_arguments (float a, float b, float c, float d, float e, float f, float g, float h, float i, float j)
 {
 	return a + b + c + d + e + f + g + h + i + j;
 }
 
-LIBTEST_API double STDCALL 
+LIBTEST_API double STDCALL
 mono_test_many_double_arguments (double a, double b, double c, double d, double e, double f, double g, double h, double i, double j)
 {
 	return a + b + c + d + e + f + g + h + i + j;
 }
 
-LIBTEST_API double STDCALL 
+LIBTEST_API double STDCALL
 mono_test_split_double_arguments (double a, double b, float c, double d, double e)
 {
 	return a + b + c + d + e;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_puts_static (char *s)
 {
 	// printf ("TEST %s\n", s);
@@ -361,7 +361,7 @@ mono_test_puts_static (char *s)
 
 typedef int (STDCALL *SimpleDelegate3) (int a, int b);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_invoke_delegate (SimpleDelegate3 delegate)
 {
 	int res;
@@ -381,12 +381,12 @@ mono_invoke_simple_delegate (SimpleDelegate d)
 	return d (4);
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_marshal_char (short a1)
 {
 	if (a1 == 'a')
 		return 0;
-	
+
 	return 1;
 }
 
@@ -398,7 +398,7 @@ mono_test_marshal_char_array (gunichar2 *s)
 	glong len;
 
 	s2 = g_utf8_to_utf16 (m, -1, NULL, &len, NULL);
-	
+
 	len = (len * 2) + 2;
 	memcpy (s, s2, len);
 
@@ -437,13 +437,13 @@ mono_test_marshal_unicode_char_array (gunichar2 *s)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_empty_pinvoke (int i)
 {
 	return i;
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_marshal_bool_byref (int a, int *b, int c)
 {
     int res = *b;
@@ -453,7 +453,7 @@ mono_test_marshal_bool_byref (int a, int *b, int c)
 	return res;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_bool_in_as_I1_U1 (char bTrue, char bFalse)
 {
 	if (!bTrue)
@@ -463,7 +463,7 @@ mono_test_marshal_bool_in_as_I1_U1 (char bTrue, char bFalse)
         return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_bool_out_as_I1_U1 (char* bTrue, char* bFalse)
 {
         if (!bTrue || !bFalse)
@@ -475,7 +475,7 @@ mono_test_marshal_bool_out_as_I1_U1 (char* bTrue, char* bFalse)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_bool_ref_as_I1_U1 (char* bTrue, char* bFalse)
 {
 	if (!bTrue || !bFalse)
@@ -492,18 +492,18 @@ mono_test_marshal_bool_ref_as_I1_U1 (char* bTrue, char* bFalse)
 	return 0;
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_marshal_array (int *a1)
 {
 	int i, sum = 0;
 
 	for (i = 0; i < 50; i++)
 		sum += a1 [i];
-	
+
 	return sum;
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_marshal_inout_array (int *a1)
 {
 	int i, sum = 0;
@@ -512,7 +512,7 @@ mono_test_marshal_inout_array (int *a1)
 		sum += a1 [i];
 		a1 [i] = 50 - a1 [i];
 	}
-	
+
 	return sum;
 }
 
@@ -522,7 +522,7 @@ mono_test_marshal_inout_array_cdecl (int *a1)
 	return mono_test_marshal_inout_array (a1);
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_marshal_out_array (int *a1)
 {
 	int i;
@@ -530,7 +530,7 @@ mono_test_marshal_out_array (int *a1)
 	for (i = 0; i < 50; i++) {
 		a1 [i] = i;
 	}
-	
+
 	return 0;
 }
 
@@ -563,7 +563,7 @@ mono_test_marshal_out_lparray_out_size_param (int *arr, int *out_len)
 	return 0;
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_marshal_inout_nonblittable_array (gunichar2 *a1)
 {
 	int i, sum = 0;
@@ -571,7 +571,7 @@ mono_test_marshal_inout_nonblittable_array (gunichar2 *a1)
 	for (i = 0; i < 10; i++) {
 		a1 [i] = 'F';
 	}
-	
+
 	return sum;
 }
 
@@ -588,7 +588,7 @@ typedef struct {
 	double y;
 } point;
 
-LIBTEST_API simplestruct STDCALL 
+LIBTEST_API simplestruct STDCALL
 mono_test_return_vtype (int i)
 {
 	simplestruct res;
@@ -611,7 +611,7 @@ mono_test_delegate_struct (void)
 
 typedef char* (STDCALL *ReturnStringDelegate) (const char *s);
 
-LIBTEST_API char * STDCALL 
+LIBTEST_API char * STDCALL
 mono_test_return_string (ReturnStringDelegate func)
 {
 	char *res;
@@ -627,7 +627,7 @@ mono_test_return_string (ReturnStringDelegate func)
 
 typedef int (STDCALL *RefVTypeDelegate) (int a, simplestruct *ss, int b);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_ref_vtype (int a, simplestruct *ss, int b, RefVTypeDelegate func)
 {
 	if (a == 1 && b == 2 && ss->a == 0 && ss->b == 1 && ss->c == 0 &&
@@ -645,7 +645,7 @@ mono_test_ref_vtype (int a, simplestruct *ss, int b, RefVTypeDelegate func)
 
 typedef int (STDCALL *OutVTypeDelegate) (int a, simplestruct *ss, int b);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_out_struct (int a, simplestruct *ss, int b, OutVTypeDelegate func)
 {
 	/* Check that the input pointer is ignored */
@@ -661,7 +661,7 @@ mono_test_marshal_out_struct (int a, simplestruct *ss, int b, OutVTypeDelegate f
 
 typedef int (STDCALL *InVTypeDelegate) (int a, simplestruct *ss, int b);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_in_struct (int a, simplestruct *ss, int b, InVTypeDelegate func)
 {
 	simplestruct ss2;
@@ -687,7 +687,7 @@ typedef struct {
 	SimpleDelegate func, func2, func3;
 } DelegateStruct;
 
-LIBTEST_API DelegateStruct STDCALL 
+LIBTEST_API DelegateStruct STDCALL
 mono_test_marshal_delegate_struct (DelegateStruct ds)
 {
 	DelegateStruct res;
@@ -700,7 +700,7 @@ mono_test_marshal_delegate_struct (DelegateStruct ds)
 	return res;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_byref_struct (simplestruct *ss, int a, int b, int c, char *d)
 {
 	gboolean res = (ss->a == a && ss->b == b && ss->c == c && strcmp (ss->d, d) == 0);
@@ -726,11 +726,11 @@ typedef struct {
 	guint64 h;
 } simplestruct2;
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_struct2 (simplestruct2 ss)
 {
 	if (ss.a == 0 && ss.b == 1 && ss.c == 0 &&
-	    !strcmp (ss.d, "TEST") && 
+	    !strcmp (ss.d, "TEST") &&
 	    ss.e == 99 && ss.f == 1.5 && ss.g == 42 && ss.h == (guint64)123)
 		return 0;
 
@@ -738,20 +738,20 @@ mono_test_marshal_struct2 (simplestruct2 ss)
 }
 
 /* on HP some of the struct should be on the stack and not in registers */
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_struct2_2 (int i, int j, int k, simplestruct2 ss)
 {
 	if (i != 10 || j != 11 || k != 12)
 		return 1;
 	if (ss.a == 0 && ss.b == 1 && ss.c == 0 &&
-	    !strcmp (ss.d, "TEST") && 
+	    !strcmp (ss.d, "TEST") &&
 	    ss.e == 99 && ss.f == 1.5 && ss.g == 42 && ss.h == (guint64)123)
 		return 0;
 
 	return 1;
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_marshal_lpstruct (simplestruct *ss)
 {
 	if (ss->a == 0 && ss->b == 1 && ss->c == 0 &&
@@ -761,7 +761,7 @@ mono_test_marshal_lpstruct (simplestruct *ss)
 	return 1;
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_marshal_lpstruct_blittable (point *p)
 {
 	if (p->x == 1.0 && p->y == 2.0)
@@ -770,16 +770,16 @@ mono_test_marshal_lpstruct_blittable (point *p)
 		return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_struct_array (simplestruct2 *ss)
 {
 	if (! (ss[0].a == 0 && ss[0].b == 1 && ss[0].c == 0 &&
-		   !strcmp (ss[0].d, "TEST") && 
+		   !strcmp (ss[0].d, "TEST") &&
 		   ss[0].e == 99 && ss[0].f == 1.5 && ss[0].g == 42 && ss[0].h == (guint64)123))
 		return 1;
 
 	if (! (ss[1].a == 0 && ss[1].b == 0 && ss[1].c == 0 &&
-		   !strcmp (ss[1].d, "TEST2") && 
+		   !strcmp (ss[1].d, "TEST2") &&
 		   ss[1].e == 100 && ss[1].f == 2.5 && ss[1].g == 43 && ss[1].h == (guint64)124))
 		return 1;
 
@@ -792,13 +792,13 @@ typedef struct long_align_struct {
 	gint64 c;
 } long_align_struct;
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_long_align_struct_array (long_align_struct *ss)
 {
 	return ss[0].a + ss[0].b + ss[0].c + ss[1].a + ss[1].b + ss[1].c;
 }
 
-LIBTEST_API simplestruct2 * STDCALL 
+LIBTEST_API simplestruct2 * STDCALL
 mono_test_marshal_class (int i, int j, int k, simplestruct2 *ss, int l)
 {
 	simplestruct2 *res;
@@ -809,7 +809,7 @@ mono_test_marshal_class (int i, int j, int k, simplestruct2 *ss, int l)
 	if (i != 10 || j != 11 || k != 12 || l != 14)
 		return NULL;
 	if (! (ss->a == 0 && ss->b == 1 && ss->c == 0 &&
-		   !strcmp (ss->d, "TEST") && 
+		   !strcmp (ss->d, "TEST") &&
 		   ss->e == 99 && ss->f == 1.5 && ss->g == 42 && ss->h == (guint64)123))
 		return NULL;
 
@@ -819,14 +819,14 @@ mono_test_marshal_class (int i, int j, int k, simplestruct2 *ss, int l)
 	return res;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_byref_class (simplestruct2 **ssp)
 {
 	simplestruct2 *ss = *ssp;
 	simplestruct2 *res;
-	
+
 	if (! (ss->a == 0 && ss->b == 1 && ss->c == 0 &&
-		   !strcmp (ss->d, "TEST") && 
+		   !strcmp (ss->d, "TEST") &&
 		   ss->e == 99 && ss->f == 1.5 && ss->g == 42 && ss->h == (guint64)123))
 		return 1;
 
@@ -853,7 +853,7 @@ get_sp (void)
 
 MONO_RESTORE_WARNING
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 reliable_delegate (int a)
 {
 	return a;
@@ -872,9 +872,9 @@ is_get_sp_reliable (void)
 	reliable_delegate(1);
 	sp2 = get_sp();
 	return sp1 == sp2;
-} 
+}
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_delegate (SimpleDelegate delegate)
 {
 	void *sp1, *sp2;
@@ -895,7 +895,7 @@ static int STDCALL inc_cb (int i)
 	return i + 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_out_delegate (SimpleDelegate *delegate)
 {
 	*delegate = inc_cb;
@@ -903,7 +903,7 @@ mono_test_marshal_out_delegate (SimpleDelegate *delegate)
 	return 0;
 }
 
-LIBTEST_API SimpleDelegate STDCALL 
+LIBTEST_API SimpleDelegate STDCALL
 mono_test_marshal_return_delegate (SimpleDelegate delegate)
 {
 	return delegate;
@@ -927,7 +927,7 @@ return_plus_one (int i)
 	return i + 1;
 }
 
-LIBTEST_API SimpleDelegate STDCALL 
+LIBTEST_API SimpleDelegate STDCALL
 mono_test_marshal_return_delegate_2 (void)
 {
 	return return_plus_one;
@@ -958,7 +958,7 @@ mono_test_marshal_struct (simplestruct ss)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_delegate2 (SimpleDelegate2 delegate)
 {
 	simplestruct ss, res;
@@ -967,7 +967,7 @@ mono_test_marshal_delegate2 (SimpleDelegate2 delegate)
 	ss.b = 1;
 	ss.c = 0;
 	ss.d = "TEST";
-	ss.d2 = g_utf8_to_utf16 ("TEST2", -1, NULL, NULL, NULL); 
+	ss.d2 = g_utf8_to_utf16 ("TEST2", -1, NULL, NULL, NULL);
 
 	res = delegate (ss);
 	if (! (res.a && !res.b && res.c && !strcmp (res.d, "TEST-RES") && is_utf16_equals (res.d2, "TEST2-RES")))
@@ -978,7 +978,7 @@ mono_test_marshal_delegate2 (SimpleDelegate2 delegate)
 
 typedef simplestruct* (STDCALL *SimpleDelegate4) (simplestruct *ss);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_delegate4 (SimpleDelegate4 delegate)
 {
 	simplestruct ss;
@@ -1008,7 +1008,7 @@ mono_test_marshal_delegate4 (SimpleDelegate4 delegate)
 
 typedef int (STDCALL *SimpleDelegate5) (simplestruct **ss);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_delegate5 (SimpleDelegate5 delegate)
 {
 	simplestruct ss;
@@ -1032,7 +1032,7 @@ mono_test_marshal_delegate5 (SimpleDelegate5 delegate)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_delegate6 (SimpleDelegate5 delegate)
 {
 	delegate (NULL);
@@ -1041,7 +1041,7 @@ mono_test_marshal_delegate6 (SimpleDelegate5 delegate)
 
 typedef int (STDCALL *SimpleDelegate7) (simplestruct **ss);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_delegate7 (SimpleDelegate7 delegate)
 {
 	int res;
@@ -1062,7 +1062,7 @@ mono_test_marshal_delegate7 (SimpleDelegate7 delegate)
 
 typedef int (STDCALL *InOutByvalClassDelegate) (simplestruct *ss);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_inout_byval_class_delegate (InOutByvalClassDelegate delegate)
 {
 	int res;
@@ -1085,7 +1085,7 @@ mono_test_marshal_inout_byval_class_delegate (InOutByvalClassDelegate delegate)
 
 typedef int (STDCALL *SimpleDelegate8) (gunichar2 *s);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_delegate8 (SimpleDelegate8 delegate, gunichar2 *s)
 {
 	return delegate (s);
@@ -1094,19 +1094,19 @@ mono_test_marshal_delegate8 (SimpleDelegate8 delegate, gunichar2 *s)
 typedef int (STDCALL *return_int_fnt) (int i);
 typedef int (STDCALL *SimpleDelegate9) (return_int_fnt d);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_delegate9 (SimpleDelegate9 delegate, gpointer ftn)
 {
 	return delegate ((return_int_fnt)ftn);
 }
 
-static int STDCALL 
+static int STDCALL
 return_self (int i)
 {
 	return i;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_delegate10 (SimpleDelegate9 delegate)
 {
 	return delegate (return_self);
@@ -1114,7 +1114,7 @@ mono_test_marshal_delegate10 (SimpleDelegate9 delegate)
 
 typedef int (STDCALL *PrimitiveByrefDelegate) (int *i);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_primitive_byref_delegate (PrimitiveByrefDelegate delegate)
 {
 	int i = 1;
@@ -1133,7 +1133,7 @@ typedef int (STDCALL *return_int_delegate) (int i);
 
 typedef return_int_delegate (STDCALL *ReturnDelegateDelegate) (void);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_return_delegate_delegate (ReturnDelegateDelegate d)
 {
 	return (d ()) (55);
@@ -1155,7 +1155,14 @@ mono_test_marshal_icall_delegate (IcallDelegate del)
 	return strcmp (res, "ABC") == 0 ? 0 : 1;
 }
 
-LIBTEST_API int STDCALL  
+typedef char* (STDCALL *NullableReturnDelegate) (void);
+LIBTEST_API void STDCALL
+mono_test_marshal_nullable_ret_delegate (NullableReturnDelegate del)
+{
+	del ();
+}
+
+LIBTEST_API int STDCALL
 mono_test_marshal_stringbuilder (char *s, int n)
 {
 	const char m[] = "This is my message.  Isn't it nice?";
@@ -1167,7 +1174,7 @@ mono_test_marshal_stringbuilder (char *s, int n)
 	return 0;
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_marshal_stringbuilder_append (char *s, int length)
 {
 	const char out_sentinel[] = "CSHARP_";
@@ -1183,7 +1190,7 @@ mono_test_marshal_stringbuilder_append (char *s, int length)
 	return 0;
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_marshal_stringbuilder_default (char *s, int n)
 {
 	const char m[] = "This is my message.  Isn't it nice?";
@@ -1193,7 +1200,7 @@ mono_test_marshal_stringbuilder_default (char *s, int n)
 	return 0;
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_marshal_stringbuilder_unicode (gunichar2 *s, int n)
 {
 	const char m[] = "This is my message.  Isn't it nice?";
@@ -1201,7 +1208,7 @@ mono_test_marshal_stringbuilder_unicode (gunichar2 *s, int n)
 	glong len;
 
 	s2 = g_utf8_to_utf16 (m, -1, NULL, &len, NULL);
-	
+
 	len = (len * 2) + 2;
 	if (len > (n * 2))
 		len = n * 2;
@@ -1220,11 +1227,11 @@ mono_test_marshal_stringbuilder_out (char **s)
 
 	str = (char *)marshal_alloc (strlen (m) + 1);
 	memcpy (str, m, strlen (m) + 1);
-	
+
 	*s = str;
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_marshal_stringbuilder_out_unicode (gunichar2 **s)
 {
 	const char m[] = "This is my message.  Isn't it nice?";
@@ -1232,7 +1239,7 @@ mono_test_marshal_stringbuilder_out_unicode (gunichar2 **s)
 	glong len;
 
 	s2 = g_utf8_to_utf16 (m, -1, NULL, &len, NULL);
-	
+
 	len = (len * 2) + 2;
 	*s = (gunichar2 *)marshal_alloc (len);
 	memcpy (*s, s2, len);
@@ -1253,12 +1260,12 @@ mono_test_marshal_stringbuilder_ref (char **s)
 
 	str = (char *)marshal_alloc (strlen (m) + 1);
 	memcpy (str, m, strlen (m) + 1);
-	
+
 	*s = str;
 	return 0;
 }
 
-LIBTEST_API void STDCALL  
+LIBTEST_API void STDCALL
 mono_test_marshal_stringbuilder_utf16_tolower (short *s, int n)
 {
 	for (int i = 0; i < n; i++)
@@ -1290,13 +1297,13 @@ typedef struct {
 #pragma GCC diagnostic pop
 #endif
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_empty_string_array (char **array)
 {
 	return (array == NULL) ? 0 : 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_string_array (char **array)
 {
 	if (strcmp (array [0], "ABC"))
@@ -1310,7 +1317,7 @@ mono_test_marshal_string_array (char **array)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_byref_string_array (char ***array)
 {
 	if (*array == NULL)
@@ -1326,7 +1333,7 @@ mono_test_marshal_byref_string_array (char ***array)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_stringbuilder_array (char **array)
 {
 	if (strcmp (array [0], "ABC"))
@@ -1340,12 +1347,12 @@ mono_test_marshal_stringbuilder_array (char **array)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_unicode_string_array (gunichar2 **array, char **array2)
 {
 	GError *gerror = NULL;
 	char *s;
-	
+
 	s = g_utf16_to_utf8 (array [0], -1, NULL, NULL, &gerror);
 	if (strcmp (s, "ABC")) {
 		g_free (s);
@@ -1365,14 +1372,14 @@ mono_test_marshal_unicode_string_array (gunichar2 **array, char **array2)
 	if (strcmp (array2 [0], "ABC"))
 		return 3;
 
-	if (strcmp (array2 [1], "DEF")) 
+	if (strcmp (array2 [1], "DEF"))
 		return 4;
 
 	return 0;
 }
 
 /* this does not work on Redhat gcc 2.96 */
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_empty_struct (int a, EmptyStruct es, int b)
 {
 	// printf ("mono_test_empty_struct %d %d\n", a, b);
@@ -1406,11 +1413,11 @@ typedef struct {
        char a[100];
 } ByValStrStruct;
 
-LIBTEST_API ByValStrStruct * STDCALL 
+LIBTEST_API ByValStrStruct * STDCALL
 mono_test_byvalstr_gen (void)
 {
 	ByValStrStruct *ret;
-       
+
 	ret = (ByValStrStruct *)malloc (sizeof (ByValStrStruct));
 	memset(ret, 'a', sizeof(ByValStrStruct)-1);
 	ret->a[sizeof(ByValStrStruct)-1] = 0;
@@ -1418,7 +1425,7 @@ mono_test_byvalstr_gen (void)
 	return ret;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_byvalstr_check (ByValStrStruct* data, char* correctString)
 {
 	int ret;
@@ -1437,14 +1444,14 @@ typedef struct {
 	int  flag;
 } ByValStrStruct_Unicode;
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_byvalstr_check_unicode (ByValStrStruct_Unicode *ref, int test)
 {
 	if (ref->flag != 0x1234abcd){
 		printf ("overwritten data");
 		return 1;
 	}
-	    
+
 	if (test == 1 || test == 3){
 		if (ref->a [0] != '1' ||
 		    ref->a [1] != '2'   ||
@@ -1461,55 +1468,55 @@ mono_test_byvalstr_check_unicode (ByValStrStruct_Unicode *ref, int test)
 	return 10;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 NameManglingAnsi (char *data)
 {
 	return data [0] + data [1] + data [2];
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 NameManglingAnsiA (char *data)
 {
 	g_assert_not_reached ();
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 NameManglingAnsiW (char *data)
 {
 	g_assert_not_reached ();
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 NameManglingAnsi2A (char *data)
 {
 	return data [0] + data [1] + data [2];
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 NameManglingAnsi2W (char *data)
 {
 	g_assert_not_reached ();
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 NameManglingUnicode (char *data)
 {
 	g_assert_not_reached ();
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 NameManglingUnicodeW (gunichar2 *data)
 {
 	return data [0] + data [1] + data [2];
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 NameManglingUnicode2 (gunichar2 *data)
 {
 	return data [0] + data [1] + data [2];
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 NameManglingAutoW (char *data)
 {
 #ifdef WIN32
@@ -1519,7 +1526,7 @@ NameManglingAutoW (char *data)
 #endif
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 NameManglingAuto (char *data)
 {
 #ifndef WIN32
@@ -1531,7 +1538,7 @@ NameManglingAuto (char *data)
 
 typedef int (STDCALL *intcharFunc)(const char*);
 
-LIBTEST_API void STDCALL 
+LIBTEST_API void STDCALL
 callFunction (intcharFunc f)
 {
 	f ("ABC");
@@ -1542,7 +1549,7 @@ typedef struct {
         int i;
 } SimpleObj;
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 class_marshal_test0 (SimpleObj *obj1)
 {
 	// printf ("class_marshal_test0 %s %d\n", obj1->str, obj1->i);
@@ -1555,7 +1562,7 @@ class_marshal_test0 (SimpleObj *obj1)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 class_marshal_test4 (SimpleObj *obj1)
 {
 	if (obj1)
@@ -1575,7 +1582,7 @@ class_marshal_test1 (SimpleObj **obj1)
 	*obj1 = res;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 class_marshal_test2 (SimpleObj **obj1)
 {
 	// printf ("class_marshal_test2 %s %d\n", (*obj1)->str, (*obj1)->i);
@@ -1588,7 +1595,7 @@ class_marshal_test2 (SimpleObj **obj1)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 string_marshal_test0 (char *str)
 {
 	if (strcmp (str, "TEST0"))
@@ -1603,7 +1610,7 @@ string_marshal_test1 (const char **str)
 	*str = marshal_strdup ("TEST1");
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 string_marshal_test2 (char **str)
 {
 	// printf ("string_marshal_test2 %s\n", *str);
@@ -1616,7 +1623,7 @@ string_marshal_test2 (char **str)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 string_marshal_test3 (char *str)
 {
 	if (str)
@@ -1630,7 +1637,7 @@ typedef struct {
 	int b;
 } BlittableClass;
 
-LIBTEST_API BlittableClass* STDCALL 
+LIBTEST_API BlittableClass* STDCALL
 TestBlittableClass (BlittableClass *vl)
 {
 	BlittableClass *res;
@@ -1653,12 +1660,12 @@ TestBlittableClass (BlittableClass *vl)
 }
 
 typedef struct OSVERSIONINFO_STRUCT
-{ 
-	int a; 
-	int b; 
+{
+	int a;
+	int b;
 } OSVERSIONINFO_STRUCT;
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 MyGetVersionEx (OSVERSIONINFO_STRUCT *osvi)
 {
 
@@ -1670,7 +1677,7 @@ MyGetVersionEx (OSVERSIONINFO_STRUCT *osvi)
 	return osvi->a + osvi->b;
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 BugGetVersionEx (int a, int b, int c, int d, int e, int f, int g, int h, OSVERSIONINFO_STRUCT *osvi)
 {
 
@@ -1682,7 +1689,7 @@ BugGetVersionEx (int a, int b, int c, int d, int e, int f, int g, int h, OSVERSI
 	return osvi->a + osvi->b;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_point (point pt)
 {
 	// printf("point %g %g\n", pt.x, pt.y);
@@ -1697,7 +1704,7 @@ typedef struct {
 	double y;
 } mixed_point;
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_mixed_point (mixed_point pt)
 {
 	// printf("mixed point %d %g\n", pt.x, pt.y);
@@ -1707,7 +1714,7 @@ mono_test_marshal_mixed_point (mixed_point pt)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_mixed_point_2 (mixed_point *pt)
 {
 	if (pt->x != 5 || pt->y != 6.75)
@@ -1719,7 +1726,7 @@ mono_test_marshal_mixed_point_2 (mixed_point *pt)
 	return 0;
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 marshal_test_ref_bool(int i, char *b1, short *b2, int *b3)
 {
     int res = 1;
@@ -1745,7 +1752,7 @@ struct BoolStruct
     int b3;
 };
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 marshal_test_bool_struct(struct BoolStruct *s)
 {
     int res = 1;
@@ -1797,13 +1804,13 @@ mono_test_last_error (int err)
 	*/
 	char buffer[256] = { 0 };
 	char value[] = "Dummy";
-	strncpy (buffer, value, G_N_ELEMENTS (value) - 1);
+	strncpy (buffer, value, STRING_LENGTH (value));
 #else
 	mono_set_errno (err);
 #endif
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_asany (void *ptr, int what)
 {
 	switch (what) {
@@ -1815,7 +1822,7 @@ mono_test_asany (void *ptr, int what)
 		simplestruct2 ss = *(simplestruct2*)ptr;
 
 		if (ss.a == 0 && ss.b == 1 && ss.c == 0 &&
-	    !strcmp (ss.d, "TEST") && 
+	    !strcmp (ss.d, "TEST") &&
 	    ss.e == 99 && ss.f == 1.5 && ss.g == 42 && ss.h == (guint64)123)
 			return 0;
 		else
@@ -1857,7 +1864,7 @@ typedef struct
 	char *s;
 } AsAnyStruct;
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_asany_in (void* ptr)
 {
 	AsAnyStruct *asAny = (AsAnyStruct *)ptr;
@@ -1866,7 +1873,7 @@ mono_test_marshal_asany_in (void* ptr)
 	return res;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_asany_inout (void* ptr)
 {
 	AsAnyStruct *asAny = (AsAnyStruct *)ptr;
@@ -1882,7 +1889,7 @@ mono_test_marshal_asany_inout (void* ptr)
 	return res;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_asany_out (void* ptr)
 {
 	AsAnyStruct *asAny = (AsAnyStruct *)ptr;
@@ -1907,7 +1914,7 @@ typedef struct amd64_struct1 {
 	int l;
 } amd64_struct1;
 
-LIBTEST_API amd64_struct1 STDCALL 
+LIBTEST_API amd64_struct1 STDCALL
 mono_test_marshal_amd64_pass_return_struct1 (amd64_struct1 s)
 {
 	s.i ++;
@@ -1918,7 +1925,7 @@ mono_test_marshal_amd64_pass_return_struct1 (amd64_struct1 s)
 	return s;
 }
 
-LIBTEST_API amd64_struct1 STDCALL 
+LIBTEST_API amd64_struct1 STDCALL
 mono_test_marshal_amd64_pass_return_struct1_many_args (amd64_struct1 s, int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8)
 {
 	s.i ++;
@@ -1934,7 +1941,7 @@ typedef struct amd64_struct2 {
 	int j;
 } amd64_struct2;
 
-LIBTEST_API amd64_struct2 STDCALL 
+LIBTEST_API amd64_struct2 STDCALL
 mono_test_marshal_amd64_pass_return_struct2 (amd64_struct2 s)
 {
 	s.i ++;
@@ -1947,7 +1954,7 @@ typedef struct amd64_struct3 {
 	int i;
 } amd64_struct3;
 
-LIBTEST_API amd64_struct3 STDCALL 
+LIBTEST_API amd64_struct3 STDCALL
 mono_test_marshal_amd64_pass_return_struct3 (amd64_struct3 s)
 {
 	s.i ++;
@@ -1959,7 +1966,7 @@ typedef struct amd64_struct4 {
 	double d1, d2;
 } amd64_struct4;
 
-LIBTEST_API amd64_struct4 STDCALL 
+LIBTEST_API amd64_struct4 STDCALL
 mono_test_marshal_amd64_pass_return_struct4 (amd64_struct4 s)
 {
 	s.d1 ++;
@@ -1975,7 +1982,7 @@ typedef struct test_struct5 {
 	float d1, d2;
 } test_struct5;
 
-LIBTEST_API test_struct5 STDCALL 
+LIBTEST_API test_struct5 STDCALL
 mono_test_marshal_ia64_pass_return_struct5 (double d1, double d2, test_struct5 s, int i, double d3, double d4)
 {
 	s.d1 += d1 + d2 + i;
@@ -1988,7 +1995,7 @@ typedef struct test_struct6 {
 	double d1, d2;
 } test_struct6;
 
-LIBTEST_API test_struct6 STDCALL 
+LIBTEST_API test_struct6 STDCALL
 mono_test_marshal_ia64_pass_return_struct6 (double d1, double d2, test_struct6 s, int i, double d3, double d4)
 {
 	s.d1 += d1 + d2 + i;
@@ -2009,7 +2016,7 @@ mono_test_marshal_pass_return_custom (int i, guint32 *ptr, int j)
 	return &custom_res;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_pass_out_custom (int i, guint32 **ptr, int j)
 {
 	custom_res [0] = 0;
@@ -2020,7 +2027,7 @@ mono_test_marshal_pass_out_custom (int i, guint32 **ptr, int j)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_pass_inout_custom (int i, guint32 *ptr, int j)
 {
 	ptr [0] = 0;
@@ -2029,13 +2036,13 @@ mono_test_marshal_pass_inout_custom (int i, guint32 *ptr, int j)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_pass_out_byval_custom (int i, guint32 *ptr, int j)
 {
 	return ptr == NULL ? 0 : 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_pass_byref_custom (int i, guint32 **ptr, int j)
 {
 	(*ptr)[1] += i + j;
@@ -2061,7 +2068,7 @@ mono_test_marshal_pass_return_custom_null (int i, guint32 *ptr, int j)
 
 typedef void *(STDCALL *PassReturnPtrDelegate) (void *ptr);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_pass_return_custom_in_delegate (PassReturnPtrDelegate del)
 {
 	guint32 buf [2];
@@ -2084,7 +2091,7 @@ mono_test_marshal_pass_return_custom_in_delegate (PassReturnPtrDelegate del)
 	return res;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_pass_return_custom_null_in_delegate (PassReturnPtrDelegate del)
 {
 	void *ptr = del (NULL);
@@ -2094,7 +2101,7 @@ mono_test_marshal_pass_return_custom_null_in_delegate (PassReturnPtrDelegate del
 
 typedef void (STDCALL *CustomOutParamDelegate) (void **pptr);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_custom_out_param_delegate (CustomOutParamDelegate del)
 {
 	void* pptr = (void*)del;
@@ -2109,7 +2116,7 @@ mono_test_marshal_custom_out_param_delegate (CustomOutParamDelegate del)
 
 typedef int (STDCALL *ReturnEnumDelegate) (int e);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_return_enum_delegate (ReturnEnumDelegate func)
 {
 	return func (1);
@@ -2119,10 +2126,10 @@ typedef struct {
 	int a, b, c;
 	gint64 d;
 } BlittableStruct;
-	
+
 typedef BlittableStruct (STDCALL *SimpleDelegate10) (BlittableStruct ss);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_blittable_struct_delegate (SimpleDelegate10 delegate)
 {
 	BlittableStruct ss, res;
@@ -2139,7 +2146,7 @@ mono_test_marshal_blittable_struct_delegate (SimpleDelegate10 delegate)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_stdcall_name_mangling (int a, int b, int c)
 {
         return a + b + c;
@@ -2164,10 +2171,10 @@ mono_test_stdcall_mismatch_2 (int a, int b, int c)
 typedef struct {
 	int i;
 } SmallStruct1;
-	
+
 typedef SmallStruct1 (STDCALL *SmallStructDelegate1) (SmallStruct1 ss);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_small_struct_delegate1 (SmallStructDelegate1 delegate)
 {
 	SmallStruct1 ss, res;
@@ -2184,10 +2191,10 @@ mono_test_marshal_small_struct_delegate1 (SmallStructDelegate1 delegate)
 typedef struct {
 	gint16 i, j;
 } SmallStruct2;
-	
+
 typedef SmallStruct2 (STDCALL *SmallStructDelegate2) (SmallStruct2 ss);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_small_struct_delegate2 (SmallStructDelegate2 delegate)
 {
 	SmallStruct2 ss, res;
@@ -2206,10 +2213,10 @@ typedef struct {
 	gint16 i;
 	gint8 j;
 } SmallStruct3;
-	
+
 typedef SmallStruct3 (STDCALL *SmallStructDelegate3) (SmallStruct3 ss);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_small_struct_delegate3 (SmallStructDelegate3 delegate)
 {
 	SmallStruct3 ss, res;
@@ -2227,10 +2234,10 @@ mono_test_marshal_small_struct_delegate3 (SmallStructDelegate3 delegate)
 typedef struct {
 	gint16 i;
 } SmallStruct4;
-	
+
 typedef SmallStruct4 (STDCALL *SmallStructDelegate4) (SmallStruct4 ss);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_small_struct_delegate4 (SmallStructDelegate4 delegate)
 {
 	SmallStruct4 ss, res;
@@ -2247,10 +2254,10 @@ mono_test_marshal_small_struct_delegate4 (SmallStructDelegate4 delegate)
 typedef struct {
 	gint64 i;
 } SmallStruct5;
-	
+
 typedef SmallStruct5 (STDCALL *SmallStructDelegate5) (SmallStruct5 ss);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_small_struct_delegate5 (SmallStructDelegate5 delegate)
 {
 	SmallStruct5 ss, res;
@@ -2267,10 +2274,10 @@ mono_test_marshal_small_struct_delegate5 (SmallStructDelegate5 delegate)
 typedef struct {
 	int i, j;
 } SmallStruct6;
-	
+
 typedef SmallStruct6 (STDCALL *SmallStructDelegate6) (SmallStruct6 ss);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_small_struct_delegate6 (SmallStructDelegate6 delegate)
 {
 	SmallStruct6 ss, res;
@@ -2289,10 +2296,10 @@ typedef struct {
 	int i;
 	gint16 j;
 } SmallStruct7;
-	
+
 typedef SmallStruct7 (STDCALL *SmallStructDelegate7) (SmallStruct7 ss);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_small_struct_delegate7 (SmallStructDelegate7 delegate)
 {
 	SmallStruct7 ss, res;
@@ -2310,10 +2317,10 @@ mono_test_marshal_small_struct_delegate7 (SmallStructDelegate7 delegate)
 typedef struct {
 	float i;
 } SmallStruct8;
-	
+
 typedef SmallStruct8 (STDCALL *SmallStructDelegate8) (SmallStruct8 ss);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_small_struct_delegate8 (SmallStructDelegate8 delegate)
 {
 	SmallStruct8 ss, res;
@@ -2330,10 +2337,10 @@ mono_test_marshal_small_struct_delegate8 (SmallStructDelegate8 delegate)
 typedef struct {
 	double i;
 } SmallStruct9;
-	
+
 typedef SmallStruct9 (STDCALL *SmallStructDelegate9) (SmallStruct9 ss);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_small_struct_delegate9 (SmallStructDelegate9 delegate)
 {
 	SmallStruct9 ss, res;
@@ -2350,10 +2357,10 @@ mono_test_marshal_small_struct_delegate9 (SmallStructDelegate9 delegate)
 typedef struct {
 	float i, j;
 } SmallStruct10;
-	
+
 typedef SmallStruct10 (STDCALL *SmallStructDelegate10) (SmallStruct10 ss);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_small_struct_delegate10 (SmallStructDelegate10 delegate)
 {
 	SmallStruct10 ss, res;
@@ -2372,10 +2379,10 @@ typedef struct {
 	float i;
 	int j;
 } SmallStruct11;
-	
+
 typedef SmallStruct11 (STDCALL *SmallStructDelegate11) (SmallStruct11 ss);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_small_struct_delegate11 (SmallStructDelegate11 delegate)
 {
 	SmallStruct11 ss, res;
@@ -2392,7 +2399,7 @@ mono_test_marshal_small_struct_delegate11 (SmallStructDelegate11 delegate)
 
 typedef int (STDCALL *ArrayDelegate) (int i, char *j, void *arr);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_array_delegate (void *arr, int len, ArrayDelegate del)
 {
 	return del (len, NULL, arr);
@@ -2400,13 +2407,13 @@ mono_test_marshal_array_delegate (void *arr, int len, ArrayDelegate del)
 
 typedef int (STDCALL *ArrayDelegateLong) (gint64 i, char *j, void *arr);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_array_delegate_long (void *arr, gint64 len, ArrayDelegateLong del)
 {
 	return del (len, NULL, arr);
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_out_array_delegate (int *arr, int len, ArrayDelegate del)
 {
 	del (len, NULL, arr);
@@ -2419,7 +2426,7 @@ mono_test_marshal_out_array_delegate (int *arr, int len, ArrayDelegate del)
 
 typedef gunichar2* (STDCALL *UnicodeStringDelegate) (gunichar2 *message);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_return_unicode_string_delegate (UnicodeStringDelegate del)
 {
 	const char m[] = "abcdef";
@@ -2435,7 +2442,7 @@ mono_test_marshal_return_unicode_string_delegate (UnicodeStringDelegate del)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_out_string_array_delegate (char **arr, int len, ArrayDelegate del)
 {
 	del (len, NULL, arr);
@@ -2448,7 +2455,7 @@ mono_test_marshal_out_string_array_delegate (char **arr, int len, ArrayDelegate 
 
 typedef int (*CdeclDelegate) (int i, int j);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_cdecl_delegate (CdeclDelegate del)
 {
 	int i;
@@ -2461,7 +2468,7 @@ mono_test_marshal_cdecl_delegate (CdeclDelegate del)
 
 typedef char** (STDCALL *ReturnStringArrayDelegate) (int i);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_return_string_array_delegate (ReturnStringArrayDelegate d)
 {
 	char **arr = d (2);
@@ -2482,7 +2489,7 @@ mono_test_marshal_return_string_array_delegate (ReturnStringArrayDelegate d)
 
 typedef int (STDCALL *ByrefStringDelegate) (char **s);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_byref_string_delegate (ByrefStringDelegate d)
 {
 	char *s = (char*)"ABC";
@@ -2502,19 +2509,19 @@ mono_test_marshal_byref_string_delegate (ByrefStringDelegate d)
 	return res;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 add_delegate (int i, int j)
 {
 	return i + j;
 }
 
-LIBTEST_API gpointer STDCALL 
+LIBTEST_API gpointer STDCALL
 mono_test_marshal_return_fnptr (void)
 {
 	return (gpointer)&add_delegate;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_xr (int code)
 {
 	printf ("codigo %x\n", code);
@@ -2525,7 +2532,7 @@ typedef struct {
 	int handle;
 } HandleRef;
 
-LIBTEST_API HandleRef STDCALL 
+LIBTEST_API HandleRef STDCALL
 mono_xr_as_handle (int code)
 {
 	HandleRef ref;
@@ -2534,7 +2541,7 @@ mono_xr_as_handle (int code)
 
 	return ref;
 }
- 
+
 typedef struct {
 	int   a;
 	void *handle1;
@@ -2542,7 +2549,7 @@ typedef struct {
 	int   b;
 } HandleStructs;
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_safe_handle_struct_ref (HandleStructs *x)
 {
 	printf ("Dingus Ref! \n");
@@ -2561,7 +2568,7 @@ mono_safe_handle_struct_ref (HandleStructs *x)
 	return 0xf00d;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_safe_handle_struct (HandleStructs x)
 {
 	printf ("Dingus Standard! \n");
@@ -2576,7 +2583,7 @@ mono_safe_handle_struct (HandleStructs x)
 
 	if (x.handle2 != (void*) 0x1234abcd)
 		return 4;
-	
+
 	return 0xf00f;
 }
 
@@ -2584,14 +2591,14 @@ typedef struct {
 	void *a;
 } TrivialHandle;
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_safe_handle_struct_simple (TrivialHandle x)
 {
 	printf ("The value is %p\n", x.a);
 	return ((int)(gsize)x.a) * 2;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_safe_handle_return (void)
 {
 	return 0x1000f00d;
@@ -2742,7 +2749,7 @@ void VariantInit(VARIANT* vt)
 
 #endif
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_bstr_in(gunichar2* bstr)
 {
 	gint32 result = 0;
@@ -2754,14 +2761,14 @@ mono_test_marshal_bstr_in(gunichar2* bstr)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_bstr_out(gunichar2** bstr)
 {
 	*bstr = marshal_bstr_alloc ("mono_test_marshal_bstr_out");
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_bstr_in_null(gunichar2* bstr)
 {
 	if (!bstr)
@@ -2769,14 +2776,14 @@ mono_test_marshal_bstr_in_null(gunichar2* bstr)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_bstr_out_null(gunichar2** bstr)
 {
 	*bstr = NULL;
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_sbyte(VARIANT variant)
 {
 	if (variant.vt == VT_I1 && variant.cVal == 100)
@@ -2784,7 +2791,7 @@ mono_test_marshal_variant_in_sbyte(VARIANT variant)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_byte(VARIANT variant)
 {
 	if (variant.vt == VT_UI1 && variant.bVal == 100)
@@ -2792,7 +2799,7 @@ mono_test_marshal_variant_in_byte(VARIANT variant)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_short(VARIANT variant)
 {
 	if (variant.vt == VT_I2 && variant.iVal == 314)
@@ -2800,7 +2807,7 @@ mono_test_marshal_variant_in_short(VARIANT variant)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_ushort(VARIANT variant)
 {
 	if (variant.vt == VT_UI2 && variant.uiVal == 314)
@@ -2808,7 +2815,7 @@ mono_test_marshal_variant_in_ushort(VARIANT variant)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_int(VARIANT variant)
 {
 	if (variant.vt == VT_I4 && variant.lVal == 314)
@@ -2816,7 +2823,7 @@ mono_test_marshal_variant_in_int(VARIANT variant)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_uint(VARIANT variant)
 {
 	if (variant.vt == VT_UI4 && variant.ulVal == 314)
@@ -2824,7 +2831,7 @@ mono_test_marshal_variant_in_uint(VARIANT variant)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_long(VARIANT variant)
 {
 	if (variant.vt == VT_I8 && variant.llVal == 314)
@@ -2832,7 +2839,7 @@ mono_test_marshal_variant_in_long(VARIANT variant)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_ulong(VARIANT variant)
 {
 	if (variant.vt == VT_UI8 && variant.ullVal == 314)
@@ -2840,7 +2847,7 @@ mono_test_marshal_variant_in_ulong(VARIANT variant)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_float(VARIANT variant)
 {
 	if (variant.vt == VT_R4 && (variant.fltVal - 3.14)/3.14 < .001)
@@ -2848,7 +2855,7 @@ mono_test_marshal_variant_in_float(VARIANT variant)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_double(VARIANT variant)
 {
 	if (variant.vt == VT_R8 && (variant.dblVal - 3.14)/3.14 < .001)
@@ -2856,7 +2863,7 @@ mono_test_marshal_variant_in_double(VARIANT variant)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_bstr(VARIANT variant)
 {
 	gint32 result = 0;
@@ -2869,7 +2876,7 @@ mono_test_marshal_variant_in_bstr(VARIANT variant)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_bool_true (VARIANT variant)
 {
 	if (variant.vt == VT_BOOL && variant.boolVal == VARIANT_TRUE)
@@ -2877,7 +2884,7 @@ mono_test_marshal_variant_in_bool_true (VARIANT variant)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_bool_false (VARIANT variant)
 {
 	if (variant.vt == VT_BOOL && variant.boolVal == VARIANT_FALSE)
@@ -2885,7 +2892,7 @@ mono_test_marshal_variant_in_bool_false (VARIANT variant)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_sbyte(VARIANT* variant)
 {
 	variant->vt = VT_I1;
@@ -2894,7 +2901,7 @@ mono_test_marshal_variant_out_sbyte(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_sbyte_byref(VARIANT* variant)
 {
 	variant->vt = VT_I1|VT_BYREF;
@@ -2904,18 +2911,18 @@ mono_test_marshal_variant_out_sbyte_byref(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_byte(VARIANT* variant)
-{	
+{
 	variant->vt = VT_UI1;
 	variant->bVal = 100;
 
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_byte_byref(VARIANT* variant)
-{	
+{
 	variant->vt = VT_UI1|VT_BYREF;
 	variant->byref = marshal_alloc(1);
 	*((gint8*)variant->byref) = 100;
@@ -2923,7 +2930,7 @@ mono_test_marshal_variant_out_byte_byref(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_short(VARIANT* variant)
 {
 	variant->vt = VT_I2;
@@ -2932,7 +2939,7 @@ mono_test_marshal_variant_out_short(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_short_byref(VARIANT* variant)
 {
 	variant->vt = VT_I2|VT_BYREF;
@@ -2942,7 +2949,7 @@ mono_test_marshal_variant_out_short_byref(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_ushort(VARIANT* variant)
 {
 	variant->vt = VT_UI2;
@@ -2951,7 +2958,7 @@ mono_test_marshal_variant_out_ushort(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_ushort_byref(VARIANT* variant)
 {
 	variant->vt = VT_UI2|VT_BYREF;
@@ -2961,7 +2968,7 @@ mono_test_marshal_variant_out_ushort_byref(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_int(VARIANT* variant)
 {
 	variant->vt = VT_I4;
@@ -2970,7 +2977,7 @@ mono_test_marshal_variant_out_int(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_int_byref(VARIANT* variant)
 {
 	variant->vt = VT_I4|VT_BYREF;
@@ -2980,7 +2987,7 @@ mono_test_marshal_variant_out_int_byref(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_uint(VARIANT* variant)
 {
 	variant->vt = VT_UI4;
@@ -2989,7 +2996,7 @@ mono_test_marshal_variant_out_uint(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_uint_byref(VARIANT* variant)
 {
 	variant->vt = VT_UI4|VT_BYREF;
@@ -2999,7 +3006,7 @@ mono_test_marshal_variant_out_uint_byref(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_long(VARIANT* variant)
 {
 	variant->vt = VT_I8;
@@ -3008,7 +3015,7 @@ mono_test_marshal_variant_out_long(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_long_byref(VARIANT* variant)
 {
 	variant->vt = VT_I8|VT_BYREF;
@@ -3018,7 +3025,7 @@ mono_test_marshal_variant_out_long_byref(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_ulong(VARIANT* variant)
 {
 	variant->vt = VT_UI8;
@@ -3027,7 +3034,7 @@ mono_test_marshal_variant_out_ulong(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_ulong_byref(VARIANT* variant)
 {
 	variant->vt = VT_UI8|VT_BYREF;
@@ -3037,7 +3044,7 @@ mono_test_marshal_variant_out_ulong_byref(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_float(VARIANT* variant)
 {
 	variant->vt = VT_R4;
@@ -3046,7 +3053,7 @@ mono_test_marshal_variant_out_float(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_float_byref(VARIANT* variant)
 {
 	variant->vt = VT_R4|VT_BYREF;
@@ -3056,7 +3063,7 @@ mono_test_marshal_variant_out_float_byref(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_double(VARIANT* variant)
 {
 	variant->vt = VT_R8;
@@ -3065,7 +3072,7 @@ mono_test_marshal_variant_out_double(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_double_byref(VARIANT* variant)
 {
 	variant->vt = VT_R8|VT_BYREF;
@@ -3075,7 +3082,7 @@ mono_test_marshal_variant_out_double_byref(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_bstr(VARIANT* variant)
 {
 	variant->vt = VT_BSTR;
@@ -3084,7 +3091,7 @@ mono_test_marshal_variant_out_bstr(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_bstr_byref(VARIANT* variant)
 {
 	variant->vt = VT_BSTR|VT_BYREF;
@@ -3094,7 +3101,7 @@ mono_test_marshal_variant_out_bstr_byref(VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_bool_true (VARIANT* variant)
 {
 	variant->vt = VT_BOOL;
@@ -3103,7 +3110,7 @@ mono_test_marshal_variant_out_bool_true (VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_bool_true_byref (VARIANT* variant)
 {
 	variant->vt = VT_BOOL|VT_BYREF;
@@ -3113,7 +3120,7 @@ mono_test_marshal_variant_out_bool_true_byref (VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_bool_false (VARIANT* variant)
 {
 	variant->vt = VT_BOOL;
@@ -3122,7 +3129,7 @@ mono_test_marshal_variant_out_bool_false (VARIANT* variant)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_bool_false_byref (VARIANT* variant)
 {
 	variant->vt = VT_BOOL|VT_BYREF;
@@ -3135,7 +3142,7 @@ mono_test_marshal_variant_out_bool_false_byref (VARIANT* variant)
 typedef int (STDCALL *VarFunc) (int vt, VARIANT variant);
 typedef int (STDCALL *VarRefFunc) (int vt, VARIANT* variant);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_sbyte_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -3144,7 +3151,7 @@ mono_test_marshal_variant_in_sbyte_unmanaged(VarFunc func)
 	return func (VT_I1, vt);
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_byte_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -3153,7 +3160,7 @@ mono_test_marshal_variant_in_byte_unmanaged(VarFunc func)
 	return func (VT_UI1, vt);
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_short_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -3162,7 +3169,7 @@ mono_test_marshal_variant_in_short_unmanaged(VarFunc func)
 	return func (VT_I2, vt);
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_ushort_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -3171,7 +3178,7 @@ mono_test_marshal_variant_in_ushort_unmanaged(VarFunc func)
 	return func (VT_UI2, vt);
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_int_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -3180,7 +3187,7 @@ mono_test_marshal_variant_in_int_unmanaged(VarFunc func)
 	return func (VT_I4, vt);
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_uint_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -3189,7 +3196,7 @@ mono_test_marshal_variant_in_uint_unmanaged(VarFunc func)
 	return func (VT_UI4, vt);
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_long_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -3198,7 +3205,7 @@ mono_test_marshal_variant_in_long_unmanaged(VarFunc func)
 	return func (VT_I8, vt);
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_ulong_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -3207,7 +3214,7 @@ mono_test_marshal_variant_in_ulong_unmanaged(VarFunc func)
 	return func (VT_UI8, vt);
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_float_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -3216,7 +3223,7 @@ mono_test_marshal_variant_in_float_unmanaged(VarFunc func)
 	return func (VT_R4, vt);
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_double_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -3225,7 +3232,7 @@ mono_test_marshal_variant_in_double_unmanaged(VarFunc func)
 	return func (VT_R8, vt);
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_bstr_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -3234,7 +3241,7 @@ mono_test_marshal_variant_in_bstr_unmanaged(VarFunc func)
 	return func (VT_BSTR, vt);
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_bool_true_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -3243,7 +3250,7 @@ mono_test_marshal_variant_in_bool_true_unmanaged(VarFunc func)
 	return func (VT_BOOL, vt);
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_in_bool_false_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -3252,7 +3259,7 @@ mono_test_marshal_variant_in_bool_false_unmanaged(VarFunc func)
 	return func (VT_BOOL, vt);
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_sbyte_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -3263,7 +3270,7 @@ mono_test_marshal_variant_out_sbyte_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_byte_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -3274,7 +3281,7 @@ mono_test_marshal_variant_out_byte_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_short_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -3285,7 +3292,7 @@ mono_test_marshal_variant_out_short_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_ushort_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -3296,7 +3303,7 @@ mono_test_marshal_variant_out_ushort_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_int_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -3307,7 +3314,7 @@ mono_test_marshal_variant_out_int_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_uint_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -3318,7 +3325,7 @@ mono_test_marshal_variant_out_uint_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_long_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -3329,7 +3336,7 @@ mono_test_marshal_variant_out_long_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_ulong_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -3340,7 +3347,7 @@ mono_test_marshal_variant_out_ulong_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_float_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -3351,7 +3358,7 @@ mono_test_marshal_variant_out_float_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_double_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -3362,7 +3369,7 @@ mono_test_marshal_variant_out_double_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_bstr_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -3380,7 +3387,7 @@ mono_test_marshal_variant_out_bstr_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_bool_true_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -3391,7 +3398,7 @@ mono_test_marshal_variant_out_bool_true_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_bool_false_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -3407,7 +3414,7 @@ typedef struct _StructWithVariant {
 } StructWithVariant;
 typedef int (STDCALL *CheckStructWithVariantFunc) (StructWithVariant sv);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_struct_with_variant_in_unmanaged(CheckStructWithVariantFunc func)
 {
     StructWithVariant sv;
@@ -3431,7 +3438,7 @@ typedef struct _StructWithBstr {
 } StructWithBstr;
 typedef int (STDCALL *CheckStructWithBstrFunc) (StructWithBstr sb);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_struct_with_bstr_in_unmanaged(CheckStructWithBstrFunc func)
 {
     StructWithBstr sb;
@@ -3525,85 +3532,85 @@ MonoQueryInterface(MonoComObject* pUnk, gpointer riid, gpointer* ppv)
 	return 0x80004002; //E_NOINTERFACE;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 MonoAddRef(MonoComObject* pUnk)
 {
 	return ++(pUnk->m_ref);
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 MonoRelease(MonoComObject* pUnk)
 {
 	return --(pUnk->m_ref);
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 SByteIn(MonoComObject* pUnk, char a)
 {
 	return S_OK;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 ByteIn(MonoComObject* pUnk, unsigned char a)
 {
 	return S_OK;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 ShortIn(MonoComObject* pUnk, short a)
 {
 	return S_OK;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 UShortIn(MonoComObject* pUnk, unsigned short a)
 {
 	return S_OK;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 IntIn(MonoComObject* pUnk, int a)
 {
 	return S_OK;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 UIntIn(MonoComObject* pUnk, unsigned int a)
 {
 	return S_OK;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 LongIn(MonoComObject* pUnk, gint64 a)
 {
 	return S_OK;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 ULongIn(MonoComObject* pUnk, guint64 a)
 {
 	return S_OK;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 FloatIn(MonoComObject* pUnk, float a)
 {
 	return S_OK;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 DoubleIn(MonoComObject* pUnk, double a)
 {
 	return S_OK;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 ITestIn(MonoComObject* pUnk, MonoComObject *pUnk2)
 {
 	return S_OK;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 ITestOut(MonoComObject* pUnk, MonoComObject* *ppUnk)
 {
 	return S_OK;
@@ -3659,7 +3666,7 @@ GetDefInterface2(MonoComObject* pUnk, MonoDefItfObject **obj)
 
 static void create_com_object (MonoComObject** pOut);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 get_ITest(MonoComObject* pUnk, MonoComObject* *ppUnk)
 {
 	create_com_object (ppUnk);
@@ -3700,7 +3707,7 @@ static void create_com_object (MonoComObject** pOut)
 
 static MonoComObject* same_object = NULL;
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_com_object_create(MonoComObject* *pUnk)
 {
 	create_com_object (pUnk);
@@ -3711,7 +3718,7 @@ mono_test_marshal_com_object_create(MonoComObject* *pUnk)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_com_object_same(MonoComObject* *pUnk)
 {
 	*pUnk = same_object;
@@ -3719,7 +3726,7 @@ mono_test_marshal_com_object_same(MonoComObject* *pUnk)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_com_object_destroy(MonoComObject *pUnk)
 {
 	int ref = --(pUnk->m_ref);
@@ -3729,13 +3736,13 @@ mono_test_marshal_com_object_destroy(MonoComObject *pUnk)
 	return ref;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_com_object_ref_count(MonoComObject *pUnk)
 {
 	return pUnk->m_ref;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_ccw_itest (MonoComObject *pUnk)
 {
 	int hr = 0;
@@ -3912,7 +3919,7 @@ mono_test_marshal_lookup_symbol (const char *symbol_name)
  * @test_method_handle: MonoMethod* of the C# test method
  * @create_object_method_handle: MonoMethod* of thunks.cs:Test.CreateObject
  */
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_object_method_handle)
 {
 	int ret = 0;
@@ -3941,7 +3948,7 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 	void (*mono_threads_exit_gc_unsafe_region) (gpointer, gpointer)
 		= (void (*)(gpointer, gpointer))lookup_mono_symbol ("mono_threads_exit_gc_unsafe_region");
 
-	
+
 
 	gpointer test_method, ex = NULL;
 	gpointer (STDCALL *CreateObject)(gpointer*);
@@ -3964,7 +3971,7 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		ret = 3;
 		goto done;
 	}
-	
+
 
 	switch (test_id) {
 
@@ -4321,7 +4328,7 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 			ret = 5;
 			goto done;
 		}
-		
+
 		a1 = (TestStruct *)mono_object_unbox (obj);
 
 		if (!a1) {
@@ -4363,12 +4370,12 @@ done:
 	return ret;
 }
 
-typedef struct 
+typedef struct
 {
 	char a;
 } winx64_struct1;
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_Winx64_struct1_in (winx64_struct1 var)
 {
 	if (var.a != 123)
@@ -4382,7 +4389,7 @@ typedef struct
 	char b;
 } winx64_struct2;
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_Winx64_struct2_in (winx64_struct2 var)
 {
 	if (var.a != 4)
@@ -4400,7 +4407,7 @@ typedef struct
 	short c;
 } winx64_struct3;
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_Winx64_struct3_in (winx64_struct3 var)
 {
 	if (var.a != 4)
@@ -4420,7 +4427,7 @@ typedef struct
 	unsigned int d;
 } winx64_struct4;
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_Winx64_struct4_in (winx64_struct4 var)
 {
 	if (var.a != 4)
@@ -4441,7 +4448,7 @@ typedef struct
 	char c;
 } winx64_struct5;
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_Winx64_struct5_in (winx64_struct5 var)
 {
 	if (var.a != 4)
@@ -4460,7 +4467,7 @@ typedef struct
 	char c;
 } winx64_struct6;
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_Winx64_struct6_in (winx64_struct6 var)
 {
 	if (var.a.a != 4)
@@ -4472,7 +4479,7 @@ mono_test_Winx64_struct6_in (winx64_struct6 var)
 	return 0;
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_Winx64_structs_in1 (winx64_struct1 var1,
 			 winx64_struct2 var2,
 			 winx64_struct3 var3,
@@ -4480,19 +4487,19 @@ mono_test_Winx64_structs_in1 (winx64_struct1 var1,
 {
 	if (var1.a != 123)
 		return 1;
-	
+
 	if (var2.a != 4)
 		return 2;
 	if (var2.b != 5)
 		return 3;
-	
+
 	if (var3.a != 4)
 		return 4;
 	if (var3.b != 5)
 		return 2;
 	if (var3.c != 0x1234)
 		return 5;
-	
+
 	if (var4.a != 4)
 		return 6;
 	if (var4.b != 5)
@@ -4504,7 +4511,7 @@ mono_test_Winx64_structs_in1 (winx64_struct1 var1,
 	return 0;
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_Winx64_structs_in2 (winx64_struct1 var1,
 			 winx64_struct1 var2,
 			 winx64_struct1 var3,
@@ -4521,11 +4528,11 @@ mono_test_Winx64_structs_in2 (winx64_struct1 var1,
 		return 4;
 	if (var5.a != 5)
 		return 5;
-	
+
 	return 0;
 }
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_Winx64_structs_in3 (winx64_struct1 var1,
 			 winx64_struct5 var2,
 			 winx64_struct1 var3,
@@ -4535,24 +4542,24 @@ mono_test_Winx64_structs_in3 (winx64_struct1 var1,
 {
 	if (var1.a != 1)
 		return 1;
-	
+
 	if (var2.a != 2)
 		return 2;
 	if (var2.b != 3)
 		return 2;
 	if (var2.c != 4)
 		return 4;
-	
+
 	if (var3.a != 5)
 		return 5;
-	
+
 	if (var4.a != 6)
 		return 6;
 	if (var4.b != 7)
 		return 7;
 	if (var4.c != 8)
 		return 8;
-	
+
 	if (var5.a != 9)
 		return 9;
 
@@ -4562,11 +4569,11 @@ mono_test_Winx64_structs_in3 (winx64_struct1 var1,
 		return 11;
 	if (var6.c != 12)
 		return 12;
-	
+
 	return 0;
 }
 
-LIBTEST_API winx64_struct1 STDCALL  
+LIBTEST_API winx64_struct1 STDCALL
 mono_test_Winx64_struct1_ret (void)
 {
 	winx64_struct1 ret;
@@ -4574,7 +4581,7 @@ mono_test_Winx64_struct1_ret (void)
 	return ret;
 }
 
-LIBTEST_API winx64_struct2 STDCALL  
+LIBTEST_API winx64_struct2 STDCALL
 mono_test_Winx64_struct2_ret (void)
 {
 	winx64_struct2 ret;
@@ -4583,7 +4590,7 @@ mono_test_Winx64_struct2_ret (void)
 	return ret;
 }
 
-LIBTEST_API winx64_struct3 STDCALL  
+LIBTEST_API winx64_struct3 STDCALL
 mono_test_Winx64_struct3_ret (void)
 {
 	winx64_struct3 ret;
@@ -4593,7 +4600,7 @@ mono_test_Winx64_struct3_ret (void)
 	return ret;
 }
 
-LIBTEST_API winx64_struct4 STDCALL  
+LIBTEST_API winx64_struct4 STDCALL
 mono_test_Winx64_struct4_ret (void)
 {
 	winx64_struct4 ret;
@@ -4604,7 +4611,7 @@ mono_test_Winx64_struct4_ret (void)
 	return ret;
 }
 
-LIBTEST_API winx64_struct5 STDCALL  
+LIBTEST_API winx64_struct5 STDCALL
 mono_test_Winx64_struct5_ret (void)
 {
 	winx64_struct5 ret;
@@ -4614,7 +4621,7 @@ mono_test_Winx64_struct5_ret (void)
 	return ret;
 }
 
-LIBTEST_API winx64_struct1 STDCALL  
+LIBTEST_API winx64_struct1 STDCALL
 mono_test_Winx64_struct1_ret_5_args (char a, char b, char c, char d, char e)
 {
 	winx64_struct1 ret;
@@ -4638,7 +4645,7 @@ typedef struct
 	float b;
 } winx64_floatStruct;
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_Winx64_floatStruct (winx64_floatStruct a)
 {
 	if (a.a > 5.6 || a.a < 5.4)
@@ -4646,7 +4653,7 @@ mono_test_Winx64_floatStruct (winx64_floatStruct a)
 
 	if (a.b > 9.6 || a.b < 9.4)
 		return 2;
-	
+
 	return 0;
 }
 
@@ -4655,18 +4662,18 @@ typedef struct
 	double a;
 } winx64_doubleStruct;
 
-LIBTEST_API int STDCALL  
+LIBTEST_API int STDCALL
 mono_test_Winx64_doubleStruct (winx64_doubleStruct a)
 {
 	if (a.a > 5.6 || a.a < 5.4)
 		return 1;
-	
+
 	return 0;
 }
 
 typedef int (STDCALL *managed_struct1_delegate) (winx64_struct1 a);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_managed_Winx64_struct1_in(managed_struct1_delegate func)
 {
 	winx64_struct1 val;
@@ -4676,7 +4683,7 @@ mono_test_managed_Winx64_struct1_in(managed_struct1_delegate func)
 
 typedef int (STDCALL *managed_struct5_delegate) (winx64_struct5 a);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_managed_Winx64_struct5_in(managed_struct5_delegate func)
 {
 	winx64_struct5 val;
@@ -4690,7 +4697,7 @@ typedef int (STDCALL *managed_struct1_struct5_delegate) (winx64_struct1 a, winx6
 							 winx64_struct1 c, winx64_struct5 d,
 							 winx64_struct1 e, winx64_struct5 f);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_managed_Winx64_struct1_struct5_in(managed_struct1_struct5_delegate func)
 {
 	winx64_struct1 a, c, e;
@@ -4707,7 +4714,7 @@ mono_test_managed_Winx64_struct1_struct5_in(managed_struct1_struct5_delegate fun
 
 typedef winx64_struct1 (STDCALL *managed_struct1_ret_delegate) (void);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_Winx64_struct1_ret_managed (managed_struct1_ret_delegate func)
 {
 	winx64_struct1 ret;
@@ -4716,13 +4723,13 @@ mono_test_Winx64_struct1_ret_managed (managed_struct1_ret_delegate func)
 
 	if (ret.a != 0x45)
 		return 1;
-	
+
 	return 0;
 }
 
 typedef winx64_struct5 (STDCALL *managed_struct5_ret_delegate) (void);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_Winx64_struct5_ret_managed (managed_struct5_ret_delegate func)
 {
 	winx64_struct5 ret;
@@ -4735,112 +4742,112 @@ mono_test_Winx64_struct5_ret_managed (managed_struct5_ret_delegate func)
 		return 2;
 	if (ret.c != 0x56)
 		return 3;
-	
+
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_bool_in (int arg, unsigned int expected, unsigned int bDefaultMarsh, unsigned int bBoolCustMarsh,
 			   char bI1CustMarsh, unsigned char bU1CustMarsh, short bVBCustMarsh)
 {
 	switch (arg) {
-	case 1:	
+	case 1:
 		if (bDefaultMarsh != expected)
 			return 1;
 		break;
-	case 2:	
+	case 2:
 		if (bBoolCustMarsh != expected)
 			return 2;
 		break;
-	case 3:	
+	case 3:
 		if (bI1CustMarsh != expected)
 			return 3;
 		break;
-	case 4:	
+	case 4:
 		if (bU1CustMarsh != expected)
 			return 4;
 		break;
-	case 5:	
+	case 5:
 		if (bVBCustMarsh != expected)
 			return 5;
 		break;
-	default:
-		return 999;		
-	}
-	return 0;
-}
-
-LIBTEST_API int STDCALL 
-mono_test_marshal_bool_out (int arg, unsigned int testVal, unsigned int* bDefaultMarsh, unsigned int* bBoolCustMarsh,
-			   char* bI1CustMarsh, unsigned char* bU1CustMarsh, unsigned short* bVBCustMarsh)
-{
-	switch (arg) {
-	case 1:	
-		if (!bDefaultMarsh)
-			return 1;
-		*bDefaultMarsh = testVal;
-		break;	
-	case 2:	
-		if (!bBoolCustMarsh)
-			return 2;
-		*bBoolCustMarsh = testVal;
-		break;	
-	case 3:	
-		if (!bI1CustMarsh)
-			return 3;
-		*bI1CustMarsh = (char)testVal;
-		break;	
-	case 4:	
-		if (!bU1CustMarsh)
-			return 4;
-		*bU1CustMarsh = (unsigned char)testVal;
-		break;	
-	case 5:	
-		if (!bVBCustMarsh)
-			return 5;
-		*bVBCustMarsh = (unsigned short)testVal;
-		break;	
 	default:
 		return 999;
 	}
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
+mono_test_marshal_bool_out (int arg, unsigned int testVal, unsigned int* bDefaultMarsh, unsigned int* bBoolCustMarsh,
+			   char* bI1CustMarsh, unsigned char* bU1CustMarsh, unsigned short* bVBCustMarsh)
+{
+	switch (arg) {
+	case 1:
+		if (!bDefaultMarsh)
+			return 1;
+		*bDefaultMarsh = testVal;
+		break;
+	case 2:
+		if (!bBoolCustMarsh)
+			return 2;
+		*bBoolCustMarsh = testVal;
+		break;
+	case 3:
+		if (!bI1CustMarsh)
+			return 3;
+		*bI1CustMarsh = (char)testVal;
+		break;
+	case 4:
+		if (!bU1CustMarsh)
+			return 4;
+		*bU1CustMarsh = (unsigned char)testVal;
+		break;
+	case 5:
+		if (!bVBCustMarsh)
+			return 5;
+		*bVBCustMarsh = (unsigned short)testVal;
+		break;
+	default:
+		return 999;
+	}
+	return 0;
+}
+
+LIBTEST_API int STDCALL
 mono_test_marshal_bool_ref (int arg, unsigned int expected, unsigned int testVal, unsigned int* bDefaultMarsh,
-			    unsigned int* bBoolCustMarsh, char* bI1CustMarsh, unsigned char* bU1CustMarsh, 
+			    unsigned int* bBoolCustMarsh, char* bI1CustMarsh, unsigned char* bU1CustMarsh,
 			    unsigned short* bVBCustMarsh)
 {
 	switch (arg) {
-	case 1:	
+	case 1:
 		if (!bDefaultMarsh)
 			return 1;
 		if (*bDefaultMarsh != expected)
 			return 2;
 		*bDefaultMarsh = testVal;
 		break;
-	case 2:	
+	case 2:
 		if (!bBoolCustMarsh)
 			return 3;
 		if (*bBoolCustMarsh != expected)
 			return 4;
 		*bBoolCustMarsh = testVal;
 		break;
-	case 3:	
+	case 3:
 		if (!bI1CustMarsh)
 			return 5;
 		if (*bI1CustMarsh != expected)
 			return 6;
 		*bI1CustMarsh = (char)testVal;
 		break;
-	case 4:	
+	case 4:
 		if (!bU1CustMarsh)
 			return 7;
 		if (*bU1CustMarsh != expected)
 			return 8;
 		*bU1CustMarsh = (unsigned char)testVal;
 		break;
-	case 5:	
+	case 5:
 		if (!bVBCustMarsh)
 			return 9;
 		if (*bVBCustMarsh != expected)
@@ -4848,7 +4855,7 @@ mono_test_marshal_bool_ref (int arg, unsigned int expected, unsigned int testVal
 		*bVBCustMarsh = (unsigned short)testVal;
 		break;
 	default:
-		return 999;		
+		return 999;
 	}
 	return 0;
 }
@@ -4857,7 +4864,7 @@ mono_test_marshal_bool_ref (int arg, unsigned int expected, unsigned int testVal
 typedef int (STDCALL *MarshalBoolInDelegate) (int arg, unsigned int expected, unsigned int bDefaultMarsh,
 	unsigned int bBoolCustMarsh, char bI1CustMarsh, unsigned char bU1CustMarsh, unsigned short bVBCustMarsh);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_managed_marshal_bool_in (int arg, unsigned int expected, unsigned int testVal, MarshalBoolInDelegate pfcn)
 {
 	if (!pfcn)
@@ -4884,7 +4891,7 @@ mono_test_managed_marshal_bool_in (int arg, unsigned int expected, unsigned int 
 typedef int (STDCALL *MarshalBoolOutDelegate) (int arg, unsigned int expected, unsigned int* bDefaultMarsh,
 	unsigned int* bBoolCustMarsh, char* bI1CustMarsh, unsigned char* bU1CustMarsh, unsigned short* bVBCustMarsh);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_managed_marshal_bool_out (int arg, unsigned int expected, unsigned int testVal, MarshalBoolOutDelegate pfcn)
 {
 	int ret;
@@ -4953,7 +4960,7 @@ mono_test_managed_marshal_bool_out (int arg, unsigned int expected, unsigned int
 typedef int (STDCALL *MarshalBoolRefDelegate) (int arg, unsigned int expected, unsigned int testVal, unsigned int* bDefaultMarsh,
 	unsigned int* bBoolCustMarsh, char* bI1CustMarsh, unsigned char* bU1CustMarsh, unsigned short* bVBCustMarsh);
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_managed_marshal_bool_ref (int arg, unsigned int expected, unsigned int testVal, unsigned int outExpected,
 				    unsigned int outTestVal, MarshalBoolRefDelegate pfcn)
 {
@@ -5027,7 +5034,7 @@ mono_test_managed_marshal_bool_ref (int arg, unsigned int expected, unsigned int
 
 #ifdef WIN32
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_safearray_out_1dim_vt_bstr_empty (SAFEARRAY** safearray)
 {
 	/* Create an empty one-dimensional array of variants */
@@ -5042,7 +5049,7 @@ mono_test_marshal_safearray_out_1dim_vt_bstr_empty (SAFEARRAY** safearray)
 	return S_OK;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_safearray_out_1dim_vt_bstr (SAFEARRAY** safearray)
 {
 	/* Create a one-dimensional array of 10 variants filled with "0" to "9" */
@@ -5075,7 +5082,7 @@ mono_test_marshal_safearray_out_1dim_vt_bstr (SAFEARRAY** safearray)
 	return hr;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_safearray_out_2dim_vt_i4 (SAFEARRAY** safearray)
 {
 	/* Create a two-dimensional array of 4x3 variants filled with 11, 12, 13, etc. */
@@ -5104,14 +5111,14 @@ mono_test_marshal_safearray_out_2dim_vt_i4 (SAFEARRAY** safearray)
 				SafeArrayDestroy (pSA);
 				return hr;
 			}
-			VariantClear (&vOut);  // does a deep destroy of source VARIANT	
+			VariantClear (&vOut);  // does a deep destroy of source VARIANT
 		}
 	}
 	*safearray = pSA;
 	return hr;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_safearray_out_4dim_vt_i4 (SAFEARRAY** safearray)
 {
 	/* Create a four-dimensional array of 10x3x6x7 variants filled with their indices */
@@ -5145,14 +5152,14 @@ mono_test_marshal_safearray_out_4dim_vt_i4 (SAFEARRAY** safearray)
 	return hr;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_safearray_in_byval_1dim_empty (SAFEARRAY* safearray)
 {
 	/* Check that array is one dimensional and empty */
 
 	UINT dim;
 	long lbound, ubound;
-	
+
 	dim = SafeArrayGetDim (safearray);
 	if (dim != 1)
 		return 1;
@@ -5166,14 +5173,14 @@ mono_test_marshal_safearray_in_byval_1dim_empty (SAFEARRAY* safearray)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_safearray_in_byval_1dim_vt_i4 (SAFEARRAY* safearray)
 {
 	/* Check that array is one dimensional containing integers from 1 to 10 */
 
 	UINT dim;
 	long lbound, ubound;
-	VARIANT *pData;	
+	VARIANT *pData;
 	long i;
 	int result=0;
 
@@ -5197,14 +5204,14 @@ mono_test_marshal_safearray_in_byval_1dim_vt_i4 (SAFEARRAY* safearray)
 	return result;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_safearray_in_byval_1dim_vt_mixed (SAFEARRAY* safearray)
 {
 	/* Check that array is one dimensional containing integers mixed with strings from 0 to 12 */
 
 	UINT dim;
 	long lbound, ubound;
-	VARIANT *pData;	
+	VARIANT *pData;
 	long i;
 	long indices [1];
 	VARIANT element;
@@ -5218,7 +5225,7 @@ mono_test_marshal_safearray_in_byval_1dim_vt_mixed (SAFEARRAY* safearray)
 
 	SafeArrayGetLBound (safearray, 1, &lbound);
 	SafeArrayGetUBound (safearray, 1, &ubound);
-		
+
 	if ((lbound != 0) || (ubound != 12))
 		return 1;
 
@@ -5244,7 +5251,7 @@ mono_test_marshal_safearray_in_byval_1dim_vt_mixed (SAFEARRAY* safearray)
 	return result;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_safearray_in_byval_2dim_vt_i4 (SAFEARRAY* safearray)
 {
 	/* Check that array is one dimensional containing integers mixed with strings from 0 to 12 */
@@ -5299,7 +5306,7 @@ mono_test_marshal_safearray_in_byval_2dim_vt_i4 (SAFEARRAY* safearray)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_safearray_in_byval_3dim_vt_bstr (SAFEARRAY* safearray)
 {
 	/* Check that array is one dimensional containing integers mixed with strings from 0 to 12 */
@@ -5342,8 +5349,8 @@ mono_test_marshal_safearray_in_byval_3dim_vt_bstr (SAFEARRAY* safearray)
 				indices [2] = k;
 				if (SafeArrayGetElement (safearray, indices, &element) != S_OK)
 					return 1;
-				failed = ((element.vt != VT_BSTR) 
-					|| (VariantChangeType (&element, &element, VARIANT_NOUSEROVERRIDE, VT_I4) != S_OK) 
+				failed = ((element.vt != VT_BSTR)
+					|| (VariantChangeType (&element, &element, VARIANT_NOUSEROVERRIDE, VT_I4) != S_OK)
 					|| (element.lVal != 100*(i+1)+10*(j+1)+(k+1)));
 				VariantClear (&element);
 				if (failed)
@@ -5365,13 +5372,13 @@ mono_test_marshal_safearray_in_byval_3dim_vt_bstr (SAFEARRAY* safearray)
 	return 0;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_safearray_in_byref_3dim_vt_bstr (SAFEARRAY** safearray)
 {
 	return mono_test_marshal_safearray_in_byval_3dim_vt_bstr (*safearray);
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_safearray_in_out_byref_1dim_empty (SAFEARRAY** safearray)
 {
 	/* Check that the input array is what is expected and change it so the caller can check */
@@ -5394,7 +5401,7 @@ mono_test_marshal_safearray_in_out_byref_1dim_empty (SAFEARRAY** safearray)
 
 	SafeArrayGetLBound (*safearray, 1, &lbound);
 	SafeArrayGetUBound (*safearray, 1, &ubound);
-		
+
 	if ((lbound > 0) || (ubound > 0)) {
 		return 1;
 	}
@@ -5425,7 +5432,7 @@ mono_test_marshal_safearray_in_out_byref_1dim_empty (SAFEARRAY** safearray)
 	return hr;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_safearray_in_out_byref_3dim_vt_bstr (SAFEARRAY** safearray)
 {
 	/* Check that the input array is what is expected and change it so the caller can check */
@@ -5474,8 +5481,8 @@ mono_test_marshal_safearray_in_out_byref_3dim_vt_bstr (SAFEARRAY** safearray)
 				indices [2] = k;
 				if (SafeArrayGetElement (*safearray, indices, &element) != S_OK)
 					return 1;
-				failed = ((element.vt != VT_BSTR) 
-					|| (VariantChangeType (&element, &element, VARIANT_NOUSEROVERRIDE, VT_I4) != S_OK) 
+				failed = ((element.vt != VT_BSTR)
+					|| (VariantChangeType (&element, &element, VARIANT_NOUSEROVERRIDE, VT_I4) != S_OK)
 					|| (element.lVal != 100*(i+1)+10*(j+1)+(k+1)));
 				VariantClear (&element);
 				if (failed)
@@ -5512,7 +5519,7 @@ mono_test_marshal_safearray_in_out_byref_3dim_vt_bstr (SAFEARRAY** safearray)
 	return hr;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_safearray_in_out_byref_1dim_vt_i4 (SAFEARRAY** safearray)
 {
 	/* Check that the input array is what is expected and change it so the caller can check */
@@ -5524,7 +5531,7 @@ mono_test_marshal_safearray_in_out_byref_1dim_vt_i4 (SAFEARRAY** safearray)
 	HRESULT hr = S_OK;
 	long indices [1];
 	VARIANT element;
-	
+
 	VariantInit (&element);
 
 	/* Check that in array is one dimensional and contains the expected value */
@@ -5562,7 +5569,7 @@ mono_test_marshal_safearray_in_out_byref_1dim_vt_i4 (SAFEARRAY** safearray)
 	return hr;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_safearray_in_out_byval_1dim_vt_i4 (SAFEARRAY* safearray)
 {
 	/* Check that the input array is what is expected and change it so the caller can check */
@@ -5586,7 +5593,7 @@ mono_test_marshal_safearray_in_out_byval_1dim_vt_i4 (SAFEARRAY* safearray)
 
 	SafeArrayGetLBound (safearray, 1, &lbound1);
 	SafeArrayGetUBound (safearray, 1, &ubound1);
-		
+
 	if ((lbound1 != 0) || (ubound1 != 0))
 		return 1;
 
@@ -5622,7 +5629,7 @@ mono_test_marshal_safearray_in_out_byval_1dim_vt_i4 (SAFEARRAY* safearray)
 	return hr;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_safearray_in_out_byval_3dim_vt_bstr (SAFEARRAY* safearray)
 {
 	/* Check that the input array is what is expected and change it so the caller can check */
@@ -5669,8 +5676,8 @@ mono_test_marshal_safearray_in_out_byval_3dim_vt_bstr (SAFEARRAY* safearray)
 				indices [2] = k;
 				if (SafeArrayGetElement (safearray, indices, &element) != S_OK)
 					return 1;
-				failed = ((element.vt != VT_BSTR) 
-					|| (VariantChangeType (&element, &element, VARIANT_NOUSEROVERRIDE, VT_I4) != S_OK) 
+				failed = ((element.vt != VT_BSTR)
+					|| (VariantChangeType (&element, &element, VARIANT_NOUSEROVERRIDE, VT_I4) != S_OK)
 					|| (element.lVal != 100*(i+1)+10*(j+1)+(k+1)));
 				VariantClear (&element);
 				if (failed)
@@ -5708,7 +5715,7 @@ mono_test_marshal_safearray_in_out_byval_3dim_vt_bstr (SAFEARRAY* safearray)
 	return hr;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_safearray_mixed(
 		SAFEARRAY  *safearray1,
 		SAFEARRAY **safearray2,
@@ -5805,7 +5812,7 @@ call_managed (gpointer arg)
 	call_managed_res = del (42);
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_thread_attach (SimpleDelegate del)
 {
 #ifdef WIN32
@@ -5858,13 +5865,13 @@ typedef int (STDCALL *Callback) (void);
 
 static Callback callback;
 
-LIBTEST_API void STDCALL 
+LIBTEST_API void STDCALL
 mono_test_marshal_set_callback (Callback cb)
 {
 	callback = cb;
 }
 
-LIBTEST_API int STDCALL 
+LIBTEST_API int STDCALL
 mono_test_marshal_call_callback (void)
 {
 	return callback ();
@@ -6016,7 +6023,7 @@ mono_return_sbyte1 (sbyte1 s1, int addend) {
 	if (s1.f1 != 1) {
 		fprintf(stderr, "mono_return_sbyte1 s1.f1: got %d but expected %d\n", s1.f1, 1);
 	}
-	s1.f1+=addend; 
+	s1.f1+=addend;
 	return s1;
 }
 
@@ -6032,7 +6039,7 @@ mono_return_sbyte2 (sbyte2 s2, int addend) {
 	if (s2.f2 != 2) {
 		fprintf(stderr, "mono_return_sbyte2 s2.f2: got %d but expected %d\n", s2.f2, 2);
 	}
-	s2.f1+=addend; s2.f2+=addend; 
+	s2.f1+=addend; s2.f2+=addend;
 	return s2;
 }
 
@@ -6051,7 +6058,7 @@ mono_return_sbyte3 (sbyte3 s3, int addend) {
 	if (s3.f3 != 3) {
 		fprintf(stderr, "mono_return_sbyte3 s3.f3: got %d but expected %d\n", s3.f3, 3);
 	}
-	s3.f1+=addend; s3.f2+=addend; s3.f3+=addend; 
+	s3.f1+=addend; s3.f2+=addend; s3.f3+=addend;
 	return s3;
 }
 
@@ -6073,7 +6080,7 @@ mono_return_sbyte4 (sbyte4 s4, int addend) {
 	if (s4.f4 != 4) {
 		fprintf(stderr, "mono_return_sbyte4 s4.f4: got %d but expected %d\n", s4.f4, 4);
 	}
-	s4.f1+=addend; s4.f2+=addend; s4.f3+=addend; s4.f4+=addend; 
+	s4.f1+=addend; s4.f2+=addend; s4.f3+=addend; s4.f4+=addend;
 	return s4;
 }
 
@@ -6098,7 +6105,7 @@ mono_return_sbyte5 (sbyte5 s5, int addend) {
 	if (s5.f5 != 5) {
 		fprintf(stderr, "mono_return_sbyte5 s5.f5: got %d but expected %d\n", s5.f5, 5);
 	}
-	s5.f1+=addend; s5.f2+=addend; s5.f3+=addend; s5.f4+=addend; s5.f5+=addend; 
+	s5.f1+=addend; s5.f2+=addend; s5.f3+=addend; s5.f4+=addend; s5.f5+=addend;
 	return s5;
 }
 
@@ -6126,7 +6133,7 @@ mono_return_sbyte6 (sbyte6 s6, int addend) {
 	if (s6.f6 != 6) {
 		fprintf(stderr, "mono_return_sbyte6 s6.f6: got %d but expected %d\n", s6.f6, 6);
 	}
-	s6.f1+=addend; s6.f2+=addend; s6.f3+=addend; s6.f4+=addend; s6.f5+=addend; s6.f6+=addend; 
+	s6.f1+=addend; s6.f2+=addend; s6.f3+=addend; s6.f4+=addend; s6.f5+=addend; s6.f6+=addend;
 	return s6;
 }
 
@@ -6157,7 +6164,7 @@ mono_return_sbyte7 (sbyte7 s7, int addend) {
 	if (s7.f7 != 7) {
 		fprintf(stderr, "mono_return_sbyte7 s7.f7: got %d but expected %d\n", s7.f7, 7);
 	}
-	s7.f1+=addend; s7.f2+=addend; s7.f3+=addend; s7.f4+=addend; s7.f5+=addend; s7.f6+=addend; s7.f7+=addend; 
+	s7.f1+=addend; s7.f2+=addend; s7.f3+=addend; s7.f4+=addend; s7.f5+=addend; s7.f6+=addend; s7.f7+=addend;
 	return s7;
 }
 
@@ -6191,7 +6198,7 @@ mono_return_sbyte8 (sbyte8 s8, int addend) {
 	if (s8.f8 != 8) {
 		fprintf(stderr, "mono_return_sbyte8 s8.f8: got %d but expected %d\n", s8.f8, 8);
 	}
-	s8.f1+=addend; s8.f2+=addend; s8.f3+=addend; s8.f4+=addend; s8.f5+=addend; s8.f6+=addend; s8.f7+=addend; s8.f8+=addend; 
+	s8.f1+=addend; s8.f2+=addend; s8.f3+=addend; s8.f4+=addend; s8.f5+=addend; s8.f6+=addend; s8.f7+=addend; s8.f8+=addend;
 	return s8;
 }
 
@@ -6228,7 +6235,7 @@ mono_return_sbyte9 (sbyte9 s9, int addend) {
 	if (s9.f9 != 9) {
 		fprintf(stderr, "mono_return_sbyte9 s9.f9: got %d but expected %d\n", s9.f9, 9);
 	}
-	s9.f1+=addend; s9.f2+=addend; s9.f3+=addend; s9.f4+=addend; s9.f5+=addend; s9.f6+=addend; s9.f7+=addend; s9.f8+=addend; s9.f9+=addend; 
+	s9.f1+=addend; s9.f2+=addend; s9.f3+=addend; s9.f4+=addend; s9.f5+=addend; s9.f6+=addend; s9.f7+=addend; s9.f8+=addend; s9.f9+=addend;
 	return s9;
 }
 
@@ -6268,7 +6275,7 @@ mono_return_sbyte10 (sbyte10 s10, int addend) {
 	if (s10.f10 != 10) {
 		fprintf(stderr, "mono_return_sbyte10 s10.f10: got %d but expected %d\n", s10.f10, 10);
 	}
-	s10.f1+=addend; s10.f2+=addend; s10.f3+=addend; s10.f4+=addend; s10.f5+=addend; s10.f6+=addend; s10.f7+=addend; s10.f8+=addend; s10.f9+=addend; s10.f10+=addend; 
+	s10.f1+=addend; s10.f2+=addend; s10.f3+=addend; s10.f4+=addend; s10.f5+=addend; s10.f6+=addend; s10.f7+=addend; s10.f8+=addend; s10.f9+=addend; s10.f10+=addend;
 	return s10;
 }
 
@@ -6311,7 +6318,7 @@ mono_return_sbyte11 (sbyte11 s11, int addend) {
 	if (s11.f11 != 11) {
 		fprintf(stderr, "mono_return_sbyte11 s11.f11: got %d but expected %d\n", s11.f11, 11);
 	}
-	s11.f1+=addend; s11.f2+=addend; s11.f3+=addend; s11.f4+=addend; s11.f5+=addend; s11.f6+=addend; s11.f7+=addend; s11.f8+=addend; s11.f9+=addend; s11.f10+=addend; s11.f11+=addend; 
+	s11.f1+=addend; s11.f2+=addend; s11.f3+=addend; s11.f4+=addend; s11.f5+=addend; s11.f6+=addend; s11.f7+=addend; s11.f8+=addend; s11.f9+=addend; s11.f10+=addend; s11.f11+=addend;
 	return s11;
 }
 
@@ -6357,7 +6364,7 @@ mono_return_sbyte12 (sbyte12 s12, int addend) {
 	if (s12.f12 != 12) {
 		fprintf(stderr, "mono_return_sbyte12 s12.f12: got %d but expected %d\n", s12.f12, 12);
 	}
-	s12.f1+=addend; s12.f2+=addend; s12.f3+=addend; s12.f4+=addend; s12.f5+=addend; s12.f6+=addend; s12.f7+=addend; s12.f8+=addend; s12.f9+=addend; s12.f10+=addend; s12.f11+=addend; s12.f12+=addend; 
+	s12.f1+=addend; s12.f2+=addend; s12.f3+=addend; s12.f4+=addend; s12.f5+=addend; s12.f6+=addend; s12.f7+=addend; s12.f8+=addend; s12.f9+=addend; s12.f10+=addend; s12.f11+=addend; s12.f12+=addend;
 	return s12;
 }
 
@@ -6406,7 +6413,7 @@ mono_return_sbyte13 (sbyte13 s13, int addend) {
 	if (s13.f13 != 13) {
 		fprintf(stderr, "mono_return_sbyte13 s13.f13: got %d but expected %d\n", s13.f13, 13);
 	}
-	s13.f1+=addend; s13.f2+=addend; s13.f3+=addend; s13.f4+=addend; s13.f5+=addend; s13.f6+=addend; s13.f7+=addend; s13.f8+=addend; s13.f9+=addend; s13.f10+=addend; s13.f11+=addend; s13.f12+=addend; s13.f13+=addend; 
+	s13.f1+=addend; s13.f2+=addend; s13.f3+=addend; s13.f4+=addend; s13.f5+=addend; s13.f6+=addend; s13.f7+=addend; s13.f8+=addend; s13.f9+=addend; s13.f10+=addend; s13.f11+=addend; s13.f12+=addend; s13.f13+=addend;
 	return s13;
 }
 
@@ -6458,7 +6465,7 @@ mono_return_sbyte14 (sbyte14 s14, int addend) {
 	if (s14.f14 != 14) {
 		fprintf(stderr, "mono_return_sbyte14 s14.f14: got %d but expected %d\n", s14.f14, 14);
 	}
-	s14.f1+=addend; s14.f2+=addend; s14.f3+=addend; s14.f4+=addend; s14.f5+=addend; s14.f6+=addend; s14.f7+=addend; s14.f8+=addend; s14.f9+=addend; s14.f10+=addend; s14.f11+=addend; s14.f12+=addend; s14.f13+=addend; s14.f14+=addend; 
+	s14.f1+=addend; s14.f2+=addend; s14.f3+=addend; s14.f4+=addend; s14.f5+=addend; s14.f6+=addend; s14.f7+=addend; s14.f8+=addend; s14.f9+=addend; s14.f10+=addend; s14.f11+=addend; s14.f12+=addend; s14.f13+=addend; s14.f14+=addend;
 	return s14;
 }
 
@@ -6513,7 +6520,7 @@ mono_return_sbyte15 (sbyte15 s15, int addend) {
 	if (s15.f15 != 15) {
 		fprintf(stderr, "mono_return_sbyte15 s15.f15: got %d but expected %d\n", s15.f15, 15);
 	}
-	s15.f1+=addend; s15.f2+=addend; s15.f3+=addend; s15.f4+=addend; s15.f5+=addend; s15.f6+=addend; s15.f7+=addend; s15.f8+=addend; s15.f9+=addend; s15.f10+=addend; s15.f11+=addend; s15.f12+=addend; s15.f13+=addend; s15.f14+=addend; s15.f15+=addend; 
+	s15.f1+=addend; s15.f2+=addend; s15.f3+=addend; s15.f4+=addend; s15.f5+=addend; s15.f6+=addend; s15.f7+=addend; s15.f8+=addend; s15.f9+=addend; s15.f10+=addend; s15.f11+=addend; s15.f12+=addend; s15.f13+=addend; s15.f14+=addend; s15.f15+=addend;
 	return s15;
 }
 
@@ -6571,7 +6578,7 @@ mono_return_sbyte16 (sbyte16 s16, int addend) {
 	if (s16.f16 != 16) {
 		fprintf(stderr, "mono_return_sbyte16 s16.f16: got %d but expected %d\n", s16.f16, 16);
 	}
-	s16.f1+=addend; s16.f2+=addend; s16.f3+=addend; s16.f4+=addend; s16.f5+=addend; s16.f6+=addend; s16.f7+=addend; s16.f8+=addend; s16.f9+=addend; s16.f10+=addend; s16.f11+=addend; s16.f12+=addend; s16.f13+=addend; s16.f14+=addend; s16.f15+=addend; s16.f16+=addend; 
+	s16.f1+=addend; s16.f2+=addend; s16.f3+=addend; s16.f4+=addend; s16.f5+=addend; s16.f6+=addend; s16.f7+=addend; s16.f8+=addend; s16.f9+=addend; s16.f10+=addend; s16.f11+=addend; s16.f12+=addend; s16.f13+=addend; s16.f14+=addend; s16.f15+=addend; s16.f16+=addend;
 	return s16;
 }
 
@@ -6632,7 +6639,7 @@ mono_return_sbyte17 (sbyte17 s17, int addend) {
 	if (s17.f17 != 17) {
 		fprintf(stderr, "mono_return_sbyte17 s17.f17: got %d but expected %d\n", s17.f17, 17);
 	}
-	s17.f1+=addend; s17.f2+=addend; s17.f3+=addend; s17.f4+=addend; s17.f5+=addend; s17.f6+=addend; s17.f7+=addend; s17.f8+=addend; s17.f9+=addend; s17.f10+=addend; s17.f11+=addend; s17.f12+=addend; s17.f13+=addend; s17.f14+=addend; s17.f15+=addend; s17.f16+=addend; s17.f17+=addend; 
+	s17.f1+=addend; s17.f2+=addend; s17.f3+=addend; s17.f4+=addend; s17.f5+=addend; s17.f6+=addend; s17.f7+=addend; s17.f8+=addend; s17.f9+=addend; s17.f10+=addend; s17.f11+=addend; s17.f12+=addend; s17.f13+=addend; s17.f14+=addend; s17.f15+=addend; s17.f16+=addend; s17.f17+=addend;
 	return s17;
 }
 
@@ -6696,7 +6703,7 @@ mono_return_sbyte16_nested (sbyte16_nested sn16, int addend) {
 	if (sn16.nested2.f16 != 16) {
 		fprintf(stderr, "mono_return_sbyte16_nested sn16.nested2.f16: got %d but expected %d\n", sn16.nested2.f16, 16);
 	}
-	sn16.nested1.f1+=addend; sn16.f2+=addend; sn16.f3+=addend; sn16.f4+=addend; sn16.f5+=addend; sn16.f6+=addend; sn16.f7+=addend; sn16.f8+=addend; sn16.f9+=addend; sn16.f10+=addend; sn16.f11+=addend; sn16.f12+=addend; sn16.f13+=addend; sn16.f14+=addend; sn16.f15+=addend; sn16.nested2.f16+=addend; 
+	sn16.nested1.f1+=addend; sn16.f2+=addend; sn16.f3+=addend; sn16.f4+=addend; sn16.f5+=addend; sn16.f6+=addend; sn16.f7+=addend; sn16.f8+=addend; sn16.f9+=addend; sn16.f10+=addend; sn16.f11+=addend; sn16.f12+=addend; sn16.f13+=addend; sn16.f14+=addend; sn16.f15+=addend; sn16.nested2.f16+=addend;
 	return sn16;
 }
 
@@ -6710,7 +6717,7 @@ mono_return_short1 (short1 s1, int addend) {
 	if (s1.f1 != 1) {
 		fprintf(stderr, "mono_return_short1 s1.f1: got %d but expected %d\n", s1.f1, 1);
 	}
-	s1.f1+=addend; 
+	s1.f1+=addend;
 	return s1;
 }
 
@@ -6726,7 +6733,7 @@ mono_return_short2 (short2 s2, int addend) {
 	if (s2.f2 != 2) {
 		fprintf(stderr, "mono_return_short2 s2.f2: got %d but expected %d\n", s2.f2, 2);
 	}
-	s2.f1+=addend; s2.f2+=addend; 
+	s2.f1+=addend; s2.f2+=addend;
 	return s2;
 }
 
@@ -6745,7 +6752,7 @@ mono_return_short3 (short3 s3, int addend) {
 	if (s3.f3 != 3) {
 		fprintf(stderr, "mono_return_short3 s3.f3: got %d but expected %d\n", s3.f3, 3);
 	}
-	s3.f1+=addend; s3.f2+=addend; s3.f3+=addend; 
+	s3.f1+=addend; s3.f2+=addend; s3.f3+=addend;
 	return s3;
 }
 
@@ -6767,7 +6774,7 @@ mono_return_short4 (short4 s4, int addend) {
 	if (s4.f4 != 4) {
 		fprintf(stderr, "mono_return_short4 s4.f4: got %d but expected %d\n", s4.f4, 4);
 	}
-	s4.f1+=addend; s4.f2+=addend; s4.f3+=addend; s4.f4+=addend; 
+	s4.f1+=addend; s4.f2+=addend; s4.f3+=addend; s4.f4+=addend;
 	return s4;
 }
 
@@ -6792,7 +6799,7 @@ mono_return_short5 (short5 s5, int addend) {
 	if (s5.f5 != 5) {
 		fprintf(stderr, "mono_return_short5 s5.f5: got %d but expected %d\n", s5.f5, 5);
 	}
-	s5.f1+=addend; s5.f2+=addend; s5.f3+=addend; s5.f4+=addend; s5.f5+=addend; 
+	s5.f1+=addend; s5.f2+=addend; s5.f3+=addend; s5.f4+=addend; s5.f5+=addend;
 	return s5;
 }
 
@@ -6820,7 +6827,7 @@ mono_return_short6 (short6 s6, int addend) {
 	if (s6.f6 != 6) {
 		fprintf(stderr, "mono_return_short6 s6.f6: got %d but expected %d\n", s6.f6, 6);
 	}
-	s6.f1+=addend; s6.f2+=addend; s6.f3+=addend; s6.f4+=addend; s6.f5+=addend; s6.f6+=addend; 
+	s6.f1+=addend; s6.f2+=addend; s6.f3+=addend; s6.f4+=addend; s6.f5+=addend; s6.f6+=addend;
 	return s6;
 }
 
@@ -6851,7 +6858,7 @@ mono_return_short7 (short7 s7, int addend) {
 	if (s7.f7 != 7) {
 		fprintf(stderr, "mono_return_short7 s7.f7: got %d but expected %d\n", s7.f7, 7);
 	}
-	s7.f1+=addend; s7.f2+=addend; s7.f3+=addend; s7.f4+=addend; s7.f5+=addend; s7.f6+=addend; s7.f7+=addend; 
+	s7.f1+=addend; s7.f2+=addend; s7.f3+=addend; s7.f4+=addend; s7.f5+=addend; s7.f6+=addend; s7.f7+=addend;
 	return s7;
 }
 
@@ -6885,7 +6892,7 @@ mono_return_short8 (short8 s8, int addend) {
 	if (s8.f8 != 8) {
 		fprintf(stderr, "mono_return_short8 s8.f8: got %d but expected %d\n", s8.f8, 8);
 	}
-	s8.f1+=addend; s8.f2+=addend; s8.f3+=addend; s8.f4+=addend; s8.f5+=addend; s8.f6+=addend; s8.f7+=addend; s8.f8+=addend; 
+	s8.f1+=addend; s8.f2+=addend; s8.f3+=addend; s8.f4+=addend; s8.f5+=addend; s8.f6+=addend; s8.f7+=addend; s8.f8+=addend;
 	return s8;
 }
 
@@ -6922,7 +6929,7 @@ mono_return_short9 (short9 s9, int addend) {
 	if (s9.f9 != 9) {
 		fprintf(stderr, "mono_return_short9 s9.f9: got %d but expected %d\n", s9.f9, 9);
 	}
-	s9.f1+=addend; s9.f2+=addend; s9.f3+=addend; s9.f4+=addend; s9.f5+=addend; s9.f6+=addend; s9.f7+=addend; s9.f8+=addend; s9.f9+=addend; 
+	s9.f1+=addend; s9.f2+=addend; s9.f3+=addend; s9.f4+=addend; s9.f5+=addend; s9.f6+=addend; s9.f7+=addend; s9.f8+=addend; s9.f9+=addend;
 	return s9;
 }
 
@@ -6962,7 +6969,7 @@ mono_return_short8_nested (short8_nested sn8, int addend) {
 	if (sn8.nested2.f8 != 8) {
 		fprintf(stderr, "mono_return_short8_nested sn8.nested2.f8: got %d but expected %d\n", sn8.nested2.f8, 8);
 	}
-	sn8.nested1.f1+=addend; sn8.f2+=addend; sn8.f3+=addend; sn8.f4+=addend; sn8.f5+=addend; sn8.f6+=addend; sn8.f7+=addend; sn8.nested2.f8+=addend; 
+	sn8.nested1.f1+=addend; sn8.f2+=addend; sn8.f3+=addend; sn8.f4+=addend; sn8.f5+=addend; sn8.f6+=addend; sn8.f7+=addend; sn8.nested2.f8+=addend;
 	return sn8;
 }
 
@@ -6976,7 +6983,7 @@ mono_return_int1 (int1 s1, int addend) {
 	if (s1.f1 != 1) {
 		fprintf(stderr, "mono_return_int1 s1.f1: got %d but expected %d\n", s1.f1, 1);
 	}
-	s1.f1+=addend; 
+	s1.f1+=addend;
 	return s1;
 }
 
@@ -6992,7 +6999,7 @@ mono_return_int2 (int2 s2, int addend) {
 	if (s2.f2 != 2) {
 		fprintf(stderr, "mono_return_int2 s2.f2: got %d but expected %d\n", s2.f2, 2);
 	}
-	s2.f1+=addend; s2.f2+=addend; 
+	s2.f1+=addend; s2.f2+=addend;
 	return s2;
 }
 
@@ -7011,7 +7018,7 @@ mono_return_int3 (int3 s3, int addend) {
 	if (s3.f3 != 3) {
 		fprintf(stderr, "mono_return_int3 s3.f3: got %d but expected %d\n", s3.f3, 3);
 	}
-	s3.f1+=addend; s3.f2+=addend; s3.f3+=addend; 
+	s3.f1+=addend; s3.f2+=addend; s3.f3+=addend;
 	return s3;
 }
 
@@ -7033,7 +7040,7 @@ mono_return_int4 (int4 s4, int addend) {
 	if (s4.f4 != 4) {
 		fprintf(stderr, "mono_return_int4 s4.f4: got %d but expected %d\n", s4.f4, 4);
 	}
-	s4.f1+=addend; s4.f2+=addend; s4.f3+=addend; s4.f4+=addend; 
+	s4.f1+=addend; s4.f2+=addend; s4.f3+=addend; s4.f4+=addend;
 	return s4;
 }
 
@@ -7058,7 +7065,7 @@ mono_return_int5 (int5 s5, int addend) {
 	if (s5.f5 != 5) {
 		fprintf(stderr, "mono_return_int5 s5.f5: got %d but expected %d\n", s5.f5, 5);
 	}
-	s5.f1+=addend; s5.f2+=addend; s5.f3+=addend; s5.f4+=addend; s5.f5+=addend; 
+	s5.f1+=addend; s5.f2+=addend; s5.f3+=addend; s5.f4+=addend; s5.f5+=addend;
 	return s5;
 }
 
@@ -7086,7 +7093,7 @@ mono_return_int4_nested (int4_nested sn4, int addend) {
 	if (sn4.nested2.f4 != 4) {
 		fprintf(stderr, "mono_return_int4_nested sn4.nested2.f4: got %d but expected %d\n", sn4.nested2.f4, 4);
 	}
-	sn4.nested1.f1+=addend; sn4.f2+=addend; sn4.f3+=addend; sn4.nested2.f4+=addend; 
+	sn4.nested1.f1+=addend; sn4.f2+=addend; sn4.f3+=addend; sn4.nested2.f4+=addend;
 	return sn4;
 }
 
@@ -7099,7 +7106,7 @@ mono_return_float1 (float1 s1, int addend) {
 	if (s1.f1 != 1) {
 		fprintf(stderr, "mono_return_float1 s1.f1: got %f but expected %d\n", s1.f1, 1);
 	}
-	s1.f1+=addend; 
+	s1.f1+=addend;
 	return s1;
 }
 
@@ -7115,7 +7122,7 @@ mono_return_float2 (float2 s2, int addend) {
 	if (s2.f2 != 2) {
 		fprintf(stderr, "mono_return_float2 s2.f2: got %f but expected %d\n", s2.f2, 2);
 	}
-	s2.f1+=addend; s2.f2+=addend; 
+	s2.f1+=addend; s2.f2+=addend;
 	return s2;
 }
 
@@ -7134,7 +7141,7 @@ mono_return_float3 (float3 s3, int addend) {
 	if (s3.f3 != 3) {
 		fprintf(stderr, "mono_return_float3 s3.f3: got %f but expected %d\n", s3.f3, 3);
 	}
-	s3.f1+=addend; s3.f2+=addend; s3.f3+=addend; 
+	s3.f1+=addend; s3.f2+=addend; s3.f3+=addend;
 	return s3;
 }
 
@@ -7156,7 +7163,7 @@ mono_return_float4 (float4 s4, int addend) {
 	if (s4.f4 != 4) {
 		fprintf(stderr, "mono_return_float4 s4.f4: got %f but expected %d\n", s4.f4, 4);
 	}
-	s4.f1+=addend; s4.f2+=addend; s4.f3+=addend; s4.f4+=addend; 
+	s4.f1+=addend; s4.f2+=addend; s4.f3+=addend; s4.f4+=addend;
 	return s4;
 }
 
@@ -7181,7 +7188,7 @@ mono_return_float5 (float5 s5, int addend) {
 	if (s5.f5 != 5) {
 		fprintf(stderr, "mono_return_float5 s5.f5: got %f but expected %d\n", s5.f5, 5);
 	}
-	s5.f1+=addend; s5.f2+=addend; s5.f3+=addend; s5.f4+=addend; s5.f5+=addend; 
+	s5.f1+=addend; s5.f2+=addend; s5.f3+=addend; s5.f4+=addend; s5.f5+=addend;
 	return s5;
 }
 
@@ -7209,7 +7216,7 @@ mono_return_float6 (float6 s6, int addend) {
 	if (s6.f6 != 6) {
 		fprintf(stderr, "mono_return_float6 s6.f6: got %f but expected %d\n", s6.f6, 6);
 	}
-	s6.f1+=addend; s6.f2+=addend; s6.f3+=addend; s6.f4+=addend; s6.f5+=addend; s6.f6+=addend; 
+	s6.f1+=addend; s6.f2+=addend; s6.f3+=addend; s6.f4+=addend; s6.f5+=addend; s6.f6+=addend;
 	return s6;
 }
 
@@ -7240,7 +7247,7 @@ mono_return_float7 (float7 s7, int addend) {
 	if (s7.f7 != 7) {
 		fprintf(stderr, "mono_return_float7 s7.f7: got %f but expected %d\n", s7.f7, 7);
 	}
-	s7.f1+=addend; s7.f2+=addend; s7.f3+=addend; s7.f4+=addend; s7.f5+=addend; s7.f6+=addend; s7.f7+=addend; 
+	s7.f1+=addend; s7.f2+=addend; s7.f3+=addend; s7.f4+=addend; s7.f5+=addend; s7.f6+=addend; s7.f7+=addend;
 	return s7;
 }
 
@@ -7274,7 +7281,7 @@ mono_return_float8 (float8 s8, int addend) {
 	if (s8.f8 != 8) {
 		fprintf(stderr, "mono_return_float8 s8.f8: got %f but expected %d\n", s8.f8, 8);
 	}
-	s8.f1+=addend; s8.f2+=addend; s8.f3+=addend; s8.f4+=addend; s8.f5+=addend; s8.f6+=addend; s8.f7+=addend; s8.f8+=addend; 
+	s8.f1+=addend; s8.f2+=addend; s8.f3+=addend; s8.f4+=addend; s8.f5+=addend; s8.f6+=addend; s8.f7+=addend; s8.f8+=addend;
 	return s8;
 }
 
@@ -7311,7 +7318,7 @@ mono_return_float9 (float9 s9, int addend) {
 	if (s9.f9 != 9) {
 		fprintf(stderr, "mono_return_float9 s9.f9: got %f but expected %d\n", s9.f9, 9);
 	}
-	s9.f1+=addend; s9.f2+=addend; s9.f3+=addend; s9.f4+=addend; s9.f5+=addend; s9.f6+=addend; s9.f7+=addend; s9.f8+=addend; s9.f9+=addend; 
+	s9.f1+=addend; s9.f2+=addend; s9.f3+=addend; s9.f4+=addend; s9.f5+=addend; s9.f6+=addend; s9.f7+=addend; s9.f8+=addend; s9.f9+=addend;
 	return s9;
 }
 
@@ -7339,7 +7346,7 @@ mono_return_float4_nested (float4_nested sn4, int addend) {
 	if (sn4.nested2.f4 != 4) {
 		fprintf(stderr, "mono_return_float4_nested sn4.nested2.f4: got %f but expected %d\n", sn4.nested2.f4, 4);
 	}
-	sn4.nested1.f1+=addend; sn4.f2+=addend; sn4.f3+=addend; sn4.nested2.f4+=addend; 
+	sn4.nested1.f1+=addend; sn4.f2+=addend; sn4.f3+=addend; sn4.nested2.f4+=addend;
 	return sn4;
 }
 
@@ -7352,7 +7359,7 @@ mono_return_double1 (double1 s1, int addend) {
 	if (s1.f1 != 1) {
 		fprintf(stderr, "mono_return_double1 s1.f1: got %f but expected %d\n", s1.f1, 1);
 	}
-	s1.f1+=addend; 
+	s1.f1+=addend;
 	return s1;
 }
 
@@ -7368,7 +7375,7 @@ mono_return_double2 (double2 s2, int addend) {
 	if (s2.f2 != 2) {
 		fprintf(stderr, "mono_return_double2 s2.f2: got %f but expected %d\n", s2.f2, 2);
 	}
-	s2.f1+=addend; s2.f2+=addend; 
+	s2.f1+=addend; s2.f2+=addend;
 	return s2;
 }
 
@@ -7387,7 +7394,7 @@ mono_return_double3 (double3 s3, int addend) {
 	if (s3.f3 != 3) {
 		fprintf(stderr, "mono_return_double3 s3.f3: got %f but expected %d\n", s3.f3, 3);
 	}
-	s3.f1+=addend; s3.f2+=addend; s3.f3+=addend; 
+	s3.f1+=addend; s3.f2+=addend; s3.f3+=addend;
 	return s3;
 }
 
@@ -7409,7 +7416,7 @@ mono_return_double4 (double4 s4, int addend) {
 	if (s4.f4 != 4) {
 		fprintf(stderr, "mono_return_double4 s4.f4: got %f but expected %d\n", s4.f4, 4);
 	}
-	s4.f1+=addend; s4.f2+=addend; s4.f3+=addend; s4.f4+=addend; 
+	s4.f1+=addend; s4.f2+=addend; s4.f3+=addend; s4.f4+=addend;
 	return s4;
 }
 
@@ -7434,7 +7441,7 @@ mono_return_double5 (double5 s5, int addend) {
 	if (s5.f5 != 5) {
 		fprintf(stderr, "mono_return_double5 s5.f5: got %f but expected %d\n", s5.f5, 5);
 	}
-	s5.f1+=addend; s5.f2+=addend; s5.f3+=addend; s5.f4+=addend; s5.f5+=addend; 
+	s5.f1+=addend; s5.f2+=addend; s5.f3+=addend; s5.f4+=addend; s5.f5+=addend;
 	return s5;
 }
 
@@ -7462,7 +7469,7 @@ mono_return_double6 (double6 s6, int addend) {
 	if (s6.f6 != 6) {
 		fprintf(stderr, "mono_return_double6 s6.f6: got %f but expected %d\n", s6.f6, 6);
 	}
-	s6.f1+=addend; s6.f2+=addend; s6.f3+=addend; s6.f4+=addend; s6.f5+=addend; s6.f6+=addend; 
+	s6.f1+=addend; s6.f2+=addend; s6.f3+=addend; s6.f4+=addend; s6.f5+=addend; s6.f6+=addend;
 	return s6;
 }
 
@@ -7493,7 +7500,7 @@ mono_return_double7 (double7 s7, int addend) {
 	if (s7.f7 != 7) {
 		fprintf(stderr, "mono_return_double7 s7.f7: got %f but expected %d\n", s7.f7, 7);
 	}
-	s7.f1+=addend; s7.f2+=addend; s7.f3+=addend; s7.f4+=addend; s7.f5+=addend; s7.f6+=addend; s7.f7+=addend; 
+	s7.f1+=addend; s7.f2+=addend; s7.f3+=addend; s7.f4+=addend; s7.f5+=addend; s7.f6+=addend; s7.f7+=addend;
 	return s7;
 }
 
@@ -7527,7 +7534,7 @@ mono_return_double8 (double8 s8, int addend) {
 	if (s8.f8 != 8) {
 		fprintf(stderr, "mono_return_double8 s8.f8: got %f but expected %d\n", s8.f8, 8);
 	}
-	s8.f1+=addend; s8.f2+=addend; s8.f3+=addend; s8.f4+=addend; s8.f5+=addend; s8.f6+=addend; s8.f7+=addend; s8.f8+=addend; 
+	s8.f1+=addend; s8.f2+=addend; s8.f3+=addend; s8.f4+=addend; s8.f5+=addend; s8.f6+=addend; s8.f7+=addend; s8.f8+=addend;
 	return s8;
 }
 
@@ -7564,7 +7571,7 @@ mono_return_double9 (double9 s9, int addend) {
 	if (s9.f9 != 9) {
 		fprintf(stderr, "mono_return_double9 s9.f9: got %f but expected %d\n", s9.f9, 9);
 	}
-	s9.f1+=addend; s9.f2+=addend; s9.f3+=addend; s9.f4+=addend; s9.f5+=addend; s9.f6+=addend; s9.f7+=addend; s9.f8+=addend; s9.f9+=addend; 
+	s9.f1+=addend; s9.f2+=addend; s9.f3+=addend; s9.f4+=addend; s9.f5+=addend; s9.f6+=addend; s9.f7+=addend; s9.f8+=addend; s9.f9+=addend;
 	return s9;
 }
 
@@ -7585,7 +7592,7 @@ mono_return_double2_nested (double2_nested sn2, int addend) {
 	if (sn2.nested2.f2 != 2) {
 		fprintf(stderr, "mono_return_double2_nested sn2.nested2.f2: got %f but expected %d\n", sn2.nested2.f2, 2);
 	}
-	sn2.nested1.f1+=addend; sn2.nested2.f2+=addend; 
+	sn2.nested1.f1+=addend; sn2.nested2.f2+=addend;
 	return sn2;
 }
 
@@ -7609,7 +7616,7 @@ mono_return_double_array4 (double_array4 sa4, int addend) {
 	if (sa4.f1[3] != 4) {
 		fprintf(stderr, "mono_return_double_array4 sa4.f1[3]: got %f but expected %d\n", sa4.f1[3], 4);
 	}
-	sa4.f1[0]+=addend; sa4.f1[1]+=addend; sa4.f1[2]+=addend; sa4.f1[3]+=addend; 
+	sa4.f1[0]+=addend; sa4.f1[1]+=addend; sa4.f1[2]+=addend; sa4.f1[3]+=addend;
 	return sa4;
 }
 
@@ -7657,7 +7664,7 @@ mono_test_marshal_fixed_buffer_unicode (FixedBufferUnicode *s)
 
 const int NSTRINGS = 6;
 //test strings
-const char  *utf8Strings[] = {  
+const char  *utf8Strings[] = {
                                 "Managed",
                                  "Sîne klâwen durh die wolken sint geslagen" ,
                                  "काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम्",
@@ -7718,7 +7725,7 @@ StringParameterRef(/*ref*/ char **s, int index)
     {
        marshal_free (*s);
     }
-    // overwrite the orginal 
+    // overwrite the orginal
     *s = (char *)(marshal_alloc (sizeof(char)* (strLength + 1)));
     memcpy(*s, pszTextutf8, strLength);
     (*s)[strLength] = '\0';
@@ -7727,7 +7734,7 @@ StringParameterRef(/*ref*/ char **s, int index)
 LIBTEST_API void
 StringBuilderParameterInOut(/*[In,Out] StringBuilder*/ char *s, int index)
 {
-    // if string.empty 
+    // if string.empty
     if (s == 0 || *s == 0)
         return;
 
@@ -7735,16 +7742,16 @@ StringBuilderParameterInOut(/*[In,Out] StringBuilder*/ char *s, int index)
 
     // do byte by byte validation of in string
     size_t szLen = strlen(s);
-    for (size_t i = 0; i < szLen; i++) 
+    for (size_t i = 0; i < szLen; i++)
     {
         if (s[i] != pszTextutf8[i])
         {
             printf("[in] managed string do not match native string\n");
 	    abort ();
         }
-    }  
+    }
 
-    // modify the string inplace 
+    // modify the string inplace
     size_t outLen = strlen(pszTextutf8);
     for (size_t i = 0; i < outLen; i++) {
         s[i] = pszTextutf8[i];
@@ -7759,7 +7766,7 @@ StringBuilderParameterOut(/*[Out] StringBuilder*/ char *s, int index)
     char *pszTextutf8 = (char*)utf8Strings[index];
 
     printf ("SBPO: Receiving %s\n", s);
-    // modify the string inplace 
+    // modify the string inplace
     size_t outLen = strlen(pszTextutf8);
     for (size_t i = 0; i < outLen; i++) {
         s[i] = pszTextutf8[i];
@@ -7797,9 +7804,9 @@ TestStructWithUtf8Field(struct FieldWithUtf8 fieldStruct)
 
     outLen = strlen(pszNative);
     // do byte by byte comparision
-    for (size_t i = 0; i < outLen; i++) 
+    for (size_t i = 0; i < outLen; i++)
     {
-        if (pszNative[i] != pszManagedutf8[i]) 
+        if (pszNative[i] != pszManagedutf8[i])
         {
             printf("Native and managed string do not match.\n");
 	    abort ();
@@ -7812,7 +7819,7 @@ typedef void (* Callback2)(char *text, int index);
 LIBTEST_API void
 Utf8DelegateAsParameter(Callback2 managedCallback)
 {
-    for (int i = 0; i < NSTRINGS; ++i) 
+    for (int i = 0; i < NSTRINGS; ++i)
     {
         char *pszNative = 0;
         pszNative = (char*)utf8Strings[i];

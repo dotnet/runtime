@@ -38,7 +38,7 @@ public class a
         }
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         //Start recording
         testLog.StartRecording();

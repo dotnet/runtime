@@ -41,6 +41,7 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException();
         }
 
+        [SupportedOSPlatform("windows")]
         public static void RegisterForMarshalling(ComWrappers instance)
         {
             throw new PlatformNotSupportedException();

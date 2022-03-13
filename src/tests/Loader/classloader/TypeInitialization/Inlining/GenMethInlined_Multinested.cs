@@ -125,7 +125,7 @@ public struct InlinedVal
 }
 
 
-public class Test
+public class Test_GenMethInlined_Multinested
 {
 	public static int Main()
 	{

@@ -451,4 +451,4 @@ FAIL:
 	ret
 }
 }
-.assembly clt_r4.exe{}
+.assembly clt_r4{}

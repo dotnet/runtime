@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json;
 using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.Reflection
@@ -139,7 +140,7 @@ namespace System.Text.Json.Reflection
                             sb.Insert(0, $"{currentSymbol.Name}+");
                         }
 
-                        if (!string.IsNullOrWhiteSpace(Namespace))
+                        if (!string.IsNullOrWhiteSpace(Namespace) && Namespace != JsonConstants.GlobalNamespaceValue)
                         {
                             sb.Insert(0, $"{Namespace}.");
                         }
@@ -249,7 +250,13 @@ namespace System.Text.Json.Reflection
 
             foreach (IMethodSymbol c in _namedTypeSymbol.Constructors)
             {
-                if (c.DeclaredAccessibility == Accessibility.Public)
+                if (c.IsImplicitlyDeclared && IsValueType)
+                {
+                    continue;
+                }
+
+                if (((BindingFlags.Public & bindingAttr) != 0 && c.DeclaredAccessibility == Accessibility.Public) ||
+                    ((BindingFlags.NonPublic & bindingAttr) != 0 && c.DeclaredAccessibility != Accessibility.Public))
                 {
                     ctors.Add(new ConstructorInfoWrapper(c, _metadataLoadContext));
                 }
@@ -272,6 +279,11 @@ namespace System.Text.Json.Reflection
         {
             _elementType ??= _arrayTypeSymbol?.ElementType.AsType(_metadataLoadContext)!;
             return _elementType;
+        }
+
+        public override Type MakeArrayType()
+        {
+            return _metadataLoadContext.Compilation.CreateArrayTypeSymbol(_typeSymbol).AsType(_metadataLoadContext);
         }
 
         public override EventInfo GetEvent(string name, BindingFlags bindingAttr)
@@ -304,7 +316,9 @@ namespace System.Text.Json.Reflection
                         // we want a static field and this is not static
                         (BindingFlags.Static & bindingAttr) != 0 && !fieldSymbol.IsStatic ||
                         // we want an instance field and this is static or a constant
-                        (BindingFlags.Instance & bindingAttr) != 0 && (fieldSymbol.IsStatic || fieldSymbol.IsConst))
+                        (BindingFlags.Instance & bindingAttr) != 0 && (fieldSymbol.IsStatic || fieldSymbol.IsConst) ||
+                        // symbol represents an explicitly named tuple element
+                        fieldSymbol.IsExplicitlyNamedTupleElement)
                     {
                         continue;
                     }
@@ -580,5 +594,7 @@ namespace System.Text.Json.Reflection
             }
             return base.Equals(o);
         }
+
+        public Location? Location => _typeSymbol.Locations.Length > 0 ? _typeSymbol.Locations[0] : null;
     }
 }

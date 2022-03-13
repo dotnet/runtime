@@ -11,27 +11,6 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/marshal.h>
 
-void*
-mono_marshal_alloc_co_task_mem (size_t size);
-
-void
-mono_marshal_free_co_task_mem (void *ptr);
-
-gpointer
-mono_marshal_realloc_co_task_mem (gpointer ptr, size_t size);
-
-void
-mono_marshal_free_hglobal (void *ptr);
-
-gpointer
-mono_marshal_realloc_hglobal (gpointer ptr, size_t size);
-
-void*
-mono_marshal_alloc_hglobal (size_t size);
-
-void*
-mono_marshal_alloc_hglobal_error (gsize size, MonoError*);
-
 typedef enum {
 	TYPECHECK_OBJECT_ARG_POS = 0,
 	TYPECHECK_CLASS_ARG_POS = 1,

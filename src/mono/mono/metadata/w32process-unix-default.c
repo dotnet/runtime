@@ -28,13 +28,6 @@
 #include <sys/types.h>
 #endif
 
-/* makedev() macro */
-#ifdef MAJOR_IN_MKDEV
-#include <sys/mkdev.h>
-#elif defined MAJOR_IN_SYSMACROS
-#include <sys/sysmacros.h>
-#endif
-
 #include "utils/mono-logger-internals.h"
 #include "icall-decl.h"
 
@@ -48,7 +41,6 @@ mono_w32process_get_name (pid_t pid)
 {
 	FILE *fp;
 	gchar *filename;
-	gchar buf[256];
 	gchar *ret = NULL;
 
 #if defined(HOST_SOLARIS) || (defined(_AIX) && !defined(__PASE__))
@@ -75,6 +67,7 @@ mono_w32process_get_name (pid_t pid)
 		ret = g_strdup (proc.pi_comm);
 	}
 #else
+	gchar buf[256];
 	memset (buf, '\0', sizeof(buf));
 	filename = g_strdup_printf ("/proc/%d/exe", pid);
 #if defined(HAVE_READLINK)

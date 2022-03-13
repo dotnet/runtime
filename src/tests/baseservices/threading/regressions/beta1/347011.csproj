@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
-    <CLRTestExecutionArguments>240</CLRTestExecutionArguments>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="347011.cs" />

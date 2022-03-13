@@ -2,17 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading;
 using Xunit;
 using Xunit.Sdk;
 using Xunit.Abstractions;
+using System.Linq;
 
 namespace System.IO.Tests
 {
-    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
-    public partial class NoParallelTests { }
-
     public abstract partial class FileSystemWatcherTest : FileCleanupTestBase
     {
         // Events are reported asynchronously by the OS, so allow an amount of time for
@@ -41,15 +40,24 @@ namespace System.IO.Tests
             FileSystemEventHandler changeHandler = (o, e) =>
             {
                 Assert.Equal(WatcherChangeTypes.Changed, e.ChangeType);
-                if (expectedPaths != null)
-                {
-                    Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
-                }
+                VerifyExpectedPaths(expectedPaths, e);
                 eventOccurred.Set();
             };
 
             watcher.Changed += changeHandler;
             return (eventOccurred, changeHandler);
+        }
+
+        private static void VerifyExpectedPaths(string[] expectedPaths, FileSystemEventArgs e)
+        {
+            string fullPath = Path.GetFullPath(e.FullPath);
+            if (expectedPaths is not null && !expectedPaths.Contains(fullPath))
+            {
+                // Assert.Contains does not print a full content of collection which makes it hard to diagnose issues like #65601
+                throw new XunitException($"Expected path(s):{Environment.NewLine}"
+                    + string.Join(Environment.NewLine, expectedPaths)
+                    + $"{Environment.NewLine}Actual path: {fullPath}");
+            }
         }
 
         /// <summary>
@@ -69,18 +77,7 @@ namespace System.IO.Tests
                 }
 
                 Assert.Equal(WatcherChangeTypes.Created, e.ChangeType);
-                if (expectedPaths != null)
-                {
-                    try
-                    {
-                        Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output?.WriteLine(ex.ToString());
-                        throw;
-                    }
-                }
+                VerifyExpectedPaths(expectedPaths, e);
 
                 eventOccurred.Set();
             };
@@ -104,18 +101,8 @@ namespace System.IO.Tests
                     Assert.Equal(WatcherChangeTypes.Deleted, e.ChangeType);
                 }
 
-                if (expectedPaths != null)
-                {
-                    try
-                    {
-                        Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output?.WriteLine(ex.ToString());
-                        throw;
-                    }
-                }
+                VerifyExpectedPaths(expectedPaths, e);
+
                 eventOccurred.Set();
             };
 
@@ -139,18 +126,8 @@ namespace System.IO.Tests
                     Assert.Equal(WatcherChangeTypes.Renamed, e.ChangeType);
                 }
 
-                if (expectedPaths != null)
-                {
-                    try
-                    {
-                        Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output?.WriteLine(ex.ToString());
-                        throw;
-                    }
-                }
+                VerifyExpectedPaths(expectedPaths, e);
+
                 eventOccurred.Set();
             };
 
@@ -385,14 +362,7 @@ namespace System.IO.Tests
                 if (attemptsCompleted > 1)
                 {
                     // Re-create the watcher to get a clean iteration.
-                    watcher = new FileSystemWatcher()
-                    {
-                        IncludeSubdirectories = watcher.IncludeSubdirectories,
-                        NotifyFilter = watcher.NotifyFilter,
-                        Filter = watcher.Filter,
-                        Path = watcher.Path,
-                        InternalBufferSize = watcher.InternalBufferSize
-                    };
+                    watcher = RecreateWatcher(watcher);
                     // Most intermittent failures in FSW are caused by either a shortage of resources (e.g. inotify instances)
                     // or by insufficient time to execute (e.g. CI gets bogged down). Immediately re-running a failed test
                     // won't resolve the first issue, so we wait a little while hoping that things clear up for the next run.
@@ -464,7 +434,8 @@ namespace System.IO.Tests
                 IncludeSubdirectories = watcher.IncludeSubdirectories,
                 NotifyFilter = watcher.NotifyFilter,
                 Path = watcher.Path,
-                InternalBufferSize = watcher.InternalBufferSize
+                InternalBufferSize = watcher.InternalBufferSize,
+                SynchronizingObject = watcher.SynchronizingObject,
             };
 
             foreach (string filter in watcher.Filters)
@@ -549,6 +520,26 @@ namespace System.IO.Tests
                     eventsOccured.Set();
                 }
             }
+        }
+
+        internal class TestISynchronizeInvoke : ISynchronizeInvoke
+        {
+            public bool BeginInvoke_Called;
+            public Delegate ExpectedDelegate;
+
+            public IAsyncResult BeginInvoke(Delegate method, object[] args)
+            {
+                if (ExpectedDelegate != null)
+                    Assert.Equal(ExpectedDelegate, method);
+
+                BeginInvoke_Called = true;
+                method.DynamicInvoke(args[0], args[1]);
+                return null;
+            }
+
+            public bool InvokeRequired => true;
+            public object EndInvoke(IAsyncResult result) => null;
+            public object Invoke(Delegate method, object[] args) => null;
         }
     }
 }

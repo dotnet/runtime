@@ -12,11 +12,11 @@ namespace System.Text.Json.Serialization.Tests
     /// </summary>
     public abstract partial class JsonSerializerWrapperForStream
     {
-        protected internal abstract Task SerializeWrapper<T>(Stream stream, T value, JsonSerializerOptions options = null);
-        protected internal abstract Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerOptions options = null);
+        protected internal abstract Task SerializeWrapper<T>(Stream stream, T value, JsonSerializerOptions? options = null);
+        protected internal abstract Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerOptions? options = null);
         protected internal abstract Task SerializeWrapper<T>(Stream stream, T value, JsonTypeInfo<T> jsonTypeInfo);
-        protected internal abstract Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonSerializerOptions options = null);
-        protected internal abstract Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerOptions options = null);
+        protected internal abstract Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonSerializerOptions? options = null);
+        protected internal abstract Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerOptions? options = null);
         protected internal abstract Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo);
     }
 }

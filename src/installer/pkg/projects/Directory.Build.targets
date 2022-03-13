@@ -6,6 +6,14 @@
       Needs to happen in Directory.Build.targets to allow all the pkgproj's to set Version property first.
     -->
     <StableVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' != 'true'">$(Version)</StableVersion>
+
+    <!--
+      Explicitly re-set the symbol package output path. The pkgproj files here end up importing the targets from
+      Microsoft.DotNet.Build.Tasks.Packaging (based on a PackageReference) before importing the Arcade targets hat
+      set defaults for project output paths. This means the value set by the packaging targets does not accountfor
+      the updated defaults from the Arcade targets.
+    -->
+    <SymbolPackageOutputPath>$(PackageOutputPath)</SymbolPackageOutputPath>
   </PropertyGroup>
 
   <!--

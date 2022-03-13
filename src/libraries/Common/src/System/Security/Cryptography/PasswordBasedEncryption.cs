@@ -7,6 +7,7 @@ using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -73,6 +74,14 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(destination.Length >= encryptedData.Length);
 
+            if (!Helpers.HasSymmetricEncryption)
+            {
+                throw new CryptographicException(
+                    SR.Format(
+                        SR.Cryptography_UnknownAlgorithmIdentifier,
+                        algorithmIdentifier.Algorithm));
+            }
+
             // Don't check that algorithmIdentifier.Parameters is set here.
             // Maybe some future PBES3 will have one with a default.
 
@@ -89,7 +98,7 @@ namespace System.Security.Cryptography
                     break;
                 case Oids.PbeWithMD5AndRC2CBC:
                     digestAlgorithmName = HashAlgorithmName.MD5;
-                    cipher = RC2.Create();
+                    cipher = CreateRC2();
                     break;
                 case Oids.PbeWithSha1AndDESCBC:
                     digestAlgorithmName = HashAlgorithmName.SHA1;
@@ -97,7 +106,7 @@ namespace System.Security.Cryptography
                     break;
                 case Oids.PbeWithSha1AndRC2CBC:
                     digestAlgorithmName = HashAlgorithmName.SHA1;
-                    cipher = RC2.Create();
+                    cipher = CreateRC2();
                     break;
                 case Oids.Pkcs12PbeWithShaAnd3Key3Des:
                     digestAlgorithmName = HashAlgorithmName.SHA1;
@@ -112,13 +121,13 @@ namespace System.Security.Cryptography
                     break;
                 case Oids.Pkcs12PbeWithShaAnd128BitRC2:
                     digestAlgorithmName = HashAlgorithmName.SHA1;
-                    cipher = RC2.Create();
+                    cipher = CreateRC2();
                     cipher.KeySize = 128;
                     pkcs12 = true;
                     break;
                 case Oids.Pkcs12PbeWithShaAnd40BitRC2:
                     digestAlgorithmName = HashAlgorithmName.SHA1;
-                    cipher = RC2.Create();
+                    cipher = CreateRC2();
                     cipher.KeySize = 40;
                     pkcs12 = true;
                     break;
@@ -228,6 +237,14 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(pbeParameters != null);
 
+            if (!Helpers.HasSymmetricEncryption)
+            {
+                throw new CryptographicException(
+                    SR.Format(
+                        SR.Cryptography_UnknownAlgorithmIdentifier,
+                        pbeParameters.EncryptionAlgorithm));
+            }
+
             isPkcs12 = false;
 
             switch (pbeParameters.EncryptionAlgorithm)
@@ -257,7 +274,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(
                         SR.Format(
                             SR.Cryptography_UnknownAlgorithmIdentifier,
-                            pbeParameters.HashAlgorithm.Name));
+                            pbeParameters.EncryptionAlgorithm));
             }
 
             HashAlgorithmName prf = pbeParameters.HashAlgorithm;
@@ -374,6 +391,12 @@ namespace System.Security.Cryptography
                     else
                     {
                         Debug.Assert(pwdTmpBytes!.Length == 0);
+                    }
+
+                    if (!Helpers.HasHMAC)
+                    {
+                        throw new CryptographicException(
+                            SR.Format(SR.Cryptography_AlgorithmNotSupported, "HMAC" + prf.Name));
                     }
 
                     using (var pbkdf2 = new Rfc2898DeriveBytes(pwdTmpBytes, salt.ToArray(), iterationCount, prf))
@@ -517,6 +540,8 @@ namespace System.Security.Cryptography
             Rfc2898DeriveBytes pbkdf2 =
                 OpenPbkdf2(password, pbes2Params.KeyDerivationFunc.Parameters, out int? requestedKeyLength);
 
+            Debug.Assert(Helpers.HasHMAC);
+
             using (pbkdf2)
             {
                 // The biggest block size (for IV) we support is AES (128-bit / 16 byte)
@@ -554,6 +579,12 @@ namespace System.Security.Cryptography
             ref Span<byte> iv)
         {
             string? algId = encryptionScheme.Algorithm;
+
+            if (!Helpers.HasSymmetricEncryption)
+            {
+                throw new CryptographicException(
+                    SR.Format(SR.Cryptography_AlgorithmNotSupported, algId));
+            }
 
             if (algId == Oids.Aes128Cbc ||
                 algId == Oids.Aes192Cbc ||
@@ -635,7 +666,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                RC2 rc2 = RC2.Create();
+                RC2 rc2 = CreateRC2();
                 rc2.KeySize = requestedKeyLength.Value * 8;
                 rc2.EffectiveKeySize = rc2Parameters.GetEffectiveKeyBits();
 
@@ -744,6 +775,12 @@ namespace System.Security.Cryptography
             if (!pbkdf2Params.Prf.HasNullEquivalentParameters())
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            if (!Helpers.HasHMAC)
+            {
+                throw new CryptographicException(
+                    SR.Format(SR.Cryptography_AlgorithmNotSupported, "HMAC" + prf.Name));
             }
 
             int iterationCount = NormalizeIterationCount(pbkdf2Params.IterationCount);
@@ -1077,6 +1114,17 @@ namespace System.Security.Cryptography
             }
 
             return iterationCount;
+        }
+
+        [SuppressMessage("Microsoft.Security", "CA5351", Justification = "RC2 used when specified by the input data")]
+        private static RC2 CreateRC2()
+        {
+            if (!Helpers.IsRC2Supported)
+            {
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(RC2)));
+            }
+
+            return RC2.Create();
         }
     }
 }

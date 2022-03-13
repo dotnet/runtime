@@ -12,6 +12,16 @@
         <target state="translated">Odvozené typy JsonSerializerContext a všechny obsahující typy musí být částečné.</target>
         <note />
       </trans-unit>
+      <trans-unit id="DataExtensionPropertyInvalidFormat">
+        <source>The data extension property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</source>
+        <target state="translated">Vlastnost rozšíření dat {0}.{1} není platná. Musí implementovat IDictionary&lt;string, JsonElement&gt; nebo IDictionary&lt;string, object&gt;, nebo být JsonObject.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DataExtensionPropertyInvalidTitle">
+        <source>Data extension property type invalid.</source>
+        <target state="translated">Typ vlastnosti rozšíření dat není platný</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
         <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
         <target state="translated">Existuje několik typů s názvem {0}. Zdroj se vygeneroval pro první zjištěný typ. Tuto kolizi vyřešíte pomocí JsonSerializableAttribute.TypeInfoPropertyName.</target>
@@ -20,6 +30,46 @@
       <trans-unit id="DuplicateTypeNameTitle">
         <source>Duplicate type name.</source>
         <target state="translated">Duplicitní název typu</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
+        <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
+        <target state="translated">Člen {0}.{1} má anotaci od JsonIncludeAttribute, ale není pro zdrojový generátor viditelný.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedTitle">
+        <source>Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</source>
+        <target state="translated">Nepřístupné vlastnosti anotované s JsonIncludeAttribute se v režimu generování zdroje nepodporují.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedFormat">
+        <source>The type '{0}' defines init-only properties, deserialization of which is currently not supported in source generation mode.</source>
+        <target state="translated">Typ {0} definuje vlastnosti pouze pro inicializaci, jejichž deserializace se v režimu generování zdroje v současnosti nepodporuje.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedTitle">
+        <source>Deserialization of init-only properties is currently not supported in source generation mode.</source>
+        <target state="translated">Deserializace vlastností pouze pro inicializaci se v současnosti v režimu generování zdroje nepodporuje.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeFormat">
+        <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
+        <target state="translated">Typ {0} má více konstruktorů anotovaných s JsonConstructorAttribute. </target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeTitle">
+        <source>Type has multiple constructors annotated with JsonConstructorAttribute.</source>
+        <target state="translated">Typ obsahuje více konstruktorů anotovaných s JsonConstructorAttribute.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonExtensionDataAttributeFormat">
+        <source>Type '{0}' has multiple members annotated with 'JsonExtensionDataAttribute'.</source>
+        <target state="translated">Typ {0} obsahuje více členů s komentářem JsonExtensionDataAttribute.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonExtensionDataAttributeTitle">
+        <source>Type has multiple members annotated with JsonExtensionDataAttribute.</source>
+        <target state="translated">Typ obsahuje více členů s komentářem JsonExtensionDataAttribute</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">

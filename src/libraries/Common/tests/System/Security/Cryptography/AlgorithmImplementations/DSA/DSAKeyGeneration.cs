@@ -24,14 +24,12 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsKeyGeneration))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50580", TestPlatforms.Android)]
         public static void GenerateMinKey()
         {
             GenerateKey(dsa => GetMin(dsa.LegalKeySizes));
         }
 
         [ConditionalFact(nameof(SupportsKeyGeneration), nameof(HasSecondMinSize))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50580", TestPlatforms.Android)]
         public static void GenerateSecondMinKey()
         {
             GenerateKey(dsa => GetSecondMin(dsa.LegalKeySizes));

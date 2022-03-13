@@ -239,11 +239,8 @@ namespace System.Reflection.TypeLoading
             return sb.ToString();
         }
 
-        public static bool HasSameMetadataDefinitionAsCore<M>(this M thisMember, MemberInfo other) where M : MemberInfo
+        public static bool HasSameMetadataDefinitionAsCore<M>(this M thisMember, MemberInfo other!!) where M : MemberInfo
         {
-            if (other == null)
-                throw new ArgumentNullException(nameof(other));
-
             // Ensure that "other" is one of our MemberInfo objects. Do this check before calling any methods on it!
             if (!(other is M))
                 return false;
@@ -367,7 +364,7 @@ namespace System.Reflection.TypeLoading
 
         public static byte[] ToUtf8(this string s) => Encoding.UTF8.GetBytes(s);
 
-#if NETCOREAPP3_1_OR_GREATER
+#if NETCOREAPP
         public static string ToUtf16(this ReadOnlySpan<byte> utf8) => Encoding.UTF8.GetString(utf8);
 #else
         public static unsafe string ToUtf16(this ReadOnlySpan<byte> utf8)

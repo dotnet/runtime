@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly not.exe{}
+.assembly 'not'{}
 
 .class public _not {
 

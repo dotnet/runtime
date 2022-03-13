@@ -124,11 +124,11 @@
 						x="38.26" dy="1.2em" class="st3">(ref counted)</tspan></text>		</g>
 		<g id="shape10-36" v:mID="10" v:groupContext="shape" transform="translate(318.051,-108.375)">
 			<title>Sheet.10</title>
-			<desc>ClrPrivBinderAssemblyLoadContext</desc>
+			<desc>CustomAssemblyBinder</desc>
 			<v:textBlock v:margins="rect(4,4,4,4)"/>
 			<v:textRect cx="99" cy="512.614" width="198" height="63"/>
 			<rect x="0" y="481.114" width="198" height="63" class="st6"/>
-			<text x="13.01" y="516.21" class="st2" v:langID="1033"><v:paragraph v:horizAlign="1"/><v:tabList/>ClrPrivBinderAssemblyLoadContext</text>		</g>
+			<text x="41.12" y="516.21" class="st2" v:langID="1033"><v:paragraph v:horizAlign="1"/><v:tabList/>CustomAssemblyBinder</text>		</g>
 		<g id="shape11-39" v:mID="11" v:groupContext="shape" transform="translate(48.0507,-18.375)">
 			<title>Sheet.11</title>
 			<desc>DomainAssembly A</desc>

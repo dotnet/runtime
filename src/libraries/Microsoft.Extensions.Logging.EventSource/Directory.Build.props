@@ -3,6 +3,5 @@
 
   <PropertyGroup>
     <NoWarn>$(NoWarn);PKG0001</NoWarn>
-    <IsAspNetCoreApp>true</IsAspNetCoreApp>
   </PropertyGroup>
 </Project>

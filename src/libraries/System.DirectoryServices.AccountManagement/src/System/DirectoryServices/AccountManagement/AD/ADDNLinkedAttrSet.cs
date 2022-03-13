@@ -708,18 +708,7 @@ namespace System.DirectoryServices.AccountManagement
                     {
                         ContextOptions remoteOptions = DefaultContextOptions.ADDefaultContextOption;
 
-#if USE_CTX_CACHE
                         PrincipalContext remoteCtx = SDSCache.Domain.GetContext(foreignSid.sidIssuerName, _storeCtx.Credentials, remoteOptions);
-#else
-                        PrincipalContext remoteCtx = new PrincipalContext(
-                                        ContextType.Domain,
-                                        foreignSid.sidIssuerName,
-                                        null,
-                                        (this.storeCtx.Credentials != null ? this.storeCtx.Credentials.UserName : null),
-                                        (this.storeCtx.Credentials != null ? storeCtx.storeCtx.Credentials.Password : null),
-                                        remoteOptions);
-
-#endif
                         foreignStoreCtx = remoteCtx.QueryCtx;
                     }
 

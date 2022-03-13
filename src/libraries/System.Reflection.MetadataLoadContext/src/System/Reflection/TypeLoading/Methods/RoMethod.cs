@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Reflection.TypeLoading
@@ -110,6 +111,7 @@ namespace System.Reflection.TypeLoading
         internal abstract RoType[] GetGenericTypeParametersNoCopy();
         internal abstract RoType[] GetGenericTypeArgumentsNoCopy();
 
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public abstract override MethodInfo MakeGenericMethod(params Type[] typeArguments);
 
         public sealed override string ToString() => Loader.GetDisposedString() ?? this.ToString(ComputeMethodSigStrings());

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
 
@@ -278,6 +279,7 @@ namespace System.Reflection.TypeLoading
 
         public sealed override Type MakeByRefType() => this.GetUniqueByRefType();
         public sealed override Type MakePointerType() => this.GetUniquePointerType();
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public abstract override Type MakeGenericType(params Type[] typeArguments);
 
         // Enum methods

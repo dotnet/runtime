@@ -1275,6 +1275,9 @@ namespace System.Tests
 
             // Interface[] -> Class[]
             yield return new object[] { new NonGenericInterface1[10], 0, new NonGenericClass1[10], 0, 10, new NonGenericClass1[10] };
+
+            // object[] -> Int32Enum[] when values are all Int32Enum
+            yield return new object[] { new object[] { Int32Enum.Case3 }, 0, new Int32Enum[1], 0, 1, new Int32Enum[] { Int32Enum.Case3 } };
         }
 
         public static IEnumerable<object[]> Copy_Array_UnreliableConversion_CanPerform_TestData()
@@ -4736,7 +4739,7 @@ namespace System.Tests
         public enum Int64Enum : long { }
     }
 
-    [Collection("NoParallelTests")]
+    [Collection(nameof(DisableParallelization))]
     public class DangerousArrayTests
     {
         [OuterLoop] // Allocates large array
@@ -4746,7 +4749,14 @@ namespace System.Tests
             // If this test is run in a 32-bit process, the large allocation will fail.
             if (IntPtr.Size != sizeof(long))
             {
-                return;
+                throw new SkipTestException("Unable to allocate enough memory");
+            }
+
+            if (PlatformDetection.IsUbuntu1804 || PlatformDetection.IsSLES)
+            {
+                // On these platforms, occasionally the OOM Killer will terminate the
+                // tests when they're using ~1GB, before they complete.
+                throw new SkipTestException("Prone to OOM killer");
             }
 
             short[,] a = AllocateLargeMDArray(2, 2_000_000_000);
@@ -4765,7 +4775,14 @@ namespace System.Tests
             // If this test is run in a 32-bit process, the large allocation will fail.
             if (IntPtr.Size != sizeof(long))
             {
-                return;
+                throw new SkipTestException("Unable to allocate enough memory");
+            }
+
+            if (PlatformDetection.IsUbuntu1804 || PlatformDetection.IsSLES)
+            {
+                // On these platforms, occasionally the OOM Killer will terminate the
+                // tests when they're using ~1GB, before they complete.
+                throw new SkipTestException("Prone to OOM killer");
             }
 
             short[,] a = AllocateLargeMDArray(2, 2_000_000_000);

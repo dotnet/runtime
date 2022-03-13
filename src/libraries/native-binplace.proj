@@ -1,0 +1,31 @@
+<Project>
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <BinPlaceRuntime>false</BinPlaceRuntime>
+    <BinPlaceNative>true</BinPlaceNative>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+  </PropertyGroup>
+
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
+
+  <!-- Ordering matters! Overriding GetBinPlaceItems and Build targets after the Sdk import. -->
+  <Target Name="GetBinPlaceItems">
+    <ItemGroup>
+      <BinPlaceItem Include="$(NativeBinDir)*.dll" />
+      <BinPlaceItem Include="$(NativeBinDir)*.pdb" />
+      <BinPlaceItem Include="$(NativeBinDir)*.lib" />
+      <BinPlaceItem Include="$(NativeBinDir)*.a" />
+      <BinPlaceItem Include="$(NativeBinDir)*.bc" />
+      <BinPlaceItem Include="$(NativeBinDir)*.so" />
+      <BinPlaceItem Include="$(NativeBinDir)*.dbg" />
+      <BinPlaceItem Include="$(NativeBinDir)*.dylib" />
+      <BinPlaceItem Include="$(NativeBinDir)*.dwarf" />
+      <FileWrites Include="@(BinPlaceItem)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="Build" DependsOnTargets="BinPlace" />
+  <Target Name="CreateManifestResourceNames" />
+</Project>

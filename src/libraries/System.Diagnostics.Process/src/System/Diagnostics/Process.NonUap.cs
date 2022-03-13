@@ -10,8 +10,8 @@ namespace System.Diagnostics
     public partial class Process : IDisposable
     {
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public void Kill(bool entireProcessTree)
         {
             if (!entireProcessTree)

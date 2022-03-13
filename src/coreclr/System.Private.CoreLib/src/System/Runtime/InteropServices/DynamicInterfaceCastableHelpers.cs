@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices
             if (!implType.IsDefined(typeof(DynamicInterfaceCastableImplementationAttribute), inherit: false))
                 throw new InvalidOperationException(SR.Format(SR.IDynamicInterfaceCastable_MissingImplementationAttribute, implType, nameof(DynamicInterfaceCastableImplementationAttribute)));
 
-            if (!implType.ImplementInterface(interfaceType))
+            if (!implType.IsAssignableTo(interfaceType))
                 throw new InvalidOperationException(SR.Format(SR.IDynamicInterfaceCastable_DoesNotImplementRequested, implType, interfaceType));
 
             return implType;

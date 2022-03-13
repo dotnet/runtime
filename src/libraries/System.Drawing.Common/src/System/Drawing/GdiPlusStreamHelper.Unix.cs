@@ -85,7 +85,7 @@ namespace System.Drawing
             if (bufsz <= 0)
                 return 0;
 
-            int read = 0;
+            int read;
             long originalPosition = 0;
             if (peek)
             {

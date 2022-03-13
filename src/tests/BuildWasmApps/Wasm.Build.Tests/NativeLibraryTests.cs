@@ -17,7 +17,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [BuildAndRun(aot: false)]
         [BuildAndRun(aot: true)]
         public void ProjectWithNativeReference(BuildArgs buildArgs, RunHost host, string id)
@@ -37,8 +37,8 @@ namespace Wasm.Build.Tests
             }
 
             BuildProject(buildArgs,
-                        dotnetWasmFromRuntimePack: false,
-                        id: id);
+                            id: id,
+                            new BuildProjectOptions(DotnetWasmFromRuntimePack: false));
 
             string output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 0,
                                 test: output => {},
@@ -48,7 +48,7 @@ namespace Wasm.Build.Tests
             Assert.Contains("from pinvoke: 142", output);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [BuildAndRun(aot: false)]
         [BuildAndRun(aot: true)]
         public void ProjectUsingSkiaSharp(BuildArgs buildArgs, RunHost host, string id)
@@ -81,9 +81,10 @@ public class Test
 }";
 
             BuildProject(buildArgs,
-                        initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                        dotnetWasmFromRuntimePack: false,
-                        id: id);
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
+                                DotnetWasmFromRuntimePack: false));
 
             string output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 0,
                                 test: output => {},

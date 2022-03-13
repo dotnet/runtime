@@ -99,7 +99,7 @@ namespace System.Runtime.Serialization.Json
                         Type elementType = collectionContract.GetCollectionElementType();
                         bool isDictionary = collectionContract.Kind == CollectionKind.Dictionary || collectionContract.Kind == CollectionKind.GenericDictionary;
 
-                        DataContract? itemContract = null;
+                        DataContract? itemContract;
                         JsonDataContract? jsonDataContract = null;
                         if (isDictionary)
                         {
@@ -243,7 +243,7 @@ namespace System.Runtime.Serialization.Json
                     {
                         memberValue = ReflectionGetMemberValue(obj, member);
                     }
-                    bool requiresNameAttribute = DataContractJsonSerializerImpl.CheckIfXmlNameRequiresMapping(classContract.MemberNames![i]);
+                    bool requiresNameAttribute = DataContractJsonSerializer.CheckIfXmlNameRequiresMapping(classContract.MemberNames![i]);
                     PrimitiveDataContract? primitiveContract = member.MemberPrimitiveContract;
                     if (requiresNameAttribute || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, memberNames[i + childElementIndex] /*name*/, null/*ns*/, primitiveContract))
                     {

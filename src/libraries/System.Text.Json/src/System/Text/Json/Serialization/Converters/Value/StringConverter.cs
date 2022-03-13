@@ -23,14 +23,14 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        internal override string ReadWithQuotes(ref Utf8JsonReader reader)
+        internal override string ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             return reader.GetString()!;
         }
 
-        internal override void WriteWithQuotes(Utf8JsonWriter writer, string value, JsonSerializerOptions options, ref WriteStack state)
+        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, string value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
-            if (options.DictionaryKeyPolicy != null && !state.Current.IgnoreDictionaryKeyPolicy)
+            if (options.DictionaryKeyPolicy != null && !isWritingExtensionDataProperty)
             {
                 value = options.DictionaryKeyPolicy.ConvertName(value);
 

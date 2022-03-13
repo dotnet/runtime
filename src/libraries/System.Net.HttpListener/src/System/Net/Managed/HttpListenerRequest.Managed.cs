@@ -392,11 +392,8 @@ namespace System.Net
             return asyncResult;
         }
 
-        public X509Certificate2? EndGetClientCertificate(IAsyncResult asyncResult)
+        public X509Certificate2? EndGetClientCertificate(IAsyncResult asyncResult!!)
         {
-            if (asyncResult == null)
-                throw new ArgumentNullException(nameof(asyncResult));
-
             GetClientCertificateAsyncResult? clientCertAsyncResult = asyncResult as GetClientCertificateAsyncResult;
             if (clientCertAsyncResult == null || clientCertAsyncResult.AsyncObject != this)
             {

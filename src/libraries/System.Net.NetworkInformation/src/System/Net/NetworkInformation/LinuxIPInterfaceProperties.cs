@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.Versioning;
 
 namespace System.Net.NetworkInformation
 {
@@ -28,8 +29,10 @@ namespace System.Net.NetworkInformation
             _ipv6Properties = new LinuxIPv6InterfaceProperties(lni);
         }
 
+        [UnsupportedOSPlatform("linux")]
         public override bool IsDynamicDnsEnabled { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
+        [UnsupportedOSPlatform("linux")]
         public override IPAddressInformationCollection AnycastAddresses { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override GatewayIPAddressInformationCollection GatewayAddresses { get { return _gatewayAddresses; } }

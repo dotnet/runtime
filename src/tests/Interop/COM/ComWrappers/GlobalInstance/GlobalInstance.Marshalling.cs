@@ -7,6 +7,7 @@ namespace ComWrappersTests.GlobalInstance
 
     using ComWrappersTests.Common;
     using TestLibrary;
+    using Xunit;
 
     partial class Program
     {
@@ -15,7 +16,7 @@ namespace ComWrappersTests.GlobalInstance
             Console.WriteLine($"Running {nameof(ValidateNotRegisteredForTrackerSupport)}...");
 
             int hr = MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread();
-            Assert.AreNotEqual(GlobalComWrappers.ReleaseObjectsCallAck, hr);
+            Assert.NotEqual(GlobalComWrappers.ReleaseObjectsCallAck, hr);
         }
 
         static int Main(string[] doNotUse)
@@ -47,7 +48,8 @@ namespace ComWrappersTests.GlobalInstance
                     ValidatePInvokes(validateUseRegistered: false);
                 }
 
-                if(!builtInComDisabled)
+                // RegFree COM is not supported on Windows Nano Server
+                if(!builtInComDisabled && !Utilities.IsWindowsNanoServer)
                 {
                     // This calls ValidateNativeServerActivation which calls Marshal.GetTypeFromCLSID that is not supported
                     ValidateComActivation(validateUseRegistered: true);

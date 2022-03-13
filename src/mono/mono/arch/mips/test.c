@@ -15,7 +15,7 @@ int main (int argc, char *argv[]) {
 	guint32 *code, * p;
 
 	code = p = (guint32 *) malloc (sizeof (guint32) * 1024);
-	
+
 	mips_add (p, 3, 4, 5);
 	mips_addi (p, 3, 4, 5);
 	mips_addu (p, 3, 4, 5);

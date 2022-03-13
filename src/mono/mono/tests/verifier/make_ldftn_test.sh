@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -30,12 +30,12 @@ $SED -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/LDFTN_O
 .class public Test
   	extends [mscorlib]System.Object
 {
-	.method public hidebysig  specialname  rtspecialname instance default void .ctor ()  cil managed 
+	.method public hidebysig  specialname  rtspecialname instance default void .ctor ()  cil managed
 	{
 		.maxstack 8
 		ldarg.0
 		call instance void object::.ctor()
-		ret 
+		ret
 	}
 
 	.method public virtual void VirtMethod ()
@@ -77,7 +77,7 @@ $SED -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/LDFTN_O
 		LDFTN_OP
 		pop
 		ldc.i4.0
-		ret 
+		ret
 	}
 }
 //EOF

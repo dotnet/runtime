@@ -237,17 +237,14 @@ namespace System.Diagnostics
             CreateEventSource(new EventSourceCreationData(source, logName, "."));
         }
 
-        [Obsolete("This method has been deprecated.  Please use System.Diagnostics.EventLog.CreateEventSource(EventSourceCreationData sourceData) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("EventLog.CreateEventSource has been deprecated. Use System.Diagnostics.EventLog.CreateEventSource(EventSourceCreationData sourceData) instead.")]
         public static void CreateEventSource(string source, string logName, string machineName)
         {
             CreateEventSource(new EventSourceCreationData(source, logName, machineName));
         }
 
-        public static void CreateEventSource(EventSourceCreationData sourceData)
+        public static void CreateEventSource(EventSourceCreationData sourceData!!)
         {
-            if (sourceData == null)
-                throw new ArgumentNullException(nameof(sourceData));
-
             string logName = sourceData.LogName;
             string source = sourceData.Source;
             string machineName = sourceData.MachineName;
@@ -849,7 +846,7 @@ namespace System.Diagnostics
 
                         if (sb.Length > 0)
                         {
-                            int num = -1;
+                            int num;
                             if (int.TryParse(sb.ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out num))
                             {
                                 largestNumber = Math.Max(largestNumber, num);

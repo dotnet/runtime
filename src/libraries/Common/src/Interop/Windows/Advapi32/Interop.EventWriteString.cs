@@ -7,11 +7,11 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, ExactSpelling = true)]
-        internal static extern int EventWriteString(
+        [LibraryImport(Libraries.Advapi32)]
+        internal static partial int EventWriteString(
             long registrationHandle,
             byte level,
             long keyword,
-            string msg);
+            [MarshalAs(UnmanagedType.LPStr)] string msg);
     }
 }

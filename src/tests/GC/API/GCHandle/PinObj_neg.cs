@@ -7,7 +7,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-public class Test
+public class Test_PinObj_neg
 {
     public static int Main()
     {

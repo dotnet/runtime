@@ -87,13 +87,13 @@ namespace System.Reflection.Emit
         private static extern void set_wrappers_type(ModuleBuilder mb, Type? ab);
 
         [DynamicDependency(nameof(table_indexes))]  // Automatically keeps all previous fields too due to StructLayout
-        internal ModuleBuilder(AssemblyBuilder assb, string name, bool emitSymbolInfo)
+        internal ModuleBuilder(AssemblyBuilder assb, string name)
         {
             this.name = this.scopename = name;
             this.fqname = name;
             this.assembly = this.assemblyb = assb;
             guid = Guid.NewGuid().ToByteArray();
-            table_idx = get_next_table_index(this, 0x00, 1);
+            table_idx = get_next_table_index(0x00, 1);
             name_cache = new Dictionary<ITypeName, TypeBuilder>();
             us_string_cache = new Dictionary<string, int>(512);
 
@@ -106,6 +106,7 @@ namespace System.Reflection.Emit
             set_wrappers_type(this, type);
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public override string FullyQualifiedName
         {
             get
@@ -116,11 +117,6 @@ namespace System.Reflection.Emit
 
                 return fullyQualifiedName;
             }
-        }
-
-        public bool IsTransient()
-        {
-            return true;
         }
 
         public void CreateGlobalFunctions()
@@ -152,10 +148,7 @@ namespace System.Reflection.Emit
             Justification = "Reflection.Emit is not subject to trimming")]
         private FieldBuilder DefineDataImpl(string name, int size, FieldAttributes attributes)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException("name cannot be empty", nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
             if (global_type_created != null)
                 throw new InvalidOperationException("global fields already created");
             if ((size <= 0) || (size >= 0x3f0000))
@@ -169,7 +162,7 @@ namespace System.Reflection.Emit
             {
                 TypeBuilder tb = DefineType(typeName,
                     TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Sealed,
-                                             typeof(ValueType), null, PackingSize.Size1, size);
+                                             typeof(ValueType), null, FieldBuilder.RVADataPackingSize(size), size);
                 tb.CreateType();
                 datablobtype = tb;
             }
@@ -229,11 +222,13 @@ namespace System.Reflection.Emit
             return mb;
         }
 
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
             return DefinePInvokeMethod(name, dllName, name, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
         }
 
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
             if (name == null)
@@ -309,7 +304,7 @@ namespace System.Reflection.Emit
 
         internal TypeBuilder? GetRegisteredType(ITypeName name)
         {
-            TypeBuilder? result = null;
+            TypeBuilder? result;
             name_cache.TryGetValue(name, out result);
             return result;
         }
@@ -410,10 +405,7 @@ namespace System.Reflection.Emit
         [ComVisible(true)]
         public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
         {
-            if (className == null)
-                throw new ArgumentNullException(nameof(className));
-            if (className.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(className));
+            ArgumentException.ThrowIfNullOrEmpty(className);
 
             TypeBuilder? result = null;
 
@@ -474,7 +466,7 @@ namespace System.Reflection.Emit
                 return result;
         }
 
-        internal int get_next_table_index(object obj, int table, int count)
+        internal int get_next_table_index(int table, int count)
         {
             if (table_indexes == null)
             {
@@ -596,8 +588,6 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(type));
             if (type.IsByRef)
                 throw new ArgumentException("type can't be a byref type", nameof(type));
-            if (!IsTransient() && (type.Module is ModuleBuilder) && ((ModuleBuilder)type.Module).IsTransient())
-                throw new InvalidOperationException("a non-transient module can't reference a transient module");
             return type.MetadataToken;
         }
 
@@ -823,6 +813,7 @@ namespace System.Reflection.Emit
             get { return assemblyb; }
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public override string Name
         {
             get { return name; }
@@ -881,7 +872,7 @@ namespace System.Reflection.Emit
 
             m = GetRegisteredToken(metadataToken) as MemberInfo;
             if (m == null)
-                throw RuntimeModule.resolve_token_exception(Name, metadataToken, error, "MemberInfo");
+                throw RuntimeModule.resolve_token_exception(this, metadataToken, error, "MemberInfo");
             else
                 return m;
         }
@@ -955,7 +946,7 @@ namespace System.Reflection.Emit
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributes(this);
+            return CustomAttribute.GetCustomAttributesData(this);
         }
 
         [RequiresUnreferencedCode("Fields might be removed")]

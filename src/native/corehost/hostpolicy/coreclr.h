@@ -63,7 +63,6 @@ enum class common_property
     ProbingDirectories,
     StartUpHooks,
     AppPaths,
-    AppNIPaths,
     RuntimeIdentifier,
     BundleProbe,
     HostPolicyEmbedded,

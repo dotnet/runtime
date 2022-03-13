@@ -25,15 +25,12 @@ public:
 
     VOID Init(IUnknown* pUnk, MethodTable* pClassMT, Thread *pThread, DWORD flags = 0); // see RCW::CreationFlags
 
-    OBJECTREF FindOrCreateObjectRef(IUnknown **ppIncomingIP, MethodTable *pIncomingItfMT = NULL);
-    OBJECTREF FindOrCreateObjectRef(IUnknown *pIncomingIP, MethodTable *pIncomingItfMT = NULL);
-
-    VOID InitializeExistingComObject(OBJECTREF *pComObj, IUnknown **ppIncomingIP);
+    OBJECTREF FindOrCreateObjectRef(IUnknown *pIncomingIP);
 
 private:
     VOID InitializeObjectClass(IUnknown *pIncomingIP);
-    OBJECTREF FindOrCreateObjectRefInternal(IUnknown **ppIncomingIP, MethodTable *pIncomingItfMT, bool bIncomingIPAddRefed);
-    VOID      CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj, IUnknown **ppIncomingIP, MethodTable *pIncomingItfMT, bool bIncomingIPAddRefed);
+    OBJECTREF FindOrCreateObjectRefInternal(IUnknown **ppIncomingIP);
+    VOID      CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj, IUnknown **ppIncomingIP);
     static VOID      EnsureCOMInterfacesSupported(OBJECTREF oref, MethodTable* pClassMT);
 
     inline bool NeedUniqueObject();
@@ -42,7 +39,6 @@ private:
     IUnknown*               m_pUnknown;         // NOT AddRef'ed
     IUnknown*               m_pIdentity;        // NOT AddRef'ed
     TypeHandle              m_typeHandle;       // inited and computed if inited value is NULL.  Need to represent all array information too.
-    TypeHandle              m_itfTypeHandle;    // an interface supported by the object as returned from GetRuntimeClassName
     Thread*                 m_pThread;          // Current thread - avoid calling GetThread multiple times
     DWORD                   m_flags;
 };

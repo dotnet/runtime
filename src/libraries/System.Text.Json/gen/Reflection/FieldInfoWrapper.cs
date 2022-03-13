@@ -100,5 +100,7 @@ namespace System.Text.Json.Reflection
         {
             throw new NotImplementedException();
         }
+
+        public Location? Location => _field.Locations.Length > 0 ? _field.Locations[0] : null;
     }
 }

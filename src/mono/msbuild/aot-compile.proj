@@ -1,10 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <Target Name="AotCompile">
+        <PropertyGroup>
+          <TestAssemblyDir>$([System.IO.Path]::GetDirectoryName($(_TestDll)))</TestAssemblyDir>
+        </PropertyGroup>
         <ItemGroup>
-          <MonoEnvVar Condition="'$(_MonoPath)' != ''" Include="MONO_PATH=$(_MonoPath)" />
+          <MonoPathItem Include="$(TestAssemblyDir)" />
+          <MonoPathItem Include="$(_MonoPath)" Condition="'$(_MonoPath)' != ''" />
+        </ItemGroup>
+        <PropertyGroup>
+          <MonoPath>@(MonoPathItem->'%(Identity)', ':')</MonoPath>
+        </PropertyGroup>
+        <ItemGroup>
+          <MonoEnvVar Include="MONO_PATH=$(MonoPath)" />
           <MonoEnvVar Include="MONO_ENV_OPTIONS=--aot=$(_MonoAotOptions)" />
         </ItemGroup>
+        <Message Importance="High" Text="aot-compile: compiling $(_TestDll); MONO_PATH: $(MonoPath)" />
         <Exec Command="$(_AotCompiler) $(_TestDll)" EnvironmentVariables="@(MonoEnvVar)" />
     </Target>
 </Project>

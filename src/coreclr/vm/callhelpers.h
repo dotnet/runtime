@@ -52,7 +52,7 @@ struct CallDescrData
 
 #define NUMBER_RETURNVALUE_SLOTS (ENREGISTERED_RETURNTYPE_MAXSIZE / sizeof(ARG_SLOT))
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
 extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData * pCallDescrData);
 
@@ -697,6 +697,6 @@ enum DispatchCallSimpleFlags
 
 void CallDefaultConstructor(OBJECTREF ref);
 
-#endif //!DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif //!DACCESS_COMPILE
 
 #endif // __CALLHELPERS_H__

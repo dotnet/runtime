@@ -7,6 +7,6 @@
     <DisableProjectBuild>true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildProjectName).cs" />
+    <Compile Include="WindowsEventLog.cs" />
   </ItemGroup>
 </Project>

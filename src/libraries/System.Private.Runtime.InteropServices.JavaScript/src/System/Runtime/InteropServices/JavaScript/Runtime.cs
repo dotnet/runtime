@@ -1,33 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    public static class Runtime
+    public static partial class Runtime
     {
-        private static readonly Dictionary<int, WeakReference<JSObject>> _boundObjects = new Dictionary<int, WeakReference<JSObject>>();
-        private static readonly Dictionary<object, JSObject> _rawToJS = new Dictionary<object, JSObject>();
-        // _weakDelegateTable is a ConditionalWeakTable with the Delegate and associated JSObject:
-        // Key Lifetime:
-        //    Once the key dies, the dictionary automatically removes the key/value entry.
-        // No need to lock as it is thread safe.
-        private static readonly ConditionalWeakTable<Delegate, JSObject> _weakDelegateTable = new ConditionalWeakTable<Delegate, JSObject>();
-
         private const string TaskGetResultName = "get_Result";
         private static readonly MethodInfo _taskGetResultMethodInfo = typeof(Task<>).GetMethod(TaskGetResultName)!;
 
-        // <summary>
-        // Execute the provided string in the JavaScript context
-        // </summary>
-        // <returns>The js.</returns>
-        // <param name="str">String.</param>
+        /// <summary>
+        /// Execute the provided string in the JavaScript context
+        /// </summary>
+        /// <returns>The js.</returns>
+        /// <param name="str">String.</param>
         public static string InvokeJS(string str)
         {
             return Interop.Runtime.InvokeJS(str);
@@ -38,221 +27,14 @@ namespace System.Runtime.InteropServices.JavaScript
             return Interop.Runtime.CompileFunction(snippet);
         }
 
-        public static int New<T>(params object[] parms)
-        {
-            return Interop.Runtime.New(typeof(T).Name, parms);
-        }
-
-        public static int New(string hostClassName, params object[] parms)
-        {
-            return Interop.Runtime.New(hostClassName, parms);
-        }
-
-        public static void FreeObject(object obj)
-        {
-            if (obj is Delegate)
-            {
-                return;
-            }
-
-            JSObject? jsobj;
-            lock (_rawToJS)
-            {
-                if (!_rawToJS.Remove(obj, out jsobj))
-                {
-                    throw new JSException(SR.Format(SR.ErrorReleasingObject, obj));
-                }
-            }
-        }
-
         public static object GetGlobalObject(string? str = null)
         {
             return Interop.Runtime.GetGlobalObject(str);
         }
 
-        public static void DumpAotProfileData (ref byte buf, int len, string extraArg)
+        public static void DumpAotProfileData(ref byte buf, int len, string extraArg)
         {
             Interop.Runtime.DumpAotProfileData(ref buf, len, extraArg);
-        }
-
-        public static int BindJSObject(int jsId, bool ownsHandle, int mappedType)
-        {
-            JSObject? target = null;
-
-            lock (_boundObjects)
-            {
-                if (!_boundObjects.TryGetValue(jsId, out WeakReference<JSObject>? reference) ||
-                    !reference.TryGetTarget(out target) ||
-                    target.IsDisposed)
-                {
-                    IntPtr jsIntPtr = (IntPtr)jsId;
-                    target = mappedType > 0 ? BindJSType(jsIntPtr, ownsHandle, mappedType) : new JSObject(jsIntPtr, ownsHandle);
-                    _boundObjects[jsId] = new WeakReference<JSObject>(target, trackResurrection: true);
-                }
-            }
-
-            target.AddInFlight();
-
-            return target.Int32Handle;
-        }
-
-        public static int BindCoreCLRObject(int jsId, int gcHandle)
-        {
-            GCHandle h = (GCHandle)(IntPtr)gcHandle;
-            JSObject? obj = null;
-
-            lock (_boundObjects)
-            {
-                if (_boundObjects.TryGetValue(jsId, out WeakReference<JSObject>? wr))
-                {
-                    if (!wr.TryGetTarget(out JSObject? instance) || (instance.Int32Handle != (int)(IntPtr)h && h.IsAllocated))
-                    {
-                        throw new JSException(SR.Format(SR.MultipleHandlesPointingJsId, jsId));
-                    }
-
-                    obj = instance;
-                }
-                else if (h.Target is JSObject instance)
-                {
-                    _boundObjects.Add(jsId, new WeakReference<JSObject>(instance, trackResurrection: true));
-                    obj = instance;
-                }
-            }
-
-            return obj?.Int32Handle ?? 0;
-        }
-
-        private static JSObject BindJSType(IntPtr jsIntPtr, bool ownsHandle, int coreType) =>
-            coreType switch
-            {
-                1 => new Array(jsIntPtr, ownsHandle),
-                2 => new ArrayBuffer(jsIntPtr, ownsHandle),
-                3 => new DataView(jsIntPtr, ownsHandle),
-                4 => new Function(jsIntPtr, ownsHandle),
-                5 => new Map(jsIntPtr, ownsHandle),
-                6 => new SharedArrayBuffer(jsIntPtr, ownsHandle),
-                10 => new Int8Array(jsIntPtr, ownsHandle),
-                11 => new Uint8Array(jsIntPtr, ownsHandle),
-                12 => new Uint8ClampedArray(jsIntPtr, ownsHandle),
-                13 => new Int16Array(jsIntPtr, ownsHandle),
-                14 => new Uint16Array(jsIntPtr, ownsHandle),
-                15 => new Int32Array(jsIntPtr, ownsHandle),
-                16 => new Uint32Array(jsIntPtr, ownsHandle),
-                17 => new Float32Array(jsIntPtr, ownsHandle),
-                18 => new Float64Array(jsIntPtr, ownsHandle),
-                _ => throw new ArgumentOutOfRangeException(nameof(coreType))
-            };
-
-        internal static bool ReleaseJSObject(JSObject objToRelease)
-        {
-            Interop.Runtime.ReleaseHandle(objToRelease.JSHandle, out int exception);
-            if (exception != 0)
-                throw new JSException($"Error releasing handle on (js-obj js '{objToRelease.JSHandle}' mono '{objToRelease.Int32Handle} raw '{objToRelease.RawObject != null}' weak raw '{objToRelease.IsWeakWrapper}'   )");
-
-            lock (_boundObjects)
-            {
-                _boundObjects.Remove(objToRelease.JSHandle);
-            }
-            return true;
-        }
-
-        public static void UnBindRawJSObjectAndFree(int gcHandle)
-        {
-            GCHandle h = (GCHandle)(IntPtr)gcHandle;
-            JSObject? obj = h.Target as JSObject;
-            lock (_rawToJS)
-            {
-                if (obj?.RawObject != null)
-                {
-                    _rawToJS.Remove(obj.RawObject);
-                    obj.FreeHandle();
-                }
-            }
-        }
-
-        public static object CreateTaskSource(int jsId)
-        {
-            return new TaskCompletionSource<object>();
-        }
-
-        public static void SetTaskSourceResult(TaskCompletionSource<object> tcs, object result)
-        {
-            tcs.SetResult(result);
-        }
-
-        public static void SetTaskSourceFailure(TaskCompletionSource<object> tcs, string reason)
-        {
-            tcs.SetException(new JSException(reason));
-        }
-
-        public static int GetTaskAndBind(TaskCompletionSource<object> tcs, int jsId)
-        {
-            return BindExistingObject(tcs.Task, jsId);
-        }
-
-        public static int BindExistingObject(object rawObj, int jsId)
-        {
-            JSObject? jsObject;
-            if (rawObj is Delegate dele)
-            {
-                jsObject = new JSObject(jsId, dele);
-                lock (_boundObjects)
-                {
-                    _boundObjects.Add(jsId, new WeakReference<JSObject>(jsObject));
-                }
-                lock (_weakDelegateTable)
-                {
-                    _weakDelegateTable.Add(dele, jsObject);
-                }
-            }
-            else
-            {
-                lock (_rawToJS)
-                {
-                    if (!_rawToJS.TryGetValue(rawObj, out jsObject))
-                    {
-                        _rawToJS.Add(rawObj, jsObject = new JSObject(jsId, rawObj));
-                    }
-                }
-            }
-            return jsObject.Int32Handle;
-        }
-
-        public static int GetJSObjectId(object rawObj)
-        {
-            JSObject? jsObject;
-            if (rawObj is Delegate dele)
-            {
-                lock (_weakDelegateTable)
-                {
-                    _weakDelegateTable.TryGetValue(dele, out jsObject);
-                }
-            }
-            else
-            {
-                lock (_rawToJS)
-                {
-                    _rawToJS.TryGetValue(rawObj, out jsObject);
-                }
-            }
-            return jsObject?.JSHandle ?? -1;
-        }
-
-        /// <param name="gcHandle"></param>
-        /// <param name="shouldAddInflight">when true, we would create Normal GCHandle to the JSObject, so that it would not get collected before passing it back to managed code</param>
-        public static object? GetDotNetObject(int gcHandle, int shouldAddInflight)
-        {
-            GCHandle h = (GCHandle)(IntPtr)gcHandle;
-
-            if (h.Target is JSObject jso)
-            {
-                if (shouldAddInflight != 0)
-                {
-                    jso.AddInFlight();
-                }
-                return jso.GetWrappedObject() ?? jso;
-            }
-            return h.Target;
         }
 
         public static bool IsSimpleArray(object a)
@@ -267,16 +49,63 @@ namespace System.Runtime.InteropServices.JavaScript
             internal IntPtr ptr;
 
             [FieldOffset(0)]
-            internal RuntimeMethodHandle handle;
+            internal RuntimeMethodHandle methodHandle;
+
+            [FieldOffset(0)]
+            internal RuntimeTypeHandle typeHandle;
         }
 
-        public static string GetCallSignature(IntPtr methodHandle, object objForRuntimeType)
+        // see src/mono/wasm/driver.c MARSHAL_TYPE_xxx
+        public enum MarshalType : int
         {
-            IntPtrAndHandle tmp = default(IntPtrAndHandle);
-            tmp.ptr = methodHandle;
+            NULL = 0,
+            INT = 1,
+            FP64 = 2,
+            STRING = 3,
+            VT = 4,
+            DELEGATE = 5,
+            TASK = 6,
+            OBJECT = 7,
+            BOOL = 8,
+            ENUM = 9,
+            URI = 22,
+            SAFEHANDLE = 23,
+            ARRAY_BYTE = 10,
+            ARRAY_UBYTE = 11,
+            ARRAY_UBYTE_C = 12,
+            ARRAY_SHORT = 13,
+            ARRAY_USHORT = 14,
+            ARRAY_INT = 15,
+            ARRAY_UINT = 16,
+            ARRAY_FLOAT = 17,
+            ARRAY_DOUBLE = 18,
+            FP32 = 24,
+            UINT32 = 25,
+            INT64 = 26,
+            UINT64 = 27,
+            CHAR = 28,
+            STRING_INTERNED = 29,
+            VOID = 30,
+            ENUM64 = 31,
+            POINTER = 32
+        }
 
-            MethodBase? mb = objForRuntimeType == null ? MethodBase.GetMethodFromHandle(tmp.handle) : MethodBase.GetMethodFromHandle(tmp.handle, Type.GetTypeHandle(objForRuntimeType));
-            if (mb == null)
+        // see src/mono/wasm/driver.c MARSHAL_ERROR_xxx
+        public enum MarshalError : int
+        {
+            BUFFER_TOO_SMALL = 512,
+            NULL_CLASS_POINTER = 513,
+            NULL_TYPE_POINTER = 514,
+            UNSUPPORTED_TYPE = 515,
+            FIRST = BUFFER_TOO_SMALL
+        }
+
+        public static string GetCallSignature(IntPtr _methodHandle, object? objForRuntimeType)
+        {
+            var methodHandle = GetMethodHandleFromIntPtr(_methodHandle);
+
+            MethodBase? mb = objForRuntimeType is null ? MethodBase.GetMethodFromHandle(methodHandle) : MethodBase.GetMethodFromHandle(methodHandle, Type.GetTypeHandle(objForRuntimeType));
+            if (mb is null)
                 return string.Empty;
 
             ParameterInfo[] parms = mb.GetParameters();
@@ -284,108 +113,162 @@ namespace System.Runtime.InteropServices.JavaScript
             if (parmsLength == 0)
                 return string.Empty;
 
-            char[] res = new char[parmsLength];
-
-            for (int c = 0; c < parmsLength; c++)
+            var result = new char[parmsLength];
+            for (int i = 0; i < parmsLength; i++)
             {
-                Type t = parms[c].ParameterType;
-                switch (Type.GetTypeCode(t))
-                {
-                    case TypeCode.Byte:
-                    case TypeCode.SByte:
-                    case TypeCode.Int16:
-                    case TypeCode.UInt16:
-                    case TypeCode.Int32:
-                    case TypeCode.UInt32:
-                    case TypeCode.Boolean:
-                        // Enums types have the same code as their underlying numeric types
-                        if (t.IsEnum)
-                            res[c] = 'j';
-                        else
-                            res[c] = 'i';
-                        break;
-                    case TypeCode.Int64:
-                    case TypeCode.UInt64:
-                        // Enums types have the same code as their underlying numeric types
-                        if (t.IsEnum)
-                            res[c] = 'k';
-                        else
-                            res[c] = 'l';
-                        break;
-                    case TypeCode.Single:
-                        res[c] = 'f';
-                        break;
-                    case TypeCode.Double:
-                        res[c] = 'd';
-                        break;
-                    case TypeCode.String:
-                        res[c] = 's';
-                        break;
-                    default:
-                        if (t == typeof(IntPtr))
-                        {
-                            res[c] = 'i';
-                        }
-                        else if (t == typeof(Uri))
-                        {
-                            res[c] = 'u';
-                        }
-                        else if (t == typeof(SafeHandle))
-                        {
-                            res[c] = 'h';
-                        }
-                        else
-                        {
-                            if (t.IsValueType)
-                                throw new NotSupportedException(SR.ValueTypeNotSupported);
-                            res[c] = 'o';
-                        }
-                        break;
-                }
+                Type t = parms[i].ParameterType;
+                var mt = GetMarshalTypeFromType(t);
+                result[i] = GetCallSignatureCharacterForMarshalType(mt, null);
             }
-            return new string(res);
+
+            return new string(result);
         }
 
-        public static void SetupJSContinuation(Task task, JSObject continuationObj)
+        private static RuntimeMethodHandle GetMethodHandleFromIntPtr(IntPtr ptr)
         {
-            if (task.IsCompleted)
-                Complete();
-            else
-                task.GetAwaiter().OnCompleted(Complete);
+            var temp = new IntPtrAndHandle { ptr = ptr };
+            return temp.methodHandle;
+        }
 
-            void Complete()
+        private static RuntimeTypeHandle GetTypeHandleFromIntPtr(IntPtr ptr)
+        {
+            var temp = new IntPtrAndHandle { ptr = ptr };
+            return temp.typeHandle;
+        }
+
+        internal static MarshalType GetMarshalTypeFromType(Type? type)
+        {
+            if (type is null)
+                return MarshalType.VOID;
+
+            var typeCode = Type.GetTypeCode(type);
+            if (type.IsEnum)
             {
-                try
+                switch (typeCode)
                 {
-                    if (task.Exception == null)
-                    {
-                        object? result;
-                        Type task_type = task.GetType();
-                        if (task_type == typeof(Task))
-                        {
-                            result = System.Array.Empty<object>();
-                        }
-                        else
-                        {
-                            result = GetTaskResultMethodInfo(task_type)?.Invoke(task, null);
-                        }
+                    case TypeCode.Int32:
+                    case TypeCode.UInt32:
+                        return MarshalType.ENUM;
+                    case TypeCode.Int64:
+                    case TypeCode.UInt64:
+                        return MarshalType.ENUM64;
+                    default:
+                        throw new JSException($"Unsupported enum underlying type {typeCode}");
+                }
+            }
 
-                        continuationObj.Invoke("resolve", result);
-                    }
+            switch (typeCode)
+            {
+                case TypeCode.Byte:
+                case TypeCode.SByte:
+                case TypeCode.Int16:
+                case TypeCode.UInt16:
+                case TypeCode.Int32:
+                    return MarshalType.INT;
+                case TypeCode.UInt32:
+                    return MarshalType.UINT32;
+                case TypeCode.Boolean:
+                    return MarshalType.BOOL;
+                case TypeCode.Int64:
+                    return MarshalType.INT64;
+                case TypeCode.UInt64:
+                    return MarshalType.UINT64;
+                case TypeCode.Single:
+                    return MarshalType.FP32;
+                case TypeCode.Double:
+                    return MarshalType.FP64;
+                case TypeCode.String:
+                    return MarshalType.STRING;
+                case TypeCode.Char:
+                    return MarshalType.CHAR;
+            }
+
+            if (type.IsArray)
+            {
+                if (!type.IsSZArray)
+                    throw new JSException("Only single-dimensional arrays with a zero lower bound can be marshaled to JS");
+
+                var elementType = type.GetElementType();
+                switch (Type.GetTypeCode(elementType))
+                {
+                    case TypeCode.Byte:
+                        return MarshalType.ARRAY_UBYTE;
+                    case TypeCode.SByte:
+                        return MarshalType.ARRAY_BYTE;
+                    case TypeCode.Int16:
+                        return MarshalType.ARRAY_SHORT;
+                    case TypeCode.UInt16:
+                        return MarshalType.ARRAY_USHORT;
+                    case TypeCode.Int32:
+                        return MarshalType.ARRAY_INT;
+                    case TypeCode.UInt32:
+                        return MarshalType.ARRAY_UINT;
+                    case TypeCode.Single:
+                        return MarshalType.ARRAY_FLOAT;
+                    case TypeCode.Double:
+                        return MarshalType.ARRAY_DOUBLE;
+                    default:
+                        throw new JSException($"Unsupported array element type {elementType}");
+                }
+            }
+            else if (type == typeof(IntPtr))
+                return MarshalType.POINTER;
+            else if (type == typeof(UIntPtr))
+                return MarshalType.POINTER;
+            else if (type == typeof(SafeHandle))
+                return MarshalType.SAFEHANDLE;
+            else if (typeof(Delegate).IsAssignableFrom(type))
+                return MarshalType.DELEGATE;
+            else if ((type == typeof(Task)) || typeof(Task).IsAssignableFrom(type))
+                return MarshalType.TASK;
+            else if (typeof(Uri) == type)
+                return MarshalType.URI;
+            else if (type.IsPointer)
+                return MarshalType.POINTER;
+
+            if (type.IsValueType)
+                return MarshalType.VT;
+            else
+                return MarshalType.OBJECT;
+        }
+
+        internal static char GetCallSignatureCharacterForMarshalType(MarshalType t, char? defaultValue)
+        {
+            switch (t)
+            {
+                case MarshalType.BOOL:
+                case MarshalType.INT:
+                case MarshalType.UINT32:
+                case MarshalType.POINTER:
+                    return 'i';
+                case MarshalType.UINT64:
+                case MarshalType.INT64:
+                    return 'l';
+                case MarshalType.FP32:
+                    return 'f';
+                case MarshalType.FP64:
+                    return 'd';
+                case MarshalType.STRING:
+                    return 's';
+                case MarshalType.URI:
+                    return 'u';
+                case MarshalType.SAFEHANDLE:
+                    return 'h';
+                case MarshalType.ENUM:
+                    return 'j';
+                case MarshalType.ENUM64:
+                    return 'k';
+                case MarshalType.TASK:
+                case MarshalType.DELEGATE:
+                case MarshalType.OBJECT:
+                    return 'o';
+                case MarshalType.VT:
+                    return 'a';
+                default:
+                    if (defaultValue.HasValue)
+                        return defaultValue.Value;
                     else
-                    {
-                        continuationObj.Invoke("reject", task.Exception.ToString());
-                    }
-                }
-                catch (Exception e)
-                {
-                    continuationObj.Invoke("reject", e.ToString());
-                }
-                finally
-                {
-                    continuationObj.Dispose();
-                    FreeObject(task);
-                }
+                        throw new JSException($"Unsupported marshal type {t}");
             }
         }
 
@@ -418,10 +301,8 @@ namespace System.Runtime.InteropServices.JavaScript
             return o.ToString() ?? string.Empty;
         }
 
-        public static double GetDateValue(object dtv)
+        public static double GetDateValue(object dtv!!)
         {
-            if (dtv == null)
-                throw new ArgumentNullException(nameof(dtv));
             if (!(dtv is DateTime dt))
                 throw new InvalidCastException(SR.Format(SR.UnableCastObjectToType, dtv.GetType(), typeof(DateTime)));
             if (dt.Kind == DateTimeKind.Local)
@@ -442,79 +323,74 @@ namespace System.Runtime.InteropServices.JavaScript
             return new Uri(uri);
         }
 
-        public static bool SafeHandleAddRef(SafeHandle safeHandle)
+        public static void CancelPromise(int promiseJSHandle)
         {
-            bool _addRefSucceeded = false;
-#if DEBUG_HANDLE
-            var _anyref = safeHandle as AnyRef;
-#endif
-            try
+            var res = Interop.Runtime.CancelPromise(promiseJSHandle, out int exception);
+            if (exception != 0)
+                throw new JSException(res);
+        }
+
+        public static Task<object> WebSocketOpen(string uri, object[]? subProtocols, Delegate onClosed, out JSObject webSocket, out int promiseJSHandle)
+        {
+            var res = Interop.Runtime.WebSocketOpen(uri, subProtocols, onClosed, out int webSocketJSHandle, out promiseJSHandle, out int exception);
+            if (exception != 0)
+                throw new JSException((string)res);
+            webSocket = new JSObject((IntPtr)webSocketJSHandle);
+
+            return (Task<object>)res;
+        }
+
+        public static unsafe Task<object>? WebSocketSend(JSObject webSocket, ArraySegment<byte> buffer, int messageType, bool endOfMessage, out int promiseJSHandle)
+        {
+            fixed (byte* messagePtr = buffer.Array)
             {
-                safeHandle.DangerousAddRef(ref _addRefSucceeded);
-#if DEBUG_HANDLE
-                if (_addRefSucceeded && _anyref != null)
-                    _anyref.AddRef();
-#endif
-            }
-            catch
-            {
-                if (_addRefSucceeded)
+                var res = Interop.Runtime.WebSocketSend(webSocket.JSHandle, (IntPtr)messagePtr, buffer.Offset, buffer.Count, messageType, endOfMessage, out promiseJSHandle, out int exception);
+                if (exception != 0)
+                    throw new JSException((string)res);
+
+                if (res == null)
                 {
-                    safeHandle.DangerousRelease();
-#if DEBUG_HANDLE
-                    if (_anyref != null)
-                        _anyref.Release();
-#endif
-                    _addRefSucceeded = false;
+                    return null;
                 }
+
+                return (Task<object>)res;
             }
-#if DEBUG_HANDLE
-            Debug.WriteLine($"\tSafeHandleAddRef: {safeHandle.DangerousGetHandle()} / RefCount: {((_anyref == null) ? 0 : _anyref.RefCount)}");
-#endif
-            return _addRefSucceeded;
         }
 
-        public static void SafeHandleRelease(SafeHandle safeHandle)
+        public static unsafe Task<object>? WebSocketReceive(JSObject webSocket, ArraySegment<byte> buffer, ReadOnlySpan<int> response, out int promiseJSHandle)
         {
-            safeHandle.DangerousRelease();
-#if DEBUG_HANDLE
-            var _anyref = safeHandle as AnyRef;
-            if (_anyref != null)
+            fixed (int* responsePtr = response)
+            fixed (byte* bufferPtr = buffer.Array)
             {
-                _anyref.Release();
-                Debug.WriteLine($"\tSafeHandleRelease: {safeHandle.DangerousGetHandle()} / RefCount: {_anyref.RefCount}");
+                var res = Interop.Runtime.WebSocketReceive(webSocket.JSHandle, (IntPtr)bufferPtr, buffer.Offset, buffer.Count, (IntPtr)responsePtr, out promiseJSHandle, out int exception);
+                if (exception != 0)
+                    throw new JSException((string)res);
+                if (res == null)
+                {
+                    return null;
+                }
+                return (Task<object>)res;
             }
-#endif
         }
 
-        public static void SafeHandleReleaseByHandle(int jsId)
+        public static Task<object>? WebSocketClose(JSObject webSocket, int code, string? reason, bool waitForCloseReceived, out int promiseJSHandle)
         {
-#if DEBUG_HANDLE
-            Debug.WriteLine($"SafeHandleReleaseByHandle: {jsId}");
-#endif
-            lock (_boundObjects)
+            var res = Interop.Runtime.WebSocketClose(webSocket.JSHandle, code, reason, waitForCloseReceived, out promiseJSHandle, out int exception);
+            if (exception != 0)
+                throw new JSException((string)res);
+
+            if (res == null)
             {
-                if (_boundObjects.TryGetValue(jsId, out WeakReference<JSObject>? reference))
-                {
-                    reference.TryGetTarget(out JSObject? target);
-                    Debug.Assert(target != null, $"\tSafeHandleReleaseByHandle: did not find active target {jsId}");
-                    SafeHandleRelease(target);
-                }
-                else
-                {
-                    Debug.Fail($"\tSafeHandleReleaseByHandle: did not find reference for {jsId}");
-                }
+                return null;
             }
+            return (Task<object>)res;
         }
 
-        public static IntPtr SafeHandleGetHandle(SafeHandle safeHandle, bool addRef)
+        public static void WebSocketAbort(JSObject webSocket)
         {
-#if DEBUG_HANDLE
-            Debug.WriteLine($"SafeHandleGetHandle: {safeHandle.DangerousGetHandle()} / addRef {addRef}");
-#endif
-            if (addRef && !SafeHandleAddRef(safeHandle)) return IntPtr.Zero;
-            return safeHandle.DangerousGetHandle();
+            var res = Interop.Runtime.WebSocketAbort(webSocket.JSHandle, out int exception);
+            if (exception != 0)
+                throw new JSException(res);
         }
-
     }
 }

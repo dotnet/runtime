@@ -26,6 +26,16 @@ HRESULT PdbHeap::SetData(PORT_PDB_STREAM* data)
         (sizeof(ULONG) * data->typeSystemTableRowsSize);
     m_data = new BYTE[m_size];
 
+#if BIGENDIAN
+    PORT_PDB_STREAM swappedData = *data;
+    SwapGuid(&swappedData.id.pdbGuid);
+    swappedData.id.pdbTimeStamp = VAL32(swappedData.id.pdbTimeStamp);
+    swappedData.entryPoint = VAL32(swappedData.entryPoint);
+    swappedData.referencedTypeSystemTables = VAL64(swappedData.referencedTypeSystemTables);
+    // typeSystemTableRows and typeSystemTableRowsSize handled below
+    data = &swappedData;
+#endif
+
     ULONG offset = 0;
     if (memcpy_s(m_data + offset, m_size, &data->id, sizeof(data->id)))
         return E_FAIL;
@@ -39,9 +49,17 @@ HRESULT PdbHeap::SetData(PORT_PDB_STREAM* data)
         return E_FAIL;
     offset += sizeof(data->referencedTypeSystemTables);
 
+#if !BIGENDIAN
     if (memcpy_s(m_data + offset, m_size, data->typeSystemTableRows, sizeof(ULONG) * data->typeSystemTableRowsSize))
         return E_FAIL;
     offset += sizeof(ULONG) * data->typeSystemTableRowsSize;
+#else
+    for (int i = 0; i < data->typeSystemTableRowsSize; i++)
+    {
+        SET_UNALIGNED_VAL32(m_data + offset, data->typeSystemTableRows[i]);
+        offset += sizeof(ULONG);
+    }
+#endif
 
     _ASSERTE(offset == m_size);
 

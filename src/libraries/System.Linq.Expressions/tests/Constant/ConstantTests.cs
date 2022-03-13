@@ -278,14 +278,12 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-#if FEATURE_COMPILE
         private static TypeBuilder GetTypeBuilder()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
             ModuleBuilder module = assembly.DefineDynamicModule("Name");
             return module.DefineType("Type");
         }
-#endif
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void CheckTypeConstantTest(bool useInterpreter)
@@ -296,9 +294,6 @@ namespace System.Linq.Expressions.Tests
                 typeof(int),
                 typeof(Func<string>),
                 typeof(List<>).GetGenericArguments()[0],
-#if FEATURE_COMPILE
-                GetTypeBuilder(),
-#endif
                 typeof(PrivateGenericClass<>).GetGenericArguments()[0],
                 typeof(PrivateGenericClass<>),
                 typeof(PrivateGenericClass<int>)
@@ -306,9 +301,12 @@ namespace System.Linq.Expressions.Tests
             {
                 VerifyTypeConstant(value, useInterpreter);
             }
-        }
 
-#if FEATURE_COMPILE
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                VerifyTypeConstant(GetTypeBuilder(), useInterpreter);
+            }
+        }
 
         private static MethodInfo GlobalMethod(params Type[] parameterTypes)
         {
@@ -319,7 +317,8 @@ namespace System.Linq.Expressions.Tests
             return module.GetMethod(globalMethod.Name);
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckMethodInfoConstantTest(bool useInterpreter)
         {
             foreach (MethodInfo value in new MethodInfo[]
@@ -329,16 +328,25 @@ namespace System.Linq.Expressions.Tests
                 typeof(SomePublicMethodsForLdToken).GetMethod(nameof(SomePublicMethodsForLdToken.Qux), BindingFlags.Public | BindingFlags.Static),
                 typeof(SomePublicMethodsForLdToken).GetMethod(nameof(SomePublicMethodsForLdToken.Qux), BindingFlags.Public | BindingFlags.Static).MakeGenericMethod(typeof(int)),
                 typeof(List<>).GetMethod(nameof(List<int>.Add)),
-                typeof(List<int>).GetMethod(nameof(List<int>.Add)),
-                GlobalMethod(Type.EmptyTypes),
-                GlobalMethod(typeof(PrivateGenericClass<int>)),
-                GlobalMethod(typeof(PrivateGenericClass<>))
+                typeof(List<int>).GetMethod(nameof(List<int>.Add))
             })
             {
                 VerifyMethodInfoConstant(value, useInterpreter);
             }
+
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                foreach (MethodInfo value in new MethodInfo[]
+                {
+                    GlobalMethod(Type.EmptyTypes),
+                    GlobalMethod(typeof(PrivateGenericClass<int>)),
+                    GlobalMethod(typeof(PrivateGenericClass<>))
+                })
+                {
+                    VerifyMethodInfoConstant(value, useInterpreter);
+                }
+            }
         }
-#endif
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void CheckConstructorInfoConstantTest(bool useInterpreter)

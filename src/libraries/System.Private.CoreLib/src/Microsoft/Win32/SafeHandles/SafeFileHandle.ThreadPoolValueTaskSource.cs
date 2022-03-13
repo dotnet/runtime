@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Strategies;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,6 +33,7 @@ namespace Microsoft.Win32.SafeHandles
             private ManualResetValueTaskSourceCore<long> _source;
             private Operation _operation = Operation.None;
             private ExecutionContext? _context;
+            private OSFileStreamStrategy? _strategy;
 
             // These fields store the parameters for the operation.
             // The first two are common for all kinds of operations.
@@ -116,8 +118,22 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 finally
                 {
+                    if (_strategy is not null)
+                    {
+                        // WriteAtOffset returns void, so we need to fix position only in case of an exception
+                        if (exception is not null)
+                        {
+                            _strategy.OnIncompleteOperation(_singleSegment.Length, 0);
+                        }
+                        else if (_operation == Operation.Read && result != _singleSegment.Length)
+                        {
+                            _strategy.OnIncompleteOperation(_singleSegment.Length, (int)result);
+                        }
+                    }
+
                     _operation = Operation.None;
                     _context = null;
+                    _strategy = null;
                     _cancellationToken = default;
                     _singleSegment = default;
                     _readScatterBuffers = null;
@@ -152,7 +168,7 @@ namespace Microsoft.Win32.SafeHandles
                 ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: true);
             }
 
-            public ValueTask<int> QueueRead(Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+            public ValueTask<int> QueueRead(Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
             {
                 ValidateInvariants();
 
@@ -160,12 +176,13 @@ namespace Microsoft.Win32.SafeHandles
                 _singleSegment = buffer;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
+                _strategy = strategy;
                 QueueToThreadPool();
 
                 return new ValueTask<int>(this, _source.Version);
             }
 
-            public ValueTask QueueWrite(ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+            public ValueTask QueueWrite(ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
             {
                 ValidateInvariants();
 
@@ -173,6 +190,7 @@ namespace Microsoft.Win32.SafeHandles
                 _singleSegment = buffer;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
+                _strategy = strategy;
                 QueueToThreadPool();
 
                 return new ValueTask(this, _source.Version);

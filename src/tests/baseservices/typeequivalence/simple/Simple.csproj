@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Simple.cs" />
@@ -11,6 +12,7 @@
       <EmbedTypes>true</EmbedTypes>
     </ProjectReference>
     <ProjectReference Include="../impl/TypeImpl.csproj" />
+    <ProjectReference Include="../impl/PunningLib.ilproj" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(TypeEquivalence.targets))" />

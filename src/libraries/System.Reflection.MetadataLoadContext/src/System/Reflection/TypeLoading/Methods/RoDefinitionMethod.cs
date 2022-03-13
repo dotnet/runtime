@@ -99,11 +99,9 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsGenericMethodDefinition => GetGenericTypeParametersNoCopy().Length != 0;
         public sealed override MethodInfo GetGenericMethodDefinition() => IsGenericMethodDefinition ? this : throw new InvalidOperationException(); // Very uninformative but compatible exception
 
-        public sealed override MethodInfo MakeGenericMethod(params Type[] typeArguments)
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
+        public sealed override MethodInfo MakeGenericMethod(params Type[] typeArguments!!)
         {
-            if (typeArguments == null)
-                throw new ArgumentNullException(nameof(typeArguments));
-
             if (!IsGenericMethodDefinition)
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, this));
 

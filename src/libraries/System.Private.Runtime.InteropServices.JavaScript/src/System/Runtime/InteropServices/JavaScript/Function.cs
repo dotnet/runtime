@@ -16,10 +16,10 @@ namespace System.Runtime.InteropServices.JavaScript
     /// </remarks>
     public class Function : CoreObject
     {
-        public Function(params object[] args) : base(Interop.Runtime.New<Function>(args))
+        public Function(params object[] args) : base(nameof(Function), args)
         { }
 
-        internal Function(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
+        internal Function(IntPtr jsHandle) : base(jsHandle)
         { }
 
         /// <summary>
@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <returns>The apply.</returns>
         /// <param name="thisArg">This argument.</param>
         /// <param name="argsArray">Arguments.</param>
-        public object Apply(object? thisArg = null, object[]? argsArray = null) => Invoke("apply", thisArg, argsArray);
+        public object Apply(object? thisArg, object[]? argsArray = null) => Invoke("apply", thisArg, argsArray);
 
         /// <summary>
         /// Creates a new Function that, when called, has its this keyword set to the provided value, with a given sequence of arguments preceding any provided when the new function is called.
@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <returns>The bind.</returns>
         /// <param name="thisArg">This argument.</param>
         /// <param name="argsArray">Arguments.</param>
-        public Function Bind(object? thisArg = null, object[]? argsArray = null) => (Function)Invoke("bind", thisArg, argsArray);
+        public Function Bind(object? thisArg, object[]? argsArray = null) => (Function)Invoke("bind", thisArg, argsArray);
 
         /// <summary>
         /// Calls a function with a given `this` value and arguments provided individually.
@@ -44,12 +44,18 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <returns>The result of calling the function with the specified `this` value and arguments.</returns>
         /// <param name="thisArg">Optional (null value). The value of this provided for the call to a function. Note that this may not be the actual value seen by the method: if the method is a function in non-strict mode, null and undefined will be replaced with the global object and primitive values will be converted to objects.</param>
         /// <param name="argsArray">Optional. Arguments for the function.</param>
-        public object Call(object? thisArg = null, params object[] argsArray)
+        public object Call(object? thisArg, params object[] argsArray)
         {
             object?[] argsList = new object[argsArray.Length + 1];
             argsList[0] = thisArg;
             System.Array.Copy(argsArray, 0, argsList, 1, argsArray.Length);
             return Invoke("call", argsList);
         }
+
+        /// <summary>
+        /// Calls a function with a null `this` value.
+        /// </summary>
+        /// <returns>The result of calling the function.</returns>
+        public object Call() => Call(null);
     }
 }

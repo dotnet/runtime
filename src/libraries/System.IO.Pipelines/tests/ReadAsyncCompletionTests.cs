@@ -9,7 +9,6 @@ namespace System.IO.Pipelines.Tests
     public class ReadAsyncCompletionTests : PipeTest
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50927", TestPlatforms.Android)]
         public void AwaitingReadAsyncAwaitableTwiceCompletesWriterWithException()
         {
             async Task Await(ValueTask<ReadResult> a)

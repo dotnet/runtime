@@ -13,18 +13,13 @@ namespace System.IO.Strategies
     {
         protected readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
         private readonly FileAccess _access; // What file was opened for.
-        private readonly FileShare _share;
 
         protected long _filePosition;
         private long _appendStart; // When appending, prevent overwriting file.
-        private long _length = -1; // When the file is locked for writes on Windows (_share <= FileShare.Read) cache file length in-memory, negative means that hasn't been fetched.
-        private bool _exposedHandle; // created from handle, or SafeFileHandle was used and the handle got exposed
 
-        internal OSFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
+        internal OSFileStreamStrategy(SafeFileHandle handle, FileAccess access)
         {
             _access = access;
-            _share = share;
-            _exposedHandle = true;
 
             handle.EnsureThreadPoolBindingInitialized();
 
@@ -47,7 +42,6 @@ namespace System.IO.Strategies
             string fullPath = Path.GetFullPath(path);
 
             _access = access;
-            _share = share;
 
             _fileHandle = SafeFileHandle.Open(fullPath, mode, access, share, options, preallocationSize);
 
@@ -72,50 +66,20 @@ namespace System.IO.Strategies
             }
         }
 
+        internal override bool IsAsync => _fileHandle.IsAsync;
+
         public sealed override bool CanSeek => _fileHandle.CanSeek;
 
         public sealed override bool CanRead => !_fileHandle.IsClosed && (_access & FileAccess.Read) != 0;
 
         public sealed override bool CanWrite => !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0;
 
-        public unsafe sealed override long Length
-        {
-            get
-            {
-                if (!LengthCachingSupported)
-                {
-                    return RandomAccess.GetFileLength(_fileHandle);
-                }
+        public unsafe sealed override long Length => _fileHandle.GetFileLength();
 
-                // On Windows, when the file is locked for writes we can cache file length
-                // in memory and avoid subsequent native calls which are expensive.
-
-                if (_length < 0)
-                {
-                    _length = RandomAccess.GetFileLength(_fileHandle);
-                }
-
-                return _length;
-            }
-        }
-
-        protected void UpdateLengthOnChangePosition()
-        {
-            // Do not update the cached length if the file is not locked
-            // or if the length hasn't been fetched.
-            if (!LengthCachingSupported || _length < 0)
-            {
-                Debug.Assert(_length < 0);
-                return;
-            }
-
-            if (_filePosition > _length)
-            {
-                _length = _filePosition;
-            }
-        }
-
-        protected bool LengthCachingSupported => OperatingSystem.IsWindows() && _share <= FileShare.Read && !_exposedHandle;
+        // in case of concurrent incomplete reads, there can be multiple threads trying to update the position
+        // at the same time. That is why we are using Interlocked here.
+        internal void OnIncompleteOperation(int expectedBytesTransferred, int actualBytesTransferred)
+            => Interlocked.Add(ref _filePosition, actualBytesTransferred - expectedBytesTransferred);
 
         /// <summary>Gets or sets the position within the current stream</summary>
         public sealed override long Position
@@ -140,9 +104,6 @@ namespace System.IO.Strategies
                     FileStreamHelpers.Seek(_fileHandle, _filePosition, SeekOrigin.Begin);
                 }
 
-                _exposedHandle = true;
-                _length = -1; // invalidate cached length
-
                 return _fileHandle;
             }
         }
@@ -158,8 +119,6 @@ namespace System.IO.Strategies
 
             return ValueTask.CompletedTask;
         }
-
-        internal sealed override void DisposeInternal(bool disposing) => Dispose(disposing);
 
         // this method just disposes everything (no buffer, no need to flush)
         protected sealed override void Dispose(bool disposing)
@@ -234,11 +193,8 @@ namespace System.IO.Strategies
         {
             Debug.Assert(value >= 0, "value >= 0");
 
-            FileStreamHelpers.SetFileLength(_fileHandle, value);
-            if (LengthCachingSupported)
-            {
-                _length = value;
-            }
+            RandomAccess.SetFileLength(_fileHandle, value);
+            Debug.Assert(!_fileHandle.TryGetCachedLength(out _), "If length can be cached (file opened for reading, not shared for writing), it should be impossible to modify file length");
 
             if (_filePosition > value)
             {
@@ -290,18 +246,53 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
-            try
+            RandomAccess.WriteAtOffset(_fileHandle, buffer, _filePosition);
+            _filePosition += buffer.Length;
+        }
+
+        public sealed override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+            TaskToApm.Begin(WriteAsync(buffer, offset, count), callback, state);
+
+        public sealed override void EndWrite(IAsyncResult asyncResult) =>
+            TaskToApm.End(asyncResult);
+
+        public sealed override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+
+        public sealed override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        {
+            long writeOffset = CanSeek ? Interlocked.Add(ref _filePosition, source.Length) - source.Length : -1;
+            return RandomAccess.WriteAtOffsetAsync(_fileHandle, source, writeOffset, cancellationToken, this);
+        }
+
+        public sealed override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+            TaskToApm.Begin(ReadAsync(buffer, offset, count), callback, state);
+
+        public sealed override int EndRead(IAsyncResult asyncResult) =>
+            TaskToApm.End<int>(asyncResult);
+
+        public sealed override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+
+        public sealed override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
+        {
+            if (!CanSeek)
             {
-                RandomAccess.WriteAtOffset(_fileHandle, buffer, _filePosition);
-            }
-            catch
-            {
-                _length = -1; // invalidate cached length
-                throw;
+                return RandomAccess.ReadAtOffsetAsync(_fileHandle, destination, fileOffset: -1, cancellationToken);
             }
 
-            _filePosition += buffer.Length;
-            UpdateLengthOnChangePosition();
+            if (_fileHandle.TryGetCachedLength(out long cachedLength) && Volatile.Read(ref _filePosition) >= cachedLength)
+            {
+                // We know for sure that the file length can be safely cached and it has already been obtained.
+                // If we have reached EOF we just return here and avoid a sys-call.
+                return ValueTask.FromResult(0);
+            }
+
+            // This implementation updates the file position before the operation starts and updates it after incomplete read.
+            // This is done to keep backward compatibility for concurrent reads.
+            // It uses Interlocked as there can be multiple concurrent incomplete reads updating position at the same time.
+            long readOffset = Interlocked.Add(ref _filePosition, destination.Length) - destination.Length;
+            return RandomAccess.ReadAtOffsetAsync(_fileHandle, destination, readOffset, cancellationToken, this);
         }
     }
 }

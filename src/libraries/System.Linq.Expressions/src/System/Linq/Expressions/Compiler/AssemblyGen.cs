@@ -60,6 +60,9 @@ namespace System.Linq.Expressions.Compiler
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "MulticastDelegate has a ctor with RequiresUnreferencedCode, but the generated derived type doesn't reference this ctor, so this is trim compatible.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111:ReflectionToDynamicallyAccessedMembers",
+            Justification = "MulticastDelegate and Delegate have multiple methods with DynamicallyAccessedMembers annotations. But the generated code" +
+            "in this case will not call any of them (it only defines a .ctor and Invoke method both of which are runtime implemented.")]
         internal static TypeBuilder DefineDelegateType(string name)
         {
             return Assembly.DefineType(

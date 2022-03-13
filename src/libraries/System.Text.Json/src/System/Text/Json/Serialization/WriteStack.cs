@@ -12,9 +12,11 @@ using System.Threading.Tasks;
 
 namespace System.Text.Json
 {
-    [DebuggerDisplay("Path:{PropertyPath()} Current: ConverterStrategy.{ConverterStrategy.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy}, {Current.JsonTypeInfo.Type.Name}")]
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct WriteStack
     {
+        public int CurrentDepth => _count;
+
         /// <summary>
         /// Exposes the stackframe that is currently active.
         /// </summary>
@@ -41,15 +43,21 @@ namespace System.Text.Json
         public CancellationToken CancellationToken;
 
         /// <summary>
+        /// In the case of async serialization, used by resumable converters to signal that
+        /// the current buffer contents should not be flushed to the underlying stream.
+        /// </summary>
+        public bool SuppressFlush;
+
+        /// <summary>
         /// Stores a pending task that a resumable converter depends on to continue work.
         /// It must be awaited by the root context before serialization is resumed.
         /// </summary>
         public Task? PendingTask;
 
         /// <summary>
-        /// List of IAsyncDisposables that have been scheduled for disposal by converters.
+        /// List of completed IAsyncDisposables that have been scheduled for disposal by converters.
         /// </summary>
-        public List<IAsyncDisposable>? PendingAsyncDisposables;
+        public List<IAsyncDisposable>? CompletedAsyncDisposables;
 
         /// <summary>
         /// The amount of bytes to write before the underlying Stream should be flushed and the
@@ -70,6 +78,11 @@ namespace System.Text.Json
         /// </summary>
         public bool SupportContinuation;
 
+        /// <summary>
+        /// Stores a reference id that has been calculated for a newly serialized object.
+        /// </summary>
+        public string? NewReferenceId;
+
         private void EnsurePushCapacity()
         {
             if (_stack is null)
@@ -87,16 +100,15 @@ namespace System.Text.Json
         /// </summary>
         public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
-            JsonTypeInfo jsonTypeInfo = options.GetOrAddClassForRootType(type);
-            Debug.Assert(options == jsonTypeInfo.Options);
+            JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(type);
             return Initialize(jsonTypeInfo, supportContinuation);
         }
 
         internal JsonConverter Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation)
         {
             Current.JsonTypeInfo = jsonTypeInfo;
-            Current.DeclaredJsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
-            Current.NumberHandling = Current.DeclaredJsonPropertyInfo.NumberHandling;
+            Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
+            Current.NumberHandling = Current.JsonPropertyInfo.NumberHandling;
 
             JsonSerializerOptions options = jsonTypeInfo.Options;
             if (options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
@@ -116,12 +128,14 @@ namespace System.Text.Json
             {
                 if (_count == 0)
                 {
-                    // The first stack frame is held in Current.
+                    // Performance optimization: reuse the first stackframe on the first push operation.
+                    // NB need to be careful when making writes to Current _before_ the first `Push`
+                    // operation is performed.
                     _count = 1;
                 }
                 else
                 {
-                    JsonTypeInfo jsonTypeInfo = Current.GetPolymorphicJsonPropertyInfo().RuntimeTypeInfo;
+                    JsonTypeInfo jsonTypeInfo = Current.GetNestedJsonTypeInfo();
                     JsonNumberHandling? numberHandling = Current.NumberHandling;
 
                     EnsurePushCapacity();
@@ -130,9 +144,9 @@ namespace System.Text.Json
                     _count++;
 
                     Current.JsonTypeInfo = jsonTypeInfo;
-                    Current.DeclaredJsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
+                    Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
                     // Allow number handling on property to win over handling on type.
-                    Current.NumberHandling = numberHandling ?? Current.DeclaredJsonPropertyInfo.NumberHandling;
+                    Current.NumberHandling = numberHandling ?? Current.JsonPropertyInfo.NumberHandling;
                 }
             }
             else
@@ -191,14 +205,6 @@ namespace System.Text.Json
             {
                 Debug.Assert(_continuationCount == 0);
 
-                if (Current.AsyncEnumerator is not null)
-                {
-                    // we have completed serialization of an AsyncEnumerator,
-                    // pop from the stack and schedule for async disposal.
-                    PendingAsyncDisposables ??= new List<IAsyncDisposable>();
-                    PendingAsyncDisposables.Add(Current.AsyncEnumerator);
-                }
-
                 if (--_count > 0)
                 {
                     Current = _stack[_count - 1];
@@ -206,13 +212,16 @@ namespace System.Text.Json
             }
         }
 
+        public void AddCompletedAsyncDisposable(IAsyncDisposable asyncDisposable)
+            => (CompletedAsyncDisposables ??= new List<IAsyncDisposable>()).Add(asyncDisposable);
+
         // Asynchronously dispose of any AsyncDisposables that have been scheduled for disposal
-        public async ValueTask DisposePendingAsyncDisposables()
+        public async ValueTask DisposeCompletedAsyncDisposables()
         {
-            Debug.Assert(PendingAsyncDisposables?.Count > 0);
+            Debug.Assert(CompletedAsyncDisposables?.Count > 0);
             Exception? exception = null;
 
-            foreach (IAsyncDisposable asyncDisposable in PendingAsyncDisposables)
+            foreach (IAsyncDisposable asyncDisposable in CompletedAsyncDisposables)
             {
                 try
                 {
@@ -229,7 +238,7 @@ namespace System.Text.Json
                 ExceptionDispatchInfo.Capture(exception).Throw();
             }
 
-            PendingAsyncDisposables.Clear();
+            CompletedAsyncDisposables.Clear();
         }
 
         /// <summary>
@@ -240,13 +249,13 @@ namespace System.Text.Json
         {
             Exception? exception = null;
 
-            Debug.Assert(Current.AsyncEnumerator is null);
+            Debug.Assert(Current.AsyncDisposable is null);
             DisposeFrame(Current.CollectionEnumerator, ref exception);
 
             int stackSize = Math.Max(_count, _continuationCount);
             for (int i = 0; i < stackSize - 1; i++)
             {
-                Debug.Assert(_stack[i].AsyncEnumerator is null);
+                Debug.Assert(_stack[i].AsyncDisposable is null);
                 DisposeFrame(_stack[i].CollectionEnumerator, ref exception);
             }
 
@@ -279,12 +288,12 @@ namespace System.Text.Json
         {
             Exception? exception = null;
 
-            exception = await DisposeFrame(Current.CollectionEnumerator, Current.AsyncEnumerator, exception).ConfigureAwait(false);
+            exception = await DisposeFrame(Current.CollectionEnumerator, Current.AsyncDisposable, exception).ConfigureAwait(false);
 
             int stackSize = Math.Max(_count, _continuationCount);
             for (int i = 0; i < stackSize - 1; i++)
             {
-                exception = await DisposeFrame(_stack[i].CollectionEnumerator, _stack[i].AsyncEnumerator, exception).ConfigureAwait(false);
+                exception = await DisposeFrame(_stack[i].CollectionEnumerator, _stack[i].AsyncDisposable, exception).ConfigureAwait(false);
             }
 
             if (exception is not null)
@@ -323,8 +332,8 @@ namespace System.Text.Json
         {
             StringBuilder sb = new StringBuilder("$");
 
-            // If a continuation, always report back full stack.
-            int count = Math.Max(_count, _continuationCount);
+            // If a continuation, always report back full stack which does not use Current for the last frame.
+            int count = Math.Max(_count, _continuationCount + 1);
 
             for (int i = 0; i < count - 1; i++)
             {
@@ -341,7 +350,7 @@ namespace System.Text.Json
             static void AppendStackFrame(StringBuilder sb, ref WriteStackFrame frame)
             {
                 // Append the property name.
-                string? propertyName = frame.DeclaredJsonPropertyInfo?.MemberInfo?.Name;
+                string? propertyName = frame.JsonPropertyInfo?.ClrName;
                 if (propertyName == null)
                 {
                     // Attempt to get the JSON property name from the property name specified in re-entry.
@@ -369,5 +378,8 @@ namespace System.Text.Json
                 }
             }
         }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private string DebuggerDisplay => $"Path:{PropertyPath()} Current: ConverterStrategy.{Current.JsonPropertyInfo?.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
     }
 }

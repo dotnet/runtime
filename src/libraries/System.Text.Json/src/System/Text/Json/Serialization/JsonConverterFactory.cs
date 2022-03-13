@@ -19,13 +19,7 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected JsonConverterFactory() { }
 
-        internal sealed override ConverterStrategy ConverterStrategy
-        {
-            get
-            {
-                return ConverterStrategy.None;
-            }
-        }
+        internal sealed override ConverterStrategy ConverterStrategy => ConverterStrategy.None;
 
         /// <summary>
         /// Create a converter for the provided <see cref="Type"/>.
@@ -61,14 +55,14 @@ namespace System.Text.Json.Serialization
             Debug.Assert(CanConvert(typeToConvert));
 
             JsonConverter? converter = CreateConverter(typeToConvert, options);
-            if (converter == null)
+            switch (converter)
             {
-                ThrowHelper.ThrowInvalidOperationException_SerializerConverterFactoryReturnsNull(GetType());
-            }
-
-            if (converter is JsonConverterFactory)
-            {
-                ThrowHelper.ThrowInvalidOperationException_SerializerConverterFactoryReturnsJsonConverterFactorty(GetType());
+                case null:
+                    ThrowHelper.ThrowInvalidOperationException_SerializerConverterFactoryReturnsNull(GetType());
+                    break;
+                case JsonConverterFactory:
+                    ThrowHelper.ThrowInvalidOperationException_SerializerConverterFactoryReturnsJsonConverterFactorty(GetType());
+                    break;
             }
 
             return converter!;
@@ -119,10 +113,10 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
-        internal sealed override void WriteWithQuotesAsObject(
+        internal sealed override void WriteAsPropertyNameCoreAsObject(
             Utf8JsonWriter writer, object value,
             JsonSerializerOptions options,
-            ref WriteStack state)
+            bool isWritingExtensionDataProperty)
         {
             Debug.Fail("We should never get here.");
 

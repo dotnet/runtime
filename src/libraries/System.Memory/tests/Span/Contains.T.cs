@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace System.SpanTests
@@ -192,6 +194,115 @@ namespace System.SpanTests
         {
             Span<string> theStrings = spanInput;
             Assert.Equal(expected, theStrings.Contains(null));
+        }
+
+        [Theory]
+        [InlineData(new int[] { 1, 2, 3, 4 }, 4, true)]
+        [InlineData(new int[] { 1, 2, 3, 4 }, 5, false)]
+        public static void Contains_Int32(int[] array, int value, bool expectedResult)
+        {
+            // Test with short Span
+            Span<int> span = new Span<int>(array);
+            bool result = span.Contains(value);
+            Assert.Equal(result, expectedResult);
+
+            // Test with long Span
+            for (int i = 0; i < 10; i++)
+                array = array.Concat(array).ToArray();
+            span = new Span<int>(array);
+            result = span.Contains(value);
+            Assert.Equal(result, expectedResult);
+        }
+
+        [Theory]
+        [InlineData(new long[] { 1, 2, 3, 4 }, 4, true)]
+        [InlineData(new long[] { 1, 2, 3, 4 }, 5, false)]
+        public static void Contains_Int64(long[] array, long value, bool expectedResult)
+        {
+            // Test with short Span
+            Span<long> span = new Span<long>(array);
+            bool result = span.Contains(value);
+            Assert.Equal(result, expectedResult);
+
+            // Test with long Span
+            for (int i = 0; i < 10; i++)
+                array = array.Concat(array).ToArray();
+            span = new Span<long>(array);
+            result = span.Contains(value);
+            Assert.Equal(result, expectedResult);
+        }
+
+        [Theory]
+        [InlineData(new byte[] { 1, 2, 3, 4 }, 4, true)]
+        [InlineData(new byte[] { 1, 2, 3, 4 }, 5, false)]
+        public static void Contains_Byte(byte[] array, byte value, bool expectedResult)
+        {
+            // Test with short Span
+            Span<byte> span = new Span<byte>(array);
+            bool result = span.Contains(value);
+            Assert.Equal(result, expectedResult);
+
+            // Test with long Span
+            for (int i = 0; i < 10; i++)
+                array = array.Concat(array).ToArray();
+            span = new Span<byte>(array);
+            result = span.Contains(value);
+            Assert.Equal(result, expectedResult);
+        }
+
+        [Theory]
+        [InlineData(new char[] { 'a', 'b', 'c', 'd' }, 'd', true)]
+        [InlineData(new char[] { 'a', 'b', 'c', 'd' }, 'e', false)]
+        public static void Contains_Char(char[] array, char value, bool expectedResult)
+        {
+            // Test with short Span
+            Span<char> span = new Span<char>(array);
+            bool result = span.Contains(value);
+            Assert.Equal(result, expectedResult);
+
+            // Test with long Span
+            for (int i = 0; i < 10; i++)
+                array = array.Concat(array).ToArray();
+            span = new Span<char>(array);
+            result = span.Contains(value);
+            Assert.Equal(result, expectedResult);
+
+        }
+
+        [Theory]
+        [InlineData(new float[] { 1, 2, 3, 4 }, 4, true)]
+        [InlineData(new float[] { 1, 2, 3, 4 }, 5, false)]
+        public static void Contains_Float(float[] array, float value, bool expectedResult)
+        {
+            // Test with short Span
+            Span<float> span = new Span<float>(array);
+            bool result = span.Contains(value);
+            Assert.Equal(result, expectedResult);
+
+            // Test with long Span
+            for (int i = 0; i < 10; i++)
+                array = array.Concat(array).ToArray();
+            span = new Span<float>(array);
+            result = span.Contains(value);
+            Assert.Equal(result, expectedResult);
+        }
+
+        [Theory]
+        [InlineData(new double[] { 1, 2, 3, 4 }, 4, true)]
+        [InlineData(new double[] { 1, 2, 3, 4 }, 5, false)]
+        public static void Contains_Double(double[] array, double value, bool expectedResult)
+        {
+            // Test with short Span
+            Span<double> span = new Span<double>(array);
+            bool result = span.Contains(value);
+            Assert.Equal(result, expectedResult);
+
+            // Test with long Span
+            for (int i = 0; i < 10; i++)
+                array = array.Concat(array).ToArray();
+            span = new Span<double>(array);
+            result = span.Contains(value);
+            Assert.Equal(result, expectedResult);
         }
     }
 }

@@ -257,6 +257,37 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("scale", () => new Decimal(1, 2, 3, false, 29));
         }
 
+        public static IEnumerable<object[]> Scale_TestData()
+        {
+            yield return new object[] { 10m, 0 };
+            yield return new object[] { 1m, 0 };
+            yield return new object[] { -1m, 0 };
+            yield return new object[] { 1.0m, 1 };
+            yield return new object[] { -1.0m, 1 };
+            yield return new object[] { 1.1m, 1 };
+            yield return new object[] { 1.00m, 2 };
+            yield return new object[] { 1.01m, 2 };
+            yield return new object[] { 1.0000000000000000000000000000m, 28};
+        }
+
+        [Theory]
+        [MemberData(nameof(Scale_TestData))]
+        public static void Scale(decimal value, byte expectedScale)
+        {
+            Assert.Equal(expectedScale, value.Scale);
+        }
+
+        [Theory]
+        [InlineData(new int[] { 1, 0, 0, 0 }, 0)] // 1
+        [InlineData(new int[] { 10, 0, 0, 65536 }, 1)] // 1.0
+        [InlineData(new int[] { 100, 0, 0, 131072 }, 2)] // 1.00
+        [InlineData(new int[] { 268435456, 1042612833, 542101086, 1835008 }, 28)] // 1.0000000000000000000000000000
+        [InlineData(new int[] { 10, 0, 0, -2147418112 }, 1)] // -1.0
+        public static void ScaleFromBits(int[] bits, byte expectedScale)
+        {
+            Assert.Equal(expectedScale, new decimal(bits).Scale);
+        }
+
         public static IEnumerable<object[]> Add_Valid_TestData()
         {
             yield return new object[] { 1m, 1m, 2m };
@@ -791,6 +822,11 @@ namespace System.Tests
             yield return new object[] { (-567.89m).ToString(), defaultStyle, null, -567.89m };
             yield return new object[] { "0.6666666666666666666666666666500000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 0.6666666666666666666666666666m };
 
+            yield return new object[] { emptyFormat.NumberDecimalSeparator + "234", defaultStyle, null, 0.234m };
+            yield return new object[] { "234" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 234.0m };
+            yield return new object[] { "7" + new string('0', 28) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 7E28m };
+            yield return new object[] { "07" + new string('0', 28) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 7E28m };
+
             yield return new object[] { "79228162514264337593543950335", defaultStyle, null, 79228162514264337593543950335m };
             yield return new object[] { "-79228162514264337593543950335", defaultStyle, null, -79228162514264337593543950335m };
             yield return new object[] { "79,228,162,514,264,337,593,543,950,335", NumberStyles.AllowThousands, customFormat3, 79228162514264337593543950335m };
@@ -963,7 +999,7 @@ namespace System.Tests
                 Assert.Equal(0, result);
             }
         }
-        
+
         public static IEnumerable<object[]> Remainder_Valid_TestData()
         {
             decimal NegativeZero = new decimal(0, 0, 0, true, 0);

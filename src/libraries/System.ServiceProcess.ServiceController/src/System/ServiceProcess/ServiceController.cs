@@ -283,7 +283,7 @@ namespace System.ServiceProcess
         }
 
         /// <summary>
-        /// A set of services on which the given service object is depend upon.
+        /// A set of services on which the given service object is dependent upon.
         /// </summary>
         public unsafe ServiceController[] ServicesDependedOn
         {
@@ -862,11 +862,8 @@ namespace System.ServiceProcess
         /// <summary>
         /// Starts a service in the machine specified.
         /// </summary>
-        public void Start(string[] args)
+        public void Start(string[] args!!)
         {
-            if (args == null)
-                throw new ArgumentNullException(nameof(args));
-
             using SafeServiceHandle serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_START);
             IntPtr[] argPtrs = new IntPtr[args.Length];
             int i = 0;
@@ -927,7 +924,7 @@ namespace System.ServiceProcess
         /// <param name="stopDependentServices">
         /// <c>true</c> to stop all running dependent services together with the service; <c>false</c> to stop only the service.
         /// </param>
-#if NETCOREAPP3_1_OR_GREATER
+#if NETCOREAPP
         public
 #else
         private

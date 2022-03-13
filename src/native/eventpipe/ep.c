@@ -261,6 +261,26 @@ ep_on_error:
 }
 
 EventPipeProviderCallbackData *
+ep_provider_callback_data_alloc_move (EventPipeProviderCallbackData *provider_callback_data_src)
+{
+	EventPipeProviderCallbackData *instance = ep_rt_object_alloc (EventPipeProviderCallbackData);
+	ep_raise_error_if_nok (instance != NULL);
+
+	if (provider_callback_data_src) {
+		*instance = *provider_callback_data_src;
+		memset (provider_callback_data_src, 0, sizeof (*provider_callback_data_src));
+	}
+
+ep_on_exit:
+	return instance;
+
+ep_on_error:
+	ep_provider_callback_data_free (instance);
+	instance = NULL;
+	ep_exit_error_handler ();
+}
+
+EventPipeProviderCallbackData *
 ep_provider_callback_data_init (
 	EventPipeProviderCallbackData *provider_callback_data,
 	const ep_char8_t *filter_data,
@@ -292,6 +312,19 @@ ep_provider_callback_data_init_copy (
 
 	*provider_callback_data_dst = *provider_callback_data_src;
 	provider_callback_data_dst->filter_data = ep_rt_utf8_string_dup (provider_callback_data_src->filter_data);
+	return provider_callback_data_dst;
+}
+
+EventPipeProviderCallbackData *
+ep_provider_callback_data_init_move (
+	EventPipeProviderCallbackData *provider_callback_data_dst,
+	EventPipeProviderCallbackData *provider_callback_data_src)
+{
+	EP_ASSERT (provider_callback_data_dst != NULL);
+	EP_ASSERT (provider_callback_data_src != NULL);
+
+	*provider_callback_data_dst = *provider_callback_data_src;
+	memset (provider_callback_data_src, 0, sizeof (*provider_callback_data_src));
 	return provider_callback_data_dst;
 }
 
@@ -621,6 +654,7 @@ disable_helper (EventPipeSessionID id)
 		while (ep_provider_callback_data_queue_try_dequeue (provider_callback_data_queue, &provider_callback_data)) {
 			ep_rt_prepare_provider_invoke_callback (&provider_callback_data);
 			provider_invoke_callback (&provider_callback_data);
+			ep_provider_callback_data_fini (&provider_callback_data);
 		}
 
 		ep_provider_callback_data_queue_fini (provider_callback_data_queue);
@@ -834,7 +868,7 @@ enable_default_session_via_env_variables (void)
 		ep_config_output_path = ep_rt_config_value_get_output_path ();
 
 		ep_char8_t pidStr[24];
-		ep_rt_utf8_string_snprintf(pidStr, EP_ARRAY_SIZE (pidStr), "%u", (unsigned)ep_rt_current_process_get_id());
+		ep_rt_utf8_string_snprintf(pidStr, ARRAY_SIZE (pidStr), "%u", (unsigned)ep_rt_current_process_get_id());
 
 		while (true)
 		{
@@ -951,6 +985,7 @@ ep_enable (
 	while (ep_provider_callback_data_queue_try_dequeue (provider_callback_data_queue, &provider_callback_data)) {
 		ep_rt_prepare_provider_invoke_callback (&provider_callback_data);
 		provider_invoke_callback (&provider_callback_data);
+		ep_provider_callback_data_fini (&provider_callback_data);
 	}
 
 ep_on_exit:
@@ -1080,7 +1115,7 @@ ep_disable (EventPipeSessionID id)
 	// single threaded.  HOWEVER, if the runtime was suspended during startup,
 	// then ep_finish_init might not have executed yet. Disabling a session
 	// needs to either happen before we resume or after initialization. We briefly take the
-	// lock to check _ep_can_start_threads to check whether we've finished initialization. We 
+	// lock to check _ep_can_start_threads to check whether we've finished initialization. We
 	// also check whether we are still suspended in which case we can safely disable the session
 	// without deferral.
 	EP_LOCK_ENTER (section1)
@@ -1185,6 +1220,7 @@ ep_create_provider (
 	while (ep_provider_callback_data_queue_try_dequeue (provider_callback_data_queue, &provider_callback_data)) {
 		ep_rt_prepare_provider_invoke_callback (&provider_callback_data);
 		provider_invoke_callback (&provider_callback_data);
+		ep_provider_callback_data_fini (&provider_callback_data);
 	}
 
 	ep_rt_notify_profiler_provider_created (provider);
@@ -1556,14 +1592,14 @@ ep_provider_callback_data_queue_enqueue (
 	EventPipeProviderCallbackData *provider_callback_data)
 {
 	EP_ASSERT (provider_callback_data_queue != NULL);
-	EventPipeProviderCallbackData *provider_callback_data_copy = ep_provider_callback_data_alloc_copy (provider_callback_data);
-	ep_raise_error_if_nok (provider_callback_data_copy != NULL);
-	ep_raise_error_if_nok (ep_rt_provider_callback_data_queue_push_tail (ep_provider_callback_data_queue_get_queue_ref (provider_callback_data_queue), provider_callback_data_copy));
+	EventPipeProviderCallbackData *provider_callback_data_move = ep_provider_callback_data_alloc_move (provider_callback_data);
+	ep_raise_error_if_nok (provider_callback_data_move != NULL);
+	ep_raise_error_if_nok (ep_rt_provider_callback_data_queue_push_tail (ep_provider_callback_data_queue_get_queue_ref (provider_callback_data_queue), provider_callback_data_move));
 
 	return true;
 
 ep_on_error:
-	ep_provider_callback_data_free (provider_callback_data_copy);
+	ep_provider_callback_data_free (provider_callback_data_move);
 	return false;
 }
 
@@ -1578,7 +1614,7 @@ ep_provider_callback_data_queue_try_dequeue (
 
 	EventPipeProviderCallbackData *value = NULL;
 	ep_raise_error_if_nok (ep_rt_provider_callback_data_queue_pop_head (ep_provider_callback_data_queue_get_queue_ref (provider_callback_data_queue), &value));
-	ep_provider_callback_data_init_copy (provider_callback_data, value);
+	ep_provider_callback_data_init_move (provider_callback_data, value);
 	ep_provider_callback_data_free (value);
 
 	return true;

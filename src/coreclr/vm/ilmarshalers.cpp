@@ -1635,14 +1635,13 @@ void ILVBByValStrWMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILE
     EmitLoadNativeValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pNullRefLabel);
 
-    pslILEmit->EmitLDNULL();            // this
     EmitLoadNativeValue(pslILEmit);     // ptr
     pslILEmit->EmitLDC(0);              // startIndex
     pslILEmit->EmitLDLOC(m_dwCCHLocal); // length
 
     // String CtorCharPtrStartLength(char *ptr, int startIndex, int length)
     // TODO Phase5: Why do we call this weirdo?
-    pslILEmit->EmitCALL(METHOD__STRING__CTORF_CHARPTR_START_LEN, 4, 1);
+    pslILEmit->EmitCALL(METHOD__STRING__CTORF_CHARPTR_START_LEN, 3, 1);
 
     EmitStoreManagedValue(pslILEmit);
     pslILEmit->EmitLabel(pNullRefLabel);
@@ -4304,7 +4303,6 @@ void ILNativeArrayMarshaler::EmitNewSavedSizeArgLocal(ILCodeStream* pslILEmit)
     pslILEmit->EmitSTLOC(m_dwSavedSizeArg);
 }
 
-#ifndef CROSSGEN_COMPILE
 
 FCIMPL4(void, MngdNativeArrayMarshaler::CreateMarshaler, MngdNativeArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, PCODE pManagedMarshaler)
 {
@@ -4500,7 +4498,6 @@ void MngdNativeArrayMarshaler::DoClearNativeContents(MngdNativeArrayMarshaler* p
     }
 }
 
-#endif // CROSSGEN_COMPILE
 
 
 void ILFixedArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
@@ -4542,7 +4539,6 @@ void ILFixedArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
     pslILEmit->EmitCALL(METHOD__MNGD_FIXED_ARRAY_MARSHALER__CREATE_MARSHALER, 5, 0);
 }
 
-#ifndef CROSSGEN_COMPILE
 
 FCIMPL5(void, MngdFixedArrayMarshaler::CreateMarshaler, MngdFixedArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, UINT32 cElements, PCODE pManagedElementMarshaler)
 {
@@ -4727,7 +4723,6 @@ FCIMPL3(void, MngdFixedArrayMarshaler::ClearNativeContents, MngdFixedArrayMarsha
 }
 FCIMPLEND
 
-#endif // CROSSGEN_COMPILE
 
 
 #ifdef FEATURE_COMINTEROP
@@ -4815,7 +4810,6 @@ void ILSafeArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmi
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 FCIMPL5(void, MngdSafeArrayMarshaler::CreateMarshaler, MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags, PCODE pManagedMarshaler)
 {
@@ -4928,8 +4922,8 @@ FCIMPL3(void, MngdSafeArrayMarshaler::ConvertSpaceToManaged, MngdSafeArrayMarsha
             {
                 WCHAR strExpectedRank[64];
                 WCHAR strActualRank[64];
-                _ltow_s(pThis->m_iRank, strExpectedRank, COUNTOF(strExpectedRank), 10);
-                _ltow_s(iSafeArrayRank, strActualRank, COUNTOF(strActualRank), 10);
+                _ltow_s(pThis->m_iRank, strExpectedRank, ARRAY_SIZE(strExpectedRank), 10);
+                _ltow_s(iSafeArrayRank, strActualRank, ARRAY_SIZE(strActualRank), 10);
                 COMPlusThrow(kSafeArrayRankMismatchException, IDS_EE_SAFEARRAYRANKMISMATCH, strActualRank, strExpectedRank);
             }
         }
@@ -5016,7 +5010,6 @@ FCIMPL3(void, MngdSafeArrayMarshaler::ClearNative, MngdSafeArrayMarshaler* pThis
 }
 FCIMPLEND
 
-#endif // CROSSGEN_COMPILE
 #endif // FEATURE_COMINTEROP
 
 void ILReferenceCustomMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
@@ -5063,7 +5056,6 @@ void ILReferenceCustomMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 FCIMPL2(void, MngdRefCustomMarshaler::CreateMarshaler, MngdRefCustomMarshaler* pThis, void* pCMHelper)
 {
@@ -5146,4 +5138,3 @@ FCIMPL3(void, MngdRefCustomMarshaler::ClearManaged, MngdRefCustomMarshaler* pThi
 }
 FCIMPLEND
 
-#endif // CROSSGEN_COMPILE

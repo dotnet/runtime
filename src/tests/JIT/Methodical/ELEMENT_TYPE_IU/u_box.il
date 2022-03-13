@@ -16,10 +16,10 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'avg'// as "avg"
+.assembly 'u_box'// as "avg"
 {
 }
-.module 'avg.exe'
+.assembly extern xunit.core {}
 .namespace BoxTest
 {
   .class private auto ansi Test extends [mscorlib]System.Object
@@ -47,6 +47,9 @@
     }
     .method private hidebysig static int32 Main() il managed
     {
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack  5
 		.locals (native unsigned int)

@@ -9,25 +9,20 @@ using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching
 {
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
     [UnsupportedOSPlatform("browser")]
 #endif
     internal sealed class Counters : EventSource
     {
-#if NETCOREAPP3_1_OR_GREATER
+#if NETCOREAPP
         private const string EVENT_SOURCE_NAME_ROOT = "System.Runtime.Caching.";
         private const int NUM_COUNTERS = 7;
 
         private DiagnosticCounter[] _counters;
         private long[] _counterValues;
 
-        internal Counters(string cacheName) : base(EVENT_SOURCE_NAME_ROOT + cacheName)
+        internal Counters(string cacheName!!) : base(EVENT_SOURCE_NAME_ROOT + cacheName)
         {
-            if (cacheName == null)
-            {
-                throw new ArgumentNullException(nameof(cacheName));
-            }
-
             InitDisposableMembers(cacheName);
         }
 

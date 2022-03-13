@@ -56,7 +56,7 @@ namespace System.Xml.Xsl
             StringBuilder sb = new StringBuilder(res);
             if (args != null && args.Length > 0)
             {
-                Debug.Fail("Resource string '" + res + "' was not found");
+                Debug.Fail($"Resource string '{res}' was not found");
                 sb.Append('(');
                 sb.Append(args[0]);
                 for (int idx = 1; idx < args.Length; idx++)
@@ -81,11 +81,11 @@ namespace System.Xml.Xsl
             string info = FormatDetailedMessage();
             if (info != null && info.Length > 0)
             {
-                result += ": " + info;
+                result += $": {info}";
             }
             if (InnerException != null)
             {
-                result += " ---> " + InnerException.ToString() + Environment.NewLine + "   " + CreateMessage(SR.Xml_EndOfInnerExceptionStack);
+                result += $" ---> {InnerException}{Environment.NewLine}   {CreateMessage(SR.Xml_EndOfInnerExceptionStack)}";
             }
             if (StackTrace != null)
             {

@@ -52,14 +52,14 @@ namespace System.Reflection
 
             IntPtr[]? genericArgumentHandles = null;
             int genericArgumentCount = 0;
-            RuntimeType[] genericArguments = declaredType.GetTypeHandleInternal().GetInstantiationInternal();
+            RuntimeType[] genericArguments = declaredType.TypeHandle.GetInstantiationInternal();
             if (genericArguments != null)
             {
                 genericArgumentCount = genericArguments.Length;
                 genericArgumentHandles = new IntPtr[genericArguments.Length];
                 for (int i = 0; i < genericArguments.Length; i++)
                 {
-                    genericArgumentHandles[i] = genericArguments[i].GetTypeHandleInternal().Value;
+                    genericArgumentHandles[i] = genericArguments[i].TypeHandle.Value;
                 }
             }
 

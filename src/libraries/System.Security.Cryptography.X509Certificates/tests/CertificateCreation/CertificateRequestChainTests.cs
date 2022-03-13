@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57506", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsMariner))]
     public static class CertificateRequestChainTests
     {
         public static bool PlatformSupportsPss { get; } = DetectPssSupport();
@@ -177,7 +178,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 {
                     chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                     chain.ChainPolicy.ExtraStore.Add(rootCert);
-                    chain.ChainPolicy.VerificationTime = start.ToLocalTime().DateTime;
+                    chain.ChainPolicy.VerificationTime = start.UtcDateTime;
                     chain.AllowUnknownAuthorityOrAddSelfSignedToCustomTrust(rootCert);
 
                     if (useIntermed)
@@ -421,7 +422,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     chain.ChainPolicy.ExtraStore.Add(intermed1CertWithKey);
                     chain.ChainPolicy.ExtraStore.Add(intermed2CertWithKey);
                     chain.ChainPolicy.ExtraStore.Add(rootCertWithKey);
-                    chain.ChainPolicy.VerificationTime = now.ToLocalTime().DateTime;
+                    chain.ChainPolicy.VerificationTime = now.UtcDateTime;
 
                     chain.AllowUnknownAuthorityOrAddSelfSignedToCustomTrust(rootCertWithKey);
 
@@ -509,7 +510,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         chain.AllowUnknownAuthorityOrAddSelfSignedToCustomTrust(rootCertWithKey);
                         chain.ChainPolicy.ExtraStore.Add(intermedCertWithKey);
                         chain.ChainPolicy.ExtraStore.Add(rootCertWithKey);
-                        chain.ChainPolicy.VerificationTime = notBefore.ToLocalTime().DateTime;
+                        chain.ChainPolicy.VerificationTime = notBefore.UtcDateTime;
 
                         RunChain(chain, leafCert, true, "Chain build");
                         DisposeChainCerts(chain);

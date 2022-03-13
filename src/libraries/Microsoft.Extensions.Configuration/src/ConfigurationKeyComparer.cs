@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="x">First string.</param>
         /// <param name="y">Second string.</param>
         /// <returns>Less than 0 if x is less than y, 0 if x is equal to y and greater than 0 if x is greater than y.</returns>
-        public int Compare(string x, string y)
+        public int Compare(string? x, string? y)
         {
             string[] xParts = x?.Split(_keyDelimiterArray, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
             string[] yParts = y?.Split(_keyDelimiterArray, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();

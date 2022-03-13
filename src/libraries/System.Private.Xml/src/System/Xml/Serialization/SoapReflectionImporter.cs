@@ -502,7 +502,7 @@ namespace System.Xml.Serialization
             }
 
             itemTypeName = CodeIdentifier.MakePascal(itemTypeName);
-            string uniqueName = "ArrayOf" + itemTypeName;
+            string uniqueName = $"ArrayOf{itemTypeName}";
             string ns = useDefaultNs ? _defaultNs : itemTypeNamespace;
             int i = 1;
             TypeMapping? existingMapping = (TypeMapping?)_types[uniqueName, ns];
@@ -784,7 +784,7 @@ namespace System.Xml.Serialization
 
                 for (int i = 0; i < names.Length; i++)
                 {
-                    string argument = "{" + names[i] + "}";
+                    string argument = $"{{{names[i]}}}";
                     if (typeName.Contains(argument))
                     {
                         typeName = typeName.Replace(argument, XsdTypeName(types[i]));

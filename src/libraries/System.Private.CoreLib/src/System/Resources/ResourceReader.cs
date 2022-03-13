@@ -110,13 +110,11 @@ namespace System.Resources
 
         public
 #if RESOURCES_EXTENSIONS
-        DeserializingResourceReader(Stream stream)
+        DeserializingResourceReader(Stream stream!!)
 #else
-        ResourceReader(Stream stream)
+        ResourceReader(Stream stream!!)
 #endif
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
             if (!stream.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
 
@@ -575,7 +573,11 @@ namespace System.Resources
                 return new TimeSpan(_store.ReadInt64());
             else if (type == typeof(decimal))
             {
+#if RESOURCES_EXTENSIONS
                 int[] bits = new int[4];
+#else
+                Span<int> bits = stackalloc int[4];
+#endif
                 for (int i = 0; i < bits.Length; i++)
                     bits[i] = _store.ReadInt32();
                 return new decimal(bits);

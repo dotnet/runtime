@@ -75,4 +75,4 @@ FAIL:
 }
 }
 
-.assembly ldind_r4.exe{}
+.assembly ldind_r4{}

@@ -50,7 +50,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="nodeType">The <see ctype="ExpressionType"/> of the <see cref="Expression"/>.</param>
         /// <param name="type">The <see cref="Type"/> of the <see cref="Expression"/>.</param>
-        [Obsolete("use a different constructor that does not take ExpressionType. Then override NodeType and Type properties to provide the values that would be specified to this constructor.")]
+        [Obsolete("This constructor has been deprecated. Use a different constructor that does not take ExpressionType. Then override NodeType and Type properties to provide the values that would be specified to this constructor.")]
         protected Expression(ExpressionType nodeType, Type type)
         {
             // Can't enforce anything that V1 didn't

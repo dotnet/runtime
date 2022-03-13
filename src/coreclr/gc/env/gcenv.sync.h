@@ -28,8 +28,7 @@ class CrstStatic
 public:
     bool InitNoThrow(CrstType eType, CrstFlags eFlags = CRST_DEFAULT)
     {
-        m_cs.Initialize();
-        return true;
+        return m_cs.Initialize();
     }
 
     void Destroy()

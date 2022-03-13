@@ -115,13 +115,8 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         ///   <paramref name="options"/> contains unsupported options.
         /// </exception>
-        public static JsonDocument Parse(Stream utf8Json, JsonDocumentOptions options = default)
+        public static JsonDocument Parse(Stream utf8Json!!, JsonDocumentOptions options = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
             ArraySegment<byte> drained = ReadToEnd(utf8Json);
             Debug.Assert(drained.Array != null);
             try
@@ -196,15 +191,10 @@ namespace System.Text.Json
         ///   <paramref name="options"/> contains unsupported options.
         /// </exception>
         public static Task<JsonDocument> ParseAsync(
-            Stream utf8Json,
+            Stream utf8Json!!,
             JsonDocumentOptions options = default,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
             return ParseAsyncCore(utf8Json, options, cancellationToken);
         }
 
@@ -229,7 +219,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///   Parse text representing a single JSON value into a JsonDocument.
+        ///   Parses text representing a single JSON value into a JsonDocument.
         /// </summary>
         /// <remarks>
         ///   The <see cref="ReadOnlyMemory{T}"/> value may be used for the entire lifetime of the
@@ -247,7 +237,7 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         ///   <paramref name="options"/> contains unsupported options.
         /// </exception>
-        public static JsonDocument Parse(ReadOnlyMemory<char> json, JsonDocumentOptions options = default)
+        public static JsonDocument Parse([StringSyntax(StringSyntaxAttribute.Json)] ReadOnlyMemory<char> json, JsonDocumentOptions options = default)
         {
             ReadOnlySpan<char> jsonChars = json.Span;
             int expectedByteCount = JsonReaderHelper.GetUtf8ByteCount(jsonChars);
@@ -298,7 +288,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///   Parse text representing a single JSON value into a JsonDocument.
+        ///   Parses text representing a single JSON value into a JsonDocument.
         /// </summary>
         /// <param name="json">JSON text to parse.</param>
         /// <param name="options">Options to control the reader behavior during parsing.</param>
@@ -311,13 +301,8 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         ///   <paramref name="options"/> contains unsupported options.
         /// </exception>
-        public static JsonDocument Parse(string json, JsonDocumentOptions options = default)
+        public static JsonDocument Parse([StringSyntax(StringSyntaxAttribute.Json)] string json!!, JsonDocumentOptions options = default)
         {
-            if (json == null)
-            {
-                throw new ArgumentNullException(nameof(json));
-            }
-
             return Parse(json.AsMemory(), options);
         }
 
@@ -340,7 +325,7 @@ namespace System.Text.Json
         ///   </para>
         ///
         ///   <para>
-        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
         ///     final token in the JSON value.  If an exception is thrown, or <see langword="false"/>
         ///     is returned, the reader is reset to the state it was in when the method was called.
         ///   </para>
@@ -380,8 +365,8 @@ namespace System.Text.Json
         ///   </para>
         ///
         ///   <para>
-        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
-        ///     final token in the JSON value.  If an exception is thrown the reader is reset to
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
+        ///     final token in the JSON value. If an exception is thrown, the reader is reset to
         ///     the state it was in when the method was called.
         ///   </para>
         ///

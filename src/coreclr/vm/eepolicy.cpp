@@ -185,8 +185,8 @@ void EEPolicy::HandleExitProcess(ShutdownCompleteAction sca)
 //---------------------------------------------------------------------------------------
 // This class is responsible for displaying a stack trace. It uses a condensed way for
 // stack overflow stack traces where there are possibly many repeated frames.
-// It displays a count and a repeated sequence of frames at the top of the stack in 
-// such a case, instead of displaying possibly thousands of lines with the same 
+// It displays a count and a repeated sequence of frames at the top of the stack in
+// such a case, instead of displaying possibly thousands of lines with the same
 // method.
 //---------------------------------------------------------------------------------------
 class CallStackLogger
@@ -291,7 +291,7 @@ public:
         for (int i = m_largestCommonStartLength * m_largestCommonStartRepeat; i < m_frames.Count(); i++)
         {
             PrintFrame(i, pWordAt);
-        }    
+        }
     }
 };
 
@@ -412,7 +412,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
     {
     }
     EX_END_CATCH(SwallowAllExceptions)
-    
+
     InterlockedCompareExchangeT<Thread *>(&s_pCrashingThread, FatalErrorLoggingFinished, pThread);
 }
 
@@ -484,7 +484,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 InlineSString<80> ssMessage;
                 InlineSString<80> ssErrorFormat;
                 if(!ssErrorFormat.LoadResource(CCompRC::Optional, IDS_ER_UNMANAGEDFAILFASTMSG ))
-                    ssErrorFormat.Set(W("at IP %1 (%2) with exit code %3."));
+                    ssErrorFormat.Set(W("at IP 0x%x (0x%x) with exit code 0x%x."));
                 SmallStackSString addressString;
                 addressString.Printf(W("%p"), pExceptionInfo? (UINT_PTR)pExceptionInfo->ExceptionRecord->ExceptionAddress : address);
 
@@ -616,6 +616,10 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 
     WRAPPER_NO_CONTRACT;
 
+    // Disable GC stress triggering GC at this point, we don't want the GC to start running
+    // on this thread when we have only a very limited space left on the stack
+    GCStressPolicy::InhibitHolder iholder;
+
     STRESS_LOG0(LF_EH, LL_INFO100, "In EEPolicy::HandleFatalStackOverflow\n");
 
     FrameWithCookie<FaultingExceptionFrame> fef;
@@ -625,7 +629,13 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     if (pExceptionInfo && pExceptionInfo->ContextRecord)
     {
         GCX_COOP();
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+        // For Windows x86, we don't have a reliable method to unwind to the first managed call frame,
+        // so we handle at least the cases when the stack overflow happens in JIT helpers
         AdjustContextForJITHelpers(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
+#else
+        Thread::VirtualUnwindToFirstManagedCallFrame(pExceptionInfo->ContextRecord);
+#endif
         fef.InitAndLink(pExceptionInfo->ContextRecord);
     }
 

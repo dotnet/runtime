@@ -3392,7 +3392,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.impli
             }
 
             ;
-            if (d.GetType() != typeof(dynamic[]))
+            if (d.GetType() != typeof(object[]))
                 return 1;
             return 0;
         }
@@ -3420,7 +3420,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.impli
             }
 
             ;
-            if (d.GetType() != typeof(dynamic[]))
+            if (d.GetType() != typeof(object[]))
                 return 1;
             return 0;
         }
@@ -3456,7 +3456,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.impli
             }
 
             ;
-            if (d.GetType() != typeof(dynamic[]))
+            if (d.GetType() != typeof(object[]))
                 return 1;
             return 0;
         }

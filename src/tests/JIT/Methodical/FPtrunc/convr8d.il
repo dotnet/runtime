@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly convr8d {}
+.assembly extern xunit.core {}
 .class public sealed VT extends [mscorlib]System.ValueType
 {
   .field public float64 f
@@ -205,6 +206,9 @@
 
   .method public static int32 Main() 
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       1155 (0x483)
     .maxstack  5

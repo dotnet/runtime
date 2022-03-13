@@ -789,8 +789,8 @@ CrstBase::CrstAndForbidSuspendForDebuggerHolder::CrstAndForbidSuspendForDebugger
     // Reentrant locks are currently not supported
     _ASSERTE((pCrst->m_dwFlags & CRST_REENTRANCY) == 0);
 
-    Thread *pThread = GetThread();
-    if (pThread->IsInForbidSuspendForDebuggerRegion())
+    Thread *pThread = GetThreadNULLOk();
+    if (pThread == nullptr || pThread->IsInForbidSuspendForDebuggerRegion())
     {
         AcquireLock(pCrst);
         return;

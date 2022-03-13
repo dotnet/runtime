@@ -12,7 +12,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly precise1
+.assembly 'prefldinit1'
 {
   // --- The following custom attribute is added automatically, do not uncomment -------
   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -20,44 +20,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module precise1.exe
-// MVID: {D664E737-135B-4517-AFBA-875EBEA1C810}
-.imagebase 0x00400000
-.subsystem 0x00000003
-.file alignment 512
-.corflags 0x00000001
-// Image base: 0x076c0000
-//
-// ============== CLASS STRUCTURE DECLARATION ==================
-//
-.class private auto ansi beforefieldinit measure
-       extends [mscorlib]System.Object
-{
-} // end of class measure
-
-.class private auto ansi test
-       extends [mscorlib]System.Object
-{
-} // end of class test
-
-.class private auto ansi beforefieldinit Driver
-       extends [mscorlib]System.Object
-{
-} // end of class Driver
-
-
-// =============================================================
-
-
-// =============== GLOBAL FIELDS AND METHODS ===================
-
-
-// =============================================================
-
-
-// =============== CLASS MEMBERS DECLARATION ===================
-//   note that class flags, 'extends' and 'implements' clauses
-//          are provided here for information only
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit measure
        extends [mscorlib]System.Object
@@ -85,7 +48,7 @@
 
 } // end of class measure
 
-.class private auto ansi  beforefieldinit test
+.class private auto ansi test
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  f(unsigned int8& b) cil managed
@@ -201,6 +164,9 @@
       IL_0061:  beq.s      IL_0085
 
       IL_0063:  ldstr      "in Main() after f(ref b), measure.a is {0}"
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       IL_0068:  ldsfld     int32 measure::a
       IL_006d:  box        [mscorlib]System.Int32
       IL_0072:  call       void [System.Console]System.Console::WriteLine(string,

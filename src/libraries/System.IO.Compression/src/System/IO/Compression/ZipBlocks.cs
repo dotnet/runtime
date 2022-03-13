@@ -453,7 +453,7 @@ namespace System.IO.Compression
         public long RelativeOffsetOfLocalHeader;
 
         public byte[] Filename;
-        public byte[]? FileComment;
+        public byte[] FileComment;
         public List<ZipGenericExtraField>? ExtraFields;
 
         // if saveExtraFieldsAndComments is false, FileComment and ExtraFields will be null
@@ -513,13 +513,7 @@ namespace System.IO.Compression
             // of the ExtraField block. Thus we must force the stream's position to the proper place.
             reader.BaseStream.AdvanceToPosition(endExtraFields);
 
-            if (saveExtraFieldsAndComments)
-                header.FileComment = reader.ReadBytes(header.FileCommentLength);
-            else
-            {
-                reader.BaseStream.Position += header.FileCommentLength;
-                header.FileComment = null;
-            }
+            header.FileComment = reader.ReadBytes(header.FileCommentLength);
 
             header.UncompressedSize = zip64.UncompressedSize == null
                                                     ? uncompressedSizeSmall
@@ -560,7 +554,7 @@ namespace System.IO.Compression
         public uint OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber;
         public byte[] ArchiveComment;
 
-        public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[]? archiveComment)
+        public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment)
         {
             BinaryWriter writer = new BinaryWriter(stream);
 
@@ -580,10 +574,10 @@ namespace System.IO.Compression
             writer.Write(startOfCentralDirectoryTruncated);
 
             // Should be valid because of how we read archiveComment in TryReadBlock:
-            Debug.Assert((archiveComment == null) || (archiveComment.Length <= ZipFileCommentMaxLength));
+            Debug.Assert(archiveComment.Length <= ZipFileCommentMaxLength);
 
-            writer.Write(archiveComment != null ? (ushort)archiveComment.Length : (ushort)0); // zip file comment length
-            if (archiveComment != null)
+            writer.Write((ushort)archiveComment.Length); // zip file comment length
+            if (archiveComment.Length > 0)
                 writer.Write(archiveComment);
         }
 

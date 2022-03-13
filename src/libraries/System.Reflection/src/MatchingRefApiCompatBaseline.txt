@@ -1,3 +1,6 @@
 Compat issues with assembly System.Reflection:
 MembersMustExist : Member 'protected System.ModuleHandle System.Reflection.Module.GetModuleHandleImpl()' does not exist in the reference but it does exist in the implementation.
-Total Issues: 1
+MembersMustExist : Member 'public System.Reflection.ParameterInfo[] System.Reflection.MethodBase.GetParametersNoCopy()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.Reflection.MethodBase System.Reflection.MethodBase.MetadataDefinitionMethod.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.Int32 System.Reflection.MethodInfo.GenericParameterCount.get()' does not exist in the reference but it does exist in the implementation.
+Total Issues: 4

@@ -92,7 +92,7 @@ namespace System.Xml.Serialization
 
         internal string Key
         {
-            get { return (_ns == null ? string.Empty : _ns) + ":" + ElementName + ":" + _nullable.ToString(); }
+            get { return $"{(_ns == null ? string.Empty : _ns)}:{ElementName}:{_nullable}"; }
         }
 
         internal string GetKey()

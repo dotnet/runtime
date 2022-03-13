@@ -4,7 +4,7 @@
 using System.Runtime.InteropServices;
 using System;
 using System.Reflection;
-using TestLibrary;
+using Xunit;
 
 class TestClass
 {
@@ -27,19 +27,19 @@ class RuntimeHandlesTest
     private static void TestRuntimeMethodHandle()
     {
         RuntimeMethodHandle handle = typeof(TestClass).GetMethod(nameof(TestClass.Method)).MethodHandle;
-        Assert.IsTrue(Marshal_In(handle, handle.Value));
+        Assert.True(Marshal_In(handle, handle.Value));
     }
 
     private static void TestRuntimeFieldHandle()
     {
         RuntimeFieldHandle handle = typeof(TestClass).GetField(nameof(TestClass.field)).FieldHandle;
-        Assert.IsTrue(Marshal_In(handle, handle.Value));
+        Assert.True(Marshal_In(handle, handle.Value));
     }
 
     private static void TestRuntimeTypeHandle()
     {
         RuntimeTypeHandle handle = typeof(TestClass).TypeHandle;
-        Assert.IsTrue(Marshal_In(handle, handle.Value));
+        Assert.True(Marshal_In(handle, handle.Value));
     }
 
     public static int Main()

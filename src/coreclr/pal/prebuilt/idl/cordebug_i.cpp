@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 
 /* this ALWAYS GENERATED file contains the IIDs and CLSIDs */
@@ -7,10 +9,10 @@
 
  /* File created by MIDL compiler version 8.01.0622 */
 /* Compiler settings for cordebug.idl:
-    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0622 
+    Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.01.0622
     protocol : dce , ms_ext, c_ext, robust
-    error checks: allocation ref bounds_check enum stub_data 
-    VC __declspec() decoration level: 
+    error checks: allocation ref bounds_check enum stub_data
+    VC __declspec() decoration level:
          __declspec(uuid()), __declspec(selectany), __declspec(novtable)
          DECLSPEC_UUID(), MIDL_INTERFACE()
 */
@@ -21,7 +23,7 @@
 
 #ifdef __cplusplus
 extern "C"{
-#endif 
+#endif
 
 
 #include <rpc.h>
@@ -249,6 +251,9 @@ MIDL_DEFINE_GUID(IID, IID_ICorDebugThread3,0xF8544EC3,0x5E4E,0x46c7,0x8D,0x3E,0x
 
 
 MIDL_DEFINE_GUID(IID, IID_ICorDebugThread4,0x1A1F204B,0x1C66,0x4637,0x82,0x3F,0x3E,0xE6,0xC7,0x44,0xA6,0x9C);
+
+
+MIDL_DEFINE_GUID(IID, IID_ICorDebugThread5,0xF98421C4,0xE506,0x4D24,0x91,0x6F,0x02,0x37,0xEE,0x85,0x3E,0xC6);
 
 
 MIDL_DEFINE_GUID(IID, IID_ICorDebugStackWalk,0xA0647DE9,0x55DE,0x4816,0x92,0x9C,0x38,0x52,0x71,0xC6,0x4C,0xF7);
@@ -480,6 +485,3 @@ MIDL_DEFINE_GUID(CLSID, CLSID_EmbeddedCLRCorDebug,0x211f1254,0xbc7e,0x4af5,0xb9,
 #ifdef __cplusplus
 }
 #endif
-
-
-

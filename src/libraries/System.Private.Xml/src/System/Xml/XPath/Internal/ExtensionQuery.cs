@@ -122,7 +122,7 @@ namespace MS.Internal.Xml.XPath
             return value.ToString()!;
         }
 
-        protected string QName { get { return prefix.Length != 0 ? prefix + ":" + name : name; } }
+        protected string QName { get { return prefix.Length != 0 ? $"{prefix}:{name}" : name; } }
 
         public override int Count { get { return _queryIterator == null ? 1 : _queryIterator.Count; } }
         public override XPathResultType StaticType { get { return XPathResultType.Any; } }

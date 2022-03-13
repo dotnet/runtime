@@ -4,6 +4,7 @@
   <PropertyGroup>
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <OutputType>Library</OutputType>
+    <IsWasmProject>true</IsWasmProject>
     <Configuration>Debug</Configuration>
     <RuntimeConfiguration Condition="'$(RuntimeConfiguration)'==''">Release</RuntimeConfiguration>
 
@@ -11,7 +12,7 @@
     <NoWarn>219</NoWarn>
     <RunAnalyzers>false</RunAnalyzers>
 
-    <AppDir>$(ArtifactsBinDir)debugger-test\$(Configuration)\publish</AppDir>
+    <AppDir>$(ArtifactsBinDir)debugger-test\$(Configuration)\AppBundle</AppDir>
     <OutDir>$(ArtifactsBinDir)debugger-test\$(Configuration)\wasm</OutDir>
 
     <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(RuntimeConfiguration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>

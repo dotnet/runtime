@@ -18,6 +18,7 @@
     <Compile Include="Handlers\EchoWebSocketHeadersHandler.cs" />
     <Compile Include="Handlers\EmptyContentHandler.cs" />
     <Compile Include="Handlers\GZipHandler.cs" />
+    <Compile Include="Handlers\LargeResponse.cs" />
     <Compile Include="Handlers\RedirectHandler.cs" />
     <Compile Include="Handlers\StatusCodeHandler.cs" />
     <Compile Include="Handlers\TestHandler.cs" />

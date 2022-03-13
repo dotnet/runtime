@@ -32,6 +32,14 @@ namespace System.Data.Common
 
         public abstract void RemoveAt(int index);
 
-        public abstract DbBatchCommand this[int index] { get; set; }
+        public DbBatchCommand this[int index]
+        {
+            get => GetBatchCommand(index);
+            set => SetBatchCommand(index, value);
+        }
+
+        protected abstract DbBatchCommand GetBatchCommand(int index);
+
+        protected abstract void SetBatchCommand(int index, DbBatchCommand batchCommand);
     }
 }

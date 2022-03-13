@@ -20,7 +20,6 @@
 #include "stubgen.h"
 #include "appdomain.inl"
 
-#ifndef CROSSGEN_COMPILE
 
 struct UM2MThunk_Args
 {
@@ -196,37 +195,6 @@ extern "C" VOID STDCALL ReversePInvokeBadTransition()
                                             );
 }
 
-// Disable from a place that is calling into managed code via a UMEntryThunk.
-extern "C" VOID STDCALL UMThunkStubRareDisableWorker(Thread *pThread, UMEntryThunk *pUMEntryThunk)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    // Do not add a CONTRACT here.  We haven't set up SEH.
-
-    // WARNING!!!!
-    // when we start executing here, we are actually in cooperative mode.  But we
-    // haven't synchronized with the barrier to reentry yet.  So we are in a highly
-    // dangerous mode.  If we call managed code, we will potentially be active in
-    // the GC heap, even as GC's are occuring!
-
-    // We must do the following in this order, because otherwise we would be constructing
-    // the exception for the abort without synchronizing with the GC.  Also, we have no
-    // CLR SEH set up, despite the fact that we may throw a ThreadAbortException.
-    pThread->RareDisablePreemptiveGC();
-    pThread->HandleThreadAbort();
-
-#ifdef DEBUGGING_SUPPORTED
-    // If the debugger is attached, we use this opportunity to see if
-    // we're disabling preemptive GC on the way into the runtime from
-    // unmanaged code. We end up here because
-    // Increment/DecrementTraceCallCount() will bump
-    // g_TrapReturningThreads for us.
-    if (CORDebuggerTraceCall())
-        g_pDebugInterface->TraceCall((const BYTE *)pUMEntryThunk->GetManagedTarget());
-#endif // DEBUGGING_SUPPORTED
-}
-
 PCODE TheUMEntryPrestubWorker(UMEntryThunk * pUMEntryThunk)
 {
     STATIC_CONTRACT_THROWS;
@@ -235,39 +203,13 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunk * pUMEntryThunk)
 
     Thread * pThread = GetThreadNULLOk();
     if (pThread == NULL)
-        pThread = CreateThreadBlockThrow();
-
-    GCX_COOP_THREAD_EXISTS(pThread);
-
-    if (pThread->IsAbortRequested())
-        pThread->HandleThreadAbort();
-
-    UMEntryThunk::DoRunTimeInit(pUMEntryThunk);
-
-    return (PCODE)pUMEntryThunk->GetCode();
-}
-
-void RunTimeInit_Wrapper(LPVOID /* UMThunkMarshInfo * */ ptr)
-{
-    WRAPPER_NO_CONTRACT;
-
-    UMEntryThunk::DoRunTimeInit((UMEntryThunk*)ptr);
-}
-
-
-// asm entrypoint
-void STDCALL UMEntryThunk::DoRunTimeInit(UMEntryThunk* pUMEntryThunk)
-{
-
-    CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        ENTRY_POINT;
-        PRECONDITION(CheckPointer(pUMEntryThunk));
+        CREATETHREAD_IF_NULL_FAILFAST(pThread, W("Failed to setup new thread during reverse P/Invoke"));
     }
-    CONTRACTL_END;
+
+    // Verify the current thread isn't in COOP mode.
+    if (pThread->PreemptiveGCDisabled())
+        ReversePInvokeBadTransition();
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     // this method is called by stubs which are called by managed code,
@@ -275,15 +217,13 @@ void STDCALL UMEntryThunk::DoRunTimeInit(UMEntryThunk* pUMEntryThunk)
     // exceptions don't leak out into managed code.
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
-    {
-        GCX_PREEMP();
-
-        ExecutableWriterHolder<UMEntryThunk> uMEntryThunkWriterHolder(pUMEntryThunk, sizeof(UMEntryThunk));
-        uMEntryThunkWriterHolder.GetRW()->RunTimeInit(pUMEntryThunk);
-    }
+    ExecutableWriterHolder<UMEntryThunk> uMEntryThunkWriterHolder(pUMEntryThunk, sizeof(UMEntryThunk));
+    uMEntryThunkWriterHolder.GetRW()->RunTimeInit(pUMEntryThunk);
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+    return (PCODE)pUMEntryThunk->GetCode();
 }
 
 UMEntryThunk* UMEntryThunk::CreateUMEntryThunk()
@@ -343,7 +283,6 @@ VOID UMEntryThunk::FreeUMEntryThunk(UMEntryThunk* p)
     p->Terminate();
 }
 
-#endif // CROSSGEN_COMPILE
 
 //-------------------------------------------------------------------------
 // This function is used to report error when we call collected delegate.
@@ -449,7 +388,6 @@ VOID UMThunkMarshInfo::LoadTimeInit(Signature sig, Module * pModule, MethodDesc 
     m_sig = sig;
 }
 
-#ifndef CROSSGEN_COMPILE
 //----------------------------------------------------------
 // This initializer finishes the init started by LoadTimeInit.
 // It does stub creation and can throw an exception.
@@ -465,45 +403,22 @@ VOID UMThunkMarshInfo::RunTimeInit()
     if (IsCompletelyInited())
         return;
 
-    PCODE pFinalILStub = NULL;
-    MethodDesc* pStubMD = NULL;
-
     MethodDesc * pMD = GetMethod();
 
-    // Lookup NGened stub - currently we only support ngening of reverse delegate invoke interop stubs
-    if (pMD != NULL && pMD->IsEEImpl())
-    {
-        DWORD dwStubFlags = NDIRECTSTUB_FL_NGENEDSTUB | NDIRECTSTUB_FL_REVERSE_INTEROP | NDIRECTSTUB_FL_DELEGATE;
+    PInvokeStaticSigInfo sigInfo;
 
-#if defined(DEBUGGING_SUPPORTED)
-        // Combining the next two lines, and eliminating jitDebuggerFlags, leads to bad codegen in x86 Release builds using Visual C++ 19.00.24215.1.
-        CORJIT_FLAGS jitDebuggerFlags = GetDebuggerCompileFlags(GetModule(), CORJIT_FLAGS());
-        if (jitDebuggerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
-        {
-            dwStubFlags |= NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL;
-        }
-#endif // DEBUGGING_SUPPORTED
+    if (pMD != NULL)
+        new (&sigInfo) PInvokeStaticSigInfo(pMD);
+    else
+        new (&sigInfo) PInvokeStaticSigInfo(GetSignature(), GetModule());
 
-        pFinalILStub = GetStubForInteropMethod(pMD, dwStubFlags, &pStubMD);
-    }
+    DWORD dwStubFlags = 0;
 
-    if (pFinalILStub == NULL)
-    {
-        PInvokeStaticSigInfo sigInfo;
+    if (sigInfo.IsDelegateInterop())
+        dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
 
-        if (pMD != NULL)
-            new (&sigInfo) PInvokeStaticSigInfo(pMD);
-        else
-            new (&sigInfo) PInvokeStaticSigInfo(GetSignature(), GetModule());
-
-        DWORD dwStubFlags = 0;
-
-        if (sigInfo.IsDelegateInterop())
-            dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
-
-        pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
-        pFinalILStub = JitILStub(pStubMD);
-    }
+    MethodDesc* pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
+    PCODE pFinalILStub = JitILStub(pStubMD);
 
     // Must be the last thing we set!
     InterlockedCompareExchangeT<PCODE>(&m_pILStub, pFinalILStub, (PCODE)1);
@@ -543,4 +458,3 @@ void STDCALL LogUMTransition(UMEntryThunk* thunk)
     }
 #endif // _DEBUG
 
-#endif // CROSSGEN_COMPILE

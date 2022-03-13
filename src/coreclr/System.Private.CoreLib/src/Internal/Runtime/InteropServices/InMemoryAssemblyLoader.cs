@@ -37,7 +37,9 @@ namespace Internal.Runtime.InteropServices
 
             // We don't cache the ALCs here since each IJW assembly will call this method at most once
             // (the load process rewrites the stubs that call here to call the actual methods they're supposed to)
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
             AssemblyLoadContext context = new IsolatedComponentLoadContext(assemblyPathString);
+#pragma warning restore IL2026
             context.LoadFromInMemoryModule(moduleHandle);
 #else
             throw new PlatformNotSupportedException();

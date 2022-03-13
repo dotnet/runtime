@@ -3,55 +3,26 @@
 
 using System.Text;
 using System.Diagnostics;
-using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
-    //
-    // CharEntityEncoderFallback
-    //
     internal sealed class CharEntityEncoderFallback : EncoderFallback
     {
         private CharEntityEncoderFallbackBuffer? _fallbackBuffer;
-
         private int[]? _textContentMarks;
         private int _endMarkPos;
         private int _curMarkPos;
-        private int _startOffset;
 
-        internal CharEntityEncoderFallback()
-        {
-        }
+        public override int MaxCharCount => 12;
+        internal int StartOffset { get; set; }
 
         public override EncoderFallbackBuffer CreateFallbackBuffer()
         {
-            if (_fallbackBuffer == null)
-            {
-                _fallbackBuffer = new CharEntityEncoderFallbackBuffer(this);
-            }
-            return _fallbackBuffer;
+            return _fallbackBuffer ??= new CharEntityEncoderFallbackBuffer(this);
         }
 
-        public override int MaxCharCount
-        {
-            get
-            {
-                return 12;
-            }
-        }
-
-        internal int StartOffset
-        {
-            get
-            {
-                return _startOffset;
-            }
-            set
-            {
-                _startOffset = value;
-            }
-        }
-
+        [MemberNotNull(nameof(_textContentMarks))]
         internal void Reset(int[] textContentMarks, int endMarkPos)
         {
             _textContentMarks = textContentMarks;
@@ -59,12 +30,12 @@ namespace System.Xml
             _curMarkPos = 0;
         }
 
-        internal bool CanReplaceAt(int index)
+        private bool CanReplaceAt(int index)
         {
             Debug.Assert(_textContentMarks != null);
 
             int mPos = _curMarkPos;
-            int charPos = _startOffset + index;
+            int charPos = StartOffset + index;
             while (mPos < _endMarkPos && charPos >= _textContentMarks[mPos + 1])
             {
                 mPos++;
@@ -73,144 +44,121 @@ namespace System.Xml
 
             return (mPos & 1) != 0;
         }
-    }
 
-    //
-    // CharEntityFallbackBuffer
-    //
-    internal sealed class CharEntityEncoderFallbackBuffer : EncoderFallbackBuffer
-    {
-        private readonly CharEntityEncoderFallback _parent;
 
-        private string _charEntity = string.Empty;
-        private int _charEntityIndex = -1;
-
-        internal CharEntityEncoderFallbackBuffer(CharEntityEncoderFallback parent)
+        private sealed class CharEntityEncoderFallbackBuffer : EncoderFallbackBuffer
         {
-            _parent = parent;
-        }
+            private readonly CharEntityEncoderFallback _parent;
 
-        public override bool Fallback(char charUnknown, int index)
-        {
-            // If we are already in fallback, throw, it's probably at the suspect character in charEntity
-            if (_charEntityIndex >= 0)
+            private string _charEntity = string.Empty;
+            private int _charEntityIndex = -1;
+
+            internal CharEntityEncoderFallbackBuffer(CharEntityEncoderFallback parent)
             {
-                (new EncoderExceptionFallback()).CreateFallbackBuffer().Fallback(charUnknown, index);
+                _parent = parent;
             }
 
-            // find out if we can replace the character with entity
-            if (_parent.CanReplaceAt(index))
+            public override int Remaining => _charEntityIndex == -1 ? 0 : _charEntity.Length - _charEntityIndex;
+
+            public override bool Fallback(char charUnknown, int index)
             {
-                // Create the replacement character entity
-                _charEntity = string.Create(null, stackalloc char[64], $"&#x{(int)charUnknown:X};");
-                _charEntityIndex = 0;
-                return true;
-            }
-            else
-            {
+                // If we are already in fallback, throw, it's probably at the suspect character in charEntity
+                if (_charEntityIndex >= 0)
+                {
+                    (new EncoderExceptionFallback()).CreateFallbackBuffer().Fallback(charUnknown, index);
+                }
+
+                // find out if we can replace the character with entity
+                if (_parent.CanReplaceAt(index))
+                {
+                    // Create the replacement character entity
+                    _charEntity = string.Create(null, stackalloc char[64], $"&#x{(int)charUnknown:X};");
+                    _charEntityIndex = 0;
+                    return true;
+                }
+
                 EncoderFallbackBuffer errorFallbackBuffer = (new EncoderExceptionFallback()).CreateFallbackBuffer();
                 errorFallbackBuffer.Fallback(charUnknown, index);
                 return false;
             }
-        }
 
-        public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index)
-        {
-            // check input surrogate pair
-            if (!char.IsSurrogatePair(charUnknownHigh, charUnknownLow))
+            public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index)
             {
-                throw XmlConvert.CreateInvalidSurrogatePairException(charUnknownHigh, charUnknownLow);
-            }
+                // check input surrogate pair
+                if (!char.IsSurrogatePair(charUnknownHigh, charUnknownLow))
+                {
+                    throw XmlConvert.CreateInvalidSurrogatePairException(charUnknownHigh, charUnknownLow);
+                }
 
-            // If we are already in fallback, throw, it's probably at the suspect character in charEntity
-            if (_charEntityIndex >= 0)
-            {
-                (new EncoderExceptionFallback()).CreateFallbackBuffer().Fallback(charUnknownHigh, charUnknownLow, index);
-            }
+                // If we are already in fallback, throw, it's probably at the suspect character in charEntity
+                if (_charEntityIndex >= 0)
+                {
+                    (new EncoderExceptionFallback()).CreateFallbackBuffer().Fallback(charUnknownHigh, charUnknownLow, index);
+                }
 
-            if (_parent.CanReplaceAt(index))
-            {
-                // Create the replacement character entity
-                _charEntity = string.Create(null, stackalloc char[64], $"&#x{SurrogateCharToUtf32(charUnknownHigh, charUnknownLow):X};");
-                _charEntityIndex = 0;
-                return true;
-            }
-            else
-            {
+                if (_parent.CanReplaceAt(index))
+                {
+                    // Create the replacement character entity
+                    _charEntity = string.Create(null, stackalloc char[64], $"&#x{SurrogateCharToUtf32(charUnknownHigh, charUnknownLow):X};");
+                    _charEntityIndex = 0;
+                    return true;
+                }
+
                 EncoderFallbackBuffer errorFallbackBuffer = (new EncoderExceptionFallback()).CreateFallbackBuffer();
                 errorFallbackBuffer.Fallback(charUnknownHigh, charUnknownLow, index);
                 return false;
             }
-        }
 
-        public override char GetNextChar()
-        {
-            // The protocol using GetNextChar() and MovePrevious() called by Encoder is not well documented.
-            // Here we have to signal to Encoder that the previous read was last character. Only AFTER we can
-            // mark ourself as done (-1). Otherwise MovePrevious() can still be called, but -1 is already incorrectly set
-            // and return false from MovePrevious(). Then Encoder swallowing the rest of the bytes.
-            if (_charEntityIndex == _charEntity.Length)
+            public override char GetNextChar()
             {
-                _charEntityIndex = -1;
-            }
-            if (_charEntityIndex == -1)
-            {
-                return (char)0;
-            }
-            else
-            {
+                // The protocol using GetNextChar() and MovePrevious() called by Encoder is not well documented.
+                // Here we have to signal to Encoder that the previous read was last character. Only AFTER we can
+                // mark our self as done (-1). Otherwise MovePrevious() can still be called, but -1 is already incorrectly set
+                // and return false from MovePrevious(). Then Encoder swallowing the rest of the bytes.
+                if (_charEntityIndex == _charEntity.Length)
+                {
+                    _charEntityIndex = -1;
+                }
+
+                if (_charEntityIndex == -1)
+                {
+                    return (char)0;
+                }
+
                 Debug.Assert(_charEntityIndex < _charEntity.Length);
-                char ch = _charEntity[_charEntityIndex++];
-                return ch;
-            }
-        }
 
-        public override bool MovePrevious()
-        {
-            if (_charEntityIndex == -1)
-            {
-                return false;
+                return _charEntity[_charEntityIndex++];
             }
-            else
-            {
-                // Could be == length if just read the last character
-                Debug.Assert(_charEntityIndex <= _charEntity.Length);
-                if (_charEntityIndex > 0)
-                {
-                    _charEntityIndex--;
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-        }
 
-
-        public override int Remaining
-        {
-            get
+            public override bool MovePrevious()
             {
                 if (_charEntityIndex == -1)
                 {
-                    return 0;
+                    return false;
                 }
-                else
+
+                // Could be == length if just read the last character
+                Debug.Assert(_charEntityIndex <= _charEntity.Length);
+
+                if (_charEntityIndex > 0)
                 {
-                    return _charEntity.Length - _charEntityIndex;
+                    _charEntityIndex--;
+
+                    return true;
                 }
+
+                return false;
             }
-        }
 
-        public override void Reset()
-        {
-            _charEntityIndex = -1;
-        }
+            public override void Reset()
+            {
+                _charEntityIndex = -1;
+            }
 
-        private int SurrogateCharToUtf32(char highSurrogate, char lowSurrogate)
-        {
-            return XmlCharType.CombineSurrogateChar(lowSurrogate, highSurrogate);
+            private static int SurrogateCharToUtf32(char highSurrogate, char lowSurrogate)
+            {
+                return XmlCharType.CombineSurrogateChar(lowSurrogate, highSurrogate);
+            }
         }
     }
 }

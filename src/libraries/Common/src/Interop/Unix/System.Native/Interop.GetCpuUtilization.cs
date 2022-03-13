@@ -15,7 +15,7 @@ internal static partial class Interop
             internal ulong lastRecordedUserTime;
         }
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetCpuUtilization")]
-        internal static extern int GetCpuUtilization(ref ProcessCpuInformation previousCpuInfo);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetCpuUtilization")]
+        internal static partial int GetCpuUtilization(ref ProcessCpuInformation previousCpuInfo);
     }
 }

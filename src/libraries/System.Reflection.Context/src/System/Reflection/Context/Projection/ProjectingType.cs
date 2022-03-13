@@ -307,6 +307,7 @@ namespace System.Reflection.Context.Projection
             return _projector.ProjectType(base.MakePointerType());
         }
 
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] typeArguments)
         {
             typeArguments = _projector.Unproject(typeArguments);

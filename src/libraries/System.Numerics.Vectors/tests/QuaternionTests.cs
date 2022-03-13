@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Numerics.Tests
 {
-    public class QuaternionTests
+    public sealed class QuaternionTests
     {
         // A test for Dot (Quaternion, Quaternion)
         [Fact]
@@ -21,6 +21,41 @@ namespace System.Numerics.Tests
 
             actual = Quaternion.Dot(a, b);
             Assert.True(MathHelper.Equal(expected, actual), $"Quaternion.Dot did not return the expected value: expected {expected} actual {actual}");
+        }
+
+        [Theory]
+        [InlineData(0.0f, 1.0f, 0.0f, 1.0f)]
+        [InlineData(1.0f, 0.0f, 1.0f, 0.0f)]
+        [InlineData(3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f)]
+        [InlineData(1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f)]
+        public void QuaternionIndexerGetTest(float x, float y, float z, float w)
+        {
+            var quaternion = new Quaternion(x, y, z, w);
+
+            Assert.Equal(x, quaternion[0]);
+            Assert.Equal(y, quaternion[1]);
+            Assert.Equal(z, quaternion[2]);
+            Assert.Equal(w, quaternion[3]);
+        }
+
+        [Theory]
+        [InlineData(0.0f, 1.0f, 0.0f, 1.0f)]
+        [InlineData(1.0f, 0.0f, 1.0f, 0.0f)]
+        [InlineData(3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f)]
+        [InlineData(1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f)]
+        public void QuaternionIndexerSetTest(float x, float y, float z, float w)
+        {
+            var quaternion = new Quaternion(0.0f, 0.0f, 0.0f, 0.0f);
+
+            quaternion[0] = x;
+            quaternion[1] = y;
+            quaternion[2] = z;
+            quaternion[3] = w;
+
+            Assert.Equal(x, quaternion[0]);
+            Assert.Equal(y, quaternion[1]);
+            Assert.Equal(z, quaternion[2]);
+            Assert.Equal(w, quaternion[3]);
         }
 
         // A test for Length ()
@@ -876,6 +911,20 @@ namespace System.Numerics.Tests
             expected = false;
             actual = a.Equals(b);
             Assert.Equal(expected, actual);
+        }
+
+        // A test for Zero
+        [Fact]
+        public void QuaternionZeroTest()
+        {
+            // A default value should be equal to a zero value.
+            Assert.Equal(default(Quaternion), Quaternion.Zero);
+            
+            // A newly constructed value should be equal to a zero value.
+            Assert.Equal(new Quaternion(), Quaternion.Zero);
+            
+            // A newly constructed value with (0, 0, 0, 0) should be equal to a zero value.
+            Assert.Equal(new Quaternion(0, 0, 0, 0), Quaternion.Zero);
         }
 
         // A test for Identity

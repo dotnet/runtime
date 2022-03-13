@@ -60,7 +60,7 @@ namespace
     {
 #define BASE_CALL_CONV(name, flag) { \
         MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name), \
-        lengthof(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)) - 1, \
+        STRING_LENGTH(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)), \
         CorInfoCallConvExtension::flag, \
         BeginsWith },
 
@@ -73,7 +73,7 @@ namespace
     {
 #define BASE_CALL_CONV(name, flag) { \
         name, \
-        lengthof(name) - 1, \
+        STRING_LENGTH(name), \
         CorInfoCallConvExtension::flag, \
         Equals },
 
@@ -86,7 +86,7 @@ namespace
     {
 #define CALL_CONV_MODIFIER(name, flag) { \
         MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name), \
-        lengthof(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)) - 1, \
+        STRING_LENGTH(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)), \
         CallConvBuilder::flag, \
         BeginsWith },
 
@@ -99,7 +99,7 @@ namespace
     {
 #define CALL_CONV_MODIFIER(name, flag) { \
         name, \
-        lengthof(name) - 1, \
+        STRING_LENGTH(name), \
         CallConvBuilder::flag, \
         Equals },
 
@@ -384,7 +384,6 @@ HRESULT CallConv::TryGetUnmanagedCallingConventionFromModOpt(
     return  S_OK;
 }
 
-#ifndef CROSSGEN_COMPILE
 namespace
 {
     bool TryGetCallingConventionFromTypeArray(_In_ CaValue* arrayOfTypes, _Inout_ CallConvBuilder* builder)
@@ -524,7 +523,7 @@ bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* 
         NULL,
         0,
         namedArgs,
-        lengthof(namedArgs),
+        ARRAY_SIZE(namedArgs),
         domainAssembly));
 
     // If the value isn't defined, then return without setting anything.
@@ -556,4 +555,3 @@ bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* 
     return true;
 }
 
-#endif // CROSSGEN_COMPILE

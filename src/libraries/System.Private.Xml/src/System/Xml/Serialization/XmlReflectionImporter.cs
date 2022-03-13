@@ -166,10 +166,8 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        public XmlTypeMapping ImportTypeMapping(Type type, XmlRootAttribute? root, string? defaultNamespace)
+        public XmlTypeMapping ImportTypeMapping(Type type!!, XmlRootAttribute? root, string? defaultNamespace)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
             XmlTypeMapping xmlMapping = new XmlTypeMapping(_typeScope, ImportElement(_modelScope.GetTypeModel(type), root, defaultNamespace, new RecursionLimiter()));
             xmlMapping.SetKeyInternal(XmlMapping.GenerateKey(type, root, defaultNamespace));
             xmlMapping.GenerateSerializer = true;
@@ -485,10 +483,7 @@ namespace System.Xml.Serialization
                 // do not validate the schema provider method for wildcard types.
                 return null;
             }
-            else if (provider.MethodName == null)
-            {
-                throw new ArgumentNullException(nameof(provider.MethodName));
-            }
+            ArgumentNullException.ThrowIfNull(provider.MethodName, nameof(provider.MethodName));
             if (!CSharpHelpers.IsValidLanguageIndependentIdentifier(provider.MethodName))
                 throw new ArgumentException(SR.Format(SR.XmlGetSchemaMethodName, provider.MethodName), nameof(provider.MethodName));
 
@@ -515,7 +510,7 @@ namespace System.Xml.Serialization
             }
             if (typeDesc.Kind == TypeKind.Serializable)
             {
-                SerializableMapping? serializableMapping = null;
+                SerializableMapping? serializableMapping;
 
                 // get the schema method info
                 object[] attrs = type.GetCustomAttributes(typeof(XmlSchemaProviderAttribute), false);
@@ -975,7 +970,7 @@ namespace System.Xml.Serialization
 
                 for (int i = 0; i < names.Length; i++)
                 {
-                    string argument = "{" + names[i] + "}";
+                    string argument = $"{{{names[i]}}}";
                     if (typeName.Contains(argument))
                     {
                         typeName = typeName.Replace(argument, XsdTypeName(types[i]));
@@ -1054,7 +1049,7 @@ namespace System.Xml.Serialization
             else
             {
                 ns = defaultNs;
-                name = "Choice" + (_choiceNum++);
+                name = $"Choice{(_choiceNum++)}";
             }
 
             if (name == null)
@@ -1066,7 +1061,7 @@ namespace System.Xml.Serialization
             if (ns == null)
                 ns = defaultNs;
 
-            string uniqueName = name = generateTypeName ? "ArrayOf" + CodeIdentifier.MakePascal(name) : name;
+            string uniqueName = name = generateTypeName ? $"ArrayOf{CodeIdentifier.MakePascal(name)}" : name;
             int i = 1;
             TypeMapping? existingMapping = (TypeMapping?)_types[uniqueName, ns];
             while (existingMapping != null)
@@ -1397,7 +1392,7 @@ namespace System.Xml.Serialization
         internal static XmlReflectionMember? FindSpecifiedMember(string memberName, XmlReflectionMember[] reflectionMembers)
         {
             for (int i = 0; i < reflectionMembers.Length; i++)
-                if (string.Equals(reflectionMembers[i].MemberName, memberName + "Specified", StringComparison.Ordinal))
+                if (string.Equals(reflectionMembers[i].MemberName, $"{memberName}Specified", StringComparison.Ordinal))
                     return reflectionMembers[i];
             return null;
         }
@@ -1564,7 +1559,7 @@ namespace System.Xml.Serialization
 
             if (accessor.TypeDesc.IsArrayLike)
             {
-                Type arrayElementType = TypeScope.GetArrayElementType(accessorType, model.FieldTypeDesc.FullName + "." + model.Name)!;
+                Type arrayElementType = TypeScope.GetArrayElementType(accessorType, $"{model.FieldTypeDesc.FullName}.{model.Name}")!;
 
                 if ((flags & attrFlags) != 0)
                 {
@@ -2027,7 +2022,7 @@ namespace System.Xml.Serialization
                         }
                         else
                         {
-                            string id = element.Namespace != null && element.Namespace.Length > 0 ? element.Namespace + ":" + element.Name : element.Name;
+                            string id = element.Namespace != null && element.Namespace.Length > 0 ? $"{element.Namespace}:{element.Name}" : element.Name;
                             // Type {0} is missing value for '{1}'.
                             throw new InvalidOperationException(SR.Format(SR.XmlChoiceMissingValue, accessor.ChoiceIdentifier.Mapping!.TypeDesc!.FullName, id, element.Name, element.Namespace));
                         }

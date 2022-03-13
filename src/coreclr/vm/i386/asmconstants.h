@@ -173,30 +173,22 @@ ASMCONSTANTS_C_ASSERT(CORINFO_ArgumentNullException_ASM == CORINFO_ArgumentNullE
 ASMCONSTANTS_C_ASSERT(CORINFO_ArgumentException_ASM == CORINFO_ArgumentException)
 
 
-#ifndef CROSSGEN_COMPILE
 
 #define Thread_m_State      0x04
 ASMCONSTANTS_C_ASSERT(Thread_m_State == offsetof(Thread, m_State))
-#endif // CROSSGEN_COMPILE
 
 #define Thread_m_fPreemptiveGCDisabled     0x08
-#ifndef CROSSGEN_COMPILE
 ASMCONSTANTS_C_ASSERT(Thread_m_fPreemptiveGCDisabled == offsetof(Thread, m_fPreemptiveGCDisabled))
-#endif // CROSSGEN_COMPILE
 
 #define Thread_m_pFrame     0x0C
-#ifndef CROSSGEN_COMPILE
 ASMCONSTANTS_C_ASSERT(Thread_m_pFrame == offsetof(Thread, m_pFrame))
-#endif // CROSSGEN_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef FEATURE_HIJACK
 #define TS_Hijacked_ASM 0x80
 ASMCONSTANTS_C_ASSERT(Thread::TS_Hijacked == TS_Hijacked_ASM)
 #endif
 
-#endif // CROSSGEN_COMPILE
 
 
 // from clr/src/vm/appdomain.hpp
@@ -327,7 +319,6 @@ ASMCONSTANTS_C_ASSERT(DelegateObject___invocationCount  == offsetof(DelegateObje
 
 #endif
 
-#ifndef CROSSGEN_COMPILE
 // ResolveCacheElem from src/vm/virtualcallstub.h
 #define ResolveCacheElem__pMT               0x00
 #define ResolveCacheElem__token             0x04
@@ -339,7 +330,6 @@ ASMCONSTANTS_C_ASSERT(ResolveCacheElem__token   == offsetof(ResolveCacheElem, to
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__target  == offsetof(ResolveCacheElem, target));
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pNext   == offsetof(ResolveCacheElem, pNext));
 
-#endif // !CROSSGEN_COMPILE
 
 #undef ASMCONSTANTS_C_ASSERT
 #undef ASMCONSTANTS_RUNTIME_ASSERT

@@ -29,7 +29,7 @@ internal static partial class Interop
         /// <returns>
         /// Returns 0 on success; otherwise, the error code is returned
         /// </returns>
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_PosixFAdvise", SetLastError = false /* this is explicitly called out in the man page */)]
-        internal static extern int PosixFAdvise(SafeFileHandle fd, long offset, long length, FileAdvice advice);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_PosixFAdvise", SetLastError = false /* this is explicitly called out in the man page */)]
+        internal static partial int PosixFAdvise(SafeFileHandle fd, long offset, long length, FileAdvice advice);
     }
 }

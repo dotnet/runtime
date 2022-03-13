@@ -185,6 +185,7 @@ namespace System.Reflection.Emit
         private CustomAttributeBuilder[]? cattrs;
         private string? version;
         private string? culture;
+        private byte[]? public_key_token;
         private Module[]? loaded_modules;
         private uint access;
 #endregion
@@ -221,11 +222,12 @@ namespace System.Reflection.Emit
             {
                 version = v.ToString();
             }
+            public_key_token = n.GetPublicKeyToken();
 
             basic_init(this);
 
             // Netcore only allows one module per assembly
-            manifest_module = new ModuleBuilder(this, "RefEmit_InMemoryManifestModule", false);
+            manifest_module = new ModuleBuilder(this, "RefEmit_InMemoryManifestModule");
             modules = new ModuleBuilder[] { manifest_module };
         }
 
@@ -234,6 +236,7 @@ namespace System.Reflection.Emit
             get { return base.ReflectionOnly; }
         }
 
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
             if (name == null)
@@ -242,6 +245,7 @@ namespace System.Reflection.Emit
             return new AssemblyBuilder(name, access);
         }
 
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             AssemblyBuilder ab = DefineDynamicAssembly(name, access);
@@ -254,14 +258,9 @@ namespace System.Reflection.Emit
             return ab;
         }
 
-        public ModuleBuilder DefineDynamicModule(string name) => DefineDynamicModule(name, false);
-
-        public ModuleBuilder DefineDynamicModule(string name, bool emitSymbolInfo)
+        public ModuleBuilder DefineDynamicModule(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException("Empty name is not legal.", nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
             if (name[0] == '\0')
                 throw new ArgumentException(SR.Argument_InvalidName, nameof(name));
 
@@ -273,15 +272,13 @@ namespace System.Reflection.Emit
 
         public ModuleBuilder? GetDynamicModule(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException("Empty name is not legal.", nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             if (modules != null)
                 for (int i = 0; i < modules.Length; ++i)
                     if (modules[i].name == name)
                         return modules[i];
+
             return null;
         }
 
@@ -326,10 +323,7 @@ namespace System.Reflection.Emit
         [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
-            if (name == null)
-                throw new ArgumentNullException(name);
-            if (name.Length == 0)
-                throw new ArgumentException("Name cannot be empty", nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             Type res = InternalGetType(null, name, throwOnError, ignoreCase);
             if (res is TypeBuilder)
@@ -343,10 +337,7 @@ namespace System.Reflection.Emit
 
         public override Module? GetModule(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException("Name can't be empty");
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             if (modules == null)
                 return null;
@@ -398,7 +389,7 @@ namespace System.Reflection.Emit
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) =>
             CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
 
-        public override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributeData.GetCustomAttributes(this);
+        public override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttribute.GetCustomAttributesData(this);
     }
 }
 #endif

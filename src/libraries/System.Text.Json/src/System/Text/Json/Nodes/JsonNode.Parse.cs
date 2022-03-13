@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.Json.Serialization.Converters;
 
@@ -24,7 +25,7 @@ namespace System.Text.Json.Nodes
         ///     the start of the value.
         ///   </para>
         ///   <para>
-        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
         ///     final token in the JSON value.  If an exception is thrown, the reader is reset to the state it was in when the method was called.
         ///   </para>
         ///   <para>
@@ -50,7 +51,7 @@ namespace System.Text.Json.Nodes
         }
 
         /// <summary>
-        ///   Parse text representing a single JSON value.
+        ///   Parses text representing a single JSON value.
         /// </summary>
         /// <param name="json">JSON text to parse.</param>
         /// <param name="nodeOptions">Options to control the node behavior after parsing.</param>
@@ -65,21 +66,16 @@ namespace System.Text.Json.Nodes
         ///   <paramref name="json"/> does not represent a valid single JSON value.
         /// </exception>
         public static JsonNode? Parse(
-            string json,
+            [StringSyntax(StringSyntaxAttribute.Json)] string json!!,
             JsonNodeOptions? nodeOptions = null,
             JsonDocumentOptions documentOptions = default(JsonDocumentOptions))
         {
-            if (json == null)
-            {
-                throw new ArgumentNullException(nameof(json));
-            }
-
             JsonElement element = JsonElement.ParseValue(json, documentOptions);
             return JsonNodeConverter.Create(element, nodeOptions);
         }
 
         /// <summary>
-        ///   Parse text representing a single JSON value.
+        ///   Parses text representing a single JSON value.
         /// </summary>
         /// <param name="utf8Json">JSON text to parse.</param>
         /// <param name="nodeOptions">Options to control the node behavior after parsing.</param>
@@ -113,15 +109,10 @@ namespace System.Text.Json.Nodes
         ///   <paramref name="utf8Json"/> does not represent a valid single JSON value.
         /// </exception>
         public static JsonNode? Parse(
-            Stream utf8Json,
+            Stream utf8Json!!,
             JsonNodeOptions? nodeOptions = null,
             JsonDocumentOptions documentOptions = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
             JsonElement element = JsonElement.ParseValue(utf8Json, documentOptions);
             return JsonNodeConverter.Create(element, nodeOptions);
         }

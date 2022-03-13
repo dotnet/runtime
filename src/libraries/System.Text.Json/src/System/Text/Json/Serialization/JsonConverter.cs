@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
 
@@ -30,9 +31,18 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Can the converter have $id metadata.
         /// </summary>
-        internal virtual bool CanHaveIdMetadata => true;
+        internal virtual bool CanHaveIdMetadata => false;
 
+        /// <summary>
+        /// The converter supports polymorphic writes; only reserved for System.Object types.
+        /// </summary>
         internal bool CanBePolymorphic { get; set; }
+
+        /// <summary>
+        /// The serializer must read ahead all contents of the next JSON value
+        /// before calling into the converter for deserialization.
+        /// </summary>
+        internal bool RequiresReadAhead { get; set; }
 
         /// <summary>
         /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
@@ -83,8 +93,6 @@ namespace System.Text.Json.Serialization
         /// </summary>
         internal abstract object? ReadCoreAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state);
 
-        // For polymorphic cases, the concrete type to create.
-        internal virtual Type RuntimeType => TypeToConvert;
 
         internal bool ShouldFlush(Utf8JsonWriter writer, ref WriteStack state)
         {
@@ -105,18 +113,25 @@ namespace System.Text.Json.Serialization
         internal abstract bool WriteCoreAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
 
         /// <summary>
-        /// Loosely-typed WriteWithQuotes() that forwards to strongly-typed WriteWithQuotes().
+        /// Loosely-typed WriteToPropertyName() that forwards to strongly-typed WriteToPropertyName().
         /// </summary>
-        internal abstract void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state);
+        internal abstract void WriteAsPropertyNameCoreAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, bool isWritingExtensionDataProperty);
 
         // Whether a type (ConverterStrategy.Object) is deserialized using a parameterized constructor.
         internal virtual bool ConstructorIsParameterized { get; }
 
         internal ConstructorInfo? ConstructorInfo { get; set; }
 
-        internal virtual bool RequiresDynamicMemberAccessors { get; }
+        /// <summary>
+        /// Used for hooking custom configuration to a newly created associated JsonTypeInfo instance.
+        /// </summary>
+        internal virtual void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options) { }
 
-        internal virtual void Initialize(JsonSerializerOptions options, JsonTypeInfo? jsonTypeInfo = null) { }
+        /// <summary>
+        /// Additional reflection-specific configuration required by certain collection converters.
+        /// </summary>
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        internal virtual void ConfigureJsonTypeInfoUsingReflection(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options) { }
 
         /// <summary>
         /// Creates the instance and assigns it to state.Current.ReturnValue.

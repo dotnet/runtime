@@ -9,9 +9,9 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'qsort'// as "qsort"
+.assembly 'u_vfld'// as "qsort"
 { }
-.module 'qsort.exe'
+.assembly extern xunit.core {}
 .namespace Test
 {
   .class private value sealed auto ansi AA extends [mscorlib]System.ValueType
@@ -22,6 +22,9 @@
 
     .method private hidebysig static int32 Main() il managed
     {
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack  8
 		.locals (value class Test.AA pinned, native unsigned int[0...], native unsigned int, int32, native unsigned int[0...] pinned)

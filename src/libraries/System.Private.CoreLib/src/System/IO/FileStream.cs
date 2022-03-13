@@ -19,28 +19,28 @@ namespace System.IO
         private readonly FileStreamStrategy _strategy;
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access) instead.")]
         public FileStream(IntPtr handle, FileAccess access)
             : this(handle, access, true, DefaultBufferSize, DefaultIsAsync)
         {
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access) and optionally make a new SafeFileHandle with ownsHandle=false if needed instead.")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle)
             : this(handle, access, ownsHandle, DefaultBufferSize, DefaultIsAsync)
         {
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access, int bufferSize) and optionally make a new SafeFileHandle with ownsHandle=false if needed instead.")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize)
             : this(handle, access, ownsHandle, bufferSize, DefaultIsAsync)
         {
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) and optionally make a new SafeFileHandle with ownsHandle=false if needed instead.")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize, bool isAsync)
         {
             SafeFileHandle safeHandle = new SafeFileHandle(handle, ownsHandle: ownsHandle);
@@ -48,7 +48,7 @@ namespace System.IO
             {
                 ValidateHandle(safeHandle, access, bufferSize, isAsync);
 
-                _strategy = FileStreamHelpers.ChooseStrategy(this, safeHandle, access, DefaultShare, bufferSize, isAsync);
+                _strategy = FileStreamHelpers.ChooseStrategy(this, safeHandle, access, bufferSize, isAsync);
             }
             catch
             {
@@ -107,14 +107,14 @@ namespace System.IO
         {
             ValidateHandle(handle, access, bufferSize);
 
-            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, DefaultShare, bufferSize, handle.IsAsync);
+            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, bufferSize, handle.IsAsync);
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
             ValidateHandle(handle, access, bufferSize, isAsync);
 
-            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, DefaultShare, bufferSize, isAsync);
+            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, bufferSize, isAsync);
         }
 
         public FileStream(string path, FileMode mode)
@@ -147,6 +147,14 @@ namespace System.IO
         {
         }
 
+        ~FileStream()
+        {
+            // Preserved for compatibility since FileStream has defined a
+            // finalizer in past releases and derived classes may depend
+            // on Dispose(false) call.
+            Dispose(false);
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="System.IO.FileStream" /> class with the specified path, creation mode, read/write and sharing permission, the access other FileStreams can have to the same file, the buffer size,  additional file options and the allocation size.
         /// </summary>
@@ -173,19 +181,9 @@ namespace System.IO
         /// <exception cref="T:System.IO.PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length. </exception>
         public FileStream(string path, FileStreamOptions options)
         {
-            if (path is null)
-            {
-                throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
-            }
-            else if (path.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-            }
-            else if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            else if ((options.Access & FileAccess.Read) != 0 && options.Mode == FileMode.Append)
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(options);
+            if ((options.Access & FileAccess.Read) != 0 && options.Mode == FileMode.Append)
             {
                 throw new ArgumentException(SR.Argument_InvalidAppendMode, nameof(options));
             }
@@ -195,6 +193,11 @@ namespace System.IO
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidFileModeAndAccessCombo, options.Mode, options.Access), nameof(options));
                 }
+            }
+
+            if (options.PreallocationSize > 0)
+            {
+                FileStreamHelpers.ValidateArgumentsForPreallocation(options.Mode, options.Access);
             }
 
             FileStreamHelpers.SerializationGuard(options.Access);
@@ -210,11 +213,10 @@ namespace System.IO
             _strategy = FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options, preallocationSize);
         }
 
-        [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("FileStream.Handle has been deprecated. Use FileStream's SafeFileHandle property instead.")]
         public virtual IntPtr Handle => _strategy.Handle;
 
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("macos")]
         [UnsupportedOSPlatform("tvos")]
         public virtual void Lock(long position, long length)
@@ -232,7 +234,6 @@ namespace System.IO
         }
 
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("macos")]
         [UnsupportedOSPlatform("tvos")]
         public virtual void Unlock(long position, long length)
@@ -280,9 +281,14 @@ namespace System.IO
             {
                 return Task.FromCanceled<int>(cancellationToken);
             }
-            else if (_strategy.IsClosed)
+            else if (!_strategy.CanRead)
             {
-                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                if (_strategy.IsClosed)
+                {
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                }
+
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
             return _strategy.ReadAsync(buffer, offset, count, cancellationToken);
@@ -294,9 +300,14 @@ namespace System.IO
             {
                 return ValueTask.FromCanceled<int>(cancellationToken);
             }
-            else if (_strategy.IsClosed)
+            else if (!_strategy.CanRead)
             {
-                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                if (_strategy.IsClosed)
+                {
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                }
+
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
             return _strategy.ReadAsync(buffer, cancellationToken);
@@ -319,9 +330,14 @@ namespace System.IO
             {
                 return Task.FromCanceled(cancellationToken);
             }
-            else if (_strategy.IsClosed)
+            else if (!_strategy.CanWrite)
             {
-                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                if (_strategy.IsClosed)
+                {
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                }
+
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
             return _strategy.WriteAsync(buffer, offset, count, cancellationToken);
@@ -333,9 +349,14 @@ namespace System.IO
             {
                 return ValueTask.FromCanceled(cancellationToken);
             }
-            else if (_strategy.IsClosed)
+            else if (!_strategy.CanWrite)
             {
-                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                if (_strategy.IsClosed)
+                {
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                }
+
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
             return _strategy.WriteAsync(buffer, cancellationToken);
@@ -473,11 +494,15 @@ namespace System.IO
         /// <param name="value">The byte to write to the stream.</param>
         public override void WriteByte(byte value) => _strategy.WriteByte(value);
 
-        protected override void Dispose(bool disposing) => _strategy.DisposeInternal(disposing);
+        // _strategy can be null only when ctor has thrown
+        protected override void Dispose(bool disposing) => _strategy?.DisposeInternal(disposing);
 
-        internal void DisposeInternal(bool disposing) => Dispose(disposing);
-
-        public override ValueTask DisposeAsync() => _strategy.DisposeAsync();
+        public async override ValueTask DisposeAsync()
+        {
+            await _strategy.DisposeAsync().ConfigureAwait(false);
+            Dispose(false);
+            GC.SuppressFinalize(this);
+        }
 
         public override void CopyTo(Stream destination, int bufferSize)
         {
@@ -507,13 +532,8 @@ namespace System.IO
             return _strategy.BeginRead(buffer, offset, count, callback, state);
         }
 
-        public override int EndRead(IAsyncResult asyncResult)
+        public override int EndRead(IAsyncResult asyncResult!!)
         {
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
-
             return _strategy.EndRead(asyncResult);
         }
 
@@ -533,13 +553,8 @@ namespace System.IO
             return _strategy.BeginWrite(buffer, offset, count, callback, state);
         }
 
-        public override void EndWrite(IAsyncResult asyncResult)
+        public override void EndWrite(IAsyncResult asyncResult!!)
         {
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
-
             _strategy.EndWrite(asyncResult);
         }
 
@@ -565,8 +580,6 @@ namespace System.IO
 
         internal ValueTask BaseWriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             => base.WriteAsync(buffer, cancellationToken);
-
-        internal ValueTask BaseDisposeAsync() => base.DisposeAsync();
 
         internal Task BaseCopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             => base.CopyToAsync(destination, bufferSize, cancellationToken);

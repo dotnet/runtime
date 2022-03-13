@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <!-- disabled due to https://github.com/dotnet/runtime/issues/65671 -->
+    <XUnitUseRandomizedTestOrderer>false</XUnitUseRandomizedTestOrderer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BigInteger\absolutevalue.cs" />

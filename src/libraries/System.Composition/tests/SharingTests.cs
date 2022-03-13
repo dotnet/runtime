@@ -318,7 +318,6 @@ namespace System.Composition.UnitTests
         /// we fail only when we create instance of B.. is that correct.
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50919", TestPlatforms.Android)]
         public void BoundaryExposedBoundaryButNoneImported()
         {
             try

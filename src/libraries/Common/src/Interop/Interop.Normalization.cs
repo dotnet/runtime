@@ -8,10 +8,10 @@ internal static partial class Interop
 {
     internal static partial class Globalization
     {
-        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_IsNormalized")]
-        internal static extern unsafe int IsNormalized(NormalizationForm normalizationForm, char* src, int srcLen);
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_IsNormalized", StringMarshalling = StringMarshalling.Utf16)]
+        internal static unsafe partial int IsNormalized(NormalizationForm normalizationForm, char* src, int srcLen);
 
-        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_NormalizeString")]
-        internal static extern unsafe int NormalizeString(NormalizationForm normalizationForm, char* src, int srcLen, char* dstBuffer, int dstBufferCapacity);
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_NormalizeString", StringMarshalling = StringMarshalling.Utf16)]
+        internal static unsafe partial int NormalizeString(NormalizationForm normalizationForm, char* src, int srcLen, char* dstBuffer, int dstBufferCapacity);
     }
 }

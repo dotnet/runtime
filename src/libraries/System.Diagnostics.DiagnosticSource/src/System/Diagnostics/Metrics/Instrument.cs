@@ -13,11 +13,7 @@ namespace System.Diagnostics.Metrics
 #endif
     public abstract class Instrument
     {
-#if NO_ARRAY_EMPTY_SUPPORT
-        internal static KeyValuePair<string, object?>[] EmptyTags { get; } = new KeyValuePair<string, object?>[0];
-#else
         internal static KeyValuePair<string, object?>[] EmptyTags => Array.Empty<KeyValuePair<string, object?>>();
-#endif // NO_ARRAY_EMPTY_SUPPORT
 
         // The SyncObject is used to synchronize the following operations:
         //  - Instrument.Publish()
@@ -41,18 +37,8 @@ namespace System.Diagnostics.Metrics
         /// <param name="name">The instrument name. cannot be null.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
-        protected Instrument(Meter meter, string name, string? unit, string? description)
+        protected Instrument(Meter meter!!, string name!!, string? unit, string? description)
         {
-            if (meter == null)
-            {
-                throw new ArgumentNullException(nameof(meter));
-            }
-
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             Meter = meter;
             Name = name;
             Description = description;

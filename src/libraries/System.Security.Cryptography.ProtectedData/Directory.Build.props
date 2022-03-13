@@ -3,10 +3,5 @@
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <SupportedOSPlatforms>windows</SupportedOSPlatforms>
-    <PackageDescription>Provides access to Windows Data Protection Api.
-
-Commonly Used Types:
-System.Security.Cryptography.DataProtectionScope
-System.Security.Cryptography.ProtectedData</PackageDescription>
   </PropertyGroup>
 </Project>

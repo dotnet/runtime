@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class WebSocket
     {
-        [DllImport(Libraries.WebSocket)]
-        internal static extern void WebSocketAbortHandle([In] SafeHandle webSocketHandle);
+        [LibraryImport(Libraries.WebSocket)]
+        internal static partial void WebSocketAbortHandle(SafeHandle webSocketHandle);
     }
 }

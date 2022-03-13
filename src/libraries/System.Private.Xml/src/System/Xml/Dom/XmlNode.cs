@@ -1051,7 +1051,7 @@ namespace System.Xml
         public virtual void RemoveAll()
         {
             XmlNode? child = FirstChild;
-            XmlNode? sibling = null;
+            XmlNode? sibling;
 
             while (child != null)
             {
@@ -1351,7 +1351,7 @@ namespace System.Xml
             get
             {
                 XmlNode? node = this;
-                XmlElement? elem = null;
+                XmlElement? elem;
                 do
                 {
                     elem = node as XmlElement;
@@ -1381,7 +1381,7 @@ namespace System.Xml
             get
             {
                 XmlNode? node = this;
-                XmlElement? elem = null;
+                XmlElement? elem;
                 do
                 {
                     elem = node as XmlElement;
@@ -1471,11 +1471,11 @@ namespace System.Xml
                 {
                     case XmlNodeType.Element:
                     case XmlNodeType.EntityReference:
-                        result += ", Name=\"" + _node.Name + "\"";
+                        result += $", Name=\"{_node.Name}\"";
                         break;
                     case XmlNodeType.Attribute:
                     case XmlNodeType.ProcessingInstruction:
-                        result += ", Name=\"" + _node.Name + "\", Value=\"" + XmlConvert.EscapeValueForDebuggerDisplay(_node.Value!) + "\"";
+                        result += $", Name=\"{_node.Name}\", Value=\"{XmlConvert.EscapeValueForDebuggerDisplay(_node.Value!)}\"";
                         break;
                     case XmlNodeType.Text:
                     case XmlNodeType.CDATA:
@@ -1483,11 +1483,11 @@ namespace System.Xml
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
                     case XmlNodeType.XmlDeclaration:
-                        result += ", Value=\"" + XmlConvert.EscapeValueForDebuggerDisplay(_node.Value!) + "\"";
+                        result += $", Value=\"{XmlConvert.EscapeValueForDebuggerDisplay(_node.Value!)}\"";
                         break;
                     case XmlNodeType.DocumentType:
                         XmlDocumentType documentType = (XmlDocumentType)_node;
-                        result += ", Name=\"" + documentType.Name + "\", SYSTEM=\"" + documentType.SystemId + "\", PUBLIC=\"" + documentType.PublicId + "\", Value=\"" + XmlConvert.EscapeValueForDebuggerDisplay(documentType.InternalSubset!) + "\"";
+                        result += $", Name=\"{documentType.Name}\", SYSTEM=\"{documentType.SystemId}\", PUBLIC=\"{documentType.PublicId}\", Value=\"{XmlConvert.EscapeValueForDebuggerDisplay(documentType.InternalSubset!)}\"";
                         break;
                     default:
                         break;

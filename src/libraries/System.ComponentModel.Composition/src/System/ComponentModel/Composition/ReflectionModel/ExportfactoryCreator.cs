@@ -13,13 +13,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private readonly Type _exportFactoryType;
 
-        public ExportFactoryCreator(Type exportFactoryType)
+        public ExportFactoryCreator(Type exportFactoryType!!)
         {
-            if (exportFactoryType == null)
-            {
-                throw new ArgumentNullException(nameof(exportFactoryType));
-            }
-
             _exportFactoryType = exportFactoryType;
         }
 

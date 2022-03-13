@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.FileProviders
         /// <summary>
         /// A shared instance of <see cref="NotFoundDirectoryContents"/>
         /// </summary>
-        public static NotFoundDirectoryContents Singleton { get; } = new NotFoundDirectoryContents();
+        public static NotFoundDirectoryContents Singleton { get; } = new();
 
         /// <summary>
         /// Always false.

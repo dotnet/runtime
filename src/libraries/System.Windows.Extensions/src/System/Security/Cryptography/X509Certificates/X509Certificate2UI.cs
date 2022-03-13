@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32.SafeHandles;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -16,31 +18,27 @@ namespace System.Security.Cryptography.X509Certificates
         internal const int ERROR_SUCCESS = 0;
         internal const int ERROR_CANCELLED = 1223;
 
-        public static void DisplayCertificate(X509Certificate2 certificate)
+        public static void DisplayCertificate(X509Certificate2 certificate!!)
         {
-            if (certificate == null)
-                throw new ArgumentNullException(nameof(certificate));
             DisplayX509Certificate(certificate, IntPtr.Zero);
         }
 
-        public static void DisplayCertificate(X509Certificate2 certificate, IntPtr hwndParent)
+        public static void DisplayCertificate(X509Certificate2 certificate!!, IntPtr hwndParent)
         {
-            if (certificate == null)
-                throw new ArgumentNullException(nameof(certificate));
             DisplayX509Certificate(certificate, hwndParent);
         }
 
-        public static X509Certificate2Collection SelectFromCollection(X509Certificate2Collection certificates, string title, string message, X509SelectionFlag selectionFlag)
+        public static X509Certificate2Collection SelectFromCollection(X509Certificate2Collection certificates, string? title, string? message, X509SelectionFlag selectionFlag)
         {
             return SelectFromCollectionHelper(certificates, title, message, selectionFlag, IntPtr.Zero);
         }
 
-        public static X509Certificate2Collection SelectFromCollection(X509Certificate2Collection certificates, string title, string message, X509SelectionFlag selectionFlag, IntPtr hwndParent)
+        public static X509Certificate2Collection SelectFromCollection(X509Certificate2Collection certificates, string? title, string? message, X509SelectionFlag selectionFlag, IntPtr hwndParent)
         {
             return SelectFromCollectionHelper(certificates, title, message, selectionFlag, hwndParent);
         }
 
-        private static void DisplayX509Certificate(X509Certificate2 certificate, IntPtr hwndParent)
+        private static unsafe void DisplayX509Certificate(X509Certificate2 certificate, IntPtr hwndParent)
         {
             using (SafeCertContextHandle safeCertContext = X509Utils.DuplicateCertificateContext(certificate))
             {
@@ -50,8 +48,12 @@ namespace System.Security.Cryptography.X509Certificates
                 int dwErrorCode = ERROR_SUCCESS;
 
                 // Initialize view structure.
-                Interop.CryptUI.CRYPTUI_VIEWCERTIFICATE_STRUCTW ViewInfo = new Interop.CryptUI.CRYPTUI_VIEWCERTIFICATE_STRUCTW();
-                ViewInfo.dwSize = (uint)Marshal.SizeOf(ViewInfo);
+                Interop.CryptUI.CRYPTUI_VIEWCERTIFICATE_STRUCTW ViewInfo = default;
+#if NET7_0_OR_GREATER
+                ViewInfo.dwSize = (uint)sizeof(Interop.CryptUI.CRYPTUI_VIEWCERTIFICATE_STRUCTW.Native);
+#else
+                ViewInfo.dwSize = (uint)Marshal.SizeOf<Interop.CryptUI.CRYPTUI_VIEWCERTIFICATE_STRUCTW>();
+#endif
                 ViewInfo.hwndParent = hwndParent;
                 ViewInfo.dwFlags = 0;
                 ViewInfo.szTitle = null;
@@ -81,10 +83,8 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static X509Certificate2Collection SelectFromCollectionHelper(X509Certificate2Collection certificates, string title, string message, X509SelectionFlag selectionFlag, IntPtr hwndParent)
+        private static X509Certificate2Collection SelectFromCollectionHelper(X509Certificate2Collection certificates!!, string? title, string? message, X509SelectionFlag selectionFlag, IntPtr hwndParent)
         {
-            if (certificates == null)
-                throw new ArgumentNullException(nameof(certificates));
             if (selectionFlag < X509SelectionFlag.SingleSelection || selectionFlag > X509SelectionFlag.MultiSelection)
                 throw new ArgumentException(SR.Format(SR.Enum_InvalidValue, nameof(selectionFlag)));
 
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static unsafe SafeCertStoreHandle SelectFromStore(SafeCertStoreHandle safeSourceStoreHandle, string title, string message, X509SelectionFlag selectionFlags, IntPtr hwndParent)
+        private static unsafe SafeCertStoreHandle SelectFromStore(SafeCertStoreHandle safeSourceStoreHandle, string? title, string? message, X509SelectionFlag selectionFlags, IntPtr hwndParent)
         {
             int dwErrorCode = ERROR_SUCCESS;
 
@@ -104,15 +104,23 @@ namespace System.Security.Cryptography.X509Certificates
                 Interop.Crypt32.X509_ASN_ENCODING | Interop.Crypt32.PKCS_7_ASN_ENCODING,
                 IntPtr.Zero,
                 0,
-                null);
+                IntPtr.Zero);
 
             if (safeCertStoreHandle == null || safeCertStoreHandle.IsInvalid)
                 throw new CryptographicException(Marshal.GetLastWin32Error());
 
-            Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW csc = new Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW();
+            Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW csc = default;
             // Older versions of CRYPTUI do not check the size correctly,
             // so always force it to the oldest version of the structure.
+#if NET7_0_OR_GREATER
+            // Declare a local for Native to enable us to get the managed byte offset
+            // without having a null check cause a failure.
+            Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW.Native native;
+            Unsafe.SkipInit(out native);
+            csc.dwSize = (uint)Unsafe.ByteOffset(ref Unsafe.As<Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW.Native, byte>(ref native), ref Unsafe.As<IntPtr, byte>(ref native.hSelectedCertStore));
+#else
             csc.dwSize = (uint)Marshal.OffsetOf(typeof(Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW), "hSelectedCertStore");
+#endif
             csc.hwndParent = hwndParent;
             csc.dwFlags = (uint)selectionFlags;
             csc.szTitle = title;
@@ -130,7 +138,7 @@ namespace System.Security.Cryptography.X509Certificates
             csc.rgPropSheetPages = IntPtr.Zero;
             csc.hSelectedCertStore = safeCertStoreHandle.DangerousGetHandle();
 
-            SafeCertContextHandle safeCertContextHandle = Interop.CryptUI.CryptUIDlgSelectCertificateW(csc);
+            SafeCertContextHandle safeCertContextHandle = Interop.CryptUI.CryptUIDlgSelectCertificateW(ref csc);
 
             if (safeCertContextHandle != null && !safeCertContextHandle.IsInvalid)
             {

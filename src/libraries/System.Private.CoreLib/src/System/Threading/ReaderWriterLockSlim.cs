@@ -515,7 +515,7 @@ namespace System.Threading
                 }
             }
 
-            bool retVal = true;
+            bool retVal;
             int spinCount = 0;
 
             while (true)
@@ -710,7 +710,6 @@ namespace System.Threading
                 }
             }
 
-            bool retVal = true;
             int spinCount = 0;
 
             while (true)
@@ -748,7 +747,7 @@ namespace System.Threading
                 }
 
                 // Only one thread with the upgrade lock held can proceed.
-                retVal = WaitOnEvent(_upgradeEvent, ref _numUpgradeWaiters, timeout, EnterLockType.UpgradeableRead);
+                bool retVal = WaitOnEvent(_upgradeEvent, ref _numUpgradeWaiters, timeout, EnterLockType.UpgradeableRead);
                 if (!retVal)
                     return false;
             }

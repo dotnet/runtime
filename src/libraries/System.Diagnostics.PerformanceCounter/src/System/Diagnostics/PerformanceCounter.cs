@@ -35,7 +35,7 @@ namespace System.Diagnostics
         // Cached IP Shared Performanco counter
         private SharedPerformanceCounter _sharedCounter;
 
-        [ObsoleteAttribute("This field has been deprecated and is not used.  Use machine.config or an application configuration file to set the size of the PerformanceCounter file mapping.")]
+        [ObsoleteAttribute("PerformanceCounter.DefaultFileMappingSize has been deprecated and is not used. Use machine.config or an application configuration file to set the size of the PerformanceCounter file mapping instead.")]
         public static int DefaultFileMappingSize = 524288;
 
         private object _instanceLockObject;
@@ -575,9 +575,8 @@ namespace System.Diagnostics
         {
             //No need to initialize or Demand, since NextSample already does.
             CounterSample newSample = NextSample();
-            float retVal = 0.0f;
 
-            retVal = CounterSample.Calculate(_oldSample, newSample);
+            float retVal = CounterSample.Calculate(_oldSample, newSample);
             _oldSample = newSample;
 
             return retVal;

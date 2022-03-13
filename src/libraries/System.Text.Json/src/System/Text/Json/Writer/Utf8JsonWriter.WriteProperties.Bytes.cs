@@ -47,8 +47,8 @@ namespace System.Text.Json
         /// <remarks>
         /// The property name is escaped before writing.
         /// </remarks>
-        public void WriteBase64String(string propertyName, ReadOnlySpan<byte> bytes)
-            => WriteBase64String((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), bytes);
+        public void WriteBase64String(string propertyName!!, ReadOnlySpan<byte> bytes)
+            => WriteBase64String(propertyName.AsSpan(), bytes);
 
         /// <summary>
         /// Writes the property name and raw bytes value (as a Base64 encoded JSON string) as part of a name/value pair of a JSON object.
@@ -276,7 +276,7 @@ namespace System.Text.Json
         private void WriteBase64Indented(ReadOnlySpan<char> escapedPropertyName, ReadOnlySpan<byte> bytes)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             int encodedLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
 
@@ -326,7 +326,7 @@ namespace System.Text.Json
         private void WriteBase64Indented(ReadOnlySpan<byte> escapedPropertyName, ReadOnlySpan<byte> bytes)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             int encodedLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
 

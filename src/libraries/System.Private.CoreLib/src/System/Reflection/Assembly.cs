@@ -81,7 +81,9 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Types might be removed")]
         public virtual Type[] GetForwardedTypes() { throw NotImplemented.ByDesign; }
 
-        [RequiresAssemblyFiles("The code will throw for assemblies embedded in a single-file app")]
+        internal const string ThrowingMessageInRAF = "This member throws an exception for assemblies embedded in a single-file app";
+
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public virtual string? CodeBase => throw NotImplemented.ByDesign;
         public virtual MethodInfo? EntryPoint => throw NotImplemented.ByDesign;
         public virtual string? FullName => throw NotImplemented.ByDesign;
@@ -116,7 +118,7 @@ namespace System.Reflection
         public virtual object[] GetCustomAttributes(bool inherit) { throw NotImplemented.ByDesign; }
         public virtual object[] GetCustomAttributes(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
 
-        [RequiresAssemblyFiles("The code will throw for assemblies embedded in a single-file app")]
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public virtual string EscapedCodeBase => AssemblyName.EscapeCodeBase(CodeBase);
 
         [RequiresUnreferencedCode("Assembly.CreateInstance is not supported with trimming. Use Type.GetType instead.")]
@@ -153,9 +155,11 @@ namespace System.Reflection
         public virtual Assembly GetSatelliteAssembly(CultureInfo culture) { throw NotImplemented.ByDesign; }
         public virtual Assembly GetSatelliteAssembly(CultureInfo culture, Version? version) { throw NotImplemented.ByDesign; }
 
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public virtual FileStream? GetFile(string name) { throw NotImplemented.ByDesign; }
-        [RequiresAssemblyFiles("The code will throw for assemblies embedded in a single-file app")]
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public virtual FileStream[] GetFiles() => GetFiles(getResourceModules: false);
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public virtual FileStream[] GetFiles(bool getResourceModules) { throw NotImplemented.ByDesign; }
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) { throw NotImplemented.ByDesign; }
@@ -199,17 +203,7 @@ namespace System.Reflection
 
         public static string CreateQualifiedName(string? assemblyName, string? typeName) => typeName + ", " + assemblyName;
 
-        public static Assembly? GetAssembly(Type type)
-        {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
-            Module m = type.Module;
-            if (m == null)
-                return null;
-            else
-                return m.Assembly;
-        }
+        public static Assembly? GetAssembly(Type type!!) => type.Module?.Assembly;
 
         // internal test hook
         private static bool s_forceNullEntryPoint;
@@ -229,11 +223,8 @@ namespace System.Reflection
         // an emitted assembly. The assembly is loaded into a fully isolated ALC with resolution fully deferred to the AssemblyLoadContext.Default.
         // The second parameter is the raw bytes representing the symbol store that matches the assembly.
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public static Assembly Load(byte[] rawAssembly, byte[]? rawSymbolStore)
+        public static Assembly Load(byte[] rawAssembly!!, byte[]? rawSymbolStore)
         {
-            if (rawAssembly == null)
-                throw new ArgumentNullException(nameof(rawAssembly));
-
             if (rawAssembly.Length == 0)
                 throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
 
@@ -245,11 +236,8 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public static Assembly LoadFile(string path)
+        public static Assembly LoadFile(string path!!)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             if (PathInternal.IsPartiallyQualified(path))
             {
                 throw new ArgumentException(SR.Format(SR.Argument_AbsolutePathRequired, path), nameof(path));
@@ -331,11 +319,8 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public static Assembly LoadFrom(string assemblyFile)
+        public static Assembly LoadFrom(string assemblyFile!!)
         {
-            if (assemblyFile == null)
-                throw new ArgumentNullException(nameof(assemblyFile));
-
             string fullPath = Path.GetFullPath(assemblyFile);
 
             if (!s_loadFromHandlerSet)

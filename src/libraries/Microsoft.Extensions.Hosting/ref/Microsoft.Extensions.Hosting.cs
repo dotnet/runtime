@@ -25,8 +25,32 @@ namespace Microsoft.Extensions.Hosting
     }
     public static partial class Host
     {
+        public static Microsoft.Extensions.Hosting.HostApplicationBuilder CreateApplicationBuilder() { throw null; }
+        public static Microsoft.Extensions.Hosting.HostApplicationBuilder CreateApplicationBuilder(string[] args) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder CreateDefaultBuilder() { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder CreateDefaultBuilder(string[] args) { throw null; }
+    }
+    public sealed partial class HostApplicationBuilder
+    {
+        public HostApplicationBuilder() { }
+        public HostApplicationBuilder(Microsoft.Extensions.Hosting.HostApplicationBuilderSettings settings) { }
+        public HostApplicationBuilder(string[] args) { }
+        public Microsoft.Extensions.Configuration.ConfigurationManager Configuration { get { throw null; } }
+        public Microsoft.Extensions.Hosting.IHostEnvironment Environment { get { throw null; } }
+        public Microsoft.Extensions.Logging.ILoggingBuilder Logging { get { throw null; } }
+        public Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get { throw null; } }
+        public Microsoft.Extensions.Hosting.IHost Build() { throw null; }
+        public void ConfigureContainer<TContainerBuilder>(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder> factory, System.Action<TContainerBuilder> configure = null) where TContainerBuilder : notnull { }
+    }
+    public sealed partial class HostApplicationBuilderSettings
+    {
+        public HostApplicationBuilderSettings() { }
+        public string ApplicationName { get { throw null; } set { } }
+        public string[] Args { get { throw null; } set { } }
+        public Microsoft.Extensions.Configuration.ConfigurationManager Configuration { get { throw null; } set { } }
+        public string ContentRootPath { get { throw null; } set { } }
+        public bool DisableDefaults { get { throw null; } set { } }
+        public string EnvironmentName { get { throw null; } set { } }
     }
     public partial class HostBuilder : Microsoft.Extensions.Hosting.IHostBuilder
     {
@@ -53,25 +77,21 @@ namespace Microsoft.Extensions.Hosting
         [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
         public static System.Threading.Tasks.Task RunConsoleAsync(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.ConsoleLifetimeOptions> configureOptions, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
         public static System.Threading.Tasks.Task RunConsoleAsync(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
         public static Microsoft.Extensions.Hosting.IHostBuilder UseConsoleLifetime(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
         public static Microsoft.Extensions.Hosting.IHostBuilder UseConsoleLifetime(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.ConsoleLifetimeOptions> configureOptions) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder UseContentRoot(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, string contentRoot) { throw null; }
@@ -101,7 +121,6 @@ namespace Microsoft.Extensions.Hosting.Internal
     [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("maccatalyst")]
     [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
     public partial class ConsoleLifetime : Microsoft.Extensions.Hosting.IHostLifetime, System.IDisposable
     {

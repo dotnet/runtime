@@ -14,6 +14,11 @@ namespace System.Diagnostics.Tracing
     {
         internal const string EventSourceName = "System.Runtime";
 
+        public static class Keywords
+        {
+            public const EventKeywords AppContext = (EventKeywords)0x1;
+        }
+
         private static RuntimeEventSource? s_RuntimeEventSource;
         private PollingCounter? _gcHeapSizeCounter;
         private IncrementingPollingCounter? _gen0GCCounter;
@@ -49,6 +54,17 @@ namespace System.Diagnostics.Tracing
         // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
         // as you can't make a constructor partial.
         private RuntimeEventSource(int _) { }
+
+        private enum EventId : int
+        {
+            AppContextSwitch = 1
+        }
+
+        [Event((int)EventId.AppContextSwitch, Level = EventLevel.Informational, Keywords = Keywords.AppContext)]
+        internal void LogAppContextSwitch(string switchName, int value)
+        {
+            base.WriteEvent((int)EventId.AppContextSwitch, switchName, value);
+        }
 
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
@@ -87,6 +103,8 @@ namespace System.Diagnostics.Tracing
                 _ilBytesJittedCounter ??= new PollingCounter("il-bytes-jitted", this, () => System.Runtime.JitInfo.GetCompiledILBytes()) { DisplayName = "IL Bytes Jitted", DisplayUnits = "B" };
                 _methodsJittedCounter ??= new PollingCounter("methods-jitted-count", this, () => System.Runtime.JitInfo.GetCompiledMethodCount()) { DisplayName = "Number of Methods Jitted" };
                 _jitTimeCounter ??= new IncrementingPollingCounter("time-in-jit", this, () => System.Runtime.JitInfo.GetCompilationTime().TotalMilliseconds) { DisplayName = "Time spent in JIT", DisplayUnits = "ms", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
+
+                AppContext.LogSwitchValues(this);
             }
 
         }

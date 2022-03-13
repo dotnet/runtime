@@ -11,15 +11,18 @@ namespace Microsoft.WebAssembly.Build.Tasks
 {
     public class RunWithEmSdkEnv : Exec
     {
+        public RunWithEmSdkEnv()
+        {
+            IgnoreStandardErrorWarningFormat = true;
+            StandardOutputImportance = "Low";
+        }
+
         [NotNull]
         [Required]
         public string? EmSdkPath { get; set; }
 
         public override bool Execute()
         {
-            IgnoreStandardErrorWarningFormat = true;
-            StandardOutputImportance = "Low";
-
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 string envScriptPath = Path.Combine(EmSdkPath, "emsdk_env.bat");

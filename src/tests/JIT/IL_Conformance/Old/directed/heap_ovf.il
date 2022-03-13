@@ -10,7 +10,7 @@
 }
 
 .assembly extern legacy library mscorlib {}
-.assembly heap_ovf.exe{
+.assembly heap_ovf{
 }
 
 .class public			heap_ovf {

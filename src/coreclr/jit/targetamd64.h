@@ -133,6 +133,8 @@
   #define RBM_FLT_CALLEE_TRASH    (RBM_XMM0|RBM_XMM1|RBM_XMM2|RBM_XMM3|RBM_XMM4|RBM_XMM5)
 #endif // !UNIX_AMD64_ABI
 
+  #define RBM_OSR_INT_CALLEE_SAVED  (RBM_INT_CALLEE_SAVED | RBM_EBP)
+
   #define REG_FLT_CALLEE_SAVED_FIRST   REG_XMM6
   #define REG_FLT_CALLEE_SAVED_LAST    REG_XMM15
 
@@ -221,6 +223,10 @@
   //    profiler.
   #define REG_DEFAULT_HELPER_CALL_TARGET    REG_RAX
   #define RBM_DEFAULT_HELPER_CALL_TARGET    RBM_RAX
+
+  #define REG_R2R_INDIRECT_PARAM REG_RAX // Indirection cell for R2R fast tailcall
+                                         // See ImportThunk.Kind.DelayLoadHelperWithExistingIndirectionCell in crossgen2.
+  #define RBM_R2R_INDIRECT_PARAM RBM_RAX
 
   // GenericPInvokeCalliHelper VASigCookie Parameter
   #define REG_PINVOKE_COOKIE_PARAM          REG_R11
@@ -386,6 +392,10 @@
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
   #define RBM_INIT_PINVOKE_FRAME_TRASH  RBM_CALLEE_TRASH
 
+  #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~(RBM_R10 | RBM_RCX))
+  #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_RCX
+  #define REG_DISPATCH_INDIRECT_CALL_ADDR REG_RAX
+
   // What sort of reloc do we use for [disp32] address mode
   #define IMAGE_REL_BASED_DISP32   IMAGE_REL_BASED_REL32
 
@@ -404,10 +414,10 @@
   #define REG_STACK_PROBE_HELPER_ARG   REG_R11
   #define RBM_STACK_PROBE_HELPER_ARG   RBM_R11
 
-#ifdef TARGET_UNIX
+#ifdef UNIX_AMD64_ABI
   #define RBM_STACK_PROBE_HELPER_TRASH RBM_NONE
-#else // !TARGET_UNIX
+#else // !UNIX_AMD64_ABI
   #define RBM_STACK_PROBE_HELPER_TRASH RBM_RAX
-#endif // !TARGET_UNIX
+#endif // !UNIX_AMD64_ABI
 
 // clang-format on

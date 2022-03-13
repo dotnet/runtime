@@ -10,28 +10,28 @@ internal static partial class Interop
     internal static partial class Winsock
     {
         // Used with SIOGETEXTENSIONFUNCTIONPOINTER - we're assuming that will never block.
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static extern SocketError WSAIoctl(
+        [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        internal static partial SocketError WSAIoctl(
             SafeSocketHandle socketHandle,
-            [In] int ioControlCode,
-            [In, Out] ref Guid guid,
-            [In] int guidSize,
-            [Out] out IntPtr funcPtr,
-            [In]  int funcPtrSize,
-            [Out] out int bytesTransferred,
-            [In] IntPtr shouldBeNull,
-            [In] IntPtr shouldBeNull2);
+            int ioControlCode,
+            ref Guid guid,
+            int guidSize,
+            out IntPtr funcPtr,
+            int funcPtrSize,
+            out int bytesTransferred,
+            IntPtr shouldBeNull,
+            IntPtr shouldBeNull2);
 
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true, EntryPoint = "WSAIoctl")]
-        internal static extern SocketError WSAIoctl_Blocking(
+        [LibraryImport(Interop.Libraries.Ws2_32, EntryPoint = "WSAIoctl", SetLastError = true)]
+        internal static partial SocketError WSAIoctl_Blocking(
             SafeSocketHandle socketHandle,
-            [In] int ioControlCode,
-            [In] byte[]? inBuffer,
-            [In] int inBufferSize,
-            [Out] byte[]? outBuffer,
-            [In] int outBufferSize,
-            [Out] out int bytesTransferred,
-            [In] IntPtr overlapped,
-            [In] IntPtr completionRoutine);
+            int ioControlCode,
+            byte[]? inBuffer,
+            int inBufferSize,
+            byte[]? outBuffer,
+            int outBufferSize,
+            out int bytesTransferred,
+            IntPtr overlapped,
+            IntPtr completionRoutine);
     }
 }

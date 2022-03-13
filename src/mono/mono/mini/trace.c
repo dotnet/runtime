@@ -82,7 +82,7 @@ static void indent (int diff) {
 		indent_level += diff;
 	if (start_time == 0)
 		start_time = mono_100ns_ticks ();
-	printf ("[%p: %.5f %d] ", (void*)mono_native_thread_id_get (), seconds_since_start (), indent_level);
+	printf ("[%p: %.5f %d] ", (gpointer)(gsize) mono_native_thread_id_get (), seconds_since_start (), indent_level);
 	if (diff > 0)
 		indent_level += diff;
 }
@@ -213,7 +213,7 @@ mono_trace_enter_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallCo
 
 		MonoType *type = sig->params [i];
 
-		if (type->byref) {
+		if (m_type_is_byref (type)) {
 			printf ("[BYREF:%p]", *(gpointer*)buf);
 			mini_profiler_context_free_buffer (buf);
 			break;
@@ -248,7 +248,7 @@ mono_trace_enter_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallCo
 
 				printf ("[STRING:%p:%s]", s, as);
 				g_free (as);
-			} else 
+			} else
 				printf ("[STRING:null]");
 			break;
 		}
@@ -406,7 +406,7 @@ mono_trace_leave_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallCo
 			}
 		} else
 			printf ("[OBJECT:%p]", o);
-	       
+
 		break;
 	}
 	case MONO_TYPE_I8: {

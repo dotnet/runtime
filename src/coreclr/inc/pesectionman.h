@@ -136,11 +136,11 @@ class PESection : public CeeSectionImpl {
     virtual char * computePointer(unsigned offset) const;
 
     // Checks to see if pointer is in section
-    virtual BOOL containsPointer(__in char *ptr) const;
+    virtual BOOL containsPointer(_In_ char *ptr) const;
 
     // Given a pointer pointing into this section,
     // computes an offset as if this were an array
-    virtual unsigned computeOffset(__in char *ptr) const;
+    virtual unsigned computeOffset(_In_ char *ptr) const;
 
     // Make 'destination' a copy of the current PESection
     HRESULT cloneInstance(PESection *destination);

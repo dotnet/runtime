@@ -11,10 +11,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly d
+.assembly 'nullref'
 {
 }
-.module d.exe
+.assembly extern xunit.core {}
 
 .class public explicit ansi beforefieldinit BigClass
 {
@@ -49,6 +49,9 @@
 
   .method public hidebysig static int32 Main(string [] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init (int32 retValue)
 	

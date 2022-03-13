@@ -10,13 +10,6 @@
 
 #if defined(HOST_WIN32)
 
-void *
-mono_get_local_interfaces (int family, int *interface_count)
-{
-	*interface_count = 0;
-	return NULL;
-}
-
 void
 mono_networking_init (void)
 {

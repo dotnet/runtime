@@ -595,7 +595,7 @@ namespace
 
         COM_METHOD CreateConnection(ICorDebugProcess *pProcess,
                                     CONNID dwConnectionId,
-                                    __in_z WCHAR* pConnectionName);
+                                    _In_z_ WCHAR* pConnectionName);
         COM_METHOD ChangeConnection(ICorDebugProcess *pProcess, CONNID dwConnectionId);
         COM_METHOD DestroyConnection(ICorDebugProcess *pProcess, CONNID dwConnectionId);
 
@@ -725,7 +725,7 @@ namespace
     HRESULT
     DefaultManagedCallback2::CreateConnection(ICorDebugProcess *pProcess,
                                               CONNID dwConnectionId,
-                                              __in_z WCHAR* pConnectionName)
+                                              _In_z_ WCHAR* pConnectionName)
     {
         _ASSERTE(!"DefaultManagedCallback2::CreateConnection not implemented");
         return E_NOTIMPL;
@@ -961,15 +961,12 @@ Cordb::Cordb(CorDebugInterfaceVersion iDebuggerVersion)
 }
 
 Cordb::Cordb(CorDebugInterfaceVersion iDebuggerVersion, const ProcessDescriptor& pd)
-  : CordbBase(NULL, 0, enumCordb),
-    m_processes(11),
-    m_initialized(false),
-    m_debuggerSpecifiedVersion(iDebuggerVersion),
-    m_pd(pd)
-#ifdef FEATURE_CORESYSTEM
-    ,
-    m_targetCLR(0)
-#endif
+  : CordbBase(NULL, 0, enumCordb)
+  , m_processes(11)
+  , m_initialized(false)
+  , m_debuggerSpecifiedVersion(iDebuggerVersion)
+  , m_pd(pd)
+  , m_targetCLR(0)
 {
     g_pRSDebuggingInfo->m_Cordb = this;
 
@@ -1420,10 +1417,7 @@ HRESULT Cordb::SetTargetCLR(HMODULE hmodTargetCLR)
     if (m_initialized)
         return E_FAIL;
 
-#ifdef FEATURE_CORESYSTEM
     m_targetCLR = hmodTargetCLR;
-#endif
-
     return S_OK;
 }
 
@@ -1528,16 +1522,6 @@ bool Cordb::IsInteropDebuggingSupported()
     // We explicitly refrain from checking the unmanaged callback. See comment in
     // ICorDebug::SetUnmanagedHandler for details.
 #ifdef FEATURE_INTEROP_DEBUGGING
-
-#if !defined(FEATURE_CORESYSTEM)
-    // Interop debugging is only supported internally on CoreCLR.
-    // Check if the special reg key is set.  If not, then we don't allow interop debugging.
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgEnableMixedModeDebugging) == 0)
-    {
-        return false;
-    }
-#endif // FEATURE_CORESYSTEM
-
     return true;
 #else
     return false;
@@ -1572,7 +1556,7 @@ bool Cordb::IsInteropDebuggingSupported()
 //
 //---------------------------------------------------------------------------------------
 HRESULT Cordb::CreateProcess(LPCWSTR lpApplicationName,
-                             __in_z LPWSTR lpCommandLine,
+                             _In_z_ LPWSTR lpCommandLine,
                              LPSECURITY_ATTRIBUTES lpProcessAttributes,
                              LPSECURITY_ATTRIBUTES lpThreadAttributes,
                              BOOL bInheritHandles,
@@ -1601,7 +1585,7 @@ HRESULT Cordb::CreateProcess(LPCWSTR lpApplicationName,
 
 HRESULT Cordb::CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
                                    LPCWSTR lpApplicationName,
-                                   __in_z LPWSTR lpCommandLine,
+                                   _In_z_ LPWSTR lpCommandLine,
                                    LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                    LPSECURITY_ATTRIBUTES lpThreadAttributes,
                                    BOOL bInheritHandles,
@@ -1735,7 +1719,7 @@ HRESULT Cordb::CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
 
 HRESULT Cordb::CreateProcessEx(ICorDebugRemoteTarget * pRemoteTarget,
                                LPCWSTR lpApplicationName,
-                               __in_z LPWSTR lpCommandLine,
+                               _In_z_ LPWSTR lpCommandLine,
                                LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                LPSECURITY_ATTRIBUTES lpThreadAttributes,
                                BOOL bInheritHandles,

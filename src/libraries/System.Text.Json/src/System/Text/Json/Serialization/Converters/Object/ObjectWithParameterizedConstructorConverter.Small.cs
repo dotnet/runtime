@@ -31,7 +31,7 @@ namespace System.Text.Json.Serialization.Converters
 
             bool success;
 
-            switch (jsonParameterInfo.Position)
+            switch (jsonParameterInfo.ClrInfo.Position)
             {
                 case 0:
                     success = TryRead<TArg0>(ref state, ref reader, jsonParameterInfo, out arguments.Arg0);
@@ -65,7 +65,7 @@ namespace System.Text.Json.Serialization.Converters
             var info = (JsonParameterInfo<TArg>)jsonParameterInfo;
             var converter = (JsonConverter<TArg>)jsonParameterInfo.ConverterBase;
 
-            bool success = converter.TryRead(ref reader, info.RuntimePropertyType, info.Options!, ref state, out TArg? value);
+            bool success = converter.TryRead(ref reader, info.PropertyType, info.Options!, ref state, out TArg? value);
 
             arg = value == null && jsonParameterInfo.IgnoreDefaultValuesOnRead
                 ? (TArg?)info.DefaultValue! // Use default value specified on parameter, if any.
@@ -92,9 +92,11 @@ namespace System.Text.Json.Serialization.Converters
                 JsonParameterInfo? parameterInfo = cache[i].Value;
                 Debug.Assert(parameterInfo != null);
 
+                // We can afford not to set default values for ctor arguments when we should't deserialize because the
+                // type parameters of the `Arguments` type provide default semantics that work well with value types.
                 if (parameterInfo.ShouldDeserialize)
                 {
-                    int position = parameterInfo.Position;
+                    int position = parameterInfo.ClrInfo.Position;
 
                     switch (position)
                     {

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Xunit.Performance;
 
 namespace Functions
 {
@@ -12,21 +11,6 @@ namespace Functions
 
         private const float roundSingleDelta = 0.000628318531f;
         private const float roundSingleExpectedResult = 2.0f;
-
-        [Benchmark(InnerIterationCount = RoundSingleIterations)]
-        public static void RoundSingleBenchmark()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        RoundSingleTest();
-                    }
-                }
-            }
-        }
 
         public static void RoundSingleTest()
         {

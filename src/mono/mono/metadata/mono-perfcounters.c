@@ -38,7 +38,7 @@
 #include <sys/vmmeter.h>
 #endif
 #include "metadata/mono-perfcounters.h"
-#include "metadata/appdomain.h"
+#include <mono/metadata/appdomain.h>
 #include "metadata/object-internals.h"
 /* for mono_stats */
 #include "metadata/class-internals.h"
@@ -406,7 +406,7 @@ predef_cleanup (ImplVtable *vtable)
 {
 	PredefVtable *vt = (PredefVtable*)vtable;
 	/* ExternalSArea *data; */
-	
+
 	perfctr_lock ();
 	if (!pid_to_shared_area) {
 		perfctr_unlock ();

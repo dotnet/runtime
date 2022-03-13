@@ -12,4 +12,10 @@
     <TrimMode>link</TrimMode>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
+  <!-- This is temporary hack for https://github.com/dotnet/runtime/issues/61294 -->
+  <ItemGroup>
+    <_MonoRuntimeComponentDontLink Include="libmono-component-debugger-stub-static.a" />
+    <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" />
+    <_MonoRuntimeComponentDontLink Include="libmono-component-hot_reload-stub-static.a" />
+  </ItemGroup>
 </Project>

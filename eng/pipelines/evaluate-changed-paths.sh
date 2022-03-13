@@ -73,12 +73,12 @@ while [[ $# > 0 ]]; do
       ;;
     -excludepaths)
       IFS='+' read -r -a tmp <<< $2
-      exclude_paths+=($tmp)
+      exclude_paths+=(${tmp[@]})
       shift
       ;;
     -includepaths)
       IFS='+' read -r -a tmp <<< $2
-      include_paths+=($tmp)
+      include_paths+=(${tmp[@]})
       shift
       ;;
     -subset)
@@ -141,7 +141,7 @@ probePaths() {
     echo "******* Probing $_subset exclude paths *******";
     for _path in "${exclude_paths[@]}"; do
       echo "$_path"
-      if [[ "$exclude_path_string" == "" ]]; then
+      if [[ -z "$exclude_path_string" ]]; then
         exclude_path_string=":!$_path"
       else
         exclude_path_string="$exclude_path_string :!$_path"
@@ -159,7 +159,7 @@ probePaths() {
     echo "******* Probing $_subset include paths *******";
     for _path in "${include_paths[@]}"; do
       echo "$_path"
-      if [[ "$include_path_string" == "" ]]; then
+      if [[ -z "$include_path_string" ]]; then
         include_path_string=":$_path"
       else
         include_path_string="$include_path_string :$_path"

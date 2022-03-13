@@ -18,7 +18,7 @@ namespace System.Reflection.Emit.Tests
 
     public class MethodBuilderDefineMethodOverride
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DefineMethodOverride_InterfaceMethod()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -37,7 +37,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(2, createdMethod.Invoke(Activator.CreateInstance(createdType), null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DefineMethodOverride_InterfaceMethodWithConflictingName()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -60,7 +60,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(1, createdMethod.Invoke(Activator.CreateInstance(typeof(DefineMethodOverrideClass)), null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DefineMethodOverride_GenericInterface_Succeeds()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -78,7 +78,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal("Hello World", interfaceMethod.Invoke(Activator.CreateInstance(createdType), null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DefineMethodOverride_CalledTwiceWithSameBodies_Works()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -269,7 +269,6 @@ namespace System.Reflection.Emit.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49904", TestRuntimes.Mono)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Static virtual interface methods not supported on .NET Framework")]
         public void DefineMethodOverride_StaticVirtualInterfaceMethod()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
@@ -296,7 +295,6 @@ namespace System.Reflection.Emit.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49904", TestRuntimes.Mono)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Static virtual interface methods not supported on .NET Framework")]
         public void DefineMethodOverride_StaticVirtualInterfaceMethod_VerifyWithInterfaceMap()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);

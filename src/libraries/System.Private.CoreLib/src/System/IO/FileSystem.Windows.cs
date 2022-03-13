@@ -2,22 +2,59 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.IO;
-using System.Text;
 using System.Buffers;
 
-#if MS_IO_REDIST
-namespace Microsoft.IO
-#else
 namespace System.IO
-#endif
 {
     internal static partial class FileSystem
     {
+        public static void Encrypt(string path)
+        {
+            string fullPath = Path.GetFullPath(path);
+
+            if (!Interop.Advapi32.EncryptFile(fullPath))
+            {
+                ThrowExceptionEncryptDecryptFail(fullPath);
+            }
+        }
+
+        public static void Decrypt(string path)
+        {
+            string fullPath = Path.GetFullPath(path);
+
+            if (!Interop.Advapi32.DecryptFile(fullPath))
+            {
+                ThrowExceptionEncryptDecryptFail(fullPath);
+            }
+        }
+
+        private static unsafe void ThrowExceptionEncryptDecryptFail(string fullPath)
+        {
+            int errorCode = Marshal.GetLastWin32Error();
+            if (errorCode == Interop.Errors.ERROR_ACCESS_DENIED)
+            {
+                // Check to see if the file system support the Encrypted File System (EFS)
+                string name = DriveInfoInternal.NormalizeDriveName(Path.GetPathRoot(fullPath)!);
+
+                using (DisableMediaInsertionPrompt.Create())
+                {
+                    if (!Interop.Kernel32.GetVolumeInformation(name, null, 0, null, null, out int fileSystemFlags, null, 0))
+                    {
+                        errorCode = Marshal.GetLastWin32Error();
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
+                    }
+
+                    if ((fileSystemFlags & Interop.Kernel32.FILE_SUPPORTS_ENCRYPTION) == 0)
+                    {
+                        throw new NotSupportedException(SR.PlatformNotSupported_FileEncryption);
+                    }
+                }
+            }
+            throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
+        }
+
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
             int errorCode = Interop.Kernel32.CopyFile(sourceFullPath, destFullPath, !overwrite);
@@ -117,7 +154,7 @@ namespace System.IO
             return data.ftLastWriteTime.ToDateTimeOffset();
         }
 
-        public static void MoveDirectory(string sourceFullPath, string destFullPath)
+        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool sameDirectoryDifferentCase)
         {
             if (!Interop.Kernel32.MoveFile(sourceFullPath, destFullPath, overwrite: false))
             {
@@ -145,21 +182,26 @@ namespace System.IO
             }
         }
 
-        private static SafeFileHandle OpenHandle(string fullPath, bool asDirectory)
+        private static SafeFileHandle OpenHandleToWriteAttributes(string fullPath, bool asDirectory)
         {
-            string root = fullPath.Substring(0, PathInternal.GetRootLength(fullPath.AsSpan()));
-            if (root == fullPath && root[1] == Path.VolumeSeparatorChar)
+            if (fullPath.Length == PathInternal.GetRootLength(fullPath) && fullPath[1] == Path.VolumeSeparatorChar)
             {
                 // intentionally not fullpath, most upstack public APIs expose this as path.
                 throw new ArgumentException(SR.Arg_PathIsVolume, "path");
             }
 
+            int dwFlagsAndAttributes = Interop.Kernel32.FileOperations.FILE_FLAG_OPEN_REPARSE_POINT;
+            if (asDirectory)
+            {
+                dwFlagsAndAttributes |= Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS;
+            }
+
             SafeFileHandle handle = Interop.Kernel32.CreateFile(
                 fullPath,
-                Interop.Kernel32.GenericOperations.GENERIC_WRITE,
+                Interop.Kernel32.FileOperations.FILE_WRITE_ATTRIBUTES,
                 FileShare.ReadWrite | FileShare.Delete,
                 FileMode.Open,
-                asDirectory ? Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS : 0);
+                dwFlagsAndAttributes);
 
             if (handle.IsInvalid)
             {
@@ -186,7 +228,10 @@ namespace System.IO
             }
 
             Interop.Kernel32.WIN32_FIND_DATA findData = default;
-            GetFindData(fullPath, isDirectory: true, ref findData);
+            // FindFirstFile($path) (used by GetFindData) fails with ACCESS_DENIED when user has no ListDirectory rights
+            // but FindFirstFile($path/*") (used by RemoveDirectoryRecursive) works fine in such scenario.
+            // So we ignore it here and let RemoveDirectoryRecursive throw if FindFirstFile($path/*") fails with ACCESS_DENIED.
+            GetFindData(fullPath, isDirectory: true, ignoreAccessDenied: true, ref findData);
             if (IsNameSurrogateReparsePoint(ref findData))
             {
                 // Don't recurse
@@ -200,7 +245,7 @@ namespace System.IO
             RemoveDirectoryRecursive(fullPath, ref findData, topLevel: true);
         }
 
-        private static void GetFindData(string fullPath, bool isDirectory, ref Interop.Kernel32.WIN32_FIND_DATA findData)
+        private static void GetFindData(string fullPath, bool isDirectory, bool ignoreAccessDenied, ref Interop.Kernel32.WIN32_FIND_DATA findData)
         {
             using SafeFindHandle handle = Interop.Kernel32.FindFirstFile(Path.TrimEndingDirectorySeparator(fullPath), ref findData);
             if (handle.IsInvalid)
@@ -209,6 +254,8 @@ namespace System.IO
                 // File not found doesn't make much sense coming from a directory.
                 if (isDirectory && errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
                     errorCode = Interop.Errors.ERROR_PATH_NOT_FOUND;
+                if (isDirectory && errorCode == Interop.Errors.ERROR_ACCESS_DENIED && ignoreAccessDenied)
+                    return;
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
         }
@@ -377,7 +424,7 @@ namespace System.IO
             long changeTime = -1,
             uint fileAttributes = 0)
         {
-            using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
+            using (SafeFileHandle handle = OpenHandleToWriteAttributes(fullPath, asDirectory))
             {
                 var basicInfo = new Interop.Kernel32.FILE_BASIC_INFO()
                 {
@@ -409,17 +456,6 @@ namespace System.IO
 
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
-            string pathToTargetFullPath = PathInternal.GetLinkTargetFullPath(path, pathToTarget);
-
-            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-            int errorCode = FillAttributeInfo(pathToTargetFullPath, ref data, returnErrorOnNotFound: true);
-            if (errorCode == Interop.Errors.ERROR_SUCCESS &&
-                data.dwFileAttributes != -1 &&
-                isDirectory != ((data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0))
-            {
-                throw new IOException(SR.Format(SR.IO_InconsistentLinkType, path));
-            }
-
             Interop.Kernel32.CreateSymbolicLink(path, pathToTarget, isDirectory);
         }
 
@@ -494,48 +530,81 @@ namespace System.IO
                 }
 
                 Span<byte> bufferSpan = new(buffer);
-                success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.REPARSE_DATA_BUFFER rdb);
+                success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.SymbolicLinkReparseBuffer rbSymlink);
                 Debug.Assert(success);
 
-                // Only symbolic links are supported at the moment.
-                if ((rdb.ReparseTag & Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK) == 0)
+                // We always use SubstituteName(Offset|Length) instead of PrintName(Offset|Length),
+                // the latter is just the display name of the reparse point and it can show something completely unrelated to the target.
+
+                if (rbSymlink.ReparseTag == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK)
                 {
-                    return null;
+                    int offset = sizeof(Interop.Kernel32.SymbolicLinkReparseBuffer) + rbSymlink.SubstituteNameOffset;
+                    int length = rbSymlink.SubstituteNameLength;
+
+                    Span<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(offset, length));
+
+                    bool isRelative = (rbSymlink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) != 0;
+                    if (!isRelative)
+                    {
+                        // Absolute target is in NT format and we need to clean it up before return it to the user.
+                        if (targetPath.StartsWith(PathInternal.UncNTPathPrefix.AsSpan()))
+                        {
+                            // We need to prepend the Win32 equivalent of UNC NT prefix.
+                            return Path.Join(PathInternal.UncPathPrefix.AsSpan(), targetPath.Slice(PathInternal.UncNTPathPrefix.Length));
+                        }
+
+                        return GetTargetPathWithoutNTPrefix(targetPath);
+                    }
+                    else if (returnFullPath)
+                    {
+                        return Path.Join(Path.GetDirectoryName(linkPath.AsSpan()), targetPath);
+                    }
+                    else
+                    {
+                        return targetPath.ToString();
+                    }
+                }
+                else if (rbSymlink.ReparseTag == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT)
+                {
+                    success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.MountPointReparseBuffer rbMountPoint);
+                    Debug.Assert(success);
+
+                    int offset = sizeof(Interop.Kernel32.MountPointReparseBuffer) + rbMountPoint.SubstituteNameOffset;
+                    int length = rbMountPoint.SubstituteNameLength;
+
+                    Span<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(offset, length));
+
+                    // Unlike symbolic links, mount point paths cannot be relative.
+                    Debug.Assert(!PathInternal.IsPartiallyQualified(targetPath));
+                    // Mount points cannot point to a remote location.
+                    Debug.Assert(!targetPath.StartsWith(PathInternal.UncNTPathPrefix.AsSpan()));
+                    return GetTargetPathWithoutNTPrefix(targetPath);
                 }
 
-                // We use PrintName instead of SubstitutneName given that we don't want to return a NT path when the link wasn't created with such NT path.
-                // Unlike SubstituteName and GetFinalPathNameByHandle(), PrintName doesn't start with a prefix.
-                // Another nuance is that SubstituteName does not contain redundant path segments while PrintName does.
-                // PrintName can ONLY return a NT path if the link was created explicitly targeting a file/folder in such way. e.g: mklink /D linkName \??\C:\path\to\target.
-                int printNameNameOffset = sizeof(Interop.Kernel32.REPARSE_DATA_BUFFER) + rdb.ReparseBufferSymbolicLink.PrintNameOffset;
-                int printNameNameLength = rdb.ReparseBufferSymbolicLink.PrintNameLength;
-
-                Span<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(printNameNameOffset, printNameNameLength));
-                Debug.Assert((rdb.ReparseBufferSymbolicLink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) == 0 || !PathInternal.IsExtended(targetPath));
-
-                if (returnFullPath && (rdb.ReparseBufferSymbolicLink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) != 0)
-                {
-                    // Target path is relative and is for ResolveLinkTarget(), we need to append the link directory.
-                    return Path.Join(Path.GetDirectoryName(linkPath.AsSpan()), targetPath);
-                }
-
-                return targetPath.ToString();
+                return null;
             }
             finally
             {
                 ArrayPool<byte>.Shared.Return(buffer);
+            }
+
+            static string GetTargetPathWithoutNTPrefix(ReadOnlySpan<char> targetPath)
+            {
+                Debug.Assert(targetPath.StartsWith(PathInternal.NTPathPrefix.AsSpan()));
+                return targetPath.Slice(PathInternal.NTPathPrefix.Length).ToString();
             }
         }
 
         private static unsafe string? GetFinalLinkTarget(string linkPath, bool isDirectory)
         {
             Interop.Kernel32.WIN32_FIND_DATA data = default;
-            GetFindData(linkPath, isDirectory, ref data);
+            GetFindData(linkPath, isDirectory, ignoreAccessDenied: false, ref data);
 
             // The file or directory is not a reparse point.
             if ((data.dwFileAttributes & (uint)FileAttributes.ReparsePoint) == 0 ||
-                // Only symbolic links are supported at the moment.
-                (data.dwReserved0 & Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK) == 0)
+                // Only symbolic links and mount points are supported at the moment.
+                (data.dwReserved0 != Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK &&
+                 data.dwReserved0 != Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT))
             {
                 return null;
             }

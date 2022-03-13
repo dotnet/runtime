@@ -193,6 +193,9 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the time the associated process was started.</summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public DateTime StartTime
         {
             get
@@ -261,16 +264,17 @@ namespace System.Diagnostics
         public IntPtr MaxWorkingSet
         {
             [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("maccatalyst")]
             [UnsupportedOSPlatform("tvos")]
+            [SupportedOSPlatform("maccatalyst")]
             get
             {
                 EnsureWorkingSetLimits();
                 return _maxWorkingSet;
             }
-            [SupportedOSPlatform("windows")]
-            [SupportedOSPlatform("macos")]
             [SupportedOSPlatform("freebsd")]
+            [SupportedOSPlatform("macos")]
+            [SupportedOSPlatform("maccatalyst")]
+            [SupportedOSPlatform("windows")]
             set
             {
                 SetWorkingSetLimits(null, value);
@@ -284,16 +288,17 @@ namespace System.Diagnostics
         public IntPtr MinWorkingSet
         {
             [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("maccatalyst")]
             [UnsupportedOSPlatform("tvos")]
+            [SupportedOSPlatform("maccatalyst")]
             get
             {
                 EnsureWorkingSetLimits();
                 return _minWorkingSet;
             }
-            [SupportedOSPlatform("windows")]
-            [SupportedOSPlatform("macos")]
             [SupportedOSPlatform("freebsd")]
+            [SupportedOSPlatform("macos")]
+            [SupportedOSPlatform("maccatalyst")]
+            [SupportedOSPlatform("windows")]
             set
             {
                 SetWorkingSetLimits(value, null);
@@ -322,7 +327,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.NonpagedSystemMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("Process.NonpagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.NonpagedSystemMemorySize64 instead.")]
         public int NonpagedSystemMemorySize
         {
             get
@@ -342,7 +347,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PagedMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("Process.PagedMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PagedMemorySize64 instead.")]
         public int PagedMemorySize
         {
             get
@@ -362,7 +367,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PagedSystemMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("Process.PagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PagedSystemMemorySize64 instead.")]
         public int PagedSystemMemorySize
         {
             get
@@ -382,7 +387,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PeakPagedMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("Process.PeakPagedMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakPagedMemorySize64 instead.")]
         public int PeakPagedMemorySize
         {
             get
@@ -401,7 +406,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PeakWorkingSet64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("Process.PeakWorkingSet has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakWorkingSet64 instead.")]
         public int PeakWorkingSet
         {
             get
@@ -420,7 +425,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PeakVirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("Process.PeakVirtualMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakVirtualMemorySize64 instead.")]
         public int PeakVirtualMemorySize
         {
             get
@@ -495,7 +500,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PrivateMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("Process.PrivateMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PrivateMemorySize64 instead.")]
         public int PrivateMemorySize
         {
             get
@@ -508,24 +513,11 @@ namespace System.Diagnostics
         /// <devdoc>
         ///    <para>
         ///       Gets
-        ///       the friendly name of the process.
-        ///    </para>
-        /// </devdoc>
-        public string ProcessName
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.ProcessName;
-            }
-        }
-
-        /// <devdoc>
-        ///    <para>
-        ///       Gets
         ///       or sets which processors the threads in this process can be scheduled to run on.
         ///    </para>
         /// </devdoc>
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("linux")]
         public IntPtr ProcessorAffinity
         {
             get
@@ -576,10 +568,7 @@ namespace System.Diagnostics
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 if (Associated)
                 {
@@ -638,7 +627,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.VirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("Process.VirtualMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.VirtualMemorySize64 instead.")]
         public int VirtualMemorySize
         {
             get
@@ -761,7 +750,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.WorkingSet64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("Process.WorkingSet has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.WorkingSet64 instead.")]
         public int WorkingSet
         {
             get
@@ -1039,6 +1028,9 @@ namespace System.Diagnostics
         ///       local computer. These process resources share the specified process name.
         ///    </para>
         /// </devdoc>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName)
         {
             return GetProcessesByName(processName, ".");
@@ -1050,6 +1042,9 @@ namespace System.Diagnostics
         ///       component for each process resource on the local computer.
         ///    </para>
         /// </devdoc>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcesses()
         {
             return GetProcesses(".");
@@ -1062,6 +1057,9 @@ namespace System.Diagnostics
         ///       process resource on the specified computer.
         ///    </para>
         /// </devdoc>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcesses(string machineName)
         {
             bool isRemoteMachine = ProcessManager.IsRemoteMachine(machineName);
@@ -1204,8 +1202,8 @@ namespace System.Diagnostics
         ///    </para>
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public bool Start()
         {
             Close();
@@ -1231,6 +1229,17 @@ namespace System.Diagnostics
             {
                 throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
             }
+            if (startInfo.HasArgumentList)
+            {
+                int argumentCount = startInfo.ArgumentList.Count;
+                for (int i = 0; i < argumentCount; i++)
+                {
+                    if (startInfo.ArgumentList[i] is null)
+                    {
+                        throw new ArgumentNullException("item", SR.ArgumentListMayNotContainNull);
+                    }
+                }
+            }
 
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
             CheckDisposed();
@@ -1248,8 +1257,8 @@ namespace System.Diagnostics
         ///    </para>
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process Start(string fileName)
         {
             // the underlying Start method can only return null on Windows platforms,
@@ -1267,8 +1276,8 @@ namespace System.Diagnostics
         ///    </para>
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process Start(string fileName, string arguments)
         {
             // the underlying Start method can only return null on Windows platforms,
@@ -1281,15 +1290,10 @@ namespace System.Diagnostics
         /// Starts a process resource by specifying the name of an application and a set of command line arguments
         /// </summary>
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
-        public static Process Start(string fileName, IEnumerable<string> arguments)
+        [SupportedOSPlatform("maccatalyst")]
+        public static Process Start(string fileName!!, IEnumerable<string> arguments!!)
         {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
-            if (arguments == null)
-                throw new ArgumentNullException(nameof(arguments));
-
             var startInfo = new ProcessStartInfo(fileName);
             foreach (string argument in arguments)
             {
@@ -1308,14 +1312,11 @@ namespace System.Diagnostics
         ///    </para>
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
-        public static Process? Start(ProcessStartInfo startInfo)
+        [SupportedOSPlatform("maccatalyst")]
+        public static Process? Start(ProcessStartInfo startInfo!!)
         {
             Process process = new Process();
-            if (startInfo == null)
-                throw new ArgumentNullException(nameof(startInfo));
-
             process.StartInfo = startInfo;
             return process.Start() ?
                 process :
@@ -1361,15 +1362,31 @@ namespace System.Diagnostics
 
         public override string ToString()
         {
-            if (Associated)
+            string result = base.ToString();
+
+            try
             {
-                string processName = ProcessName;
-                if (processName.Length != 0)
+                if (Associated)
                 {
-                    return $"{base.ToString()} ({processName})";
+                    _processInfo ??= ProcessManager.GetProcessInfo(_processId, _machineName);
+                    if (_processInfo is not null)
+                    {
+                        string processName = _processInfo.ProcessName;
+                        if (processName.Length != 0)
+                        {
+                            result = $"{result} ({processName})";
+                        }
+                    }
                 }
             }
-            return base.ToString();
+            catch
+            {
+                // Common contract for ToString methods is never throw.
+                // Handle cases where a process would terminates immediately after our checks
+                // and/or cause ProcessManager to throw an exception.
+            }
+
+            return result;
         }
 
         /// <devdoc>
@@ -1680,10 +1697,7 @@ namespace System.Diagnostics
         /// <exception cref="System.ObjectDisposedException">If the Proces has been disposed.</exception>
         private void CheckDisposed()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
         private static Win32Exception CreateExceptionForErrorStartingProcess(string errorMessage, int errorCode, string fileName, string? workingDirectory)

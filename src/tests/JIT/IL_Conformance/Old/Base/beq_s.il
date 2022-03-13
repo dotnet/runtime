@@ -55,5 +55,5 @@ end:
 }
 
 
-.assembly beq_s.exe {}
+.assembly beq_s {}
 

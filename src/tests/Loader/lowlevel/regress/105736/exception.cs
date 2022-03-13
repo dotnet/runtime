@@ -32,7 +32,7 @@ public class Sub : Base
 	}
 }
 
-public class Test
+public class Test_exception
 {
 	public static int Main()
 	{

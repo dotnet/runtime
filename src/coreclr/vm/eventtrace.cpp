@@ -98,52 +98,52 @@ Volatile<LONGLONG> ETW::GCLog::s_l64LastClientSequenceNumber = 0;
         { FireEtwMethodLoad_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulMethodFlags, clrInstanceID, nativeCodeId); } \
 }
 
-#define FireEtwMethodUnloadVerbose_V1_or_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId) \
+#define FireEtwMethodUnloadVerbose_V1_or_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId) \
 {   \
     if (nativeCodeId == 0)   \
-        { FireEtwMethodUnloadVerbose_V1(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID); } \
+        { FireEtwMethodUnloadVerbose_V1(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID); } \
     else \
-        { FireEtwMethodUnloadVerbose_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId); } \
+        { FireEtwMethodUnloadVerbose_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId); } \
 }
 
-#define FireEtwMethodUnload_V1_or_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId) \
+#define FireEtwMethodUnload_V1_or_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId) \
 {   \
     if (nativeCodeId == 0)   \
-        { FireEtwMethodUnload_V1(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID); } \
+        { FireEtwMethodUnload_V1(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID); } \
     else \
-        { FireEtwMethodUnload_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId); } \
+        { FireEtwMethodUnload_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId); } \
 }
 
-#define FireEtwMethodDCStartVerbose_V1_or_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId) \
+#define FireEtwMethodDCStartVerbose_V1_or_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId) \
 {   \
     if (nativeCodeId == 0)   \
-        { FireEtwMethodDCStartVerbose_V1(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID); } \
+        { FireEtwMethodDCStartVerbose_V1(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID); } \
     else \
-        { FireEtwMethodDCStartVerbose_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId); } \
+        { FireEtwMethodDCStartVerbose_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId); } \
 }
 
-#define FireEtwMethodDCStart_V1_or_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId) \
+#define FireEtwMethodDCStart_V1_or_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId) \
 {   \
     if (nativeCodeId == 0)   \
-        { FireEtwMethodDCStart_V1(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID); } \
+        { FireEtwMethodDCStart_V1(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID); } \
     else \
-        { FireEtwMethodDCStart_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId); } \
+        { FireEtwMethodDCStart_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId); } \
 }
 
-#define FireEtwMethodDCEndVerbose_V1_or_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId) \
+#define FireEtwMethodDCEndVerbose_V1_or_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId) \
 {   \
     if (nativeCodeId == 0)   \
-        { FireEtwMethodDCEndVerbose_V1(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID);  } \
+        { FireEtwMethodDCEndVerbose_V1(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID);  } \
     else \
-        { FireEtwMethodDCEndVerbose_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId); } \
+        { FireEtwMethodDCEndVerbose_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId); } \
 }
 
-#define FireEtwMethodDCEnd_V1_or_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId) \
+#define FireEtwMethodDCEnd_V1_or_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId) \
 {   \
     if (nativeCodeId == 0)   \
-        { FireEtwMethodDCEnd_V1(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID);  } \
+        { FireEtwMethodDCEnd_V1(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID);  } \
     else \
-        { FireEtwMethodDCEnd_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId); } \
+        { FireEtwMethodDCEnd_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId); } \
 }
 
 // Module load / unload events:
@@ -706,7 +706,7 @@ void ETW::GCLog::MovedReference(
     {
         // Moved references
 
-        _ASSERTE(pContext->cBulkMovedObjectRanges < _countof(pContext->rgGCBulkMovedObjectRanges));
+        _ASSERTE(pContext->cBulkMovedObjectRanges < ARRAY_SIZE(pContext->rgGCBulkMovedObjectRanges));
         EventStructGCBulkMovedObjectRangesValue * pValue =
             &pContext->rgGCBulkMovedObjectRanges[pContext->cBulkMovedObjectRanges];
         pValue->OldRangeBase = pbMemBlockStart;
@@ -715,7 +715,7 @@ void ETW::GCLog::MovedReference(
         pContext->cBulkMovedObjectRanges++;
 
         // If buffer is now full, empty it into ETW
-        if (pContext->cBulkMovedObjectRanges == _countof(pContext->rgGCBulkMovedObjectRanges))
+        if (pContext->cBulkMovedObjectRanges == ARRAY_SIZE(pContext->rgGCBulkMovedObjectRanges))
         {
             FireEtwGCBulkMovedObjectRanges(
                 pContext->iCurBulkMovedObjectRanges,
@@ -732,7 +732,7 @@ void ETW::GCLog::MovedReference(
     {
         // Surviving references
 
-        _ASSERTE(pContext->cBulkSurvivingObjectRanges < _countof(pContext->rgGCBulkSurvivingObjectRanges));
+        _ASSERTE(pContext->cBulkSurvivingObjectRanges < ARRAY_SIZE(pContext->rgGCBulkSurvivingObjectRanges));
         EventStructGCBulkSurvivingObjectRangesValue * pValue =
             &pContext->rgGCBulkSurvivingObjectRanges[pContext->cBulkSurvivingObjectRanges];
         pValue->RangeBase = pbMemBlockStart;
@@ -740,7 +740,7 @@ void ETW::GCLog::MovedReference(
         pContext->cBulkSurvivingObjectRanges++;
 
         // If buffer is now full, empty it into ETW
-        if (pContext->cBulkSurvivingObjectRanges == _countof(pContext->rgGCBulkSurvivingObjectRanges))
+        if (pContext->cBulkSurvivingObjectRanges == ARRAY_SIZE(pContext->rgGCBulkSurvivingObjectRanges))
         {
             FireEtwGCBulkSurvivingObjectRanges(
                 pContext->iCurBulkSurvivingObjectRanges,
@@ -1142,7 +1142,7 @@ void BulkComLogger::FlushRcw()
     EventDataDescCreate(&eventData[1], &instance, sizeof(const unsigned short));
     EventDataDescCreate(&eventData[2], m_etwRcwData, sizeof(EventRCWEntry) * m_currRcw);
 
-    ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRCW, _countof(eventData), eventData);
+    ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRCW, ARRAY_SIZE(eventData), eventData);
 #else
     ULONG result = FireEtXplatGCBulkRCW(m_currRcw, instance, sizeof(EventRCWEntry) * m_currRcw, m_etwRcwData);
 #endif // !defined(HOST_UNIX)
@@ -1233,7 +1233,7 @@ void BulkComLogger::FlushCcw()
     EventDataDescCreate(&eventData[1], &instance, sizeof(const unsigned short));
     EventDataDescCreate(&eventData[2], m_etwCcwData, sizeof(EventCCWEntry) * m_currCcw);
 
-    ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootCCW, _countof(eventData), eventData);
+    ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootCCW, ARRAY_SIZE(eventData), eventData);
 #else
     ULONG result = FireEtXplatGCBulkRootCCW(m_currCcw, instance, sizeof(EventCCWEntry) * m_currCcw, m_etwCcwData);
 #endif //!defined(HOST_UNIX)
@@ -1362,7 +1362,7 @@ void BulkComLogger::AddCcwHandle(Object **handle)
     while (curr->Next)
         curr = curr->Next;
 
-    if (curr->Count == _countof(curr->Handles))
+    if (curr->Count == ARRAY_SIZE(curr->Handles))
     {
         curr->Next = new CCWEnumerationEntry;
         curr = curr->Next;
@@ -1380,7 +1380,7 @@ void BulkComLogger::AddCcwHandle(Object **handle)
 
 
 
-#include "domainfile.h"
+#include "domainassembly.h"
 
 BulkStaticsLogger::BulkStaticsLogger(BulkTypeEventLogger *typeLogger)
     : m_buffer(0), m_used(0), m_count(0), m_domain(0), m_typeLogger(typeLogger)
@@ -1438,7 +1438,7 @@ void BulkStaticsLogger::FireBulkStaticsEvent()
     EventDataDescCreate(&eventData[2], &instance, sizeof(const unsigned short)  );
     EventDataDescCreate(&eventData[3], m_buffer, m_used);
 
-    ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootStaticVar, _countof(eventData), eventData);
+    ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootStaticVar, ARRAY_SIZE(eventData), eventData);
 #else
     ULONG result = FireEtXplatGCBulkRootStaticVar(m_count, appDomain, instance, m_used, m_buffer);
 #endif //!defined(HOST_UNIX)
@@ -1524,69 +1524,64 @@ void BulkStaticsLogger::LogAllStatics()
                 continue;
 
             CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
-            DomainModuleIterator modIter = pDomainAssembly->IterateModules(kModIterIncludeLoaded);
+            // Get the domain module from the module/appdomain pair.
+            Module *module = pDomainAssembly->GetModule();
+            if (module == NULL)
+                continue;
 
-            while (modIter.Next())
+            DomainAssembly *domainAssembly = module->GetDomainAssembly();
+            if (domainAssembly == NULL)
+                continue;
+
+            // Ensure the module has fully loaded.
+            if (!domainAssembly->IsActive())
+                continue;
+
+            DomainLocalModule *domainModule = module->GetDomainLocalModule();
+            if (domainModule == NULL)
+                continue;
+
+            // Now iterate all types with
+            LookupMap<PTR_MethodTable>::Iterator mtIter = module->EnumerateTypeDefs();
+            while (mtIter.Next())
             {
-                // Get the domain module from the module/appdomain pair.
-                Module *module = modIter.GetModule();
-                if (module == NULL)
+                // I don't think mt can be null here, but the dac does a null check...
+                // IsFullyLoaded should be equivalent to 'GetLoadLevel() == CLASS_LOADED'
+                MethodTable *mt = mtIter.GetElement();
+                if (mt == NULL || !mt->IsFullyLoaded())
                     continue;
 
-                DomainFile *domainFile = module->GetDomainFile();
-                if (domainFile == NULL)
+                EEClass *cls = mt->GetClass();
+                _ASSERTE(cls != NULL);
+
+                if (cls->GetNumStaticFields() <= 0)
                     continue;
 
-                // Ensure the module has fully loaded.
-                if (!domainFile->IsActive())
-                    continue;
-
-                DomainLocalModule *domainModule = module->GetDomainLocalModule();
-                if (domainModule == NULL)
-                    continue;
-
-                // Now iterate all types with
-                LookupMap<PTR_MethodTable>::Iterator mtIter = module->EnumerateTypeDefs();
-                while (mtIter.Next())
+                ApproxFieldDescIterator fieldIter(mt, ApproxFieldDescIterator::STATIC_FIELDS);
+                for (FieldDesc *field = fieldIter.Next(); field != NULL; field = fieldIter.Next())
                 {
-                    // I don't think mt can be null here, but the dac does a null check...
-                    // IsFullyLoaded should be equivalent to 'GetLoadLevel() == CLASS_LOADED'
-                    MethodTable *mt = mtIter.GetElement();
-                    if (mt == NULL || !mt->IsFullyLoaded())
+                    // Don't want thread local
+                    _ASSERTE(field->IsStatic());
+                    if (field->IsSpecialStatic() || field->IsEnCNew())
                         continue;
 
-                    EEClass *cls = mt->GetClass();
-                    _ASSERTE(cls != NULL);
-
-                    if (cls->GetNumStaticFields() <= 0)
+                    // Static valuetype values are boxed.
+                    CorElementType fieldType = field->GetFieldType();
+                    if (fieldType != ELEMENT_TYPE_CLASS && fieldType != ELEMENT_TYPE_VALUETYPE)
                         continue;
 
-                    ApproxFieldDescIterator fieldIter(mt, ApproxFieldDescIterator::STATIC_FIELDS);
-                    for (FieldDesc *field = fieldIter.Next(); field != NULL; field = fieldIter.Next())
-                    {
-                        // Don't want thread local
-                        _ASSERTE(field->IsStatic());
-                        if (field->IsSpecialStatic() || field->IsEnCNew())
-                            continue;
+                    BYTE *base = field->GetBaseInDomainLocalModule(domainModule);
+                    if (base == NULL)
+                        continue;
 
-                        // Static valuetype values are boxed.
-                        CorElementType fieldType = field->GetFieldType();
-                        if (fieldType != ELEMENT_TYPE_CLASS && fieldType != ELEMENT_TYPE_VALUETYPE)
-                            continue;
+                    Object **address = (Object**)field->GetStaticAddressHandle(base);
+                    Object *obj = NULL;
+                    if (address == NULL || ((obj = *address) == NULL))
+                        continue;
 
-                        BYTE *base = field->GetBaseInDomainLocalModule(domainModule);
-                        if (base == NULL)
-                            continue;
-
-                        Object **address = (Object**)field->GetStaticAddressHandle(base);
-                        Object *obj = NULL;
-                        if (address == NULL || ((obj = *address) == NULL))
-                            continue;
-
-                        WriteEntry(domain, address, *address, field);
-                    } // foreach static field
-                }
-            } // foreach domain module
+                    WriteEntry(domain, address, *address, field);
+                } // foreach static field
+            }
         } // foreach domain assembly
     } // foreach AppDomain
 } // BulkStaticsLogger::LogAllStatics
@@ -1741,12 +1736,12 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
     CONTRACTL_END;
 
     // If there's no room for another type, flush what we've got
-    if (m_nBulkTypeValueCount == _countof(m_rgBulkTypeValues))
+    if (m_nBulkTypeValueCount == ARRAY_SIZE(m_rgBulkTypeValues))
     {
         FireBulkTypeEvent();
     }
 
-    _ASSERTE(m_nBulkTypeValueCount < (int)_countof(m_rgBulkTypeValues));
+    _ASSERTE(m_nBulkTypeValueCount < (int)ARRAY_SIZE(m_rgBulkTypeValues));
 
     BulkTypeValue * pVal = &m_rgBulkTypeValues[m_nBulkTypeValueCount];
 
@@ -2259,7 +2254,7 @@ VOID ETW::GCLog::RootReference(
     if (fDependentHandle)
     {
         _ASSERTE(pContext->cGCBulkRootConditionalWeakTableElementEdges <
-            _countof(pContext->rgGCBulkRootConditionalWeakTableElementEdges));
+            ARRAY_SIZE(pContext->rgGCBulkRootConditionalWeakTableElementEdges));
         EventStructGCBulkRootConditionalWeakTableElementEdgeValue * pRCWTEEdgeValue =
             &pContext->rgGCBulkRootConditionalWeakTableElementEdges[pContext->cGCBulkRootConditionalWeakTableElementEdges];
         pRCWTEEdgeValue->GCKeyNodeID = pRootedNode;
@@ -2269,7 +2264,7 @@ VOID ETW::GCLog::RootReference(
 
         // If RCWTE edge buffer is now full, empty it into ETW
         if (pContext->cGCBulkRootConditionalWeakTableElementEdges ==
-            _countof(pContext->rgGCBulkRootConditionalWeakTableElementEdges))
+            ARRAY_SIZE(pContext->rgGCBulkRootConditionalWeakTableElementEdges))
         {
             FireEtwGCBulkRootConditionalWeakTableElementEdge(
                 pContext->iCurBulkRootConditionalWeakTableElementEdge,
@@ -2284,7 +2279,7 @@ VOID ETW::GCLog::RootReference(
     }
     else
     {
-        _ASSERTE(pContext->cGcBulkRootEdges < _countof(pContext->rgGcBulkRootEdges));
+        _ASSERTE(pContext->cGcBulkRootEdges < ARRAY_SIZE(pContext->rgGcBulkRootEdges));
         EventStructGCBulkRootEdgeValue * pBulkRootEdgeValue = &pContext->rgGcBulkRootEdges[pContext->cGcBulkRootEdges];
         pBulkRootEdgeValue->RootedNodeAddress = pRootedNode;
         pBulkRootEdgeValue->GCRootKind = nRootKind;
@@ -2293,7 +2288,7 @@ VOID ETW::GCLog::RootReference(
         pContext->cGcBulkRootEdges++;
 
         // If root edge buffer is now full, empty it into ETW
-        if (pContext->cGcBulkRootEdges == _countof(pContext->rgGcBulkRootEdges))
+        if (pContext->cGcBulkRootEdges == ARRAY_SIZE(pContext->rgGcBulkRootEdges))
         {
             FireEtwGCBulkRootEdge(
                 pContext->iCurBulkRootEdge,
@@ -2351,7 +2346,7 @@ VOID ETW::GCLog::ObjectReference(
     //---------------------------------------------------------------------------------------
 
     // Add Node (pObjReferenceSource) to buffer
-    _ASSERTE(pContext->cGcBulkNodeValues < _countof(pContext->rgGcBulkNodeValues));
+    _ASSERTE(pContext->cGcBulkNodeValues < ARRAY_SIZE(pContext->rgGcBulkNodeValues));
     EventStructGCBulkNodeValue * pBulkNodeValue = &pContext->rgGcBulkNodeValues[pContext->cGcBulkNodeValues];
     pBulkNodeValue->Address = pObjReferenceSource;
     pBulkNodeValue->Size = pObjReferenceSource->GetSize();
@@ -2360,7 +2355,7 @@ VOID ETW::GCLog::ObjectReference(
     pContext->cGcBulkNodeValues++;
 
     // If Node buffer is now full, empty it into ETW
-    if (pContext->cGcBulkNodeValues == _countof(pContext->rgGcBulkNodeValues))
+    if (pContext->cGcBulkNodeValues == ARRAY_SIZE(pContext->rgGcBulkNodeValues))
     {
         FireEtwGCBulkNode(
             pContext->iCurBulkNodeEvent,
@@ -2402,7 +2397,7 @@ VOID ETW::GCLog::ObjectReference(
 
     for (ULONGLONG i=0; i < cRefs; i++)
     {
-        _ASSERTE(pContext->cGcBulkEdgeValues < _countof(pContext->rgGcBulkEdgeValues));
+        _ASSERTE(pContext->cGcBulkEdgeValues < ARRAY_SIZE(pContext->rgGcBulkEdgeValues));
         EventStructGCBulkEdgeValue * pBulkEdgeValue = &pContext->rgGcBulkEdgeValues[pContext->cGcBulkEdgeValues];
         pBulkEdgeValue->Value = rgObjReferenceTargets[i];
         // FUTURE: ReferencingFieldID
@@ -2410,7 +2405,7 @@ VOID ETW::GCLog::ObjectReference(
         pContext->cGcBulkEdgeValues++;
 
         // If Edge buffer is now full, empty it into ETW
-        if (pContext->cGcBulkEdgeValues == _countof(pContext->rgGcBulkEdgeValues))
+        if (pContext->cGcBulkEdgeValues == ARRAY_SIZE(pContext->rgGcBulkEdgeValues))
         {
             FireEtwGCBulkEdge(
                 pContext->iCurBulkEdgeEvent,
@@ -4961,7 +4956,7 @@ VOID ETW::ExceptionLog::ExceptionFilterEnd()
 /****************************************************************************/
 /* This is called by the runtime when a domain is loaded */
 /****************************************************************************/
-VOID ETW::LoaderLog::DomainLoadReal(BaseDomain *pDomain, __in_opt LPWSTR wszFriendlyName)
+VOID ETW::LoaderLog::DomainLoadReal(BaseDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName)
 {
     CONTRACTL {
         NOTHROW;
@@ -5659,7 +5654,7 @@ VOID ETW::MethodLog::MethodTableRestored(MethodTable *pMethodTable)
                 for (; iter.IsValid(); iter.Next())
                 {
                     MethodDesc *pMD = (MethodDesc *)(iter.GetMethodDesc());
-                    if(pMD && pMD->IsRestored() && pMD->GetMethodTable_NoLogging() == pMethodTable)
+                    if(pMD && pMD->GetMethodTable_NoLogging() == pMethodTable)
                         ETW::MethodLog::SendMethodEvent(pMD, ETW::EnumerationLog::EnumerationStructs::NgenMethodLoad, FALSE);
                 }
             }
@@ -5671,7 +5666,7 @@ VOID ETW::MethodLog::MethodTableRestored(MethodTable *pMethodTable)
 /****************************************************************************/
 /* This is called by the runtime when a Strong Name Verification Starts */
 /****************************************************************************/
-VOID ETW::SecurityLog::StrongNameVerificationStart(DWORD dwInFlags, __in LPWSTR strFullyQualifiedAssemblyName)
+VOID ETW::SecurityLog::StrongNameVerificationStart(DWORD dwInFlags, _In_ LPWSTR strFullyQualifiedAssemblyName)
 {
     WRAPPER_NO_CONTRACT;
 }
@@ -5680,7 +5675,7 @@ VOID ETW::SecurityLog::StrongNameVerificationStart(DWORD dwInFlags, __in LPWSTR 
 /****************************************************************************/
 /* This is called by the runtime when a Strong Name Verification Ends */
 /****************************************************************************/
-VOID ETW::SecurityLog::StrongNameVerificationStop(DWORD dwInFlags,ULONG result, __in LPWSTR strFullyQualifiedAssemblyName)
+VOID ETW::SecurityLog::StrongNameVerificationStop(DWORD dwInFlags,ULONG result, _In_ LPWSTR strFullyQualifiedAssemblyName)
 {
     WRAPPER_NO_CONTRACT;
 }
@@ -6047,14 +6042,12 @@ VOID ETW::LoaderLog::SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions
     PCWSTR szDtraceOutput1=W("");
     BOOL bIsDynamicAssembly = pAssembly->IsDynamic();
     BOOL bIsCollectibleAssembly = pAssembly->IsCollectible();
-    BOOL bHasNativeImage = pAssembly->GetManifestFile()->HasNativeImage();
-    BOOL bIsReadyToRun = pAssembly->GetManifestFile()->IsILImageReadyToRun();
+    BOOL bIsReadyToRun = pAssembly->GetPEAssembly()->IsReadyToRun();
 
     ULONGLONG ullAssemblyId = (ULONGLONG)pAssembly;
     ULONGLONG ullDomainId = (ULONGLONG)pAssembly->GetDomain();
     ULONGLONG ullBindingID = 0;
     ULONG ulAssemblyFlags = ((bIsDynamicAssembly ? ETW::LoaderLog::LoaderStructs::DynamicAssembly : 0) |
-                             (bHasNativeImage ? ETW::LoaderLog::LoaderStructs::NativeAssembly : 0) |
                              (bIsCollectibleAssembly ? ETW::LoaderLog::LoaderStructs::CollectibleAssembly : 0) |
                              (bIsReadyToRun ? ETW::LoaderLog::LoaderStructs::ReadyToRunAssembly : 0));
 
@@ -6093,65 +6086,11 @@ VOID ETW::LoaderLog::SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions
 ETW_INLINE
     ULONG
     ETW::LoaderLog::SendModuleRange(
-    __in Module *pModule,
-    __in DWORD dwEventOptions)
+    _In_ Module *pModule,
+    _In_ DWORD dwEventOptions)
 
 {
     ULONG Result = ERROR_SUCCESS;
-
-#ifdef FEATURE_PREJIT
-    // do not fire the ETW event when:
-    // 1. We did not load the native image
-    // 2. We do not have IBC data for the native image
-    if( !pModule || !pModule->HasNativeImage() || !pModule->IsIbcOptimized() )
-    {
-        return Result;
-    }
-
-    // get information about the hot sections from the native image that has been loaded
-    COUNT_T cbSizeOfSectionTable;
-    CORCOMPILE_VIRTUAL_SECTION_INFO* pVirtualSectionsTable = (CORCOMPILE_VIRTUAL_SECTION_INFO* )pModule->GetNativeImage()->GetVirtualSectionsTable(&cbSizeOfSectionTable);
-
-    COUNT_T RangeCount = cbSizeOfSectionTable/sizeof(CORCOMPILE_VIRTUAL_SECTION_INFO);
-
-    // if we do not have any hot ranges, we do not fire the ETW event
-
-    // Figure out the rest of the event data
-    UINT16 ClrInstanceId = GetClrInstanceId();
-    UINT64 ModuleID = (ULONGLONG)(TADDR) pModule;
-
-    for (COUNT_T i = 0; i < RangeCount; ++i)
-    {
-        DWORD rangeBegin = pVirtualSectionsTable[i].VirtualAddress;
-        DWORD rangeSize = pVirtualSectionsTable[i].Size;
-        DWORD sectionType = pVirtualSectionsTable[i].SectionType;
-
-        UINT8 ibcType = VirtualSectionData::IBCType(sectionType);
-        UINT8 rangeType = VirtualSectionData::RangeType(sectionType);
-        UINT16 virtualSectionType = VirtualSectionData::VirtualSectionType(sectionType);
-        BOOL isIBCProfiledColdSection = VirtualSectionData::IsIBCProfiledColdSection(sectionType);
-        if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoad)
-        {
-            if (isIBCProfiledColdSection)
-                Result &= FireEtwModuleRangeLoad(ClrInstanceId, ModuleID, rangeBegin, rangeSize, rangeType);
-        }
-        else if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeDCStart)
-        {
-            if (isIBCProfiledColdSection)
-                Result &= FireEtwModuleRangeDCStart(ClrInstanceId, ModuleID, rangeBegin, rangeSize, rangeType);
-        }
-        else if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeDCEnd)
-        {
-            if (isIBCProfiledColdSection)
-                Result &= FireEtwModuleRangeDCEnd(ClrInstanceId, ModuleID, rangeBegin, rangeSize, rangeType);
-        }
-        // Fire private events if they are requested.
-        if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoadPrivate)
-        {
-            Result &= FireEtwModuleRangeLoadPrivate(ClrInstanceId, ModuleID, rangeBegin, rangeSize, rangeType, ibcType, virtualSectionType);
-        }
-    }
-#endif
 
     return Result;
 }
@@ -6191,17 +6130,13 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
     ZeroMemory(pCvInfoIL, sizeof(*pCvInfoIL));
     ZeroMemory(pCvInfoNative, sizeof(*pCvInfoNative));
 
-    PTR_PEFile pPEFile = pModule->GetFile();
-    _ASSERTE(pPEFile != NULL);
+    PTR_PEAssembly pPEAssembly = pModule->GetPEAssembly();
+    _ASSERTE(pPEAssembly != NULL);
 
     PTR_PEImageLayout pLayout = NULL;
-    if (pPEFile->HasNativeImage())
+    if (pPEAssembly->HasPEImage())
     {
-        pLayout = pPEFile->GetLoadedNative();
-    }
-    else if (pPEFile->HasOpenedILimage())
-    {
-        pLayout = pPEFile->GetLoadedIL();
+        pLayout = pPEAssembly->GetLoadedLayout();
     }
 
     if (pLayout == NULL)
@@ -6361,19 +6296,11 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 
     PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W("");
     BOOL bIsDynamicAssembly = pModule->GetAssembly()->IsDynamic();
-    BOOL bHasNativeImage = FALSE;
-#ifdef FEATURE_PREJIT
-    bHasNativeImage = pModule->HasNativeImage();
-#endif // FEATURE_PREJIT
     BOOL bIsManifestModule = pModule->IsManifest();
     ULONGLONG ullAppDomainId = 0; // This is used only with DomainModule events
     ULONGLONG ullModuleId = (ULONGLONG)(TADDR) pModule;
     ULONGLONG ullAssemblyId = (ULONGLONG)pModule->GetAssembly();
     BOOL bIsIbcOptimized = FALSE;
-    if(bHasNativeImage)
-    {
-        bIsIbcOptimized = pModule->IsIbcOptimized();
-    }
     BOOL bIsReadyToRun = pModule->IsReadyToRun();
     BOOL bIsPartialReadyToRun = FALSE;
     if (bIsReadyToRun)
@@ -6381,8 +6308,7 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
         bIsPartialReadyToRun = pModule->GetReadyToRunInfo()->IsPartial();
     }
     ULONG ulReservedFlags = 0;
-    ULONG ulFlags = ((bHasNativeImage ? ETW::LoaderLog::LoaderStructs::NativeModule : 0) |
-                     (bIsDynamicAssembly ? ETW::LoaderLog::LoaderStructs::DynamicModule : 0) |
+    ULONG ulFlags = ((bIsDynamicAssembly ? ETW::LoaderLog::LoaderStructs::DynamicModule : 0) |
                      (bIsManifestModule ? ETW::LoaderLog::LoaderStructs::ManifestModule : 0) |
                      (bIsIbcOptimized ? ETW::LoaderLog::LoaderStructs::IbcOptimized : 0) |
                      (bIsReadyToRun ? ETW::LoaderLog::LoaderStructs::ReadyToRunModule : 0) |
@@ -6407,13 +6333,8 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 
     if(!bIsDynamicAssembly)
     {
-        ModuleILPath = (PWCHAR)pModule->GetAssembly()->GetManifestFile()->GetILimage()->GetPath().GetUnicode();
+        ModuleILPath = (PWCHAR)pModule->GetAssembly()->GetPEAssembly()->GetPEImage()->GetPath().GetUnicode();
         ModuleNativePath = (PWCHAR)pEmptyString;
-
-#ifdef FEATURE_PREJIT
-        if(bHasNativeImage)
-            ModuleNativePath = (PWCHAR)pModule->GetNativeImage()->GetPath().GetUnicode();
-#endif // FEATURE_PREJIT
     }
 
     // if we do not have a module path yet, we put the module name
@@ -6580,10 +6501,6 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
     if(pMethodDesc) {
         pModule = pMethodDesc->GetModule_NoLogging();
 
-        if(!pMethodDesc->IsRestored()) {
-                return;
-        }
-
         SendMethodDetailsEvent(pMethodDesc);
 
         bool bIsDynamicMethod = pMethodDesc->IsDynamicMethod();
@@ -6650,10 +6567,10 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
 
     Module *pModule = NULL;
     Module *pLoaderModule = NULL; // This must not be used except for getting the ModuleID
-    ULONGLONG ullMethodStartAddress=0, ullColdMethodStartAddress=0, ullModuleID=0, ullMethodIdentifier=0;
-    ULONG ulMethodSize=0, ulColdMethodSize=0, ulMethodToken=0, ulMethodFlags=0, ulColdMethodFlags=0;
+    ULONGLONG ullMethodStartAddress=0, ullModuleID=0, ullMethodIdentifier=0;
+    ULONG ulMethodSize=0, ulMethodToken=0, ulMethodFlags=0, ulColdMethodFlags=0;
     PWCHAR pMethodName=NULL, pNamespaceName=NULL, pMethodSignature=NULL;
-    BOOL bHasNativeImage = FALSE, bShowVerboseOutput = FALSE, bIsDynamicMethod = FALSE, bHasSharedGenericCode = FALSE, bIsGenericMethod = FALSE;
+    BOOL bShowVerboseOutput = FALSE, bIsDynamicMethod = FALSE, bHasSharedGenericCode = FALSE, bIsGenericMethod = FALSE;
     PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W(""),szDtraceOutput3=W("");
 
     BOOL bIsRundownProvider = ((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodDCStart) ||
@@ -6669,24 +6586,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     if (pMethodDesc == NULL)
         return;
 
-    if(!pMethodDesc->IsRestored())
-    {
-        // Forcibly restoring ngen methods can cause all sorts of deadlocks and contract violations
-        // These events are therefore put under the private provider
-        if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context,
-                                        TRACE_LEVEL_INFORMATION,
-                                        CLR_PRIVATENGENFORCERESTORE_KEYWORD))
-        {
-            PERMANENT_CONTRACT_VIOLATION(GCViolation, ReasonNonShippingCode);
-            pMethodDesc->CheckRestore();
-        }
-        else
-        {
-            return;
-        }
-    }
-
-
     if(bIsRundownProvider)
     {
         bShowVerboseOutput = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context,
@@ -6701,9 +6600,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     }
 
     pModule = pMethodDesc->GetModule_NoLogging();
-#ifdef FEATURE_PREJIT
-    bHasNativeImage = pModule->HasNativeImage();
-#endif // FEATURE_PREJIT
     bIsDynamicMethod = (BOOL)pMethodDesc->IsDynamicMethod();
     bHasSharedGenericCode = pMethodDesc->IsSharedByGenericInstantiations();
 
@@ -6776,12 +6672,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     else
         ulMethodToken = (ULONG)pMethodDesc->GetMemberDef_NoLogging();
 
-    if(bHasNativeImage)
-    {
-        ullColdMethodStartAddress = (ULONGLONG)methodRegionInfo.coldStartAddress;
-        ulColdMethodSize = (ULONG)methodRegionInfo.coldSize; // methodRegionInfo.coldSize is size_t and info.MethodLoadInfo.MethodSize is 32 bit; will give incorrect values on a 64-bit machine
-    }
-
     SString tNamespace, tMethodName, tMethodSignature;
 
     // if verbose method load info needed, only then
@@ -6799,8 +6689,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
         pMethodName = (PWCHAR)methodName->GetUnicode();
         pMethodSignature = (PWCHAR)methodSignature->GetUnicode();
     }
-
-    BOOL bFireEventForColdSection = (bHasNativeImage && ullColdMethodStartAddress && ulColdMethodSize);
 
     /* prepare events args for ETW and ETM */
     szDtraceOutput1 = (PCWSTR)pNamespaceName;
@@ -6837,34 +6725,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
                 GetClrInstanceId(),
                 nativeCodeId);
         }
-        if(bFireEventForColdSection)
-        {
-            if(bShowVerboseOutput)
-            {
-                FireEtwMethodLoadVerbose_V1_or_V2(ullMethodIdentifier,
-                    ullModuleID,
-                    ullColdMethodStartAddress,
-                    ulColdMethodSize,
-                    ulMethodToken,
-                    ulColdMethodFlags,
-                    szDtraceOutput1,
-                    szDtraceOutput2,
-                    szDtraceOutput3,
-                    GetClrInstanceId(),
-                    nativeCodeId);
-            }
-            else
-            {
-                FireEtwMethodLoad_V1_or_V2(ullMethodIdentifier,
-                    ullModuleID,
-                    ullColdMethodStartAddress,
-                    ulColdMethodSize,
-                    ulMethodToken,
-                    ulColdMethodFlags,
-                    GetClrInstanceId(),
-                    nativeCodeId);
-            }
-        }
     }
     else if((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodUnload) ||
         (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::NgenMethodUnload))
@@ -6893,34 +6753,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
                 ulMethodFlags,
                 GetClrInstanceId(),
                 nativeCodeId);
-        }
-        if(bFireEventForColdSection)
-        {
-            if(bShowVerboseOutput)
-            {
-                FireEtwMethodUnloadVerbose_V1_or_V2(ullMethodIdentifier,
-                    ullModuleID,
-                    ullColdMethodStartAddress,
-                    ulColdMethodSize,
-                    ulMethodToken,
-                    ulColdMethodFlags,
-                    szDtraceOutput1,
-                    szDtraceOutput2,
-                    szDtraceOutput3,
-                    GetClrInstanceId(),
-                    nativeCodeId);
-            }
-            else
-            {
-                FireEtwMethodUnload_V1_or_V2(ullMethodIdentifier,
-                    ullModuleID,
-                    ullColdMethodStartAddress,
-                    ulColdMethodSize,
-                    ulMethodToken,
-                    ulColdMethodFlags,
-                    GetClrInstanceId(),
-                    nativeCodeId);
-            }
         }
     }
     else if((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodDCStart) ||
@@ -6951,34 +6783,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
                 GetClrInstanceId(),
                 nativeCodeId);
         }
-        if(bFireEventForColdSection)
-        {
-            if(bShowVerboseOutput)
-            {
-                FireEtwMethodDCStartVerbose_V1_or_V2(ullMethodIdentifier,
-                    ullModuleID,
-                    ullColdMethodStartAddress,
-                    ulColdMethodSize,
-                    ulMethodToken,
-                    ulColdMethodFlags,
-                    szDtraceOutput1,
-                    szDtraceOutput2,
-                    szDtraceOutput3,
-                    GetClrInstanceId(),
-                    nativeCodeId);
-            }
-            else
-            {
-                FireEtwMethodDCStart_V1_or_V2(ullMethodIdentifier,
-                    ullModuleID,
-                    ullColdMethodStartAddress,
-                    ulColdMethodSize,
-                    ulMethodToken,
-                    ulColdMethodFlags,
-                    GetClrInstanceId(),
-                    nativeCodeId);
-            }
-        }
     }
     else if((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodDCEnd) ||
         (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::NgenMethodDCEnd))
@@ -7007,34 +6811,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
                 ulMethodFlags,
                 GetClrInstanceId(),
                 nativeCodeId);
-        }
-        if(bFireEventForColdSection)
-        {
-            if(bShowVerboseOutput)
-            {
-                FireEtwMethodDCEndVerbose_V1_or_V2(ullMethodIdentifier,
-                    ullModuleID,
-                    ullColdMethodStartAddress,
-                    ulColdMethodSize,
-                    ulMethodToken,
-                    ulColdMethodFlags,
-                    szDtraceOutput1,
-                    szDtraceOutput2,
-                    szDtraceOutput3,
-                    GetClrInstanceId(),
-                    nativeCodeId);
-            }
-            else
-            {
-                FireEtwMethodDCEnd_V1_or_V2(ullMethodIdentifier,
-                    ullModuleID,
-                    ullColdMethodStartAddress,
-                    ulColdMethodSize,
-                    ulMethodToken,
-                    ulColdMethodFlags,
-                    GetClrInstanceId(),
-                    nativeCodeId);
-            }
         }
     }
     else
@@ -7187,19 +6963,6 @@ VOID ETW::MethodLog::SendEventsForNgenMethods(Module *pModule, DWORD dwEventOpti
         return;
     }
 #endif // FEATURE_READYTORUN
-
-#ifdef FEATURE_PREJIT
-    if (pModule->HasNativeImage())
-    {
-        MethodIterator mi(pModule);
-
-        while (mi.Next())
-        {
-            MethodDesc *hotDesc = (MethodDesc *)mi.GetMethodDesc();
-            ETW::MethodLog::SendMethodEvent(hotDesc, dwEventOptions, FALSE);
-        }
-    }
-#endif // FEATURE_PREJIT
 }
 
 // Called be ETW::MethodLog::SendEventsForJitMethods
@@ -7478,18 +7241,14 @@ VOID ETW::EnumerationLog::IterateDomain(BaseDomain *pDomain, DWORD enumerationOp
         CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
         while (assemblyIterator.Next(pDomainAssembly.This()))
         {
-            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetLoadedAssembly();
+            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
             if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCStart)
             {
                 ETW::EnumerationLog::IterateAssembly(pAssembly, enumerationOptions);
             }
 
-            DomainModuleIterator domainModuleIterator = pDomainAssembly->IterateModules(kModIterIncludeLoaded);
-            while (domainModuleIterator.Next())
-            {
-                Module * pModule = domainModuleIterator.GetModule();
-                ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
-            }
+            Module * pModule = pDomainAssembly->GetModule();
+            ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
 
             if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd) ||
                 (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleUnload))
@@ -7545,12 +7304,8 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
         {
             Assembly *pAssembly = domainAssemblyIt->GetAssembly(); // TODO: handle iterator
 
-            DomainModuleIterator domainModuleIterator = domainAssemblyIt->IterateModules(kModIterIncludeLoaded);
-            while (domainModuleIterator.Next())
-            {
-                Module *pModule = domainModuleIterator.GetModule();
-                ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
-            }
+            Module* pModule = domainAssemblyIt->GetModule();
+            ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
 
             if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleUnload)
             {
@@ -7594,11 +7349,8 @@ VOID ETW::EnumerationLog::IterateAssembly(Assembly *pAssembly, DWORD enumeration
         {
             if(pAssembly->GetDomain()->IsAppDomain())
             {
-                DomainModuleIterator dmIterator = pAssembly->GetDomainAssembly()->IterateModules(kModIterIncludeLoaded);
-                while (dmIterator.Next())
-                {
-                    ETW::LoaderLog::SendModuleEvent(dmIterator.GetModule(), enumerationOptions, TRUE);
-                }
+                Module* pModule = pAssembly->GetDomainAssembly()->GetModule();
+                ETW::LoaderLog::SendModuleEvent(pModule, enumerationOptions, TRUE);
             }
         }
 

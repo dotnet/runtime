@@ -12,9 +12,14 @@
     <EnableAggressiveTrimming>false</EnableAggressiveTrimming>
     <PublishTrimmed>false</PublishTrimmed>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EmbedAllSources>true</EmbedAllSources>
+
+    <!-- FIXME: issue -->
+    <DisableSourceLink>true</DisableSourceLink>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="MethodBody0.cs" />
     <Compile Include="MethodBody1.cs" />
   </ItemGroup>
 

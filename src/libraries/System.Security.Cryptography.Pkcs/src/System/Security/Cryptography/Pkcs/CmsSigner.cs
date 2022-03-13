@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
@@ -16,6 +18,7 @@ namespace System.Security.Cryptography.Pkcs
         private static readonly Oid s_defaultAlgorithm = Oids.Sha256Oid;
 
         private SubjectIdentifierType _signerIdentifierType;
+        private RSASignaturePadding? _signaturePadding;
 
         public X509Certificate2? Certificate { get; set; }
         public AsymmetricAlgorithm? PrivateKey { get; set; }
@@ -24,6 +27,25 @@ namespace System.Security.Cryptography.Pkcs
         public X509IncludeOption IncludeOption { get; set; }
         public CryptographicAttributeObjectCollection SignedAttributes { get; private set; } = new CryptographicAttributeObjectCollection();
         public CryptographicAttributeObjectCollection UnsignedAttributes { get; private set; } = new CryptographicAttributeObjectCollection();
+
+        /// <summary>
+        /// Gets or sets the RSA signature padding to use.
+        /// </summary>
+        /// <value>The RSA signature padding to use.</value>
+        public RSASignaturePadding? SignaturePadding
+        {
+            get => _signaturePadding;
+            set
+            {
+                if (value is not null &&
+                    value != RSASignaturePadding.Pkcs1 && value != RSASignaturePadding.Pss)
+                {
+                    throw new ArgumentException(SR.Argument_InvalidRsaSignaturePadding, nameof(value));
+                }
+
+                _signaturePadding = value;
+            }
+        }
 
         public SubjectIdentifierType SignerIdentifierType
         {
@@ -51,15 +73,10 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
-        // This can be implemented with NETCOREAPP2_0 with the cert creation API.
-        // * Open the parameters as RSACSP (RSA PKCS#1 signature was hard-coded in netfx)
-        //   * Which will fail on non-Windows
-        // * Create a certificate with subject CN=CMS Signer Dummy Certificate
-        //   * Need to check against .NET Framework to find out what the NotBefore/NotAfter values are
-        //   * No extensions
-        //
-        // Since it would only work on Windows, it could also be just done as P/Invokes to
-        // CertCreateSelfSignedCertificate on a split Windows/netstandard implementation.
+#if NETCOREAPP
+        [Obsolete(Obsoletions.CmsSignerCspParamsCtorMessage, DiagnosticId = Obsoletions.CmsSignerCspParamsCtorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+ #endif
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public CmsSigner(CspParameters parameters) => throw new PlatformNotSupportedException();
 
         public CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate) : this(signerIdentifierType, certificate, null)
@@ -67,7 +84,48 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         public CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate, AsymmetricAlgorithm? privateKey)
+            : this(signerIdentifierType, certificate, privateKey, signaturePadding: null)
         {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the CmsSigner class with a specified signer
+        /// certificate, subject identifier type, private key object, and RSA signature padding.
+        /// </summary>
+        /// <param name="signerIdentifierType">
+        /// One of the enumeration values that specifies the scheme to use for identifying
+        /// which signing certificate was used.
+        /// </param>
+        /// <param name="certificate">
+        /// The certificate whose private key will be used to sign a message.
+        /// </param>
+        /// <param name="privateKey">
+        /// The private key object to use when signing the message.
+        /// </param>
+        /// <param name="signaturePadding">
+        /// The RSA signature padding to use.
+        /// </param>
+        public CmsSigner(
+            SubjectIdentifierType signerIdentifierType,
+            X509Certificate2? certificate,
+            RSA? privateKey,
+            RSASignaturePadding? signaturePadding)
+            : this(signerIdentifierType, certificate, (AsymmetricAlgorithm?)privateKey, signaturePadding)
+        {
+        }
+
+        private CmsSigner(
+            SubjectIdentifierType signerIdentifierType,
+            X509Certificate2? certificate,
+            AsymmetricAlgorithm? privateKey,
+            RSASignaturePadding? signaturePadding)
+        {
+            if (signaturePadding is not null &&
+                signaturePadding != RSASignaturePadding.Pkcs1 && signaturePadding != RSASignaturePadding.Pss)
+            {
+                throw new ArgumentException(SR.Argument_InvalidRsaSignaturePadding, nameof(signaturePadding));
+            }
+
             switch (signerIdentifierType)
             {
                 case SubjectIdentifierType.Unknown:
@@ -95,6 +153,7 @@ namespace System.Security.Cryptography.Pkcs
             Certificate = certificate;
             DigestAlgorithm = s_defaultAlgorithm.CopyOid();
             PrivateKey = privateKey;
+            _signaturePadding = signaturePadding;
         }
 
         internal void CheckCertificateValue()
@@ -217,6 +276,7 @@ namespace System.Security.Cryptography.Pkcs
             bool signed;
             string? signatureAlgorithm;
             ReadOnlyMemory<byte> signatureValue;
+            ReadOnlyMemory<byte> signatureParameters = default;
 
             if (SignerIdentifierType == SubjectIdentifierType.NoSignature)
             {
@@ -232,8 +292,10 @@ namespace System.Security.Cryptography.Pkcs
                     Certificate!,
                     PrivateKey,
                     silent,
+                    SignaturePadding,
                     out signatureAlgorithm,
-                    out signatureValue);
+                    out signatureValue,
+                    out signatureParameters);
             }
 
             if (!signed)
@@ -243,6 +305,11 @@ namespace System.Security.Cryptography.Pkcs
 
             newSignerInfo.SignatureValue = signatureValue;
             newSignerInfo.SignatureAlgorithm.Algorithm = signatureAlgorithm!;
+
+            if (!signatureParameters.IsEmpty)
+            {
+                newSignerInfo.SignatureAlgorithm.Parameters = signatureParameters;
+            }
 
             X509Certificate2Collection certs = new X509Certificate2Collection();
             certs.AddRange(Certificates);

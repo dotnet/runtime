@@ -17,6 +17,17 @@ namespace ILCompiler
         {
             _genericsMode = genericsMode;
         }
+
+        internal DefType GetClosestDefType(TypeDesc type)
+        {
+            if (type.IsArray)
+            {
+                return GetWellKnownType(WellKnownType.Array);
+            }
+
+            Debug.Assert(type is DefType);
+            return (DefType)type;
+        }
     }
 
     public partial class ReadyToRunCompilerContext : CompilerTypeSystemContext
@@ -150,6 +161,11 @@ namespace ILCompiler
         }
 
         public override bool ComputeContainsGCPointers(DefType type)
+        {
+            return false;
+        }
+
+        public override bool ComputeIsUnsafeValueType(DefType type)
         {
             return false;
         }

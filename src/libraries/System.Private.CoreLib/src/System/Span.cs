@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
-using Internal.Runtime.CompilerServices;
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 
@@ -173,7 +172,7 @@ namespace System
         /// Always thrown by this method.
         /// </exception>
         /// </summary>
-        [Obsolete("Equals() on Span will always throw an exception. Use == instead.")]
+        [Obsolete("Equals() on Span will always throw an exception. Use the equality operator instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override bool Equals(object? obj) =>
             throw new NotSupportedException(SR.NotSupported_CannotCallEqualsOnSpan);
@@ -284,18 +283,11 @@ namespace System
         {
             if (Unsafe.SizeOf<T>() == 1)
             {
-#if MONO
-                // Mono runtime's implementation of initblk performs a null check on the address.
-                // We'll perform a length check here to avoid passing a null address in the empty span case.
-                if (_length != 0)
-#endif
-                {
-                    // Special-case single-byte types like byte / sbyte / bool.
-                    // The runtime eventually calls memset, which can efficiently support large buffers.
-                    // We don't need to check IsReferenceOrContainsReferences because no references
-                    // can ever be stored in types this small.
-                    Unsafe.InitBlockUnaligned(ref Unsafe.As<T, byte>(ref _pointer.Value), Unsafe.As<T, byte>(ref value), (uint)_length);
-                }
+                // Special-case single-byte types like byte / sbyte / bool.
+                // The runtime eventually calls memset, which can efficiently support large buffers.
+                // We don't need to check IsReferenceOrContainsReferences because no references
+                // can ever be stored in types this small.
+                Unsafe.InitBlockUnaligned(ref Unsafe.As<T, byte>(ref _pointer.Value), Unsafe.As<T, byte>(ref value), (uint)_length);
             }
             else
             {

@@ -4,6 +4,8 @@
   <PropertyGroup>
     <!-- COM tests are unsupported outside of Windows -->
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+    <!-- COM is not supported on Mono -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
   </PropertyGroup>
 
 </Project>

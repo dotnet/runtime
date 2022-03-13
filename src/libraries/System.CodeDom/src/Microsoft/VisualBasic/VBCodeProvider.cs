@@ -20,13 +20,8 @@ namespace Microsoft.VisualBasic
             _generator = new VBCodeGenerator();
         }
 
-        public VBCodeProvider(IDictionary<string, string> providerOptions)
+        public VBCodeProvider(IDictionary<string, string> providerOptions!!)
         {
-            if (providerOptions == null)
-            {
-                throw new ArgumentNullException(nameof(providerOptions));
-            }
-
             _generator = new VBCodeGenerator(providerOptions);
         }
 
@@ -34,10 +29,10 @@ namespace Microsoft.VisualBasic
 
         public override LanguageOptions LanguageOptions => LanguageOptions.CaseInsensitive;
 
-        [Obsolete("Callers should not use the ICodeGenerator interface and should instead use the methods directly on the CodeDomProvider class.")]
+        [Obsolete("ICodeGenerator has been deprecated. Use the methods directly on the CodeDomProvider class instead.")]
         public override ICodeGenerator CreateGenerator() => _generator;
 
-        [Obsolete("Callers should not use the ICodeCompiler interface and should instead use the methods directly on the CodeDomProvider class.")]
+        [Obsolete("ICodeCompiler has been deprecated. Use the methods directly on the CodeDomProvider class instead.")]
         public override ICodeCompiler CreateCompiler() => _generator;
 
         public override TypeConverter GetConverter(Type type) =>

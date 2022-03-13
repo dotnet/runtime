@@ -15,7 +15,6 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    [Trait("category", "FlakyAppHostTests")]
     public class BundleExtractToSpecificPath : BundleTestBase, IClassFixture<BundleExtractToSpecificPath.SharedTestState>
     {
         private SharedTestState sharedTestState;
@@ -201,17 +200,77 @@ namespace AppHost.Bundle.Tests
             extractDir.Should().HaveFiles(extractedFiles);
         }
 
+        [Fact]
+        private void Bundle_extraction_to_nonexisting_default()
+        {
+            string nonExistentPath = Path.Combine(
+                sharedTestState.DefaultBundledAppFixture.TestProject.OutputDirectory,
+                "nonexistent");
+
+            string defaultExpansionEnvVariable = OperatingSystem.IsWindows() ? "TMP" : "HOME";
+            string expectedErrorMessagePart = OperatingSystem.IsWindows() ?
+                $"Failed to determine default extraction location. Check if 'TMP'" :
+                $"Default extraction directory [{nonExistentPath}] either doesn't exist or is not accessible for read/write.";
+
+            Command.Create(sharedTestState.DefaultBundledAppExecutablePath)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .EnvironmentVariable(defaultExpansionEnvVariable, nonExistentPath)
+                .Execute().Should().Fail()
+                .And.HaveStdErrContaining(expectedErrorMessagePart);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "On Windows the default extraction path is determined by calling GetTempPath which looks at multiple places and can't really be undefined.")]
+        private void Bundle_extraction_fallsback_to_getpwuid_when_HOME_env_var_is_undefined()
+        {
+            string home = Environment.GetEnvironmentVariable("HOME");
+            // suppose we are testing on a system where HOME is not set, use System.Environment (which also fallsback to getpwuid)
+            if (string.IsNullOrEmpty(home))
+            {
+                home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            }
+
+            DirectoryInfo sharedExtractDirInfo = BundleHelper.GetExtractionDir(sharedTestState.TestFixture, sharedTestState.DefaultBundledAppBundler);
+            string sharedExtractDir = sharedExtractDirInfo.FullName;
+            string extractDirSubPath = sharedExtractDir.Substring(sharedExtractDir.LastIndexOf("extract/") + "extract/".Length);
+            string realExtractDir = Path.Combine(home, ".net", extractDirSubPath);
+            var expectedExtractDir = new DirectoryInfo(realExtractDir);
+
+            Command.Create(sharedTestState.DefaultBundledAppExecutablePath)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .EnvironmentVariable("HOME", null)
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("Hello World");
+
+            var extractedFiles = BundleHelper.GetExtractedFiles(sharedTestState.TestFixture, BundleOptions.BundleNativeBinaries);
+            expectedExtractDir.Should().HaveFiles(extractedFiles);
+        }
+
         public class SharedTestState : SharedTestStateBase, IDisposable
         {
-            public TestProjectFixture TestFixture { get; set; }
+            public TestProjectFixture TestFixture { get; }
+
+            public TestProjectFixture DefaultBundledAppFixture { get; }
+            public string DefaultBundledAppExecutablePath { get; }
+            public Bundler DefaultBundledAppBundler { get; }
 
             public SharedTestState()
             {
                 TestFixture = PreparePublishedSelfContainedTestProject("StandaloneApp");
+
+                DefaultBundledAppFixture = TestFixture.Copy();
+                DefaultBundledAppBundler = BundleSelfContainedApp(DefaultBundledAppFixture, out var singleFile, BundleOptions.BundleNativeBinaries);
+                DefaultBundledAppExecutablePath = singleFile;
             }
 
             public void Dispose()
             {
+                DefaultBundledAppFixture.Dispose();
                 TestFixture.Dispose();
             }
         }

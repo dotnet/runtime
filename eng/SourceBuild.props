@@ -16,34 +16,22 @@
     <TargetRid Condition="'$(TargetRid)' == ''">$(__DistroRid)</TargetRid>
 
     <!-- Split e.g. 'fedora.33-x64' into 'fedora.33' and 'x64'. -->
-    <_targetRidPlatformIndex>$(TargetRid.LastIndexOfAny("-"))</_targetRidPlatformIndex>
+    <_targetRidPlatformIndex>$(TargetRid.LastIndexOf('-'))</_targetRidPlatformIndex>
     <TargetRidWithoutPlatform>$(TargetRid.Substring(0, $(_targetRidPlatformIndex)))</TargetRidWithoutPlatform>
     <TargetRidPlatform>$(TargetRid.Substring($(_targetRidPlatformIndex)).TrimStart('-'))</TargetRidPlatform>
 
     <LogVerbosity Condition="'$(LogVerbosity)' == ''">minimal</LogVerbosity>
   </PropertyGroup>
 
-  <ItemGroup>
-    <!-- Work around issue where local clone may cause failure using non-origin remote fallback: https://github.com/dotnet/sourcelink/issues/629 -->
-    <InnerBuildEnv Include="EnableSourceControlManagerQueries=false" />
-    <InnerBuildEnv Include="EnableSourceLink=false" />
-    <InnerBuildEnv Include="DisableSourceLink=true" />
-    <InnerBuildEnv Include="DeterministicSourcePaths=false" />
-  </ItemGroup>
-
   <Target Name="GetRuntimeSourceBuildCommandConfiguration"
           BeforeTargets="GetSourceBuildCommandConfiguration">
     <PropertyGroup>
       <InnerBuildArgs>$(InnerBuildArgs) --arch $(TargetRidPlatform)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --configuration $(Configuration)</InnerBuildArgs>
-      <InnerBuildArgs>$(InnerBuildArgs) --ci</InnerBuildArgs>
-      <InnerBuildArgs>$(InnerBuildArgs) --allconfigurations</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(SourceBuildNonPortable)' == 'true'">$(InnerBuildArgs) --allconfigurations</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --verbosity $(LogVerbosity)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --nodereuse false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --warnAsError false</InnerBuildArgs>
-      <InnerBuildArgs>$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_LIBUNWIND=TRUE</InnerBuildArgs>
-      <InnerBuildArgs>$(InnerBuildArgs) /p:MicrosoftNetFrameworkReferenceAssembliesVersion=1.0.0</InnerBuildArgs>
-      <InnerBuildArgs>$(InnerBuildArgs) /p:ContinuousIntegrationBuild=true</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:PackageRid=$(TargetRid)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:NoPgoOptimize=true</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:KeepNativeSymbols=true</InnerBuildArgs>

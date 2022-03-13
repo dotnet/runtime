@@ -48,6 +48,8 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal Func<JsonSerializerContext, JsonPropertyInfo[]>? PropInitFunc;
 
+        internal Func<JsonParameterInfoValues[]>? CtorParamInitFunc;
+
         internal static JsonPropertyInfo AddProperty(
             MemberInfo memberInfo,
             Type memberType,
@@ -66,12 +68,10 @@ namespace System.Text.Json.Serialization.Metadata
                 memberType,
                 parentClassType,
                 memberInfo,
-                out Type runtimeType,
                 options);
 
             return CreateProperty(
                 declaredPropertyType: memberType,
-                runtimePropertyType: runtimeType,
                 memberInfo,
                 parentClassType,
                 isVirtual,
@@ -83,7 +83,6 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal static JsonPropertyInfo CreateProperty(
             Type declaredPropertyType,
-            Type? runtimePropertyType,
             MemberInfo? memberInfo,
             Type parentClassType,
             bool isVirtual,
@@ -98,8 +97,7 @@ namespace System.Text.Json.Serialization.Metadata
             jsonPropertyInfo.Initialize(
                 parentClassType,
                 declaredPropertyType,
-                runtimePropertyType,
-                runtimeClassType: converter.ConverterStrategy,
+                converterStrategy: converter.ConverterStrategy,
                 memberInfo,
                 isVirtual,
                 converter,
@@ -116,14 +114,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         internal static JsonPropertyInfo CreatePropertyInfoForTypeInfo(
             Type declaredPropertyType,
-            Type runtimePropertyType,
             JsonConverter converter,
             JsonNumberHandling? numberHandling,
             JsonSerializerOptions options)
         {
             JsonPropertyInfo jsonPropertyInfo = CreateProperty(
                 declaredPropertyType: declaredPropertyType,
-                runtimePropertyType: runtimePropertyType,
                 memberInfo: null, // Not a real property so this is null.
                 parentClassType: ObjectType, // a dummy value (not used)
                 isVirtual: false,
@@ -575,18 +571,19 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void InitializePropCache()
         {
+            Debug.Assert(PropertyCache == null);
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
-            JsonSerializerContext? context = Options._context;
+            JsonSerializerContext? context = Options.JsonSerializerContext;
             Debug.Assert(context != null);
 
-            if (PropInitFunc == null)
+            JsonPropertyInfo[] array;
+            if (PropInitFunc == null || (array = PropInitFunc(context)) == null)
             {
                 ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(context, Type);
                 return;
             }
 
-            JsonPropertyInfo[] array = PropInitFunc(context);
             Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
             JsonPropertyDictionary<JsonPropertyInfo> propertyCache = new(Options.PropertyNameCaseInsensitive, array.Length);
 
@@ -610,11 +607,41 @@ namespace System.Text.Json.Serialization.Metadata
                     continue;
                 }
 
+                if (jsonPropertyInfo.SrcGen_IsExtensionData)
+                {
+                    // Source generator compile-time type inspection has performed this validation for us.
+                    Debug.Assert(DataExtensionProperty == null);
+                    Debug.Assert(IsValidDataExtensionProperty(jsonPropertyInfo));
+
+                    DataExtensionProperty = jsonPropertyInfo;
+                    continue;
+                }
+
                 CacheMember(jsonPropertyInfo, propertyCache, ref ignoredMembers);
             }
 
             // Avoid threading issues by populating a local cache and assigning it to the global cache after completion.
             PropertyCache = propertyCache;
+        }
+
+        internal void InitializeParameterCache()
+        {
+            Debug.Assert(ParameterCache == null);
+            Debug.Assert(PropertyCache != null);
+            Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
+
+            JsonSerializerContext? context = Options.JsonSerializerContext;
+            Debug.Assert(context != null);
+
+            JsonParameterInfoValues[] array;
+            if (CtorParamInitFunc == null || (array = CtorParamInitFunc()) == null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(context, Type);
+                return;
+            }
+
+            InitializeConstructorParameters(array, sourceGenMode: true);
+            Debug.Assert(ParameterCache != null);
         }
     }
 }

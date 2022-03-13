@@ -2013,30 +2013,3 @@ ErrExit:
 
 #endif //FEATURE_METADATA_EMIT
 
-#if defined(FEATURE_METADATA_IN_VM) && defined(FEATURE_PREJIT)
-
-//******************************************************************************
-//--- IMetaDataCorProfileData
-//******************************************************************************
-
-HRESULT RegMeta::SetCorProfileData(
-        CorProfileData *pProfileData)         // [IN] Pointer to profile data
-{
-    m_pCorProfileData = pProfileData;
-
-    return S_OK;
-}
-
-//******************************************************************************
-//--- IMDInternalMetadataReorderingOptions
-//******************************************************************************
-
-HRESULT RegMeta::SetMetaDataReorderingOptions(
-        MetaDataReorderingOptions options)         // [IN] Metadata reordering options
-{
-    m_ReorderingOptions = options;
-
-    return S_OK;
-}
-
-#endif //defined(FEATURE_METADATA_IN_VM) && defined(FEATURE_PREJIT)

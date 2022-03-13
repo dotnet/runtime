@@ -16,21 +16,30 @@ namespace System.Diagnostics.Tests
             bool shouldAppend;
 
             message = new Debug.AssertInterpolatedStringHandler(0, 0, true, out shouldAppend);
-            VerifyLogged(() => Debug.Assert(true, message), "");
+            VerifyLogged(() => Debug.Assert(true, ref message), "");
 
             message = new Debug.AssertInterpolatedStringHandler(0, 0, true, out shouldAppend);
             detailedMessage = new Debug.AssertInterpolatedStringHandler(0, 0, true, out shouldAppend);
-            VerifyLogged(() => Debug.Assert(true, message, detailedMessage), "");
+            VerifyLogged(() => Debug.Assert(true, ref message, ref detailedMessage), "");
 
             message = new Debug.AssertInterpolatedStringHandler(0, 0, false, out shouldAppend);
-            message.AppendLiteral("assert passed");
-            VerifyAssert(() => Debug.Assert(false, message), "assert passed");
+            message.AppendLiteral("uh oh");
+            VerifyAssert(() => Debug.Assert(false, ref message), "uh oh");
 
             message = new Debug.AssertInterpolatedStringHandler(0, 0, false, out shouldAppend);
-            message.AppendLiteral("assert passed");
+            message.AppendLiteral("uh oh");
             detailedMessage = new Debug.AssertInterpolatedStringHandler(0, 0, false, out shouldAppend);
-            detailedMessage.AppendLiteral("nothing is wrong");
-            VerifyAssert(() => Debug.Assert(false, message, detailedMessage), "assert passed", "nothing is wrong");
+            detailedMessage.AppendLiteral("something went wrong");
+            VerifyAssert(() => Debug.Assert(false, ref message, ref detailedMessage), "uh oh", "something went wrong");
+        }
+
+        [Fact]
+        public void Asserts_Interpolation_Syntax()
+        {
+            VerifyLogged(() => Debug.Assert(true, $"you won't see this {EmptyToString.Instance}"), "");
+            VerifyLogged(() => Debug.Assert(true, $"you won't see this {EmptyToString.Instance}", $"you won't see this {EmptyToString.Instance}"), "");
+            VerifyAssert(() => Debug.Assert(false, $"uh oh{EmptyToString.Instance}"), "uh oh");
+            VerifyAssert(() => Debug.Assert(false, $"uh oh{EmptyToString.Instance}", $"something went wrong{EmptyToString.Instance}"), "uh oh", "something went wrong");
         }
 
         [Fact]
@@ -41,18 +50,28 @@ namespace System.Diagnostics.Tests
 
             handler = new Debug.WriteIfInterpolatedStringHandler(0, 0, true, out shouldAppend);
             handler.AppendLiteral("logged");
-            VerifyLogged(() => Debug.WriteIf(true, handler), "logged");
+            VerifyLogged(() => Debug.WriteIf(true, ref handler), "logged");
 
             handler = new Debug.WriteIfInterpolatedStringHandler(0, 0, false, out shouldAppend);
-            VerifyLogged(() => Debug.WriteIf(false, handler), "");
+            VerifyLogged(() => Debug.WriteIf(false, ref handler), "");
 
             handler = new Debug.WriteIfInterpolatedStringHandler(0, 0, true, out shouldAppend);
             handler.AppendLiteral("logged");
-            VerifyLogged(() => Debug.WriteIf(true, handler, "category"), "category: logged");
+            VerifyLogged(() => Debug.WriteIf(true, ref handler, "category"), "category: logged");
 
             handler = new Debug.WriteIfInterpolatedStringHandler(0, 0, false, out shouldAppend);
-            VerifyLogged(() => Debug.WriteIf(false, handler, "category"), "");
+            VerifyLogged(() => Debug.WriteIf(false, ref handler, "category"), "");
 
+            GoToNextLine();
+        }
+
+        [Fact]
+        public void WriteIf_Interpolation_Syntax()
+        {
+            VerifyLogged(() => Debug.WriteIf(true, $"{EmptyToString.Instance}logged"), "logged");
+            VerifyLogged(() => Debug.WriteIf(false, $"{EmptyToString.Instance}logged"), "");
+            VerifyLogged(() => Debug.WriteIf(true, $"{EmptyToString.Instance}logged", "category"), "category: logged");
+            VerifyLogged(() => Debug.WriteIf(false, $"{EmptyToString.Instance}logged", "category"), "");
             GoToNextLine();
         }
 
@@ -64,17 +83,27 @@ namespace System.Diagnostics.Tests
 
             handler = new Debug.WriteIfInterpolatedStringHandler(0, 0, true, out shouldAppend);
             handler.AppendLiteral("logged");
-            VerifyLogged(() => Debug.WriteLineIf(true, handler), "logged" + Environment.NewLine);
+            VerifyLogged(() => Debug.WriteLineIf(true, ref handler), "logged" + Environment.NewLine);
 
             handler = new Debug.WriteIfInterpolatedStringHandler(0, 0, false, out shouldAppend);
-            VerifyLogged(() => Debug.WriteLineIf(false, handler), "");
+            VerifyLogged(() => Debug.WriteLineIf(false, ref handler), "");
 
             handler = new Debug.WriteIfInterpolatedStringHandler(0, 0, true, out shouldAppend);
             handler.AppendLiteral("logged");
-            VerifyLogged(() => Debug.WriteLineIf(true, handler, "category"), "category: logged" + Environment.NewLine);
+            VerifyLogged(() => Debug.WriteLineIf(true, ref handler, "category"), "category: logged" + Environment.NewLine);
 
             handler = new Debug.WriteIfInterpolatedStringHandler(0, 0, false, out shouldAppend);
-            VerifyLogged(() => Debug.WriteLineIf(false, handler, "category"), "");
+            VerifyLogged(() => Debug.WriteLineIf(false, ref handler, "category"), "");
+        }
+
+        [Fact]
+        public void WriteLineIf_Interpolation_Syntax()
+        {
+            VerifyLogged(() => Debug.WriteLineIf(true, $"{EmptyToString.Instance}logged"), "logged" + Environment.NewLine);
+            VerifyLogged(() => Debug.WriteLineIf(false, $"{EmptyToString.Instance}logged"), "");
+            VerifyLogged(() => Debug.WriteLineIf(true, $"{EmptyToString.Instance}logged", "category"), "category: logged" + Environment.NewLine);
+            VerifyLogged(() => Debug.WriteLineIf(false, $"{EmptyToString.Instance}logged", "category"), "");
+            GoToNextLine();
         }
 
         [Theory]
@@ -131,7 +160,7 @@ namespace System.Diagnostics.Tests
             actual.AppendFormatted((object)DayOfWeek.Monday, 42, null);
             expected.AppendFormatted((object)DayOfWeek.Monday, 42, null);
 
-            VerifyAssert(() => Debug.Assert(false, actual), sb.ToString());
+            VerifyAssert(() => Debug.Assert(false, ref actual), sb.ToString());
         }
 
         [Fact]
@@ -174,7 +203,13 @@ namespace System.Diagnostics.Tests
             actual.AppendFormatted((object)DayOfWeek.Monday, 42, null);
             expected.AppendFormatted((object)DayOfWeek.Monday, 42, null);
 
-            VerifyLogged(() => Debug.WriteIf(true, actual), sb.ToString());
+            VerifyLogged(() => Debug.WriteIf(true, ref actual), sb.ToString());
+        }
+
+        private sealed class EmptyToString
+        {
+            public static EmptyToString Instance { get; } = new EmptyToString();
+            public override string ToString() => "";
         }
     }
 }

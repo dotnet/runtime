@@ -2,16 +2,5 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <SupportedOSPlatforms>windows</SupportedOSPlatforms>
-    <PackageDescription>Provides a collection of classes for OLEDB.
-
-Commonly Used Types:
-System.Data.OleDb.OleDbCommand
-System.Data.OleDb.OleDbCommandBuilder
-System.Data.OleDb.OleDbConnection
-System.Data.OleDb.OleDbDataAdapter
-System.Data.OleDb.OleDbDataReader
-System.Data.OleDb.OleDbParameter
-System.Data.OleDb.OleDbParameterCollection
-System.Data.OleDb.OleDbTransaction</PackageDescription>
   </PropertyGroup>
 </Project>

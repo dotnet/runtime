@@ -4,6 +4,7 @@
 #include <xplatform.h>
 #include <cassert>
 #include <Server.Contracts.h>
+#include <windows_version_helpers.h>
 
 // COM headers
 #include <objbase.h>
@@ -32,7 +33,7 @@ namespace
     public:
         DispIDToStringMap()
             : _pairs{}
-            , _end{ _pairs + ARRAYSIZE(_pairs) }
+            , _end{ _pairs + ARRAY_SIZE(_pairs) }
         {
             for (auto curr = _pairs; curr != _end; ++curr)
                 curr->id = DISPID_UNKNOWN;
@@ -296,6 +297,11 @@ using ComMTA = ComInit<COINIT_MULTITHREADED>;
 
 int __cdecl main()
 {
+    if (is_windows_nano() == S_OK)
+    {
+        ::puts("RegFree COM is not supported on Windows Nano. Auto-passing this test.\n");
+        return 100;
+    }
     ComMTA init;
     if (FAILED(init.Result))
         return -1;

@@ -29,4 +29,4 @@ FAIL:
 
 
 
-.assembly call.exe{}
+.assembly 'call'{}

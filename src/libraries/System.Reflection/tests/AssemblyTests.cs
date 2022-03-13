@@ -161,7 +161,7 @@ namespace System.Reflection.Tests
             if (asm.Location.Length > 0)
             {
                 Assert.Throws<ArgumentNullException>(() => asm.GetFile(null));
-                AssertExtensions.Throws<ArgumentException>(null, () => asm.GetFile(""));
+                Assert.Throws<ArgumentException>(() => asm.GetFile(""));
                 Assert.Null(asm.GetFile("NonExistentfile.dll"));
                 Assert.NotNull(asm.GetFile("System.Reflection.Tests.dll"));
 
@@ -693,10 +693,10 @@ namespace System.Reflection.Tests
         public void AssemblyLoadFromStringNeg()
         {
             Assert.Throws<ArgumentNullException>(() => Assembly.Load((string)null));
-            AssertExtensions.Throws<ArgumentException>(null, () => Assembly.Load(string.Empty));
+            AssertExtensions.Throws<ArgumentException>("assemblyName", () => Assembly.Load(string.Empty));
 
             string emptyCName = new string('\0', 1);
-            AssertExtensions.Throws<ArgumentException>(null, () => Assembly.Load(emptyCName));
+            Assert.Throws<ArgumentException>(() => Assembly.Load(emptyCName));
 
             Assert.Throws<FileNotFoundException>(() => Assembly.Load("no such assembly")); // No such assembly
         }
@@ -710,6 +710,12 @@ namespace System.Reflection.Tests
             Assembly loadedAssembly = Assembly.Load(aBytes);
             Assert.NotNull(loadedAssembly);
             Assert.Equal(assembly.FullName, loadedAssembly.FullName);
+
+            System.Runtime.Loader.AssemblyLoadContext alc = System.Runtime.Loader.AssemblyLoadContext.GetLoadContext(loadedAssembly);
+            string expectedName = "Assembly.Load(byte[], ...)";
+            Assert.Equal(expectedName, alc.Name);
+            Assert.Contains(expectedName, alc.ToString());
+            Assert.Contains("System.Runtime.Loader.IndividualAssemblyLoadContext", alc.ToString());
         }
 
         [Fact]

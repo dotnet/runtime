@@ -606,8 +606,8 @@ public class LoadDebuggerTestALC {
         }
         public static void RunMethod(string className, string methodName)
         {
-            var ty = typeof(System.Reflection.Metadata.AssemblyExtensions);
-            var mi = ty.GetMethod("GetApplyUpdateCapabilities", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static, Array.Empty<Type>());
+            var ty = typeof(System.Reflection.Metadata.MetadataUpdater);
+            var mi = ty.GetMethod("GetCapabilities", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static, Array.Empty<Type>());
 
             if (mi == null)
                 return;
@@ -643,11 +643,11 @@ public class LoadDebuggerTestALC {
 
             if (version == 1)
             {
-                System.Reflection.Metadata.AssemblyExtensions.ApplyUpdate(assm, dmeta_data1_bytes, dil_data1_bytes, dpdb_data1_bytes);
+                System.Reflection.Metadata.MetadataUpdater.ApplyUpdate(assm, dmeta_data1_bytes, dil_data1_bytes, dpdb_data1_bytes);
             }
             else if (version == 2)
             {
-                System.Reflection.Metadata.AssemblyExtensions.ApplyUpdate(assm, dmeta_data2_bytes, dil_data2_bytes, dpdb_data2_bytes);
+                System.Reflection.Metadata.MetadataUpdater.ApplyUpdate(assm, dmeta_data2_bytes, dil_data2_bytes, dpdb_data2_bytes);
             }
 
         }
@@ -725,5 +725,270 @@ public class Foo
         Console.WriteLine($"time for await");
         return true;
     }
+
 }
 
+public class MainPage
+{
+    public MainPage()
+    {
+    }
+
+    int count = 0;
+    private int someValue;
+
+    public int SomeValue
+    {
+        get
+        {
+            return someValue;
+        }
+        set
+        {
+            someValue = value;
+            count++;
+
+            if (count == 10)
+            {
+                var view = 150;
+
+                if (view != 50)
+                {
+
+                }
+                System.Diagnostics.Debugger.Break();
+            }
+
+            SomeValue = count;
+        }
+    }
+
+    public static void CallSetValue()
+    {
+        var mainPage = new MainPage();
+        mainPage.SomeValue = 10;
+    }
+}
+
+public class LoopClass
+{
+    public static void LoopToBreak()
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            Console.WriteLine($"should pause only on i == 3");
+        }
+        Console.WriteLine("breakpoint to check");
+    }
+}
+
+public class SteppingInto
+{
+    static int currentCount = 0;
+    static MyIncrementer incrementer = new MyIncrementer();
+    public static void MethodToStep()
+    {
+        currentCount = incrementer.Increment(currentCount);
+    }
+}
+
+public class MyIncrementer
+{
+    private Func<DateTime> todayFunc = () => new DateTime(2061, 1, 5); // Wednesday
+
+    public int Increment(int count)
+    {
+        var today = todayFunc();
+        if (today.DayOfWeek == DayOfWeek.Sunday)
+        {
+            return count + 2;
+        }
+
+        return count + 1;
+    }
+}
+
+public class DebuggerAttribute
+{
+    [System.Diagnostics.DebuggerHidden]
+    public static void HiddenMethod()
+    {
+        var a = 9;
+    }
+
+    [System.Diagnostics.DebuggerHidden]
+    public static void HiddenMethodUserBreak()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public static void RunDebuggerHidden()
+    {
+        HiddenMethod();
+        HiddenMethodUserBreak();
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    public static void StepThrougBp()
+    {
+        var a = 0;
+        a++;
+        var b = 1;
+    }
+
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    public static void StepThrougUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public static void RunStepThrough()
+    {
+        StepThrougBp();
+        StepThrougUserBp();
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    public static void NonUserCodeBp()
+    {
+        var a = 0;
+        a++;
+        var b = 1;
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    public static void NonUserCodeUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public static void RunNonUserCode()
+    {
+        NonUserCodeBp();
+        NonUserCodeUserBp();
+    }
+
+    [System.Diagnostics.DebuggerStepperBoundary]
+    public static void BoundaryBp()
+    {
+        var a = 5;
+    }
+
+    [System.Diagnostics.DebuggerStepperBoundary]
+    public static void BoundaryUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    public static void NonUserCodeForBoundaryEscape(Action boundaryTestFun)
+    {
+        boundaryTestFun();
+    }
+
+    public static void RunNoBoundary()
+    {
+        NonUserCodeForBoundaryEscape(DebuggerAttribute.BoundaryBp);
+        NonUserCodeForBoundaryEscape(DebuggerAttribute.BoundaryUserBp);
+    }
+
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    [System.Diagnostics.DebuggerHidden]
+    public static void StepThroughWithHiddenBp()
+    {
+        var a = 9;
+    }
+
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    [System.Diagnostics.DebuggerHidden]
+    public static void StepThroughWithHiddenUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public static void RunStepThroughWithHidden()
+    {
+        StepThroughWithHiddenBp();
+        StepThroughWithHiddenUserBp();
+    }
+
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    [System.Diagnostics.DebuggerNonUserCode]
+    public static void StepThroughWithNonUserCodeBp()
+    {
+        var a = 0;
+        a++;
+        var b = 1;
+    }
+
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    [System.Diagnostics.DebuggerNonUserCode]
+    public static void StepThroughWithNonUserCodeUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public static void RunStepThroughWithNonUserCode()
+    {
+        StepThroughWithNonUserCodeBp();
+        StepThroughWithNonUserCodeUserBp();
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    [System.Diagnostics.DebuggerHidden]
+    public static void NonUserCodeWithHiddenBp()
+    {
+        var a = 9;
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    [System.Diagnostics.DebuggerHidden]
+    public static void NonUserCodeWithHiddenUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public static void RunNonUserCodeWithHidden()
+    {
+        NonUserCodeWithHiddenBp();
+        NonUserCodeWithHiddenUserBp();
+    }
+}
+
+public class DebugTypeFull
+{
+    public static void CallToEvaluateLocal()
+    {
+        var asm = System.Reflection.Assembly.LoadFrom("debugger-test-with-full-debug-type.dll");
+        var myType = asm.GetType("DebuggerTests.ClassToInspectWithDebugTypeFull");
+        var myMethod = myType.GetConstructor(new Type[] { });
+        var a = myMethod.Invoke(new object[]{});
+        System.Diagnostics.Debugger.Break();
+    }
+}
+
+public class TestHotReloadUsingSDB {
+        static System.Reflection.Assembly loadedAssembly;
+        public static string LoadLazyHotReload(string asm_base64, string pdb_base64)
+        {
+            byte[] asm_bytes = Convert.FromBase64String(asm_base64);
+            byte[] pdb_bytes = Convert.FromBase64String(pdb_base64);
+
+            loadedAssembly = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromStream(new System.IO.MemoryStream(asm_bytes), new System.IO.MemoryStream(pdb_bytes));
+            var GUID = loadedAssembly.Modules.FirstOrDefault()?.ModuleVersionId.ToByteArray();
+            return Convert.ToBase64String(GUID);
+        }
+
+        public static string GetModuleGUID()
+        {
+            var GUID = loadedAssembly.Modules.FirstOrDefault()?.ModuleVersionId.ToByteArray();
+            return Convert.ToBase64String(GUID);
+        }
+
+        public static void RunMethod(string className, string methodName)
+        {
+            var myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
+            var myMethod = myType.GetMethod(methodName);
+            myMethod.Invoke(null, null);
+        }
+}

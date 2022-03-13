@@ -46,7 +46,7 @@ private:
     void RewriteNodeAsCall(GenTree**             use,
                            ArrayStack<GenTree*>& parents,
                            CORINFO_METHOD_HANDLE callHnd,
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                            CORINFO_CONST_LOOKUP entryPoint,
 #endif
                            GenTreeCall::Use* args);

@@ -17,6 +17,7 @@ namespace System.Linq.Parallel
     /// This is a bounded channel meant for single-producer/single-consumer scenarios.
     /// </summary>
     /// <typeparam name="T">Specifies the type of data in the channel.</typeparam>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     internal sealed class AsynchronousChannel<T> : IDisposable
     {
         // The producer will be blocked once the channel reaches a capacity, and unblocked

@@ -104,7 +104,7 @@ namespace System.Runtime.Caching
         }
 
         internal MemoryCacheEntry(string key,
-                                  object value,
+                                  object value!!,
                                   DateTimeOffset absExp,
                                   TimeSpan slidingExp,
                                   CacheItemPriority priority,
@@ -112,10 +112,6 @@ namespace System.Runtime.Caching
                                   CacheEntryRemovedCallback removedCallback,
                                   MemoryCache cache) : base(key)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
             _utcCreated = DateTime.UtcNow;
             _value = value;
 
@@ -240,6 +236,10 @@ namespace System.Runtime.Caching
         {
             if (State == EntryState.AddedToCache)
             {
+                // This is a callback - not directly called by the user. We don't want
+                // to throw potentially unhandled "disposed" exceptions in this case.
+                // However, RemoveEntry sidesteps 'throwOnDispose' so we don't need to
+                // worry about a try/catch here.
                 _fields._cache.RemoveEntry(this.Key, this, CacheEntryRemovedReason.ChangeMonitorChanged);
             }
         }

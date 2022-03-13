@@ -234,8 +234,8 @@ namespace System.Reflection.Tests
                 Assert.Equal(m, m1);
 
                 Assert.Equal(a, m.Assembly);
-                Assert.Equal("<unknown>", m.FullyQualifiedName);
-                Assert.Equal("<unknown>", m.Name);
+                Assert.Equal("<Unknown>", m.FullyQualifiedName);
+                Assert.Equal("<Unknown>", m.Name);
                 Assert.Equal("Joe.netmodule", m.ScopeName);
                 Assert.Equal(TestData.s_JoeNetModuleMvid, m.ModuleVersionId);
             }

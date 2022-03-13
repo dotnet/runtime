@@ -147,7 +147,7 @@ namespace System.Xml.Serialization
                     if (IsAnyType(schemaType, true, true))
                         return name;
                     i++;
-                    name = "any" + i.ToString(CultureInfo.InvariantCulture);
+                    name = string.Create(CultureInfo.InvariantCulture, $"any{i}");
                 }
             }
 
@@ -572,7 +572,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Unsupported anonymous mapping type: " + mapping.ToString()));
+                throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, $"Unsupported anonymous mapping type: {mapping}"));
             }
         }
 

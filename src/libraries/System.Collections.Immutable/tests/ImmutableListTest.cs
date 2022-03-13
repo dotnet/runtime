@@ -793,7 +793,7 @@ namespace System.Collections.Immutable.Tests
         }
 
 #if NETCOREAPP
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void UsableWithCollectibleAssemblies()
         {
             var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("dynamic_assembly"), AssemblyBuilderAccess.RunAndCollect);

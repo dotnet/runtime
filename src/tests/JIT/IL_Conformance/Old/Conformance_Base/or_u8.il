@@ -240,4 +240,4 @@ FAIL:
 	ret
 }
 }
-.assembly or_u8.exe{}
+.assembly or_u8{}

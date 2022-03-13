@@ -92,5 +92,7 @@ namespace System.Text.Json.Reflection
         {
             throw new NotSupportedException();
         }
+
+        public Location? Location => _property.Locations.Length > 0 ? _property.Locations[0] : null;
     }
 }

@@ -20,6 +20,7 @@ namespace System.ServiceProcess.Tests
         private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
         protected static bool IsProcessElevated => s_isElevated.Value;
         protected static bool IsElevatedAndSupportsEventLogs => IsProcessElevated && PlatformDetection.IsNotWindowsNanoServer;
+        protected static bool IsElevatedAndWindows10OrLater => IsProcessElevated && PlatformDetection.IsWindows10OrLater;
 
         private bool _disposed;
 
@@ -81,7 +82,7 @@ namespace System.ServiceProcess.Tests
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(nameof(IsElevatedAndWindows10OrLater))] // flaky on Windows 8.1
         public void TestOnStartWithArgsThenStop()
         {
             ServiceController controller = ConnectToServer();
@@ -183,7 +184,7 @@ namespace System.ServiceProcess.Tests
         public void LogWritten()
         {
             string serviceName = Guid.NewGuid().ToString();
-            // If the username is null, then the service is created under LocalSystem Account which have access to EventLog.
+            // If the username is null, then the service is created under LocalSystem Account which has access to EventLog.
             var testService = new TestServiceProvider(serviceName);
             Assert.True(EventLog.SourceExists(serviceName));
             testService.DeleteTestServices();

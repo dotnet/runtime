@@ -8,43 +8,121 @@ namespace System.Threading.Tests
 {
     public class ManualResetEventTests
     {
-        private const int FailedWaitTimeout = 30000;
-
         [Fact]
-        public void Ctor()
+        public void ConstructorAndDisposeTest()
         {
-            using (ManualResetEvent mre = new ManualResetEvent(false))
-                Assert.False(mre.WaitOne(0));
+            var e = new ManualResetEvent(false);
+            Assert.False(e.WaitOne(0));
+            e.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => e.Reset());
+            Assert.Throws<ObjectDisposedException>(() => e.Set());
+            Assert.Throws<ObjectDisposedException>(() => e.WaitOne(0));
 
-            using (ManualResetEvent mre = new ManualResetEvent(true))
-                Assert.True(mre.WaitOne(0));
+            e = new ManualResetEvent(true);
+            Assert.True(e.WaitOne(0));
+            e.Dispose();
         }
 
         [Fact]
-        public void SetReset()
+        public void SetAndResetTest()
         {
-            using (ManualResetEvent mre = new ManualResetEvent(false))
+            var e = new ManualResetEvent(true);
+            e.Reset();
+            Assert.False(e.WaitOne(0));
+            Assert.False(e.WaitOne(0));
+            e.Reset();
+            Assert.False(e.WaitOne(0));
+            e.Set();
+            Assert.True(e.WaitOne(0));
+            Assert.True(e.WaitOne(0));
+            e.Set();
+            Assert.True(e.WaitOne(0));
+        }
+
+        [Fact]
+        public void WaitTest()
+        {
+            var e = new ManualResetEvent(true);
+            e.CheckedWait();
+            e.CheckedWait();
+
+            e.Reset();
+            Assert.False(e.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+        }
+
+        [Fact]
+        public void MultiWaitWithAllIndexesSetTest()
+        {
+            var es =
+                new ManualResetEvent[]
+                {
+                    new ManualResetEvent(true),
+                    new ManualResetEvent(true),
+                    new ManualResetEvent(true),
+                    new ManualResetEvent(true)
+                };
+            Assert.Equal(0, WaitHandle.WaitAny(es, 0));
+            Assert.Equal(0, WaitHandle.WaitAny(es, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            Assert.Equal(0, WaitHandle.WaitAny(es));
+            Assert.True(WaitHandle.WaitAll(es, 0));
+            Assert.True(WaitHandle.WaitAll(es, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            Assert.True(WaitHandle.WaitAll(es));
+            for (int i = 0; i < es.Length; ++i)
             {
-                Assert.False(mre.WaitOne(0));
-                mre.Set();
-                Assert.True(mre.WaitOne(0));
-                Assert.True(mre.WaitOne(0));
-                mre.Set();
-                Assert.True(mre.WaitOne(0));
-                mre.Reset();
-                Assert.False(mre.WaitOne(0));
+                Assert.True(es[i].WaitOne(0));
+            }
+        }
+
+        [Fact]
+        public void MultiWaitWithInnerIndexesSetTest()
+        {
+            var es =
+                new ManualResetEvent[]
+                {
+                    new ManualResetEvent(false),
+                    new ManualResetEvent(true),
+                    new ManualResetEvent(true),
+                    new ManualResetEvent(false)
+                };
+            Assert.Equal(1, WaitHandle.WaitAny(es, 0));
+            Assert.Equal(1, WaitHandle.WaitAny(es, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            Assert.False(WaitHandle.WaitAll(es, 0));
+            Assert.False(WaitHandle.WaitAll(es, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            for (int i = 0; i < es.Length; ++i)
+            {
+                Assert.Equal(i == 1 || i == 2, es[i].WaitOne(0));
+            }
+        }
+
+        [Fact]
+        public void MultiWaitWithAllIndexesResetTest()
+        {
+            var es =
+                new ManualResetEvent[]
+                {
+                    new ManualResetEvent(false),
+                    new ManualResetEvent(false),
+                    new ManualResetEvent(false),
+                    new ManualResetEvent(false)
+                };
+            Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(es, 0));
+            Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(es, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            Assert.False(WaitHandle.WaitAll(es, 0));
+            Assert.False(WaitHandle.WaitAll(es, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            for (int i = 0; i < es.Length; ++i)
+            {
+                Assert.False(es[i].WaitOne(0));
             }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49890", TestPlatforms.Android)]
         public void WaitHandleWaitAll()
         {
             ManualResetEvent[] handles = new ManualResetEvent[10];
             for (int i = 0; i < handles.Length; i++)
                 handles[i] = new ManualResetEvent(false);
 
-            Task<bool> t = Task.Run(() => WaitHandle.WaitAll(handles, FailedWaitTimeout));
+            Task<bool> t = Task.Run(() => WaitHandle.WaitAll(handles, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
             for (int i = 0; i < handles.Length; i++)
             {
                 Assert.False(t.IsCompleted);
@@ -56,14 +134,13 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49890", TestPlatforms.Android)]
         public void WaitHandleWaitAny()
         {
             ManualResetEvent[] handles = new ManualResetEvent[10];
             for (int i = 0; i < handles.Length; i++)
                 handles[i] = new ManualResetEvent(false);
 
-            Task<int> t = Task.Run(() => WaitHandle.WaitAny(handles, FailedWaitTimeout));
+            Task<int> t = Task.Run(() => WaitHandle.WaitAny(handles, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
             handles[5].Set();
             Assert.Equal(5, t.Result);
 
@@ -71,7 +148,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49890", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51400", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void PingPong()
         {
@@ -83,7 +159,7 @@ namespace System.Threading.Tests
                     {
                         for (int i = 0; i < Iters; i++)
                         {
-                            Assert.True(mre1.WaitOne(FailedWaitTimeout));
+                            mre1.CheckedWait();
                             mre1.Reset();
                             mre2.Set();
                         }
@@ -92,7 +168,7 @@ namespace System.Threading.Tests
                     {
                         for (int i = 0; i < Iters; i++)
                         {
-                            Assert.True(mre2.WaitOne(FailedWaitTimeout));
+                            mre2.CheckedWait();
                             mre2.Reset();
                             mre1.Set();
                         }

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
 using System.Globalization;
+using System.Tests;
 using Xunit;
 
 namespace System.Drawing.Printing.Tests
@@ -139,6 +140,9 @@ namespace System.Drawing.Printing.Tests
                 Assert.Throws<NotSupportedException>(() => mc.ConvertTo(context, culture, new object(), typeof(object)));
                 Assert.Throws<NotSupportedException>(() => mc.ConvertTo(context, culture, 12, typeof(int)));
                 Assert.Throws<NotSupportedException>(() => mc.ConvertTo(context, culture, guid, typeof(Guid)));
+
+                Assert.Equal(string.Empty, (string)mc.ConvertTo(null, typeof(string)));
+                Assert.Equal(string.Empty, (string)mc.ConvertTo(context, CultureInfo.CreateSpecificCulture("ru-RU"), null, typeof(string)));
             }
         }
 

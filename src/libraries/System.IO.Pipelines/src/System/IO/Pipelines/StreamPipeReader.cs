@@ -35,15 +35,9 @@ namespace System.IO.Pipelines
         /// </summary>
         /// <param name="readingStream">The stream to read from.</param>
         /// <param name="options">The options to use.</param>
-        public StreamPipeReader(Stream readingStream, StreamPipeReaderOptions options)
+        public StreamPipeReader(Stream readingStream!!, StreamPipeReaderOptions options!!)
         {
-            InnerStream = readingStream ?? throw new ArgumentNullException(nameof(readingStream));
-
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
+            InnerStream = readingStream;
             _options = options;
             _bufferSegmentPool = new BufferSegmentStack(InitialSegmentPoolSize);
         }
@@ -383,11 +377,13 @@ namespace System.IO.Pipelines
                 try
                 {
                     BufferSegment? segment = _readHead;
+                    int segmentIndex = _readIndex;
+
                     try
                     {
                         while (segment != null)
                         {
-                            FlushResult flushResult = await destination.WriteAsync(segment.Memory, tokenSource.Token).ConfigureAwait(false);
+                            FlushResult flushResult = await destination.WriteAsync(segment.Memory.Slice(segmentIndex), tokenSource.Token).ConfigureAwait(false);
 
                             if (flushResult.IsCanceled)
                             {
@@ -395,6 +391,7 @@ namespace System.IO.Pipelines
                             }
 
                             segment = segment.NextSegment;
+                            segmentIndex = 0;
 
                             if (flushResult.IsCompleted)
                             {
@@ -451,13 +448,16 @@ namespace System.IO.Pipelines
                 try
                 {
                     BufferSegment? segment = _readHead;
+                    int segmentIndex = _readIndex;
+
                     try
                     {
                         while (segment != null)
                         {
-                            await destination.WriteAsync(segment.Memory, tokenSource.Token).ConfigureAwait(false);
+                            await destination.WriteAsync(segment.Memory.Slice(segmentIndex), tokenSource.Token).ConfigureAwait(false);
 
                             segment = segment.NextSegment;
+                            segmentIndex = 0;
                         }
                     }
                     finally

@@ -24,7 +24,6 @@ namespace System.Net.Test.Common
         private Stream _connectionStream;
         private TaskCompletionSource<bool> _ignoredSettingsAckPromise;
         private bool _ignoreWindowUpdates;
-        private TaskCompletionSource<PingFrame> _expectPingFrame;
         private bool _transparentPingResponse;
         private readonly TimeSpan _timeout;
         private int _lastStreamId;
@@ -201,7 +200,7 @@ namespace System.Net.Test.Common
                 return await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            if (header.Type == FrameType.Ping && (_expectPingFrame != null || _transparentPingResponse))
+            if (header.Type == FrameType.Ping && _transparentPingResponse)
             {
                 PingFrame pingFrame = PingFrame.ReadFrom(header, data);
 
@@ -237,13 +236,7 @@ namespace System.Net.Test.Common
 
         private async Task<bool> TryProcessExpectedPingFrameAsync(PingFrame pingFrame)
         {
-            if (_expectPingFrame != null)
-            {
-                _expectPingFrame.SetResult(pingFrame);
-                _expectPingFrame = null;
-                return true;
-            }
-            else if (_transparentPingResponse && !pingFrame.AckFlag)
+            if (_transparentPingResponse && !pingFrame.AckFlag)
             {
                 try
                 {
@@ -291,22 +284,6 @@ namespace System.Net.Test.Common
         public void IgnoreWindowUpdates()
         {
             _ignoreWindowUpdates = true;
-        }
-
-        // Set up loopback server to expect a PING frame among other frames.
-        // Once PING frame is read in ReadFrameAsync, the returned task is completed.
-        // The returned task is canceled in ReadPingAsync if no PING frame has been read so far.
-        // Does not work when Http2Options.EnableTransparentPingResponse == true
-        public Task<PingFrame> ExpectPingFrameAsync()
-        {
-            if (_transparentPingResponse)
-            {
-                throw new InvalidOperationException(
-                    $"{nameof(Http2LoopbackConnection)}.{nameof(ExpectPingFrameAsync)} can not be used when transparent PING response is enabled.");
-            }
-
-            _expectPingFrame ??= new TaskCompletionSource<PingFrame>();
-            return _expectPingFrame.Task;
         }
 
         public async Task ReadRstStreamAsync(int streamId)
@@ -581,7 +558,10 @@ namespace System.Net.Test.Common
             do
             {
                 frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
-                if (frame == null && expectEndOfStream)
+
+                // Check if it was a zero-byte read or we got a RST_STREAM with the CANCEL code.
+                if (expectEndOfStream
+                    && (frame == null || (frame.Type == FrameType.RstStream && ((RstStreamFrame)frame).ErrorCode == 0x8)))
                 {
                     break;
                 }
@@ -772,9 +752,6 @@ namespace System.Net.Test.Common
 
         public async Task<PingFrame> ReadPingAsync(TimeSpan timeout)
         {
-            _expectPingFrame?.TrySetCanceled();
-            _expectPingFrame = null;
-
             Frame frame = await ReadFrameAsync(timeout).ConfigureAwait(false);
             Assert.NotNull(frame);
             Assert.Equal(FrameType.Ping, frame.Type);
@@ -887,7 +864,7 @@ namespace System.Net.Test.Common
             return ReadBodyAsync();
         }
 
-        public override async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0)
+        public async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0)
         {
             if (headers != null)
             {
@@ -933,25 +910,30 @@ namespace System.Net.Test.Common
             else
             {
                 await SendResponseHeadersAsync(streamId, endStream: false, (HttpStatusCode)statusCode, endHeaders: true, headers: headers);
-                await SendResponseBodyAsync(content, isFinal: isFinal, requestId: streamId);
+                await SendResponseBodyAsync(content, isFinal: isFinal);
             }
         }
 
-        public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+        public override Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true)
         {
-            int streamId = requestId == 0 ? _lastStreamId : requestId;
+            return SendResponseAsync(statusCode, headers, content, isFinal, requestId: 0);
+        }
+
+        public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
+        {
+            int streamId = _lastStreamId;
             return SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, endHeaders: true, headers);
         }
 
-        public override Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+        public override Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
         {
-            int streamId = requestId == 0 ? _lastStreamId : requestId;
+            int streamId = _lastStreamId;
             return SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, endHeaders: false, headers);
         }
 
-        public override Task SendResponseBodyAsync(byte[] content, bool isFinal = true, int requestId = 0)
+        public override Task SendResponseBodyAsync(byte[] content, bool isFinal = true)
         {
-            int streamId = requestId == 0 ? _lastStreamId : requestId;
+            int streamId = _lastStreamId;
             return SendResponseBodyAsync(streamId, content, isFinal);
         }
 
@@ -978,9 +960,9 @@ namespace System.Net.Test.Common
             return requestData;
         }
 
-        public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0)
+        public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true)
         {
-            int streamId = requestId == 0 ? _lastStreamId : requestId;
+            int streamId = _lastStreamId;
 
             Frame frame;
             do
@@ -999,6 +981,13 @@ namespace System.Net.Test.Common
             } while (frame.Type != FrameType.RstStream);
 
             Assert.Equal(streamId, frame.StreamId);
+            RstStreamFrame rstStreamFrame = Assert.IsType<RstStreamFrame>(frame);
+            Assert.Equal((int)ProtocolErrors.CANCEL, rstStreamFrame.ErrorCode);
+        }
+
+        public override Task WaitForCloseAsync(CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -16,7 +16,7 @@ namespace System.Diagnostics
     public sealed class ActivityListener : IDisposable
     {
         /// <summary>
-        /// Construct a new <see cref="ActivityListener"/> object to start listeneing to the <see cref="Activity"/> events.
+        /// Construct a new <see cref="ActivityListener"/> object to start listening to the <see cref="Activity"/> events.
         /// </summary>
         public ActivityListener()
         {
@@ -48,7 +48,7 @@ namespace System.Diagnostics
         public SampleActivity<ActivityContext>? Sample { get; set; }
 
         /// <summary>
-        /// Dispose will unregister this <see cref="ActivityListener"/> object from listeneing to <see cref="Activity"/> events.
+        /// Dispose will unregister this <see cref="ActivityListener"/> object from listening to <see cref="Activity"/> events.
         /// </summary>
         public void Dispose() => ActivitySource.DetachListener(this);
    }

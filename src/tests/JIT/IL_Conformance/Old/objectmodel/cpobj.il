@@ -9,7 +9,7 @@
 }
 
 .assembly extern legacy library mscorlib {}
-.assembly cpobj.exe{}
+.assembly 'cpobj'{}
 
 .class public			_cpobj {
 

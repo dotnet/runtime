@@ -118,7 +118,8 @@ namespace ILCompiler.DependencyAnalysis
                 IMethodNode targetMethodNode = _codegenNodeFactory.MethodEntrypoint(
                     ctorKey.Method,
                     isInstantiatingStub: ctorKey.Method.Method.HasInstantiation,
-                    isPrecodeImportRequired: false);
+                    isPrecodeImportRequired: false,
+                    isJumpableImportRequired: false);
 
                 return new DelayLoadHelperImport(
                     _codegenNodeFactory,
@@ -435,7 +436,8 @@ namespace ILCompiler.DependencyAnalysis
                 delegateType,
                 method,
                 isInstantiatingStub: false,
-                isPrecodeImportRequired: false);
+                isPrecodeImportRequired: false,
+                isJumpableImportRequired: false);
             return _delegateCtors.GetOrAdd(ctorKey);
         }
 

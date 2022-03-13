@@ -14,7 +14,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly main
+.assembly 'repro_good'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -24,7 +24,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module main.exe
+.assembly extern xunit.core {}
 // MVID: {8652F29E-ADDD-4F29-9B4B-0D71E9CFC6D1}
 .imagebase 0x00400000
 .subsystem 0x00000003
@@ -39,6 +39,9 @@
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       72 (0x48)
     .maxstack  2

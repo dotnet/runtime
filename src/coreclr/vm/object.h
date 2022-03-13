@@ -444,7 +444,7 @@ class Object
         // we must zero out the lowest 2 bits on 32-bit and 3 bits on 64-bit.
 #ifdef TARGET_64BIT
         return dac_cast<PTR_MethodTable>((dac_cast<TADDR>(m_pMethTab)) & ~((UINT_PTR)7));
-#else 
+#else
         return dac_cast<PTR_MethodTable>((dac_cast<TADDR>(m_pMethTab)) & ~((UINT_PTR)3));
 #endif //TARGET_64BIT
     }
@@ -935,7 +935,7 @@ class StringObject : public Object
     BOOL HasTrailByte();
     BOOL GetTrailByte(BYTE *bTrailByte);
     BOOL SetTrailByte(BYTE bTrailByte);
-    static BOOL CaseInsensitiveCompHelper(__in_ecount(aLength) WCHAR * strA, __in_z INT8 * strB, int aLength, int bLength, int *result);
+    static BOOL CaseInsensitiveCompHelper(_In_reads_(aLength) WCHAR * strA, _In_z_ INT8 * strB, int aLength, int bLength, int *result);
 
     /*=================RefInterpretGetStringValuesDangerousForGC======================
     **N.B.: This perfoms no range checking and relies on the caller to have done this.
@@ -948,7 +948,7 @@ class StringObject : public Object
     // !!!! If you use this function, you have to be careful because chars is a pointer
     // !!!! to the data buffer of ref.  If GC happens after this call, you need to make
     // !!!! sure that you have a pin handle on ref, or use GCPROTECT_BEGINPINNING on ref.
-    void RefInterpretGetStringValuesDangerousForGC(__deref_out_ecount(*length + 1) WCHAR **chars, int *length) {
+    void RefInterpretGetStringValuesDangerousForGC(_Outptr_result_buffer_(*length + 1) WCHAR **chars, int *length) {
         WRAPPER_NO_CONTRACT;
 
         _ASSERTE(GetGCSafeMethodTable() == g_pStringClass);
@@ -1509,7 +1509,7 @@ class AssemblyLoadContextBaseObject : public Object
    ~AssemblyLoadContextBaseObject() { LIMITED_METHOD_CONTRACT; }
 
   public:
-    INT_PTR GetNativeAssemblyLoadContext() { LIMITED_METHOD_CONTRACT; return _nativeAssemblyLoadContext; }
+    INT_PTR GetNativeAssemblyBinder() { LIMITED_METHOD_CONTRACT; return _nativeAssemblyLoadContext; }
 };
 #if defined(TARGET_X86) && !defined(TARGET_UNIX)
 #include "poppack.h"
@@ -2418,7 +2418,7 @@ public:
     OBJECTREF GetInnerException()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return _innerException;
+        return VolatileLoadWithoutBarrierOBJECTREF(&_innerException);
     }
 
     // Returns the innermost exception object - equivalent of the
@@ -2431,7 +2431,7 @@ public:
         OBJECTREF oInnerMostException = NULL;
         OBJECTREF oCurrent = NULL;
 
-        oCurrent = _innerException;
+        oCurrent = GetInnerException();
         while(oCurrent != NULL)
         {
             oInnerMostException = oCurrent;
@@ -2469,7 +2469,7 @@ public:
     STRINGREF GetRemoteStackTraceString()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return _remoteStackTraceString;
+        return (STRINGREF)VolatileLoadWithoutBarrierOBJECTREF(&_remoteStackTraceString);
     }
 
     void SetHelpURL(STRINGREF helpURL)
@@ -2512,7 +2512,7 @@ public:
     U1ARRAYREF GetWatsonBucketReference()
     {
         LIMITED_METHOD_CONTRACT;
-        return _watsonBuckets;
+        return (U1ARRAYREF)VolatileLoadWithoutBarrierOBJECTREF(&_watsonBuckets);
     }
 
     // This method will return a BOOL to indicate if the
@@ -2520,7 +2520,7 @@ public:
     BOOL AreWatsonBucketsPresent()
     {
         LIMITED_METHOD_CONTRACT;
-        return (_watsonBuckets != NULL)?TRUE:FALSE;
+        return (GetWatsonBucketReference() != NULL)?TRUE:FALSE;
     }
 
     // This method will save the IP to be used for watson bucketing.
@@ -2545,7 +2545,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return _ipForWatsonBuckets;
+        return VolatileLoadWithoutBarrier(&_ipForWatsonBuckets);
     }
 
     // README:

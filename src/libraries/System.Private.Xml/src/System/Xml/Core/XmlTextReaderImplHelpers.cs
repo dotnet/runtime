@@ -681,7 +681,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    nameWPrefix = nt.Add(string.Concat(prefix, ":", localName));
+                    nameWPrefix = nt.Add($"{prefix}:{localName}");
                 }
                 return nameWPrefix;
             }

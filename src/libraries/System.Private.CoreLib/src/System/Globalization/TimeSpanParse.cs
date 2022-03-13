@@ -246,15 +246,12 @@ namespace System.Globalization
                 if (_pos > 0) --_pos;
             }
 
-            internal char NextChar
+            internal char NextChar()
             {
-                get
-                {
-                    int pos = ++_pos;
-                    return (uint)pos < (uint)_value.Length ?
-                        _value[pos] :
-                        (char)0;
-                }
+                int pos = ++_pos;
+                return (uint)pos < (uint)_value.Length?
+                    _value[pos] :
+                    (char)0;
             }
         }
 
@@ -590,8 +587,11 @@ namespace System.Globalization
                 return false;
             }
 
+            const long MaxMilliSeconds = long.MaxValue / TimeSpan.TicksPerMillisecond;
+            const long MinMilliSeconds = long.MinValue / TimeSpan.TicksPerMillisecond;
+
             long ticks = ((long)days._num * 3600 * 24 + (long)hours._num * 3600 + (long)minutes._num * 60 + seconds._num) * 1000;
-            if (ticks > InternalGlobalizationHelper.MaxMilliSeconds || ticks < InternalGlobalizationHelper.MinMilliSeconds)
+            if (ticks > MaxMilliSeconds || ticks < MinMilliSeconds)
             {
                 result = 0;
                 return false;
@@ -1258,7 +1258,7 @@ namespace System.Globalization
 
             var tokenizer = new TimeSpanTokenizer(input, -1);
 
-            while (i < format.Length)
+            while ((uint)i < (uint)format.Length)
             {
                 char ch = format[i];
                 int nextFormatChar;
@@ -1321,18 +1321,18 @@ namespace System.Globalization
 
                     case '\'':
                     case '\"':
-                        StringBuilder enquotedString = StringBuilderCache.Acquire();
-                        if (!DateTimeParse.TryParseQuoteString(format, i, enquotedString, out tokenLen))
+                        var enquotedString = new ValueStringBuilder(64);
+                        if (!DateTimeParse.TryParseQuoteString(format, i, ref enquotedString, out tokenLen))
                         {
-                            StringBuilderCache.Release(enquotedString);
+                            enquotedString.Dispose();
                             return result.SetBadQuoteFailure(ch);
                         }
-                        if (!ParseExactLiteral(ref tokenizer, enquotedString))
+                        if (!ParseExactLiteral(ref tokenizer, ref enquotedString))
                         {
-                            StringBuilderCache.Release(enquotedString);
+                            enquotedString.Dispose();
                             return result.SetInvalidStringFailure();
                         }
-                        StringBuilderCache.Release(enquotedString);
+                        enquotedString.Dispose();
                         break;
 
                     case '%':
@@ -1360,7 +1360,7 @@ namespace System.Globalization
                         // For example, "\d" will insert the character 'd' into the string.
                         //
                         nextFormatChar = DateTimeFormat.ParseNextChar(format, i);
-                        if (nextFormatChar >= 0 && tokenizer.NextChar == (char)nextFormatChar)
+                        if (nextFormatChar >= 0 && tokenizer.NextChar() == (char)nextFormatChar)
                         {
                             tokenLen = 2;
                         }
@@ -1420,7 +1420,7 @@ namespace System.Globalization
             int tokenLength = 0;
             while (tokenLength < maxDigitLength)
             {
-                char ch = tokenizer.NextChar;
+                char ch = tokenizer.NextChar();
                 if (ch < '0' || ch > '9')
                 {
                     tokenizer.BackOne();
@@ -1437,11 +1437,12 @@ namespace System.Globalization
             return tokenLength >= minDigitLength;
         }
 
-        private static bool ParseExactLiteral(ref TimeSpanTokenizer tokenizer, StringBuilder enquotedString)
+        private static bool ParseExactLiteral(ref TimeSpanTokenizer tokenizer, ref ValueStringBuilder enquotedString)
         {
-            for (int i = 0; i < enquotedString.Length; i++)
+            ReadOnlySpan<char> span = enquotedString.AsSpan();
+            for (int i = 0; i < span.Length; i++)
             {
-                if (enquotedString[i] != tokenizer.NextChar)
+                if (span[i] != tokenizer.NextChar())
                 {
                     return false;
                 }

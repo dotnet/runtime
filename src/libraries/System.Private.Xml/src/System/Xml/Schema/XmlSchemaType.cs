@@ -29,13 +29,8 @@ namespace System.Xml.Schema
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public static XmlSchemaSimpleType? GetBuiltInSimpleType(XmlQualifiedName qualifiedName)
+        public static XmlSchemaSimpleType? GetBuiltInSimpleType(XmlQualifiedName qualifiedName!!)
         {
-            if (qualifiedName == null)
-            {
-                throw new ArgumentNullException(nameof(qualifiedName));
-            }
-
             return DatatypeImplementation.GetSimpleTypeFromXsdType(qualifiedName);
         }
 
@@ -63,13 +58,8 @@ namespace System.Xml.Schema
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public static XmlSchemaComplexType? GetBuiltInComplexType(XmlQualifiedName qualifiedName)
+        public static XmlSchemaComplexType? GetBuiltInComplexType(XmlQualifiedName qualifiedName!!)
         {
-            if (qualifiedName == null)
-            {
-                throw new ArgumentNullException(nameof(qualifiedName));
-            }
-
             if (qualifiedName.Equals(XmlSchemaComplexType.AnyType.QualifiedName))
             {
                 return XmlSchemaComplexType.AnyType;
@@ -125,7 +115,7 @@ namespace System.Xml.Schema
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [XmlIgnore]
-        [Obsolete("This property has been deprecated. Please use BaseXmlSchemaType property that returns a strongly typed base schema type. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("XmlSchemaType.BaseSchemaType has been deprecated. Use the BaseXmlSchemaType property that returns a strongly typed base schema type instead.")]
         public object? BaseSchemaType
         {
             get

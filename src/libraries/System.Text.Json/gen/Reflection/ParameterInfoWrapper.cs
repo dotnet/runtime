@@ -23,6 +23,12 @@ namespace System.Text.Json.Reflection
 
         public override string Name => _parameter.Name;
 
+        public override bool HasDefaultValue => _parameter.HasExplicitDefaultValue;
+
+        public override object DefaultValue => HasDefaultValue ? _parameter.ExplicitDefaultValue : null;
+
+        public override int Position => _parameter.Ordinal; 
+
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
             var attributes = new List<CustomAttributeData>();

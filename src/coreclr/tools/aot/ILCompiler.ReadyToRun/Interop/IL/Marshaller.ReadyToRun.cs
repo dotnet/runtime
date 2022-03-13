@@ -40,21 +40,19 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public static Marshaller[] GetMarshallersForMethod(MethodDesc targetMethod)
+        private static Marshaller[] GetMarshallers(
+            MethodSignature methodSig,
+            PInvokeFlags flags,
+            ParameterMetadata[] parameterMetadataArray,
+            bool runtimeMarshallingEnabled)
         {
-            Debug.Assert(targetMethod.IsPInvoke);
-
-            MarshalDirection direction = MarshalDirection.Forward;
-            MethodSignature methodSig = targetMethod.Signature;
-            PInvokeFlags flags = targetMethod.GetPInvokeMethodMetadata().Flags;
-
-            ParameterMetadata[] parameterMetadataArray = targetMethod.GetParameterMetadata();
             Marshaller[] marshallers = new Marshaller[methodSig.Length + 1];
-            ParameterMetadata parameterMetadata;
 
             for (int i = 0, parameterIndex = 0; i < marshallers.Length; i++)
             {
                 Debug.Assert(parameterIndex == parameterMetadataArray.Length || i <= parameterMetadataArray[parameterIndex].Index);
+
+                ParameterMetadata parameterMetadata;
                 if (parameterIndex == parameterMetadataArray.Length || i < parameterMetadataArray[parameterIndex].Index)
                 {
                     // if we don't have metadata for the parameter, create a dummy one
@@ -67,21 +65,55 @@ namespace Internal.TypeSystem.Interop
                 }
 
                 TypeDesc parameterType = (i == 0) ? methodSig.ReturnType : methodSig[i - 1];  //first item is the return type
-                marshallers[i] = CreateMarshaller(parameterType,
-                                                    parameterIndex,
-                                                    methodSig.GetEmbeddedSignatureData(),
-                                                    MarshallerType.Argument,
-                                                    parameterMetadata.MarshalAsDescriptor,
-                                                    direction,
-                                                    marshallers,
-                                                    parameterMetadata.Index,
-                                                    flags,
-                                                    parameterMetadata.In,
-                                                    parameterMetadata.Out,
-                                                    parameterMetadata.Return);
+                if (runtimeMarshallingEnabled)
+                {
+                    marshallers[i] = CreateMarshaller(parameterType,
+                                                        parameterIndex,
+                                                        methodSig.GetEmbeddedSignatureData(),
+                                                        MarshallerType.Argument,
+                                                        parameterMetadata.MarshalAsDescriptor,
+                                                        MarshalDirection.Forward,
+                                                        marshallers,
+                                                        parameterMetadata.Index,
+                                                        flags,
+                                                        parameterMetadata.In,
+                                                        parameterMetadata.Out,
+                                                        parameterMetadata.Return);
+                }
+                else
+                {
+                    marshallers[i] = CreateDisabledMarshaller(
+                        parameterType,
+                        parameterIndex,
+                        MarshallerType.Argument,
+                        MarshalDirection.Forward,
+                        marshallers,
+                        parameterMetadata.Index,
+                        flags,
+                        parameterMetadata.Return);
+                }
             }
 
             return marshallers;
+        }
+
+        public static Marshaller[] GetMarshallersForMethod(MethodDesc targetMethod)
+        {
+            Debug.Assert(targetMethod.IsPInvoke);
+            return GetMarshallers(
+                targetMethod.Signature,
+                targetMethod.GetPInvokeMethodMetadata().Flags,
+                targetMethod.GetParameterMetadata(),
+                MarshalHelpers.IsRuntimeMarshallingEnabled(((MetadataType)targetMethod.OwningType).Module));
+        }
+
+        public static Marshaller[] GetMarshallersForSignature(MethodSignature methodSig, ParameterMetadata[] paramMetadata, ModuleDesc moduleContext)
+        {
+            return GetMarshallers(
+                methodSig,
+                new PInvokeFlags(PInvokeAttributes.None),
+                paramMetadata,
+                MarshalHelpers.IsRuntimeMarshallingEnabled(moduleContext));
         }
 
         public static bool IsMarshallingRequired(MethodDesc targetMethod)
@@ -113,27 +145,12 @@ namespace Internal.TypeSystem.Interop
             return false;
         }
 
-        public static bool IsMarshallingRequired(MethodSignature methodSig, ParameterMetadata[] paramMetadata)
+        public static bool IsMarshallingRequired(MethodSignature methodSig, ParameterMetadata[] paramMetadata, ModuleDesc moduleContext)
         {
-            for (int i = 0, paramIndex = 0; i < methodSig.Length + 1; i++)
+            Marshaller[] marshallers = GetMarshallersForSignature(methodSig, paramMetadata, moduleContext);
+            for (int i = 0; i < marshallers.Length; i++)
             {
-                ParameterMetadata parameterMetadata = (paramIndex == paramMetadata.Length || i < paramMetadata[paramIndex].Index) ?
-                    new ParameterMetadata(i, ParameterMetadataAttributes.None, null) :
-                    paramMetadata[paramIndex++];
-
-                TypeDesc parameterType = (i == 0) ? methodSig.ReturnType : methodSig[i - 1];  //first item is the return type
-
-                MarshallerKind marshallerKind = MarshalHelpers.GetMarshallerKind(
-                    parameterType,
-                    parameterIndex: i,
-                    customModifierData: methodSig.GetEmbeddedSignatureData(),
-                    parameterMetadata.MarshalAsDescriptor,
-                    parameterMetadata.Return,
-                    isAnsi: true,
-                    MarshallerType.Argument,
-                    out MarshallerKind elementMarshallerKind);
-
-                if (IsMarshallingRequired(marshallerKind))
+                if (marshallers[i].IsMarshallingRequired())
                     return true;
             }
 

@@ -47,7 +47,7 @@ namespace System.Runtime.Serialization
         public int ReassignId(int oldObjId, object oldObj, object newObj)
         {
             bool isEmpty, isWrapped;
-            int position = FindElement(oldObj, out isEmpty, out isWrapped);
+            int position = FindElement(oldObj, out isEmpty, out _);
             if (isEmpty)
                 return 0;
             int id = m_ids[position];
@@ -150,8 +150,8 @@ namespace System.Runtime.Serialization
                 object? obj = oldObjs[j];
                 if (obj != null)
                 {
-                    bool found, isWrapped;
-                    int position = FindElement(obj, out found, out isWrapped);
+                    bool isWrapped;
+                    int position = FindElement(obj, out _, out isWrapped);
                     m_objs[position] = obj;
                     m_ids[position] = oldIds[j];
                     m_isWrapped[position] = isWrapped;

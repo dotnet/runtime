@@ -715,7 +715,7 @@ private:
     //
     static JitPrimeInfo NextPrime(unsigned number)
     {
-        for (int i = 0; i < (int)(_countof(jitPrimeInfo)); i++)
+        for (int i = 0; i < (int)(ArrLen(jitPrimeInfo)); i++)
         {
             if (jitPrimeInfo[i].prime >= number)
             {

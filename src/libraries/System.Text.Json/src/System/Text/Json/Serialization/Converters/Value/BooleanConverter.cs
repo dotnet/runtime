@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Text;
+using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -17,19 +18,19 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteBooleanValue(value);
         }
 
-        internal override bool ReadWithQuotes(ref Utf8JsonReader reader)
+        internal override bool ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             ReadOnlySpan<byte> propertyName = reader.GetSpan();
-            if (Utf8Parser.TryParse(propertyName, out bool value, out int bytesConsumed)
-                && propertyName.Length == bytesConsumed)
+            if (!(Utf8Parser.TryParse(propertyName, out bool value, out int bytesConsumed)
+                  && propertyName.Length == bytesConsumed))
             {
-                return value;
+                ThrowHelper.ThrowFormatException(DataType.Boolean);
             }
 
-            throw ThrowHelper.GetFormatException(DataType.Boolean);
+            return value;
         }
 
-        internal override void WriteWithQuotes(Utf8JsonWriter writer, bool value, JsonSerializerOptions options, ref WriteStack state)
+        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, bool value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             writer.WritePropertyName(value);
         }

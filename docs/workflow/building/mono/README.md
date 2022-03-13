@@ -33,6 +33,25 @@ build.cmd mono
 ```
 When the build completes, product binaries will be dropped in the `artifacts\bin\mono\<OS>.<arch>.<flavor>` folder.
 
+If you need to run library tests or run HelloWorld sample with your change to mono, you want to build mono with this command instead:
+
+```bash
+./build.sh mono+libs.pretest
+```
+or on Windows,
+```cmd
+build.cmd mono+libs.pretest
+```
+
+If you want to skip restoring nuget packages, when only making change to mono, you want to use this command:
+```bash
+./build.sh mono --build
+```
+or on Windows,
+```cmd
+build.cmd mono --build
+```
+
 ### Useful Build Arguments
 Here are a list of build arguments that may be of use:
 

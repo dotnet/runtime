@@ -30,7 +30,7 @@ do
   else
   	INIT="no";
   fi
-	
+
   ./make_bin_test.sh bin_num_op_32_${I} valid $OP int32 int32 "ldc.i4.1" "${INIT}"
   ./make_bin_test.sh bin_num_op_33_${I} valid $OP int32 'native int' "ldc.i4.1" "${INIT}"
   ./make_bin_test.sh bin_num_op_34_${I} valid $OP int64 int64 "ldc.i8 1" "${INIT}"
@@ -40,7 +40,7 @@ do
   ./make_bin_test.sh bin_num_op_38_${I} valid $OP float32 float64 "ldc.r8 0" "${INIT}"
   ./make_bin_test.sh bin_num_op_39_${I} valid $OP float64 float32 "ldc.r4 0" "${INIT}"
   ./make_bin_test.sh bin_num_op_40_${I} valid $OP float32 float32 "ldc.r4 0" "${INIT}"
-  
+
   ./make_bin_test.sh bin_num_op_1_${I} unverifiable $OP int32 int64 "ldc.i8 1" "${INIT}"
   ./make_bin_test.sh bin_num_op_2_${I} unverifiable $OP int32 float64 "ldc.r8 0" "${INIT}"
   ./make_bin_test.sh bin_num_op_3_${I} unverifiable $OP int32 object "ldnull" "${INIT}"
@@ -184,7 +184,7 @@ do
 done
 
 
-for TYPE in int32 float32 int64 "int32&" "native int" 
+for TYPE in int32 float32 int64 "int32&" "native int"
 do
 	./make_bin_test.sh bin_cgt_un_a_${I} unverifiable 'cgt.un' "${TYPE}" 'object'
 	./make_bin_test.sh bin_cgt_un_b_${I} unverifiable 'cgt.un' 'object' "${TYPE}"
@@ -313,7 +313,7 @@ done
 # Table 8: Conversion Operations
 I=1
 J=1
-for OP in "conv.i1\n\tpop" "conv.i2\n\tpop" "conv.i4\n\tpop" "conv.i8\n\tpop" "conv.r4\n\tpop" "conv.r8\n\tpop" "conv.u1\n\tpop" "conv.u2\n\tpop" "conv.u4\n\tpop" "conv.u8\n\tpop" "conv.i\n\tpop" "conv.u\n\tpop" "conv.r.un\n\tpop" "conv.ovf.i1\n\tpop" "conv.ovf.i2\n\tpop" "conv.ovf.i4\n\tpop" "conv.ovf.i8\n\tpop" "conv.ovf.u1\n\tpop" "conv.ovf.u2\n\tpop" "conv.ovf.u4\n\tpop" "conv.ovf.u8\n\tpop" "conv.ovf.i\n\tpop"  "conv.ovf.u\n\tpop" "conv.ovf.i1.un\n\tpop" "conv.ovf.i2.un\n\tpop" "conv.ovf.i4.un\n\tpop" "conv.ovf.i8.un\n\tpop" "conv.ovf.u1.un\n\tpop" "conv.ovf.u2.un\n\tpop" "conv.ovf.u4.un\n\tpop" "conv.ovf.u8.un\n\tpop" "conv.ovf.i.un\n\tpop"  "conv.ovf.u.un\n\tpop" 
+for OP in "conv.i1\n\tpop" "conv.i2\n\tpop" "conv.i4\n\tpop" "conv.i8\n\tpop" "conv.r4\n\tpop" "conv.r8\n\tpop" "conv.u1\n\tpop" "conv.u2\n\tpop" "conv.u4\n\tpop" "conv.u8\n\tpop" "conv.i\n\tpop" "conv.u\n\tpop" "conv.r.un\n\tpop" "conv.ovf.i1\n\tpop" "conv.ovf.i2\n\tpop" "conv.ovf.i4\n\tpop" "conv.ovf.i8\n\tpop" "conv.ovf.u1\n\tpop" "conv.ovf.u2\n\tpop" "conv.ovf.u4\n\tpop" "conv.ovf.u8\n\tpop" "conv.ovf.i\n\tpop"  "conv.ovf.u\n\tpop" "conv.ovf.i1.un\n\tpop" "conv.ovf.i2.un\n\tpop" "conv.ovf.i4.un\n\tpop" "conv.ovf.i8.un\n\tpop" "conv.ovf.u1.un\n\tpop" "conv.ovf.u2.un\n\tpop" "conv.ovf.u4.un\n\tpop" "conv.ovf.u8.un\n\tpop" "conv.ovf.i.un\n\tpop"  "conv.ovf.u.un\n\tpop"
 do
   for TYPE in 'int8' 'bool' 'unsigned int8' 'int16' 'char' 'unsigned int16' 'int32' 'unsigned int32' 'int64' 'unsigned int64' 'float32' 'float64' 'native int' 'native unsigned int'
   do
@@ -357,55 +357,55 @@ do
   ./make_store_test.sh coercion_14_${I} unverifiable "$OP" int16 float64
   ./make_store_test.sh coercion_15_${I} unverifiable "$OP" int16 'int16&'
   ./make_store_test.sh coercion_16_${I} unverifiable "$OP" int16 object
-  
+
   ./make_store_test.sh coercion_17_${I} unverifiable "$OP" 'unsigned int16' int64
   ./make_store_test.sh coercion_18_${I} unverifiable "$OP" 'unsigned int16' float64
   ./make_store_test.sh coercion_19_${I} unverifiable "$OP" 'unsigned int16' 'unsigned int16&'
   ./make_store_test.sh coercion_20_${I} unverifiable "$OP" 'unsigned int16' object
-  
+
   ./make_store_test.sh coercion_21_${I} unverifiable "$OP" char int64
   ./make_store_test.sh coercion_22_${I} unverifiable "$OP" char float64
   ./make_store_test.sh coercion_23_${I} unverifiable "$OP" char 'char&'
   ./make_store_test.sh coercion_24_${I} unverifiable "$OP" char object
-  
+
   ./make_store_test.sh coercion_25_${I} unverifiable "$OP" int32 int64
   ./make_store_test.sh coercion_26_${I} unverifiable "$OP" int32 float64
   ./make_store_test.sh coercion_27_${I} unverifiable "$OP" int32 'int32&'
   ./make_store_test.sh coercion_28_${I} unverifiable "$OP" int32 object
-  
+
   ./make_store_test.sh coercion_29_${I} unverifiable "$OP" 'unsigned int32' int64
   ./make_store_test.sh coercion_30_${I} unverifiable "$OP" 'unsigned int32' float64
   ./make_store_test.sh coercion_31_${I} unverifiable "$OP" 'unsigned int32' 'unsigned int32&'
   ./make_store_test.sh coercion_32_${I} unverifiable "$OP" 'unsigned int32' object
- 
+
   ./make_store_test.sh coercion_33_${I} unverifiable "$OP" int64 int32
   ./make_store_test.sh coercion_34_${I} unverifiable "$OP" int64 'native int'
   ./make_store_test.sh coercion_35_${I} unverifiable "$OP" int64 float64
   ./make_store_test.sh coercion_36_${I} unverifiable "$OP" int64 'int64&'
   ./make_store_test.sh coercion_37_${I} unverifiable "$OP" int64 object
-  
+
   ./make_store_test.sh coercion_38_${I} unverifiable "$OP" 'unsigned int64' int32
   ./make_store_test.sh coercion_39_${I} unverifiable "$OP" 'unsigned int64' 'native int'
   ./make_store_test.sh coercion_40_${I} unverifiable "$OP" 'unsigned int64' float64
   ./make_store_test.sh coercion_41_${I} unverifiable "$OP" 'unsigned int64' 'unsigned int64&'
   ./make_store_test.sh coercion_42_${I} unverifiable "$OP" 'unsigned int64' object
-  
+
   ./make_store_test.sh coercion_43_${I} unverifiable "$OP" 'native int' int64
   ./make_store_test.sh coercion_44_${I} unverifiable "$OP" 'native int' float64
   ./make_store_test.sh coercion_45_${I} unverifiable "$OP" 'native int' 'native int&'
   ./make_store_test.sh coercion_46_${I} unverifiable "$OP" 'native int' object
-  
+
   ./make_store_test.sh coercion_47_${I} unverifiable "$OP" 'native unsigned int' int64
   ./make_store_test.sh coercion_48_${I} unverifiable "$OP" 'native unsigned int' float64
   ./make_store_test.sh coercion_49_${I} unverifiable "$OP" 'native unsigned int' 'native unsigned int&'
   ./make_store_test.sh coercion_50_${I} unverifiable "$OP" 'native unsigned int' object
-  
+
   ./make_store_test.sh coercion_51_${I} unverifiable "$OP" float32 int32
   ./make_store_test.sh coercion_52_${I} unverifiable "$OP" float32 'native int'
   ./make_store_test.sh coercion_53_${I} unverifiable "$OP" float32 int64
   ./make_store_test.sh coercion_54_${I} unverifiable "$OP" float32 'float32&'
   ./make_store_test.sh coercion_55_${I} unverifiable "$OP" float32 object
-  
+
   ./make_store_test.sh coercion_56_${I} unverifiable "$OP" float64 int32
   ./make_store_test.sh coercion_57_${I} unverifiable "$OP" float64 'native int'
   ./make_store_test.sh coercion_58_${I} unverifiable "$OP" float64 int64
@@ -417,20 +417,20 @@ do
   ./make_store_test.sh coercion_63_${I} unverifiable "$OP" object int64
   ./make_store_test.sh coercion_64_${I} unverifiable "$OP" object float64
   ./make_store_test.sh coercion_65_${I} unverifiable "$OP" object 'object&'
-  
+
   ./make_store_test.sh coercion_66_${I} unverifiable "$OP" 'class ValueType' int32
   ./make_store_test.sh coercion_67_${I} unverifiable "$OP" 'class ValueType' 'native int'
   ./make_store_test.sh coercion_68_${I} unverifiable "$OP" 'class ValueType' int64
   ./make_store_test.sh coercion_69_${I} unverifiable "$OP" 'class ValueType' float64
   ./make_store_test.sh coercion_70_${I} unverifiable "$OP" 'class ValueType' 'class ValueType&'
   ./make_store_test.sh coercion_71_${I} unverifiable "$OP" 'class ValueType' object
-  
+
   ./make_store_test.sh coercion_72_${I} unverifiable "$OP" 'int32&' int32
   ./make_store_test.sh coercion_73_${I} unverifiable "$OP" 'int32&' 'native int'
   ./make_store_test.sh coercion_74_${I} unverifiable "$OP" 'int32&' int64
   ./make_store_test.sh coercion_75_${I} unverifiable "$OP" 'int32&' float64
   ./make_store_test.sh coercion_76_${I} unverifiable "$OP" 'int32&' object
-  
+
   ./make_store_test.sh coercion_77_${I} unverifiable "$OP" typedref int32
   ./make_store_test.sh coercion_78_${I} unverifiable "$OP" typedref 'native int'
   ./make_store_test.sh coercion_89_${I} unverifiable "$OP" typedref int64
@@ -442,7 +442,7 @@ done
 
 #valid coercion between native int and int32
 I=1
-for OP in stloc.0 "starg 0" 
+for OP in stloc.0 "starg 0"
 do
 	./make_store_test.sh coercion_83_${I} valid "$OP" int32 "native int"
  	./make_store_test.sh coercion_84_${I} valid "$OP" "native int" int32
@@ -495,9 +495,9 @@ done
 
 
 function fix () {
-	if [ "$3" != "" ]; then
+	if [ -n "$3" ]; then
 		A=$3;
-	elif [ "$2" != "" ]; then
+	elif [ -n "$2" ]; then
 		A=$2;
 	else
 		A=$1;
@@ -595,55 +595,55 @@ do
   ./make_obj_store_test.sh obj_coercion_14_${I} unverifiable "$OP" int16 float64
   ./make_obj_store_test.sh obj_coercion_15_${I} unverifiable "$OP" int16 'int16&'
   ./make_obj_store_test.sh obj_coercion_16_${I} unverifiable "$OP" int16 object
-  
+
   ./make_obj_store_test.sh obj_coercion_17_${I} unverifiable "$OP" 'unsigned int16' int64
   ./make_obj_store_test.sh obj_coercion_18_${I} unverifiable "$OP" 'unsigned int16' float64
   ./make_obj_store_test.sh obj_coercion_19_${I} unverifiable "$OP" 'unsigned int16' 'unsigned int16&'
   ./make_obj_store_test.sh obj_coercion_20_${I} unverifiable "$OP" 'unsigned int16' object
-  
+
   ./make_obj_store_test.sh obj_coercion_21_${I} unverifiable "$OP" char int64
   ./make_obj_store_test.sh obj_coercion_22_${I} unverifiable "$OP" char float64
   ./make_obj_store_test.sh obj_coercion_23_${I} unverifiable "$OP" char 'char&'
   ./make_obj_store_test.sh obj_coercion_24_${I} unverifiable "$OP" char object
-  
+
   ./make_obj_store_test.sh obj_coercion_25_${I} unverifiable "$OP" int32 int64
   ./make_obj_store_test.sh obj_coercion_26_${I} unverifiable "$OP" int32 float64
   ./make_obj_store_test.sh obj_coercion_27_${I} unverifiable "$OP" int32 'int32&'
   ./make_obj_store_test.sh obj_coercion_28_${I} unverifiable "$OP" int32 object
-  
+
   ./make_obj_store_test.sh obj_coercion_29_${I} unverifiable "$OP" 'unsigned int32' int64
   ./make_obj_store_test.sh obj_coercion_30_${I} unverifiable "$OP" 'unsigned int32' float64
   ./make_obj_store_test.sh obj_coercion_31_${I} unverifiable "$OP" 'unsigned int32' 'unsigned int32&'
   ./make_obj_store_test.sh obj_coercion_32_${I} unverifiable "$OP" 'unsigned int32' object
- 
+
   ./make_obj_store_test.sh obj_coercion_33_${I} unverifiable "$OP" int64 int32
   ./make_obj_store_test.sh obj_coercion_34_${I} unverifiable "$OP" int64 'native int'
   ./make_obj_store_test.sh obj_coercion_35_${I} unverifiable "$OP" int64 float64
   ./make_obj_store_test.sh obj_coercion_36_${I} unverifiable "$OP" int64 'int64&'
   ./make_obj_store_test.sh obj_coercion_37_${I} unverifiable "$OP" int64 object
-  
+
   ./make_obj_store_test.sh obj_coercion_38_${I} unverifiable "$OP" 'unsigned int64' int32
   ./make_obj_store_test.sh obj_coercion_39_${I} unverifiable "$OP" 'unsigned int64' 'native int'
   ./make_obj_store_test.sh obj_coercion_40_${I} unverifiable "$OP" 'unsigned int64' float64
   ./make_obj_store_test.sh obj_coercion_41_${I} unverifiable "$OP" 'unsigned int64' 'unsigned int64&'
   ./make_obj_store_test.sh obj_coercion_42_${I} unverifiable "$OP" 'unsigned int64' object
-  
+
   ./make_obj_store_test.sh obj_coercion_43_${I} unverifiable "$OP" 'native int' int64
   ./make_obj_store_test.sh obj_coercion_44_${I} unverifiable "$OP" 'native int' float64
   ./make_obj_store_test.sh obj_coercion_45_${I} unverifiable "$OP" 'native int' 'native int&'
   ./make_obj_store_test.sh obj_coercion_46_${I} unverifiable "$OP" 'native int' object
-  
+
   ./make_obj_store_test.sh obj_coercion_47_${I} unverifiable "$OP" 'native unsigned int' int64
   ./make_obj_store_test.sh obj_coercion_48_${I} unverifiable "$OP" 'native unsigned int' float64
   ./make_obj_store_test.sh obj_coercion_49_${I} unverifiable "$OP" 'native unsigned int' 'native unsigned int&'
   ./make_obj_store_test.sh obj_coercion_50_${I} unverifiable "$OP" 'native unsigned int' object
-  
+
   ./make_obj_store_test.sh obj_coercion_51_${I} unverifiable "$OP" float32 int32
   ./make_obj_store_test.sh obj_coercion_52_${I} unverifiable "$OP" float32 'native int'
   ./make_obj_store_test.sh obj_coercion_53_${I} unverifiable "$OP" float32 int64
   ./make_obj_store_test.sh obj_coercion_54_${I} unverifiable "$OP" float32 'float32&'
   ./make_obj_store_test.sh obj_coercion_55_${I} unverifiable "$OP" float32 object
-  
+
   ./make_obj_store_test.sh obj_coercion_56_${I} unverifiable "$OP" float64 int32
   ./make_obj_store_test.sh obj_coercion_57_${I} unverifiable "$OP" float64 'native int'
   ./make_obj_store_test.sh obj_coercion_58_${I} unverifiable "$OP" float64 int64
@@ -655,15 +655,15 @@ do
   ./make_obj_store_test.sh obj_coercion_63_${I} unverifiable "$OP" object int64
   ./make_obj_store_test.sh obj_coercion_64_${I} unverifiable "$OP" object float64
   ./make_obj_store_test.sh obj_coercion_65_${I} unverifiable "$OP" object 'object&'
-  
+
   ./make_obj_store_test.sh obj_coercion_66_${I} unverifiable "$OP" 'class ValueType' int32
   ./make_obj_store_test.sh obj_coercion_67_${I} unverifiable "$OP" 'class ValueType' 'native int'
   ./make_obj_store_test.sh obj_coercion_68_${I} unverifiable "$OP" 'class ValueType' int64
   ./make_obj_store_test.sh obj_coercion_69_${I} unverifiable "$OP" 'class ValueType' float64
   ./make_obj_store_test.sh obj_coercion_70_${I} unverifiable "$OP" 'class ValueType' 'class ValueType&'
   ./make_obj_store_test.sh obj_coercion_71_${I} unverifiable "$OP" 'class ValueType' object
-  
-  
+
+
   #These tests don't test store error since one cannot have an 'int32&' field
   #They should exist in the structural tests session
   #./make_obj_store_test.sh obj_coercion_72_${I} invalid "$OP" 'int32&' int32
@@ -671,17 +671,17 @@ do
   #./make_obj_store_test.sh obj_coercion_74_${I} invalid "$OP" 'int32&' int64
   #./make_obj_store_test.sh obj_coercion_75_${I} invalid "$OP" 'int32&' float64
   #./make_obj_store_test.sh obj_coercion_76_${I} invalid "$OP" 'int32&' object
-  
+
 
   ./make_obj_store_test.sh obj_coercion_83_${I} valid "$OP" int32 "native int"
   ./make_obj_store_test.sh obj_coercion_84_${I} valid "$OP" "native int" int32
- 
+
   ./make_obj_store_test.sh obj_coercion_85_${I} valid "$OP" "unsigned int32" "native int"
   ./make_obj_store_test.sh obj_coercion_86_${I} valid "$OP" "native int" "unsigned int32"
- 
+
   ./make_obj_store_test.sh obj_coercion_87_${I} valid "$OP" int32 "native unsigned int"
   ./make_obj_store_test.sh obj_coercion_88_${I} valid "$OP" "native unsigned int" int32
- 
+
   ./make_obj_store_test.sh obj_coercion_89_${I} valid "$OP" "unsigned int32" "native int"
   ./make_obj_store_test.sh obj_coercion_90_${I} valid "$OP" "native unsigned int" "unsigned int32"
   I=`expr $I + 1`
@@ -708,7 +708,7 @@ do
   # ClassA not interface type.
   # FIXME: what was the purpoise of this test? on it's current for it is valid and not unverifiable
   ./make_store_test.sh assign_compat_3_${I} valid "$OP" object 'class ClassA'
-  
+
   # Implementation of InterfaceB does not require the implementation of InterfaceA
   ./make_store_test.sh assign_compat_4_${I} unverifiable "$OP" 'class InterfaceA' 'class InterfaceB'
 
@@ -749,7 +749,7 @@ do
   # ClassA not interface type.
   #FIXME: this test is valid, you can store type ClassA in a object field
   ./make_obj_store_test.sh assign_compat_3_${I} valid "$OP" object 'class ClassA'
-  
+
   # Implementation of InterfaceB does not require the implementation of InterfaceA
   ./make_obj_store_test.sh assign_compat_4_${I} unverifiable "$OP" 'class InterfaceA' 'class InterfaceB'
 
@@ -770,13 +770,13 @@ do
 
   # Method pointers with different calling conventions.
   ./make_obj_store_test.sh assign_compat_10_${I} unverifiable "$OP" 'method vararg int32 *(int32)' 'method int32 *(int32)'
-  
+
     # Method pointers with different calling conventions. (2)
   ./make_obj_store_test.sh assign_compat_11_${I} unverifiable "$OP" 'method unmanaged fastcall int32 *(int32)' 'method int32 *(int32)'
-  
+
     # Method pointers with different calling conventions. (3)
   ./make_obj_store_test.sh assign_compat_12_${I} unverifiable "$OP" 'method unmanaged fastcall int32 *(int32)' 'method unmanaged stdcall int32 *(int32)'
-  
+
   I=`expr $I + 1`
 done
 
@@ -790,7 +790,7 @@ do
  	T1_PTR=$?
  	ZZ=`echo $TYPE2 | grep "*";`
  	T2_PTR=$?
- 	
+
     if [ $T1_PTR -eq 0 ] || [ $T2_PTR -eq 0 ]; then
 		./make_stack_merge_test.sh stack_merge_${I} unverifiable "$TYPE1" "$TYPE2"
     elif [ "$TYPE1" = "$TYPE2" ]; then
@@ -813,9 +813,9 @@ done
 # Unverifiable array stack merges
 
 # These are verifiable, the merged type is 'object' or 'Array'
-#for TYPE1 in 'string []' 'string [,]' 'string [,,]' 
+#for TYPE1 in 'string []' 'string [,]' 'string [,,]'
 #do
-#  for TYPE2 in 'string []' 'string [,]' 'string [,,]' 
+#  for TYPE2 in 'string []' 'string [,]' 'string [,,]'
 #  do
 #    if [ "$TYPE1" != "$TYPE2" ]; then
 #	./make_stack_merge_test.sh stack_merge_${I} unverifiable "$TYPE1" "$TYPE2"
@@ -974,55 +974,55 @@ done
 ./make_ret_test.sh ret_coercion_14 unverifiable int16 float64
 ./make_ret_test.sh ret_coercion_15 unverifiable int16 'int16&'
 ./make_ret_test.sh ret_coercion_16 unverifiable int16 object
-  
+
 ./make_ret_test.sh ret_coercion_17 unverifiable 'unsigned int16' int64
 ./make_ret_test.sh ret_coercion_18 unverifiable 'unsigned int16' float64
 ./make_ret_test.sh ret_coercion_19 unverifiable 'unsigned int16' 'unsigned int16&'
 ./make_ret_test.sh ret_coercion_20 unverifiable 'unsigned int16' object
-  
+
 ./make_ret_test.sh ret_coercion_21 unverifiable char int64
 ./make_ret_test.sh ret_coercion_22 unverifiable char float64
 ./make_ret_test.sh ret_coercion_23 unverifiable char 'char&'
 ./make_ret_test.sh ret_coercion_24 unverifiable char object
-  
+
 ./make_ret_test.sh ret_coercion_25 unverifiable int32 int64
 ./make_ret_test.sh ret_coercion_26 unverifiable int32 float64
 ./make_ret_test.sh ret_coercion_27 unverifiable int32 'int32&'
 ./make_ret_test.sh ret_coercion_28 unverifiable int32 object
-  
+
 ./make_ret_test.sh ret_coercion_29 unverifiable 'unsigned int32' int64
 ./make_ret_test.sh ret_coercion_30 unverifiable 'unsigned int32' float64
 ./make_ret_test.sh ret_coercion_31 unverifiable 'unsigned int32' 'unsigned int32&'
 ./make_ret_test.sh ret_coercion_32 unverifiable 'unsigned int32' object
- 
+
 ./make_ret_test.sh ret_coercion_33 unverifiable int64 int32
 ./make_ret_test.sh ret_coercion_34 unverifiable int64 'native int'
 ./make_ret_test.sh ret_coercion_35 unverifiable int64 float64
 ./make_ret_test.sh ret_coercion_36 unverifiable int64 'int64&'
 ./make_ret_test.sh ret_coercion_37 unverifiable int64 object
-  
+
 ./make_ret_test.sh ret_coercion_38 unverifiable 'unsigned int64' int32
 ./make_ret_test.sh ret_coercion_39 unverifiable 'unsigned int64' 'native int'
 ./make_ret_test.sh ret_coercion_40 unverifiable 'unsigned int64' float64
 ./make_ret_test.sh ret_coercion_41 unverifiable 'unsigned int64' 'unsigned int64&'
 ./make_ret_test.sh ret_coercion_42 unverifiable 'unsigned int64' object
-  
+
 ./make_ret_test.sh ret_coercion_43 unverifiable 'native int' int64
 ./make_ret_test.sh ret_coercion_44 unverifiable 'native int' float64
 ./make_ret_test.sh ret_coercion_45 unverifiable 'native int' 'native int&'
 ./make_ret_test.sh ret_coercion_46 unverifiable 'native int' object
-  
+
 ./make_ret_test.sh ret_coercion_47 unverifiable 'native unsigned int' int64
 ./make_ret_test.sh ret_coercion_48 unverifiable 'native unsigned int' float64
 ./make_ret_test.sh ret_coercion_49 unverifiable 'native unsigned int' 'native unsigned int&'
 ./make_ret_test.sh ret_coercion_50 unverifiable 'native unsigned int' object
-  
+
 ./make_ret_test.sh ret_coercion_51 unverifiable float32 int32
 ./make_ret_test.sh ret_coercion_52 unverifiable float32 'native int'
 ./make_ret_test.sh ret_coercion_53 unverifiable float32 int64
 ./make_ret_test.sh ret_coercion_54 unverifiable float32 'float32&'
 ./make_ret_test.sh ret_coercion_55 unverifiable float32 object
-  
+
 ./make_ret_test.sh ret_coercion_56 unverifiable float64 int32
 ./make_ret_test.sh ret_coercion_57 unverifiable float64 'native int'
 ./make_ret_test.sh ret_coercion_58 unverifiable float64 int64
@@ -1034,20 +1034,20 @@ done
 ./make_ret_test.sh ret_coercion_63 unverifiable object int64
 ./make_ret_test.sh ret_coercion_64 unverifiable object float64
 ./make_ret_test.sh ret_coercion_65 unverifiable object 'object&'
-  
+
 ./make_ret_test.sh ret_coercion_66 unverifiable 'class MyValueType' int32
 ./make_ret_test.sh ret_coercion_67 unverifiable 'class MyValueType' 'native int'
 ./make_ret_test.sh ret_coercion_68 unverifiable 'class MyValueType' int64
 ./make_ret_test.sh ret_coercion_69 unverifiable 'class MyValueType' float64
 ./make_ret_test.sh ret_coercion_70 unverifiable 'class MyValueType' 'class MyValueType&'
 ./make_ret_test.sh ret_coercion_71 unverifiable 'class MyValueType' object
-  
+
 ./make_ret_test.sh ret_coercion_72 unverifiable 'int32&' int32
 ./make_ret_test.sh ret_coercion_73 unverifiable 'int32&' 'native int'
 ./make_ret_test.sh ret_coercion_74 unverifiable 'int32&' int64
 ./make_ret_test.sh ret_coercion_75 unverifiable 'int32&' float64
 ./make_ret_test.sh ret_coercion_76 unverifiable 'int32&' object
-  
+
 ./make_ret_test.sh ret_coercion_77 unverifiable typedref int32
 ./make_ret_test.sh ret_coercion_78 unverifiable typedref 'native int'
 ./make_ret_test.sh ret_coercion_79 unverifiable typedref int64
@@ -1317,24 +1317,24 @@ do
 	LOCALS_1=''
 	CALL_1='ldc.i4.0'
 	SIG_1='int32'
-	
+
 	ARGS_2='int32 V, int32 V1'
 	LOCALS_2=''
 	CALL_2='ldc.i4.0\n\tldc.i4.0'
 	SIG_2='int32, int32'
-	
+
 	ARGS_3='int32 V, int32 V1, int32 V1'
 	LOCALS_3=''
 	CALL_3='ldc.i4.0\n\tldc.i4.0\n\tldc.i4.0'
 	SIG_3='int32, int32, int32'
-	
+
 	ARGS_4='int32 V, int32 V1, int32 V1, int32 V1'
 	LOCALS_4=''
 	CALL_4='ldc.i4.0\n\tldc.i4.0\n\tldc.i4.0\n\tldc.i4.0'
 	SIG_4='int32, int32, int32, int32'
 	MAX_PARAM_RESULT="unverifiable"
 	POPS="pop\npop\npop\npop\npop\npop\npop\npop\n"
-	
+
 	if [ "$OP" = "ldloc" ]; then
 		MAX_PARAM_RESULT="invalid"
 
@@ -1358,26 +1358,26 @@ do
 		CALL_4=''
 		SIG_4=''
 	fi;
-	
+
 	./make_load_test.sh ${OP}0_max_params "${MAX_PARAM_RESULT}" "${OP}.0" '' '' '' ''
 	./make_load_test.sh ${OP}1_max_params "${MAX_PARAM_RESULT}" "${OP}.1" '' '' '' ''
 	./make_load_test.sh ${OP}2_max_params "${MAX_PARAM_RESULT}" "${OP}.2" '' '' '' ''
 	./make_load_test.sh ${OP}3_max_params "${MAX_PARAM_RESULT}" "${OP}.3" '' '' '' ''
-	
+
 	./make_load_test.sh ${OP}1_1_max_params "${MAX_PARAM_RESULT}" "${OP}.1" "${ARGS_1}" "${LOCALS_1}" "${CALL_1}" "${SIG_1}"
 	./make_load_test.sh ${OP}2_1_max_params "${MAX_PARAM_RESULT}" "${OP}.2" "${ARGS_1}" "${LOCALS_1}" "${CALL_1}" "${SIG_1}"
 	./make_load_test.sh ${OP}3_1_max_params "${MAX_PARAM_RESULT}" "${OP}.3" "${ARGS_1}" "${LOCALS_1}" "${CALL_1}" "${SIG_1}"
-	
+
 	./make_load_test.sh ${OP}2_2_max_params "${MAX_PARAM_RESULT}" "${OP}.2" "${ARGS_2}" "${LOCALS_2}" "${CALL_2}" "${SIG_2}"
 	./make_load_test.sh ${OP}3_2_max_params "${MAX_PARAM_RESULT}" "${OP}.3" "${ARGS_2}" "${LOCALS_2}" "${CALL_2}" "${SIG_2}"
-	
+
 	./make_load_test.sh ${OP}3_3_max_params "${MAX_PARAM_RESULT}" "${OP}.3" "${ARGS_3}" "${LOCALS_3}" "${CALL_3}" "${SIG_3}"
-	
+
 	./make_load_test.sh ${OP}0_max_params valid "${OP}.0" "${ARGS_1}" "${LOCALS_1}" "${CALL_1}" "${SIG_1}"
 	./make_load_test.sh ${OP}1_max_params valid "${OP}.1" "${ARGS_2}" "${LOCALS_2}" "${CALL_2}" "${SIG_2}"
 	./make_load_test.sh ${OP}2_max_params valid "${OP}.2" "${ARGS_3}" "${LOCALS_3}" "${CALL_3}" "${SIG_3}"
 	./make_load_test.sh ${OP}3_max_params valid "${OP}.3" "${ARGS_4}" "${LOCALS_4}" "${CALL_4}" "${SIG_4}"
-	
+
 	./make_load_test.sh ${OP}0_stack_overflow invalid "${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${POPS}" "${ARGS_4}" "${LOCALS_4}" "${CALL_4}" "${SIG_4}"
 	./make_load_test.sh ${OP}1_stack_overflow invalid "${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${POPS}" "${ARGS_4}" "${LOCALS_4}" "${CALL_4}" "${SIG_4}"
 	./make_load_test.sh ${OP}2_stack_overflow invalid "${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${POPS}" "${ARGS_4}" "${LOCALS_4}" "${CALL_4}" "${SIG_4}"
@@ -1393,7 +1393,7 @@ do
 	./make_bool_branch_test.sh boolean_branch_${I}_3 valid ${OP} int32
 	./make_bool_branch_test.sh boolean_branch_${I}_4 valid ${OP} int64
 	./make_bool_branch_test.sh boolean_branch_${I}_5 valid ${OP} 'native int'
-	
+
 	#unmanaged pointers are not veriable types, all ops on unmanaged pointers are unverifiable
 	./make_bool_branch_test.sh boolean_branch_${I}_6 unverifiable ${OP} 'int32*'
 	./make_bool_branch_test.sh boolean_branch_${I}_8 unverifiable ${OP} 'method int32 *(int32)'
@@ -1407,7 +1407,7 @@ do
 	./make_bool_branch_test.sh boolean_branch_${I}_14 valid ${OP} 'class Template`1<object>'
 	./make_bool_branch_test.sh boolean_branch_${I}_15 valid ${OP} 'class Template`1<object>[]'
 	./make_bool_branch_test.sh boolean_branch_${I}_16 valid ${OP} 'class Template`1<object>[,,]'
-	
+
 	./make_bool_branch_test.sh boolean_branch_${I}_17 unverifiable ${OP} float32
 	./make_bool_branch_test.sh boolean_branch_${I}_18 unverifiable ${OP} float64
 	./make_bool_branch_test.sh boolean_branch_${I}_19 unverifiable ${OP} 'class MyValueType'
@@ -1846,7 +1846,7 @@ done
 
 #static members are different from instance members
 I=1
-for OP in "ldc.i4.0\n\t\tstsfld int32 Class::sfld" "ldsfld int32 Class::sfld\n\n\tpop" "ldsflda int32 Class::sfld\n\n\tpop" 
+for OP in "ldc.i4.0\n\t\tstsfld int32 Class::sfld" "ldsfld int32 Class::sfld\n\n\tpop" "ldsflda int32 Class::sfld\n\n\tpop"
 do
 	./make_access_test.sh access_check_41_${I} valid "$OP" public family yes
 	./make_access_test.sh access_check_42_${I} valid "$OP" public famandassem yes
@@ -2180,12 +2180,12 @@ done
 
 #ldobj tests
 function fix_ldobj () {
-	if [ "$3" != "" ]; then
-		A=$3;
-	elif [ "$2" != "" ]; then
-		A=$2;
+	if [ -n "$3" ]; then
+		A="$3";
+	elif [ -n "$2" ]; then
+		A="$2";
 	else
-		A=$1;
+		A="$1";
 	fi
 
 	if [ "$A" = "bool" ]; then
@@ -2207,7 +2207,7 @@ do
 	do
 		TYPE1="$(fix_ldobj $T1)"
 		TYPE2="$(fix_ldobj $T2)"
-		if [ "$TYPE1" = "$TYPE2" ] ; then
+		if [ "$TYPE1" = "$TYPE2" ]; then
 			./make_ldobj_test.sh ldobj_${I} valid "${T1}\&" "${T2}"
 		else
 			./make_ldobj_test.sh ldobj_${I} unverifiable "${T1}\&" "${T2}"
@@ -2220,16 +2220,16 @@ done
 
 #unverifiable
 #for T1 in "int8" "int64" "float64" "object" "string" "class Class" "int32[]" "int32[,]" "valuetype MyStruct" "valuetype MyStruct2" "int32 *" "valuetype MyStruct *" "method int32 *(int32)"
-for T1 in "native int" "int8*" "typedref" 
+for T1 in "native int" "int8*" "typedref"
 do
 	for T2 in "int8" "int64" "float64" "object" "string" "class Class" "int32[]" "int32[,]" "valuetype MyStruct" "valuetype MyStruct2"   "int32 *" "valuetype MyStruct *" "method int32 *(int32)" "native int"  "typedref" "class Template\`1<object>" "valuetype StructTemplate\`1<object>" "valuetype StructTemplate2\`1<object>"
-	do 
+	do
 		./make_ldobj_test.sh ldobj_${I} unverifiable "${T1}" "${T2}"
 		I=`expr $I + 1`
 	done
 done
 
-for T1 in "native int" "int8*" "typedref" 
+for T1 in "native int" "int8*" "typedref"
 do
 	./make_ldobj_test.sh ldobj_${I} invalid "${T1}" "typedref\&"
 	I=`expr $I + 1`
@@ -2240,9 +2240,9 @@ done
 #invalid
 #for T1 in "int8" "int64" "float64" "object" "string" "class Class" "int32[]" "int32[,]" "valuetype MyStruct" "valuetype MyStruct2" "int32 *" "valuetype MyStruct *" "method int32 *(int32)"
 for T1 in 'int8' 'native int'
-do	
+do
 	for T2 in "int8\&" "int64\&" "float64\&" "object\&" "string\&" "class Class\&" "valuetype MyStruct\&" "native int\&" "class Template\`1<object>\&" "valuetype StructTemplate\`1<object>\&"  "valuetype StructTemplate2\`1<object>\&" "class [mscorlib]ExampleMM" "class [mscorlib]ExampleMM\&"
-	do 
+	do
 		./make_ldobj_test.sh ldobj_${I} invalid "${T1}" "${T2}"
 		I=`expr $I + 1`
 	done
@@ -2427,7 +2427,7 @@ done
 
 
 I=1
-for TYPE in "int32" "unsigned int32" "native int" "native unsigned int" 
+for TYPE in "int32" "unsigned int32" "native int" "native unsigned int"
 do
 	./make_load_indirect_test.sh indirect_load_i_${I} valid "ldind.i" "${TYPE}"
 	I=`expr $I + 1`
@@ -2523,14 +2523,14 @@ I=1
 for TYPE1 in "int8" "bool" "int32" "native int"
 do
 	./make_store_indirect_test.sh indirect_store_bad_addr_i2_${I} unverifiable "stind.i2" "${TYPE1}\&" "int16"
-	./make_store_indirect_test.sh indirect_store_good_val_i2_${I} valid "stind.i2" "int16\&" "${TYPE1}" 
+	./make_store_indirect_test.sh indirect_store_good_val_i2_${I} valid "stind.i2" "int16\&" "${TYPE1}"
 	I=`expr $I + 1`
 done
 
 for TYPE1 in "int64" "float32" "float64" "object" "string" "class Class" "valuetype MyStruct"  "int32[]" "int32[,]" "int32*" "method int32 *(int32)"  "class Template\`1<object>"
 do
 	./make_store_indirect_test.sh indirect_store_bad_addr_i2_${I} unverifiable "stind.i2" "${TYPE1}\&" "int16"
-	./make_store_indirect_test.sh indirect_store_bad_val_i2_${I} unverifiable "stind.i2" "int16\&" "${TYPE1}" 
+	./make_store_indirect_test.sh indirect_store_bad_val_i2_${I} unverifiable "stind.i2" "int16\&" "${TYPE1}"
 	I=`expr $I + 1`
 done
 
@@ -2589,14 +2589,14 @@ done
 I=1
 for TYPE1 in "int8" "bool" "int16" "char"
 do
-	./make_store_indirect_test.sh indirect_store_bad_addr_i_${I} unverifiable "stind.i" "${TYPE1}\&" "native int" 
+	./make_store_indirect_test.sh indirect_store_bad_addr_i_${I} unverifiable "stind.i" "${TYPE1}\&" "native int"
 	./make_store_indirect_test.sh indirect_store_good_val_i_${I} valid "stind.i" "native int\&" "${TYPE1}"
 	I=`expr $I + 1`
 done
 
 for TYPE1 in "int64" "float32" "float64" "object" "string" "class Class" "valuetype MyStruct"  "int32[]" "int32[,]" "int32*" "method int32 *(int32)"  "class Template\`1<object>"
 do
-	./make_store_indirect_test.sh indirect_store_bad_addr_i_${I} unverifiable "stind.i" "${TYPE1}\&" "native int" 
+	./make_store_indirect_test.sh indirect_store_bad_addr_i_${I} unverifiable "stind.i" "${TYPE1}\&" "native int"
 	./make_store_indirect_test.sh indirect_store_bad_val_i_${I} unverifiable "stind.i" "native int\&" "${TYPE1}"
 	I=`expr $I + 1`
 done
@@ -2701,7 +2701,7 @@ done
 ./make_ldelema_test.sh ldelema_empty_stack_3 invalid "pop" "ldc.i4.0" "int32"
 
 I=1
-for ARR in "int8" "int16" "int32" 
+for ARR in "int8" "int16" "int32"
 do
  ./make_ldelema_test.sh ldelema_size_compat_${I} valid "newarr ${ARR}" "ldc.i4.0" "unsigned ${ARR}"
   I=`expr $I + 1`
@@ -2722,12 +2722,12 @@ done
 ./make_ldelema_test.sh ldelema_misc_size_compat_3 valid "newarr native int" "ldc.i4.0" "int32"
 ./make_ldelema_test.sh ldelema_misc_size_compat_4 valid "newarr native unsigned int" "ldc.i4.0" "int32"
 
-./make_ldelema_test.sh ldelema_misc_size_compat_5 valid "newarr int8" "ldc.i4.0" "bool" 
+./make_ldelema_test.sh ldelema_misc_size_compat_5 valid "newarr int8" "ldc.i4.0" "bool"
 ./make_ldelema_test.sh ldelema_misc_size_compat_6 valid "newarr int16" "ldc.i4.0" "char"
 ./make_ldelema_test.sh ldelema_misc_size_compat_7 valid "newarr int32" "ldc.i4.0" "native int"
 ./make_ldelema_test.sh ldelema_misc_size_compat_8 valid "newarr int32" "ldc.i4.0" "native unsigned int"
 
-./make_ldelema_test.sh ldelema_misc_size_compat_9 valid "newarr unsigned int8" "ldc.i4.0" "bool" 
+./make_ldelema_test.sh ldelema_misc_size_compat_9 valid "newarr unsigned int8" "ldc.i4.0" "bool"
 ./make_ldelema_test.sh ldelema_misc_size_compat_10 valid "newarr unsigned int16" "ldc.i4.0" "char"
 ./make_ldelema_test.sh ldelema_misc_size_compat_11 valid "newarr unsigned int32" "ldc.i4.0" "native int"
 ./make_ldelema_test.sh ldelema_misc_size_compat_12 valid "newarr unsigned int32" "ldc.i4.0" "native unsigned int"
@@ -2804,7 +2804,7 @@ do
 	I=`expr $I + 1`
 done
 
-for ARR in "int32" "unsigned int32" "IntEnum" 
+for ARR in "int32" "unsigned int32" "IntEnum"
 do
 	./make_ldelem_test.sh ldelem_base_types_i_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.i4"
 	./make_ldelem_test.sh ldelem_base_types_u_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.u4"
@@ -2876,7 +2876,7 @@ do
 	I=`expr $I + 1`
 done
 
-for ARR in "valuetype MyStruct" "int8" "bool" "unsigned int8" "int16" "char" "unsigned int16" "int32" "unsigned int32" "native int" "native unsigned int" "int64" "unsigned int64" "float32" "float64" 
+for ARR in "valuetype MyStruct" "int8" "bool" "unsigned int8" "int16" "char" "unsigned int16" "int32" "unsigned int32" "native int" "native unsigned int" "int64" "unsigned int64" "float32" "float64"
 do
 	./make_ldelem_test.sh ldelem_base_types_o_${I} unverifiable "newarr ${ARR}" "ldc.i4.0" "ldelem.ref"
 	I=`expr $I + 1`
@@ -3187,7 +3187,7 @@ done
 #object
 
 I=1
-for LOAD in "ldloc.0" "ldnull" 
+for LOAD in "ldloc.0" "ldnull"
 do
 	./make_cast_test.sh cast_good_obj_${I} valid "object" "$LOAD" "castclass object"
 	./make_cast_test.sh isinst_good_obj_${I} valid "object" "$LOAD" "isinst object"
@@ -3349,7 +3349,7 @@ done
 #branching in the middle of an instruction
 ./make_branch_test.sh branch_middle_of_instruction invalid 1 "br 2";
 
-#branching in between prefix and instruction 
+#branching in between prefix and instruction
 ./make_branch_test.sh branch_middle_of_instruction_prefix_1 invalid 1 "br AFTER_FIRST_PREFIX";
 ./make_branch_test.sh branch_middle_of_instruction_prefix_2 invalid 1 "br AFTER_SECOND_PREFIX";
 
@@ -3408,7 +3408,7 @@ done
 #regions must not overlap with each other
 ./make_exception_overlap_test.sh exception_entry_overlap_separate_1 valid ".try TRY_BLOCK_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END"
 
-./make_exception_overlap_test.sh exception_entry_overlap_separate_2 valid ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END" ".try TRY_BLOCK_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" 
+./make_exception_overlap_test.sh exception_entry_overlap_separate_2 valid ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END" ".try TRY_BLOCK_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END"
 
 ./make_exception_overlap_test.sh exception_entry_overlap_try_over_catch invalid ".try TRY_BLOCK_1 to CATCH_BLOCK_1_A catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END"
 
@@ -3590,7 +3590,7 @@ done
 
 #tests for ovf opcodes
 I=1
-for OP in "add.ovf" "add.ovf.un" "mul.ovf" "mul.ovf.un" "sub.ovf" "sub.ovf.un" 
+for OP in "add.ovf" "add.ovf.un" "mul.ovf" "mul.ovf.un" "sub.ovf" "sub.ovf.un"
 do
 	for TYPE in "object" "string" "float32" "float64" "int32*" "typedref" "int32[]" "int32[,]" "method int32 *(int32)"
 	do
@@ -3613,8 +3613,8 @@ do
 		I=`expr $I + 1`
 	done
 done
-	
-for OP in "add.ovf.un" "sub.ovf.un" 
+
+for OP in "add.ovf.un" "sub.ovf.un"
 do
 	for TYPE in "int32" "native int" "int32&"
 	do
@@ -3682,20 +3682,20 @@ done
 I=1
 for TYPE in "int32" "int64" "float32" "float64" Class MyStruct string object "int32[]" "int32[,]" "native int"
 do
-	./make_stobj_test.sh stobj_simple_${I} valid "$TYPE" "$TYPE\&" "$TYPE" 
+	./make_stobj_test.sh stobj_simple_${I} valid "$TYPE" "$TYPE\&" "$TYPE"
 	I=`expr $I + 1`
 done
 
 
 for TYPE in "int32*" "method int32 *(int32)"
 do
-	./make_stobj_test.sh stobj_simple_${I} unverifiable "$TYPE" "$TYPE\&" "$TYPE" 
+	./make_stobj_test.sh stobj_simple_${I} unverifiable "$TYPE" "$TYPE\&" "$TYPE"
 	I=`expr $I + 1`
 done
 
 for TYPE in "int32\&" "void" "typedref"
 do
-	./make_stobj_test.sh stobj_simple_${I} invalid "$TYPE" "$TYPE\&" "$TYPE" 
+	./make_stobj_test.sh stobj_simple_${I} invalid "$TYPE" "$TYPE\&" "$TYPE"
 	I=`expr $I + 1`
 done
 
@@ -3703,7 +3703,7 @@ done
 I=1
 for TYPE in "int32\&" "int32*" "typedref"
 do
-	./make_stobj_test.sh stobj_bad_src_${I} unverifiable "$TYPE" "int32\&" "int32" 
+	./make_stobj_test.sh stobj_bad_src_${I} unverifiable "$TYPE" "int32\&" "int32"
 	I=`expr $I + 1`
 done
 
@@ -3711,27 +3711,27 @@ done
 I=1
 for TYPE in "int32" "int64" "float32" "float64" Class MyStruct string object "int32[]" "int32[,]" "native int"
 do
-	./make_stobj_test.sh stobj_dest_not_managed_pointer_${I} unverifiable "$TYPE" "$TYPE" "$TYPE" 
+	./make_stobj_test.sh stobj_dest_not_managed_pointer_${I} unverifiable "$TYPE" "$TYPE" "$TYPE"
 	I=`expr $I + 1`
 done
 
 #src is compat to dest
 I=1
 for TYPE in "int8" "unsigned int8" "bool" "int16" "unsigned int16" "char" "int32" "unsigned int32" "native int" "native unsigned int"
-do 
-	./make_stobj_test.sh stobj_src_compat_to_token_${I} valid "$TYPE" "int32\&" "int32" 
+do
+	./make_stobj_test.sh stobj_src_compat_to_token_${I} valid "$TYPE" "int32\&" "int32"
 	I=`expr $I + 1`
 done
 
 for TYPE in "int64" "unsigned int64" "float32" "float64" string object
-do 
-	./make_stobj_test.sh stobj_src_compat_to_token_${I} unverifiable "$TYPE" "int32\&" "int32" 
+do
+	./make_stobj_test.sh stobj_src_compat_to_token_${I} unverifiable "$TYPE" "int32\&" "int32"
 	I=`expr $I + 1`
 done
 
 for TYPE in string object Class
-do 
-	./make_stobj_test.sh stobj_src_compat_to_token_${I} valid "$TYPE" "object\&" "object" 
+do
+	./make_stobj_test.sh stobj_src_compat_to_token_${I} valid "$TYPE" "object\&" "object"
 	I=`expr $I + 1`
 done
 
@@ -3741,8 +3741,8 @@ done
 
 #token type subtype of dest_type
 for TYPE in string object Class "int32[]" "int32[,]"
-do 
-	./make_stobj_test.sh stobj_token_subtype_of_dest_${I} valid "$TYPE" "object\&" "$TYPE" 
+do
+	./make_stobj_test.sh stobj_token_subtype_of_dest_${I} valid "$TYPE" "object\&" "$TYPE"
 	I=`expr $I + 1`
 done
 
@@ -3930,7 +3930,7 @@ done
 
 #valid types
 I=1
-for INIT in "ldc.i4.1" "ldc.i4.1\n\tconv.i" 
+for INIT in "ldc.i4.1" "ldc.i4.1\n\tconv.i"
 do
 	./make_localloc_test.sh localloc_stack_type_$I unverifiable "$INIT"
 	I=`expr $I + 1`
@@ -3944,7 +3944,7 @@ do
 done
 
 #stack underflow
-./make_localloc_test.sh localloc_empty_stack invalid 
+./make_localloc_test.sh localloc_empty_stack invalid
 ./make_localloc_test.sh localloc_stack_with_more_than_2_items invalid "ldc.i4.1\n\tldc.i4.1"
 
 #inside exception blocks
@@ -3964,7 +3964,7 @@ done
 #call test
 #invalid method token
 #valid
-#validate the this pointer for signatures with HASTHIS. 
+#validate the this pointer for signatures with HASTHIS.
 #this ptr: reference types must be a value, value type can be a MP or a BT.
 #number of args
 #args are compatible
@@ -4006,7 +4006,7 @@ done
 ./make_call_test.sh call_final_virtual_method_2 unverifiable "call instance void ClassC::VirtMethod()" "newobj instance void ClassA::.ctor()"
 ./make_call_test.sh call_final_virtual_method_3 unverifiable "call instance void ClassA::VirtMethod()" "newobj instance void ClassA::.ctor()"
 
-./make_call_test.sh call_virtual_method_3 unverifiable "call instance void BaseClass::VirtMethod()" "ldarg.0" "instance" "ldarg.0\n\t\tstarg 0" 
+./make_call_test.sh call_virtual_method_3 unverifiable "call instance void BaseClass::VirtMethod()" "ldarg.0" "instance" "ldarg.0\n\t\tstarg 0"
 ./make_call_test.sh call_virtual_method_4 unverifiable "call instance void BaseClass::VirtMethod()" "ldarg.0" "instance" "ldarga 0\n\t\tpop"
 
 #value type (we can call non final virtual on boxed VT)
@@ -4030,7 +4030,7 @@ done
 ./make_call_test.sh callvirt_final_virtual_method_2 unverifiable "callvirt instance void ClassC::VirtMethod()" "newobj instance void ClassA::.ctor()"
 ./make_call_test.sh callvirt_final_virtual_method_3 valid "callvirt instance void ClassA::VirtMethod()" "newobj instance void ClassA::.ctor()"
 
-./make_call_test.sh callvirt_virtual_method_3 valid "callvirt instance void BaseClass::VirtMethod()" "ldarg.0" "instance" "ldarg.0\n\t\tstarg 0" 
+./make_call_test.sh callvirt_virtual_method_3 valid "callvirt instance void BaseClass::VirtMethod()" "ldarg.0" "instance" "ldarg.0\n\t\tstarg 0"
 ./make_call_test.sh callvirt_virtual_method_4 valid "callvirt instance void BaseClass::VirtMethod()" "ldarg.0" "instance" "ldarga 0\n\t\tpop"
 
 #value type (we can call non final virtual on boxed VT)
@@ -4227,7 +4227,7 @@ done
 
 ./make_delegate_compat_test.sh delegate_pointers_ret_1 unverifiable "object*" "string*" int32 int32
 ./make_delegate_compat_test.sh delegate_pointers_ret_2 unverifiable "InterfaceA*" "ImplA*" int32 int32
-./make_delegate_compat_test.sh delegate_pointers_ret_3 unverifiable "string*" "object*" int32 int32 
+./make_delegate_compat_test.sh delegate_pointers_ret_3 unverifiable "string*" "object*" int32 int32
 ./make_delegate_compat_test.sh delegate_pointers_ret_4 unverifiable  "int32*" "int32*" int32 int32
 
 
@@ -4278,8 +4278,8 @@ done
 I=1
 for TYPE in "ldind.i1 int8" "ldind.u1 int8" "ldind.i2 int16" "ldind.u2 int16" "ldind.i4 int32" "ldind.u4 int32" "ldind.i8 int64" "ldind.u8 int64" "ldind.i native int" "ldind.r4 float32" "ldind.r8 float64"
 do
-	LOAD=`echo $TYPE | cut -d' ' -f 1` 
-	TYPE=`echo $TYPE | cut -d' ' -f 2-` 
+	LOAD=`echo $TYPE | cut -d' ' -f 1`
+	TYPE=`echo $TYPE | cut -d' ' -f 2-`
 	./make_cmmp_test.sh cmmp_basic_test_ro_$I valid "readonly. ldelema $TYPE" "$LOAD" "$TYPE"
 	./make_cmmp_test.sh cmmp_basic_test_ub_$I valid "unbox $TYPE" "$LOAD" "$TYPE"
 	I=`expr $I + 1`
@@ -4333,8 +4333,8 @@ done
 I=1
 for TYPE in "stind.i1 int8" "stind.i2 int16" "stind.i4 int32" "stind.i8 int64" "stind.r4 float32" "stind.r8 float64" "stind.i native int"
 do
-	STORE=`echo $TYPE | cut -d' ' -f 1` 
-	TYPE=`echo $TYPE | cut -d' ' -f 2-` 
+	STORE=`echo $TYPE | cut -d' ' -f 1`
+	TYPE=`echo $TYPE | cut -d' ' -f 2-`
 	./make_cmmp_test.sh cmmp_bad_ops_test_ro_$I unverifiable "readonly. ldelema $TYPE" "ldloc.0\n\t$STORE" "$TYPE"
 	./make_cmmp_test.sh cmmp_bad_ops_test_ub_$I unverifiable "unbox $TYPE" "ldloc.0\n\t$STORE" "$TYPE"
 	I=`expr $I + 1`
@@ -4667,7 +4667,7 @@ do
 	I=`expr $I + 1`
 done
 
-for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl 
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl
 do
 	./make_type_constraint_test.sh type_constraint_system_enum_ctor_ct_$I invalid "$TYPE" ".ctor (class [mscorlib]System.Enum)"
 	./make_type_constraint_test.sh type_constraint_system_enum_vt_ct_$I invalid "$TYPE" "valuetype (class [mscorlib]System.Enum)"
@@ -4761,8 +4761,8 @@ done
 I=1
 for TYPE in "stind.i1 int8" "stind.i2 int16" "stind.i4 int32" "stind.i8 int64" "stind.r4 float32" "stind.r8 float64" "stind.i native int"
 do
-	STORE=`echo $TYPE | cut -d' ' -f 1` 
-	TYPE=`echo $TYPE | cut -d' ' -f 2-` 
+	STORE=`echo $TYPE | cut -d' ' -f 1`
+	TYPE=`echo $TYPE | cut -d' ' -f 2-`
 	./make_prefix_test.sh "prefix_test_stind_volatile_$I" valid "volatile. $STORE" "ldloca 0\n\tldloc.0" "$TYPE"
 	./make_prefix_test.sh "prefix_test_stind_unaligned_$I" valid  "unaligned. 1 $STORE" "ldloca 0\n\tldloc.0" "$TYPE"
 	I=`expr $I + 1`
@@ -4776,8 +4776,8 @@ done
 I=1
 for TYPE in "ldind.i1 int8" "ldind.u1 unsigned int8" "ldind.i2 int16" "ldind.u2 unsigned int16" "ldind.i4 int32" "ldind.u4 unsigned int32" "ldind.i8 int64" "ldind.u8 unsigned int64" "ldind.r4 float32" "ldind.r8 float64" "ldind.i native int"
 do
-	STORE=`echo $TYPE | cut -d' ' -f 1` 
-	TYPE=`echo $TYPE | cut -d' ' -f 2-` 
+	STORE=`echo $TYPE | cut -d' ' -f 1`
+	TYPE=`echo $TYPE | cut -d' ' -f 2-`
 	./make_prefix_test.sh "prefix_test_ldind_volatile_$I" valid "volatile. $STORE" "ldloca 0" "$TYPE"
 	./make_prefix_test.sh "prefix_test_ldind_unaligned_$I" valid  "unaligned. 1 $STORE" "ldloca 0" "$TYPE"
 	I=`expr $I + 1`
@@ -5133,7 +5133,7 @@ done
 ./make_generic_argument_constraints_test.sh no_constraints valid "" ""
 
 I=1
-for SRC in "(IfaceA)" "(IfaceB)" "(IfaceA, IfaceB)" ".ctor" "class" 
+for SRC in "(IfaceA)" "(IfaceB)" "(IfaceA, IfaceB)" ".ctor" "class"
 do
 	./make_generic_argument_constraints_test.sh src_ctrs_only_${I} unverifiable "$SRC" ""
 	I=`expr $I + 1`

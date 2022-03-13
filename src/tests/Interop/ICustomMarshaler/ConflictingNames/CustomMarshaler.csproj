@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>library</OutputType>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CustomMarshaler.cs" />

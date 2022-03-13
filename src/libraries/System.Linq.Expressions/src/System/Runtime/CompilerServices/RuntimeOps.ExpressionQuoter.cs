@@ -21,7 +21,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="hoistedLocals">The hoisted local state provided by the compiler.</param>
         /// <param name="locals">The actual hoisted local values.</param>
         /// <returns>The quoted expression.</returns>
-        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("RuntimeOps has been deprecated and is not supported.", true), EditorBrowsable(EditorBrowsableState.Never)]
         [return: NotNullIfNotNull("expression")]
         public static Expression? Quote(Expression? expression, object hoistedLocals, object[] locals)
         {
@@ -37,7 +37,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="second">The second list.</param>
         /// <param name="indexes">The index array indicating which list to get variables from.</param>
         /// <returns>The merged runtime variables.</returns>
-        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("RuntimeOps has been deprecated and is not supported.", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static IRuntimeVariables MergeRuntimeVariables(IRuntimeVariables first, IRuntimeVariables second, int[] indexes)
         {
             return new MergedRuntimeVariables(first, second, indexes);

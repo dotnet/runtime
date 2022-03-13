@@ -9,17 +9,13 @@ using System.Runtime.InteropServices;
 using System.IO;
 using System.Text;
 
-#if MS_IO_REDIST
-namespace Microsoft.IO
-#else
 namespace System.IO
-#endif
 {
     internal static partial class FileSystem
     {
         public static bool DirectoryExists(string? fullPath)
         {
-            return DirectoryExists(fullPath, out int lastError);
+            return DirectoryExists(fullPath, out _);
         }
 
         private static bool DirectoryExists(string? path, out int lastError)

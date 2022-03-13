@@ -18,6 +18,8 @@ class CILJit : public ICorJitCompiler
                               );
 
     unsigned getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags);
+
+    void setTargetOS(CORINFO_OS os);
 };
 
 /*****************************************************************************
@@ -54,9 +56,21 @@ bool Compiler::eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 FORCEINLINE
-bool Compiler::eeIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+bool Compiler::eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn)
 {
-    return info.compCompHnd->isJitIntrinsic(ftn);
+    return info.compCompHnd->isIntrinsic(ftn);
+}
+
+FORCEINLINE
+bool Compiler::eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
+{
+    return info.compCompHnd->isFieldStatic(fldHnd);
+}
+
+FORCEINLINE
+var_types Compiler::eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE* pStructHnd)
+{
+    return JITtype2varType(info.compCompHnd->getFieldType(fldHnd, pStructHnd));
 }
 
 FORCEINLINE
@@ -279,12 +293,4 @@ inline var_types JitType2PreciseVarType(CorInfoType type)
 inline CORINFO_CALLINFO_FLAGS combine(CORINFO_CALLINFO_FLAGS flag1, CORINFO_CALLINFO_FLAGS flag2)
 {
     return (CORINFO_CALLINFO_FLAGS)(flag1 | flag2);
-}
-inline CORINFO_CALLINFO_FLAGS Compiler::addVerifyFlag(CORINFO_CALLINFO_FLAGS flags)
-{
-    if (tiVerificationNeeded)
-    {
-        flags = combine(flags, CORINFO_CALLINFO_VERIFICATION);
-    }
-    return flags;
 }

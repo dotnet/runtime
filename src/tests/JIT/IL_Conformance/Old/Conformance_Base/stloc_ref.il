@@ -29,4 +29,4 @@ FAIL:
 	ret
 }
 }
-.assembly stloc_ref.exe{}
+.assembly stloc_ref{}

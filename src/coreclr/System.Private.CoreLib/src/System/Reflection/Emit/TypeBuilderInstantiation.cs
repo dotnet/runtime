@@ -24,13 +24,11 @@ namespace System.Reflection.Emit
             if (!type.IsGenericTypeDefinition)
                 throw new InvalidOperationException();
 
-            if (typeArguments == null)
-                throw new ArgumentNullException(nameof(typeArguments));
+            ArgumentNullException.ThrowIfNull(typeArguments);
 
             foreach (Type t in typeArguments)
             {
-                if (t == null)
-                    throw new ArgumentNullException(nameof(typeArguments));
+                ArgumentNullException.ThrowIfNull(t, nameof(typeArguments));
             }
 
             return new TypeBuilderInstantiation(type, typeArguments);
@@ -251,6 +249,8 @@ namespace System.Reflection.Emit
         }
         public override MethodBase? DeclaringMethod => null;
         public override Type GetGenericTypeDefinition() { return m_type; }
+
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] inst) { throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this)); }
         public override bool IsAssignableFrom([NotNullWhen(true)] Type? c) { throw new NotSupportedException(); }
 

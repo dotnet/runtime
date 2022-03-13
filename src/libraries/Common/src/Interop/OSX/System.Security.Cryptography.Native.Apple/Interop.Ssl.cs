@@ -46,6 +46,7 @@ internal static partial class Interop
             WouldBlock,
             ServerAuthCompleted,
             ClientAuthCompleted,
+            ClientCertRequested,
         }
 
         internal enum PAL_TlsIo
@@ -57,97 +58,124 @@ internal static partial class Interop
             Renegotiate,
         }
 
-        [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslCreateContext")]
-        internal static extern System.Net.SafeSslHandle SslCreateContext(int isServer);
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslCreateContext")]
+        internal static partial System.Net.SafeSslHandle SslCreateContext(int isServer);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SslSetMinProtocolVersion(
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetConnection")]
+        internal static partial int SslSetConnection(
+            SafeSslHandle sslHandle,
+            IntPtr sslConnection);
+
+        [LibraryImport(Interop.Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SslSetMinProtocolVersion(
             SafeSslHandle sslHandle,
             SslProtocols minProtocolId);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SslSetMaxProtocolVersion(
+        [LibraryImport(Interop.Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SslSetMaxProtocolVersion(
             SafeSslHandle sslHandle,
             SslProtocols maxProtocolId);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SslCopyCertChain(
+        [LibraryImport(Interop.Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SslCopyCertChain(
             SafeSslHandle sslHandle,
             out SafeX509ChainHandle pTrustOut,
             out int pOSStatus);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SslCopyCADistinguishedNames(
+        [LibraryImport(Interop.Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SslCopyCADistinguishedNames(
             SafeSslHandle sslHandle,
             out SafeCFArrayHandle pArrayOut,
             out int pOSStatus);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SslSetBreakOnServerAuth(
+        [LibraryImport(Interop.Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SslSetBreakOnServerAuth(
             SafeSslHandle sslHandle,
             int setBreak,
             out int pOSStatus);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SslSetBreakOnClientAuth(
+        [LibraryImport(Interop.Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SslSetBreakOnClientAuth(
             SafeSslHandle sslHandle,
             int setBreak,
             out int pOSStatus);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SslSetCertificate(
+        [LibraryImport(Interop.Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SslSetBreakOnCertRequested(
+            SafeSslHandle sslHandle,
+            int setBreak,
+            out int pOSStatus);
+
+        [LibraryImport(Interop.Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SslSetCertificate(
             SafeSslHandle sslHandle,
             SafeCreateHandle cfCertRefs);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SslSetTargetName(
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, StringMarshalling = StringMarshalling.Utf8)]
+        private static partial int AppleCryptoNative_SslSetTargetName(
             SafeSslHandle sslHandle,
             string targetName,
             int cbTargetName,
             out int osStatus);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SSLSetALPNProtocols")]
-        internal static extern int SSLSetALPNProtocols(SafeSslHandle ctx, SafeCreateHandle cfProtocolsRefs, out int osStatus);
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SSLSetALPNProtocols")]
+        internal static partial int SSLSetALPNProtocols(SafeSslHandle ctx, SafeCreateHandle cfProtocolsRefs, out int osStatus);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslGetAlpnSelected")]
-        internal static extern int SslGetAlpnSelected(SafeSslHandle ssl, out SafeCFDataHandle protocol);
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslGetAlpnSelected")]
+        internal static partial int SslGetAlpnSelected(SafeSslHandle ssl, out SafeCFDataHandle protocol);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslHandshake")]
-        internal static extern PAL_TlsHandshakeState SslHandshake(SafeSslHandle sslHandle);
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslHandshake")]
+        internal static partial PAL_TlsHandshakeState SslHandshake(SafeSslHandle sslHandle);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SslSetAcceptClientCert(SafeSslHandle sslHandle);
+        [LibraryImport(Interop.Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SslSetAcceptClientCert(SafeSslHandle sslHandle);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetIoCallbacks")]
-        internal static extern int SslSetIoCallbacks(
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetIoCallbacks")]
+        internal static unsafe partial int SslSetIoCallbacks(
             SafeSslHandle sslHandle,
-            SSLReadFunc readCallback,
-            SSLWriteFunc writeCallback);
+            delegate* unmanaged<IntPtr, byte*, void**, int> readCallback,
+            delegate* unmanaged<IntPtr, byte*, void**, int> writeCallback);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslWrite")]
-        internal static extern unsafe PAL_TlsIo SslWrite(SafeSslHandle sslHandle, byte* writeFrom, int count, out int bytesWritten);
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslWrite")]
+        internal static unsafe partial PAL_TlsIo SslWrite(SafeSslHandle sslHandle, byte* writeFrom, int count, out int bytesWritten);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslRead")]
-        internal static extern unsafe PAL_TlsIo SslRead(SafeSslHandle sslHandle, byte* writeFrom, int count, out int bytesWritten);
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslRead")]
+        internal static unsafe partial PAL_TlsIo SslRead(SafeSslHandle sslHandle, byte* writeFrom, int count, out int bytesWritten);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SslIsHostnameMatch(
+        [LibraryImport(Interop.Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SslIsHostnameMatch(
             SafeSslHandle handle,
             SafeCreateHandle cfHostname,
             SafeCFDateHandle cfValidTime,
             out int pOSStatus);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslShutdown")]
-        internal static extern int SslShutdown(SafeSslHandle sslHandle);
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslShutdown")]
+        internal static partial int SslShutdown(SafeSslHandle sslHandle);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslGetCipherSuite")]
-        internal static extern int SslGetCipherSuite(SafeSslHandle sslHandle, out TlsCipherSuite cipherSuite);
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslGetCipherSuite")]
+        internal static partial int SslGetCipherSuite(SafeSslHandle sslHandle, out TlsCipherSuite cipherSuite);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslGetProtocolVersion")]
-        internal static extern int SslGetProtocolVersion(SafeSslHandle sslHandle, out SslProtocols protocol);
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslGetProtocolVersion")]
+        internal static partial int SslGetProtocolVersion(SafeSslHandle sslHandle, out SslProtocols protocol);
 
-        [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetEnabledCipherSuites")]
-        internal static extern unsafe int SslSetEnabledCipherSuites(SafeSslHandle sslHandle, uint* cipherSuites, int numCipherSuites);
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetEnabledCipherSuites")]
+        internal static unsafe partial int SslSetEnabledCipherSuites(SafeSslHandle sslHandle, uint* cipherSuites, int numCipherSuites);
+
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetCertificateAuthorities")]
+        internal static partial int SslSetCertificateAuthorities(SafeSslHandle sslHandle, SafeCreateHandle certificateOrArray, int replaceExisting);
+
+        internal static unsafe void SslSetCertificateAuthorities(SafeSslHandle sslHandle, Span<IntPtr> certificates, bool replaceExisting)
+        {
+            using (SafeCreateHandle cfCertRefs = CoreFoundation.CFArrayCreate(certificates))
+            {
+                int osStatus = SslSetCertificateAuthorities(sslHandle, cfCertRefs, replaceExisting ? 1 : 0);
+
+                if (osStatus != 0)
+                {
+                    throw CreateExceptionForOSStatus(osStatus);
+                }
+            }
+        }
 
         internal static void SslSetAcceptClientCert(SafeSslHandle sslHandle)
         {
@@ -258,6 +286,25 @@ internal static partial class Interop
             }
 
             Debug.Fail($"AppleCryptoNative_SslSetBreakOnClientAuth returned {result}");
+            throw new SslException();
+        }
+
+        internal static void SslBreakOnCertRequested(SafeSslHandle sslHandle, bool setBreak)
+        {
+            int osStatus;
+            int result = AppleCryptoNative_SslSetBreakOnCertRequested(sslHandle, setBreak ? 1 : 0, out osStatus);
+
+            if (result == 1)
+            {
+                return;
+            }
+
+            if (result == 0)
+            {
+                throw CreateExceptionForOSStatus(osStatus);
+            }
+
+            Debug.Fail($"AppleCryptoNative_SslSetBreakOnCertRequested returned {result}");
             throw new SslException();
         }
 

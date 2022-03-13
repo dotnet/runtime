@@ -152,13 +152,8 @@ namespace System.Text.Json.Nodes
         }
 
         /// <inheritdoc/>
-        public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
+        public override void WriteTo(Utf8JsonWriter writer!!, JsonSerializerOptions? options = null)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
             if (_jsonElement.HasValue)
             {
                 _jsonElement.Value.WriteTo(writer);
@@ -168,7 +163,7 @@ namespace System.Text.Json.Nodes
                 CreateNodes();
                 Debug.Assert(_list != null);
 
-                options ??= JsonSerializerOptions.s_defaultOptions;
+                options ??= JsonSerializerOptions.Default;
 
                 writer.WriteStartArray();
 
@@ -214,7 +209,7 @@ namespace System.Text.Json.Nodes
         }
 
         [ExcludeFromCodeCoverage] // Justification = "Design-time"
-        private class DebugView
+        private sealed class DebugView
         {
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
             private JsonArray _node;

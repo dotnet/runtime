@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.IO.Strategies;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -24,7 +24,29 @@ namespace System.IO
         {
             ValidateInput(handle, fileOffset: 0);
 
-            return GetFileLength(handle);
+            return handle.GetFileLength();
+        }
+
+        /// <summary>
+        /// Sets the length of the file to the given value.
+        /// </summary>
+        /// <param name="handle">The file handle.</param>
+        /// <param name="length">A long value representing the length of the file in bytes.</param>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
+        /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
+        /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
+        /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
+        /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="length" /> is negative.</exception>
+        public static void SetLength(SafeFileHandle handle, long length)
+        {
+            ValidateInput(handle, fileOffset: 0);
+
+            if (length < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(nameof(length));
+            }
+
+            SetFileLength(handle, length);
         }
 
         /// <summary>
@@ -264,9 +286,9 @@ namespace System.IO
         }
 
         private static ValueTask<int> ScheduleSyncReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer,
-            long fileOffset, CancellationToken cancellationToken)
+            long fileOffset, CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
         {
-            return handle.GetThreadPoolValueTaskSource().QueueRead(buffer, fileOffset, cancellationToken);
+            return handle.GetThreadPoolValueTaskSource().QueueRead(buffer, fileOffset, cancellationToken, strategy);
         }
 
         private static ValueTask<long> ScheduleSyncReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
@@ -276,9 +298,9 @@ namespace System.IO
         }
 
         private static ValueTask ScheduleSyncWriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer,
-            long fileOffset, CancellationToken cancellationToken)
+            long fileOffset, CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
         {
-            return handle.GetThreadPoolValueTaskSource().QueueWrite(buffer, fileOffset, cancellationToken);
+            return handle.GetThreadPoolValueTaskSource().QueueWrite(buffer, fileOffset, cancellationToken, strategy);
         }
 
         private static ValueTask ScheduleSyncWriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,

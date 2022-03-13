@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Sockets
 {
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static class SocketTaskExtensions
     {
         [EditorBrowsable(EditorBrowsableState.Never)]

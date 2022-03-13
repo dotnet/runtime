@@ -18,14 +18,17 @@ namespace System.Net.Quic.Tests
     public sealed class MockQuicStreamConformanceTests : QuicStreamConformanceTests
     {
         protected override QuicImplementationProvider Provider => QuicImplementationProviders.Mock;
+        protected override bool BlocksOnZeroByteReads => true;
     }
 
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
+    [Collection(nameof(DisableParallelization))]
     public sealed class MsQuicQuicStreamConformanceTests : QuicStreamConformanceTests
     {
         protected override QuicImplementationProvider Provider => QuicImplementationProviders.MsQuic;
         protected override bool UsableAfterCanceledReads => false;
         protected override bool BlocksOnZeroByteReads => true;
+        protected override bool CanTimeout => true;
 
         public MsQuicQuicStreamConformanceTests(ITestOutputHelper output)
         {

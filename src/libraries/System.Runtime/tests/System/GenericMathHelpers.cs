@@ -157,7 +157,11 @@ namespace System.Tests
 
         public static TSelf Min(TSelf x, TSelf y) => TSelf.Min(x, y);
 
+        public static TSelf Parse(string s, IFormatProvider provider) => TSelf.Parse(s, provider);
+
         public static TSelf Parse(string s, NumberStyles style, IFormatProvider provider) => TSelf.Parse(s, style, provider);
+
+        public static TSelf Parse(ReadOnlySpan<char> s, IFormatProvider provider) => TSelf.Parse(s, provider);
 
         public static TSelf Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider) => TSelf.Parse(s, style, provider);
 
@@ -166,7 +170,11 @@ namespace System.Tests
         public static bool TryCreate<TOther>(TOther value, out TSelf result)
             where TOther : INumber<TOther> => TSelf.TryCreate<TOther>(value, out result);
 
+        public static bool TryParse(string s, IFormatProvider provider, out TSelf result) => TSelf.TryParse(s, provider, out result);
+
         public static bool TryParse(string s, NumberStyles style, IFormatProvider provider, out TSelf result) => TSelf.TryParse(s, style, provider, out result);
+
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider provider, out TSelf result) => TSelf.TryParse(s, provider, out result);
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out TSelf result) => TSelf.TryParse(s, style, provider, out result);
     }

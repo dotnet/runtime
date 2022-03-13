@@ -327,8 +327,7 @@ namespace System.Reflection.Metadata
         {
             Debug.Assert(_metadataKind != MetadataKind.Ecma335);
 
-            bool isIDisposable;
-            int projectionIndex = GetProjectionIndexForTypeReference(handle, out isIDisposable);
+            int projectionIndex = GetProjectionIndexForTypeReference(handle, out _);
             if (projectionIndex >= 0)
             {
                 return TreatmentAndRowId((byte)TypeRefTreatment.UseProjectionInfo, projectionIndex);

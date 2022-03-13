@@ -450,15 +450,15 @@ namespace System.Xml
                 _textWriter.Write(name);
                 if (pubid != null)
                 {
-                    _textWriter.Write(" PUBLIC " + _quoteChar);
+                    _textWriter.Write($" PUBLIC {_quoteChar}");
                     _textWriter.Write(pubid);
-                    _textWriter.Write(_quoteChar + " " + _quoteChar);
+                    _textWriter.Write($"{_quoteChar} {_quoteChar}");
                     _textWriter.Write(sysid);
                     _textWriter.Write(_quoteChar);
                 }
                 else if (sysid != null)
                 {
-                    _textWriter.Write(" SYSTEM " + _quoteChar);
+                    _textWriter.Write($" SYSTEM {_quoteChar}");
                     _textWriter.Write(sysid);
                     _textWriter.Write(_quoteChar);
                 }
@@ -1592,8 +1592,7 @@ namespace System.Xml
         private string GeneratePrefix()
         {
             int temp = _stack[_top].prefixCount++ + 1;
-            return "d" + _top.ToString("d", CultureInfo.InvariantCulture)
-                + "p" + temp.ToString("d", CultureInfo.InvariantCulture);
+            return string.Create(CultureInfo.InvariantCulture, $"d{_top:d}p{temp:d}");
         }
 
         private void InternalWriteProcessingInstruction(string name, string? text)

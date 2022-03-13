@@ -93,6 +93,8 @@ using namespace CorUnix;
 
 #ifdef __APPLE__
 #define MAX_THREAD_NAME_SIZE 63
+#elif defined(__FreeBSD__)
+#define MAX_THREAD_NAME_SIZE MAXCOMLEN
 #else
 #define MAX_THREAD_NAME_SIZE 15
 #endif
@@ -550,41 +552,6 @@ CorUnix::InternalCreateThread(
     BOOL fHoldingProcessLock = FALSE;
     int iError = 0;
     size_t alignedStackSize;
-
-    if (0 != terminator)
-    {
-        //
-        // Since the PAL is in the middle of shutting down we don't want to
-        // create any new threads (since it's possible for that new thread
-        // to create another thread before the shutdown thread gets around
-        // to suspending it, and so on). We don't want to return an error
-        // here, though, as some programs (in particular, build) do not
-        // handle CreateThread errors properly -- instead, we just put
-        // the calling thread to sleep (unless it is the shutdown thread,
-        // which could occur if a DllMain PROCESS_DETACH handler tried to
-        // create a new thread for some odd reason).
-        //
-
-        ERROR("process is terminating, can't create new thread.\n");
-
-        if (pThread->GetThreadId() != static_cast<DWORD>(terminator))
-        {
-            while (true)
-            {
-                poll(NULL, 0, INFTIM);
-                sched_yield();
-            }
-        }
-        else
-        {
-            //
-            // This is the shutdown thread, so just return an error
-            //
-
-            palError = ERROR_PROCESS_ABORTED;
-            goto EXIT;
-        }
-    }
 
     /* Validate parameters */
 
@@ -1633,8 +1600,8 @@ CorUnix::InternalSetThreadDescription(
     char *nameBuf = NULL;
 
 // The exact API of pthread_setname_np varies very wildly depending on OS.
-// For now, only Linux and macOS are implemented.
-#if defined(__linux__) || defined(__APPLE__)
+// For now, only Linux, macOS and FreeBSD are implemented.
+#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
 
     palError = InternalGetThreadDataFromHandle(
         pThread,
@@ -1681,14 +1648,14 @@ CorUnix::InternalSetThreadDescription(
     }
 
     // Null terminate early.
-    // pthread_setname_np only accepts up to 16 chars on Linux and
-    // 64 chars on macOS.
+    // pthread_setname_np only accepts up to 16 chars on Linux,
+    // 64 chars on macOS and 20 chars on FreeBSD.
     if (nameSize > MAX_THREAD_NAME_SIZE)
     {
         nameBuf[MAX_THREAD_NAME_SIZE] = '\0';
     }
     
-    #if defined(__linux__)
+    #if defined(__linux__) || defined(__FreeBSD__)
     error = pthread_setname_np(pTargetThread->GetPThreadSelf(), nameBuf);
     #endif
 
@@ -1721,7 +1688,7 @@ InternalSetThreadDescriptionExit:
         PAL_free(nameBuf);
     }
 
-#endif //defined(__linux__) || defined(__APPLE__)
+#endif //defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
 
     return palError;
 }

@@ -92,25 +92,17 @@ public class TestAssemblyLoadContext : AssemblyLoadContext
 /// on each test specified.
 /// </summary>
 public class ReliabilityTest
-#if !PROJECTK_BUILD
-    : ICloneable
-#endif
 {
     private bool _suppressConsoleOutput = false;
 
     private string _assembly, _debugger, _debuggerOptions;
     private string _basePath;
-#if PROJECTK_BUILD
     private MethodInfo _entryPointMethod = null;
-#endif    
     private string _refOrID;
     private string _arguments;
     private string _entryPoint;
     private int _successCode = 0;
     private int _runCount = 0;
-#if !PROJECTK_BUILD
-    private AppDomain appDomain;
-#endif
     private TestAssemblyLoadContext _assemblyLoadContext;
     private Object _testObject;
     private object _myLoader;
@@ -242,20 +234,6 @@ public class ReliabilityTest
         }
     }
 
-#if !PROJECTK_BUILD
-    public AppDomain AppDomain
-    {
-        get
-        {
-            return (appDomain);
-        }
-        set
-        {
-            appDomain = value;
-        }
-    }
-#endif
-
     public TestAssemblyLoadContext AssemblyLoadContext
     {
         get
@@ -375,7 +353,6 @@ public class ReliabilityTest
         }
     }
 
-#if PROJECTK_BUILD
     public MethodInfo EntryPointMethod
     {
         get
@@ -387,7 +364,6 @@ public class ReliabilityTest
             _entryPointMethod = value;
         }
     }
-#endif 
 
     public string BasePath
     {
@@ -395,15 +371,11 @@ public class ReliabilityTest
         {
             if (_basePath == null)
             {
-#if PROJECTK_BUILD
                 string strBVTRoot = Environment.GetEnvironmentVariable("BVT_ROOT");
                 if (String.IsNullOrEmpty(strBVTRoot))
                     return Path.Combine(Directory.GetCurrentDirectory(), "Tests");
                 else
                     return strBVTRoot;
-#else
-                return (String.Empty);
-#endif
             }
 
             if (_basePath.Length > 0)

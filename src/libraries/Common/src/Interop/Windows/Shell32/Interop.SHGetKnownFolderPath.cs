@@ -11,9 +11,9 @@ internal static partial class Interop
         internal const int COR_E_PLATFORMNOTSUPPORTED = unchecked((int)0x80131539);
 
         // https://msdn.microsoft.com/en-us/library/windows/desktop/bb762188.aspx
-        [DllImport(Libraries.Shell32, CharSet = CharSet.Unicode, SetLastError = false, BestFitMapping = false, ExactSpelling = true)]
-        internal static extern int SHGetKnownFolderPath(
-            [MarshalAs(UnmanagedType.LPStruct)] Guid rfid,
+        [LibraryImport(Libraries.Shell32, SetLastError = false, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial int SHGetKnownFolderPath(
+            in Guid rfid,
             uint dwFlags,
             IntPtr hToken,
             out string ppszPath);

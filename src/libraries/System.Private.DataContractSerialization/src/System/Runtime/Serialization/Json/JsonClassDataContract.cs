@@ -21,12 +21,6 @@ namespace System.Runtime.Serialization.Json
             _helper = (base.Helper as JsonClassDataContractCriticalHelper)!;
         }
 
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private JsonFormatClassReaderDelegate CreateJsonFormatReaderDelegate()
-        {
-            return new ReflectionJsonClassReader(TraditionalClassDataContract).ReflectionReadClass;
-        }
-
         internal JsonFormatClassReaderDelegate JsonFormatReaderDelegate
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -41,7 +35,7 @@ namespace System.Runtime.Serialization.Json
                             JsonFormatClassReaderDelegate tempDelegate;
                             if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                             {
-                                tempDelegate = CreateJsonFormatReaderDelegate();
+                                tempDelegate = new ReflectionJsonClassReader(TraditionalClassDataContract).ReflectionReadClass;
                             }
                             else
                             {
@@ -55,12 +49,6 @@ namespace System.Runtime.Serialization.Json
                 }
                 return _helper.JsonFormatReaderDelegate;
             }
-        }
-
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private JsonFormatClassWriterDelegate CreateJsonFormatWriterDelegate()
-        {
-            return new ReflectionJsonFormatWriter().ReflectionWriteClass;
         }
 
         internal JsonFormatClassWriterDelegate JsonFormatWriterDelegate
@@ -77,7 +65,7 @@ namespace System.Runtime.Serialization.Json
                             JsonFormatClassWriterDelegate tempDelegate;
                             if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                             {
-                                tempDelegate = CreateJsonFormatWriterDelegate();
+                                tempDelegate = new ReflectionJsonFormatWriter().ReflectionWriteClass;
                             }
                             else
                             {
@@ -171,7 +159,7 @@ namespace System.Runtime.Serialization.Json
                         else
                         {
                             memberTable.Add(_traditionalClassDataContract.MemberNames[i].Value, null);
-                            decodedMemberNames[i] = DataContractJsonSerializerImpl.ConvertXmlNameToJsonName(_traditionalClassDataContract.MemberNames[i]);
+                            decodedMemberNames[i] = DataContractJsonSerializer.ConvertXmlNameToJsonName(_traditionalClassDataContract.MemberNames[i]);
                         }
                     }
                     _memberNames = decodedMemberNames;

@@ -27,4 +27,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldloc_ref.exe{}
+.assembly ldloc_ref{}

@@ -50,7 +50,7 @@ namespace System.Text.RegularExpressions
         internal bool _balancing;        // whether we've done any balancing with this match.  If we
                                          // have done balancing, we'll need to do extra work in Tidy().
 
-        internal Match(Regex? regex, int capcount, string text, int begpos, int len, int startpos) :
+        internal Match(Regex? regex, int capcount, string? text, int begpos, int len, int startpos) :
             base(text, new int[2], 0, "0")
         {
             _regex = regex;
@@ -61,15 +61,12 @@ namespace System.Text.RegularExpressions
             _textend = begpos + len;
             _textstart = startpos;
             _balancing = false;
-
-            Debug.Assert(!(_textbeg < 0 || _textstart < _textbeg || _textend < _textstart || Text.Length < _textend),
-                "The parameters are out of range.");
         }
 
         /// <summary>Returns an empty Match object.</summary>
         public static Match Empty { get; } = new Match(null, 1, string.Empty, 0, 0, 0);
 
-        internal void Reset(Regex regex, string text, int textbeg, int textend, int textstart)
+        internal void Reset(Regex regex, string? text, int textbeg, int textend, int textstart)
         {
             _regex = regex;
             Text = text;
@@ -87,6 +84,16 @@ namespace System.Text.RegularExpressions
             _groupcoll?.Reset();
         }
 
+        /// <summary>
+        /// Returns <see langword="true"/> if this object represents a successful match, and <see langword="false"/> otherwise.
+        /// </summary>
+        /// <remarks>
+        /// The main difference between the public <see cref="Group.Success"/> property and this one, is that <see cref="Group.Success"/> requires
+        /// for a <see cref="Match"/> to call <see cref="Match.Tidy(int)"/> first, in order to report the correct value, while this API will return
+        /// the correct value right after a Match gets calculated, meaning that it will return <see langword="true"/> right after <see cref="RegexRunner.Capture(int, int, int)"/>
+        /// </remarks>
+        internal bool FoundMatch => _matchcount[0] > 0;
+
         public virtual GroupCollection Groups => _groupcoll ??= new GroupCollection(this, null);
 
         /// <summary>
@@ -97,8 +104,9 @@ namespace System.Text.RegularExpressions
         public Match NextMatch()
         {
             Regex? r = _regex;
+            Debug.Assert(Text != null);
             return r != null ?
-                r.Run(false, Length, Text, _textbeg, _textend - _textbeg, _textpos)! :
+                r.RunSingleMatch(false, Length, Text, _textbeg, _textend - _textbeg, _textpos)! :
                 this;
         }
 
@@ -121,7 +129,7 @@ namespace System.Text.RegularExpressions
             }
 
             // Gets the weakly cached replacement helper or creates one if there isn't one already.
-            RegexReplacement repl = RegexReplacement.GetOrCreate(regex._replref!, replacement, regex.caps!, regex.capsize, regex.capnames!, regex.roptions);
+            RegexReplacement repl = RegexReplacement.GetOrCreate(regex.RegexReplacementWeakReference, replacement, regex.caps!, regex.capsize, regex.capnames!, regex.roptions);
             SegmentStringBuilder segments = SegmentStringBuilder.Create();
             repl.ReplacementImpl(ref segments, this);
             return segments.ToString();
@@ -332,31 +340,6 @@ namespace System.Text.RegularExpressions
 
             _balancing = false;
         }
-
-#if DEBUG
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal bool IsDebug => _regex != null && _regex.IsDebug;
-
-        internal virtual void Dump()
-        {
-            for (int i = 0; i < _matchcount.Length; i++)
-            {
-                Debug.WriteLine($"Capnum {i}:");
-
-                for (int j = 0; j < _matchcount[i]; j++)
-                {
-                    string text = "";
-
-                    if (_matches[i][j * 2] >= 0)
-                    {
-                        text = Text.Substring(_matches[i][j * 2], _matches[i][j * 2 + 1]);
-                    }
-
-                    Debug.WriteLine($"  ({_matches[i][j * 2]},{_matches[i][j * 2 + 1]}) {text}");
-                }
-            }
-        }
-#endif
     }
 
     /// <summary>
@@ -364,32 +347,14 @@ namespace System.Text.RegularExpressions
     /// </summary>
     internal sealed class MatchSparse : Match
     {
-        // the lookup hashtable
-        internal new readonly Hashtable _caps;
+        private new readonly Hashtable _caps;
 
-        internal MatchSparse(Regex regex, Hashtable caps, int capcount, string text, int begpos, int len, int startpos) :
+        internal MatchSparse(Regex regex, Hashtable caps, int capcount, string? text, int begpos, int len, int startpos) :
             base(regex, capcount, text, begpos, len, startpos)
         {
             _caps = caps;
         }
 
         public override GroupCollection Groups => _groupcoll ??= new GroupCollection(this, _caps);
-
-#if DEBUG
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal override void Dump()
-        {
-            if (_caps != null)
-            {
-                foreach (object? entry in _caps)
-                {
-                    DictionaryEntry kvp = (DictionaryEntry)entry!;
-                    Debug.WriteLine($"Slot {kvp.Key} -> {kvp.Value}");
-                }
-            }
-
-            base.Dump();
-        }
-#endif
     }
 }

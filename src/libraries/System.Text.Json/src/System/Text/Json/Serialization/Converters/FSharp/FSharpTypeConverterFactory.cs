@@ -8,7 +8,7 @@ using FSharpKind = System.Text.Json.Serialization.Metadata.FSharpCoreReflectionP
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal class FSharpTypeConverterFactory : JsonConverterFactory
+    internal sealed class FSharpTypeConverterFactory : JsonConverterFactory
     {
         // Temporary solution to account for not implemented support for type-level attributes
         // TODO remove once addressed https://github.com/mono/linker/issues/1742#issuecomment-875036480

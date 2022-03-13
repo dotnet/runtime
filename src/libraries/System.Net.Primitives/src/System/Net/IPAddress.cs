@@ -24,11 +24,11 @@ namespace System.Net
 
         internal const uint LoopbackMaskHostOrder = 0xFF000000;
 
-        public static readonly IPAddress IPv6Any = new IPAddress(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0);
-        public static readonly IPAddress IPv6Loopback = new IPAddress(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 0);
-        public static readonly IPAddress IPv6None = new IPAddress(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0);
+        public static readonly IPAddress IPv6Any = new IPAddress((ReadOnlySpan<byte>) new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0);
+        public static readonly IPAddress IPv6Loopback = new IPAddress((ReadOnlySpan<byte>) new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 0);
+        public static readonly IPAddress IPv6None = IPv6Any;
 
-        private static readonly IPAddress s_loopbackMappedToIPv6 = new IPAddress(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 127, 0, 0, 1 }, 0);
+        private static readonly IPAddress s_loopbackMappedToIPv6 = new IPAddress((ReadOnlySpan<byte>) new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 127, 0, 0, 1 }, 0);
 
         /// <summary>
         /// For IPv4 addresses, this field stores the Address.
@@ -231,13 +231,8 @@ namespace System.Net
             return (address != null);
         }
 
-        public static IPAddress Parse(string ipString)
+        public static IPAddress Parse(string ipString!!)
         {
-            if (ipString == null)
-            {
-                throw new ArgumentNullException(nameof(ipString));
-            }
-
             return IPAddressParser.Parse(ipString.AsSpan(), tryParse: false)!;
         }
 
@@ -414,13 +409,8 @@ namespace System.Net
             return HostToNetworkOrder(network);
         }
 
-        public static bool IsLoopback(IPAddress address)
+        public static bool IsLoopback(IPAddress address!!)
         {
-            if (address == null)
-            {
-                ThrowAddressNullException();
-            }
-
             if (address.IsIPv6)
             {
                 // Do Equals test for IPv6 addresses
@@ -511,7 +501,7 @@ namespace System.Net
             }
         }
 
-        [Obsolete("This property has been deprecated. It is address family dependent. Please use IPAddress.Equals method to perform comparisons. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("IPAddress.Address is address family dependent and has been deprecated. Use IPAddress.Equals to perform comparisons instead.")]
         public long Address
         {
             get
@@ -644,7 +634,7 @@ namespace System.Net
 
         private sealed class ReadOnlyIPAddress : IPAddress
         {
-            public ReadOnlyIPAddress(byte[] newAddress) : base(newAddress)
+            public ReadOnlyIPAddress(ReadOnlySpan<byte> newAddress) : base(newAddress)
             { }
         }
     }

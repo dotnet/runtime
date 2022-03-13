@@ -366,7 +366,7 @@ namespace System.Runtime.Serialization.Json
                     _ilg.Set(memberIndexLocal, memberCount);
                     expectedElements.Load(memberCount);
                     _ilg.Brfalse(throwDuplicateMemberLabel);
-                    LocalBuilder? value = null;
+                    LocalBuilder? value;
                     if (dataMember.IsGetOnlyCollection)
                     {
                         _ilg.LoadAddress(_objectLocal);
@@ -563,7 +563,14 @@ namespace System.Runtime.Serialization.Json
                 _ilg.Load(string.Empty);
                 _ilg.Call(XmlFormatGeneratorStatics.InternalDeserializeMethod);
 
-                _ilg.ConvertValue(Globals.TypeOfObject, type);
+                if (type.IsPointer)
+                {
+                    _ilg.Call(JsonFormatGeneratorStatics.UnboxPointer);
+                }
+                else
+                {
+                    _ilg.ConvertValue(Globals.TypeOfObject, type);
+                }
                 _ilg.Stloc(value);
             }
 

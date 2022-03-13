@@ -12,6 +12,16 @@
         <target state="translated">파생된 'JsonSerializerContext' 형식과 포함하는 모든 형식은 부분이어야 합니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="DataExtensionPropertyInvalidFormat">
+        <source>The data extension property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</source>
+        <target state="translated">데이터 확장 속성 '{0}.{1}'이 잘못되었습니다. 'IDictionary&lt;string, JsonElement&gt;'나 'IDictionary&lt;string, object&gt;' 를 구현하거나 'JsonObject'여야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DataExtensionPropertyInvalidTitle">
+        <source>Data extension property type invalid.</source>
+        <target state="translated">데이터 확장 속성 형식이 잘못되었습니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
         <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
         <target state="translated">이름이 {0}인 형식이 여러 개 있습니다. 처음 검색한 원본에 대해 원본이 생성되었습니다. 이 충돌을 해결하려면 'JsonSerializableAttribute.TypeInfoPropertyName'을 사용하세요.</target>
@@ -20,6 +30,46 @@
       <trans-unit id="DuplicateTypeNameTitle">
         <source>Duplicate type name.</source>
         <target state="translated">중복된 형식 이름입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
+        <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
+        <target state="translated">멤버 '{0}.{1}'이(가) JsonIncludeAttribute로 주석 처리되었지만 원본 생성기에는 표시되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedTitle">
+        <source>Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</source>
+        <target state="translated">JsonIncludeAttribute로 주석 처리된 액세스할 수 없는 속성은 원본 생성 모드에서 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedFormat">
+        <source>The type '{0}' defines init-only properties, deserialization of which is currently not supported in source generation mode.</source>
+        <target state="translated">'{0}' 유형은 초기화 전용 속성을 정의하며, 이 속성의 역직렬화는 현재 원본 생성 모드에서 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedTitle">
+        <source>Deserialization of init-only properties is currently not supported in source generation mode.</source>
+        <target state="translated">초기화 전용 속성의 역직렬화는 현재 원본 생성 모드에서 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeFormat">
+        <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
+        <target state="translated">'{0}' 형식에 'JsonConstructorAttribute'로 주석이 추가된 여러 생성자가 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeTitle">
+        <source>Type has multiple constructors annotated with JsonConstructorAttribute.</source>
+        <target state="translated">해당 형식에 JsonConstructorAttribute로 주석이 추가된 여러 생성자가 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonExtensionDataAttributeFormat">
+        <source>Type '{0}' has multiple members annotated with 'JsonExtensionDataAttribute'.</source>
+        <target state="translated">'{0}' 형식에 JsonExtensionDataAttribute로 주석이 추가 된 멤버가 여러 개 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonExtensionDataAttributeTitle">
+        <source>Type has multiple members annotated with JsonExtensionDataAttribute.</source>
+        <target state="translated">형식에 JsonExtensionDataAttribute로 주석이 추가 된 멤버가 여러 개 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">

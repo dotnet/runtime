@@ -34,6 +34,11 @@ namespace Internal.TypeSystem
             };
         }
 
+        public override bool ComputeIsUnsafeValueType(DefType type)
+        {
+            throw new NotSupportedException();
+        }
+
         public override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType type, StaticLayoutKind layoutKind)
         {
             return new ComputedStaticFieldLayout()

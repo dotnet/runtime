@@ -89,4 +89,4 @@ END:
 }
 }
 
-.assembly ret_r4.exe{}
+.assembly ret_r4{}

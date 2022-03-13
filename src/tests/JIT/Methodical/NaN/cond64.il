@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly cond64 { }
+.assembly extern xunit.core {}
 .namespace JitTest {
 .class private auto ansi beforefieldinit Test extends [mscorlib]System.Object
 {
@@ -1303,6 +1304,9 @@ IL_THROW:
 
 .method private hidebysig static int32 Main() cil managed
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.maxstack  4
 	.locals (int32 V_0)

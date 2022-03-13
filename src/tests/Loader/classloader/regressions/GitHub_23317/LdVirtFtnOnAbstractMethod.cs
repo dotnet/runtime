@@ -31,7 +31,7 @@ class Top : Middle
     }
 }
 
-class Test
+class Test_LdVirtFtnOnAbstractMethod
 {
     public static int Main() 
     {

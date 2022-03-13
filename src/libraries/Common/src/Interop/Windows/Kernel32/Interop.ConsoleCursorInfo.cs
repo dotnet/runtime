@@ -12,13 +12,15 @@ internal static partial class Interop
         internal struct CONSOLE_CURSOR_INFO
         {
             internal int dwSize;
-            internal bool bVisible;
+            internal BOOL bVisible;
         }
 
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static extern bool GetConsoleCursorInfo(IntPtr hConsoleOutput, out CONSOLE_CURSOR_INFO cci);
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool GetConsoleCursorInfo(IntPtr hConsoleOutput, out CONSOLE_CURSOR_INFO cci);
 
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static extern bool SetConsoleCursorInfo(IntPtr hConsoleOutput, ref CONSOLE_CURSOR_INFO cci);
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool SetConsoleCursorInfo(IntPtr hConsoleOutput, ref CONSOLE_CURSOR_INFO cci);
     }
 }

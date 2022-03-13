@@ -21,16 +21,16 @@ private:
         static const WCHAR DirectorySeparatorChar;
         static const WCHAR AltDirectorySeparatorChar;
 public:
-        static BOOL IsExtended(SString & path);
-        static BOOL IsUNCExtended(SString & path);
         static BOOL ContainsDirectorySeparator(SString & path);
         static BOOL IsDirectorySeparator(WCHAR c);
-        static BOOL IsPathNotFullyQualified(SString & path);
-        static BOOL IsDevice(SString & path);
+        static BOOL IsPathNotFullyQualified(const SString & path);
 
         static HRESULT NormalizePath(SString& path);
 
 #ifdef HOST_WINDOWS
+        static BOOL IsExtended(const SString & path);
+        static BOOL IsUNCExtended(const SString & path);
+        static BOOL IsDevice(const SString & path);
         static void NormalizeDirectorySeparators(SString& path);
 #endif
 };
@@ -786,15 +786,14 @@ void LongFile::NormalizeDirectorySeparators(SString& path)
     }
 }
 
-BOOL LongFile::IsExtended(SString & path)
+BOOL LongFile::IsExtended(const SString & path)
 {
-    return path.BeginsWith(ExtendedPrefix);
+    return path.BeginsWith(SL(ExtendedPrefix));
 }
 
-BOOL LongFile::IsUNCExtended(SString & path)
+BOOL LongFile::IsUNCExtended(const SString & path)
 {
-
-    return path.BeginsWith(UNCExtendedPathPrefix);
+    return path.BeginsWith(SL(UNCExtendedPathPrefix));
 }
 
 // Relative here means it could be relative to current directory on the relevant drive
@@ -805,7 +804,7 @@ BOOL LongFile::IsUNCExtended(SString & path)
 // Handles paths that use the alternate directory separator.  It is a frequent mistake to
 // assume that rooted paths (Path.IsPathRooted) are not relative.  This isn't the case.
 
-BOOL LongFile::IsPathNotFullyQualified(SString & path)
+BOOL LongFile::IsPathNotFullyQualified(const SString & path)
 {
     if (path.GetCount() < 2)
     {
@@ -822,9 +821,9 @@ BOOL LongFile::IsPathNotFullyQualified(SString & path)
             && IsDirectorySeparator(path[2]));
 }
 
-BOOL LongFile::IsDevice(SString & path)
+BOOL LongFile::IsDevice(const SString & path)
 {
-    return path.BeginsWith(DevicePathPrefix);
+    return path.BeginsWith(SL(DevicePathPrefix));
 }
 
 // This function will normalize paths if the path length exceeds MAX_PATH
@@ -848,7 +847,7 @@ HRESULT LongFile::NormalizePath(SString & path)
     SString prefix(ExtendedPrefix);
     prefixLen = prefix.GetCount();
 
-    if (path.BeginsWith(UNCPathPrefix))
+    if (path.BeginsWith(SL(UNCPathPrefix)))
     {
         prefix.Set(UNCExtendedPathPrefix);
         //In this case if path is \\server the extended syntax should be like  \\?\UNC\server
@@ -898,9 +897,8 @@ HRESULT LongFile::NormalizePath(SString & path)
 	SString fullpath(SString::Literal,buffer + prefixLen);
 
     //Check if the resolved path is a UNC. By default we assume relative path to resolve to disk
-    if (fullpath.BeginsWith(UNCPathPrefix) && prefixLen != prefix.GetCount() - (COUNT_T)wcslen(UNCPATHPREFIX))
+    if (fullpath.BeginsWith(SL(UNCPathPrefix)) && prefixLen != prefix.GetCount() - (COUNT_T)wcslen(UNCPATHPREFIX))
     {
-
         //Remove the leading '\\' from the UNC path to be replaced with UNCExtendedPathPrefix
         fullpath.Replace(fullpath.Begin(), (COUNT_T)wcslen(UNCPATHPREFIX), UNCExtendedPathPrefix);
         path.CloseBuffer();
@@ -918,24 +916,9 @@ HRESULT LongFile::NormalizePath(SString & path)
     return S_OK;
 }
 #else
-BOOL LongFile::IsExtended(SString & path)
-{
-    return FALSE;
-}
-
-BOOL LongFile::IsUNCExtended(SString & path)
-{
-    return FALSE;
-}
-
-BOOL LongFile::IsPathNotFullyQualified(SString & path)
+BOOL LongFile::IsPathNotFullyQualified(const SString & path)
 {
     return TRUE;
-}
-
-BOOL LongFile::IsDevice(SString & path)
-{
-    return FALSE;
 }
 
 //Don't need to do anything For XPlat

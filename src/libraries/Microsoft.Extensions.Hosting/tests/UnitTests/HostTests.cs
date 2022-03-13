@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -33,7 +35,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_IncludesContentRootByDefault()
         {
             var expected = Directory.GetCurrentDirectory();
@@ -46,7 +47,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_IncludesCommandLineArguments()
         {
             var expected = Directory.GetParent(Directory.GetCurrentDirectory()).FullName; // It must exist
@@ -57,7 +57,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_RegistersEventSourceLogger()
         {
             var listener = new TestEventListener();
@@ -74,7 +73,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_EnablesActivityTracking()
         {
             var parentActivity = new Activity("ParentActivity");
@@ -113,7 +111,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_EnablesScopeValidation()
         {
             using var host = Host.CreateDefaultBuilder()
@@ -128,7 +125,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_EnablesValidateOnBuild()
         {
             var hostBuilder = Host.CreateDefaultBuilder()
@@ -185,7 +181,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/48696")]
         public async Task CreateDefaultBuilder_ConfigJsonDoesNotReload()
         {
@@ -220,7 +215,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CreateDefaultBuilder_ConfigJsonDoesReload()
         {
             var reloadFlagConfig = new Dictionary<string, string>() { { "hostbuilder:reloadConfigOnChange", "true" } };
@@ -257,8 +251,8 @@ namespace Microsoft.Extensions.Hosting.Tests
                 // Only update the config after we've registered the change callback
                 var dynamicConfigMessage2 = SaveRandomConfig(appSettingsPath);
 
-                // Wait for up to 1 minute, if config reloads at any time, cancel the wait.
-                await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(1), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
+                // Wait for up to 5 minutes, if config reloads at any time, cancel the wait.
+                await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(5), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
                 Assert.NotEqual(dynamicConfigMessage1, dynamicConfigMessage2); // Messages are different.
                 Assert.Equal(dynamicConfigMessage2, config["Hello"]); // Config DID reload from disk
             }
@@ -272,7 +266,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CreateDefaultBuilder_SecretsDoesReload()
         {
             var secretId = Assembly.GetExecutingAssembly().GetName().Name;
@@ -309,14 +302,13 @@ namespace Microsoft.Extensions.Hosting.Tests
             // Only update the secrets after we've registered the change callback
             var dynamicSecretMessage2 = SaveRandomSecret(secretPath);
 
-            // Wait for up to 1 minute, if config reloads at any time, cancel the wait.
-            await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(1), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
+            // Wait for up to 5 minutes, if config reloads at any time, cancel the wait.
+            await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(5), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
             Assert.NotEqual(dynamicSecretMessage1, dynamicSecretMessage2); // Messages are different.
             Assert.Equal(dynamicSecretMessage2, config["Hello"]);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_RespectShutdownTimeout()
         {
             var notDefaultTimeoutSeconds = 99;
@@ -401,6 +393,37 @@ namespace Microsoft.Extensions.Hosting.Tests
                 public void Dispose()
                 {
                 }
+            }
+        }
+
+        private class TestEventListener : EventListener
+        {
+            private volatile bool _disposed;
+
+            private ConcurrentQueue<EventWrittenEventArgs> _events = new ConcurrentQueue<EventWrittenEventArgs>();
+
+            public IEnumerable<EventWrittenEventArgs> EventData => _events;
+
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name == "Microsoft-Extensions-Logging")
+                {
+                    EnableEvents(eventSource, EventLevel.Informational);
+                }
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                if (!_disposed)
+                {
+                    _events.Enqueue(eventData);
+                }
+            }
+
+            public override void Dispose()
+            {
+                _disposed = true;
+                base.Dispose();
             }
         }
     }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly interfacecctor { }
 
 .class interface private abstract auto ansi IFoo
@@ -42,6 +43,9 @@
 .method private hidebysig static int32 
         Main() cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .maxstack  8
   newobj     instance void Fooer::.ctor()

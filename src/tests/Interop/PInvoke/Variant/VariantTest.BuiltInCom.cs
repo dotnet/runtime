@@ -3,11 +3,11 @@
 
 using System;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 using static VariantNative;
 
 #pragma warning disable CS0612, CS0618
-partial class Test
+partial class Test_VariantTest
 {
     public static int Main()
     {

@@ -232,6 +232,14 @@ namespace System.Reflection.Tests
                         MarshalType = "Blah",
                     },
                 };
+                yield return new object[]
+                {
+                     "F21",
+                    new MarshalAsAttribute(UnmanagedType.ByValTStr)
+                    {
+                        SizeConst = 65
+                    },
+                };
             }
         }
 

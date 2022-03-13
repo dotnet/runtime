@@ -354,7 +354,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     pSid = Utils.ConvertByteArrayToIntPtr(sid);
 
-                    if (UnsafeNativeMethods.IsValidSid(pSid) && (Utils.ClassifySID(pSid) == SidType.FakeObject))
+                    if (Interop.Advapi32.IsValidSid(pSid) && (Utils.ClassifySID(pSid) == SidType.FakeObject))
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                                 "SAMStoreCtx",
@@ -419,7 +419,7 @@ namespace System.DirectoryServices.AccountManagement
                         {
                             pSid = Utils.ConvertByteArrayToIntPtr(sid);
 
-                            if (UnsafeNativeMethods.IsValidSid(pSid) && (Utils.ClassifySID(pSid) == SidType.FakeObject))
+                            if (Interop.Advapi32.IsValidSid(pSid) && (Utils.ClassifySID(pSid) == SidType.FakeObject))
                             {
                                 GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                                         "SAMStoreCtx",
@@ -1175,5 +1175,3 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 }
-
-// #endif   // PAPI_REGSAM

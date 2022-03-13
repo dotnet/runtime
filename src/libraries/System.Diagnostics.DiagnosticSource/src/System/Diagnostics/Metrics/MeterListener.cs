@@ -152,7 +152,7 @@ namespace System.Diagnostics.Metrics
         }
 
         /// <summary>
-        /// Enable the listener to start listeneing to instruments measurement recording.
+        /// Enable the listener to start listening to instruments measurement recording.
         /// </summary>
         public void Start()
         {
@@ -212,7 +212,7 @@ namespace System.Diagnostics.Metrics
         }
 
         /// <summary>
-        /// Disposes the listeners which will stop it from listeneing to any instrument.
+        /// Disposes the listeners which will stop it from listening to any instrument.
         /// </summary>
         public void Dispose()
         {

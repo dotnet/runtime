@@ -67,4 +67,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldc_i8.exe{}
+.assembly ldc_i8{}

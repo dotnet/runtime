@@ -105,14 +105,14 @@ namespace System.Net.NetworkInformation
         private unsafe List<SystemTcpConnectionInformation> GetAllTcpConnections()
         {
             uint size = 0;
-            uint result = 0;
+            uint result;
             List<SystemTcpConnectionInformation> tcpConnections = new List<SystemTcpConnectionInformation>();
 
             // Check if it supports IPv4 for IPv6 only modes.
             if (Socket.OSSupportsIPv4)
             {
                 // Get the buffer size needed.
-                result = Interop.IpHlpApi.GetTcpTable(IntPtr.Zero, ref size, true);
+                result = Interop.IpHlpApi.GetTcpTable(IntPtr.Zero, &size, order: true);
 
                 while (result == Interop.IpHlpApi.ERROR_INSUFFICIENT_BUFFER)
                 {
@@ -120,7 +120,7 @@ namespace System.Net.NetworkInformation
                     IntPtr buffer = Marshal.AllocHGlobal((int)size);
                     try
                     {
-                        result = Interop.IpHlpApi.GetTcpTable(buffer, ref size, true);
+                        result = Interop.IpHlpApi.GetTcpTable(buffer, &size, order: true);
 
                         if (result == Interop.IpHlpApi.ERROR_SUCCESS)
                         {
@@ -159,7 +159,7 @@ namespace System.Net.NetworkInformation
             {
                 // Get the buffer size needed.
                 size = 0;
-                result = Interop.IpHlpApi.GetExtendedTcpTable(IntPtr.Zero, ref size, true,
+                result = Interop.IpHlpApi.GetExtendedTcpTable(IntPtr.Zero, &size, order: true,
                                                                         (uint)AddressFamily.InterNetworkV6,
                                                                         Interop.IpHlpApi.TcpTableClass.TcpTableOwnerPidAll, 0);
 
@@ -169,7 +169,7 @@ namespace System.Net.NetworkInformation
                     IntPtr buffer = Marshal.AllocHGlobal((int)size);
                     try
                     {
-                        result = Interop.IpHlpApi.GetExtendedTcpTable(buffer, ref size, true,
+                        result = Interop.IpHlpApi.GetExtendedTcpTable(buffer, &size, order: true,
                                                                                 (uint)AddressFamily.InterNetworkV6,
                                                                                 Interop.IpHlpApi.TcpTableClass.TcpTableOwnerPidAll, 0);
                         if (result == Interop.IpHlpApi.ERROR_SUCCESS)
@@ -214,14 +214,14 @@ namespace System.Net.NetworkInformation
         public unsafe override IPEndPoint[] GetActiveUdpListeners()
         {
             uint size = 0;
-            uint result = 0;
+            uint result;
             List<IPEndPoint> udpListeners = new List<IPEndPoint>();
 
             // Check if it support IPv4 for IPv6 only modes.
             if (Socket.OSSupportsIPv4)
             {
                 // Get the buffer size needed.
-                result = Interop.IpHlpApi.GetUdpTable(IntPtr.Zero, ref size, true);
+                result = Interop.IpHlpApi.GetUdpTable(IntPtr.Zero, &size, order: true);
                 while (result == Interop.IpHlpApi.ERROR_INSUFFICIENT_BUFFER)
                 {
                     // Allocate the buffer and get the UDP table.
@@ -229,7 +229,7 @@ namespace System.Net.NetworkInformation
 
                     try
                     {
-                        result = Interop.IpHlpApi.GetUdpTable(buffer, ref size, true);
+                        result = Interop.IpHlpApi.GetUdpTable(buffer, &size, order: true);
 
                         if (result == Interop.IpHlpApi.ERROR_SUCCESS)
                         {
@@ -273,7 +273,7 @@ namespace System.Net.NetworkInformation
             {
                 // Get the buffer size needed.
                 size = 0;
-                result = Interop.IpHlpApi.GetExtendedUdpTable(IntPtr.Zero, ref size, true,
+                result = Interop.IpHlpApi.GetExtendedUdpTable(IntPtr.Zero, &size, order: true,
                                                                         (uint)AddressFamily.InterNetworkV6,
                                                                         Interop.IpHlpApi.UdpTableClass.UdpTableOwnerPid, 0);
                 while (result == Interop.IpHlpApi.ERROR_INSUFFICIENT_BUFFER)
@@ -282,7 +282,7 @@ namespace System.Net.NetworkInformation
                     IntPtr buffer = Marshal.AllocHGlobal((int)size);
                     try
                     {
-                        result = Interop.IpHlpApi.GetExtendedUdpTable(buffer, ref size, true,
+                        result = Interop.IpHlpApi.GetExtendedUdpTable(buffer, &size, order: true,
                                                                                 (uint)AddressFamily.InterNetworkV6,
                                                                                 Interop.IpHlpApi.UdpTableClass.UdpTableOwnerPid, 0);
 
@@ -379,8 +379,8 @@ namespace System.Net.NetworkInformation
         public override async Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()
         {
             // Wait for the address table to stabilize.
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            if (!TeredoHelper.UnsafeNotifyStableUnicastIpAddressTable(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (!TeredoHelper.UnsafeNotifyStableUnicastIpAddressTable(s => ((TaskCompletionSource)s).TrySetResult(), tcs))
             {
                 await tcs.Task.ConfigureAwait(false);
             }

@@ -1,6 +1,7 @@
 <Project>
   <!-- This depends on the root Directory.Build.targets imported this file -->
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+  <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
   <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
   <!--<Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true'"/>-->
@@ -16,7 +17,7 @@
                            Condition="'$(_LocalMicrosoftNetCoreAppRuntimePackDir)' != '' and
                                       '%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" />
     </ItemGroup>
-    <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
+    <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory) for $(MSBuildProjectName)" Importance="normal" />
   </Target>
 
   <Target Name="RebuildWasmAppBuilder">
@@ -34,9 +35,9 @@
   </Target>
 
   <Target Name="CopyAppZipToHelixTestDir"
-          Condition="'$(WasmCopyAppZipToHelixTestDir)' == 'true'"
+          Condition="'$(WasmCopyAppZipToHelixTestDir)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="Publish">
+          DependsOnTargets="WasmTriggerPublishApp">
     <PropertyGroup>
       <WasmHelixTestAppRelativeDir Condition="'$(WasmHelixTestAppRelativeDir)' == ''">$(MSBuildProjectName)</WasmHelixTestAppRelativeDir>
       <!-- Helix properties -->

@@ -16,7 +16,7 @@ Imports Microsoft.VisualBasic.CompilerServices.Symbols
 Namespace Microsoft.VisualBasic.CompilerServices
 
     ' Implements VB late binder for IDynamicMetaObjectProvider.
-    Friend Class IDOBinder
+    Friend NotInheritable Class IDOBinder
 
         Friend Const UnsafeSubclassCtorMessage As String = "This subclass is unsafe. Marking ctor unsafe in order to suppress warnings for overridden methods as unsafe."
         Friend Const SuppressionJustification As String = "The constructor of this subclass has been annotated."
@@ -285,7 +285,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBCallBinder
+    Friend NotInheritable Class VBCallBinder
         Inherits InvokeMemberBinder
 
         Private ReadOnly _ignoreReturn As Boolean
@@ -369,7 +369,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBGetBinder
+    Friend NotInheritable Class VBGetBinder
         Inherits InvokeMemberBinder
 
         <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
@@ -449,7 +449,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 
     ' Implements FallbackInvoke for VBCallBinder and VBGetBinder
-    Friend Class VBInvokeBinder
+    Friend NotInheritable Class VBInvokeBinder
         Inherits InvokeBinder
 
         ' True if this is coming from LateCall, false if it's for LateGet
@@ -524,7 +524,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBInvokeDefaultBinder
+    Friend NotInheritable Class VBInvokeDefaultBinder
         Inherits InvokeBinder
 
         Private ReadOnly _reportErrors As Boolean
@@ -593,7 +593,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBInvokeDefaultFallbackBinder
+    Friend NotInheritable Class VBInvokeDefaultFallbackBinder
         Inherits GetIndexBinder
 
         Private ReadOnly _reportErrors As Boolean
@@ -662,7 +662,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBSetBinder
+    Friend NotInheritable Class VBSetBinder
         Inherits SetMemberBinder
 
         <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
@@ -714,7 +714,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBSetComplexBinder
+    Friend NotInheritable Class VBSetComplexBinder
         Inherits SetMemberBinder
 
         Private ReadOnly _optimisticSet As Boolean
@@ -774,7 +774,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
     End Class
 
     ' Used to fetch a DLR field
-    Friend Class VBGetMemberBinder
+    Friend NotInheritable Class VBGetMemberBinder
         Inherits GetMemberBinder
         Implements IInvokeOnGetBinder
         Public Sub New(ByVal name As String)
@@ -814,7 +814,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Property
     End Class
 
-    Friend Class VBConversionBinder
+    Friend NotInheritable Class VBConversionBinder
         Inherits ConvertBinder
 
         <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
@@ -823,6 +823,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111:ReflectionToDynamicallyAccessedMembers",
             Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackConvert(
                 ByVal target As DynamicMetaObject,
@@ -860,7 +862,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBUnaryOperatorBinder
+    Friend NotInheritable Class VBUnaryOperatorBinder
         Inherits UnaryOperationBinder
 
         Private ReadOnly _Op As UserDefinedOperator
@@ -908,7 +910,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBBinaryOperatorBinder
+    Friend NotInheritable Class VBBinaryOperatorBinder
         Inherits BinaryOperationBinder
 
         Private ReadOnly _Op As UserDefinedOperator
@@ -959,7 +961,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBIndexSetBinder
+    Friend NotInheritable Class VBIndexSetBinder
         Inherits SetIndexBinder
 
         <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
@@ -1027,7 +1029,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBIndexSetComplexBinder
+    Friend NotInheritable Class VBIndexSetComplexBinder
         Inherits SetIndexBinder
 
         Private ReadOnly _optimisticSet As Boolean
@@ -1102,7 +1104,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class IDOUtils
+    Friend NotInheritable Class IDOUtils
 
         Private Sub New()
             Throw New InternalErrorException()

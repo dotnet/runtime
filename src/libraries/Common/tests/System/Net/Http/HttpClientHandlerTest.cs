@@ -262,9 +262,9 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> SecureAndNonSecure_IPBasedUri_MemberData() =>
             from address in new[] { IPAddress.Loopback, IPAddress.IPv6Loopback }
-            from useSsl in BoolValues 
+            from useSsl in BoolValues
             // we could not create SslStream in browser, [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
-            where PlatformDetection.IsNotBrowser || !useSsl 
+            where PlatformDetection.IsNotBrowser || !useSsl
             select new object[] { address, useSsl };
 
         [Theory]
@@ -399,7 +399,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             const string content = "hello world";
-
+            string authSafeValue = "QWxhZGRpbjpvcGVuIHNlc2FtZQ==";
             // Using examples from https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Request_fields
             // Exercises all exposed request.Headers and request.Content.Headers strongly-typed properties
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -421,7 +421,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Add("Access-Control-Request-Method", "GET");
                     request.Headers.Add("Access-Control-Request-Headers", "GET");
                     request.Headers.Add("Age", "12");
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Basic", "QWxhZGRpbjpvcGVuIHNlc2FtZQ==");
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authSafeValue);
                     request.Headers.CacheControl = new CacheControlHeaderValue() { NoCache = true };
                     request.Headers.Connection.Add("close");
                     request.Headers.Add("Cookie", "$Version=1; Skin=new");
@@ -429,10 +429,10 @@ namespace System.Net.Http.Functional.Tests
                     if (PlatformDetection.IsNotBrowser)
                     {
                         request.Content.Headers.ContentMD5 = MD5.Create().ComputeHash(contentArray);
+                        request.Headers.Expect.Add(new NameValueWithParametersHeaderValue("100-continue"));
                     }
                     request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
                     request.Headers.Date = DateTimeOffset.Parse("Tue, 15 Nov 1994 08:12:31 GMT");
-                    request.Headers.Expect.Add(new NameValueWithParametersHeaderValue("100-continue"));
                     request.Headers.Add("Forwarded", "for=192.0.2.60;proto=http;by=203.0.113.43");
                     request.Headers.Add("From", "User Name <user@example.com>");
                     request.Headers.Host = "en.wikipedia.org:8080";
@@ -444,13 +444,16 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.MaxForwards = 10;
                     request.Headers.Add("Origin", "http://www.example-social-network.com");
                     request.Headers.Pragma.Add(new NameValueHeaderValue("no-cache"));
-                    request.Headers.ProxyAuthorization = new AuthenticationHeaderValue("Basic", "QWxhZGRpbjpvcGVuIHNlc2FtZQ==");
+                    request.Headers.ProxyAuthorization = new AuthenticationHeaderValue("Basic", authSafeValue);
                     request.Headers.Range = new RangeHeaderValue(500, 999);
                     request.Headers.Referrer = new Uri("http://en.wikipedia.org/wiki/Main_Page");
                     request.Headers.TE.Add(new TransferCodingWithQualityHeaderValue("trailers"));
                     request.Headers.TE.Add(new TransferCodingWithQualityHeaderValue("deflate"));
-                    request.Headers.Trailer.Add("MyTrailer");
-                    request.Headers.TransferEncoding.Add(new TransferCodingHeaderValue("chunked"));
+                    if (PlatformDetection.IsNotNodeJS) 
+                    {
+                        request.Headers.Trailer.Add("MyTrailer");
+                        request.Headers.TransferEncoding.Add(new TransferCodingHeaderValue("chunked"));
+                    }
                     if (PlatformDetection.IsNotBrowser)
                     {
                         request.Headers.UserAgent.Add(new ProductInfoHeaderValue(new ProductHeaderValue("Mozilla", "5.0")));
@@ -465,8 +468,11 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Add("X-Requested-With", "XMLHttpRequest");
                     request.Headers.Add("DNT", "1 (Do Not Track Enabled)");
                     request.Headers.Add("X-Forwarded-For", "client1");
-                    request.Headers.Add("X-Forwarded-For", "proxy1");
-                    request.Headers.Add("X-Forwarded-For", "proxy2");
+                    if (PlatformDetection.IsNotNodeJS) 
+                    {
+                        request.Headers.Add("X-Forwarded-For", "proxy1");
+                        request.Headers.Add("X-Forwarded-For", "proxy2");
+                    }
                     request.Headers.Add("X-Forwarded-Host", "en.wikipedia.org:8080");
                     request.Headers.Add("X-Forwarded-Proto", "https");
                     request.Headers.Add("Front-End-Https", "https");
@@ -477,7 +483,10 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Add("X-UIDH", "...");
                     request.Headers.Add("X-Csrf-Token", "i8XNjC4b8KVok4uw5RftR38Wgp2BFwql");
                     request.Headers.Add("X-Request-ID", "f058ebd6-02f7-4d3f-942e-904344e8cde5");
-                    request.Headers.Add("X-Request-ID", "f058ebd6-02f7-4d3f-942e-904344e8cde5");
+                    if (PlatformDetection.IsNotNodeJS) 
+                    {
+                        request.Headers.Add("X-Request-ID", "f058ebd6-02f7-4d3f-942e-904344e8cde5");
+                    }
                     request.Headers.Add("X-Empty", "");
                     request.Headers.Add("X-Null", (string)null);
                     request.Headers.Add("X-Underscore_Name", "X-Underscore_Name");
@@ -504,7 +513,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal("GET", requestData.GetSingleHeaderValue("Access-Control-Request-Headers"));
                     }
                     Assert.Equal("12", requestData.GetSingleHeaderValue("Age"));
-                    Assert.Equal("Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==", requestData.GetSingleHeaderValue("Authorization"));
+                    Assert.Equal($"Basic {authSafeValue}", requestData.GetSingleHeaderValue("Authorization"));
                     Assert.Equal("no-cache", requestData.GetSingleHeaderValue("Cache-Control"));
                     if (PlatformDetection.IsNotBrowser)
                     {
@@ -512,10 +521,13 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal("Tue, 15 Nov 1994 08:12:31 GMT", requestData.GetSingleHeaderValue("Date"));
                         Assert.Equal("100-continue", requestData.GetSingleHeaderValue("Expect"));
                         Assert.Equal("http://www.example-social-network.com", requestData.GetSingleHeaderValue("Origin"));
-                        Assert.Equal("Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==", requestData.GetSingleHeaderValue("Proxy-Authorization"));
+                        Assert.Equal($"Basic {authSafeValue}", requestData.GetSingleHeaderValue("Proxy-Authorization"));
                         Assert.Equal("Mozilla/5.0", requestData.GetSingleHeaderValue("User-Agent"));
                         Assert.Equal("http://en.wikipedia.org/wiki/Main_Page", requestData.GetSingleHeaderValue("Referer"));
-                        Assert.Equal("MyTrailer", requestData.GetSingleHeaderValue("Trailer"));
+                        if (PlatformDetection.IsNotNodeJS) 
+                        {
+                            Assert.Equal("MyTrailer", requestData.GetSingleHeaderValue("Trailer"));
+                        }
                         Assert.Equal("1.0 fred, 1.1 example.com (Apache/1.1)", requestData.GetSingleHeaderValue("Via"));
                         Assert.Equal("1 (Do Not Track Enabled)", requestData.GetSingleHeaderValue("DNT"));
                     }
@@ -531,7 +543,15 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal("bytes=500-999", requestData.GetSingleHeaderValue("Range"));
                     Assert.Equal("199 - \"Miscellaneous warning\"", requestData.GetSingleHeaderValue("Warning"));
                     Assert.Equal("XMLHttpRequest", requestData.GetSingleHeaderValue("X-Requested-With"));
-                    Assert.Equal("client1, proxy1, proxy2", requestData.GetSingleHeaderValue("X-Forwarded-For"));
+                    if (PlatformDetection.IsNotNodeJS) 
+                    {
+                        Assert.Equal("client1, proxy1, proxy2", requestData.GetSingleHeaderValue("X-Forwarded-For"));
+                    }
+                    else
+                    {
+                        // node-fetch polyfill doesn't support combining multiple header values
+                        Assert.Equal("client1", requestData.GetSingleHeaderValue("X-Forwarded-For"));
+                    }
                     Assert.Equal("en.wikipedia.org:8080", requestData.GetSingleHeaderValue("X-Forwarded-Host"));
                     Assert.Equal("https", requestData.GetSingleHeaderValue("X-Forwarded-Proto"));
                     Assert.Equal("https", requestData.GetSingleHeaderValue("Front-End-Https"));
@@ -540,7 +560,15 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal("http://wap.samsungmobile.com/uaprof/SGH-I777.xml", requestData.GetSingleHeaderValue("X-Wap-Profile"));
                     Assert.Equal("...", requestData.GetSingleHeaderValue("X-UIDH"));
                     Assert.Equal("i8XNjC4b8KVok4uw5RftR38Wgp2BFwql", requestData.GetSingleHeaderValue("X-Csrf-Token"));
-                    Assert.Equal("f058ebd6-02f7-4d3f-942e-904344e8cde5, f058ebd6-02f7-4d3f-942e-904344e8cde5", requestData.GetSingleHeaderValue("X-Request-ID"));
+                    if (PlatformDetection.IsNotNodeJS) 
+                    {
+                        Assert.Equal("f058ebd6-02f7-4d3f-942e-904344e8cde5, f058ebd6-02f7-4d3f-942e-904344e8cde5", requestData.GetSingleHeaderValue("X-Request-ID"));
+                    }
+                    else 
+                    {
+                        // node-fetch polyfill doesn't support combining multiple header values
+                        Assert.Equal("f058ebd6-02f7-4d3f-942e-904344e8cde5", requestData.GetSingleHeaderValue("X-Request-ID"));
+                    }
                     Assert.Equal("", requestData.GetSingleHeaderValue("X-Null"));
                     Assert.Equal("", requestData.GetSingleHeaderValue("X-Empty"));
                     Assert.Equal("X-Underscore_Name", requestData.GetSingleHeaderValue("X-Underscore_Name"));
@@ -938,6 +966,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false, true)]
         [InlineData(false, false)]
         [InlineData(null, false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65429", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked, bool enableWasmStreaming)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -948,12 +977,6 @@ namespace System.Net.Http.Functional.Tests
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && chunked == true)
             {
                 // Chunking is not supported on HTTP/2 and later.
-                return;
-            }
-
-            if (UseVersion == HttpVersion30 && (chunked is null || chunked is false))
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53087")]
                 return;
             }
 
@@ -1250,6 +1273,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58812", TestPlatforms.Browser)]
         public async Task Dispose_DisposingHandlerCancelsActiveOperationsWithoutResponses()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1369,7 +1393,7 @@ namespace System.Net.Http.Functional.Tests
 #region Post Methods Tests
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53876", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
         public async Task GetAsync_ExpectContinueTrue_NoContent_StillSendsHeader()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1547,6 +1571,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
         public async Task SendAsync_MultipleExpected100Responses_ReceivesCorrectResponse()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1642,6 +1667,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
         public async Task SendAsync_No100ContinueReceived_RequestBodySentEventually()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)

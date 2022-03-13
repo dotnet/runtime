@@ -493,7 +493,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData("Empty", "")]
         [InlineData("Reserved Tag", "0F00")]
         [InlineData("Zero Tag", "0000")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public static void InvalidPublicKeyEncoding(string caseName, string parametersHex)
         {
             _ = caseName;
@@ -526,7 +525,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData("Non-Nested Data", "300206035102013001")]
         [InlineData("Indefinite Encoding", "3002060351020130800000")]
         [InlineData("Dangling LengthLength", "300206035102013081")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public static void InvalidSignatureAlgorithmEncoding(string caseName, string sigAlgHex)
         {
             _ = caseName;

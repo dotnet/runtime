@@ -52,15 +52,6 @@ public:
         return m_BlobPool.InitOnMemReadOnly((void *)sourceData.GetDataPointer(), sourceData.GetSize());
     }
 
-#ifdef FEATURE_PREJIT
-    // Can be called multiple times.
-    inline void InitializeHotData(
-        HotHeap hotHeap)
-    {
-        m_BlobPool.InitHotData(hotHeap);
-    }
-#endif //FEATURE_PREJIT
-
     inline void Delete()
     {
         return m_BlobPool.Uninit();
@@ -74,7 +65,7 @@ public:
     __checkReturn
     inline HRESULT GetBlob(
               UINT32    nIndex,
-        __out DataBlob *pData)
+        _Out_ DataBlob *pData)
     {
         return m_BlobPool.GetBlob(nIndex, pData);
     }
@@ -185,7 +176,7 @@ public:
     __checkReturn
     inline HRESULT GetBlob(
               UINT32    nIndex,
-        __out DataBlob *pData)
+        _Out_ DataBlob *pData)
     {
         return m_BlobPool.GetBlob(nIndex, pData);
     }
@@ -199,7 +190,7 @@ public:
     __checkReturn
     inline HRESULT GetBlobWithSizePrefix(
               UINT32    nIndex,
-        __out DataBlob *pData)
+        _Out_ DataBlob *pData)
     {
         return m_BlobPool.GetBlobWithSizePrefix(nIndex, pData);
     }
@@ -213,7 +204,7 @@ public:
     // Fills *pcbSize with 0 on error.
     __checkReturn
     inline HRESULT GetAlignedSize(
-        __out UINT32 *pcbSize) const
+        _Out_ UINT32 *pcbSize) const
     {
         return m_BlobPool.GetSaveSize(pcbSize);
     }
@@ -233,7 +224,7 @@ public:
     __checkReturn
     HRESULT SaveToStream_Aligned(
              UINT32   nStartIndex,
-        __in IStream *pStream) const
+        _In_ IStream *pStream) const
     {
         if (nStartIndex == 0)
         {
@@ -258,7 +249,7 @@ public:
     __checkReturn
     inline HRESULT AddBlob(
               DataBlob data,
-        __out UINT32  *pnIndex)
+        _Out_ UINT32  *pnIndex)
     {
         return m_BlobPool.AddBlob(&data, pnIndex);
     }
@@ -307,7 +298,7 @@ public:
     // Gets size (in bytes) aligned to 4-bytes of adds made from the beginning of the last EnC session.
     __checkReturn
     inline HRESULT GetEnCSessionAddedHeapSize_Aligned(
-        __out UINT32 *pcbSize) const
+        _Out_ UINT32 *pcbSize) const
     {
         if (m_BlobPool.HaveEdits())
         {

@@ -15,7 +15,11 @@ namespace System.Reflection.TypeLoading.Ecma
                 throw new BadImageFormatException();
 
             Constant constantValue = metadataReader.GetConstant(constantHandle);
-            if (constantValue.Value.IsNil)
+            // Partition II section 24.2.4:
+            // The first entry in both these heaps is the empty 'blob' that consists of the single byte 0x00.
+            //
+            // This means zero value is valid for string and is used to represent the empty string.
+            if (constantValue.Value.IsNil && constantValue.TypeCode != ConstantTypeCode.String)
                 throw new BadImageFormatException();
 
             BlobReader reader = metadataReader.GetBlobReader(constantValue.Value);

@@ -11,49 +11,49 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
-        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreAddCertificate")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreAddCertificate", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern unsafe bool X509StoreAddCertificate(
+        internal static unsafe partial bool X509StoreAddCertificate(
             SafeX509StoreHandle store,
             SafeX509Handle cert,
             string hashString);
 
-        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern unsafe bool X509StoreAddCertificateWithPrivateKey(
+        internal static unsafe partial bool X509StoreAddCertificateWithPrivateKey(
             SafeX509StoreHandle store,
             SafeX509Handle cert,
             SafeKeyHandle key,
             PAL_KeyAlgorithm algorithm,
             string hashString);
 
-        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreContainsCertificate")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreContainsCertificate", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern unsafe bool X509StoreContainsCertificate(
+        internal static unsafe partial bool X509StoreContainsCertificate(
             SafeX509StoreHandle store,
             SafeX509Handle cert,
             string hashString);
 
-        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreEnumerateCertificates")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreEnumerateCertificates")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern unsafe bool X509StoreEnumerateCertificates(
+        internal static unsafe partial bool X509StoreEnumerateCertificates(
             SafeX509StoreHandle storeHandle,
             delegate* unmanaged<void*, void*, Interop.AndroidCrypto.PAL_KeyAlgorithm, void*, void> callback,
             void *callbackContext);
 
-        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreEnumerateTrustedCertificates")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreEnumerateTrustedCertificates")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern unsafe bool X509StoreEnumerateTrustedCertificates(
+        internal static unsafe partial bool X509StoreEnumerateTrustedCertificates(
             byte systemOnly,
             delegate* unmanaged<void*, void*, void> callback,
             void *callbackContext);
 
-        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreOpenDefault")]
-        internal static extern unsafe SafeX509StoreHandle X509StoreOpenDefault();
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreOpenDefault")]
+        internal static unsafe partial SafeX509StoreHandle X509StoreOpenDefault();
 
-        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreRemoveCertificate")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreRemoveCertificate", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern unsafe bool X509StoreRemoveCertificate(
+        internal static unsafe partial bool X509StoreRemoveCertificate(
             SafeX509StoreHandle store,
             SafeX509Handle cert,
             string hashString);

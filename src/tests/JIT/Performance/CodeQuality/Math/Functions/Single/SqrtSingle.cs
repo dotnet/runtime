@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Xunit.Performance;
 
 namespace Functions
 {
@@ -12,21 +11,6 @@ namespace Functions
 
         private const float sqrtSingleDelta = 0.000628318531f;
         private const float sqrtSingleExpectedResult = 5909.03027f;
-
-        [Benchmark(InnerIterationCount = SqrtSingleIterations)]
-        public static void SqrtSingleBenchmark()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        SqrtSingleTest();
-                    }
-                }
-            }
-        }
 
         public static void SqrtSingleTest()
         {

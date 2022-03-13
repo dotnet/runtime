@@ -7,7 +7,7 @@ internal class Foo
 {
 }
 
-internal class Test
+internal class Test_gettypetypeofmatrix
 {
     private static object s_null = null;
     private static object s_object = new object();

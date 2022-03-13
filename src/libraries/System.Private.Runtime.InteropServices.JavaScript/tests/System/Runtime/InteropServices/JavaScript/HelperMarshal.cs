@@ -4,6 +4,7 @@
 using System.Runtime.InteropServices.JavaScript;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
@@ -641,6 +642,69 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             };
         }
 
+        public static Task SynchronousTask() 
+        {
+            return Task.CompletedTask;
+        }
+
+        public static async Task AsynchronousTask() 
+        {
+            await Task.Yield();
+        }
+
+        public static Task<int> SynchronousTaskInt(int i) 
+        {
+            return Task.FromResult(i);
+        }
+
+        public static async Task<int> AsynchronousTaskInt(int i) 
+        {
+            await Task.Yield();
+            return i;
+        }
+
+        public static Task FailedSynchronousTask() 
+        {
+            return Task.FromException(new Exception());
+        }
+
+        public static async Task FailedAsynchronousTask() 
+        {
+            await Task.Yield();
+            throw new Exception();
+        }
+
+        public static async ValueTask AsynchronousValueTask() 
+        {
+            await Task.Yield();
+        }
+
+        public static ValueTask SynchronousValueTask() 
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        public static ValueTask<int> SynchronousValueTaskInt(int i) 
+        {
+            return ValueTask.FromResult(i);
+        }
+
+        public static async ValueTask<int> AsynchronousValueTaskInt(int i) 
+        {
+            await Task.Yield();
+            return i;
+        }
+
+        public static ValueTask FailedSynchronousValueTask() 
+        {
+            return ValueTask.FromException(new Exception());
+        }
+
+        public static async ValueTask FailedAsynchronousValueTask() 
+        {
+            await Task.Yield();
+            throw new Exception();
+        }
     }
 
     public enum TestEnum : uint {

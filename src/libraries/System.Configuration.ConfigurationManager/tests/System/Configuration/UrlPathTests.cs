@@ -31,8 +31,8 @@ namespace System.ConfigurationTests
             // Remove the trailing slash.  Different OS's use a different slash.
             // This is to make the test pass without worrying about adding a slash
             // and which kind of slash.
-            string exePathWithoutTrailingSlash = exePath.Substring(0, exePath.Length - 1);
-            string pathToNonexistentFile = exePath + "TestFileForUrlPathTests.txt";
+            string exePathWithoutTrailingSlash = exePath.TrimEnd(Path.DirectorySeparatorChar);
+            string pathToNonexistentFile = Path.Combine(exePath, "TestFileForUrlPathTests.txt");
 
             string test = UrlPath.GetDirectoryOrRootName(pathToNonexistentFile);
             Assert.Equal(exePathWithoutTrailingSlash, test);

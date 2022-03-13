@@ -24,7 +24,6 @@ namespace ILCompiler
         private readonly IEnumerable<string> _inputFiles;
         private readonly string _compositeRootPath;
         private bool _ibcTuning;
-        private bool _resilient;
         private bool _generateMapFile;
         private bool _generateMapCsvFile;
         private bool _generatePdbFile;
@@ -33,7 +32,6 @@ namespace ILCompiler
         private string _perfMapPath;
         private int _perfMapFormatVersion;
         private bool _generateProfileFile;
-        private int _parallelism;
         Func<MethodDesc, string> _printReproInstructions;
         private InstructionSetSupport _instructionSetSupport;
         private ProfileDataManager _profileData;
@@ -63,12 +61,6 @@ namespace ILCompiler
 
             // R2R field layout needs compilation group information
             ((ReadyToRunCompilerContext)context).SetCompilationGroup(group);
-        }
-
-        // Shutdown the Jit if it has been loaded. This must only be called once per process
-        public static void ShutdownJit()
-        {
-            CorInfoImpl.ShutdownJit();
         }
 
         public override CompilationBuilder UseBackendOptions(IEnumerable<string> options)
@@ -124,12 +116,6 @@ namespace ILCompiler
             return this;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UseResilience(bool resilient)
-        {
-            _resilient = resilient;
-            return this;
-        }
-
         public ReadyToRunCodegenCompilationBuilder UseProfileData(ProfileDataManager profileData)
         {
             _profileData = profileData;
@@ -176,12 +162,6 @@ namespace ILCompiler
             return this;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UseParallelism(int parallelism)
-        {
-            _parallelism = parallelism;
-            return this;
-        }
-
         public ReadyToRunCodegenCompilationBuilder UsePrintReproInstructions(Func<MethodDesc, string> printReproInstructions)
         {
             _printReproInstructions = printReproInstructions;
@@ -225,7 +205,7 @@ namespace ILCompiler
             EcmaModule singleModule = _compilationGroup.IsCompositeBuildMode ? null : inputModules.First();
             CopiedCorHeaderNode corHeaderNode = new CopiedCorHeaderNode(singleModule);
             // TODO: proper support for multiple input files
-            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(singleModule, _outputFile);
+            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(singleModule, _outputFile, _generatePdbFile, _generatePerfMapFile);
 
             // Produce a ResourceData where the IBC PROFILE_DATA entry has been filtered out
             // TODO: proper support for multiple input files

@@ -370,7 +370,7 @@ namespace System.Text.Json.Serialization.Tests
             }
             Assert.Equal(0, count);
 
-            StackWrapper wrapper =  JsonSerializer.Deserialize<StackWrapper>(@"[1,2]");
+            StackWrapper wrapper = await JsonSerializerWrapperForString.DeserializeWrapper<StackWrapper>(@"[1,2]");
             expected = 2;
 
             foreach (JsonElement i in wrapper)

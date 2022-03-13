@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Buffers
 {
@@ -150,7 +148,7 @@ namespace System.Buffers
                 _startObject = manager;
                 _endObject = manager;
                 _startInteger = ReadOnlySequence.MemoryManagerToSequenceStart(index);
-                _endInteger = length;
+                _endInteger = index + length;
             }
             else if (MemoryMarshal.TryGetArray(memory, out ArraySegment<T> segment))
             {

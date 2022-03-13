@@ -11,12 +11,18 @@ Copyright (c) .NET Foundation. All rights reserved.
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(_TargetFrameworkVersionWithoutV)' >= '3.0'">
-    <!-- For .NET 6 and higher, default to using Crossgen2 in non-composite mode -->
-    <PublishReadyToRunUseCrossgen2 Condition="'$(PublishReadyToRunUseCrossgen2)' == '' and '$(_TargetFrameworkVersionWithoutV)' >= '6.0'">true</PublishReadyToRunUseCrossgen2>
+  <!--
+    For ReadyToRun compilation, default to Crossgen for .NET Core 3.x and .NET 5. If PublishReadyToRunUseCrossgen2
+    is set to true in the project or on the command line, use Crossgen2 and default to composite mode. For .NET 6
+    and higher, always use Crossgen2 and default to non-composite mode.
+  -->
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(_TargetFrameworkVersionWithoutV)' >= '3.0'">
+    <PublishReadyToRunUseCrossgen2 Condition="'$(_TargetFrameworkVersionWithoutV)' >= '6.0'">true</PublishReadyToRunUseCrossgen2>
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == '' and '$(_TargetFrameworkVersionWithoutV)' >= '6.0'">false</PublishReadyToRunComposite>
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">true</PublishReadyToRunComposite>
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunUseCrossgen2)' != 'true' or '$(SelfContained)' != 'true'">false</PublishReadyToRunComposite>
+    <PublishReadyToRunUseRuntimePackOptimizationData Condition="'$(PublishReadyToRunUseRuntimePackOptimizationData)' == ''">true</PublishReadyToRunUseRuntimePackOptimizationData>
+    <PublishReadyToRunPerfmapFormatVersion Condition="'$(PublishReadyToRunPerfmapFormatVersion)' == ''">1</PublishReadyToRunPerfmapFormatVersion>
   </PropertyGroup>
 
   <!--
@@ -397,6 +403,12 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_ReadyToRunImplementationAssemblies Include="@(_ReadyToRunImplementationAssembliesWithoutConflicts)" />
     </ItemGroup>
 
+    <ItemGroup>
+      <_ReadyToRunPgoFiles Include="@(PublishReadyToRunPgoFiles)" />
+      <_ReadyToRunPgoFiles Include="@(RuntimePackAsset)"
+                           Condition="'%(RuntimePackAsset.AssetType)' == 'pgodata' and '%(RuntimePackAsset.Extension)' == '.mibc' and '$(PublishReadyToRunUseRuntimePackOptimizationData)' == 'true'" />
+    </ItemGroup>
+
     <PrepareForReadyToRunCompilation CrossgenTool="@(CrossgenTool)"
                                      Crossgen2Tool="@(Crossgen2Tool)"
                                      OutputPath="$(_ReadyToRunOutputPath)"
@@ -428,7 +440,8 @@ Copyright (c) .NET Foundation. All rights reserved.
                                 RuntimeGraphPath="$(BundledRuntimeIdentifierGraphFile)"
                                 NETCoreSdkRuntimeIdentifier="$(NETCoreSdkRuntimeIdentifier)"
                                 EmitSymbols="$(PublishReadyToRunEmitSymbols)"
-                                ReadyToRunUseCrossgen2="$(PublishReadyToRunUseCrossgen2)">
+                                ReadyToRunUseCrossgen2="$(PublishReadyToRunUseCrossgen2)"
+                                PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)">
 
       <Output TaskParameter="CrossgenTool" ItemName="CrossgenTool" />
       <Output TaskParameter="Crossgen2Tool" ItemName="Crossgen2Tool" />
@@ -444,12 +457,13 @@ Copyright (c) .NET Foundation. All rights reserved.
     -->
   <UsingTask Condition="'$(Crossgen2TasksOverriden)' != 'true'" TaskName="RunReadyToRunCompiler" AssemblyFile="$(MicrosoftNETBuildTasksAssembly)" />
   <Target Name="_CreateR2RImages"
-          Inputs="@(_ReadyToRunCompileList);@(_ReadyToRunCompositeBuildInput)"
+          Inputs="@(_ReadyToRunCompileList);@(_ReadyToRunCompositeBuildInput);@(_ReadyToRunPgoFiles)"
           Outputs="%(_ReadyToRunCompileList.OutputR2RImage);%(_ReadyToRunCompileList.OutputPDBImage)">
 
     <RunReadyToRunCompiler CrossgenTool="@(CrossgenTool)"
                            Crossgen2Tool="@(Crossgen2Tool)"
                            UseCrossgen2="$(PublishReadyToRunUseCrossgen2)"
+                           Crossgen2PgoFiles="@(_ReadyToRunPgoFiles)"
                            Crossgen2ExtraCommandLineArgs="$(PublishReadyToRunCrossgen2ExtraArgs)"
                            ImplementationAssemblyReferences="@(_ReadyToRunAssembliesToReference)"
                            ShowCompilerWarnings="$(PublishReadyToRunShowWarnings)"

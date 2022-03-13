@@ -36,9 +36,9 @@ PALTEST(miscellaneous_FormatMessageW_test6_paltest_formatmessagew_test6, "miscel
        the error message it extracts is correct, only that it does place some
        information into the buffer when it is called.
     */
-  
+
     /*
-        
+
         ERROR_SUCCESS (0L) is normally returned by GetLastError,
         But, the  ERROR_SUCCESS is removed from messages for Unix based Systems
         To ensure that we have some information into the buffer we are using the message
@@ -54,25 +54,25 @@ PALTEST(miscellaneous_FormatMessageW_test6_paltest_formatmessagew_test6, "miscel
         0,                               /* maximum size of message buffer */
         NULL                            /* array of message inserts */
         );
-  
-    if(ReturnResult == 0) 
+
+    if(ReturnResult == 0)
     {
         Fail("ERROR: The return value was 0, which indicates failure. The "
              "function failed when trying to Format a FROM_SYSTEM message.");
     }
-  
-    if(wcslen(OutBuffer) <= 0) 
+
+    if(wcslen(OutBuffer) <= 0)
     {
         Fail("ERROR: There are no characters in the buffer, and when the "
              "FORMAT_MESSAGE_FROM_SYSTEM flag is used with ERROR_FILE_NOT_FOUND error, "
              "something should be put into the buffer.");
     }
-  
-    LocalFree(OutBuffer);
-  
+
+    free(OutBuffer);
+
     PAL_Terminate();
     return PASS;
- 
+
 }
 
 

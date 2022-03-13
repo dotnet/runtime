@@ -1392,5 +1392,5 @@ END:
 }
 
 
-.assembly ldc_mul_ovf_u1.exe{}
+.assembly ldc_mul_ovf_u1{}
 

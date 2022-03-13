@@ -3,7 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly isinst.exe{}
+.assembly 'isinst'{}
 
 .class public	Super {
 

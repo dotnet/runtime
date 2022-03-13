@@ -17,7 +17,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-public class Test
+public class Test_KeepAlive
 {
     public static bool visited1 = false;
     public static bool visited2 = false;

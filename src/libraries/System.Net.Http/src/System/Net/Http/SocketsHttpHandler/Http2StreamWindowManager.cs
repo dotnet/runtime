@@ -12,7 +12,6 @@ namespace System.Net.Http
         // Maintains a dynamically-sized stream receive window, and sends WINDOW_UPDATE frames to the server.
         private struct Http2StreamWindowManager
         {
-            private static readonly double StopWatchToTimesSpan = TimeSpan.TicksPerSecond / (double)Stopwatch.Frequency;
             private static double WindowScaleThresholdMultiplier => GlobalHttpSettings.SocketsHttpHandler.Http2StreamWindowScaleThresholdMultiplier;
             private static int MaxStreamWindowSize => GlobalHttpSettings.SocketsHttpHandler.MaxHttp2StreamWindowSize;
             private static bool WindowScalingEnabled => !GlobalHttpSettings.SocketsHttpHandler.DisableDynamicHttp2WindowSizing;
@@ -99,7 +98,7 @@ namespace System.Net.Http
                 TimeSpan rtt = connection._rttEstimator.MinRtt;
                 if (rtt > TimeSpan.Zero && _streamWindowSize < MaxStreamWindowSize)
                 {
-                    TimeSpan dt = StopwatchTicksToTimeSpan(currentTime - _lastWindowUpdate);
+                    TimeSpan dt = Stopwatch.GetElapsedTime(_lastWindowUpdate, currentTime);
 
                     // We are detecting bursts in the amount of data consumed within a single 'dt' window update period.
                     // The value "_deliveredBytes / dt" correlates with the bandwidth of the connection.
@@ -132,12 +131,6 @@ namespace System.Net.Http
                 connection.LogExceptions(sendWindowUpdateTask);
 
                 _lastWindowUpdate = currentTime;
-            }
-
-            private static TimeSpan StopwatchTicksToTimeSpan(long stopwatchTicks)
-            {
-                long ticks = (long)(StopWatchToTimesSpan * stopwatchTicks);
-                return new TimeSpan(ticks);
             }
         }
 
@@ -213,6 +206,7 @@ namespace System.Net.Http
 
                     // Send a PING
                     _pingCounter--;
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace($"[FlowControl] Sending RTT PING with payload {_pingCounter}");
                     connection.LogExceptions(connection.SendPingAsync(_pingCounter, isAck: false));
                     _pingSentTimestamp = now;
                     _state = State.PingSent;
@@ -223,6 +217,7 @@ namespace System.Net.Http
             {
                 if (_state != State.PingSent && _state != State.TerminatingMayReceivePingAck)
                 {
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace($"[FlowControl] Unexpected PING ACK in state {_state}");
                     ThrowProtocolError();
                 }
 
@@ -236,7 +231,10 @@ namespace System.Net.Http
                 Debug.Assert(payload < 0);
 
                 if (_pingCounter != payload)
+                {
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace($"[FlowControl] Unexpected RTT PING ACK payload {payload}, should be {_pingCounter}.");
                     ThrowProtocolError();
+                }
 
                 RefreshRtt(connection);
                 _state = State.Waiting;
@@ -257,9 +255,8 @@ namespace System.Net.Http
 
             private void RefreshRtt(Http2Connection connection)
             {
-                long elapsedTicks = Stopwatch.GetTimestamp() - _pingSentTimestamp;
                 long prevRtt = _minRtt == 0 ? long.MaxValue : _minRtt;
-                TimeSpan currentRtt = TimeSpan.FromSeconds(elapsedTicks / (double)Stopwatch.Frequency);
+                TimeSpan currentRtt = Stopwatch.GetElapsedTime(_pingSentTimestamp);
                 long minRtt = Math.Min(prevRtt, currentRtt.Ticks);
 
                 Interlocked.Exchange(ref _minRtt, minRtt); // MinRtt is being queried from another thread

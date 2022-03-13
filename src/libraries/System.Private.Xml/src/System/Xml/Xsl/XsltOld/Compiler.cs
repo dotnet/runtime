@@ -746,13 +746,13 @@ namespace System.Xml.Xsl.XsltOld
 
         internal int AddStringQuery(string xpathQuery)
         {
-            string modifiedQuery = XmlCharType.IsOnlyWhitespace(xpathQuery) ? xpathQuery : "string(" + xpathQuery + ")";
+            string modifiedQuery = XmlCharType.IsOnlyWhitespace(xpathQuery) ? xpathQuery : $"string({xpathQuery})";
             return AddQuery(modifiedQuery);
         }
 
         internal int AddBooleanQuery(string xpathQuery)
         {
-            string modifiedQuery = XmlCharType.IsOnlyWhitespace(xpathQuery) ? xpathQuery : "boolean(" + xpathQuery + ")";
+            string modifiedQuery = XmlCharType.IsOnlyWhitespace(xpathQuery) ? xpathQuery : $"boolean({xpathQuery})";
             return AddQuery(modifiedQuery);
         }
 
@@ -959,8 +959,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal ArrayList CompileAvt(string avtText)
         {
-            bool constant;
-            return CompileAvt(avtText, out constant);
+            return CompileAvt(avtText, out _);
         }
 
         // Compiler is a class factory for some actions:
@@ -1184,7 +1183,7 @@ namespace System.Xml.Xsl.XsltOld
             public override XPathExpression Clone() { return this; }
             public override void CheckErrors()
             {
-                throw new XsltException(SR.Xslt_InvalidXPath, new string[] { Expression }, _baseUri, _linePosition, _lineNumber, null);
+                throw new XsltException(SR.Xslt_InvalidXPath, new string[] { Expression }, _baseUri, _lineNumber, _linePosition, null);
             }
         }
     }

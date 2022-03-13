@@ -22,6 +22,8 @@ using ILCompiler.Reflection.ReadyToRun;
 using Internal.Runtime;
 using Internal.TypeSystem;
 
+using OperatingSystem = ILCompiler.Reflection.ReadyToRun.OperatingSystem;
+
 namespace R2RDump
 {
     public class DumpOptions : IAssemblyResolver
@@ -146,7 +148,7 @@ namespace R2RDump
 
             return new StandaloneAssemblyMetadata(peReader);
         }
-        
+
         public SignatureFormattingOptions GetSignatureFormattingOptions()
         {
             if (signatureFormattingOptions == null)
@@ -416,6 +418,25 @@ namespace R2RDump
                     _dumper.DumpEntryPoints();
                 }
 
+                TargetArchitecture architecture = r2r.Machine switch
+                {
+                    Machine.I386 => TargetArchitecture.X86,
+                    Machine.Amd64 => TargetArchitecture.X64,
+                    Machine.ArmThumb2 => TargetArchitecture.ARM,
+                    Machine.Arm64 => TargetArchitecture.ARM64,
+                    _ => throw new NotImplementedException(r2r.Machine.ToString()),
+                };
+                TargetOS os = r2r.OperatingSystem switch
+                {
+                    OperatingSystem.Windows => TargetOS.Windows,
+                    OperatingSystem.Linux => TargetOS.Linux,
+                    OperatingSystem.Apple => TargetOS.OSX,
+                    OperatingSystem.FreeBSD => TargetOS.FreeBSD,
+                    OperatingSystem.NetBSD => TargetOS.FreeBSD,
+                    _ => throw new NotImplementedException(r2r.OperatingSystem.ToString()),
+                };
+                TargetDetails details = new TargetDetails(architecture, os, TargetAbi.CoreRT);
+
                 if (_options.CreatePDB)
                 {
                     string pdbPath = _options.PdbPath;
@@ -423,7 +444,7 @@ namespace R2RDump
                     {
                         pdbPath = Path.GetDirectoryName(r2r.Filename);
                     }
-                    var pdbWriter = new PdbWriter(pdbPath, PDBExtraData.None);
+                    var pdbWriter = new PdbWriter(pdbPath, PDBExtraData.None, details);
                     pdbWriter.WritePDBData(r2r.Filename, ProduceDebugInfoMethods(r2r));
                 }
 
@@ -434,7 +455,7 @@ namespace R2RDump
                     {
                         perfmapPath = Path.ChangeExtension(r2r.Filename, ".r2rmap");
                     }
-                    PerfMapWriter.Write(perfmapPath, _options.PerfmapFormatVersion, ProduceDebugInfoMethods(r2r), ProduceDebugInfoAssemblies(r2r), r2r.TargetOperatingSystem, r2r.TargetArchitecture);
+                    PerfMapWriter.Write(perfmapPath, _options.PerfmapFormatVersion, ProduceDebugInfoMethods(r2r), ProduceDebugInfoAssemblies(r2r), details);
                 }
 
                 if (standardDump)
@@ -459,7 +480,7 @@ namespace R2RDump
                 mi.AssemblyName = method.ComponentReader.MetadataReader.GetString(method.ComponentReader.MetadataReader.GetAssemblyDefinition().Name);
                 mi.ColdRVA = 0;
                 mi.ColdLength = 0;
-                
+
                 yield return mi;
             }
         }

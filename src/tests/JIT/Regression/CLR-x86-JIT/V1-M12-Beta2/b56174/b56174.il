@@ -10,12 +10,16 @@
 .assembly b56174
 {
 }
+.assembly extern xunit.core {}
 .class public auto ansi TestClass extends ['mscorlib']System.Object
 {
 .field static value class [mscorlib]System.RuntimeTypeHandle args
 
 .method public hidebysig static int32 Main(class [mscorlib]System.String[]) il managed
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.maxstack  8
 	.entrypoint
 	ldtoken int32

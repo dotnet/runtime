@@ -418,6 +418,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets a writable dictionary (that is, a map) of custom properties for the HttpClient requests. The dictionary is initialized empty; you can insert and query key-value pairs for your custom handlers and special processing.
+        /// </summary>
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
 
@@ -528,14 +531,9 @@ namespace System.Net.Http
             return _handler;
         }
 
-        protected internal override HttpResponseMessage Send(HttpRequestMessage request,
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request!!,
             CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
-
             if (request.Version.Major >= 2)
             {
                 throw new NotSupportedException(SR.Format(SR.net_http_http2_sync_not_supported, GetType()));
@@ -562,13 +560,8 @@ namespace System.Net.Http
             return handler.Send(request, cancellationToken);
         }
 
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request!!, CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
-
             CheckDisposed();
 
             if (cancellationToken.IsCancellationRequested)

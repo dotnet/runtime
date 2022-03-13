@@ -108,7 +108,7 @@ public class CC4<T> : C4<T>
 
 
 
-public class Test
+public class Test_Class2_ImplicitOverrideVirtualNewslot
 {
 
 	public static int counter = 0;

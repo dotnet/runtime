@@ -192,11 +192,21 @@ public:
     bool tmpAllFree() const;
 #endif // DEBUG
 
+    void tmpBeginPreAllocateTemps()
+    {
+        tmpSize = 0;
+    }
     void tmpPreAllocateTemps(var_types type, unsigned count);
 
     unsigned tmpGetTotalSize()
     {
+        assert(hasComputedTmpSize());
         return tmpSize;
+    }
+
+    bool hasComputedTmpSize()
+    {
+        return tmpSize != UINT_MAX;
     }
 
 private:

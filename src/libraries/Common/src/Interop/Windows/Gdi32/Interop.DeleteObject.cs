@@ -8,8 +8,9 @@ internal static partial class Interop
 {
     internal static partial class Gdi32
     {
-        [DllImport(Libraries.Gdi32, ExactSpelling = true)]
-        public static extern bool DeleteObject(IntPtr ho);
+        [LibraryImport(Libraries.Gdi32)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool DeleteObject(IntPtr ho);
 
         public static bool DeleteObject(HandleRef ho)
         {

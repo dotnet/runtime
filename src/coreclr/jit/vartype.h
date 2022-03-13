@@ -248,6 +248,12 @@ inline bool varTypeIsLong(T vt)
 }
 
 template <class T>
+inline bool varTypeIsInt(T vt)
+{
+    return (TypeGet(vt) >= TYP_INT) && (TypeGet(vt) <= TYP_UINT);
+}
+
+template <class T>
 inline bool varTypeIsMultiReg(T vt)
 {
 #ifdef TARGET_64BIT

@@ -347,7 +347,7 @@ namespace System.Xml.Xsl.Runtime
                     break;
             }
 
-            Debug.Fail("Conversion from " + value.XmlType.QualifiedName.Name + " to " + destinationType + " is not supported.");
+            Debug.Fail($"Conversion from {value.XmlType.QualifiedName.Name} to {destinationType} is not supported.");
             return value;
         }
 

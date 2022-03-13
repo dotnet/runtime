@@ -170,9 +170,9 @@ HRESULT ProfilingAPIDetach::RequestProfilerDetach(ProfilerInfo *pProfilerInfo, D
 
     if (dwExpectedCompletionMilliseconds == 0)
     {
-        // Pick suitable default if the profiler just leaves this at 0.  5 seconds is
+        // Pick suitable default if the profiler just leaves this at 0. 2.5 seconds is
         // reasonable.
-        dwExpectedCompletionMilliseconds = 5000;
+        dwExpectedCompletionMilliseconds = 2500;
     }
 
     {
@@ -365,8 +365,8 @@ void ProfilingAPIDetach::SleepWhileProfilerEvacuates(ProfilerDetachInfo *pDetach
     const DWORD kdwDefaultMinSleepMs = 300;
 
     // The default "steady state" max sleep is how long we'll wait if, after a couple
-    // tries the profiler still hasn't evacuated. Default to every 10 minutes
-    const DWORD kdwDefaultMaxSleepMs = 600000;
+    // tries the profiler still hasn't evacuated. Default to every 5 seconds
+    const DWORD kdwDefaultMaxSleepMs = 5000;
 
     static DWORD s_dwMinSleepMs = 0;
     static DWORD s_dwMaxSleepMs = 0;

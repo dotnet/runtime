@@ -48,10 +48,8 @@ namespace System.Collections.Generic
 
         // Fills a Stack with the contents of a particular collection.  The items are
         // pushed onto the stack in the same order they are read by the enumerator.
-        public Stack(IEnumerable<T> collection)
+        public Stack(IEnumerable<T> collection!!)
         {
-            if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
             _array = EnumerableHelpers.ToArray(collection, out _size);
         }
 
@@ -94,13 +92,8 @@ namespace System.Collections.Generic
         }
 
         // Copies the stack into an array.
-        public void CopyTo(T[] array, int arrayIndex)
+        public void CopyTo(T[] array!!, int arrayIndex)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
-
             if (arrayIndex < 0 || arrayIndex > array.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
@@ -120,13 +113,8 @@ namespace System.Collections.Generic
             }
         }
 
-        void ICollection.CopyTo(Array array, int arrayIndex)
+        void ICollection.CopyTo(Array array!!, int arrayIndex)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
-
             if (array.Rank != 1)
             {
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -295,6 +283,7 @@ namespace System.Collections.Generic
         /// the capacity is increased by continuously twice current capacity until it is at least the specified <paramref name="capacity"/>.
         /// </summary>
         /// <param name="capacity">The minimum capacity to ensure.</param>
+        /// <returns>The new capacity of this stack.</returns>
         public int EnsureCapacity(int capacity)
         {
             if (capacity < 0)

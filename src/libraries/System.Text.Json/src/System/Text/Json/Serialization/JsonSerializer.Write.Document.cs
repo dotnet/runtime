@@ -11,8 +11,9 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         /// <summary>
-        /// Convert the provided value into a <see cref="JsonDocument"/>.
+        /// Converts the provided value into a <see cref="JsonDocument"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
         /// <returns>A <see cref="JsonDocument"/> representation of the JSON value.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
@@ -21,11 +22,15 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static JsonDocument SerializeToDocument<TValue>(TValue value, JsonSerializerOptions? options = null) =>
-            WriteDocument(value, GetRuntimeType(value), options);
+        public static JsonDocument SerializeToDocument<TValue>(TValue value, JsonSerializerOptions? options = null)
+        {
+            Type runtimeType = GetRuntimeType(value);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            return WriteDocumentUsingSerializer(value, jsonTypeInfo);
+        }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="JsonDocument"/>.
+        /// Converts the provided value into a <see cref="JsonDocument"/>.
         /// </summary>
         /// <returns>A <see cref="JsonDocument"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -42,15 +47,17 @@ namespace System.Text.Json
         /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static JsonDocument SerializeToDocument(object? value, Type inputType, JsonSerializerOptions? options = null) =>
-            WriteDocument(
-                value,
-                GetRuntimeTypeAndValidateInputType(value, inputType),
-                options);
+        public static JsonDocument SerializeToDocument(object? value, Type inputType, JsonSerializerOptions? options = null)
+        {
+            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            return WriteDocumentUsingSerializer(value, jsonTypeInfo);
+        }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="JsonDocument"/>.
+        /// Converts the provided value into a <see cref="JsonDocument"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
         /// <returns>A <see cref="JsonDocument"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
@@ -61,18 +68,13 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
         /// </exception>
-        public static JsonDocument SerializeToDocument<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
+        public static JsonDocument SerializeToDocument<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo!!)
         {
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
-            return WriteDocument(value, jsonTypeInfo);
+            return WriteDocumentUsingGeneratedSerializer(value, jsonTypeInfo);
         }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="JsonDocument"/>.
+        /// Converts the provided value into a <see cref="JsonDocument"/>.
         /// </summary>
         /// <returns>A <see cref="JsonDocument"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -89,25 +91,13 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// <paramref name="inputType"/> or <paramref name="context"/> is <see langword="null"/>.
         /// </exception>
-        public static JsonDocument SerializeToDocument(object? value, Type inputType, JsonSerializerContext context)
+        public static JsonDocument SerializeToDocument(object? value, Type inputType, JsonSerializerContext context!!)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            return WriteDocument(value, GetTypeInfo(context, runtimeType));
+            return WriteDocumentUsingGeneratedSerializer(value, GetTypeInfo(context, runtimeType));
         }
 
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static JsonDocument WriteDocument<TValue>(in TValue value, Type runtimeType, JsonSerializerOptions? options)
-        {
-            JsonTypeInfo typeInfo = GetTypeInfo(runtimeType, options);
-            return WriteDocument(value, typeInfo);
-        }
-
-        private static JsonDocument WriteDocument<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
+        private static JsonDocument WriteDocumentUsingGeneratedSerializer<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
             Debug.Assert(options != null);
@@ -117,7 +107,23 @@ namespace System.Text.Json
             PooledByteBufferWriter output = new(options.DefaultBufferSize);
             using (Utf8JsonWriter writer = new(output, options.GetWriterOptions()))
             {
-                WriteUsingMetadata(writer, value, jsonTypeInfo);
+                WriteUsingGeneratedSerializer(writer, value, jsonTypeInfo);
+            }
+
+            return JsonDocument.ParseRented(output, options.GetDocumentOptions());
+        }
+
+        private static JsonDocument WriteDocumentUsingSerializer<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
+        {
+            JsonSerializerOptions options = jsonTypeInfo.Options;
+            Debug.Assert(options != null);
+
+            // For performance, share the same buffer across serialization and deserialization.
+            // The PooledByteBufferWriter is cleared and returned when JsonDocument.Dispose() is called.
+            PooledByteBufferWriter output = new(options.DefaultBufferSize);
+            using (Utf8JsonWriter writer = new(output, options.GetWriterOptions()))
+            {
+                WriteUsingSerializer(writer, value, jsonTypeInfo);
             }
 
             return JsonDocument.ParseRented(output, options.GetDocumentOptions());

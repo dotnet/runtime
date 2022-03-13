@@ -1,6 +1,7 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <IsAspNetCoreApp>true</IsAspNetCoreApp>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
   </PropertyGroup>
 </Project>

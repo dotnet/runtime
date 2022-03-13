@@ -286,5 +286,41 @@ namespace System.IO.Pipelines.Tests
             Assert.True(startPosition.Equals(wrappedPipeReader.LastConsumed));
             Assert.True(startPosition.Equals(wrappedPipeReader.LastExamined));
         }
+
+        [Fact]
+        public async Task CopyToAsyncStreamCopiesRemainderAfterReadingSome()
+        {
+            var buffer = Encoding.UTF8.GetBytes("Hello World");
+            await Pipe.Writer.WriteAsync(buffer);
+            Pipe.Writer.Complete();
+
+            var result = await PipeReader.ReadAsync();
+            Assert.Equal(result.Buffer.ToArray(), buffer);
+            // Consume Hello
+            PipeReader.AdvanceTo(result.Buffer.GetPosition(5));
+
+            var ms = new MemoryStream();
+            await PipeReader.CopyToAsync(ms);
+
+            Assert.Equal(buffer.AsMemory(5).ToArray(), ms.ToArray());
+        }
+
+        [Fact]
+        public async Task CopyToAsyncPipeWriterCopiesRemainderAfterReadingSome()
+        {
+            var buffer = Encoding.UTF8.GetBytes("Hello World");
+            await Pipe.Writer.WriteAsync(buffer);
+            Pipe.Writer.Complete();
+
+            var result = await PipeReader.ReadAsync();
+            Assert.Equal(result.Buffer.ToArray(), buffer);
+            // Consume Hello
+            PipeReader.AdvanceTo(result.Buffer.GetPosition(5));
+
+            var ms = new MemoryStream();
+            await PipeReader.CopyToAsync(PipeWriter.Create(ms));
+
+            Assert.Equal(buffer.AsMemory(5).ToArray(), ms.ToArray());
+        }
     }
 }

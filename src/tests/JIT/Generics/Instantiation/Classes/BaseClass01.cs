@@ -147,7 +147,7 @@ public class GenIntJaggedArray : GenBase<int[][]>
 }
 
 
-public class Test
+public class Test_BaseClass01
 {
     public static int counter = 0;
     public static bool result = true;

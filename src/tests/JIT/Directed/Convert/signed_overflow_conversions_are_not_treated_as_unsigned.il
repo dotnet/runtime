@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { auto }
+.assembly extern xunit.core {}
 .assembly extern System.Runtime { auto }
-.assembly SignedOverflowConversionsAreNotTreatedAsUnsigned { }
+.assembly 'signed_overflow_conversions_are_not_treated_as_unsigned' { }
 
 .class auto SignedOverflowConversionsAreNotTreatedAsUnsigned extends [System.Runtime]System.Object
 {
@@ -16,6 +17,9 @@
 
   .method private hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init
     (

@@ -36,20 +36,36 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         public static SafeMsQuicConfigurationHandle Create(QuicClientConnectionOptions options)
         {
             X509Certificate? certificate = null;
-            if (options.ClientAuthenticationOptions?.ClientCertificates != null)
+
+            if (options.ClientAuthenticationOptions != null)
             {
-                foreach (var cert in options.ClientAuthenticationOptions.ClientCertificates)
+                if (options.ClientAuthenticationOptions.CipherSuitesPolicy != null)
                 {
-                    try
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ClientAuthenticationOptions.CipherSuitesPolicy)));
+                }
+
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
+                if (options.ClientAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ClientAuthenticationOptions.EncryptionPolicy)));
+                }
+#pragma warning restore SYSLIB0040
+
+                if (options.ClientAuthenticationOptions.ClientCertificates != null)
+                {
+                    foreach (var cert in options.ClientAuthenticationOptions.ClientCertificates)
                     {
-                        if (((X509Certificate2)cert).HasPrivateKey)
+                        try
                         {
-                            // Pick first certificate with private key.
-                            certificate = cert;
-                            break;
+                            if (((X509Certificate2)cert).HasPrivateKey)
+                            {
+                                // Pick first certificate with private key.
+                                certificate = cert;
+                                break;
+                            }
                         }
+                        catch { }
                     }
-                    catch { }
                 }
             }
 
@@ -68,10 +84,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(serverAuthenticationOptions.CipherSuitesPolicy)));
                 }
 
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 if (serverAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
                 {
                     throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(serverAuthenticationOptions.EncryptionPolicy)));
                 }
+#pragma warning restore SYSLIB0040
 
                 if (serverAuthenticationOptions.ClientCertificateRequired)
                 {
@@ -142,9 +160,13 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 ulong ms = (ulong)options.IdleTimeout.Ticks / TimeSpan.TicksPerMillisecond;
                 if (ms > (1ul << 62) - 1) throw new Exception("IdleTimeout is too large (max 2^62-1 milliseconds)");
 
-                settings.IsSetFlags |= QuicSettingsIsSetFlags.IdleTimeoutMs;
                 settings.IdleTimeoutMs = (ulong)options.IdleTimeout.TotalMilliseconds;
             }
+            else
+            {
+                settings.IdleTimeoutMs = 0;
+            }
+            settings.IsSetFlags |= QuicSettingsIsSetFlags.IdleTimeoutMs;
 
             uint status;
             SafeMsQuicConfigurationHandle? configurationHandle;

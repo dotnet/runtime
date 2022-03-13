@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public partial class SingleTests
+    public class SingleTests
     {
         // NOTE: Consider duplicating any tests added here in DoubleTests.cs
 
@@ -39,6 +39,10 @@ namespace System.Tests
         [InlineData(float.NegativeInfinity, float.MinValue, -1)]
         [InlineData(-0f, float.NegativeInfinity, 1)]
         [InlineData(float.NegativeInfinity, -0f, -1)]
+        [InlineData(float.NegativeInfinity, float.NegativeInfinity, 0)]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, -1)]
+        [InlineData(float.PositiveInfinity, float.PositiveInfinity, 0)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, 1)]
         public static void CompareTo_Other_ReturnsExpected(float f1, object value, int expected)
         {
             if (value is float f2)
@@ -268,6 +272,11 @@ namespace System.Tests
             yield return new object[] { (567.89f).ToString(), defaultStyle, null, 567.89f };
             yield return new object[] { (-567.89f).ToString(), defaultStyle, null, -567.89f };
             yield return new object[] { "1E23", defaultStyle, null, 1E23f };
+
+            yield return new object[] { emptyFormat.NumberDecimalSeparator + "234", defaultStyle, null, 0.234f };
+            yield return new object[] { "234" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 234.0f };
+            yield return new object[] { new string('0', 72) + "3" + new string('0', 38) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 3E38f };
+            yield return new object[] { new string('0', 73) + "3" + new string('0', 38) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 3E38f };
 
             // 2^24 + 1. Not exactly representable
             yield return new object[] { "16777217.0", defaultStyle, invariantFormat, 16777216.0f };

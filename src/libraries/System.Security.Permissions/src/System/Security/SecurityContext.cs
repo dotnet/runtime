@@ -5,6 +5,9 @@ using System.Threading;
 
 namespace System.Security
 {
+#if NETCOREAPP
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed partial class SecurityContext : System.IDisposable
     {
         internal SecurityContext() { }

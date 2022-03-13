@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
     public class File_SymbolicLinks : BaseSymbolicLinks_FileSystem
     {
         protected override bool IsDirectoryTest => false;
@@ -44,6 +45,21 @@ namespace System.IO.Tests
         [Fact]
         public void ResolveLinkTarget_Throws_NotExists() =>
             ResolveLinkTarget_Throws_NotExists_Internal<FileNotFoundException>();
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void UnsupportedLink_ReturnsNull()
+        {
+            string unsupportedLinkPath = GetAppExecLinkPath();
+            if (unsupportedLinkPath is null)
+            {
+                return;
+            }
+
+            Assert.Null(File.ResolveLinkTarget(unsupportedLinkPath, false));
+            Assert.Null(File.ResolveLinkTarget(unsupportedLinkPath, true));
+        }
+
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void CreateSymbolicLink_PathToTarget_RelativeToLinkPath()

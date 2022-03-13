@@ -139,4 +139,4 @@ FAIL:
 
 }
 }
-.assembly c_brfalse.exe {}
+.assembly c_brfalse {}

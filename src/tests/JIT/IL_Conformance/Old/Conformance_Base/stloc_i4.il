@@ -78,4 +78,4 @@ FAIL:
 	ret
 }
 }
-.assembly stloc_i4.exe{}
+.assembly stloc_i4{}

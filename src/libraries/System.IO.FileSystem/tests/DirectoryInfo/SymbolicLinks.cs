@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
     public class DirectoryInfo_SymbolicLinks : BaseSymbolicLinks_FileSystemInfo
     {
         protected override bool IsDirectoryTest => true;
@@ -43,78 +44,8 @@ namespace System.IO.Tests
             }
             else
             {
-                // Unix implementation detail:
-                // When the directory target does not exist FileStatus.GetExists returns false because:
-                // - We check _exists (which whould be true because the link itself exists).
-                // - We check InitiallyDirectory, which is the initial expected object type (which would be true).
-                // - We check _directory (false because the target directory does not exist)
+                // Unix requires the target to be a directory that exists.
                 Assert.False(link.Exists);
-            }
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void EnumerateDirectories_LinksWithCycles_ThrowsTooManyLevelsOfSymbolicLinks(bool recurse)
-        {
-            var options  = new EnumerationOptions() { RecurseSubdirectories = recurse };
-            DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
-
-            // Windows avoids accessing the cyclic symlink if we do not recurse
-            if (OperatingSystem.IsWindows() && !recurse)
-            {
-                testDirectory.EnumerateDirectories("*", options).Count();
-                testDirectory.GetDirectories("*", options).Count();
-            }
-            else
-            {
-                // Internally transforms the FileSystemEntry to a DirectoryInfo, which performs a disk hit on the cyclic symlink
-                Assert.Throws<IOException>(() => testDirectory.EnumerateDirectories("*", options).Count());
-                Assert.Throws<IOException>(() => testDirectory.GetDirectories("*", options).Count());
-            }
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void EnumerateFiles_LinksWithCycles_ThrowsTooManyLevelsOfSymbolicLinks(bool recurse)
-        {
-            var options  = new EnumerationOptions() { RecurseSubdirectories = recurse };
-            DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
-
-            // Windows avoids accessing the cyclic symlink if we do not recurse
-            if (OperatingSystem.IsWindows() && !recurse)
-            {
-                testDirectory.EnumerateFiles("*", options).Count();
-                testDirectory.GetFiles("*", options).Count();
-            }
-            else
-            {
-                // Internally transforms the FileSystemEntry to a FileInfo, which performs a disk hit on the cyclic symlink
-                Assert.Throws<IOException>(() => testDirectory.EnumerateFiles("*", options).Count());
-                Assert.Throws<IOException>(() => testDirectory.GetFiles("*", options).Count());
-            }
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void EnumerateFileSystemInfos_LinksWithCycles_ThrowsTooManyLevelsOfSymbolicLinks(bool recurse)
-        {
-            var options  = new EnumerationOptions() { RecurseSubdirectories = recurse };
-            DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
-
-            // Windows avoids accessing the cyclic symlink if we do not recurse
-            if (OperatingSystem.IsWindows() && !recurse)
-            {
-                testDirectory.EnumerateFileSystemInfos("*", options).Count();
-                testDirectory.GetFileSystemInfos("*", options).Count();
-            }
-            else
-            {
-                // Internally transforms the FileSystemEntry to a FileSystemInfo, which performs a disk hit on the cyclic symlink
-                Assert.Throws<IOException>(() => testDirectory.EnumerateFileSystemInfos("*", options).Count());
-                Assert.Throws<IOException>(() => testDirectory.GetFileSystemInfos("*", options).Count());
             }
         }
 

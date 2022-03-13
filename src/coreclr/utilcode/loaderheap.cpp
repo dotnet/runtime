@@ -502,9 +502,9 @@ class LoaderHeapSniffer
 
         static VOID RecordEvent(UnlockedLoaderHeap *pHeap,
                                 AllocationType allocationType,
-                                __in const char *szFile,
+                                _In_ const char *szFile,
                                 int            lineNum,
-                                __in const char *szAllocFile,
+                                _In_ const char *szAllocFile,
                                 int            allocLineNum,
                                 void          *pMem,
                                 size_t         dwRequestedSize,
@@ -954,10 +954,8 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
 
     m_Options                    = 0;
 
-#ifndef CROSSGEN_COMPILE
     if (fMakeExecutable)
         m_Options                |= LHF_EXECUTABLE;
-#endif // CROSSGEN_COMPILE
 
     m_pFirstFreeBlock            = NULL;
 
@@ -1250,7 +1248,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 }
 
 void *UnlockedLoaderHeap::UnlockedAllocMem(size_t dwSize
-                                           COMMA_INDEBUG(__in const char *szFile)
+                                           COMMA_INDEBUG(_In_ const char *szFile)
                                            COMMA_INDEBUG(int  lineNum))
 {
     CONTRACT(void*)
@@ -1302,7 +1300,7 @@ static DWORD ShouldInjectFault()
 #endif
 
 void *UnlockedLoaderHeap::UnlockedAllocMem_NoThrow(size_t dwSize
-                                                   COMMA_INDEBUG(__in const char *szFile)
+                                                   COMMA_INDEBUG(_In_ const char *szFile)
                                                    COMMA_INDEBUG(int lineNum))
 {
     CONTRACT(void*)
@@ -1406,9 +1404,9 @@ again:
 
 void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
                                             size_t dwRequestedSize
-                                            COMMA_INDEBUG(__in const char *szFile)
+                                            COMMA_INDEBUG(_In_ const char *szFile)
                                             COMMA_INDEBUG(int  lineNum)
-                                            COMMA_INDEBUG(__in const char *szAllocFile)
+                                            COMMA_INDEBUG(_In_ const char *szAllocFile)
                                             COMMA_INDEBUG(int  allocLineNum))
 {
     CONTRACTL
@@ -1578,7 +1576,7 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
 void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSize,
                                                           size_t  alignment,
                                                           size_t *pdwExtra
-                                                          COMMA_INDEBUG(__in const char *szFile)
+                                                          COMMA_INDEBUG(_In_ const char *szFile)
                                                           COMMA_INDEBUG(int  lineNum))
 {
     CONTRACT(void*)
@@ -1715,7 +1713,7 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
 void *UnlockedLoaderHeap::UnlockedAllocAlignedMem(size_t  dwRequestedSize,
                                                   size_t  dwAlignment,
                                                   size_t *pdwExtra
-                                                  COMMA_INDEBUG(__in const char *szFile)
+                                                  COMMA_INDEBUG(_In_ const char *szFile)
                                                   COMMA_INDEBUG(int  lineNum))
 {
     CONTRACTL
@@ -1910,9 +1908,9 @@ void UnlockedLoaderHeap::UnlockedPrintEvents()
 
 /*static*/ VOID LoaderHeapSniffer::RecordEvent(UnlockedLoaderHeap *pHeap,
                                                AllocationType allocationType,
-                                               __in const char *szFile,
+                                               _In_ const char *szFile,
                                                int            lineNum,
-                                               __in const char *szAllocFile,
+                                               _In_ const char *szAllocFile,
                                                int            allocLineNum,
                                                void          *pMem,
                                                size_t         dwRequestedSize,
@@ -2181,6 +2179,21 @@ AllocMemTracker::~AllocMemTracker()
         }
     }
 
+// We have seen evidence of memory corruption in this data structure.
+// https://github.com/dotnet/runtime/issues/54469
+// m_pFirstBlock is intended to be a linked list terminating with
+// &m_FirstBlock but we are finding a nullptr in the list before
+// that point. In order to investigate further we need to observe
+// the corrupted memory block(s) before they are deleted below
+#ifdef _DEBUG
+    AllocMemTrackerBlock* pDebugBlock = m_pFirstBlock;
+    for (int i = 0; pDebugBlock != &m_FirstBlock; i++)
+    {
+        CONSISTENCY_CHECK_MSGF(i < 10000, ("Linked list is much longer than expected, memory corruption likely\n"));
+        CONSISTENCY_CHECK_MSGF(pDebugBlock != nullptr, ("Linked list pointer == NULL, memory corruption likely\n"));
+        pDebugBlock = pDebugBlock->m_pNext;
+    }
+#endif
 
     AllocMemTrackerBlock *pBlock = m_pFirstBlock;
     while (pBlock != &m_FirstBlock)

@@ -35,6 +35,21 @@ namespace System.Text.Json.SourceGeneration.Tests
         public string Country { get; set; }
     }
 
+    public class NumberTypes
+    {
+        public float Single { get; set; }
+        public double Double { get; set; }
+        public decimal Decimal { get; set; }
+        public sbyte SByte { get; set; }
+        public byte Byte { get; set; }
+        public ushort UShort { get; set; }
+        public short Short { get; set; }
+        public uint UInt { get; set; }
+        public int Int { get; set; }
+        public ulong ULong { get; set; }
+        public long Long { get; set; }
+    }
+
     public class ActiveOrUpcomingEvent
     {
         public int Id { get; set; }
@@ -45,6 +60,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public string Description { get; set; }
         public DateTimeOffset StartDate { get; set; }
         public DateTimeOffset EndDate { get; set; }
+        public TimeSpan Offset { get; set; }
     }
 
     public class CampaignSummaryViewModel
@@ -136,4 +152,32 @@ namespace System.Text.Json.SourceGeneration.Tests
     }
 
     internal struct MyStruct { }
+
+    public struct PersonStruct
+    {
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+    }
+
+    public class TypeWithValidationAttributes
+    {
+        [ComponentModel.DataAnnotations.Required(ErrorMessage = "Name is required")]
+        [ComponentModel.DataAnnotations.StringLength(100, ErrorMessage = "Name must not be longer than 100 characters")]
+        public string Name { get; set; }
+
+        [ComponentModel.DataAnnotations.Required]
+        public string Email { get; set; }
+    }
+
+    public class BaseAttribute : Attribute
+    {
+        public string TestProperty { get; set; }
+    }
+
+    public class DerivedAttribute : BaseAttribute
+    { }
+
+    [Derived(TestProperty = "Test")]
+    public class TypeWithDerivedAttribute
+    { }
 }

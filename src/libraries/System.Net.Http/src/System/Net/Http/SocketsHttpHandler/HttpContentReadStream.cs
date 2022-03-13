@@ -28,6 +28,17 @@ namespace System.Net.Http
 
             protected bool IsDisposed => _disposed == 1;
 
+            protected bool CanReadFromConnection
+            {
+                get
+                {
+                    // _connection == null typically means that we have finished reading the response.
+                    // Cancellation may lead to a state where a disposed _connection is not null.
+                    HttpConnection? connection = _connection;
+                    return connection != null && connection._disposed != Status_Disposed;
+                }
+            }
+
             public virtual ValueTask<bool> DrainAsync(int maxDrainBytes)
             {
                 Debug.Fail($"DrainAsync should not be called for this response stream: {GetType()}");

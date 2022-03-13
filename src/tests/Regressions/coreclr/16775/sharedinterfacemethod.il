@@ -1,4 +1,5 @@
 .assembly extern System.Runtime { }
+.assembly extern xunit.core {}
 
 .assembly sharedinterfacemethod { }
 
@@ -28,6 +29,9 @@
 
 .method public hidebysig static int32 Main() cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
 
   // Callvirt to a shared interface method

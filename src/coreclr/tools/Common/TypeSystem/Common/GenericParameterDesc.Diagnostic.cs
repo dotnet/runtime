@@ -11,6 +11,12 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the name of the generic parameter as defined in the metadata. This must not throw
         /// </summary>
-        public abstract string DiagnosticName { get; }
+        public virtual string DiagnosticName
+        {
+            get
+            {
+                return string.Concat("T", Index.ToStringInvariant());
+            }
+        }
     }
 }

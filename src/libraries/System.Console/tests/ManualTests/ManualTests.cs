@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.IO;
+using System.Text;
 using Xunit;
 
 namespace System
@@ -42,6 +43,36 @@ namespace System
             using StreamReader reader = new StreamReader(inputStream);
             result = reader.ReadLine();
             Assert.Equal(expectedLine, result);
+            AssertUserExpectedResults("the characters you typed properly echoed as you typed");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void ReadFromOpenStandardInput()
+        {
+            // The implementation in StdInReader uses a StringBuilder for caching. We want this builder to use
+            // multiple chunks. So the expectedLine is longer than 16 characters (StringBuilder.DefaultCapacity).
+            string expectedLine = $"This is a test for ReadFromOpenStandardInput.";
+            Assert.True(expectedLine.Length > new StringBuilder().Capacity);
+            Console.WriteLine($"Please type the sentence (without the quotes): \"{expectedLine}\"");
+            using Stream inputStream = Console.OpenStandardInput();
+            for (int i = 0; i < expectedLine.Length; i++)
+            {
+                Assert.Equal((byte)expectedLine[i], inputStream.ReadByte());
+            }
+            Assert.Equal((byte)'\n', inputStream.ReadByte());
+            AssertUserExpectedResults("the characters you typed properly echoed as you typed");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void ConsoleReadSupportsBackspace()
+        {
+            const string expectedLine = "aab\r";
+
+            Console.WriteLine($"Please type 'a' 3 times, press 'Backspace' to erase 1, then type a single 'b' and press 'Enter'.");
+            foreach (char c in expectedLine)
+            {
+                Assert.Equal((int)c, Console.Read());
+            }
             AssertUserExpectedResults("the characters you typed properly echoed as you typed");
         }
 

@@ -1000,7 +1000,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Baseline
             string json = @"{""MyDictionary"":{""Key"":""Value""}}";
-            JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+            await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, object>>(json);
 
             await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, string>>(json));
         }

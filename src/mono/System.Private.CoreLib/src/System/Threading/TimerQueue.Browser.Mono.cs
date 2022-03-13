@@ -17,7 +17,9 @@ namespace System.Threading
     {
         private static List<TimerQueue>? s_scheduledTimers;
         private static List<TimerQueue>? s_scheduledTimersToFire;
+        private static long s_shortestDueTimeMs = long.MaxValue;
 
+        // this means that it's in the s_scheduledTimers collection, not that it's the one which would run on the next TimeoutCallback
         private bool _isScheduled;
         private long _scheduledDueTimeMs;
 
@@ -26,25 +28,25 @@ namespace System.Threading
         }
 
         [DynamicDependency("TimeoutCallback")]
-        // The id argument is unused in netcore
+        // This replaces the current pending setTimeout with shorter one
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void SetTimeout(int timeout, int id);
+        private static extern void SetTimeout(int timeout);
 
         // Called by mini-wasm.c:mono_set_timeout_exec
         private static void TimeoutCallback()
         {
-            int shortestWaitDurationMs = PumpTimerQueue();
+            // always only have one scheduled at a time
+            s_shortestDueTimeMs = long.MaxValue;
 
-            if (shortestWaitDurationMs != int.MaxValue)
-            {
-                SetTimeout((int)shortestWaitDurationMs, 0);
-            }
+            long currentTimeMs = TickCount64;
+            ReplaceNextSetTimeout(PumpTimerQueue(currentTimeMs), currentTimeMs);
         }
 
+        // this is called with shortest of timers scheduled on the particular TimerQueue
         private bool SetTimer(uint actualDuration)
         {
             Debug.Assert((int)actualDuration >= 0);
-            long dueTimeMs = TickCount64 + (int)actualDuration;
+            long currentTimeMs = TickCount64;
             if (!_isScheduled)
             {
                 s_scheduledTimers ??= new List<TimerQueue>(Instances.Length);
@@ -52,24 +54,65 @@ namespace System.Threading
                 s_scheduledTimers.Add(this);
                 _isScheduled = true;
             }
-            _scheduledDueTimeMs = dueTimeMs;
-            SetTimeout((int)actualDuration, 0);
+
+            _scheduledDueTimeMs = currentTimeMs + (int)actualDuration;
+
+            ReplaceNextSetTimeout(ShortestDueTime(), currentTimeMs);
 
             return true;
         }
 
-        private static int PumpTimerQueue()
+        // shortest time of all TimerQueues
+        private static void ReplaceNextSetTimeout(long shortestDueTimeMs, long currentTimeMs)
+        {
+            if (shortestDueTimeMs == int.MaxValue)
+            {
+                return;
+            }
+
+            // this also covers s_shortestDueTimeMs = long.MaxValue when none is scheduled
+            if (s_shortestDueTimeMs > shortestDueTimeMs)
+            {
+                s_shortestDueTimeMs = shortestDueTimeMs;
+                int shortestWait = Math.Max((int)(shortestDueTimeMs - currentTimeMs), 0);
+                // this would cancel the previous schedule and create shorter one
+                // it is expensive call
+                SetTimeout(shortestWait);
+            }
+        }
+
+        private static long ShortestDueTime()
+        {
+            if (s_scheduledTimers == null)
+            {
+                return int.MaxValue;
+            }
+
+            long shortestDueTimeMs = long.MaxValue;
+            var timers = s_scheduledTimers!;
+            for (int i = timers.Count - 1; i >= 0; --i)
+            {
+                TimerQueue timer = timers[i];
+                if (timer._scheduledDueTimeMs < shortestDueTimeMs)
+                {
+                    shortestDueTimeMs = timer._scheduledDueTimeMs;
+                }
+            }
+
+            return shortestDueTimeMs;
+        }
+
+        private static long PumpTimerQueue(long currentTimeMs)
         {
             if (s_scheduledTimersToFire == null)
             {
-                return int.MaxValue;
+                return ShortestDueTime();
             }
 
             List<TimerQueue> timersToFire = s_scheduledTimersToFire!;
             List<TimerQueue> timers;
             timers = s_scheduledTimers!;
-            long currentTimeMs = TickCount64;
-            int shortestWaitDurationMs = int.MaxValue;
+            long shortestDueTimeMs = int.MaxValue;
             for (int i = timers.Count - 1; i >= 0; --i)
             {
                 TimerQueue timer = timers[i];
@@ -88,9 +131,9 @@ namespace System.Threading
                     continue;
                 }
 
-                if (waitDurationMs < shortestWaitDurationMs)
+                if (timer._scheduledDueTimeMs < shortestDueTimeMs)
                 {
-                    shortestWaitDurationMs = (int)waitDurationMs;
+                    shortestDueTimeMs = timer._scheduledDueTimeMs;
                 }
             }
 
@@ -103,7 +146,7 @@ namespace System.Threading
                 timersToFire.Clear();
             }
 
-            return shortestWaitDurationMs;
+            return shortestDueTimeMs;
         }
     }
 }

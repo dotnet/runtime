@@ -11,7 +11,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    public class dynamic
+    public class @dynamic
     {
     }
 
@@ -104,7 +104,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    public class dynamic
+    public class @dynamic
     {
         public int i = 0;
     }
@@ -147,7 +147,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    public class dynamic
+    public class @dynamic
     {
         public dynamic(int i)
         {
@@ -240,7 +240,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    public class dynamic
+    public class @dynamic
     {
         public dynamic(int i)
         {
@@ -315,7 +315,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    public class dynamic
+    public class @dynamic
     {
     }
 
@@ -353,7 +353,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    public struct dynamic
+    public struct @dynamic
     {
     }
 
@@ -388,7 +388,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    public class dynamic
+    public class @dynamic
     {
     }
 
@@ -463,7 +463,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    public class dynamic<T>
+    public class @dynamic<T>
     {
         public T GetT()
         {
@@ -471,7 +471,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
         }
     }
 
-    public class dynamic<T, S>
+    public class @dynamic<T, S>
     {
         public T GetT()
         {
@@ -526,7 +526,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    public class dynamic
+    public class @dynamic
     {
     }
 
@@ -561,7 +561,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    public class dynamic
+    public class @dynamic
     {
     }
 
@@ -603,7 +603,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    public class dynamic
+    public class @dynamic
     {
     }
 
@@ -640,7 +640,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    public class dynamic
+    public class @dynamic
     {
     }
 
@@ -690,7 +690,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    public class G<dynamic>
+    public class G<@dynamic>
         where dynamic : new()
     {
         public dynamic V = new dynamic();
@@ -698,7 +698,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
 
     public class C
     {
-        public dynamic M<dynamic>() where dynamic : new()
+        public dynamic M<@dynamic>() where dynamic : new()
         {
             return new dynamic();
         }
@@ -744,11 +744,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
 
     namespace NS
     {
-        public class dynamic
+        public class @dynamic
         {
         }
 
-        public class G2<dynamic>
+        public class G2<@dynamic>
             where dynamic : new()
         {
             public dynamic V = new dynamic();
@@ -756,7 +756,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
 
         public class C2
         {
-            public dynamic M<dynamic>() where dynamic : new()
+            public dynamic M<@dynamic>() where dynamic : new()
             {
                 return new dynamic();
             }
@@ -774,11 +774,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    public class dynamic
+    public class @dynamic
     {
     }
 
-    public class G<dynamic>
+    public class G<@dynamic>
         where dynamic : new()
     {
         public dynamic V = new dynamic();
@@ -786,7 +786,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
 
     public class C
     {
-        public dynamic M<dynamic>() where dynamic : new()
+        public dynamic M<@dynamic>() where dynamic : new()
         {
             return new dynamic();
         }
@@ -829,7 +829,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    public class dynamic
+    public class @dynamic
     {
     }
 
@@ -902,7 +902,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    internal enum dynamic
+    internal enum @dynamic
     {
         foo,
         bar
@@ -939,7 +939,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    public class dynamic
+    public class @dynamic
     {
     }
 
@@ -1003,7 +1003,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
         }
 
         private event dynamic MyEvent;
-        private delegate void dynamic(int i);
+        private delegate void @dynamic(int i);
     }
 }
 
@@ -1013,7 +1013,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
 {
     public class Test
     {
-        public class dynamic
+        public class @dynamic
         {
             public int Foo()
             {
@@ -1048,7 +1048,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
     // <Code>
     public class App
     {
-        public class dynamic
+        public class @dynamic
         {
             public int Foo()
             {
@@ -1086,7 +1086,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.backwardsc
 {
     public class Test
     {
-        public class dynamic
+        public class @dynamic
         {
             public int Foo()
             {

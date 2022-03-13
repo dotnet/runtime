@@ -4,13 +4,15 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Threading
 {
     internal sealed class ThreadInt64PersistentCounter
     {
         private static readonly LowLevelLock s_lock = new LowLevelLock();
+
+        [ThreadStatic]
+        private static List<ThreadLocalNodeFinalizationHelper>? t_nodeFinalizationHelpers;
 
         private long _overflowCount;
         private HashSet<ThreadLocalNode> _nodes = new HashSet<ThreadLocalNode>();
@@ -22,9 +24,19 @@ namespace System.Threading
             Unsafe.As<ThreadLocalNode>(threadLocalCountObject).Increment();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Add(object threadLocalCountObject, uint count)
+        {
+            Debug.Assert(threadLocalCountObject is ThreadLocalNode);
+            Unsafe.As<ThreadLocalNode>(threadLocalCountObject).Add(count);
+        }
+
         public object CreateThreadLocalCountObject()
         {
             var node = new ThreadLocalNode(this);
+
+            List<ThreadLocalNodeFinalizationHelper>? nodeFinalizationHelpers = t_nodeFinalizationHelpers ??= new List<ThreadLocalNodeFinalizationHelper>(1);
+            nodeFinalizationHelpers.Add(new ThreadLocalNodeFinalizationHelper(node));
 
             s_lock.Acquire();
             try
@@ -76,13 +88,14 @@ namespace System.Threading
                 _counter = counter;
             }
 
-            ~ThreadLocalNode()
+            public void Dispose()
             {
                 ThreadInt64PersistentCounter counter = _counter;
                 s_lock.Acquire();
                 try
                 {
                     counter._overflowCount += _count;
+                    counter._nodes.Remove(this);
                 }
                 finally
                 {
@@ -102,13 +115,29 @@ namespace System.Threading
                     return;
                 }
 
-                OnIncrementOverflow();
+                OnAddOverflow(1);
+            }
+
+            public void Add(uint count)
+            {
+                Debug.Assert(count != 0);
+
+                uint newCount = _count + count;
+                if (newCount >= count)
+                {
+                    _count = newCount;
+                    return;
+                }
+
+                OnAddOverflow(count);
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            private void OnIncrementOverflow()
+            private void OnAddOverflow(uint count)
             {
-                // Accumulate the count for this increment into the overflow count and reset the thread-local count
+                Debug.Assert(count != 0);
+
+                // Accumulate the count for this add into the overflow count and reset the thread-local count
 
                 // The lock, in coordination with other places that read these values, ensures that both changes below become
                 // visible together
@@ -116,14 +145,27 @@ namespace System.Threading
                 s_lock.Acquire();
                 try
                 {
+                    counter._overflowCount += (long)_count + count;
                     _count = 0;
-                    counter._overflowCount += (long)uint.MaxValue + 1;
                 }
                 finally
                 {
                     s_lock.Release();
                 }
             }
+        }
+
+        private sealed class ThreadLocalNodeFinalizationHelper
+        {
+            private readonly ThreadLocalNode _node;
+
+            public ThreadLocalNodeFinalizationHelper(ThreadLocalNode node)
+            {
+                Debug.Assert(node != null);
+                _node = node;
+            }
+
+            ~ThreadLocalNodeFinalizationHelper() => _node.Dispose();
         }
     }
 }

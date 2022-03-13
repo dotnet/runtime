@@ -12,6 +12,16 @@
         <target state="translated">Türetilmiş 'JsonSerializerContext' türleri ve bunları içeren tüm türler kısmi olmalıdır.</target>
         <note />
       </trans-unit>
+      <trans-unit id="DataExtensionPropertyInvalidFormat">
+        <source>The data extension property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</source>
+        <target state="translated">'{0}.{1}' veri uzantısı özelliği geçersiz. 'IDictionary&lt;string, JsonElement&gt;' veya 'IDictionary&lt;string, object&gt;' uygulamalı ya da 'JsonObject' olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DataExtensionPropertyInvalidTitle">
+        <source>Data extension property type invalid.</source>
+        <target state="translated">Veri uzantısı özellik türü geçersiz.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
         <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
         <target state="translated">{0} adını taşıyan birden çok tür var. Kaynak, algılanan ilk tür için oluşturuldu. Bu çarpışmayı çözmek için 'JsonSerializableAttribute.TypeInfoPropertyName' özelliğini kullanın.</target>
@@ -20,6 +30,46 @@
       <trans-unit id="DuplicateTypeNameTitle">
         <source>Duplicate type name.</source>
         <target state="translated">Yinelenen tür adı.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
+        <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
+        <target state="translated">'{0}.{1}' üyesine JsonIncludeAttribute notu eklendi ancak bu üye kaynak oluşturucu tarafından görülmüyor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedTitle">
+        <source>Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</source>
+        <target state="translated">JsonIncludeAttribute notu eklenmiş erişilemeyen özellikler kaynak oluşturma modunda desteklenmiyor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedFormat">
+        <source>The type '{0}' defines init-only properties, deserialization of which is currently not supported in source generation mode.</source>
+        <target state="translated">‘{0}’ türü, seri durumdan çıkarılması şu anda kaynak oluşturma modunda desteklenmeyen yalnızca başlangıç özelliklerini tanımlar.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedTitle">
+        <source>Deserialization of init-only properties is currently not supported in source generation mode.</source>
+        <target state="translated">Yalnızca başlangıç özelliklerini seri durumdan çıkarma şu anda kaynak oluşturma modunda desteklenmiyor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeFormat">
+        <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
+        <target state="translated">'{0}' türünün 'JsonConstructorAttribute' ile açıklanan birden çok oluşturucusu var.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeTitle">
+        <source>Type has multiple constructors annotated with JsonConstructorAttribute.</source>
+        <target state="translated">Türün JsonConstructorAttribute ile açıklanan birden çok oluşturucusu var.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonExtensionDataAttributeFormat">
+        <source>Type '{0}' has multiple members annotated with 'JsonExtensionDataAttribute'.</source>
+        <target state="translated">'{0}' türü, JsonExtensionDataAttribute ile ilişkili birden çok üyeye sahip.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonExtensionDataAttributeTitle">
+        <source>Type has multiple members annotated with JsonExtensionDataAttribute.</source>
+        <target state="translated">Tür, JsonExtensionDataAttribute ile açıklanan birden çok üyeye sahip.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">

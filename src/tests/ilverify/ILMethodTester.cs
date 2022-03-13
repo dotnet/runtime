@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -16,7 +17,7 @@ namespace ILVerification.Tests
         [Theory(DisplayName = "")]
         [MemberData(nameof(TestDataLoader.GetMethodsWithValidIL), MemberType = typeof(TestDataLoader))]
         [Trait("", "Valid IL Tests")]
-        void TestMethodsWithValidIL(ValidILTestCase validIL)
+        public static void TestMethodsWithValidIL(ValidILTestCase validIL)
         {
             var results = Verify(validIL);
             Assert.Empty(results);
@@ -25,7 +26,7 @@ namespace ILVerification.Tests
         [Theory(DisplayName = "")]
         [MemberData(nameof(TestDataLoader.GetMethodsWithInvalidIL), MemberType = typeof(TestDataLoader))]
         [Trait("", "Invalid IL Tests")]
-        void TestMethodsWithInvalidIL(InvalidILTestCase invalidIL)
+        public static void TestMethodsWithInvalidIL(InvalidILTestCase invalidIL)
         {
             IEnumerable<VerificationResult> results = null;
 
@@ -48,7 +49,7 @@ namespace ILVerification.Tests
                 foreach (var item in invalidIL.ExpectedVerifierErrors)
                 {
                     var actual = results.Select(e => e.Code.ToString());
-                    Assert.True(results.Where(r => r.Code == item).Count() > 0, $"Actual errors where: {string.Join(",", actual)}");
+                    Assert.True(results.Where(r => r.Code == item).Count() > 0, $"Actual errors were: {string.Join(",", actual)}");
                 }
             }
         }

@@ -508,7 +508,6 @@ void VTableCallHolder::Initialize(unsigned slot)
 {
     unsigned offsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
     unsigned offsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
-    _ASSERTE(MethodTable::VTableIndir_t::isRelative == false /* TODO: NYI */);
 
     int indirectionsCodeSize = (offsetOfIndirection >= 0x8000 ? 8 : 4) + (offsetAfterIndirection >= 0x8000 ? 8 : 4);
     int indirectionsDataSize = (offsetOfIndirection >= 0x8000 ? 4 : 0) + (offsetAfterIndirection >= 0x8000 ? 4 : 0);

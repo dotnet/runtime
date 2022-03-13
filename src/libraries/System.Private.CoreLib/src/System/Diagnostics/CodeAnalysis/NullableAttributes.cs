@@ -3,8 +3,7 @@
 
 namespace System.Diagnostics.CodeAnalysis
 {
-// These attributes already shipped with .NET Core 3.1 in System.Runtime
-#if !NETCOREAPP3_0 && !NETCOREAPP3_1 && !NETSTANDARD2_1
+#if !NETSTANDARD2_1
     /// <summary>Specifies that null is allowed as an input even if the corresponding type disallows it.</summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property, Inherited = false)]
 #if SYSTEM_PRIVATE_CORELIB

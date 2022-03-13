@@ -3,7 +3,7 @@
 
 namespace System.Text.Json
 {
-    internal static class JsonConstants
+    internal static partial class JsonConstants
     {
         public const byte OpenBrace = (byte)'{';
         public const byte CloseBrace = (byte)'}';
@@ -48,7 +48,6 @@ namespace System.Text.Json
         public static ReadOnlySpan<byte> EscapableChars => new byte[] { Quote, (byte)'n', (byte)'r', (byte)'t', Slash, (byte)'u', (byte)'b', (byte)'f' };
 
         public const int SpacesPerIndent = 2;
-        public const int MaxWriterDepth = 1_000;
         public const int RemoveFlagsBitMask = 0x7FFFFFFF;
 
         public const int StackallocByteThreshold = 256;
@@ -114,8 +113,5 @@ namespace System.Text.Json
         // The maximum number of parameters a constructor can have where it can be considered
         // for a path on deserialization where we don't box the constructor arguments.
         public const int UnboxedParameterCountThreshold = 4;
-
-        // The maximum number of parameters a constructor can have where it can be supported.
-        public const int MaxParameterCount = 64;
     }
 }

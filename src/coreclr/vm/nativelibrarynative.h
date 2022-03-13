@@ -10,16 +10,11 @@
 #ifndef __NATIVELIBRARYNATIVE_H__
 #define __NATIVELIBRARYNATIVE_H__
 
-class NativeLibraryNative
-{
-public:
-    static INT_PTR QCALLTYPE LoadFromPath(LPCWSTR path, BOOL throwOnError);
-    static INT_PTR QCALLTYPE LoadByName(LPCWSTR name, QCall::AssemblyHandle callingAssembly,
-                                               BOOL hasDllImportSearchPathFlag, DWORD dllImportSearchPathFlag,
-                                               BOOL throwOnError);
-    static void QCALLTYPE FreeLib(INT_PTR handle);
-    static INT_PTR QCALLTYPE GetSymbol(INT_PTR handle, LPCWSTR symbolName, BOOL throwOnError);
-
-};
+extern "C" INT_PTR QCALLTYPE NativeLibrary_LoadFromPath(LPCWSTR path, BOOL throwOnError);
+extern "C" INT_PTR QCALLTYPE NativeLibrary_LoadByName(LPCWSTR name, QCall::AssemblyHandle callingAssembly,
+                                            BOOL hasDllImportSearchPathFlag, DWORD dllImportSearchPathFlag,
+                                            BOOL throwOnError);
+extern "C" void QCALLTYPE NativeLibrary_FreeLib(INT_PTR handle);
+extern "C" INT_PTR QCALLTYPE NativeLibrary_GetSymbol(INT_PTR handle, LPCWSTR symbolName, BOOL throwOnError);
 
 #endif // __NATIVELIBRARYNATIVE_H__

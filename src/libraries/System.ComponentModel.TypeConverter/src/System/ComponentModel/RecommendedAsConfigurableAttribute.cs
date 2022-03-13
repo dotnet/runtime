@@ -9,7 +9,7 @@ namespace System.ComponentModel
     /// Specifies that the property can be used as an application setting.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
-    [Obsolete("Use System.ComponentModel.SettingsBindableAttribute instead to work with the new settings model.")]
+    [Obsolete("RecommendedAsConfigurableAttribute has been deprecated. Use System.ComponentModel.SettingsBindableAttribute instead.")]
     public class RecommendedAsConfigurableAttribute : Attribute
     {
         /// <summary>

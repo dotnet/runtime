@@ -86,7 +86,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void FileSystemWatcher_Directory_Create_SymLink()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
@@ -95,11 +95,31 @@ namespace System.IO.Tests
             using (var watcher = new FileSystemWatcher(Path.GetFullPath(dir.Path), "*"))
             {
                 // Make the symlink in our path (to the temp folder) and make sure an event is raised
-                string symLinkPath = Path.Combine(dir.Path, Path.GetFileName(temp.Path));
-                Action action = () => Assert.True(CreateSymLink(temp.Path, symLinkPath, true));
+                string symLinkPath = Path.Combine(dir.Path, GetRandomLinkName());
+                Action action = () => Assert.True(MountHelper.CreateSymbolicLink(symLinkPath, temp.Path, true));
                 Action cleanup = () => Directory.Delete(symLinkPath);
 
                 ExpectEvent(watcher, WatcherChangeTypes.Created, action, cleanup, symLinkPath);
+            }
+        }
+
+        [Fact]
+        public void FileSystemWatcher_Directory_Create_SynchronizingObject()
+        {
+            using (var testDirectory = new TempDirectory(GetTestFilePath()))
+            using (var watcher = new FileSystemWatcher(testDirectory.Path))
+            {
+                TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
+                watcher.SynchronizingObject = invoker;
+
+                string dirName = Path.Combine(testDirectory.Path, "dir");
+                watcher.Filter = Path.GetFileName(dirName);
+
+                Action action = () => Directory.CreateDirectory(dirName);
+                Action cleanup = () => Directory.Delete(dirName);
+
+                ExpectEvent(watcher, WatcherChangeTypes.Created, action, cleanup, dirName);
+                Assert.True(invoker.BeginInvoke_Called);
             }
         }
     }

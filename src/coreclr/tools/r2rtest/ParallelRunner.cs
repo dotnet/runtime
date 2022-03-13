@@ -159,7 +159,14 @@ public sealed class ParallelRunner
         }
     }
 
-    private static void BuildEtwProcesses(int startIndex, int endIndex, int totalCount, int failureCount, List<ProcessInfo> processList, int degreeOfParallelism, bool measurePerf)
+    private static void BuildEtwProcesses(
+        int startIndex,
+        int endIndex,
+        int totalCount,
+        int failureCount,
+        List<ProcessInfo> processList,
+        int degreeOfParallelism,
+        bool measurePerf)
     {
         using (TraceEventSession traceEventSession = new TraceEventSession("ReadyToRunTestSession"))
         {

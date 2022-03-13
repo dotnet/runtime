@@ -5,14 +5,11 @@
 // Samples for Parallel Programming with the .NET Framework
 // https://code.msdn.microsoft.com/windowsdesktop/Samples-for-Parallel-b4b76364
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace SIMD
 {
@@ -60,12 +57,6 @@ public class RayTracerBench
         RenderLoop(MaxIterations);
     }
 
-    private void RenderBench()
-    {
-        _cancellation = new CancellationTokenSource();
-        RenderLoop(Iterations);
-    }
-
     private void RenderLoop(int iterations)
     {
         // Create a ray tracer, and create a reference to "sphere2" that we are going to bounce
@@ -110,19 +101,6 @@ public class RayTracerBench
 
             _framesPerSecond = (1000.0 / renderingTime.ElapsedMilliseconds);
             _freeBuffers.PutObject(rgb);
-        }
-    }
-
-    [Benchmark]
-    public static void Bench()
-    {
-        var m = new RayTracerBench();
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                m.RenderBench();
-            }
         }
     }
 

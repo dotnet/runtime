@@ -240,4 +240,4 @@ FAIL:
 	ret
 }
 }
-.assembly xor_u8.exe{}
+.assembly xor_u8{}

@@ -23,7 +23,8 @@ internal static partial class Interop
             public UIntPtr PeakPagefileUsage;
         }
 
-        [DllImport(Libraries.Kernel32, EntryPoint="K32GetProcessMemoryInfo")]
-        internal static extern bool GetProcessMemoryInfo(IntPtr Process, ref PROCESS_MEMORY_COUNTERS ppsmemCounters, uint cb);
+        [LibraryImport(Libraries.Kernel32, EntryPoint ="K32GetProcessMemoryInfo")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool GetProcessMemoryInfo(IntPtr Process, ref PROCESS_MEMORY_COUNTERS ppsmemCounters, uint cb);
     }
 }

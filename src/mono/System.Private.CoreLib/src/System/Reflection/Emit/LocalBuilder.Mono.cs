@@ -61,18 +61,6 @@ namespace System.Reflection.Emit
             this.ilgen = ilgen;
         }
 
-        public void SetLocalSymInfo(string name, int startOffset, int endOffset)
-        {
-            this.name = name;
-            this.startOffset = startOffset;
-            this.endOffset = endOffset;
-        }
-
-        public void SetLocalSymInfo(string name)
-        {
-            SetLocalSymInfo(name, 0, 0);
-        }
-
         public override Type LocalType
         {
             get

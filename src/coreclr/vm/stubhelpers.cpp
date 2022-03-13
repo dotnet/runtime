@@ -4,9 +4,6 @@
 // File: stubhelpers.cpp
 //
 
-//
-
-
 #include "common.h"
 
 #include "mlinfo.h"
@@ -461,7 +458,7 @@ FCIMPL4(Object*, StubHelpers::InterfaceMarshaler__ConvertToManaged, IUnknown **p
 }
 FCIMPLEND
 
-void QCALLTYPE StubHelpers::InterfaceMarshaler__ClearNative(IUnknown * pUnk)
+extern "C" void QCALLTYPE InterfaceMarshaler__ClearNative(IUnknown * pUnk)
 {
     QCALL_CONTRACT;
 
@@ -495,34 +492,6 @@ FCIMPL0(void, StubHelpers::ClearLastError)
 }
 FCIMPLEND
 
-NOINLINE static void InitDeclaringTypeHelper(MethodTable *pMT)
-{
-    FC_INNER_PROLOG(StubHelpers::InitDeclaringType);
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-    pMT->CheckRunClassInitThrowing();
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-}
-
-// Triggers cctor of pNMD's declarer, similar to code:JIT_InitClass.
-#include <optsmallperfcritical.h>
-FCIMPL1(void, StubHelpers::InitDeclaringType, NDirectMethodDesc* pNMD)
-{
-    FCALL_CONTRACT;
-
-    MethodTable *pMT = pNMD->GetMethodTable();
-    _ASSERTE(!pMT->IsClassPreInited());
-
-    if (pMT->GetDomainLocalModule()->IsClassInitialized(pMT))
-        return;
-
-    FC_INNER_RETURN_VOID(InitDeclaringTypeHelper(pMT));
-}
-FCIMPLEND
-#include <optdefault.h>
-
 FCIMPL1(void*, StubHelpers::GetNDirectTarget, NDirectMethodDesc* pNMD)
 {
     FCALL_CONTRACT;
@@ -532,7 +501,7 @@ FCIMPL1(void*, StubHelpers::GetNDirectTarget, NDirectMethodDesc* pNMD)
 }
 FCIMPLEND
 
-FCIMPL2(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE, UINT_PTR *ppStubArg)
+FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
 {
     PCODE pEntryPoint = NULL;
 
@@ -555,19 +524,9 @@ FCIMPL2(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE, UINT
     // See code:GenericPInvokeCalliHelper
     // The lowest bit is used to distinguish between MD and target on 64-bit.
     target = (target << 1) | 1;
+#endif // HOST_64BIT
 
-    // On 64-bit we pass the real target to the stub-for-host through this out argument,
-    // see IL code gen in NDirectStubLinker::DoNDirect for details.
-    *ppStubArg = target;
-
-#elif defined(TARGET_ARM)
-    // @ARMTODO: Nothing to do for ARM yet since we don't support the hosted path.
-#endif // HOST_64BIT, TARGET_ARM
-
-    if (pEntryPoint == NULL)
-    {
-        pEntryPoint = orefThis->GetMethodPtrAux();
-    }
+    pEntryPoint = orefThis->GetMethodPtrAux();
 
 #ifdef _DEBUG
     END_PRESERVE_LAST_ERROR;
@@ -1007,17 +966,6 @@ FCIMPL2(void, StubHelpers::LogPinnedArgument, MethodDesc *target, Object *pinned
     }
 }
 FCIMPLEND
-
-#ifdef TARGET_64BIT
-FCIMPL0(void*, StubHelpers::GetStubContextAddr)
-{
-    FCALL_CONTRACT;
-
-    FCUnique(0xa1);
-    UNREACHABLE_MSG("This is a JIT intrinsic!");
-}
-FCIMPLEND
-#endif // TARGET_64BIT
 
 FCIMPL1(DWORD, StubHelpers::CalcVaListSize, VARARGS *varargs)
 {

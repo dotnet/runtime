@@ -2123,5 +2123,5 @@ END:
 
 
 
-.assembly ldc_add_ovf_i2.exe{}
+.assembly ldc_add_ovf_i2{}
 

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using TestLibrary;
+using Xunit;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -39,17 +39,17 @@ internal class MyCriticalHandle : CriticalHandle
         {
             return handle;
         }
-        set 
+        set
         {
             handle = value;
         }
     }
-    
+
     internal static IntPtr GetUniqueHandle()
     {
         return new IntPtr(s_uniqueHandleValue++);
     }
-    
+
     internal static bool IsHandleClosed(IntPtr handle)
     {
         return s_closedHandles.Contains(handle.ToInt32());
@@ -62,7 +62,7 @@ public class Reverse
     {
         IntPtr handleValue = new IntPtr(1);
         Native.InCallback callback = (handle) => { };
-        Assert.Throws<MarshalDirectiveException>(() => Native.InvokeInCallback(callback, handleValue), "Calling P/Invoke that invokes a delegate that has an CriticalHandle parameter");
+        Assert.Throws<MarshalDirectiveException>(() => Native.InvokeInCallback(callback, handleValue));
         GC.KeepAlive(callback);
     }
 
@@ -70,7 +70,7 @@ public class Reverse
     {
         IntPtr handleValue = new IntPtr(2);
         Native.RetCallback callback = () => new MyCriticalHandle();
-        Assert.Throws<MarshalDirectiveException>(() => Native.InvokeRetCallback(callback), "Calling P/Invoke that invokes a delegate that returns a CriticalHandle parameter");
+        Assert.Throws<MarshalDirectiveException>(() => Native.InvokeRetCallback(callback));
         GC.KeepAlive(callback);
     }
 
@@ -78,7 +78,7 @@ public class Reverse
     {
         IntPtr handleValue = new IntPtr(3);
         Native.OutCallback callback = (out MyCriticalHandle handle) => handle = null;
-        Assert.Throws<MarshalDirectiveException>(() => Native.InvokeOutCallback(callback, ref handleValue), "Calling P/Invoke that invokes a delegate that has an out CriticalHandle parameter");
+        Assert.Throws<MarshalDirectiveException>(() => Native.InvokeOutCallback(callback, ref handleValue));
         GC.KeepAlive(callback);
     }
 
@@ -86,7 +86,7 @@ public class Reverse
     {
         IntPtr handleValue = new IntPtr(4);
         Native.InRefCallback callback = (ref MyCriticalHandle handle) => { };
-        Assert.Throws<MarshalDirectiveException>(() => Native.InvokeInRefCallback(callback, ref handleValue), "Calling P/Invoke that invokes a delegate that has an [In] ref CriticalHandle parameter");
+        Assert.Throws<MarshalDirectiveException>(() => Native.InvokeInRefCallback(callback, ref handleValue));
         GC.KeepAlive(callback);
     }
 
@@ -94,7 +94,7 @@ public class Reverse
     {
         IntPtr handleValue = new IntPtr(5);
         Native.RefCallback callback = (ref MyCriticalHandle handle) => { };
-        Assert.Throws<MarshalDirectiveException>(() => Native.InvokeRefCallback(callback, ref handleValue), "Calling P/Invoke that invokes a delegate that has an ref CriticalHandle parameter");
+        Assert.Throws<MarshalDirectiveException>(() => Native.InvokeRefCallback(callback, ref handleValue));
         GC.KeepAlive(callback);
     }
 

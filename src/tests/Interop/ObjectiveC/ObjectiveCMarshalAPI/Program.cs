@@ -5,11 +5,12 @@ namespace ObjectiveCMarshalAPI
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Runtime.InteropServices.ObjectiveC;
 
-    using TestLibrary;
+    using Xunit;
 
     class NativeObjCMarshalTests
     {
@@ -97,8 +98,8 @@ namespace ObjectiveCMarshalAPI
             {
                 if (_contract != null)
                 {
-                    Assert.AreEqual(nuint.MaxValue, _contract->RefCountDown);  // Validate finalizer queue callback
-                    Assert.AreEqual(_expectedCount, _contract->RefCountUp);    // Validate "is referenced" callback
+                    Assert.Equal(nuint.MaxValue, _contract->RefCountDown);  // Validate finalizer queue callback
+                    Assert.Equal(_expectedCount, _contract->RefCountUp);    // Validate "is referenced" callback
                 }
 
                 FinalizeCount++;
@@ -111,8 +112,8 @@ namespace ObjectiveCMarshalAPI
                 _contract = (Contract*)mem;
 
                 // Contract should be 0 initialized when supplied.
-                Assert.AreEqual((nuint)0, _contract->RefCountDown);
-                Assert.AreEqual((nuint)0, _contract->RefCountUp);
+                Assert.Equal((nuint)0, _contract->RefCountDown);
+                Assert.Equal((nuint)0, _contract->RefCountUp);
 
                 _expectedCount = (nuint)count;
                 _contract->RefCountDown = _expectedCount;
@@ -139,17 +140,17 @@ namespace ObjectiveCMarshalAPI
             ObjectiveCMarshal.Initialize(beginEndCallback, isReferencedCallback, trackedObjectEnteredFinalization, OnUnhandledExceptionPropagationHandler);
         }
 
-        static GCHandle AllocAndTrackObject<T>() where T : Base, new()
+        static GCHandle AllocAndTrackObject<T>(uint count) where T : Base, new()
         {
             var obj = new T();
             GCHandle h = ObjectiveCMarshal.CreateReferenceTrackingHandle(obj, out Span<IntPtr> s);
 
             // Validate contract length for tagged memory.
-            Assert.AreEqual(2, s.Length);
+            Assert.Equal(2, s.Length);
 
-            // Make the "is referenced" callback run a few times.
+            // Make the "is referenced" callback run at least 'count' number of times.
             fixed (void* p = s)
-                obj.SetContractMemory((IntPtr)p, count: 3);
+                obj.SetContractMemory((IntPtr)p, count);
             return h;
         }
 
@@ -160,9 +161,9 @@ namespace ObjectiveCMarshalAPI
 
             // Validate the memory is the same but the GCHandles are distinct.
             fixed (void* p = s)
-                Assert.AreEqual(obj.Contract, new IntPtr(p));
+                Assert.Equal(obj.Contract, new IntPtr(p));
 
-            Assert.AreNotEqual(handle, h);
+            Assert.NotEqual(handle, h);
             h.Free();
         }
 
@@ -188,24 +189,27 @@ namespace ObjectiveCMarshalAPI
                     ObjectiveCMarshal.CreateReferenceTrackingHandle(new AttributedNoFinalizer(), out _);
                 });
 
+            // Provide the minimum number of times the reference callback should run.
+            // See IsRefCb() in NativeObjCMarshalTests.cpp for usage logic.
+            const uint callbackCount = 3;
             {
-                GCHandle h = AllocAndTrackObject<Base>();
+                GCHandle h = AllocAndTrackObject<Base>(callbackCount);
                 handles.Add(h);
                 Validate_AllocAndFreeAnotherHandle<Base>(h);
             }
             {
-                GCHandle h = AllocAndTrackObject<Derived>();
+                GCHandle h = AllocAndTrackObject<Derived>(callbackCount);
                 handles.Add(h);
                 Validate_AllocAndFreeAnotherHandle<Derived>(h);
             }
             {
-                GCHandle h = AllocAndTrackObject<DerivedWithFinalizer>();
+                GCHandle h = AllocAndTrackObject<DerivedWithFinalizer>(callbackCount);
                 handles.Add(h);
                 Validate_AllocAndFreeAnotherHandle<DerivedWithFinalizer>(h);
             }
 
             // Trigger the GC
-            for (int i = 0; i < 5; ++i)
+            for (int i = 0; i < (callbackCount + 2); ++i)
             {
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
@@ -214,7 +218,7 @@ namespace ObjectiveCMarshalAPI
             // Validate we finalized all the objects we allocated.
             // It is important to validate the count prior to freeing
             // the handles to verify they are not keeping objects alive.
-            Assert.AreEqual(Base.FinalizeCount, Base.AllocCount);
+            Assert.Equal(Base.FinalizeCount, Base.AllocCount);
 
             // Clean up all allocated handles that are no longer needed.
             foreach (var h in handles)
@@ -252,7 +256,7 @@ namespace ObjectiveCMarshalAPI
             out IntPtr context)
         {
             var lastMethod = (MethodInfo)MethodBase.GetMethodFromHandle(lastMethodHandle);
-            Assert.IsTrue(lastMethod != null);
+            Assert.True(lastMethod != null);
 
             context = IntPtr.Zero;
             if (e is IntException ie)
@@ -265,8 +269,8 @@ namespace ObjectiveCMarshalAPI
                 return (delegate* unmanaged<IntPtr, void>)NativeObjCMarshalTests.GetThrowException();
             }
 
-            Assert.Fail("Unknown exception type");
-            throw new Exception("Unreachable");
+            Assert.True(false, "Unknown exception type");
+            throw new UnreachableException();
         }
 
         class Scenario
@@ -293,7 +297,7 @@ namespace ObjectiveCMarshalAPI
             {
                 delegate* unmanaged<int, void> testNativeMethod = scen.Fptr;
                 int ret = NativeObjCMarshalTests.CallAndCatch((IntPtr)testNativeMethod, scen.Expected);
-                Assert.AreEqual(scen.Expected, ret);
+                Assert.Equal(scen.Expected, ret);
             }
 
             GC.KeepAlive(delThrowInt);
@@ -303,7 +307,7 @@ namespace ObjectiveCMarshalAPI
         static void Validate_Initialize_FailsOnSecondAttempt()
         {
             Console.WriteLine($"Running {nameof(Validate_Initialize_FailsOnSecondAttempt)}...");
-            
+
             Assert.Throws<InvalidOperationException>(
                 () =>
                 {

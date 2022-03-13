@@ -22,9 +22,9 @@ namespace Microsoft.Extensions.Configuration
         /// Constructor.
         /// </summary>
         /// <param name="source">The source.</param>
-        public StreamConfigurationProvider(StreamConfigurationSource source)
+        public StreamConfigurationProvider(StreamConfigurationSource source!!)
         {
-            Source = source ?? throw new ArgumentNullException(nameof(source));
+            Source = source;
         }
 
         /// <summary>
@@ -42,6 +42,12 @@ namespace Microsoft.Extensions.Configuration
             {
                 throw new InvalidOperationException(SR.StreamConfigurationProvidersAlreadyLoaded);
             }
+
+            if (Source.Stream == null)
+            {
+                throw new InvalidOperationException(SR.StreamConfigurationSourceStreamCannotBeNull);
+            }
+
             Load(Source.Stream);
             _loaded = true;
         }

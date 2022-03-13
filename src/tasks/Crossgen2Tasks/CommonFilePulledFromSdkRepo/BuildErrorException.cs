@@ -10,7 +10,7 @@ namespace Microsoft.NET.Build.Tasks
     /// Represents an error that is neither avoidable in all cases nor indicative of a bug in this library.
     /// It will be logged as a plain build error without the exception type or stack.
     /// </summary>
-    internal class BuildErrorException : Exception
+    internal sealed class BuildErrorException : Exception
     {
         public BuildErrorException()
         {

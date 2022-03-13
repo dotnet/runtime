@@ -3,7 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly ldvirtftn.exe{
+.assembly 'ldvirtftn'{
 }
 
 .method public static int32 main(class System.String[]) {

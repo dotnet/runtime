@@ -10,7 +10,7 @@ using System.Collections.Generic;
 
 namespace System.Xml
 {
-    [Obsolete("Use XmlReader created by XmlReader.Create() method using appropriate XmlReaderSettings instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+    [Obsolete("XmlValidatingReader has been deprecated. Use XmlReader created by XmlReader.Create() method using appropriate XmlReaderSettings instead.")]
     public class XmlValidatingReader : XmlReader, IXmlLineInfo, IXmlNamespaceResolver
     {
         //
@@ -27,23 +27,14 @@ namespace System.Xml
             _impl.OuterReader = this;
         }
 
-        public XmlValidatingReader(string xmlFragment, XmlNodeType fragType, XmlParserContext context)
+        public XmlValidatingReader(string xmlFragment!!, XmlNodeType fragType, XmlParserContext context)
         {
-            if (xmlFragment == null)
-            {
-                throw new ArgumentNullException(nameof(xmlFragment));
-            }
-
             _impl = new XmlValidatingReaderImpl(xmlFragment, fragType, context);
             _impl.OuterReader = this;
         }
 
-        public XmlValidatingReader(Stream xmlFragment, XmlNodeType fragType, XmlParserContext context)
+        public XmlValidatingReader(Stream xmlFragment!!, XmlNodeType fragType, XmlParserContext context)
         {
-            if (xmlFragment == null)
-            {
-                throw new ArgumentNullException(nameof(xmlFragment));
-            }
             _impl = new XmlValidatingReaderImpl(xmlFragment, fragType, context);
             _impl.OuterReader = this;
         }

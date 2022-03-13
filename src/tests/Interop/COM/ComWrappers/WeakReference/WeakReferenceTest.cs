@@ -8,12 +8,15 @@ namespace ComWrappersTests
     using System.Collections.Generic;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
-    using TestLibrary;
+    using Xunit;
 
     static class WeakReferenceNative
     {
         [DllImport(nameof(WeakReferenceNative))]
         public static extern IntPtr CreateWeakReferencableObject();
+
+        [DllImport(nameof(WeakReferenceNative))]
+        public static extern IntPtr CreateAggregatedWeakReferenceObject(IntPtr outer);
     }
 
     public struct VtblPtr
@@ -28,79 +31,104 @@ namespace ComWrappersTests
         Marshalling,
     }
 
-    public class WeakReferenceableWrapper
+    public unsafe class WeakReferenceableWrapper
     {
         private struct Vtbl
         {
-            public IntPtr QueryInterface;
-            public _AddRef AddRef;
-            public _Release Release;
+            public delegate* unmanaged<IntPtr, Guid*, IntPtr*, int> QueryInterface;
+            public delegate* unmanaged<IntPtr, int> AddRef;
+            public delegate* unmanaged<IntPtr, int> Release;
         }
-
-        private delegate int _AddRef(IntPtr This);
-        private delegate int _Release(IntPtr This);
 
         private readonly IntPtr instance;
         private readonly Vtbl vtable;
+        private readonly bool releaseInFinalizer;
 
         public WrapperRegistration Registration { get; }
 
-        public WeakReferenceableWrapper(IntPtr instance, WrapperRegistration reg)
+        public WeakReferenceableWrapper(IntPtr instance, WrapperRegistration reg, bool releaseInFinalizer = true)
         {
             var inst = Marshal.PtrToStructure<VtblPtr>(instance);
             this.vtable = Marshal.PtrToStructure<Vtbl>(inst.Vtbl);
             this.instance = instance;
+            this.releaseInFinalizer = releaseInFinalizer;
             Registration = reg;
+        }
+
+        public int QueryInterface(Guid iid, out IntPtr ptr)
+        {
+            fixed(IntPtr* ppv = &ptr)
+            {
+                return this.vtable.QueryInterface(this.instance, &iid, ppv);
+            }
         }
 
         ~WeakReferenceableWrapper()
         {
-            if (this.instance != IntPtr.Zero)
+            if (this.instance != IntPtr.Zero && this.releaseInFinalizer)
             {
                 this.vtable.Release(this.instance);
             }
         }
     }
 
+    class DerivedObject : ICustomQueryInterface
+    {
+        private WeakReferenceableWrapper inner;
+        public DerivedObject(TestComWrappers comWrappersInstance)
+        {
+            IntPtr innerInstance = WeakReferenceNative.CreateAggregatedWeakReferenceObject(
+                comWrappersInstance.GetOrCreateComInterfaceForObject(this, CreateComInterfaceFlags.None));
+            inner = new WeakReferenceableWrapper(innerInstance, comWrappersInstance.Registration, releaseInFinalizer: false);
+            comWrappersInstance.GetOrRegisterObjectForComInstance(innerInstance, CreateObjectFlags.Aggregation, this);
+        }
+
+        public CustomQueryInterfaceResult GetInterface(ref Guid iid, out IntPtr ppv)
+        {
+            return inner.QueryInterface(iid, out ppv) == 0 ? CustomQueryInterfaceResult.Handled : CustomQueryInterfaceResult.Failed;
+        }
+    }
+
+    class TestComWrappers : ComWrappers
+    {
+        public WrapperRegistration Registration { get; }
+
+        public TestComWrappers(WrapperRegistration reg = WrapperRegistration.Local)
+        {
+            Registration = reg;
+        }
+
+        protected unsafe override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
+        {
+            count = 0;
+            return null;
+        }
+
+        protected override object CreateObject(IntPtr externalComObject, CreateObjectFlags flag)
+        {
+            Marshal.AddRef(externalComObject);
+            return new WeakReferenceableWrapper(externalComObject, Registration);
+        }
+
+        protected override void ReleaseObjects(IEnumerable objects)
+        {
+        }
+
+        public static readonly TestComWrappers TrackerSupportInstance = new TestComWrappers(WrapperRegistration.TrackerSupport);
+        public static readonly TestComWrappers MarshallingInstance = new TestComWrappers(WrapperRegistration.Marshalling);
+    }
+
     class Program
     {
-        class TestComWrappers : ComWrappers
-        {
-            public WrapperRegistration Registration { get; }
-
-            public TestComWrappers(WrapperRegistration reg = WrapperRegistration.Local)
-            {
-                Registration = reg;
-            }
-
-            protected unsafe override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
-            {
-                count = 0;
-                return null;
-            }
-
-            protected override object CreateObject(IntPtr externalComObject, CreateObjectFlags flag)
-            {
-                Marshal.AddRef(externalComObject);
-                return new WeakReferenceableWrapper(externalComObject, Registration);
-            }
-
-            protected override void ReleaseObjects(IEnumerable objects)
-            {
-            }
-
-            public static readonly TestComWrappers TrackerSupportInstance = new TestComWrappers(WrapperRegistration.TrackerSupport);
-            public static readonly TestComWrappers MarshallingInstance = new TestComWrappers(WrapperRegistration.Marshalling);
-        }
 
         private static void ValidateWeakReferenceState(WeakReference<WeakReferenceableWrapper> wr, bool expectedIsAlive, TestComWrappers sourceWrappers = null)
         {
             WeakReferenceableWrapper target;
             bool isAlive = wr.TryGetTarget(out target);
-            Assert.AreEqual(expectedIsAlive, isAlive);
+            Assert.Equal(expectedIsAlive, isAlive);
 
             if (isAlive && sourceWrappers != null)
-                Assert.AreEqual(sourceWrappers.Registration, target.Registration);
+                Assert.Equal(sourceWrappers.Registration, target.Registration);
         }
 
         private static (WeakReference<WeakReferenceableWrapper>, IntPtr) GetWeakReference(TestComWrappers cw)
@@ -135,7 +163,7 @@ namespace ComWrappersTests
             // a global ComWrappers instance. If the RCW was created throug a local ComWrappers instance, the weak
             // reference should be dead and stay dead once the RCW is collected.
             bool supportsRehydration = cw.Registration != WrapperRegistration.Local;
-            
+
             Console.WriteLine($"    -- Validate RCW recreation");
             ValidateWeakReferenceState(weakRef, expectedIsAlive: supportsRehydration, cw);
 
@@ -209,8 +237,8 @@ namespace ComWrappersTests
 
             // A weak reference to an RCW wrapping an IWeakReference created throguh the built-in system
             // should stay alive even after the RCW dies
-            Assert.IsFalse(weakRef.IsAlive);
-            Assert.IsTrue(HasTarget(weakRef));
+            Assert.False(weakRef.IsAlive);
+            Assert.True(HasTarget(weakRef));
 
             // Release the last native reference.
             Marshal.Release(nativeRef);
@@ -218,20 +246,44 @@ namespace ComWrappersTests
             GC.WaitForPendingFinalizers();
 
             // After all native references die and the RCW is collected, the weak reference should be dead and stay dead.
-            Assert.IsNull(weakRef.Target);
+            Assert.Null(weakRef.Target);
+        }
+
+        static void ValidateAggregatedWeakReference()
+        {
+            Console.WriteLine("Validate weak reference with aggregation.");
+            var (handle, weakRef) = GetWeakReference();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            Assert.Null(handle.Target);
+            Assert.False(weakRef.TryGetTarget(out _));
+
+            static (GCHandle handle, WeakReference<DerivedObject>) GetWeakReference()
+            {
+                DerivedObject obj = new DerivedObject(TestComWrappers.TrackerSupportInstance);
+                // We use an explicit weak GC handle here to enable us to validate that we are using "weak" GCHandle
+                // semantics with the weak reference.
+                return (GCHandle.Alloc(obj, GCHandleType.Weak), new WeakReference<DerivedObject>(obj));
+            }
         }
 
         static int Main(string[] doNotUse)
         {
             try
             {
-                ValidateNonComWrappers();
+                if (OperatingSystem.IsWindows())
+                {
+                    ValidateNonComWrappers();
+
+                    ComWrappers.RegisterForMarshalling(TestComWrappers.MarshallingInstance);
+                    ValidateGlobalInstanceMarshalling();
+                }
 
                 ComWrappers.RegisterForTrackerSupport(TestComWrappers.TrackerSupportInstance);
                 ValidateGlobalInstanceTrackerSupport();
-
-                ComWrappers.RegisterForMarshalling(TestComWrappers.MarshallingInstance);
-                ValidateGlobalInstanceMarshalling();
+                ValidateAggregatedWeakReference();
 
                 ValidateLocalInstance();
             }

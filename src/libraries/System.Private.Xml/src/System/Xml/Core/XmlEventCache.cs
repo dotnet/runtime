@@ -242,7 +242,7 @@ namespace System.Xml
                             break;
 
                         default:
-                            Debug.Fail("Unknown event: " + page[idxEvent].EventType);
+                            Debug.Fail($"Unknown event: {page[idxEvent].EventType}");
                             break;
                     }
                 }

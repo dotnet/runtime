@@ -46,7 +46,7 @@ namespace System.Collections.Specialized
             Add(col!);
         }
 
-        [Obsolete("Please use NameValueCollection(IEqualityComparer) instead.")]
+        [Obsolete("This constructor has been deprecated. Use NameValueCollection(IEqualityComparer) instead.")]
         public NameValueCollection(IHashCodeProvider? hashProvider, IComparer? comparer)
             : base(hashProvider, comparer)
         {
@@ -76,19 +76,14 @@ namespace System.Collections.Specialized
         ///    using the default case-insensitive hash code provider and the default
         ///    case-insensitive comparer.</para>
         /// </devdoc>
-        public NameValueCollection(int capacity, NameValueCollection col)
-            : base(capacity, (col != null ? col.Comparer : null))
+        public NameValueCollection(int capacity, NameValueCollection col!!)
+            : base(capacity, col.Comparer)
         {
-            if (col == null)
-            {
-                throw new ArgumentNullException(nameof(col));
-            }
-
             this.Comparer = col.Comparer;
             Add(col);
         }
 
-        [Obsolete("Please use NameValueCollection(Int32, IEqualityComparer) instead.")]
+        [Obsolete("This constructor has been deprecated. Use NameValueCollection(Int32, IEqualityComparer) instead.")]
         public NameValueCollection(int capacity, IHashCodeProvider? hashProvider, IComparer? comparer)
             : base(capacity, hashProvider, comparer)
         {
@@ -157,13 +152,8 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// <para>Copies the entries in the specified <see cref='System.Collections.Specialized.NameValueCollection'/> to the current <see cref='System.Collections.Specialized.NameValueCollection'/>.</para>
         /// </devdoc>
-        public void Add(NameValueCollection c)
+        public void Add(NameValueCollection c!!)
         {
-            if (c == null)
-            {
-                throw new ArgumentNullException(nameof(c));
-            }
-
             InvalidateCachedArrays();
 
             int n = c.Count;
@@ -198,13 +188,8 @@ namespace System.Collections.Specialized
             BaseClear();
         }
 
-        public void CopyTo(Array dest, int index)
+        public void CopyTo(Array dest!!, int index)
         {
-            if (dest == null)
-            {
-                throw new ArgumentNullException(nameof(dest));
-            }
-
             if (dest.Rank != 1)
             {
                 throw new ArgumentException(SR.Arg_MultiRank, nameof(dest));

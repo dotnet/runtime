@@ -14,15 +14,14 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Initializes a new instance of the Map class.
         /// </summary>
-        public Map() : base(Runtime.New<Map>())
+        public Map() : base(nameof(Map))
         { }
 
         /// <summary>
         /// Initializes a new instance of the Map class.
         /// </summary>
         /// <param name="jsHandle">Js handle.</param>
-        /// <param name="ownsHandle">Whether or not the handle is owned by the clr or not.</param>
-        internal Map(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
+        internal Map(IntPtr jsHandle) : base(jsHandle)
         { }
 
         /// <summary>
@@ -207,10 +206,9 @@ namespace System.Runtime.InteropServices.JavaScript
                     if (_mapItemIterator == null)
                         _mapItemIterator = (JSObject)_mapItemCollection._map.Invoke(_mapItemCollection._iterator);
 
-                    var done = false;
                     using (var result = (JSObject)_mapItemIterator.Invoke("next"))
                     {
-                        done = (bool)result.GetObjectProperty("done");
+                        bool done = (bool)result.GetObjectProperty("done");
                         if (!done)
                             Current = result.GetObjectProperty("value");
                         return !done;

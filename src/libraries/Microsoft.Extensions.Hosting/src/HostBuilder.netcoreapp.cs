@@ -9,9 +9,9 @@ namespace Microsoft.Extensions.Hosting
 {
     public partial class HostBuilder
     {
-        private static void AddLifetime(ServiceCollection services)
+        private static void AddLifetime(IServiceCollection services)
         {
-            if (!OperatingSystem.IsAndroid() && !OperatingSystem.IsBrowser() && !OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst() && !OperatingSystem.IsTvOS())
+            if (!OperatingSystem.IsAndroid() && !OperatingSystem.IsBrowser() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS())
             {
                 services.AddSingleton<IHostLifetime, ConsoleLifetime>();
             }

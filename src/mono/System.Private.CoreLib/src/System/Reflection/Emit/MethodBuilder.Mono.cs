@@ -99,7 +99,7 @@ namespace System.Reflection.Emit
                 Array.Copy(parameterTypes, this.parameters, parameterTypes.Length);
             }
             type = tb;
-            table_idx = get_next_table_index(this, 0x06, 1);
+            table_idx = get_next_table_index(0x06, 1);
 
             ((ModuleBuilder)tb.Module).RegisterToken(this, MetadataToken);
         }
@@ -182,15 +182,6 @@ namespace System.Reflection.Emit
         public override CallingConventions CallingConvention
         {
             get { return call_conv; }
-        }
-
-        // FIXME: "Not implemented"
-        public string Signature
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
         }
 
         /* Used by mcs */
@@ -278,7 +269,7 @@ namespace System.Reflection.Emit
             return type.RuntimeResolve().GetMethod(this);
         }
 
-        public Module GetModule()
+        internal Module GetModule()
         {
             return type.Module;
         }
@@ -392,18 +383,7 @@ namespace System.Reflection.Emit
                     TypeBuilder.ResolveUserTypes(types);
             }
         }
-        /*
-                internal void GenerateDebugInfo (ISymbolWriter symbolWriter)
-                {
-                    if (ilgen != null && ilgen.HasDebugInfo) {
-                        SymbolToken token = new SymbolToken (GetToken().Token);
-                        symbolWriter.OpenMethod (token);
-                        symbolWriter.SetSymAttribute (token, "__name", System.Text.Encoding.UTF8.GetBytes (Name));
-                        ilgen.GenerateDebugInfo (symbolWriter);
-                        symbolWriter.CloseMethod ();
-                    }
-                }
-        */
+
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             if (customBuilder == null)
@@ -525,9 +505,9 @@ namespace System.Reflection.Emit
             return name.GetHashCode();
         }
 
-        internal override int get_next_table_index(object obj, int table, int count)
+        internal override int get_next_table_index(int table, int count)
         {
-            return type.get_next_table_index(obj, table, count);
+            return type.get_next_table_index(table, count);
         }
 
         private static void ExtendArray<T>([NotNull] ref T[]? array, T elem)
@@ -561,6 +541,8 @@ namespace System.Reflection.Emit
             return new NotSupportedException("The invoked member is not supported in a dynamic module.");
         }
 
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
             if (!IsGenericMethodDefinition)

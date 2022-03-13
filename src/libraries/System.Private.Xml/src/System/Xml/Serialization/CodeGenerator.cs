@@ -109,7 +109,7 @@ namespace System.Xml.Serialization
             MarkLabel(_methodEndLabel);
             Ret();
 
-            MethodBuilder? retVal = null;
+            MethodBuilder? retVal;
             retVal = _methodBuilder;
             _methodBuilder = null;
             _ilGen = null;
@@ -161,7 +161,7 @@ namespace System.Xml.Serialization
             LocalBuilder? localTmp;
             if (!_tmpLocals.TryGetValue(type, out localTmp))
             {
-                localTmp = DeclareLocal(type, "_tmp" + _tmpLocals.Count);
+                localTmp = DeclareLocal(type, $"_tmp{_tmpLocals.Count}");
                 _tmpLocals.Add(type, localTmp);
             }
             return localTmp;
@@ -528,7 +528,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls GetPropertyMethodFromBaseType")]
         internal Type LoadMember(MemberInfo memberInfo)
         {
-            Type? memberType = null;
+            Type? memberType;
             if (memberInfo is FieldInfo)
             {
                 FieldInfo fieldInfo = (FieldInfo)memberInfo;
@@ -567,7 +567,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls GetPropertyMethodFromBaseType")]
         internal Type LoadMemberAddress(MemberInfo memberInfo)
         {
-            Type? memberType = null;
+            Type? memberType;
             if (memberInfo is FieldInfo)
             {
                 FieldInfo fieldInfo = (FieldInfo)memberInfo;
@@ -719,7 +719,7 @@ namespace System.Xml.Serialization
 
         internal void Ldobj(Type type)
         {
-            OpCode opCode = GetLdindOpCode(type.GetTypeCode());
+            OpCode opCode = GetLdindOpCode(Type.GetTypeCode(type));
             if (!opCode.Equals(OpCodes.Nop))
             {
                 _ilGen!.Emit(opCode);
@@ -781,7 +781,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                switch (valueType.GetTypeCode())
+                switch (Type.GetTypeCode(valueType))
                 {
                     case TypeCode.Boolean:
                         Ldc((bool)o);
@@ -936,7 +936,7 @@ namespace System.Xml.Serialization
 
         internal void Stloc(Type type, string name)
         {
-            LocalBuilder? local = null;
+            LocalBuilder? local;
             if (!_currentScope!.TryGetValue(name, out local))
             {
                 local = DeclareLocal(type, name);
@@ -1037,7 +1037,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                OpCode opCode = GetLdelemOpCode(arrayElementType.GetTypeCode());
+                OpCode opCode = GetLdelemOpCode(Type.GetTypeCode(arrayElementType));
                 Debug.Assert(!opCode.Equals(OpCodes.Nop));
                 if (opCode.Equals(OpCodes.Nop))
                     throw new InvalidOperationException(SR.Format(SR.ArrayTypeIsNotSupported, arrayElementType.AssemblyQualifiedName));
@@ -1083,7 +1083,7 @@ namespace System.Xml.Serialization
                 Stelem(Enum.GetUnderlyingType(arrayElementType));
             else
             {
-                OpCode opCode = GetStelemOpCode(arrayElementType.GetTypeCode());
+                OpCode opCode = GetStelemOpCode(Type.GetTypeCode(arrayElementType));
                 if (opCode.Equals(OpCodes.Nop))
                     throw new InvalidOperationException(SR.Format(SR.ArrayTypeIsNotSupported, arrayElementType.AssemblyQualifiedName));
                 _ilGen!.Emit(opCode);
@@ -1197,7 +1197,7 @@ namespace System.Xml.Serialization
             {
                 if (source.IsValueType)
                 {
-                    OpCode opCode = GetConvOpCode(target.GetTypeCode());
+                    OpCode opCode = GetConvOpCode(Type.GetTypeCode(target));
                     if (opCode.Equals(OpCodes.Nop))
                     {
                         throw new CodeGeneratorConversionException(source, target, isAddress, "NoConversionPossibleTo");
@@ -1270,7 +1270,7 @@ namespace System.Xml.Serialization
             Type[] interfaces)
         {
             // parent is nullable if no base class
-            return moduleBuilder.DefineType(TempAssembly.GeneratedAssemblyNamespace + "." + name,
+            return moduleBuilder.DefineType($"{TempAssembly.GeneratedAssemblyNamespace}.{name}",
                 attributes, parent, interfaces);
         }
 

@@ -9,12 +9,8 @@
 //
 // This is adapted from a benchmark in BYTE Magazine, August 1984.
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Benchstone.BenchI
 {
@@ -119,21 +115,6 @@ public static class Array1
         bool result = VerifySort(buffer);
 
         return result;
-    }
-
-    [Benchmark]
-    public static void Test()
-    {
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                for (int i = 0; i < Iterations; i++)
-                {
-                    Bench();
-                }
-            }
-        }
     }
 
     private static bool TestBase()

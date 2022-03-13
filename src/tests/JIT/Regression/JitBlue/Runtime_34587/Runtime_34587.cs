@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.CompilerServices;
 
 using ArmAes = System.Runtime.Intrinsics.Arm.Aes;
 using X86Aes = System.Runtime.Intrinsics.X86.Aes;
@@ -69,10 +72,21 @@ class Runtime_34587
         TestLibrary.TestFramework.LogInformation($"  Sha1.Arm64:    {Sha1.Arm64.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  Sha256.Arm64:  {Sha256.Arm64.IsSupported}");
 
-        bool succeeded = true;
+        TestLibrary.TestFramework.LogInformation("Supported Cross Platform ISAs:");
+        TestLibrary.TestFramework.LogInformation($"  Vector<T>:     {Vector.IsHardwareAccelerated}; {Vector<byte>.Count}");
+        TestLibrary.TestFramework.LogInformation($"  Vector64<T>:   {Vector64.IsHardwareAccelerated}");
+        TestLibrary.TestFramework.LogInformation($"  Vector128<T>:  {Vector128.IsHardwareAccelerated}");
+        TestLibrary.TestFramework.LogInformation($"  Vector256<T>:  {Vector256.IsHardwareAccelerated}");
 
-        succeeded &= ValidateArm();
-        succeeded &= ValidateX86();
+        bool succeeded = true;
+        bool testSucceeded;
+
+        testSucceeded = ValidateArm();
+        Console.WriteLine($"ValidateArm: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateX86();
+        Console.WriteLine($"ValidateX86: {testSucceeded}");
+        succeeded &= testSucceeded;
 
         return succeeded ? 100 : 0;
     }
@@ -80,15 +94,44 @@ class Runtime_34587
     private static bool ValidateArm()
     {
         bool succeeded = true;
+        bool testSucceeded;
 
-        succeeded &= ValidateArmBase();
-        succeeded &= ValidateAdvSimd();
-        succeeded &= ValidateAes();
-        succeeded &= ValidateCrc32();
-        succeeded &= ValidateDp();
-        succeeded &= ValidateRdm();
-        succeeded &= ValidateSha1();
-        succeeded &= ValidateSha256();
+        testSucceeded = ValidateArmBase();
+        Console.WriteLine($"ValidateArmBase: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateAdvSimd();
+        Console.WriteLine($"ValidateAdvSimd: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateAes();
+        Console.WriteLine($"ValidateAes: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateCrc32();
+        Console.WriteLine($"ValidateCrc32: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateDp();
+        Console.WriteLine($"ValidateDp: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateRdm();
+        Console.WriteLine($"ValidateRdm: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateSha1();
+        Console.WriteLine($"ValidateSha1: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateSha256();
+        Console.WriteLine($"ValidateSha256: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateVectorT();
+        Console.WriteLine($"ValidateVectorT: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateVector64();
+        Console.WriteLine($"ValidateVector64: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateVector128();
+        Console.WriteLine($"ValidateVector128: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateVector256();
+        Console.WriteLine($"ValidateVector256: {testSucceeded}");
+        succeeded &= testSucceeded;
 
         return succeeded;
 
@@ -96,14 +139,14 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (ArmBase.IsSupported)
+            if (ArmBaseIsSupported)
             {
                 succeeded &= (RuntimeInformation.OSArchitecture == Architecture.Arm64);
             }
 
-            if (ArmBase.Arm64.IsSupported)
+            if (ArmBaseArm64IsSupported)
             {
-                succeeded &= ArmBase.IsSupported;
+                succeeded &= ArmBaseIsSupported;
                 succeeded &= (RuntimeInformation.OSArchitecture == Architecture.Arm64);
             }
 
@@ -114,15 +157,15 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (AdvSimd.IsSupported)
+            if (AdvSimdIsSupported)
             {
-                succeeded &= ArmBase.IsSupported;
+                succeeded &= ArmBaseIsSupported;
             }
 
-            if (AdvSimd.Arm64.IsSupported)
+            if (AdvSimdArm64IsSupported)
             {
-                succeeded &= AdvSimd.IsSupported;
-                succeeded &= ArmBase.Arm64.IsSupported;
+                succeeded &= AdvSimdIsSupported;
+                succeeded &= ArmBaseArm64IsSupported;
             }
 
             return succeeded;
@@ -132,15 +175,15 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (ArmAes.IsSupported)
+            if (ArmAesIsSupported)
             {
-                succeeded &= ArmBase.IsSupported;
+                succeeded &= ArmBaseIsSupported;
             }
 
-            if (ArmAes.Arm64.IsSupported)
+            if (ArmAesArm64IsSupported)
             {
-                succeeded &= ArmAes.IsSupported;
-                succeeded &= ArmBase.Arm64.IsSupported;
+                succeeded &= ArmAesIsSupported;
+                succeeded &= ArmBaseArm64IsSupported;
             }
 
             return succeeded;
@@ -150,15 +193,15 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Crc32.IsSupported)
+            if (Crc32IsSupported)
             {
-                succeeded &= ArmBase.IsSupported;
+                succeeded &= ArmBaseIsSupported;
             }
 
-            if (Crc32.Arm64.IsSupported)
+            if (Crc32Arm64IsSupported)
             {
-                succeeded &= Crc32.IsSupported;
-                succeeded &= ArmBase.Arm64.IsSupported;
+                succeeded &= Crc32IsSupported;
+                succeeded &= ArmBaseArm64IsSupported;
             }
 
             return succeeded;
@@ -168,15 +211,15 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Dp.IsSupported)
+            if (DpIsSupported)
             {
-                succeeded &= AdvSimd.IsSupported;
+                succeeded &= AdvSimdIsSupported;
             }
 
-            if (Dp.Arm64.IsSupported)
+            if (DpArm64IsSupported)
             {
-                succeeded &= Dp.IsSupported;
-                succeeded &= AdvSimd.Arm64.IsSupported;
+                succeeded &= DpIsSupported;
+                succeeded &= AdvSimdArm64IsSupported;
             }
 
             return succeeded;
@@ -186,15 +229,15 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Rdm.IsSupported)
+            if (RdmIsSupported)
             {
-                succeeded &= AdvSimd.IsSupported;
+                succeeded &= AdvSimdIsSupported;
             }
 
-            if (Rdm.Arm64.IsSupported)
+            if (RdmArm64IsSupported)
             {
-                succeeded &= Rdm.IsSupported;
-                succeeded &= AdvSimd.Arm64.IsSupported;
+                succeeded &= RdmIsSupported;
+                succeeded &= AdvSimdArm64IsSupported;
             }
 
             return succeeded;
@@ -209,10 +252,10 @@ class Runtime_34587
                 succeeded &= ArmBase.IsSupported;
             }
 
-            if (Sha1.Arm64.IsSupported)
+            if (Sha1Arm64IsSupported)
             {
-                succeeded &= Sha1.IsSupported;
-                succeeded &= ArmBase.Arm64.IsSupported;
+                succeeded &= Sha1IsSupported;
+                succeeded &= ArmBaseArm64IsSupported;
             }
 
             return succeeded;
@@ -222,15 +265,82 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Sha256.IsSupported)
+            if (Sha256IsSupported)
             {
-                succeeded &= ArmBase.IsSupported;
+                succeeded &= ArmBaseIsSupported;
             }
 
-            if (Sha256.Arm64.IsSupported)
+            if (Sha256Arm64IsSupported)
             {
-                succeeded &= Sha256.IsSupported;
-                succeeded &= ArmBase.Arm64.IsSupported;
+                succeeded &= Sha256IsSupported;
+                succeeded &= ArmBaseArm64IsSupported;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateVectorT()
+        {
+            bool succeeded = true;
+
+            if (AdvSimdIsSupported)
+            {
+                succeeded &= VectorIsHardwareAccelerated;
+                succeeded &= VectorByteCount == 16;
+            }
+            else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+            {
+                succeeded &= !VectorIsHardwareAccelerated;
+                succeeded &= VectorByteCount == 16;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateVector64()
+        {
+            bool succeeded = true;
+
+            if (AdvSimdIsSupported)
+            {
+                succeeded &= Vector64IsHardwareAccelerated;
+                succeeded &= Vector64ByteCount == 8;
+            }
+            else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+            {
+                succeeded &= !Vector64IsHardwareAccelerated;
+                succeeded &= Vector64ByteCount == 8;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateVector128()
+        {
+            bool succeeded = true;
+
+            if (AdvSimdIsSupported)
+            {
+                succeeded &= Vector128IsHardwareAccelerated;
+                succeeded &= Vector128ByteCount == 16;
+            }
+            else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+            {
+                succeeded &= !Vector128IsHardwareAccelerated;
+                succeeded &= Vector128ByteCount == 16;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateVector256()
+        {
+            bool succeeded = true;
+
+            if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+            {
+                succeeded &= !Vector256IsHardwareAccelerated;
+                succeeded &= Vector256ByteCount == 32;
             }
 
             return succeeded;
@@ -240,38 +350,84 @@ class Runtime_34587
     public static bool ValidateX86()
     {
         bool succeeded = true;
+        bool testSucceeded;
 
-        succeeded &= ValidateX86Base();
-        succeeded &= ValidateSse();
-        succeeded &= ValidateSse2();
-        succeeded &= ValidateSse3();
-        succeeded &= ValidateSsse3();
-        succeeded &= ValidateSse41();
-        succeeded &= ValidateSse42();
-        succeeded &= ValidateAvx();
-        succeeded &= ValidateAvx2();
-        succeeded &= ValidateAes();
-        succeeded &= ValidateBmi1();
-        succeeded &= ValidateBmi2();
-        succeeded &= ValidateFma();
-        succeeded &= ValidateLzcnt();
-        succeeded &= ValidatePclmulqdq();
-        succeeded &= ValidatePopcnt();
-
+        testSucceeded = ValidateX86Base();
+        succeeded &= testSucceeded;
+        Console.WriteLine($"ValidateX86Base: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateSse();
+        Console.WriteLine($"ValidateSse: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateSse2();
+        Console.WriteLine($"ValidateSse2: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateSse3();
+        Console.WriteLine($"ValidateSse3: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateSsse3();
+        Console.WriteLine($"ValidateSsse3: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateSse41();
+        Console.WriteLine($"ValidateSse41: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateSse42();
+        Console.WriteLine($"ValidateSse42: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateAvx();
+        Console.WriteLine($"ValidateAvx: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateAvx2();
+        Console.WriteLine($"ValidateAvx2: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateAes();
+        Console.WriteLine($"ValidateAes: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateBmi1();
+        Console.WriteLine($"ValidateBmi1: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateBmi2();
+        Console.WriteLine($"ValidateBmi2: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateFma();
+        Console.WriteLine($"ValidateFma: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateLzcnt();
+        Console.WriteLine($"ValidateLzcnt: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidatePclmulqdq();
+        Console.WriteLine($"ValidatePclmulqdq: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidatePopcnt();
+        Console.WriteLine($"ValidatePopcnt: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateVectorT();
+        Console.WriteLine($"ValidateVectorT: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateVector64();
+        Console.WriteLine($"ValidateVector64: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateVector128();
+        Console.WriteLine($"ValidateVector128: {testSucceeded}");
+        succeeded &= testSucceeded;
+        testSucceeded = ValidateVector256();
+        Console.WriteLine($"ValidateVector256: {testSucceeded}");
+        succeeded &= testSucceeded;
+        
         return succeeded;
 
         static bool ValidateX86Base()
         {
             bool succeeded = true;
 
-            if (X86Base.IsSupported)
+            if (X86BaseIsSupported)
             {
                 succeeded &= (RuntimeInformation.OSArchitecture == Architecture.X86) || (RuntimeInformation.OSArchitecture == Architecture.X64);
             }
 
-            if (X86Base.X64.IsSupported)
+            if (X86BaseX64IsSupported)
             {
-                succeeded &= X86Base.IsSupported;
+                succeeded &= X86BaseIsSupported;
                 succeeded &= (RuntimeInformation.OSArchitecture == Architecture.X64);
             }
 
@@ -282,15 +438,15 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Sse.IsSupported)
+            if (SseIsSupported)
             {
-                succeeded &= X86Base.IsSupported;
+                succeeded &= X86BaseIsSupported;
             }
 
-            if (Sse.X64.IsSupported)
+            if (SseX64IsSupported)
             {
-                succeeded &= Sse.IsSupported;
-                succeeded &= X86Base.X64.IsSupported;
+                succeeded &= SseIsSupported;
+                succeeded &= X86BaseX64IsSupported;
             }
 
             return succeeded;
@@ -300,15 +456,15 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Sse2.IsSupported)
+            if (Sse2IsSupported)
             {
-                succeeded &= Sse.IsSupported;
+                succeeded &= SseIsSupported;
             }
 
-            if (Sse2.X64.IsSupported)
+            if (Sse2X64IsSupported)
             {
-                succeeded &= Sse2.IsSupported;
-                succeeded &= Sse.X64.IsSupported;
+                succeeded &= Sse2IsSupported;
+                succeeded &= SseX64IsSupported;
             }
 
             return succeeded;
@@ -318,15 +474,15 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Sse3.IsSupported)
+            if (Sse3IsSupported)
             {
-                succeeded &= Sse2.IsSupported;
+                succeeded &= Sse2IsSupported;
             }
 
-            if (Sse3.X64.IsSupported)
+            if (Sse3X64IsSupported)
             {
-                succeeded &= Sse3.IsSupported;
-                succeeded &= Sse2.X64.IsSupported;
+                succeeded &= Sse3IsSupported;
+                succeeded &= Sse2X64IsSupported;
             }
 
             return succeeded;
@@ -338,13 +494,13 @@ class Runtime_34587
 
             if (Ssse3.IsSupported)
             {
-                succeeded &= Sse3.IsSupported;
+                succeeded &= Sse3IsSupported;
             }
 
-            if (Ssse3.X64.IsSupported)
+            if (Ssse3X64IsSupported)
             {
-                succeeded &= Ssse3.IsSupported;
-                succeeded &= Sse3.X64.IsSupported;
+                succeeded &= Ssse3IsSupported;
+                succeeded &= Sse3X64IsSupported;
             }
 
             return succeeded;
@@ -354,15 +510,15 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Sse41.IsSupported)
+            if (Sse41IsSupported)
             {
-                succeeded &= Ssse3.IsSupported;
+                succeeded &= Ssse3IsSupported;
             }
 
-            if (Sse41.X64.IsSupported)
+            if (Sse41X64IsSupported)
             {
-                succeeded &= Sse41.IsSupported;
-                succeeded &= Ssse3.X64.IsSupported;
+                succeeded &= Sse41IsSupported;
+                succeeded &= Ssse3X64IsSupported;
             }
 
             return succeeded;
@@ -372,15 +528,15 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Sse42.IsSupported)
+            if (Sse42IsSupported)
             {
-                succeeded &= Sse41.IsSupported;
+                succeeded &= Sse41IsSupported;
             }
 
-            if (Sse42.X64.IsSupported)
+            if (Sse42X64IsSupported)
             {
-                succeeded &= Sse42.IsSupported;
-                succeeded &= Sse41.X64.IsSupported;
+                succeeded &= Sse42IsSupported;
+                succeeded &= Sse41X64IsSupported;
             }
 
             return succeeded;
@@ -390,15 +546,15 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Avx.IsSupported)
+            if (AvxIsSupported)
             {
-                succeeded &= Sse42.IsSupported;
+                succeeded &= Sse42IsSupported;
             }
 
-            if (Avx.X64.IsSupported)
+            if (AvxX64IsSupported)
             {
-                succeeded &= Avx.IsSupported;
-                succeeded &= Sse42.X64.IsSupported;
+                succeeded &= AvxIsSupported;
+                succeeded &= Sse42X64IsSupported;
             }
 
             return succeeded;
@@ -408,15 +564,15 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Avx2.IsSupported)
+            if (Avx2IsSupported)
             {
-                succeeded &= Avx.IsSupported;
+                succeeded &= AvxIsSupported;
             }
 
-            if (Avx2.X64.IsSupported)
+            if (Avx2X64IsSupported)
             {
-                succeeded &= Avx2.IsSupported;
-                succeeded &= Avx.X64.IsSupported;
+                succeeded &= Avx2IsSupported;
+                succeeded &= AvxX64IsSupported;
             }
 
             return succeeded;
@@ -426,15 +582,15 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (X86Aes.IsSupported)
+            if (X86AesIsSupported)
             {
-                succeeded &= Sse2.IsSupported;
+                succeeded &= Sse2IsSupported;
             }
 
-            if (X86Aes.X64.IsSupported)
+            if (X86AesX64IsSupported)
             {
-                succeeded &= X86Aes.IsSupported;
-                succeeded &= Sse2.X64.IsSupported;
+                succeeded &= X86AesIsSupported;
+                succeeded &= Sse2X64IsSupported;
             }
 
             return succeeded;
@@ -444,14 +600,14 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Bmi1.IsSupported)
+            if (Bmi1IsSupported)
             {
                 succeeded &= (RuntimeInformation.OSArchitecture == Architecture.X86) || (RuntimeInformation.OSArchitecture == Architecture.X64);
             }
 
-            if (Bmi1.X64.IsSupported)
+            if (Bmi1X64IsSupported)
             {
-                succeeded &= Bmi1.IsSupported;
+                succeeded &= Bmi1IsSupported;
                 succeeded &= (RuntimeInformation.OSArchitecture == Architecture.X64);
             }
 
@@ -462,14 +618,14 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Bmi2.IsSupported)
+            if (Bmi2IsSupported)
             {
                 succeeded &= (RuntimeInformation.OSArchitecture == Architecture.X86) || (RuntimeInformation.OSArchitecture == Architecture.X64);
             }
 
-            if (Bmi2.X64.IsSupported)
+            if (Bmi2X64IsSupported)
             {
-                succeeded &= Bmi2.IsSupported;
+                succeeded &= Bmi2IsSupported;
                 succeeded &= (RuntimeInformation.OSArchitecture == Architecture.X64);
             }
 
@@ -480,15 +636,15 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Fma.IsSupported)
+            if (FmaIsSupported)
             {
                 succeeded &= Avx.IsSupported;
             }
 
-            if (Fma.X64.IsSupported)
+            if (FmaX64IsSupported)
             {
-                succeeded &= Fma.IsSupported;
-                succeeded &= Avx.X64.IsSupported;
+                succeeded &= FmaIsSupported;
+                succeeded &= AvxX64IsSupported;
             }
 
             return succeeded;
@@ -498,14 +654,14 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Lzcnt.IsSupported)
+            if (LzcntIsSupported)
             {
                 succeeded &= (RuntimeInformation.OSArchitecture == Architecture.X86) || (RuntimeInformation.OSArchitecture == Architecture.X64);
             }
 
-            if (Lzcnt.X64.IsSupported)
+            if (LzcntX64IsSupported)
             {
-                succeeded &= Lzcnt.IsSupported;
+                succeeded &= LzcntIsSupported;
                 succeeded &= (RuntimeInformation.OSArchitecture == Architecture.X64);
             }
 
@@ -516,15 +672,15 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Pclmulqdq.IsSupported)
+            if (PclmulqdqIsSupported)
             {
-                succeeded &= Sse2.IsSupported;
+                succeeded &= Sse2IsSupported;
             }
 
-            if (Pclmulqdq.X64.IsSupported)
+            if (PclmulqdqX64IsSupported)
             {
-                succeeded &= Pclmulqdq.IsSupported;
-                succeeded &= Sse2.X64.IsSupported;
+                succeeded &= PclmulqdqIsSupported;
+                succeeded &= Sse2X64IsSupported;
             }
 
             return succeeded;
@@ -534,18 +690,160 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Popcnt.IsSupported)
+            if (PopcntIsSupported)
             {
-                succeeded &= Sse42.IsSupported;
+                succeeded &= Sse42IsSupported;
             }
 
-            if (Popcnt.X64.IsSupported)
+            if (PopcntX64IsSupported)
             {
-                succeeded &= Popcnt.IsSupported;
-                succeeded &= Sse42.X64.IsSupported;
+                succeeded &= PopcntIsSupported;
+                succeeded &= Sse42X64IsSupported;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateVectorT()
+        {
+            bool succeeded = true;
+
+            if (Avx2IsSupported)
+            {
+                succeeded &= VectorIsHardwareAccelerated;
+                succeeded &= VectorByteCount == 32;
+            }
+            else if (Sse2IsSupported)
+            {
+                succeeded &= VectorIsHardwareAccelerated;
+                succeeded &= VectorByteCount == 16;
+            }
+            else if ((RuntimeInformation.ProcessArchitecture == Architecture.X86) || (RuntimeInformation.ProcessArchitecture == Architecture.X64))
+            {
+                succeeded &= !Vector.IsHardwareAccelerated;
+                succeeded &= VectorByteCount == 16;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateVector64()
+        {
+            bool succeeded = true;
+
+            if ((RuntimeInformation.ProcessArchitecture == Architecture.X86) || (RuntimeInformation.ProcessArchitecture == Architecture.X64))
+            {
+                succeeded &= !Vector64IsHardwareAccelerated;
+                succeeded &= Vector64ByteCount == 8;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateVector128()
+        {
+            bool succeeded = true;
+
+            if (Sse2IsSupported)
+            {
+                succeeded &= Vector128IsHardwareAccelerated;
+                succeeded &= Vector128ByteCount == 16;
+            }
+            else if ((RuntimeInformation.ProcessArchitecture == Architecture.X86) || (RuntimeInformation.ProcessArchitecture == Architecture.X64))
+            {
+                succeeded &= !Vector128IsHardwareAccelerated;
+                succeeded &= Vector128ByteCount == 16;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateVector256()
+        {
+            bool succeeded = true;
+
+            if (Avx2IsSupported)
+            {
+                succeeded &= Vector256IsHardwareAccelerated;
+                succeeded &= Vector256ByteCount == 32;
+            }
+            else if ((RuntimeInformation.ProcessArchitecture == Architecture.X86) || (RuntimeInformation.ProcessArchitecture == Architecture.X64))
+            {
+                succeeded &= !Vector256IsHardwareAccelerated;
+                succeeded &= Vector256ByteCount == 32;
             }
 
             return succeeded;
         }
     }
+
+    // Break issupported checks into non-inlined helper functions so that this test will catch issues
+    // that occur during crossgen2. Crossgen2 is more fine grained in terms of what is supported than the runtime
+    // so placing the entire set of checks in a single function will generally fall back to jitting all of the time
+    // but there are cases where crossgen2 can produce code when only 1or 2 of these checks are hit. By
+    // placing the checks into helper functions, the test isolates the checks in the jit, so that a single
+    // instance of incorrect behavior can be identified.
+
+    static bool X86BaseIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return X86Base.IsSupported; } }
+    static bool SseIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Sse.IsSupported; } }
+    static bool Sse2IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Sse2.IsSupported; } }
+    static bool Sse3IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Sse3.IsSupported; } }
+    static bool Ssse3IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Ssse3.IsSupported; } }
+    static bool Sse41IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Sse41.IsSupported; } }
+    static bool Sse42IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Sse42.IsSupported; } }
+    static bool AvxIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Avx.IsSupported; } }
+    static bool Avx2IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Avx2.IsSupported; } }
+
+    static bool X86AesIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return X86Aes.IsSupported; } }
+    static bool Bmi1IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Bmi1.IsSupported; } }
+    static bool Bmi2IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Bmi2.IsSupported; } }
+    static bool FmaIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Fma.IsSupported; } }
+    static bool LzcntIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Lzcnt.IsSupported; } }
+    static bool PclmulqdqIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Pclmulqdq.IsSupported; } }
+    static bool PopcntIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Popcnt.IsSupported; } }
+
+    static bool X86BaseX64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return X86Base.X64.IsSupported; } }
+    static bool SseX64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Sse.X64.IsSupported; } }
+    static bool Sse2X64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Sse2.X64.IsSupported; } }
+    static bool Sse3X64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Sse3.X64.IsSupported; } }
+    static bool Ssse3X64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Ssse3.X64.IsSupported; } }
+    static bool Sse41X64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Sse41.X64.IsSupported; } }
+    static bool Sse42X64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Sse42.X64.IsSupported; } }
+    static bool AvxX64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Avx.X64.IsSupported; } }
+    static bool Avx2X64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Avx2.X64.IsSupported; } }
+
+    static bool X86AesX64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return X86Aes.X64.IsSupported; } }
+    static bool Bmi1X64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Bmi1.X64.IsSupported; } }
+    static bool Bmi2X64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Bmi2.X64.IsSupported; } }
+    static bool FmaX64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Fma.X64.IsSupported; } }
+    static bool LzcntX64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Lzcnt.X64.IsSupported; } }
+    static bool PclmulqdqX64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Pclmulqdq.X64.IsSupported; } }
+    static bool PopcntX64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Popcnt.X64.IsSupported; } }
+
+    static bool ArmBaseIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return ArmBase.IsSupported; } }
+    static bool AdvSimdIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return AdvSimd.IsSupported; } }
+    static bool ArmAesIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return ArmAes.IsSupported; } }
+    static bool Crc32IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Crc32.IsSupported; } }
+    static bool DpIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Dp.IsSupported; } }
+    static bool RdmIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Rdm.IsSupported; } }
+    static bool Sha1IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Sha1.IsSupported; } }
+    static bool Sha256IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Sha256.IsSupported; } }
+
+    static bool ArmBaseArm64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return ArmBase.Arm64.IsSupported; } }
+    static bool AdvSimdArm64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return AdvSimd.Arm64.IsSupported; } }
+    static bool ArmAesArm64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return ArmAes.Arm64.IsSupported; } }
+    static bool Crc32Arm64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Crc32.Arm64.IsSupported; } }
+    static bool DpArm64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Dp.Arm64.IsSupported; } }
+    static bool RdmArm64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Rdm.Arm64.IsSupported; } }
+    static bool Sha1Arm64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Sha1.Arm64.IsSupported; } }
+    static bool Sha256Arm64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Sha256.Arm64.IsSupported; } }
+
+    static bool VectorIsHardwareAccelerated { [MethodImpl(MethodImplOptions.NoInlining)] get { return Vector.IsHardwareAccelerated; } }
+    static bool Vector64IsHardwareAccelerated { [MethodImpl(MethodImplOptions.NoInlining)] get { return Vector64.IsHardwareAccelerated; } }
+    static bool Vector128IsHardwareAccelerated { [MethodImpl(MethodImplOptions.NoInlining)] get { return Vector128.IsHardwareAccelerated; } }
+    static bool Vector256IsHardwareAccelerated { [MethodImpl(MethodImplOptions.NoInlining)] get { return Vector256.IsHardwareAccelerated; } }
+    static int VectorByteCount { [MethodImpl(MethodImplOptions.NoInlining)] get { return Vector<byte>.Count; } }
+    static int Vector64ByteCount { [MethodImpl(MethodImplOptions.NoInlining)] get { return Vector64<byte>.Count; } }
+    static int Vector128ByteCount { [MethodImpl(MethodImplOptions.NoInlining)] get { return Vector128<byte>.Count; } }
+    static int Vector256ByteCount { [MethodImpl(MethodImplOptions.NoInlining)] get { return Vector256<byte>.Count; } }
 }

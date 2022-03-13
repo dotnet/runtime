@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ChMod", SetLastError = true)]
-        internal static extern int ChMod(string path, int mode);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ChMod", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        internal static partial int ChMod(string path, int mode);
     }
 }

@@ -8,7 +8,7 @@
 
 using System;
 
-public class Test
+public class Test_arrayDim
 
 {
     private static int Main()
@@ -91,6 +91,6 @@ j=11
 10
 0 1 2 3 4 5 6 7 8 9 10
 Unhandled Exception: System.IndexOutOfRangeException: Index was outside the bounds of the array.
-   at Test.Main() 
+   at Test_arrayDim.Main() 
  
 */

@@ -73,7 +73,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0016`__ | Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations. |
 |  __`SYSLIB0017`__ | Strong name signing is not supported and throws PlatformNotSupportedException. |
 |  __`SYSLIB0018`__ | ReflectionOnly loading is not supported and throws PlatformNotSupportedException. |
-|  __`SYSLIB0019`__ | RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are no longer supported and throw PlatformNotSupportedException. |
+|  __`SYSLIB0019`__ | RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are not supported and throw PlatformNotSupportedException. |
 |  __`SYSLIB0020`__ | JsonSerializerOptions.IgnoreNullValues is obsolete. To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull. |
 |  __`SYSLIB0021`__ | Derived cryptographic types are obsolete. Use the Create method on the base type instead. |
 |  __`SYSLIB0022`__ | The Rijndael and RijndaelManaged types are obsolete. Use Aes instead. |
@@ -83,9 +83,18 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0026`__ | X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate. |
 |  __`SYSLIB0027`__ | PublicKey.Key is obsolete. Use the appropriate method to get the public key, such as GetRSAPublicKey. |
 |  __`SYSLIB0028`__ | X509Certificate2.PrivateKey is obsolete. Use the appropriate method to get the private key, such as GetRSAPrivateKey, or use the CopyWithPrivateKey method to create a new instance with a private key. |
-|  __`SYSLIB0029`__ | ProduceLegacyHmacValues is obsolete. Producing legacy HMAC values is no longer supported. |
+|  __`SYSLIB0029`__ | ProduceLegacyHmacValues is obsolete. Producing legacy HMAC values is not supported. |
 |  __`SYSLIB0030`__ | HMACSHA1 always uses the algorithm implementation provided by the platform. Use a constructor without the useManagedSha1 parameter. |
 |  __`SYSLIB0031`__ | EncodeOID is obsolete. Use the ASN.1 functionality provided in System.Formats.Asn1. |
+|  __`SYSLIB0032`__ | Recovery from corrupted process state exceptions is not supported; HandleProcessCorruptedStateExceptionsAttribute is ignored. |
+|  __`SYSLIB0033`__ | Rfc2898DeriveBytes.CryptDeriveKey is obsolete and is not supported. Use PasswordDeriveBytes.CryptDeriveKey instead. |
+|  __`SYSLIB0034`__ | CmsSigner(CspParameters) is obsolete and is not supported. Use an alternative constructor instead. |
+|  __`SYSLIB0035`__ | ComputeCounterSignature without specifying a CmsSigner is obsolete and is not supported. Use the overload that accepts a CmsSigner. |
+|  __`SYSLIB0036`__ | Regex.CompileToAssembly is obsolete and not supported. Use RegexGeneratorAttribute with the regular expression source generator instead. |
+|  __`SYSLIB0037`__ | AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported. |
+|  __`SYSLIB0038`__ | SerializationFormat.Binary is obsolete and should not be used. See https://aka.ms/serializationformat-binary-obsolete for more information. |
+|  __`SYSLIB0039`__ | TLS versions 1.0 and 1.1 have known vulnerabilities and are not recommended. Use a newer TLS version instead, or use SslProtocols.None to defer to OS defaults. |
+|  __`SYSLIB0040`__ | EncryptionPolicy.NoEncryption and AllowEncryption significantly reduce security and should not be used in production code. |
 
 ## Analyzer Warnings
 
@@ -124,13 +133,43 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1027`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
 |  __`SYSLIB1028`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
 |  __`SYSLIB1029`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
-|  __`SYSLIB1030`__ | [System.Text.Json.SourceGeneration] Did not generate serialization metadata for type. |
-|  __`SYSLIB1031`__ | [System.Text.Json.SourceGeneration] Duplicate type name. |
-|  __`SYSLIB1032`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
-|  __`SYSLIB1033`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
-|  __`SYSLIB1034`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
-|  __`SYSLIB1035`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
-|  __`SYSLIB1036`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
-|  __`SYSLIB1037`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
-|  __`SYSLIB1038`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
-|  __`SYSLIB1039`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
+|  __`SYSLIB1030`__ | JsonSourceGenerator did not generate serialization metadata for type |
+|  __`SYSLIB1031`__ | JsonSourceGenerator encountered a duplicate JsonTypeInfo property name |
+|  __`SYSLIB1032`__ | JsonSourceGenerator encountered a context class that is not partial |
+|  __`SYSLIB1033`__ | JsonSourceGenerator encountered a type that has multiple [JsonConstructor] annotations|
+|  __`SYSLIB1034`__ | *_`SYSLIB1034` reserved for System.Text.Json.SourceGeneration._* |
+|  __`SYSLIB1035`__ | JsonSourceGenerator encountered a type that has multiple [JsonExtensionData] annotations |
+|  __`SYSLIB1036`__ | JsonSourceGenerator encountered an invalid [JsonExtensionData] annotation |
+|  __`SYSLIB1037`__ | JsonSourceGenerator encountered a type with init-only properties for which deserialization is not supported |
+|  __`SYSLIB1038`__ | JsonSourceGenerator encountered a property annotated with [JsonInclude] that has inaccessible accessors |
+|  __`SYSLIB1039`__ | *_`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
+|  __`SYSLIB1040`__ | Invalid RegexGenerator attribute |
+|  __`SYSLIB1041`__ | Multiple RegexGenerator attribute |
+|  __`SYSLIB1042`__ | Invalid RegexGenerator arguments |
+|  __`SYSLIB1043`__ | RegexGenerator method must have a valid signature |
+|  __`SYSLIB1044`__ | RegexGenerator only supports C# 10 and newer |
+|  __`SYSLIB1045`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
+|  __`SYSLIB1046`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
+|  __`SYSLIB1047`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
+|  __`SYSLIB1048`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
+|  __`SYSLIB1049`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
+|  __`SYSLIB1050`__ | Invalid LibraryImportAttribute usage |
+|  __`SYSLIB1051`__ | Specified type is not supported by source-generated P/Invokes |
+|  __`SYSLIB1052`__ | Specified configuration is not supported by source-generated P/Invokes |
+|  __`SYSLIB1053`__ | Current target framework is not supported by source-generated P/Invokes |
+|  __`SYSLIB1054`__ | Specified LibraryImportAttribute arguments cannot be forwarded to DllImportAttribute |
+|  __`SYSLIB1055`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1056`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1057`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1058`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1059`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1060`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1061`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1062`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1063`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1064`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1065`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1066`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1067`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1068`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1069`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |

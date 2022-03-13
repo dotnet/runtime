@@ -20,7 +20,7 @@
 #define MAX_INLINE_COPIES 16
 #define MAX_INLINE_COPY_SIZE 10000
 
-void 
+void
 mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, int align)
 {
 	int val_reg;
@@ -109,7 +109,7 @@ set_1:
 	}
 }
 
-void 
+void
 mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int soffset, int size, int align)
 {
 	int cur_reg;
@@ -250,7 +250,7 @@ create_write_barrier_bitmap (MonoCompile *cfg, MonoClass *klass, unsigned *wb_bi
 
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
-		foffset = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject): field->offset;
+		foffset = m_class_is_valuetype (klass) ? m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject): m_field_get_offset (field);
 		if (mini_type_is_reference (mono_field_get_type_internal (field))) {
 			g_assert ((foffset % TARGET_SIZEOF_VOID_P) == 0);
 			*wb_bitmap |= 1 << ((offset + foffset) / TARGET_SIZEOF_VOID_P);

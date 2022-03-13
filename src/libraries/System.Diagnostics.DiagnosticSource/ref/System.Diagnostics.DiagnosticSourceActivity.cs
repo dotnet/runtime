@@ -24,7 +24,9 @@ namespace System.Diagnostics
             get { throw null; }
         }
 
+        public bool HasRemoteParent { get { throw null; } }
         public bool IsAllDataRequested { get { throw null; } set { throw null; } }
+        public bool IsStopped { get { throw null; } }
         public System.Diagnostics.ActivityIdFormat IdFormat { get { throw null; } }
         public System.Diagnostics.ActivityKind Kind  { get { throw null; } }
         public string OperationName { get { throw null; } }
@@ -214,6 +216,7 @@ namespace System.Diagnostics
         public string? TraceState  { get { throw null; } }
         public bool IsRemote { get { throw null; } }
         public static bool TryParse(string? traceParent, string? traceState, out System.Diagnostics.ActivityContext context) { throw null; }
+        public static bool TryParse(string? traceParent, string? traceState, bool isRemote, out System.Diagnostics.ActivityContext context) { throw null; }
         public static System.Diagnostics.ActivityContext Parse(string traceParent, string? traceState) { throw null; }
         public static bool operator ==(System.Diagnostics.ActivityContext left, System.Diagnostics.ActivityContext right) { throw null; }
         public static bool operator !=(System.Diagnostics.ActivityContext left, System.Diagnostics.ActivityContext right) { throw null; }
@@ -242,6 +245,7 @@ namespace System.Diagnostics
         public System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? Links  { get { throw null; } }
         public System.Diagnostics.ActivityTagsCollection SamplingTags { get { throw null; } }
         public System.Diagnostics.ActivityTraceId TraceId { get { throw null; } }
+        public string? TraceState { get { throw null; } init { throw null; } }
     }
     public delegate System.Diagnostics.ActivitySamplingResult SampleActivity<T>(ref System.Diagnostics.ActivityCreationOptions<T> options);
     public sealed class ActivityListener : IDisposable
@@ -267,20 +271,65 @@ namespace System.Diagnostics
       public static DistributedContextPropagator CreatePassThroughPropagator() { throw null; }
       public static DistributedContextPropagator CreateNoOutputPropagator() { throw null; }
     }
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public struct TagList : System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>
+    {
+        public TagList(System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tagList) : this() { throw null; }
+        public readonly int Count => throw null;
+        public readonly bool IsReadOnly => throw null;
+        public System.Collections.Generic.KeyValuePair<string, object?> this[int index]
+        {
+            readonly get { { throw null; } }
+            set { { throw null; } }
+        }
+        public void Add(string key, object? value) { throw null; }
+        public void Add(System.Collections.Generic.KeyValuePair<string, object?> tag) { throw null; }
+        public readonly void CopyTo(System.Span<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
+        public void Insert(int index, System.Collections.Generic.KeyValuePair<string, object?> item) { throw null; }
+        public void RemoveAt(int index) { throw null; }
+        public void Clear() { throw null; }
+        public readonly bool Contains(System.Collections.Generic.KeyValuePair<string, object?> item) { throw null; }
+        public readonly void CopyTo(System.Collections.Generic.KeyValuePair<string, object?>[] array, int arrayIndex) { throw null; }
+        public bool Remove(System.Collections.Generic.KeyValuePair<string, object?> item) { throw null; }
+        public readonly System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator() { throw null; }
+        readonly System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public readonly int IndexOf(System.Collections.Generic.KeyValuePair<string, object?> item) { throw null; }
+        public struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.IEnumerator
+        {
+            public System.Collections.Generic.KeyValuePair<string, object?> Current => throw null;
+            object System.Collections.IEnumerator.Current => throw null;
+            public void Dispose() { throw null; }
+            public bool MoveNext() { throw null; }
+            public void Reset() { throw null; }
+        }
+    }
 }
 
 namespace System.Diagnostics.Metrics
 {
     public sealed class Counter<T> : Instrument<T> where T : struct
     {
-        public void Add(T delta) {  throw null; }
-        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag)  {  throw null; }
-        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2)  {  throw null; }
-        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3)  {  throw null; }
-        public void Add(T delta, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) {  throw null; }
-        public void Add(T delta, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) {  throw null; }
+        public void Add(T delta) { throw null; }
+        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag)  { throw null; }
+        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2)  { throw null; }
+        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3)  { throw null; }
+        public void Add(T delta, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
+        public void Add(T delta, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) { throw null; }
+        public void Add(T delta, in TagList tagList) { throw null; }
         internal Counter(Meter meter, string name, string? unit, string? description) :
-                        base(meter, name, unit, description) {  throw null; }
+                        base(meter, name, unit, description) { throw null; }
+    }
+    public sealed class UpDownCounter<T> : Instrument<T> where T : struct
+    {
+        public void Add(T delta) { throw null; }
+        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag)  { throw null; }
+        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2)  { throw null; }
+        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3)  { throw null; }
+        public void Add(T delta, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
+        public void Add(T delta, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) { throw null; }
+        public void Add(T delta, in TagList tagList) { throw null; }
+        internal UpDownCounter(Meter meter, string name, string? unit, string? description) :
+                        base(meter, name, unit, description) { throw null; }
     }
     public sealed class Histogram<T> : Instrument<T> where T : struct
     {
@@ -289,6 +338,7 @@ namespace System.Diagnostics.Metrics
         public void Record(T value, System.Collections.Generic.KeyValuePair<string, object?> tag) { throw null; }
         public void Record(T value, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2) { throw null; }
         public void Record(T value, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3) { throw null; }
+        public void Record(T value, in TagList tagList) { throw null; }
         public void Record(T value, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
         public void Record(T value, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) { throw null; }
     }
@@ -310,6 +360,7 @@ namespace System.Diagnostics.Metrics
         protected void RecordMeasurement(T measurement, System.Collections.Generic.KeyValuePair<string, object?> tag) { throw null; }
         protected void RecordMeasurement(T measurement, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2)  { throw null; }
         protected void RecordMeasurement(T measurement, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3)  { throw null; }
+        protected void RecordMeasurement(T measurement, in TagList tagList) { throw null; }
         protected void RecordMeasurement(T measurement, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
     }
     public readonly struct Measurement<T> where T : struct
@@ -325,6 +376,7 @@ namespace System.Diagnostics.Metrics
     public class Meter : IDisposable
     {
         public Counter<T> CreateCounter<T>(string name, string? unit = null, string? description = null) where T : struct  { throw null; }
+        public UpDownCounter<T> CreateUpDownCounter<T>(string name, string? unit = null, string? description = null) where T : struct  { throw null; }
         public Histogram<T> CreateHistogram<T>(string name, string? unit = null, string? description = null) where T : struct { throw null; }
         public ObservableCounter<T> CreateObservableCounter<T>(
                             string name,
@@ -337,6 +389,21 @@ namespace System.Diagnostics.Metrics
                             string? unit = null,
                             string? description = null) where T : struct { throw null; }
         public ObservableCounter<T> CreateObservableCounter<T>(
+                            string name,
+                            Func<System.Collections.Generic.IEnumerable<Measurement<T>>> observeValues,
+                            string? unit = null,
+                            string? description = null) where T : struct { throw null; }
+        public ObservableUpDownCounter<T> CreateObservableUpDownCounter<T>(
+                            string name,
+                            Func<T> observeValue,
+                            string? unit = null,
+                            string? description = null) where T : struct { throw null; }
+        public ObservableUpDownCounter<T> CreateObservableUpDownCounter<T>(
+                            string name,
+                            Func<Measurement<T>> observeValue,
+                            string? unit = null,
+                            string? description = null) where T : struct { throw null; }
+        public ObservableUpDownCounter<T> CreateObservableUpDownCounter<T>(
                             string name,
                             Func<System.Collections.Generic.IEnumerable<Measurement<T>>> observeValues,
                             string? unit = null,
@@ -377,6 +444,11 @@ namespace System.Diagnostics.Metrics
     public sealed class ObservableCounter<T> : ObservableInstrument<T> where T : struct
     {
         internal ObservableCounter(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description) { throw null; }
+        protected override System.Collections.Generic.IEnumerable<Measurement<T>> Observe() { throw null;}
+    }
+    public sealed class ObservableUpDownCounter<T> : ObservableInstrument<T> where T : struct
+    {
+        internal ObservableUpDownCounter(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description) { throw null; }
         protected override System.Collections.Generic.IEnumerable<Measurement<T>> Observe() { throw null;}
     }
     public sealed class ObservableGauge<T> : ObservableInstrument<T> where T : struct

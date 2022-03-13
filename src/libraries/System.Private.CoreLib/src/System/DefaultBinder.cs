@@ -3,6 +3,8 @@
 
 using System.Reflection;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System
@@ -27,6 +29,8 @@ namespace System
         //
         // The most specific match will be selected.
         //
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "AOT compiler ensures params arrays are created for reflection-invokable methods")]
         public sealed override MethodBase BindToMethod(
             BindingFlags bindingAttr, MethodBase[] match, ref object?[] args,
             ParameterModifier[]? modifiers, CultureInfo? cultureInfo, string[]? names, out object? state)
@@ -227,7 +231,7 @@ namespace System
 
                         if (!pCls.IsAssignableFrom(argTypes[paramOrder[i][j]]))
                         {
-                            if (argTypes[paramOrder[i][j]].IsCOMObject)
+                            if (Marshal.IsBuiltInComSupported && argTypes[paramOrder[i][j]].IsCOMObject)
                             {
                                 if (pCls.IsInstanceOfType(args[paramOrder[i][j]]))
                                     continue;
@@ -255,7 +259,7 @@ namespace System
 
                             if (!paramArrayType.IsAssignableFrom(argTypes[j]))
                             {
-                                if (argTypes[j].IsCOMObject)
+                                if (Marshal.IsBuiltInComSupported && argTypes[j].IsCOMObject)
                                 {
                                     if (paramArrayType.IsInstanceOfType(args[j]))
                                         continue;
@@ -365,7 +369,7 @@ namespace System
             }
 
             if (ambig)
-                throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                throw new AmbiguousMatchException();
 
             // Reorder (if needed)
             if (names != null)
@@ -428,13 +432,8 @@ namespace System
 
         // Given a set of fields that match the base criteria, select a field.
         // if value is null then we have no way to select a field
-        public sealed override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match, object value, CultureInfo? cultureInfo)
+        public sealed override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match!!, object value, CultureInfo? cultureInfo)
         {
-            if (match == null)
-            {
-                throw new ArgumentNullException(nameof(match));
-            }
-
             int i;
             // Find the method that match...
             int CurIdx = 0;
@@ -511,7 +510,7 @@ namespace System
                 }
             }
             if (ambig)
-                throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                throw new AmbiguousMatchException();
             return candidates[currentMin];
         }
 
@@ -527,7 +526,7 @@ namespace System
             for (i = 0; i < types.Length; i++)
             {
                 realTypes[i] = types[i].UnderlyingSystemType;
-                if (!(realTypes[i].IsRuntimeImplemented() || realTypes[i] is SignatureType))
+                if (!(realTypes[i] is RuntimeType || realTypes[i] is SignatureType))
                     throw new ArgumentException(SR.Arg_MustBeType, nameof(types));
             }
             types = realTypes;
@@ -566,8 +565,8 @@ namespace System
 
                     if (pCls.IsPrimitive)
                     {
-                        if (!type.UnderlyingSystemType.IsRuntimeImplemented() ||
-                            !CanChangePrimitive(type.UnderlyingSystemType, pCls.UnderlyingSystemType))
+                        if (type.UnderlyingSystemType is not RuntimeType rtType ||
+                            !CanChangePrimitive(rtType, pCls.UnderlyingSystemType))
                             break;
                     }
                     else
@@ -605,7 +604,7 @@ namespace System
                 }
             }
             if (ambig)
-                throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                throw new AmbiguousMatchException();
             return candidates[currentMin];
         }
 
@@ -618,8 +617,7 @@ namespace System
             {
                 foreach (Type index in indexes)
                 {
-                    if (index == null)
-                        throw new ArgumentNullException(nameof(indexes));
+                    ArgumentNullException.ThrowIfNull(index, nameof(indexes));
                 }
             }
 
@@ -653,8 +651,8 @@ namespace System
 
                         if (pCls.IsPrimitive)
                         {
-                            if (!indexes[j].UnderlyingSystemType.IsRuntimeImplemented() ||
-                                !CanChangePrimitive(indexes[j].UnderlyingSystemType, pCls.UnderlyingSystemType))
+                            if (indexes[j].UnderlyingSystemType is not RuntimeType rtType ||
+                                !CanChangePrimitive(rtType, pCls.UnderlyingSystemType))
                                 break;
                         }
                         else
@@ -671,8 +669,8 @@ namespace System
                     {
                         if (candidates[i].PropertyType.IsPrimitive)
                         {
-                            if (!returnType.UnderlyingSystemType.IsRuntimeImplemented() ||
-                                !CanChangePrimitive(returnType.UnderlyingSystemType, candidates[i].PropertyType.UnderlyingSystemType))
+                            if (returnType.UnderlyingSystemType is not RuntimeType rtType ||
+                                !CanChangePrimitive(rtType, candidates[i].PropertyType.UnderlyingSystemType))
                                 continue;
                         }
                         else
@@ -721,7 +719,7 @@ namespace System
             }
 
             if (ambig)
-                throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                throw new AmbiguousMatchException();
             return candidates[currentMin];
         }
 
@@ -769,11 +767,8 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static MethodBase? ExactBinding(MethodBase[] match, Type[] types, ParameterModifier[]? modifiers)
+        public static MethodBase? ExactBinding(MethodBase[] match!!, Type[] types)
         {
-            if (match == null)
-                throw new ArgumentNullException(nameof(match));
-
             MethodBase[] aExactMatches = new MethodBase[match.Length];
             int cExactMatches = 0;
 
@@ -812,11 +807,8 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
+        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match!!, Type? returnType, Type[]? types)
         {
-            if (match == null)
-                throw new ArgumentNullException(nameof(match));
-
             PropertyInfo? bestMatch = null;
             int typesLength = (types != null) ? types.Length : 0;
             for (int i = 0; i < match.Length; i++)
@@ -837,7 +829,7 @@ namespace System
                     continue;
 
                 if (bestMatch != null)
-                    throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                    throw new AmbiguousMatchException();
 
                 bestMatch = match[i];
             }
@@ -1124,7 +1116,7 @@ namespace System
                 // This can only happen if at least one is vararg or generic.
                 if (currentHierarchyDepth == deepestHierarchy)
                 {
-                    throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                    throw new AmbiguousMatchException();
                 }
 
                 // Check to see if this method is on the most derived class.

@@ -523,6 +523,7 @@ namespace System.Threading.Tasks.Tests
             TaskScheduler.UnobservedTaskException -= handler;
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57751")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static async Task AsyncMethodsDropsStateMachineAndExecutionContextUponCompletion()
         {
@@ -560,6 +561,7 @@ namespace System.Threading.Tasks.Tests
             {
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
+                await Task.Yield();
             }
 
             if (!Volatile.Read(ref finalized))

@@ -390,7 +390,7 @@ void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, Meth
 
     if (argDest->IsHFA())
     {
-        argDest->CopyHFAStructToRegister(src, pMT->GetAlignedNumInstanceFieldBytes());
+        argDest->CopyHFAStructToRegister(src, pMT->GetNumInstanceFieldBytes());
         return;
     }
 
@@ -579,7 +579,7 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
 #ifdef FEATURE_64BIT_ALIGNMENT
         if (pMT->RequiresAlign8())
         {
-            CHECK_AND_TEAR_DOWN((((size_t)this) & 0x7) == (pMT->IsValueType()? 4:0));
+            CHECK_AND_TEAR_DOWN((((size_t)this) & 0x7) == (size_t)(pMT->IsValueType()?4:0));
         }
         lastTest = 9;
 #endif // FEATURE_64BIT_ALIGNMENT
@@ -852,7 +852,7 @@ STRINGREF* StringObject::InitEmptyStringRefPtr() {
 // strAChars must be null-terminated, with an appropriate aLength
 // strBChars must be null-terminated, with an appropriate bLength OR bLength == -1
 // If bLength == -1, we stop on the first null character in strBChars
-BOOL StringObject::CaseInsensitiveCompHelper(__in_ecount(aLength) WCHAR *strAChars, __in_z INT8 *strBChars, INT32 aLength, INT32 bLength, INT32 *result) {
+BOOL StringObject::CaseInsensitiveCompHelper(_In_reads_(aLength) WCHAR *strAChars, _In_z_ INT8 *strBChars, INT32 aLength, INT32 bLength, INT32 *result) {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -1024,6 +1024,41 @@ OBJECTREF::OBJECTREF(const OBJECTREF & objref)
         _ASSERTE(!"Write Barrier violation. Must use SetObjectReference() to assign OBJECTREF's into the GC heap!");
     }
     m_asObj = objref.m_asObj;
+
+    if (m_asObj != 0) {
+        ENABLESTRESSHEAP();
+    }
+
+    Thread::ObjectRefNew(this);
+}
+
+
+//-------------------------------------------------------------
+// VolatileLoadWithoutBarrier constructor
+//-------------------------------------------------------------
+OBJECTREF::OBJECTREF(const OBJECTREF *pObjref, tagVolatileLoadWithoutBarrier tag)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+    STATIC_CONTRACT_FORBID_FAULT;
+
+    Object* objrefAsObj = VolatileLoadWithoutBarrier(&pObjref->m_asObj);
+    VALIDATEOBJECT(objrefAsObj);
+
+    // !!! If this assert is fired, there are two possibilities:
+    // !!! 1.  You are doing a type cast, e.g.  *(OBJECTREF*)pObj
+    // !!!     Instead, you should use ObjectToOBJECTREF(*(Object**)pObj),
+    // !!!                          or ObjectToSTRINGREF(*(StringObject**)pObj)
+    // !!! 2.  There is a real GC hole here.
+    // !!! Either way you need to fix the code.
+    _ASSERTE(Thread::IsObjRefValid(pObjref));
+    if ((objrefAsObj != 0) &&
+        ((IGCHeap*)GCHeapUtilities::GetGCHeap())->IsHeapPointer( (BYTE*)this ))
+    {
+        _ASSERTE(!"Write Barrier violation. Must use SetObjectReference() to assign OBJECTREF's into the GC heap!");
+    }
+    m_asObj = objrefAsObj;
 
     if (m_asObj != 0) {
         ENABLESTRESSHEAP();
@@ -1453,10 +1488,6 @@ void StackTraceArray::EnsureThreadAffinity()
     }
 }
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4267)
-#endif
-
 // Deep copies the stack trace array
 void StackTraceArray::CopyFrom(StackTraceArray const & src)
 {
@@ -1480,11 +1511,6 @@ void StackTraceArray::CopyFrom(StackTraceArray const & src)
                     // another thread might have changed it at the time of copying
     SetObjectThread();  // affinitize the newly created array with the current thread
 }
-
-#ifdef _MSC_VER
-#pragma warning(default: 4267)
-#endif
-
 
 #ifdef _DEBUG
 //===============================================================================
@@ -1881,6 +1907,13 @@ void ExceptionObject::SetStackTrace(I1ARRAYREF stackTrace, PTRARRAYREF dynamicMe
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
+
+#ifdef STRESS_LOG
+    if (StressLog::StressLogOn(~0u, 0))
+    {
+        StressLog::CreateThreadStressLog();
+    }
+#endif
 
     SpinLock::AcquireLock(&g_StackTraceArrayLock);
 

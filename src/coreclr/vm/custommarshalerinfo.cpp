@@ -58,7 +58,6 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
     if (m_bDataIsByValue)
         COMPlusThrow(kNotSupportedException, W("NotSupported_ValueClassCM"));
 
-#ifndef CROSSGEN_COMPILE
     // Run the <clinit> on the marshaler since it might not have run yet.
     hndCustomMarshalerType.GetMethodTable()->EnsureInstanceActive();
     hndCustomMarshalerType.GetMethodTable()->CheckRunClassInitThrowing();
@@ -66,7 +65,6 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
     // Create a COM+ string that will contain the string cookie.
     STRINGREF CookieStringObj = StringObject::NewString(strCookie, cCookieStrBytes);
     GCPROTECT_BEGIN(CookieStringObj);
-#endif
     // Load the method desc for the static method to retrieve the instance.
     MethodDesc *pGetCustomMarshalerMD = GetCustomMarshalerMD(CustomMarshalerMethods_GetInstance, hndCustomMarshalerType);
 
@@ -85,7 +83,6 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
         _ASSERTE(!pGetCustomMarshalerMD->RequiresInstMethodTableArg());
     }
 
-#ifndef CROSSGEN_COMPILE
     MethodDescCallSite getCustomMarshaler(pGetCustomMarshalerMD, (OBJECTREF*)&CookieStringObj);
 
     pGetCustomMarshalerMD->EnsureActive();
@@ -129,14 +126,12 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
     }
 
     GCPROTECT_END();
-#endif
 }
 
 
 CustomMarshalerInfo::~CustomMarshalerInfo()
 {
     WRAPPER_NO_CONTRACT;
-#ifndef CROSSGEN_COMPILE
     if (m_pLoaderAllocator->IsAlive() && m_hndCustomMarshaler)
     {
         // Only free the LOADERHANDLE if the LoaderAllocator is still alive.
@@ -145,7 +140,6 @@ CustomMarshalerInfo::~CustomMarshalerInfo()
         m_pLoaderAllocator->FreeHandle(m_hndCustomMarshaler);
     }
     m_hndCustomMarshaler = NULL;
-#endif
 }
 
 
@@ -172,7 +166,6 @@ void CustomMarshalerInfo::operator delete(void *pMem)
     LIMITED_METHOD_CONTRACT;
 }
 
-#ifndef CROSSGEN_COMPILE
 OBJECTREF CustomMarshalerInfo::InvokeMarshalNativeToManagedMeth(void *pNative)
 {
     CONTRACTL
@@ -294,7 +287,6 @@ void CustomMarshalerInfo::InvokeCleanUpManagedMeth(OBJECTREF MngObj)
     GCPROTECT_END ();
 }
 
-#endif // CROSSGEN_COMPILE
 MethodDesc *CustomMarshalerInfo::GetCustomMarshalerMD(EnumCustomMarshalerMethods Method, TypeHandle hndCustomMarshalertype)
 {
     CONTRACTL
@@ -364,7 +356,6 @@ MethodDesc *CustomMarshalerInfo::GetCustomMarshalerMD(EnumCustomMarshalerMethods
     return pMD;
 }
 
-#ifndef CROSSGEN_COMPILE
 
 //==========================================================================
 // Implementation of the custom marshaler hashtable helper.
@@ -656,5 +647,4 @@ CustomMarshalerInfo *SharedCustomMarshalerHelper::GetCustomMarshalerInfo()
 }
 
 
-#endif // CROSSGEN_COMPILE
 

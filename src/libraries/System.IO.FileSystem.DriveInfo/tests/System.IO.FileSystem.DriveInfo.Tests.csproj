@@ -3,7 +3,10 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="DriveInfo.Unix.Tests.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'" />
-    <Compile Include="DriveInfo.Windows.Tests.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="DriveInfo.Unix.Tests.cs" Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'" />
+    <Compile Include="DriveInfo.Windows.Tests.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Compile Include="VirtualDrives.Windows.Tests.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Compile Include="$(CommonTestPath)System\IO\VirtualDriveHelper.Windows.cs" Link="Common\System\IO\VirtualDriveHelper.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelizationPerAssembly.cs" />
   </ItemGroup>
 </Project>

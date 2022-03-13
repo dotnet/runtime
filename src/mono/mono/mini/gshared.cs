@@ -1472,15 +1472,16 @@ public class Tests
 
 	interface IConstrained {
 		void foo ();
-		void foo_ref_arg (string s);
+		void foo_ref_arg (string s, string s2);
 	}
 
 	interface IConstrained<T3> {
-		void foo_gsharedvt_arg (T3 s);
+		void foo_gsharedvt_arg (T3 s, T3 s2);
 		T3 foo_gsharedvt_ret (T3 s);
 	}
 
 	static object constrained_res;
+	static object constrained_res2;
 
 	struct ConsStruct : IConstrained {
 		public int i;
@@ -1489,8 +1490,8 @@ public class Tests
 			constrained_res = i;
 		}
 
-		public void foo_ref_arg (string s) {
-			constrained_res = s == "A" ? 42 : 0;
+		public void foo_ref_arg (string s, string s2) {
+			constrained_res = (s == "A" && s2 == "B") ? 42 : 0;
 		}
 	}
 
@@ -1501,14 +1502,15 @@ public class Tests
 			constrained_res = i;
 		}
 
-		public void foo_ref_arg (string s) {
-			constrained_res = s == "A" ? 43 : 0;
+		public void foo_ref_arg (string s, string s2) {
+			constrained_res = (s == "A" && s2 == "B") ? 43 : 0;
 		}
 	}
 
 	struct ConsStruct<T> : IConstrained<T> {
-		public void foo_gsharedvt_arg (T s) {
+		public void foo_gsharedvt_arg (T s, T s2) {
 			constrained_res = s;
+			constrained_res2 = s2;
 		}
 
 		public T foo_gsharedvt_ret (T s) {
@@ -1521,7 +1523,7 @@ public class Tests
 			throw new Exception ();
 		}
 
-		public void foo_ref_arg (string s) {
+		public void foo_ref_arg (string s, string s2) {
 		}
 	}
 
@@ -1541,12 +1543,12 @@ public class Tests
 
 		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		public void constrained_void_iface_call_ref_arg<T, T2>(T t, T2 t2) where T2 : IConstrained {
-			t2.foo_ref_arg ("A");
+			t2.foo_ref_arg ("A", "B");
 		}
 
 		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		public void constrained_void_iface_call_gsharedvt_arg<T, T2, T3>(T t, T2 t2, T3 t3) where T2 : IConstrained<T> {
-			t2.foo_gsharedvt_arg (t);
+			t2.foo_gsharedvt_arg (t, t);
 		}
 
 		[MethodImplAttribute (MethodImplOptions.NoInlining)]
@@ -1616,6 +1618,8 @@ public class Tests
 		c.constrained_void_iface_call_gsharedvt_arg<string, ConsStruct<string>, int> ("A", s2, 55);
 		if (!(constrained_res is string) || ((string)constrained_res) != "A")
 			return 2;
+		if (!(constrained_res2 is string) || ((string)constrained_res2) != "A")
+			return 3;
 
 		return 0;
 	}

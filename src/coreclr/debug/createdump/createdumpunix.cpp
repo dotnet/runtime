@@ -47,7 +47,12 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
         CrashReportWriter crashReportWriter(*crashInfo);
         crashReportWriter.WriteCrashReport(dumpPath);
     }
-    printf("Writing %s to file %s\n", dumpType, dumpPath.c_str());
+    // Gather all the useful memory regions from the DAC
+    if (!crashInfo->EnumerateMemoryRegionsWithDAC(minidumpType))
+    {
+        goto exit;
+    }
+    fprintf(stdout, "Writing %s to file %s\n", dumpType, dumpPath.c_str());
 
     // Write the actual dump file
     if (!dumpWriter.OpenDump(dumpPath.c_str()))

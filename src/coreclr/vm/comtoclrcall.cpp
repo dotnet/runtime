@@ -32,7 +32,6 @@
 #include "mlinfo.h"
 #include "dbginterface.h"
 #include "sigbuilder.h"
-#include "notifyexternals.h"
 #include "callconvbuilder.hpp"
 #include "comdelegate.h"
 #include "finalizerthread.h"
@@ -54,7 +53,6 @@ UINT64 FieldCallWorker(Thread *pThread, ComMethodFrame* pFrame);
 void FieldCallWorkerDebuggerWrapper(Thread *pThread, ComMethodFrame* pFrame);
 void FieldCallWorkerBody(Thread *pThread, ComMethodFrame* pFrame);
 
-#ifndef CROSSGEN_COMPILE
 //---------------------------------------------------------
 // void SetupGenericStubs()
 //
@@ -768,18 +766,7 @@ PCODE ComCallMethodDesc::CreateCOMToCLRStub(DWORD dwStubFlags, MethodDesc **ppSt
     {
         // if this represents a ctor or static, use the class method (i.e. the actual ctor or static)
         MethodDesc *pMD = GetCallMethodDesc();
-
-        // first see if we have an NGENed stub
-        pStubMD = GetStubMethodDescFromInteropMethodDesc(pMD, dwStubFlags);
-        if (pStubMD != NULL)
-        {
-            pStubMD = RestoreNGENedStub(pStubMD);
-        }
-        if (pStubMD == NULL)
-        {
-            // no NGENed stub - create a new one
-            pStubMD = ComCall::GetILStubMethodDesc(pMD, dwStubFlags);
-        }
+        pStubMD = ComCall::GetILStubMethodDesc(pMD, dwStubFlags);
     }
 
     *ppStubMD = pStubMD;
@@ -918,7 +905,6 @@ void ComCallMethodDesc::InitRuntimeNativeInfo(MethodDesc *pStubMD)
     FlushInstructionCache(GetCurrentProcess(), pMethodDescMemoryRX, sizeof pMethodDescMemoryRX[0] + sizeof(SHORT));
 #endif // TARGET_X86
 }
-#endif //CROSSGEN_COMPILE
 
 void ComCallMethodDesc::InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD)
 {
@@ -942,11 +928,8 @@ void ComCallMethodDesc::InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD)
     m_pwStubStackSlotOffsets = NULL;
 #endif // TARGET_X86
 
-    if (!SystemDomain::GetCurrentDomain()->IsCompilationDomain())
-    {
-        // Initialize the native type information size of native stack, native retval flags, etc).
-        InitNativeInfo();
-    }
+    // Initialize the native type information size of native stack, native retval flags, etc).
+    InitNativeInfo();
 
     if (pMD->IsEEImpl() && COMDelegate::IsDelegateInvokeMethod(pMD))
     {
@@ -974,11 +957,8 @@ void ComCallMethodDesc::InitField(FieldDesc* pFD, BOOL isGetter)
     m_flags = enum_IsFieldCall; // mark the attribute as a field
     m_flags |= isGetter ? enum_IsGetter : 0;
 
-    if (!SystemDomain::GetCurrentDomain()->IsCompilationDomain())
-    {
-        // Initialize the native type information size of native stack, native retval flags, etc).
-        InitNativeInfo();
-    }
+    // Initialize the native type information size of native stack, native retval flags, etc).
+    InitNativeInfo();
 };
 
 // Initialize the member's native type information (size of native stack, native retval flags, etc).
@@ -1336,7 +1316,6 @@ void ComCall::PopulateComCallMethodDesc(ComCallMethodDesc *pCMD, DWORD *pdwStubF
     *pdwStubFlags = dwStubFlags;
 }
 
-#ifndef CROSSGEN_COMPILE
 #ifdef TARGET_X86
 //---------------------------------------------------------
 // Creates the generic ComCall stub.
@@ -1452,7 +1431,6 @@ PCODE ComCall::GetComCallMethodStub(ComCallMethodDesc *pCMD)
     RETURN GetEEFuncEntryPoint(GenericComCallStub);
 #endif
 }
-#endif // CROSSGEN_COMPILE
 
 // Called both at run-time and by NGEN - generates method stub.
 /*static*/

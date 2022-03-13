@@ -25,7 +25,7 @@ namespace AppHost.Bundle.Tests
             var publishedHostPath = BundleHelper.GetHostPath(testFixture);
             HostWriter.CreateAppHost(singleFileHost,
                                      publishedHostPath,
-                                     BundleHelper.GetAppPath(testFixture));
+                                     BundleHelper.GetAppName(testFixture));
             return publishedHostPath;
         }
 
@@ -37,7 +37,7 @@ namespace AppHost.Bundle.Tests
             var publishedHostPath = BundleHelper.GetHostPath(testFixture);
             HostWriter.CreateAppHost(appHost,
                                      publishedHostPath,
-                                     BundleHelper.GetAppPath(testFixture));
+                                     BundleHelper.GetAppName(testFixture));
             return publishedHostPath;
         }
 

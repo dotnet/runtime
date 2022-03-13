@@ -160,7 +160,7 @@ namespace System.Net.Sockets
 
             SocketFlags flags;
             SocketError errorCode;
-            int bytesReceived = 0;
+            int bytesReceived;
             int socketAddressLen = _socketAddress!.Size;
             if (_bufferList == null)
             {
@@ -288,7 +288,7 @@ namespace System.Net.Sockets
                 throw;
             }
 
-            SocketPal.SendPacketsAsync(socket, SendPacketsFlags, elements, fileHandles, cancellationToken, (bytesTransferred, error) =>
+            _ = SocketPal.SendPacketsAsync(socket, SendPacketsFlags, elements, fileHandles, cancellationToken, (bytesTransferred, error) =>
             {
                 if (error == SocketError.Success)
                 {

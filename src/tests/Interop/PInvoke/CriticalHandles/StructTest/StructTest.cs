@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using TestLibrary;
+using Xunit;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -39,17 +39,17 @@ internal class MyCriticalHandle : CriticalHandle
         {
             return handle;
         }
-        set 
+        set
         {
             handle = value;
         }
     }
-    
+
     internal static IntPtr GetUniqueHandle()
     {
         return new IntPtr(s_uniqueHandleValue++);
     }
-    
+
     internal static bool IsHandleClosed(IntPtr handle)
     {
         return s_closedHandles.Contains(handle.ToInt32());
@@ -58,7 +58,7 @@ internal class MyCriticalHandle : CriticalHandle
 
 public class CriticalHandleStructTest
 {
-    private static Native.HandleCallback s_handleCallback = (handleValue) => 
+    private static Native.HandleCallback s_handleCallback = (handleValue) =>
     {
         GC.Collect();
         GC.WaitForPendingFinalizers();
@@ -71,7 +71,7 @@ public class CriticalHandleStructTest
         InWorker(handleValue);
         GC.Collect();
         GC.WaitForPendingFinalizers();
-        Assert.IsTrue(MyCriticalHandle.IsHandleClosed(handleValue), "Handle was not closed");
+        Assert.True(MyCriticalHandle.IsHandleClosed(handleValue));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -80,7 +80,7 @@ public class CriticalHandleStructTest
         Native.MyCriticalHandleStruct handleStruct = new Native.MyCriticalHandleStruct() { Handle = new MyCriticalHandle() { Handle = handleValue } };
         IntPtr value;
         value = Native.In(handleStruct, s_handleCallback);
-        Assert.AreEqual(handleValue.ToInt32(), value.ToInt32(), "Handle value");
+        Assert.Equal(handleValue.ToInt32(), value.ToInt32());
     }
 
     public static void Ret()
@@ -101,7 +101,7 @@ public class CriticalHandleStructTest
     {
         Native.MyCriticalHandleStruct handleStruct;
         Native.Out(handleValue, out handleStruct);
-        Assert.AreEqual(handleValue.ToInt32(), handleStruct.Handle.Handle.ToInt32(), "Handle value");
+        Assert.Equal(handleValue.ToInt32(), handleStruct.Handle.Handle.ToInt32());
     }
 
     public static void InRef()
@@ -110,7 +110,7 @@ public class CriticalHandleStructTest
         InRefWorker(handleValue);
         GC.Collect();
         GC.WaitForPendingFinalizers();
-        Assert.IsTrue(MyCriticalHandle.IsHandleClosed(handleValue), "Handle was not closed");
+        Assert.True(MyCriticalHandle.IsHandleClosed(handleValue));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -118,7 +118,7 @@ public class CriticalHandleStructTest
     {
         Native.MyCriticalHandleStruct handleStruct = new Native.MyCriticalHandleStruct() { Handle = new MyCriticalHandle() { Handle = handleValue } };
         Native.InRef(ref handleStruct, s_handleCallback);
-        Assert.AreEqual(handleValue.ToInt32(), handleStruct.Handle.Handle.ToInt32(), "Handle value");
+        Assert.Equal(handleValue.ToInt32(), handleStruct.Handle.Handle.ToInt32());
     }
 
     public static void Ref()
@@ -127,7 +127,7 @@ public class CriticalHandleStructTest
         RefWorker(handleValue);
         GC.Collect();
         GC.WaitForPendingFinalizers();
-        Assert.IsTrue(MyCriticalHandle.IsHandleClosed(handleValue), "Handle was not closed");
+        Assert.True(MyCriticalHandle.IsHandleClosed(handleValue));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -135,7 +135,7 @@ public class CriticalHandleStructTest
     {
         Native.MyCriticalHandleStruct handleStruct = new Native.MyCriticalHandleStruct() { Handle = new MyCriticalHandle() { Handle = handleValue } };
         Native.Ref(ref handleStruct, s_handleCallback);
-        Assert.AreEqual(handleValue.ToInt32(), handleStruct.Handle.Handle.ToInt32(), "Handle value");
+        Assert.Equal(handleValue.ToInt32(), handleStruct.Handle.Handle.ToInt32());
     }
 
     public static void RefModify()

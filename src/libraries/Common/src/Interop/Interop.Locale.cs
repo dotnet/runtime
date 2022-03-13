@@ -7,35 +7,35 @@ internal static partial class Interop
 {
     internal static partial class Globalization
     {
-        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetLocaleName")]
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleName", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern unsafe bool GetLocaleName(string localeName, char* value, int valueLength);
+        internal static unsafe partial bool GetLocaleName(string localeName, char* value, int valueLength);
 
-        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetLocaleInfoString")]
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleInfoString", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern unsafe bool GetLocaleInfoString(string localeName, uint localeStringData, char* value, int valueLength, string? uiLocaleName = null);
+        internal static unsafe partial bool GetLocaleInfoString(string localeName, uint localeStringData, char* value, int valueLength, string? uiLocaleName = null);
 
-        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetDefaultLocaleName")]
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetDefaultLocaleName", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern unsafe bool GetDefaultLocaleName(char* value, int valueLength);
+        internal static unsafe partial bool GetDefaultLocaleName(char* value, int valueLength);
 
-        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_IsPredefinedLocale")]
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_IsPredefinedLocale", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool IsPredefinedLocale(string localeName);
+        internal static partial bool IsPredefinedLocale(string localeName);
 
-        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetLocaleTimeFormat")]
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleTimeFormat", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern unsafe bool GetLocaleTimeFormat(string localeName, bool shortFormat, char* value, int valueLength);
+        internal static unsafe partial bool GetLocaleTimeFormat(string localeName, [MarshalAs(UnmanagedType.Bool)] bool shortFormat, char* value, int valueLength);
 
-        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetLocaleInfoInt")]
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleInfoInt", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool GetLocaleInfoInt(string localeName, uint localeNumberData, ref int value);
+        internal static partial bool GetLocaleInfoInt(string localeName, uint localeNumberData, ref int value);
 
-        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetLocaleInfoGroupingSizes")]
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleInfoGroupingSizes", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool GetLocaleInfoGroupingSizes(string localeName, uint localeGroupingData, ref int primaryGroupSize, ref int secondaryGroupSize);
+        internal static partial bool GetLocaleInfoGroupingSizes(string localeName, uint localeGroupingData, ref int primaryGroupSize, ref int secondaryGroupSize);
 
-        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetLocales")]
-        internal static extern int GetLocales([Out] char[]? value, int valueLength);
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocales", StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial int GetLocales([Out] char[]? value, int valueLength);
     }
 }

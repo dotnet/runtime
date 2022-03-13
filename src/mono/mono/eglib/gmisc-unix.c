@@ -28,6 +28,7 @@
 
 #include <config.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <glib.h>
 #include <pthread.h>
 
@@ -42,8 +43,8 @@
 static pthread_mutex_t env_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* MONO Comment
- * 
- * As per the UNIX spec, 
+ *
+ * As per the UNIX spec,
  * "The return value from getenv() may point to static data which may be overwritten by subsequent calls to getenv(), setenv(), or unsetenv()."
  * Source: Unix Manual Pages for getenv, IEEE Std 1003.1
  *
@@ -55,7 +56,7 @@ static pthread_mutex_t env_lock = PTHREAD_MUTEX_INITIALIZER;
  * g_getenv does not mimic the behavior of POSIX getenv anymore.
  *
  * The memory address returned will be unique to the invocaton, and must be freed.
- * */ 
+ * */
 gchar *
 g_getenv (const gchar *variable)
 {
@@ -94,14 +95,6 @@ g_setenv(const gchar *variable, const gchar *value, gboolean overwrite)
 	res = (setenv(variable, value, overwrite) == 0);
 	pthread_mutex_unlock (&env_lock);
 	return res;
-}
-
-void
-g_unsetenv(const gchar *variable)
-{
-	pthread_mutex_lock (&env_lock);
-	unsetenv(variable);
-	pthread_mutex_unlock (&env_lock);
 }
 
 gchar*
@@ -201,3 +194,25 @@ g_get_tmp_dir (void)
 	return tmp_dir;
 }
 
+gchar *
+g_get_current_dir (void)
+{
+	int s = 32;
+	char *buffer = NULL, *r;
+	gboolean fail;
+
+	do {
+		buffer = g_realloc (buffer, s);
+		r = getcwd (buffer, s);
+		fail = (r == NULL && errno == ERANGE);
+		if (fail) {
+			s <<= 1;
+		}
+	} while (fail);
+
+	/* On amd64 sometimes the bottom 32-bits of r == the bottom 32-bits of buffer
+	 * but the top 32-bits of r have overflown to 0xffffffff (seriously, getcwd
+	 * so we return the buffer here since it has a pointer to the valid string
+	 */
+	return buffer;
+}

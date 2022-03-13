@@ -5,7 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
-public class BringUpTest
+public class BringUpTest_IntArraySum
 {
     const int Pass = 100;
     const int Fail = -1;    

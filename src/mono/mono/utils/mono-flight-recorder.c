@@ -26,14 +26,14 @@
 
 // Mutex has to be held when called
 void
-mono_flight_recorder_iter_init (MonoFlightRecorder *recorder, MonoFlightRecorderIter *iter) 
+mono_flight_recorder_iter_init (MonoFlightRecorder *recorder, MonoFlightRecorderIter *iter)
 {
 	// Make sure we are initialized
 	g_assert (recorder->max_count > 0);
 
 	iter->recorder = recorder;
 	if (recorder->cursor == MONO_FLIGHT_RECORDER_SENTINEL) {
-		iter->lowest_index = MONO_FLIGHT_RECORDER_SENTINEL; 
+		iter->lowest_index = MONO_FLIGHT_RECORDER_SENTINEL;
 		iter->highest_index = MONO_FLIGHT_RECORDER_SENTINEL;
 	} else if (recorder->cursor >= recorder->max_count) {
 		// Ring buffer has wrapped around

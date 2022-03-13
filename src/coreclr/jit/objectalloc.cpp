@@ -200,7 +200,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         {
             m_ConnGraphAdjacencyMatrix[lclNum] = BitVecOps::MakeEmpty(&m_bitVecTraits);
 
-            if (comp->lvaTable[lclNum].lvAddrExposed)
+            if (comp->lvaTable[lclNum].IsAddressExposed())
             {
                 JITDUMP("   V%02u is address exposed\n", lclNum);
                 MarkLclVarAsEscaping(lclNum);
@@ -283,7 +283,7 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
         changed = false;
         for (unsigned int lclNum = 0; lclNum < comp->lvaCount; ++lclNum)
         {
-            LclVarDsc* lclVarDsc = comp->lvaTable + lclNum;
+            LclVarDsc* lclVarDsc = comp->lvaGetDesc(lclNum);
             var_types  type      = lclVarDsc->TypeGet();
 
             if (type == TYP_REF || type == TYP_I_IMPL || type == TYP_BYREF)
@@ -456,7 +456,7 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
     bool         helperHasSideEffects = allocObj->gtHelperHasSideEffects;
 
     GenTreeCall::Use* args;
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP entryPoint = allocObj->gtEntryPoint;
     if (helper == CORINFO_HELP_READYTORUN_NEW)
     {
@@ -475,11 +475,16 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
         helperCall->AsCall()->gtCallMoreFlags |= GTF_CALL_M_ALLOC_SIDE_EFFECTS;
     }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (entryPoint.addr != nullptr)
     {
         assert(comp->opts.IsReadyToRun());
         helperCall->AsCall()->setEntryPoint(entryPoint);
+    }
+    else
+    {
+        assert(helper != CORINFO_HELP_READYTORUN_NEW); // If this is true, then we should have collected a non-null
+                                                       // entrypoint above
     }
 #endif
 
@@ -878,7 +883,7 @@ void ObjectAllocator::RewriteUses()
 
             const unsigned int lclNum    = tree->AsLclVarCommon()->GetLclNum();
             unsigned int       newLclNum = BAD_VAR_NUM;
-            LclVarDsc*         lclVarDsc = m_compiler->lvaTable + lclNum;
+            LclVarDsc*         lclVarDsc = m_compiler->lvaGetDesc(lclNum);
 
             if ((lclNum < BitVecTraits::GetSize(&m_allocator->m_bitVecTraits)) &&
                 m_allocator->MayLclVarPointToStack(lclNum))

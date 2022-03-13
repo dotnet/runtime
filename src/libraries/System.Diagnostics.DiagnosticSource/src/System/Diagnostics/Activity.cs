@@ -93,16 +93,21 @@ namespace System.Diagnostics
         public ActivityStatusCode Status => _statusCode;
 
         /// <summary>
-        /// Gets the status descrition of the current activity object.
+        /// Gets the status description of the current activity object.
         /// </summary>
         public string? StatusDescription => _statusDescription;
+
+        /// <summary>
+        /// Gets whether the parent context was created from remote propagation.
+        /// </summary>
+        public bool HasRemoteParent { get; private set; }
 
         /// <summary>
         /// Sets the status code and description on the current activity object.
         /// </summary>
         /// <param name="code">The status code</param>
-        /// <param name="description">The error status descrition</param>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <param name="description">The error status description</param>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         /// <remarks>
         /// When passing code value different than ActivityStatusCode.Error, the Activity.StatusDescription will reset to null value.
         /// The description paramater will be respected only when passing ActivityStatusCode.Error value.
@@ -399,7 +404,7 @@ namespace System.Diagnostics
         /// This shows up in the <see cref="Tags"/>  enumeration. It is meant for information that
         /// is useful to log but not needed for runtime control (for the latter, <see cref="Baggage"/>)
         /// </summary>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         /// <param name="key">The tag key name</param>
         /// <param name="value">The tag value mapped to the input key</param>
         public Activity AddTag(string key, string? value) => AddTag(key, (object?) value);
@@ -409,7 +414,7 @@ namespace System.Diagnostics
         /// This shows up in the <see cref="TagObjects"/> enumeration. It is meant for information that
         /// is useful to log but not needed for runtime control (for the latter, <see cref="Baggage"/>)
         /// </summary>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         /// <param name="key">The tag key name</param>
         /// <param name="value">The tag value mapped to the input key</param>
         public Activity AddTag(string key, object? value)
@@ -435,7 +440,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="key">The tag key name</param>
         /// <param name="value">The tag value mapped to the input key</param>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity SetTag(string key, object? value)
         {
             KeyValuePair<string, object?> kvp = new KeyValuePair<string, object?>(key, value);
@@ -452,7 +457,7 @@ namespace System.Diagnostics
         /// Add <see cref="ActivityEvent" /> object to the <see cref="Events" /> list.
         /// </summary>
         /// <param name="e"> object of <see cref="ActivityEvent"/> to add to the attached events list.</param>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity AddEvent(ActivityEvent e)
         {
             if (_events != null || Interlocked.CompareExchange(ref _events, new DiagLinkedList<ActivityEvent>(e), null) != null)
@@ -471,7 +476,7 @@ namespace System.Diagnostics
         /// that is simply useful to show up in the log with the activity use <see cref="Tags"/>.
         /// Returns 'this' for convenient chaining.
         /// </summary>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity AddBaggage(string key, string? value)
         {
             KeyValuePair<string, string?> kvp = new KeyValuePair<string, string?>(key, value);
@@ -495,7 +500,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="key">The baggage key name</param>
         /// <param name="value">The baggage value mapped to the input key</param>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity SetBaggage(string key, string? value)
         {
             KeyValuePair<string, string?> kvp = new KeyValuePair<string, string?>(key, value);
@@ -566,7 +571,7 @@ namespace System.Diagnostics
         /// Update the Activity to set start time
         /// </summary>
         /// <param name="startTimeUtc">Activity start time in UTC (Greenwich Mean Time)</param>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity SetStartTime(DateTime startTimeUtc)
         {
             if (startTimeUtc.Kind != DateTimeKind.Utc)
@@ -586,7 +591,7 @@ namespace System.Diagnostics
         /// and <paramref name="endTimeUtc"/>.
         /// </summary>
         /// <param name="endTimeUtc">Activity stop time in UTC (Greenwich Mean Time)</param>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity SetEndTime(DateTime endTimeUtc)
         {
             if (endTimeUtc.Kind != DateTimeKind.Utc)
@@ -684,9 +689,9 @@ namespace System.Diagnostics
                 return;
             }
 
-            if (!IsFinished)
+            if (!IsStopped)
             {
-                IsFinished = true;
+                IsStopped = true;
 
                 if (Duration == TimeSpan.Zero)
                 {
@@ -920,7 +925,7 @@ namespace System.Diagnostics
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
 #endif
-        internal static bool TryConvertIdToContext(string traceParent, string? traceState, out ActivityContext context)
+        internal static bool TryConvertIdToContext(string traceParent, string? traceState, bool isRemote, out ActivityContext context)
         {
             context = default;
             if (!IsW3CId(traceParent))
@@ -941,7 +946,8 @@ namespace System.Diagnostics
                             new ActivityTraceId(traceIdSpan.ToString()),
                             new ActivitySpanId(spanIdSpan.ToString()),
                             (ActivityTraceFlags) ActivityTraceId.HexByteFromChars(traceParent[53], traceParent[54]),
-                            traceState);
+                            traceState,
+                            isRemote);
 
             return true;
         }
@@ -951,7 +957,7 @@ namespace System.Diagnostics
         /// </summary>
         public void Dispose()
         {
-            if (!IsFinished)
+            if (!IsStopped)
             {
                 Stop();
             }
@@ -1016,13 +1022,14 @@ namespace System.Diagnostics
 
         internal static Activity Create(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,
                                         IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links, DateTimeOffset startTime,
-                                        ActivityTagsCollection? samplerTags, ActivitySamplingResult request, bool startIt, ActivityIdFormat idFormat)
+                                        ActivityTagsCollection? samplerTags, ActivitySamplingResult request, bool startIt, ActivityIdFormat idFormat, string? traceState)
         {
             Activity activity = new Activity(name);
 
             activity.Source = source;
             activity.Kind = kind;
             activity.IdFormat = idFormat;
+            activity._traceState = traceState;
 
             if (links != null)
             {
@@ -1073,7 +1080,7 @@ namespace System.Diagnostics
 
                 activity.ActivityTraceFlags = parentContext.TraceFlags;
                 activity._parentTraceFlags = (byte) parentContext.TraceFlags;
-                activity._traceState = parentContext.TraceState;
+                activity.HasRemoteParent = parentContext.IsRemote;
             }
 
             activity.IsAllDataRequested = request == ActivitySamplingResult.AllData || request == ActivitySamplingResult.AllDataAndRecorded;
@@ -1232,7 +1239,7 @@ namespace System.Diagnostics
 
         private static bool ValidateSetCurrent(Activity? activity)
         {
-            bool canSet = activity == null || (activity.Id != null && !activity.IsFinished);
+            bool canSet = activity == null || (activity.Id != null && !activity.IsStopped);
             if (!canSet)
             {
                 NotifyError(new InvalidOperationException(SR.ActivityNotRunning));
@@ -1298,18 +1305,24 @@ namespace System.Diagnostics
             get => (_w3CIdFlags & ActivityTraceFlagsIsSet) != 0;
         }
 
-        private bool IsFinished
+        /// <summary>
+        /// Indicates whether this <see cref="Activity"/> object is stopped
+        /// </summary>
+        /// <remarks>
+        /// When subscribing to <see cref="Activity"/> stop event using <see cref="ActivityListener.ActivityStopped"/>, the received <see cref="Activity"/> object in the event callback will have <see cref="IsStopped"/> as true.
+        /// </remarks>
+        public bool IsStopped
         {
-            get => (_state & State.IsFinished) != 0;
-            set
+            get => (_state & State.IsStopped) != 0;
+            private set
             {
                 if (value)
                 {
-                    _state |= State.IsFinished;
+                    _state |= State.IsStopped;
                 }
                 else
                 {
-                    _state &= ~State.IsFinished;
+                    _state &= ~State.IsStopped;
                 }
             }
         }
@@ -1623,7 +1636,7 @@ namespace System.Diagnostics
             FormatW3C = 0b_0_00000_10,
             FormatFlags = 0b_0_00000_11,
 
-            IsFinished = 0b_1_00000_00,
+            IsStopped = 0b_1_00000_00,
         }
     }
 

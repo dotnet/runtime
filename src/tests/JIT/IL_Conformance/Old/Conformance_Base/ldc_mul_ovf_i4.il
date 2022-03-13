@@ -1877,5 +1877,5 @@ END:
 //---- EOF ------------------
 }
 
-.assembly ldc_mul_ovf_i4.exe{}
+.assembly ldc_mul_ovf_i4{}
 

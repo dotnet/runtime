@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using TestLibrary;
+using Xunit;
 
 unsafe partial class GenericsNative
 {
@@ -44,18 +44,18 @@ unsafe partial class GenericsTest
 
         Vector256<double> value2;
         GenericsNative.GetVector256DOut(1.0, 2.0, 3.0, 4.0, &value2);
-        Assert.AreEqual(value2.GetElement(0), 1.0);
-        Assert.AreEqual(value2.GetElement(1), 2.0);
-        Assert.AreEqual(value2.GetElement(2), 3.0);
-        Assert.AreEqual(value2.GetElement(3), 4.0);
+        Assert.Equal(value2.GetElement(0), 1.0);
+        Assert.Equal(value2.GetElement(1), 2.0);
+        Assert.Equal(value2.GetElement(2), 3.0);
+        Assert.Equal(value2.GetElement(3), 4.0);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector256DOut(1.0, 2.0, 3.0, 4.0, out Vector256<double> value3));
 
         Vector256<double>* value4 = GenericsNative.GetVector256DPtr(1.0, 2.0, 3.0, 4.0);
-        Assert.AreEqual(value4->GetElement(0), 1.0);
-        Assert.AreEqual(value4->GetElement(1), 2.0);
-        Assert.AreEqual(value4->GetElement(2), 3.0);
-        Assert.AreEqual(value4->GetElement(3), 4.0);
+        Assert.Equal(value4->GetElement(0), 1.0);
+        Assert.Equal(value4->GetElement(1), 2.0);
+        Assert.Equal(value4->GetElement(2), 3.0);
+        Assert.Equal(value4->GetElement(3), 4.0);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector256DRef(1.0, 2.0, 3.0, 4.0));
 

@@ -8,7 +8,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
   .ver 5:0:0:0
 }
-.assembly '41571'
+.assembly extern xunit.core {}
+.assembly 'GitHub_41571'
 {
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
@@ -30,7 +31,6 @@
   .hash algorithm 0x00008004
   .ver 1:0:0:0
 }
-.module '41571.dll'
 // MVID: {7F828A34-F3E8-43DB-A60B-950719B2314B}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -48,6 +48,9 @@
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       19 (0x13)
     .maxstack  1

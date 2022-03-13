@@ -7,8 +7,8 @@
   <ItemGroup>
     <Compile Include="System\Net\IWebProxyScript.cs" />
     <Compile Include="System\Net\WebProxy.cs" />
-    <Compile Condition="'$(TargetsBrowser)' == 'true'" Include="System\Net\WebProxy.Browser.cs" />
-    <Compile Condition="'$(TargetsBrowser)' != 'true'" Include="System\Net\WebProxy.NonBrowser.cs" />
+    <Compile Condition="'$(TargetPlatformIdentifier)' == 'Browser'" Include="System\Net\WebProxy.Browser.cs" />
+    <Compile Condition="'$(TargetPlatformIdentifier)' != 'Browser'" Include="System\Net\WebProxy.NonBrowser.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Net.NameResolution" />

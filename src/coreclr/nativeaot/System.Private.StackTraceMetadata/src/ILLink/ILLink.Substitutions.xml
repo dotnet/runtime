@@ -1,0 +1,5 @@
+<linker>
+  <type fullname="Internal.StackTraceMetadata.StackTraceMetadata" feature="System.Reflection.IsReflectionExecutionAvailable" featurevalue="false">
+    <method signature="System.Boolean IsReflectionExecutionAvailable()" body="stub" />
+  </type>
+</linker>

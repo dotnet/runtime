@@ -84,8 +84,7 @@ namespace System.Net
                     port = hostAndPort.Substring(colonIndex + 1); // Excludes colon
 
                     // Loosely validate the port just to make sure it was a port and not something else
-                    ushort portValue;
-                    if (!ushort.TryParse(port, NumberStyles.Integer, CultureInfo.InvariantCulture, out portValue))
+                    if (!ushort.TryParse(port, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
                     {
                         return inputServiceName;
                     }
@@ -281,10 +280,9 @@ namespace System.Net
         {
             string hostname = ExtractHostname(uriPrefix, true)!;
 
-            IPAddress? ipAddress = null;
             if (string.Equals(hostname, "*", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(hostname, "+", StringComparison.OrdinalIgnoreCase) ||
-                IPAddress.TryParse(hostname, out ipAddress))
+                IPAddress.TryParse(hostname, out _))
             {
                 // for a wildcard, register the machine name.  If the caller doesn't have DNS permission
                 // or the query fails for some reason, don't add an SPN.

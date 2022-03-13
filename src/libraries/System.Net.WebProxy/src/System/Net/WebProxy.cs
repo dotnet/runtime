@@ -20,9 +20,9 @@ namespace System.Net
 
         public WebProxy(Uri? Address, bool BypassOnLocal) : this(Address, BypassOnLocal, null, null) { }
 
-        public WebProxy(Uri? Address, bool BypassOnLocal, string[]? BypassList) : this(Address, BypassOnLocal, BypassList, null) { }
+        public WebProxy(Uri? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList) : this(Address, BypassOnLocal, BypassList, null) { }
 
-        public WebProxy(Uri? Address, bool BypassOnLocal, string[]? BypassList, ICredentials? Credentials)
+        public WebProxy(Uri? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList, ICredentials? Credentials)
         {
             this.Address = Address;
             this.Credentials = Credentials;
@@ -35,7 +35,7 @@ namespace System.Net
         }
 
         public WebProxy(string Host, int Port)
-            : this(new Uri(string.Create(CultureInfo.InvariantCulture, $"http://{Host}:{Port}")), false, null, null)
+            : this(CreateProxyUri(Host, Port), false, null, null)
         {
         }
 
@@ -49,12 +49,12 @@ namespace System.Net
         {
         }
 
-        public WebProxy(string? Address, bool BypassOnLocal, string[]? BypassList)
+        public WebProxy(string? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList)
             : this(CreateProxyUri(Address), BypassOnLocal, BypassList, null)
         {
         }
 
-        public WebProxy(string? Address, bool BypassOnLocal, string[]? BypassList, ICredentials? Credentials)
+        public WebProxy(string? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList, ICredentials? Credentials)
             : this(CreateProxyUri(Address), BypassOnLocal, BypassList, Credentials)
         {
         }
@@ -92,20 +92,32 @@ namespace System.Net
             set => Credentials = value ? CredentialCache.DefaultCredentials : null;
         }
 
-        public Uri? GetProxy(Uri destination)
+        public Uri? GetProxy(Uri destination!!)
         {
-            if (destination == null)
-            {
-                throw new ArgumentNullException(nameof(destination));
-            }
-
             return IsBypassed(destination) ? destination : Address;
         }
 
-        private static Uri? CreateProxyUri(string? address) =>
-            address == null ? null :
-            !address.Contains("://") ? new Uri("http://" + address) :
-            new Uri(address);
+        private static Uri? CreateProxyUri(string? address, int? port = null)
+        {
+            if (address is null)
+            {
+                return null;
+            }
+
+            if (!address.Contains("://", StringComparison.Ordinal))
+            {
+                address = "http://" + address;
+            }
+
+            var proxyUri = new Uri(address);
+
+            if (port.HasValue && proxyUri.IsAbsoluteUri)
+            {
+                proxyUri = new UriBuilder(proxyUri) { Port = port.Value }.Uri;
+            }
+
+            return proxyUri;
+        }
 
         private void UpdateRegexList(bool canThrow)
         {
@@ -159,13 +171,8 @@ namespace System.Net
             return false;
         }
 
-        public bool IsBypassed(Uri host)
+        public bool IsBypassed(Uri host!!)
         {
-            if (host == null)
-            {
-                throw new ArgumentNullException(nameof(host));
-            }
-
             return
                 Address == null ||
                 (BypassProxyOnLocal && IsLocal(host)) ||
@@ -181,7 +188,7 @@ namespace System.Net
         protected virtual void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext) =>
             throw new PlatformNotSupportedException();
 
-        [Obsolete("This method has been deprecated. Please use the proxy selected for you by default. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("WebProxy.GetDefaultProxy has been deprecated. Use the proxy selected for you by default.")]
         public static WebProxy GetDefaultProxy() =>
             // The .NET Framework here returns a proxy that fetches IE settings and
             // executes JavaScript to determine the correct proxy.

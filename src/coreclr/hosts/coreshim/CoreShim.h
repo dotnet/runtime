@@ -18,6 +18,7 @@
 // CoreCLR
 #include <palclr.h>
 #include <coreclrhost.h>
+#include <minipal/utils.h>
 
 #define WCHAR wchar_t
 

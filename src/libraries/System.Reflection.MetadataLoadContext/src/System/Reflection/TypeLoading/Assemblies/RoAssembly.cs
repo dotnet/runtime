@@ -40,16 +40,18 @@ namespace System.Reflection.TypeLoading
         public sealed override string FullName => _lazyFullName ?? (_lazyFullName = GetName().FullName);
         private volatile string? _lazyFullName;
 
+        internal const string ThrowingMessageInRAF = "This member throws an exception for assemblies embedded in a single-file app";
+
         // Location and codebase
         public abstract override string Location { get; }
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
         [Obsolete(Obsoletions.CodeBaseMessage, DiagnosticId = Obsoletions.CodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        [RequiresAssemblyFiles("The code will throw for assemblies embedded in a single-file app")]
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
 #endif
         public sealed override string CodeBase => throw new NotSupportedException(SR.NotSupported_AssemblyCodeBase);
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
         [Obsolete(Obsoletions.CodeBaseMessage, DiagnosticId = Obsoletions.CodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        [RequiresAssemblyFiles("The code will throw for assemblies embedded in a single-file app")]
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
 #endif
         public sealed override string EscapedCodeBase => throw new NotSupportedException(SR.NotSupported_AssemblyCodeBase);
 
@@ -94,11 +96,8 @@ namespace System.Reflection.TypeLoading
         }
 
         // Api to retrieve types by name. Retrieves both types physically defined in this module and types this assembly forwards from another assembly.
-        public sealed override Type? GetType(string name, bool throwOnError, bool ignoreCase)
+        public sealed override Type? GetType(string name!!, bool throwOnError, bool ignoreCase)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             // Known compat disagreement: This api is supposed to throw an ArgumentException if the name has an assembly qualification
             // (though the intended meaning seems clear.) This is difficult for us to implement as we don't have our own type name parser.
             // (We can't just throw in the assemblyResolve delegate because assembly qualifications are permitted inside generic arguments,
@@ -154,7 +153,7 @@ namespace System.Reflection.TypeLoading
 
         // Miscellaneous properties
         public sealed override bool ReflectionOnly => true;
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
         [Obsolete("The Global Assembly Cache is not supported.", DiagnosticId = "SYSLIB0005", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public sealed override bool GlobalAssemblyCache => false;
@@ -164,7 +163,7 @@ namespace System.Reflection.TypeLoading
         public abstract override MethodInfo? EntryPoint { get; }
 
         // Manifest resource support.
-        public abstract override ManifestResourceInfo GetManifestResourceInfo(string resourceName);
+        public abstract override ManifestResourceInfo? GetManifestResourceInfo(string resourceName);
         public abstract override string[] GetManifestResourceNames();
         public abstract override Stream? GetManifestResourceStream(string name);
         public sealed override Stream? GetManifestResourceStream(Type type, string name)

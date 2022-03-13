@@ -249,4 +249,4 @@ END:
 }
 }
 
-.assembly sub_ovf_u2.exe{}
+.assembly sub_ovf_u2{}

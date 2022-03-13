@@ -11,10 +11,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly bug // // as "bug"
+.assembly 'volatile' // // as "bug"
 {
 }
-.module bug.exe
+.assembly extern xunit.core {}
 // MVID: {A29CDE84-6701-43B3-B56A-DE8480CE7421}
 .namespace JitTest
 {
@@ -23,6 +23,9 @@
   	.field public int32 m_n
     .method private hidebysig static int32 Main() il managed
     {
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack  8
 		.locals (value class JitTest.VT src, value class JitTest.VT dst)

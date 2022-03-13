@@ -1568,7 +1568,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
         use |= dMD->IsMulticastStub();
 #endif
-        use |= dMD->GetILStubResolver()->GetStubType() == ILStubResolver::TailCallCallTargetStub;
+        use |= dMD->GetILStubType() == DynamicMethodDesc::StubTailCallCallTarget;
 
         if (use)
         {
@@ -2103,7 +2103,7 @@ StackWalkAction DebuggerWalkStack(Thread *thread,
 #endif
             memset((void *)&data, 0, sizeof(data));
 
-#if defined(TARGET_X86)
+#if !defined(FEATURE_EH_FUNCLETS)
             // @todo - this seems pointless. context->Eip will be 0; and when we copy it over to the DebuggerRD,
             // the context will be completely null.
             data.regDisplay.ControlPC = context->Eip;

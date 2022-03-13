@@ -250,17 +250,6 @@ class StubLinkerCPU : public StubLinker
                               );
         VOID X86EmitPushEBPframe();
 
-#if defined(TARGET_X86)
-#if defined(PROFILING_SUPPORTED) && !defined(FEATURE_STUBS_AS_IL)
-        // These are used to emit calls to notify the profiler of transitions in and out of
-        // managed code through COM->COM+ interop or N/Direct
-        VOID EmitProfilerComCallProlog(TADDR pFrameVptr, X86Reg regFrame);
-        VOID EmitProfilerComCallEpilog(TADDR pFrameVptr, X86Reg regFrame);
-#endif // PROFILING_SUPPORTED && !FEATURE_STUBS_AS_IL
-#endif // TARGET_X86
-
-
-
         // Emits the most efficient form of the operation:
         //
         //    opcode   altreg, [basereg + scaledreg*scale + ofs]
@@ -340,6 +329,7 @@ class StubLinkerCPU : public StubLinker
 #endif
         }
 
+#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
         VOID EmitEnable(CodeLabel *pForwardRef);
         VOID EmitRareEnable(CodeLabel *pRejoinPoint);
 
@@ -349,20 +339,13 @@ class StubLinkerCPU : public StubLinker
 
         VOID EmitSetup(CodeLabel *pForwardRef);
         VOID EmitRareSetup(CodeLabel* pRejoinPoint, BOOL fThrow);
+#endif // FEATURE_COMINTEROP && TARGET_X86
 
 #ifndef FEATURE_STUBS_AS_IL
         VOID EmitMethodStubProlog(TADDR pFrameVptr, int transitionBlockOffset);
         VOID EmitMethodStubEpilog(WORD numArgBytes, int transitionBlockOffset);
 
         VOID EmitCheckGSCookie(X86Reg frameReg, int gsCookieOffset);
-
-#ifdef TARGET_X86
-        void EmitComMethodStubProlog(TADDR pFrameVptr, CodeLabel** rgRareLabels,
-                                     CodeLabel** rgRejoinLabels, BOOL bShouldProfile);
-
-        void EmitComMethodStubEpilog(TADDR pFrameVptr, CodeLabel** rgRareLabels,
-                                     CodeLabel** rgRejoinLabels, BOOL bShouldProfile);
-#endif // TARGET_X86
 #endif // !FEATURE_STUBS_AS_IL
 
 #ifdef TARGET_X86
@@ -379,6 +362,20 @@ class StubLinkerCPU : public StubLinker
         VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 
 #if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
+
+#if defined(PROFILING_SUPPORTED)
+        // These are used to emit calls to notify the profiler of transitions in and out of
+        // managed code through COM->COM+ interop or N/Direct
+        VOID EmitProfilerComCallProlog(TADDR pFrameVptr, X86Reg regFrame);
+        VOID EmitProfilerComCallEpilog(TADDR pFrameVptr, X86Reg regFrame);
+#endif // PROFILING_SUPPORTED
+
+        void EmitComMethodStubProlog(TADDR pFrameVptr, CodeLabel** rgRareLabels,
+            CodeLabel** rgRejoinLabels, BOOL bShouldProfile);
+
+        void EmitComMethodStubEpilog(TADDR pFrameVptr, CodeLabel** rgRareLabels,
+            CodeLabel** rgRejoinLabels, BOOL bShouldProfile);
+
         //========================================================================
         //  shared Epilog for stubs that enter managed code from COM
         //  uses a return thunk within the method desc
@@ -437,7 +434,7 @@ class StubLinkerCPU : public StubLinker
         VOID X86EmitDebugTrashReg(X86Reg reg);
 #endif
 
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
         virtual VOID EmitUnwindInfoCheckWorker (CodeLabel *pCheckLabel);
         virtual VOID EmitUnwindInfoCheckSubfunction();
 #endif
@@ -684,13 +681,6 @@ struct FixupPrecode {
 
         return *dac_cast<PTR_BYTE>(addr) == X86_INSTR_JMP_REL32;
     }
-
-#ifdef FEATURE_PREJIT
-    // Partial initialization. Used to save regrouped chunks.
-    void InitForSave(int iPrecodeChunkIndex);
-
-    void Fixup(DataImage *image, MethodDesc * pMD);
-#endif
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);

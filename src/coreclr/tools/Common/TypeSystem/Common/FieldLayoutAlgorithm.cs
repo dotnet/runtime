@@ -32,6 +32,11 @@ namespace Internal.TypeSystem
         public abstract bool ComputeContainsGCPointers(DefType type);
 
         /// <summary>
+        /// Compute whether the specified type is a value type that transitively has UnsafeValueTypeAttribute
+        /// </summary>
+        public abstract bool ComputeIsUnsafeValueType(DefType type);
+
+        /// <summary>
         /// Compute the shape of a value type. The shape information is used to control code generation and allocation
         /// (such as vectorization, passing the value type by value across method calls, or boxing alignment).
         /// </summary>
@@ -77,6 +82,7 @@ namespace Internal.TypeSystem
         public LayoutInt ByteCountUnaligned;
         public LayoutInt ByteCountAlignment;
         public bool LayoutAbiStable; // Is the layout stable such that it can safely be used in function calling conventions
+        public bool IsAutoLayoutOrHasAutoLayoutFields;
 
         /// <summary>
         /// If Offsets is non-null, then all field based layout is complete.

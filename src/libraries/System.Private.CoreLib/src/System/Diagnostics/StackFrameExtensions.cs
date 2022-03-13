@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
@@ -12,6 +13,8 @@ namespace System.Diagnostics
             return stackFrame.GetNativeImageBase() != IntPtr.Zero;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "StackFrame.GetMethod is used to establish if method is available.")]
         public static bool HasMethod(this StackFrame stackFrame)
         {
             return stackFrame.GetMethod() != null;

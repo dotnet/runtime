@@ -415,4 +415,4 @@ END:
 
 
 
-.assembly add_ovf_i2.exe{}
+.assembly add_ovf_i2{}

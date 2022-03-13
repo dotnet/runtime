@@ -28,6 +28,7 @@ if /i "%__Ninja%" == "1" (
     set __CmakeGenerator=Ninja
 ) else (
     if /i NOT "%__Arch%" == "wasm" (
+        if /i "%__VSVersion%" == "vs2022" (set __CmakeGenerator=%__CmakeGenerator% 17 2022)
         if /i "%__VSVersion%" == "vs2019" (set __CmakeGenerator=%__CmakeGenerator% 16 2019)
         if /i "%__VSVersion%" == "vs2017" (set __CmakeGenerator=%__CmakeGenerator% 15 2017)
 
@@ -72,7 +73,7 @@ set __CMakeCmdLineCache=
 if not "%__ConfigureOnly%" == "1" (
     REM MSBuild can't reload from a CMake reconfigure during build correctly, so only do this
     REM command-line up to date check for non-VS generators.
-    if not "%__CmakeGenerator%" == "Visual Studio" (
+    if "%__CmakeGenerator:Visual Studio=%" == "%__CmakeGenerator%" (
         if exist "%__CmdLineOptionsUpToDateFile%" (
             set /p __CMakeCmdLineCache=<"%__CmdLineOptionsUpToDateFile%"
             REM Strip the extra space from the end of the cached command line

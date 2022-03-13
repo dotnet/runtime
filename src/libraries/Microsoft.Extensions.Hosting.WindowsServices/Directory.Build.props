@@ -2,6 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <PackageTags>hosting</PackageTags>
-    <SupportedOSPlatforms>windows</SupportedOSPlatforms> 
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
 </Project>

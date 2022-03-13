@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
     {
         private const string LiteralParent = "..";
 
-        public bool CanProduceStem { get { return false; } }
+        public bool CanProduceStem => false;
 
         public bool Match(string value)
         {

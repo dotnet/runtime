@@ -7,14 +7,6 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
-#if XUNIT_PERF
-using Xunit;
-using Microsoft.Xunit.Performance;
-#endif // XUNIT_PERF
-
-#if XUNIT_PERF
-[assembly: OptimizeForBenchmarks]
-#endif // XUNIT_PERF
 
 namespace Benchstone.BenchF
 {
@@ -36,7 +28,7 @@ public static class Adams
     private static void Bench()
     {
         double[] f = new double[5];
-        double xn, yn, dn, en, yxn, h, fnp, ynp, y0, x0, nz;
+        double xn, yn, dn, en, yxn, h, fnp, ynp, y0, x0;
         int i, k, n, nstep;
 
 #if VERBOSE
@@ -52,11 +44,10 @@ public static class Adams
         yn = 0.0;
         dn = 0.0;
         en = 0.0;
-        nz = 0;
 
         f[1] = x0 + y0;
 #if VERBOSE
-        Console.WriteLine("{0},  {1},  {2},  {3},  {4}", nz, x0, y0, dn, en);
+        Console.WriteLine("{0},  {1},  {2},  {3}", x0, y0, dn, en);
 #endif // VERBOSE
         xn = x0;
         for (i = 2; i <= 4; i++)
@@ -108,20 +99,6 @@ public static class Adams
             Bench();
         }
     }
-
-#if XUNIT_PERF
-    [Benchmark]
-    public static void Test()
-    {
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                TestBench();
-            }
-        }
-    }
-#endif // XUNIT_PERF
 
     [MethodImpl(MethodImplOptions.NoOptimization)]
     public static int Main(string[] argv)

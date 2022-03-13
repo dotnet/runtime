@@ -49,6 +49,11 @@ namespace System.Text.Json.Serialization.Metadata
             else
             {
                 generator.Emit(OpCodes.Newobj, realMethod);
+                if (type.IsValueType)
+                {
+                    // Since C# 10 it's now possible to have parameterless constructors in structs
+                    generator.Emit(OpCodes.Box, type);
+                }
             }
 
             generator.Emit(OpCodes.Ret);
@@ -56,8 +61,8 @@ namespace System.Text.Json.Serialization.Metadata
             return (JsonTypeInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(typeof(JsonTypeInfo.ConstructorDelegate));
         }
 
-        public override JsonTypeInfo.ParameterizedConstructorDelegate<T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>
-            CreateDelegate<JsonTypeInfo.ParameterizedConstructorDelegate<T>>(CreateParameterizedConstructor(constructor));
+        public override Func<object[], T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>
+            CreateDelegate<Func<object[], T>>(CreateParameterizedConstructor(constructor));
 
         private static DynamicMethod? CreateParameterizedConstructor(ConstructorInfo constructor)
         {
@@ -258,6 +263,10 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (declaredPropertyType != runtimePropertyType && declaredPropertyType.IsValueType)
             {
+                // Not supported scenario: possible if declaredPropertyType == int? and runtimePropertyType == int
+                // We should catch that particular case earlier in converter generation.
+                Debug.Assert(!runtimePropertyType.IsValueType);
+
                 generator.Emit(OpCodes.Box, declaredPropertyType);
             }
 
@@ -291,6 +300,10 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (declaredPropertyType != runtimePropertyType && declaredPropertyType.IsValueType)
             {
+                // Not supported scenario: possible if e.g. declaredPropertyType == int? and runtimePropertyType == int
+                // We should catch that particular case earlier in converter generation.
+                Debug.Assert(!runtimePropertyType.IsValueType);
+
                 generator.Emit(OpCodes.Unbox_Any, declaredPropertyType);
             }
 

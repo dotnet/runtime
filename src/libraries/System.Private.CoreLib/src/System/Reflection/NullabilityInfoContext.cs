@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 
 namespace System.Reflection
 {
@@ -17,6 +17,9 @@ namespace System.Reflection
         private readonly Dictionary<Module, NotAnnotatedStatus> _publicOnlyModules = new();
         private readonly Dictionary<MemberInfo, NullabilityState> _context = new();
 
+        internal static bool IsSupported { get; } =
+            AppContext.TryGetSwitch("System.Reflection.NullabilityInfoContext.IsSupported", out bool isSupported) ? isSupported : true;
+
         [Flags]
         private enum NotAnnotatedStatus
         {
@@ -25,7 +28,7 @@ namespace System.Reflection
             Internal = 0x2 // internal members not annotated
         }
 
-        private NullabilityState GetNullableContext(MemberInfo? memberInfo)
+        private NullabilityState? GetNullableContext(MemberInfo? memberInfo)
         {
             while (memberInfo != null)
             {
@@ -49,7 +52,7 @@ namespace System.Reflection
                 memberInfo = memberInfo.DeclaringType;
             }
 
-            return NullabilityState.Unknown;
+            return null;
         }
 
         /// <summary>
@@ -60,21 +63,15 @@ namespace System.Reflection
         /// <param name="parameterInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the parameterInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        [RequiresUnreferencedCode("By default nullability attributes are trimmed by the trimmer")]
-        public NullabilityInfo Create(ParameterInfo parameterInfo)
+        public NullabilityInfo Create(ParameterInfo parameterInfo!!)
         {
-            if (parameterInfo is null)
-            {
-                throw new ArgumentNullException(nameof(parameterInfo));
-            }
-
-            if (parameterInfo.Member is MethodInfo method && IsPrivateOrInternalMethodAndAnnotationDisabled(method))
-            {
-                return new NullabilityInfo(parameterInfo.ParameterType, NullabilityState.Unknown, NullabilityState.Unknown, null, Array.Empty<NullabilityInfo>());
-            }
+            EnsureIsSupported();
 
             IList<CustomAttributeData> attributes = parameterInfo.GetCustomAttributesData();
-            NullabilityInfo nullability = GetNullabilityInfo(parameterInfo.Member, parameterInfo.ParameterType, attributes);
+            NullableAttributeStateParser parser = parameterInfo.Member is MethodBase method && IsPrivateOrInternalMethodAndAnnotationDisabled(method)
+                ? NullableAttributeStateParser.Unknown
+                : CreateParser(attributes);
+            NullabilityInfo nullability = GetNullabilityInfo(parameterInfo.Member, parameterInfo.ParameterType, parser);
 
             if (nullability.ReadState != NullabilityState.Unknown)
             {
@@ -111,7 +108,7 @@ namespace System.Reflection
 
                 if (metaParameter != null)
                 {
-                    CheckGenericParameters(nullability, metaMethod, metaParameter.ParameterType);
+                    CheckGenericParameters(nullability, metaMethod, metaParameter.ParameterType, parameter.Member.ReflectedType);
                 }
             }
         }
@@ -128,39 +125,44 @@ namespace System.Reflection
 
         private void CheckNullabilityAttributes(NullabilityInfo nullability, IList<CustomAttributeData> attributes)
         {
+            var codeAnalysisReadState = NullabilityState.Unknown;
+            var codeAnalysisWriteState = NullabilityState.Unknown;
+
             foreach (CustomAttributeData attribute in attributes)
             {
                 if (attribute.AttributeType.Namespace == "System.Diagnostics.CodeAnalysis")
                 {
-                    if (attribute.AttributeType.Name == "NotNullAttribute" &&
-                        nullability.ReadState == NullabilityState.Nullable)
+                    if (attribute.AttributeType.Name == "NotNullAttribute")
                     {
-                        nullability.ReadState = NullabilityState.NotNull;
-                        break;
+                        codeAnalysisReadState = NullabilityState.NotNull;
                     }
                     else if ((attribute.AttributeType.Name == "MaybeNullAttribute" ||
                             attribute.AttributeType.Name == "MaybeNullWhenAttribute") &&
-                            nullability.ReadState == NullabilityState.NotNull &&
+                            codeAnalysisReadState == NullabilityState.Unknown &&
                             !nullability.Type.IsValueType)
                     {
-                        nullability.ReadState = NullabilityState.Nullable;
-                        break;
+                        codeAnalysisReadState = NullabilityState.Nullable;
                     }
-
-                    if (attribute.AttributeType.Name == "DisallowNullAttribute" &&
-                        nullability.WriteState == NullabilityState.Nullable)
+                    else if (attribute.AttributeType.Name == "DisallowNullAttribute")
                     {
-                        nullability.WriteState = NullabilityState.NotNull;
-                        break;
+                        codeAnalysisWriteState = NullabilityState.NotNull;
                     }
                     else if (attribute.AttributeType.Name == "AllowNullAttribute" &&
-                        nullability.WriteState == NullabilityState.NotNull &&
+                        codeAnalysisWriteState == NullabilityState.Unknown &&
                         !nullability.Type.IsValueType)
                     {
-                        nullability.WriteState = NullabilityState.Nullable;
-                        break;
+                        codeAnalysisWriteState = NullabilityState.Nullable;
                     }
                 }
+            }
+
+            if (codeAnalysisReadState != NullabilityState.Unknown)
+            {
+                nullability.ReadState = codeAnalysisReadState;
+            }
+            if (codeAnalysisWriteState != NullabilityState.Unknown)
+            {
+                nullability.WriteState = codeAnalysisWriteState;
             }
         }
 
@@ -172,25 +174,19 @@ namespace System.Reflection
         /// <param name="propertyInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the propertyInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        [RequiresUnreferencedCode("By default nullability attributes are trimmed by the trimmer")]
-        public NullabilityInfo Create(PropertyInfo propertyInfo)
+        public NullabilityInfo Create(PropertyInfo propertyInfo!!)
         {
-            if (propertyInfo is null)
-            {
-                throw new ArgumentNullException(nameof(propertyInfo));
-            }
+            EnsureIsSupported();
 
-            NullabilityInfo nullability = GetNullabilityInfo(propertyInfo, propertyInfo.PropertyType, propertyInfo.GetCustomAttributesData());
             MethodInfo? getter = propertyInfo.GetGetMethod(true);
             MethodInfo? setter = propertyInfo.GetSetMethod(true);
+            bool annotationsDisabled = (getter == null || IsPrivateOrInternalMethodAndAnnotationDisabled(getter))
+                && (setter == null || IsPrivateOrInternalMethodAndAnnotationDisabled(setter));
+            NullableAttributeStateParser parser = annotationsDisabled ? NullableAttributeStateParser.Unknown : CreateParser(propertyInfo.GetCustomAttributesData());
+            NullabilityInfo nullability = GetNullabilityInfo(propertyInfo, propertyInfo.PropertyType, parser);
 
             if (getter != null)
             {
-                if (IsPrivateOrInternalMethodAndAnnotationDisabled(getter))
-                {
-                    nullability.ReadState = NullabilityState.Unknown;
-                }
-
                 CheckNullabilityAttributes(nullability, getter.ReturnParameter.GetCustomAttributesData());
             }
             else
@@ -200,12 +196,7 @@ namespace System.Reflection
 
             if (setter != null)
             {
-                if (IsPrivateOrInternalMethodAndAnnotationDisabled(setter))
-                {
-                    nullability.WriteState = NullabilityState.Unknown;
-                }
-
-                CheckNullabilityAttributes(nullability, setter.GetParameters()[0].GetCustomAttributesData());
+                CheckNullabilityAttributes(nullability, setter.GetParameters()[^1].GetCustomAttributesData());
             }
             else
             {
@@ -215,7 +206,7 @@ namespace System.Reflection
             return nullability;
         }
 
-        private bool IsPrivateOrInternalMethodAndAnnotationDisabled(MethodInfo method)
+        private bool IsPrivateOrInternalMethodAndAnnotationDisabled(MethodBase method)
         {
             if ((method.IsPrivate || method.IsFamilyAndAssembly || method.IsAssembly) &&
                IsPublicOnly(method.IsPrivate, method.IsFamilyAndAssembly, method.IsAssembly, method.Module))
@@ -234,15 +225,11 @@ namespace System.Reflection
         /// <param name="eventInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the eventInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        [RequiresUnreferencedCode("By default nullability attributes are trimmed by the trimmer")]
-        public NullabilityInfo Create(EventInfo eventInfo)
+        public NullabilityInfo Create(EventInfo eventInfo!!)
         {
-            if (eventInfo is null)
-            {
-                throw new ArgumentNullException(nameof(eventInfo));
-            }
+            EnsureIsSupported();
 
-            return GetNullabilityInfo(eventInfo, eventInfo.EventHandlerType!, eventInfo.GetCustomAttributesData());
+            return GetNullabilityInfo(eventInfo, eventInfo.EventHandlerType!, CreateParser(eventInfo.GetCustomAttributesData()));
         }
 
         /// <summary>
@@ -253,23 +240,23 @@ namespace System.Reflection
         /// <param name="fieldInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the fieldInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        [RequiresUnreferencedCode("By default nullability attributes are trimmed by the trimmer")]
-        public NullabilityInfo Create(FieldInfo fieldInfo)
+        public NullabilityInfo Create(FieldInfo fieldInfo!!)
         {
-            if (fieldInfo is null)
-            {
-                throw new ArgumentNullException(nameof(fieldInfo));
-            }
-
-            if (IsPrivateOrInternalFieldAndAnnotationDisabled(fieldInfo))
-            {
-                return new NullabilityInfo(fieldInfo.FieldType, NullabilityState.Unknown, NullabilityState.Unknown, null, Array.Empty<NullabilityInfo>());
-            }
+            EnsureIsSupported();
 
             IList<CustomAttributeData> attributes = fieldInfo.GetCustomAttributesData();
-            NullabilityInfo nullability = GetNullabilityInfo(fieldInfo, fieldInfo.FieldType, attributes);
+            NullableAttributeStateParser parser = IsPrivateOrInternalFieldAndAnnotationDisabled(fieldInfo) ? NullableAttributeStateParser.Unknown : CreateParser(attributes);
+            NullabilityInfo nullability = GetNullabilityInfo(fieldInfo, fieldInfo.FieldType, parser);
             CheckNullabilityAttributes(nullability, attributes);
             return nullability;
+        }
+
+        private static void EnsureIsSupported()
+        {
+            if (!IsSupported)
+            {
+                throw new InvalidOperationException(SR.NullabilityInfoContext_NotSupported);
+            }
         }
 
         private bool IsPrivateOrInternalFieldAndAnnotationDisabled(FieldInfo fieldInfo)
@@ -327,62 +314,74 @@ namespace System.Reflection
             return NotAnnotatedStatus.None;
         }
 
-        private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, IList<CustomAttributeData> customAttributes) =>
-            GetNullabilityInfo(memberInfo, type, customAttributes, 0);
+        private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, NullableAttributeStateParser parser)
+        {
+            int index = 0;
+            return GetNullabilityInfo(memberInfo, type, parser, ref index);
+        }
 
-        private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, IList<CustomAttributeData> customAttributes, int index)
+        private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, NullableAttributeStateParser parser, ref int index)
         {
             NullabilityState state = NullabilityState.Unknown;
+            NullabilityInfo? elementState = null;
+            NullabilityInfo[] genericArgumentsState = Array.Empty<NullabilityInfo>();
+            Type? underlyingType = type;
 
             if (type.IsValueType)
             {
-                if (Nullable.GetUnderlyingType(type) != null)
+                underlyingType = Nullable.GetUnderlyingType(type);
+
+                if (underlyingType != null)
                 {
                     state = NullabilityState.Nullable;
                 }
                 else
                 {
+                    underlyingType = type;
                     state = NullabilityState.NotNull;
                 }
 
-                return new NullabilityInfo(type, state, state, null, Array.Empty<NullabilityInfo>());
+                if (underlyingType.IsGenericType)
+                {
+                    ++index;
+                }
             }
             else
             {
-                if (!ParseNullableState(customAttributes, index, ref state))
+                if (!parser.ParseNullableState(index++, ref state)
+                    && GetNullableContext(memberInfo) is { } contextState)
                 {
-                    state = GetNullableContext(memberInfo);
+                    state = contextState;
                 }
-
-                NullabilityInfo? elementState = null;
-                NullabilityInfo[]? genericArgumentsState = null;
 
                 if (type.IsArray)
                 {
-                    elementState = GetNullabilityInfo(memberInfo, type.GetElementType()!, customAttributes, index + 1);
+                    elementState = GetNullabilityInfo(memberInfo, type.GetElementType()!, parser, ref index);
                 }
-                else if (type.IsGenericType)
-                {
-                    Type[] genericArguments = type.GetGenericArguments();
-                    genericArgumentsState = new NullabilityInfo[genericArguments.Length];
-
-                    for (int i = 0; i < genericArguments.Length; i++)
-                    {
-                        genericArgumentsState[i] = GetNullabilityInfo(memberInfo, genericArguments[i], customAttributes, i + 1);
-                    }
-                }
-
-                NullabilityInfo nullability = new NullabilityInfo(type, state, state, elementState, genericArgumentsState ?? Array.Empty<NullabilityInfo>());
-                if (state != NullabilityState.Unknown)
-                {
-                    TryLoadGenericMetaTypeNullability(memberInfo, nullability);
-                }
-
-                return nullability;
             }
+
+            if (underlyingType.IsGenericType)
+            {
+                Type[] genericArguments = underlyingType.GetGenericArguments();
+                genericArgumentsState = new NullabilityInfo[genericArguments.Length];
+
+                for (int i = 0; i < genericArguments.Length; i++)
+                {
+                    genericArgumentsState[i] = GetNullabilityInfo(memberInfo, genericArguments[i], parser, ref index);
+                }
+            }
+
+            NullabilityInfo nullability = new NullabilityInfo(type, state, state, elementState, genericArgumentsState);
+
+            if (!type.IsValueType && state != NullabilityState.Unknown)
+            {
+                TryLoadGenericMetaTypeNullability(memberInfo, nullability);
+            }
+
+            return nullability;
         }
 
-        private static bool ParseNullableState(IList<CustomAttributeData> customAttributes, int index, ref NullabilityState state)
+        private static NullableAttributeStateParser CreateParser(IList<CustomAttributeData> customAttributes)
         {
             foreach (CustomAttributeData attribute in customAttributes)
             {
@@ -390,26 +389,11 @@ namespace System.Reflection
                     attribute.AttributeType.Namespace == CompilerServicesNameSpace &&
                     attribute.ConstructorArguments.Count == 1)
                 {
-                    object? o = attribute.ConstructorArguments[0].Value;
-
-                    if (o is byte b)
-                    {
-                        state = TranslateByte(b);
-                        return true;
-                    }
-                    else if (o is ReadOnlyCollection<CustomAttributeTypedArgument> args &&
-                            index < args.Count &&
-                            args[index].Value is byte elementB)
-                        {
-                            state = TranslateByte(elementB);
-                            return true;
-                        }
-
-                    break;
+                    return new(attribute.ConstructorArguments[0].Value);
                 }
             }
 
-            return false;
+            return new(null);
         }
 
         private void TryLoadGenericMetaTypeNullability(MemberInfo memberInfo, NullabilityInfo nullability)
@@ -427,7 +411,7 @@ namespace System.Reflection
 
             if (metaType != null)
             {
-                CheckGenericParameters(nullability, metaMember!, metaType);
+                CheckGenericParameters(nullability, metaMember!, metaType, memberInfo.ReflectedType);
             }
         }
 
@@ -452,19 +436,14 @@ namespace System.Reflection
             return property.GetSetMethod(true)!.GetParameters()[0].ParameterType;
         }
 
-        private void CheckGenericParameters(NullabilityInfo nullability, MemberInfo metaMember, Type metaType)
+        private void CheckGenericParameters(NullabilityInfo nullability, MemberInfo metaMember, Type metaType, Type? reflectedType)
         {
             if (metaType.IsGenericParameter)
             {
-                NullabilityState state = nullability.ReadState;
-
-                if (!ParseNullableState(metaType.GetCustomAttributesData(), 0, ref state))
+                if (nullability.ReadState == NullabilityState.NotNull)
                 {
-                    state = GetNullableContext(metaType);
+                    TryUpdateGenericParameterNullability(nullability, metaType, reflectedType);
                 }
-
-                nullability.ReadState = state;
-                nullability.WriteState = state;
             }
             else if (metaType.ContainsGenericParameters)
             {
@@ -474,35 +453,136 @@ namespace System.Reflection
 
                     for (int i = 0; i < genericArguments.Length; i++)
                     {
-                        if (genericArguments[i].IsGenericParameter)
-                        {
-                            NullabilityInfo n = GetNullabilityInfo(metaMember, genericArguments[i], genericArguments[i].GetCustomAttributesData(), i + 1);
-                            nullability.GenericTypeArguments[i].ReadState = n.ReadState;
-                            nullability.GenericTypeArguments[i].WriteState = n.WriteState;
-                        }
-                        else
-                        {
-                            UpdateGenericArrayElements(nullability.GenericTypeArguments[i].ElementType, metaMember, genericArguments[i]);
-                        }
+                        CheckGenericParameters(nullability.GenericTypeArguments[i], metaMember, genericArguments[i], reflectedType);
                     }
                 }
-                else
+                else if (nullability.ElementType is { } elementNullability && metaType.IsArray)
                 {
-                    UpdateGenericArrayElements(nullability.ElementType, metaMember, metaType);
+                    CheckGenericParameters(elementNullability, metaMember, metaType.GetElementType()!, reflectedType);
                 }
             }
         }
 
-        private void UpdateGenericArrayElements(NullabilityInfo? elementState, MemberInfo metaMember, Type metaType)
+        private bool TryUpdateGenericParameterNullability(NullabilityInfo nullability, Type genericParameter, Type? reflectedType)
         {
-            if (metaType.IsArray && elementState != null
-                && metaType.GetElementType()!.IsGenericParameter)
+            Debug.Assert(genericParameter.IsGenericParameter);
+
+            if (reflectedType is not null
+                && !genericParameter.IsGenericMethodParameter
+                && TryUpdateGenericTypeParameterNullabilityFromReflectedType(nullability, genericParameter, reflectedType, reflectedType))
             {
-                Type elementType = metaType.GetElementType()!;
-                NullabilityInfo n = GetNullabilityInfo(metaMember, elementType, elementType.GetCustomAttributesData(), 0);
-                elementState.ReadState = n.ReadState;
-                elementState.WriteState = n.WriteState;
+                return true;
             }
+
+            var state = NullabilityState.Unknown;
+            if (CreateParser(genericParameter.GetCustomAttributesData()).ParseNullableState(0, ref state))
+            {
+                nullability.ReadState = state;
+                nullability.WriteState = state;
+                return true;
+            }
+
+            if (GetNullableContext(genericParameter) is { } contextState)
+            {
+                nullability.ReadState = contextState;
+                nullability.WriteState = contextState;
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool TryUpdateGenericTypeParameterNullabilityFromReflectedType(NullabilityInfo nullability, Type genericParameter, Type context, Type reflectedType)
+        {
+            Debug.Assert(genericParameter.IsGenericParameter && !genericParameter.IsGenericMethodParameter);
+
+            Type contextTypeDefinition = context.IsGenericType && !context.IsGenericTypeDefinition ? context.GetGenericTypeDefinition() : context;
+            if (genericParameter.DeclaringType == contextTypeDefinition)
+            {
+                return false;
+            }
+
+            Type? baseType = contextTypeDefinition.BaseType;
+            if (baseType is null)
+            {
+                return false;
+            }
+
+            if (!baseType.IsGenericType
+                || (baseType.IsGenericTypeDefinition ? baseType : baseType.GetGenericTypeDefinition()) != genericParameter.DeclaringType)
+            {
+                return TryUpdateGenericTypeParameterNullabilityFromReflectedType(nullability, genericParameter, baseType, reflectedType);
+            }
+
+            Type[] genericArguments = baseType.GetGenericArguments();
+            Type genericArgument = genericArguments[genericParameter.GenericParameterPosition];
+            if (genericArgument.IsGenericParameter)
+            {
+                return TryUpdateGenericParameterNullability(nullability, genericArgument, reflectedType);
+            }
+
+            NullableAttributeStateParser parser = CreateParser(contextTypeDefinition.GetCustomAttributesData());
+            int nullabilityStateIndex = 1; // start at 1 since index 0 is the type itself
+            for (int i = 0; i < genericParameter.GenericParameterPosition; i++)
+            {
+                nullabilityStateIndex += CountNullabilityStates(genericArguments[i]);
+            }
+            return TryPopulateNullabilityInfo(nullability, parser, ref nullabilityStateIndex);
+
+            static int CountNullabilityStates(Type type)
+            {
+                Type underlyingType = Nullable.GetUnderlyingType(type) ?? type;
+                if (underlyingType.IsGenericType)
+                {
+                    int count = 1;
+                    foreach (Type genericArgument in underlyingType.GetGenericArguments())
+                    {
+                        count += CountNullabilityStates(genericArgument);
+                    }
+                    return count;
+                }
+                if (underlyingType.IsArray)
+                {
+                    return 1 + CountNullabilityStates(underlyingType.GetElementType()!);
+                }
+
+                return type.IsValueType ? 0 : 1;
+            }
+        }
+
+        private bool TryPopulateNullabilityInfo(NullabilityInfo nullability, NullableAttributeStateParser parser, ref int index)
+        {
+            bool isValueType = nullability.Type.IsValueType;
+            if (!isValueType)
+            {
+                var state = NullabilityState.Unknown;
+                if (!parser.ParseNullableState(index, ref state))
+                {
+                    return false;
+                }
+
+                nullability.ReadState = state;
+                nullability.WriteState = state;
+            }
+
+            if (!isValueType || (Nullable.GetUnderlyingType(nullability.Type) ?? nullability.Type).IsGenericType)
+            {
+                index++;
+            }
+
+            if (nullability.GenericTypeArguments.Length > 0)
+            {
+                foreach (NullabilityInfo genericTypeArgumentNullability in nullability.GenericTypeArguments)
+                {
+                    TryPopulateNullabilityInfo(genericTypeArgumentNullability, parser, ref index);
+                }
+            }
+            else if (nullability.ElementType is { } elementTypeNullability)
+            {
+                TryPopulateNullabilityInfo(elementTypeNullability, parser, ref index);
+            }
+
+            return true;
         }
 
         private static NullabilityState TranslateByte(object? value)
@@ -517,5 +597,35 @@ namespace System.Reflection
                 2 => NullabilityState.Nullable,
                 _ => NullabilityState.Unknown
             };
+
+        private readonly struct NullableAttributeStateParser
+        {
+            private static readonly object UnknownByte = (byte)0;
+
+            private readonly object? _nullableAttributeArgument;
+
+            public NullableAttributeStateParser(object? nullableAttributeArgument)
+            {
+                this._nullableAttributeArgument = nullableAttributeArgument;
+            }
+
+            public static NullableAttributeStateParser Unknown => new(UnknownByte);
+
+            public bool ParseNullableState(int index, ref NullabilityState state)
+            {
+                switch (this._nullableAttributeArgument)
+                {
+                    case byte b:
+                        state = TranslateByte(b);
+                        return true;
+                    case ReadOnlyCollection<CustomAttributeTypedArgument> args
+                        when index < args.Count && args[index].Value is byte elementB:
+                        state = TranslateByte(elementB);
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        }
     }
 }

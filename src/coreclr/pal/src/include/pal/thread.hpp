@@ -767,12 +767,8 @@ inline SIZE_T PlatformGetCurrentThreadId() {
     return (SIZE_T)tid;
 }
 #elif defined(__FreeBSD__)
-#include <sys/thr.h>
-inline SIZE_T PlatformGetCurrentThreadId() {
-    long tid;
-    thr_self(&tid);
-    return (SIZE_T)tid;
-}
+#include <pthread_np.h>
+#define PlatformGetCurrentThreadId() (SIZE_T)pthread_getthreadid_np()
 #elif defined(__NetBSD__)
 #include <lwp.h>
 #define PlatformGetCurrentThreadId() (SIZE_T)_lwp_self()

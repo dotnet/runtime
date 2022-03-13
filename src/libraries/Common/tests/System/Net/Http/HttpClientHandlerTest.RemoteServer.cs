@@ -136,7 +136,7 @@ namespace System.Net.Http.Functional.Tests
             handler.Credentials = CredentialCache.DefaultCredentials;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
-                Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
+                Uri uri = remoteServer.BasicAuthUriForCreds(Username, Password);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
                     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -153,7 +153,7 @@ namespace System.Net.Http.Functional.Tests
             handler.Credentials = _credential;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
-                Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
+                Uri uri = remoteServer.BasicAuthUriForCreds(Username, Password);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -167,7 +167,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
-                Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
+                Uri uri = remoteServer.BasicAuthUriForCreds(Username, Password);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
                     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -607,7 +607,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory]
         [MemberData(nameof(ExpectContinueVersion))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53876", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
         public async Task PostAsync_ExpectContinue_Success(bool? expectContinue, Version version)
         {
             // Sync API supported only up to HTTP/1.1
@@ -1033,7 +1033,7 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AllowAutoRedirect = true;
-            Uri targetUri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
+            Uri targetUri = remoteServer.BasicAuthUriForCreds(Username, Password);
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
                 Uri uri = remoteServer.RedirectUriForDestinationUri(
@@ -1133,8 +1133,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 Uri redirectUri = remoteServer.RedirectUriForCreds(
                     statusCode: 302,
-                    userName: Username,
-                    password: Password);
+                    Username,
+                    Password);
                 using (HttpResponseMessage unAuthResponse = await client.GetAsync(redirectUri))
                 {
                     Assert.Equal(HttpStatusCode.Unauthorized, unAuthResponse.StatusCode);
@@ -1153,15 +1153,15 @@ namespace System.Net.Http.Functional.Tests
             {
                 Uri redirectUri = remoteServer.RedirectUriForCreds(
                     statusCode: 302,
-                    userName: Username,
-                    password: Password);
+                    Username,
+                    Password);
                 using (HttpResponseMessage unAuthResponse = await client.GetAsync(redirectUri))
                 {
                     Assert.Equal(HttpStatusCode.Unauthorized, unAuthResponse.StatusCode);
                 }
 
                 // Use the same handler to perform get request, authentication should succeed after redirect.
-                Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
+                Uri uri = remoteServer.BasicAuthUriForCreds(Username, Password);
                 using (HttpResponseMessage authResponse = await client.GetAsync(uri))
                 {
                     Assert.Equal(HttpStatusCode.OK, authResponse.StatusCode);
@@ -1180,11 +1180,11 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
+            Uri uri = remoteServer.BasicAuthUriForCreds(Username, Password);
             Uri redirectUri = remoteServer.RedirectUriForCreds(
                 statusCode: statusCode,
-                userName: Username,
-                password: Password);
+                Username,
+                Password);
             _output.WriteLine(uri.AbsoluteUri);
             _output.WriteLine(redirectUri.AbsoluteUri);
             var credentialCache = new CredentialCache();
@@ -1237,8 +1237,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 yield return new object[] { remoteServer, remoteServer.GZipUri };
 
-                // Remote deflate endpoint isn't correctly following the deflate protocol.
-                //yield return new object[] { remoteServer, remoteServer.DeflateUri };
+                // Remote deflate endpoint isn't correctly following the deflate protocol,
+                // but SocketsHttpHandler makes it work, anyway.
+                yield return new object[] { remoteServer, remoteServer.DeflateUri };
             }
         }
 
@@ -1271,10 +1272,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        // The remote server endpoint was written to use DeflateStream, which isn't actually a correct
-        // implementation of the deflate protocol (the deflate protocol requires the zlib wrapper around
-        // deflate).  Until we can get that updated (and deal with previous releases still testing it
-        // via a DeflateStream-based implementation), we utilize httpbin.org to help validate behavior.
         [OuterLoop("Uses external servers")]
         [Theory]
         [InlineData("http://httpbin.org/deflate", "\"deflated\": true")]

@@ -7,7 +7,7 @@
     <OutputPath>bin</OutputPath>
 
     <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</WasmAppDir>
-    <WasmMainJSPath>runtime.js</WasmMainJSPath>
+    <WasmMainJSPath>main.js</WasmMainJSPath>
     <EnableDefaultItems>false</EnableDefaultItems>
 
     <!-- Important - deltas don't support trimming! -->
@@ -31,7 +31,6 @@
 
   <Target Name="PrepareDeltasForWasmApp" DependsOnTargets="Build;CompileDiff;ComputeDeltaFileOutputNames">
     <ItemGroup>
-      <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
       <WasmFilesToIncludeInFileSystem Include="@(_DeltaFileForPublish)">
         <TargetPath>\%(_DeltaFileForPublish.Filename)%(_DeltaFileForPublish.Extension)</TargetPath>
       </WasmFilesToIncludeInFileSystem>

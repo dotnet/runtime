@@ -57,4 +57,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldarga_i8.exe{}
+.assembly ldarga_i8{}

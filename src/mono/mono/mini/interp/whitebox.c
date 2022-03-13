@@ -100,7 +100,7 @@ static MonoImage *
 load_assembly (const char *path, MonoDomain *root_domain)
 {
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
+	mono_assembly_request_prepare_open (&req, mono_alc_get_default ());
 	MonoAssembly *ass = mono_assembly_request_open (path, &req, NULL);
 	if (!ass)
 		g_error ("failed to load assembly: %s", path);

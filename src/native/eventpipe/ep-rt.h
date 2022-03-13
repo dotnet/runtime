@@ -3,10 +3,11 @@
 
 #include "ep-rt-config.h"
 
+#include <minipal/utils.h>
+
 #ifdef ENABLE_PERFTRACING
 #include "ep-types.h"
 
-#define EP_ARRAY_SIZE(expr) ep_rt_redefine
 #define EP_INFINITE_WAIT ep_rt_redefine
 
 #define EP_GCX_PREEMP_ENTER ep_rt_redefine

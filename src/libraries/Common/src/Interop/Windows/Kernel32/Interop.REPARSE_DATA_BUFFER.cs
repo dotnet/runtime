@@ -14,24 +14,29 @@ internal static partial class Interop
         internal const uint SYMLINK_FLAG_RELATIVE = 1;
 
         // https://msdn.microsoft.com/library/windows/hardware/ff552012.aspx
-        // We don't need all the struct fields; omitting the rest.
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct REPARSE_DATA_BUFFER
+        internal unsafe struct SymbolicLinkReparseBuffer
         {
             internal uint ReparseTag;
             internal ushort ReparseDataLength;
             internal ushort Reserved;
-            internal SymbolicLinkReparseBuffer ReparseBufferSymbolicLink;
+            internal ushort SubstituteNameOffset;
+            internal ushort SubstituteNameLength;
+            internal ushort PrintNameOffset;
+            internal ushort PrintNameLength;
+            internal uint Flags;
+        }
 
-            [StructLayout(LayoutKind.Sequential)]
-            internal struct SymbolicLinkReparseBuffer
-            {
-                internal ushort SubstituteNameOffset;
-                internal ushort SubstituteNameLength;
-                internal ushort PrintNameOffset;
-                internal ushort PrintNameLength;
-                internal uint Flags;
-            }
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct MountPointReparseBuffer
+        {
+            public uint ReparseTag;
+            public ushort ReparseDataLength;
+            public ushort Reserved;
+            public ushort SubstituteNameOffset;
+            public ushort SubstituteNameLength;
+            public ushort PrintNameOffset;
+            public ushort PrintNameLength;
         }
     }
 }

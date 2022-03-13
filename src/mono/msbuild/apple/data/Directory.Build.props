@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup Condition="'$(HELIX_CORRELATION_PAYLOAD)' != ''">
+    <AppleBuildSupportDir Condition="'$(AppleBuildSupportDir)' == ''">$(HELIX_CORRELATION_PAYLOAD)\build\</AppleBuildSupportDir>
+    <_AppleTargetsDir>$(AppleBuildSupportDir)\apple\</_AppleTargetsDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_AppleTargetsDir Condition="'$(_AppleTargetsDir)' == '' and '$(RuntimeSrcDir)' != ''">$(RuntimeSrcDir)\src\mono\msbuild\apple\build\</_AppleTargetsDir>
+    <_AppleTargetsDir Condition="'$(_AppleTargetsDir)' != ''">$([MSBuild]::EnsureTrailingSlash($(_AppleTargetsDir)))</_AppleTargetsDir>
+  </PropertyGroup>
+
+  <Import Project="$(_AppleTargetsDir)AppleApp.LocalBuild.props" Condition="Exists('$(_AppleTargetsDir)AppleApp.LocalBuild.props')" />
+  <PropertyGroup>
+    <AppleBuildAppDependsOn>PrepareForAppleBuild;$(AppleBuildAppDependsOn)</AppleBuildAppDependsOn>
+  </PropertyGroup>
+</Project>

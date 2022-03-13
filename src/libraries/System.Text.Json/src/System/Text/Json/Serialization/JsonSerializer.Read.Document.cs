@@ -12,6 +12,7 @@ namespace System.Text.Json
         /// <summary>
         /// Converts the <see cref="JsonDocument"/> representing a single JSON value into a <typeparamref name="TValue"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="document">The <see cref="JsonDocument"/> to convert.</param>
         /// <param name="options">Options to control the behavior during parsing.</param>
@@ -26,14 +27,10 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static TValue? Deserialize<TValue>(this JsonDocument document, JsonSerializerOptions? options = null)
+        public static TValue? Deserialize<TValue>(this JsonDocument document!!, JsonSerializerOptions? options = null)
         {
-            if (document == null)
-            {
-                throw new ArgumentNullException(nameof(document));
-            }
-
-            return ReadUsingOptions<TValue>(document, typeof(TValue), options);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
+            return ReadDocument<TValue>(document, jsonTypeInfo);
         }
 
         /// <summary>
@@ -54,24 +51,16 @@ namespace System.Text.Json
         /// for <paramref name="returnType"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static object? Deserialize(this JsonDocument document, Type returnType, JsonSerializerOptions? options = null)
+        public static object? Deserialize(this JsonDocument document!!, Type returnType!!, JsonSerializerOptions? options = null)
         {
-            if (document == null)
-            {
-                throw new ArgumentNullException(nameof(document));
-            }
-
-            if (returnType == null)
-            {
-                throw new ArgumentNullException(nameof(returnType));
-            }
-
-            return ReadUsingOptions<object?>(document, returnType, options);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
+            return ReadDocument<object?>(document, jsonTypeInfo);
         }
 
         /// <summary>
         /// Converts the <see cref="JsonDocument"/> representing a single JSON value into a <typeparamref name="TValue"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="document">The <see cref="JsonDocument"/> to convert.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
@@ -89,19 +78,9 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
-        public static TValue? Deserialize<TValue>(this JsonDocument document, JsonTypeInfo<TValue> jsonTypeInfo)
+        public static TValue? Deserialize<TValue>(this JsonDocument document!!, JsonTypeInfo<TValue> jsonTypeInfo!!)
         {
-            if (document == null)
-            {
-                throw new ArgumentNullException(nameof(document));
-            }
-
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
-            return ReadUsingMetadata<TValue>(document, jsonTypeInfo);
+            return ReadDocument<TValue>(document, jsonTypeInfo);
         }
 
         /// <summary>
@@ -140,34 +119,16 @@ namespace System.Text.Json
         /// The <see cref="JsonSerializerContext.GetTypeInfo(Type)"/> method of the provided
         /// <paramref name="context"/> returns <see langword="null"/> for the type to convert.
         /// </exception>
-        public static object? Deserialize(this JsonDocument document, Type returnType, JsonSerializerContext context)
+        public static object? Deserialize(this JsonDocument document!!, Type returnType!!, JsonSerializerContext context!!)
         {
-            if (document == null)
-            {
-                throw new ArgumentNullException(nameof(document));
-            }
-
-            if (returnType == null)
-            {
-                throw new ArgumentNullException(nameof(returnType));
-            }
-
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
-            return ReadUsingMetadata<object?>(document, GetTypeInfo(context, returnType));
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
+            return ReadDocument<object?>(document, jsonTypeInfo);
         }
 
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static TValue? ReadUsingOptions<TValue>(JsonDocument document, Type returnType, JsonSerializerOptions? options) =>
-            ReadUsingMetadata<TValue>(document, GetTypeInfo(returnType, options));
-
-        private static TValue? ReadUsingMetadata<TValue>(JsonDocument document, JsonTypeInfo jsonTypeInfo)
+        private static TValue? ReadDocument<TValue>(JsonDocument document, JsonTypeInfo jsonTypeInfo)
         {
             ReadOnlySpan<byte> utf8Json = document.GetRootRawValue().Span;
-            return ReadUsingMetadata<TValue>(utf8Json, jsonTypeInfo);
+            return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
         }
     }
 }

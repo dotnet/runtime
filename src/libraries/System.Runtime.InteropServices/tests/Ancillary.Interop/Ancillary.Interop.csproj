@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>Microsoft.Interop.Ancillary</AssemblyName>
+    <TargetFramework>$(NetCoreAppMinimum)</TargetFramework>
+    <RootNamespace>System.Runtime.InteropServices</RootNamespace>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>APIs required for usage of the LibraryImportGenerator and related tools.</Description>
+    <DefineConstants>$(DefineConstants);LIBRARYIMPORT_GENERATOR_TEST</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)Common/src/System/Runtime/InteropServices/LibraryImportAttribute.cs" Link="LibraryImportAttribute.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common/src/System/Runtime/InteropServices/GeneratedMarshallingAttribute.cs" Link="GeneratedMarshallingAttribute.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common/src/System/Runtime/InteropServices/ArrayMarshaller.cs" Link="ArrayMarshaller.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common/src/System/Runtime/InteropServices/StringMarshalling.cs" Link="StringMarshalling.cs" />
+  </ItemGroup>
+</Project>

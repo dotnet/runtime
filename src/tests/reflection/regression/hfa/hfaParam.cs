@@ -18,7 +18,7 @@ public struct IntStruct
 }
 
 
-public class Test
+public class Test_hfaParam
 {
     public static int TestMethod(HFAStruct hfaStruct, IntStruct intStruct)
     {
@@ -54,6 +54,6 @@ public class Test
         if (result != 100)
             return -result;
 
-        return (int)typeof(Test).GetMethod("TestMethod").Invoke(null, new object[] {hfaStruct, intStruct});
+        return (int)typeof(Test_hfaParam).GetMethod("TestMethod").Invoke(null, new object[] {hfaStruct, intStruct});
     }
 }

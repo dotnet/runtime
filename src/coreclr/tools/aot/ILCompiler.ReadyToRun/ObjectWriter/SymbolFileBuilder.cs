@@ -16,20 +16,22 @@ namespace ILCompiler.PEWriter
     public class SymbolFileBuilder
     {
         private readonly OutputInfoBuilder _outputInfoBuilder;
+        private readonly TargetDetails _details;
 
-        public SymbolFileBuilder(OutputInfoBuilder outputInfoBuilder)
+        public SymbolFileBuilder(OutputInfoBuilder outputInfoBuilder, TargetDetails details)
         {
             _outputInfoBuilder = outputInfoBuilder;
+            _details = details;
         }
 
         public void SavePdb(string pdbPath, string dllFileName)
         {
             Console.WriteLine("Emitting PDB file: {0}", Path.Combine(pdbPath, Path.GetFileNameWithoutExtension(dllFileName) + ".ni.pdb"));
 
-            new PdbWriter(pdbPath, PDBExtraData.None).WritePDBData(dllFileName, _outputInfoBuilder.EnumerateMethods());
+            new PdbWriter(pdbPath, PDBExtraData.None, _details).WritePDBData(dllFileName, _outputInfoBuilder.EnumerateMethods());
         }
 
-        public void SavePerfMap(string perfMapPath, int perfMapFormatVersion, string dllFileName, TargetOS targetOS, TargetArchitecture targetArch)
+        public void SavePerfMap(string perfMapPath, int perfMapFormatVersion, string dllFileName)
         {
             string perfMapExtension;
             if (perfMapFormatVersion == PerfMapWriter.LegacyCrossgen1FormatVersion)
@@ -56,7 +58,7 @@ namespace ILCompiler.PEWriter
 
             string perfMapFileName = Path.Combine(perfMapPath, Path.GetFileNameWithoutExtension(dllFileName) + perfMapExtension);
             Console.WriteLine("Emitting PerfMap file: {0}", perfMapFileName);
-            PerfMapWriter.Write(perfMapFileName, perfMapFormatVersion, _outputInfoBuilder.EnumerateMethods(), _outputInfoBuilder.EnumerateInputAssemblies(), targetOS, targetArch);
+            PerfMapWriter.Write(perfMapFileName, perfMapFormatVersion, _outputInfoBuilder.EnumerateMethods(), _outputInfoBuilder.EnumerateInputAssemblies(), _details);
         }
     }
 }

@@ -429,7 +429,7 @@ namespace System.IO.Ports
             {
                 Debug.Assert(!(value < StopBits.One || value > StopBits.OnePointFive), "An invalid value was passed to StopBits");
 
-                byte nativeValue = 0;
+                byte nativeValue;
                 if (value == StopBits.One)
                 {
                     nativeValue = Interop.Kernel32.DCBStopBits.ONESTOPBIT;
@@ -555,16 +555,17 @@ namespace System.IO.Ports
         // -----------SECTION: constructor --------------------------*
 
         // this method is used by SerialPort upon SerialStream's creation
-        internal SerialStream(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits, int readTimeout, int writeTimeout, Handshake handshake,
+        internal SerialStream(string portName!!, int baudRate, Parity parity, int dataBits, StopBits stopBits, int readTimeout, int writeTimeout, Handshake handshake,
             bool dtrEnable, bool rtsEnable, bool discardNull, byte parityReplace)
         {
-            if (portName == null)
-            {
-                throw new ArgumentNullException(nameof(portName));
-            }
-
             if (!portName.StartsWith("COM", StringComparison.OrdinalIgnoreCase) ||
-                !uint.TryParse(portName.Substring(3), out uint portNumber))
+                !uint.TryParse(
+#if NETCOREAPP
+                    portName.AsSpan(3),
+#else
+                    portName.Substring(3),
+#endif
+                    out uint portNumber))
             {
                 throw new ArgumentException(SR.Format(SR.Arg_InvalidSerialPort, portName), nameof(portName));
             }
@@ -1015,8 +1016,7 @@ namespace System.IO.Ports
             }
             else
             {
-                int hr;
-                numBytes = ReadFileNative(array, offset, count, null, out hr);
+                numBytes = ReadFileNative(array, offset, count, null, out _);
                 if (numBytes == -1)
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -1041,8 +1041,7 @@ namespace System.IO.Ports
             }
             else
             {
-                int hr;
-                numBytes = ReadFileNative(_tempBuf, 0, 1, null, out hr);
+                numBytes = ReadFileNative(_tempBuf, 0, 1, null, out _);
                 if (numBytes == -1)
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -1115,7 +1114,6 @@ namespace System.IO.Ports
 
 
             int numBytes;
-            int hr;
             if (_isAsync)
             {
                 IAsyncResult result = BeginWriteCore(_tempBuf, 0, 1, null, null);
@@ -1127,7 +1125,7 @@ namespace System.IO.Ports
             }
             else
             {
-                numBytes = WriteFileNative(_tempBuf, 0, 1, null, out hr);
+                numBytes = WriteFileNative(_tempBuf, 0, 1, null, out _);
                 if (numBytes == -1)
                 {
                     // This is how writes timeout on Win9x.
@@ -1328,8 +1326,7 @@ namespace System.IO.Ports
 
             // queue an async ReadFile operation and pass in a packed overlapped
             //int r = ReadFile(_handle, array, numBytes, null, intOverlapped);
-            int hr = 0;
-            int r = ReadFileNative(array, offset, numBytes, intOverlapped, out hr);
+            int r = ReadFileNative(array, offset, numBytes, intOverlapped, out int hr);
 
             // ReadFile, the OS version, will return 0 on failure.  But
             // my ReadFileNative wrapper returns -1.  My wrapper will return
@@ -1373,9 +1370,8 @@ namespace System.IO.Ports
 
             asyncResult._overlapped = intOverlapped;
 
-            int hr = 0;
             // queue an async WriteFile operation and pass in a packed overlapped
-            int r = WriteFileNative(array, offset, numBytes, intOverlapped, out hr);
+            int r = WriteFileNative(array, offset, numBytes, intOverlapped, out int hr);
 
             // WriteFile, the OS version, will return 0 on failure.  But
             // my WriteFileNative wrapper returns -1.  My wrapper will return
@@ -1756,8 +1752,6 @@ namespace System.IO.Ports
                     if ((errors & (int)SerialError.Frame) != 0)
                         stream.ErrorReceived(stream, new SerialErrorReceivedEventArgs(SerialError.Frame));
                 }
-
-                stream = null;
             }
 
             private void CallReceiveEvents(object state)
@@ -1774,8 +1768,6 @@ namespace System.IO.Ports
                     if ((nativeEvents & (int)SerialData.Eof) != 0)
                         stream.DataReceived(stream, new SerialDataReceivedEventArgs(SerialData.Eof));
                 }
-
-                stream = null;
             }
 
             private void CallPinEvents(object state)
@@ -1803,8 +1795,6 @@ namespace System.IO.Ports
                     if ((nativeEvents & (int)SerialPinChange.Break) != 0)
                         stream.PinChanged(stream, new SerialPinChangedEventArgs(SerialPinChange.Break));
                 }
-
-                stream = null;
             }
 
         }

@@ -8,6 +8,5 @@
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <UnsupportedOSPlatforms>browser;android;ios;tvos</UnsupportedOSPlatforms>
-    <PackageDescription>Provides the methods defined in the Lightweight Directory Access Protocol (LDAP) version 3 (V3) and Directory Services Markup Language (DSML) version 2.0 (V2) standards.</PackageDescription>
   </PropertyGroup>
 </Project>

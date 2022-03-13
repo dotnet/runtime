@@ -52,23 +52,6 @@ namespace System.IO.Tests
             }
         }
 
-        internal class TestISynchronizeInvoke : ISynchronizeInvoke
-        {
-            public bool BeginInvoke_Called;
-            public Delegate ExpectedDelegate;
-
-            public IAsyncResult BeginInvoke(Delegate method, object[] args)
-            {
-                Assert.Equal(ExpectedDelegate, method);
-                BeginInvoke_Called = true;
-                return null;
-            }
-
-            public bool InvokeRequired => true;
-            public object EndInvoke(IAsyncResult result) => null;
-            public object Invoke(Delegate method, object[] args) => null;
-        }
-
         [Fact]
         public void SynchronizingObject_GetSetRoundtrips()
         {
@@ -85,7 +68,7 @@ namespace System.IO.Tests
         }
 
         /// <summary>
-        /// Ensure that the SynchronizeObject is invoked when an event occurs
+        /// Ensure that the SynchronizingObject is invoked when an event occurs
         /// </summary>
         [Theory]
         [InlineData(WatcherChangeTypes.Changed)]
@@ -119,7 +102,7 @@ namespace System.IO.Tests
         }
 
         /// <summary>
-        /// Ensure that the SynchronizeObject is invoked when an Renamed event occurs
+        /// Ensure that the SynchronizingObject is invoked when a Renamed event occurs
         /// </summary>
         [Fact]
         public void SynchronizingObject_CalledOnRenamed()
@@ -131,13 +114,13 @@ namespace System.IO.Tests
             {
                 watcher.SynchronizingObject = invoker;
                 watcher.Renamed += dele;
-                watcher.CallOnRenamed(new RenamedEventArgs(WatcherChangeTypes.Changed, "test", "name", "oldname"));
+                watcher.CallOnRenamed(new RenamedEventArgs(WatcherChangeTypes.Renamed, "test", "name", "oldname"));
                 Assert.True(invoker.BeginInvoke_Called);
             }
         }
 
         /// <summary>
-        /// Ensure that the SynchronizeObject is invoked when an Error event occurs
+        /// Ensure that the SynchronizingObject is invoked when an Error event occurs
         /// </summary>
         [Fact]
         public void SynchronizingObject_CalledOnError()

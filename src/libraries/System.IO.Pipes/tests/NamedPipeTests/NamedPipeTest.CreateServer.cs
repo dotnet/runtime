@@ -31,12 +31,12 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.Out)]
         public static void ZeroLengthPipeName_Throws_ArgumentException(PipeDirection direction)
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeServerStream(""));
-            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeServerStream("", direction));
-            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeServerStream("", direction, 2));
-            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeServerStream("", direction, 3, PipeTransmissionMode.Byte));
-            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeServerStream("", direction, 3, PipeTransmissionMode.Byte, PipeOptions.None));
-            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeServerStream("", direction, 3, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
+            AssertExtensions.Throws<ArgumentException>("pipeName", () => new NamedPipeServerStream(""));
+            AssertExtensions.Throws<ArgumentException>("pipeName", () => new NamedPipeServerStream("", direction));
+            AssertExtensions.Throws<ArgumentException>("pipeName", () => new NamedPipeServerStream("", direction, 2));
+            AssertExtensions.Throws<ArgumentException>("pipeName", () => new NamedPipeServerStream("", direction, 3, PipeTransmissionMode.Byte));
+            AssertExtensions.Throws<ArgumentException>("pipeName", () => new NamedPipeServerStream("", direction, 3, PipeTransmissionMode.Byte, PipeOptions.None));
+            AssertExtensions.Throws<ArgumentException>("pipeName", () => new NamedPipeServerStream("", direction, 3, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
         }
 
         [Theory]

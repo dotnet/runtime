@@ -15,7 +15,7 @@ namespace System.Diagnostics
     /// </summary>
     public class InstanceDataCollectionCollection : DictionaryBase
     {
-        [Obsolete("This constructor has been deprecated.  Please use System.Diagnostics.PerformanceCounterCategory.ReadCategory() to get an instance of this collection instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This constructor has been deprecated. Use System.Diagnostics.PerformanceCounterCategory.ReadCategory() to get an instance of this collection instead.")]
         public InstanceDataCollectionCollection() : base() { }
 
         public InstanceDataCollection this[string counterName]
@@ -49,11 +49,8 @@ namespace System.Diagnostics
             Dictionary.Add(objectName, value);
         }
 
-        public bool Contains(string counterName)
+        public bool Contains(string counterName!!)
         {
-            if (counterName == null)
-                throw new ArgumentNullException(nameof(counterName));
-
             object objectName = counterName.ToLowerInvariant();
             return Dictionary.Contains(objectName);
         }

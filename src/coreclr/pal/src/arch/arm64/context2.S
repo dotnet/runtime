@@ -204,12 +204,11 @@ LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
     ldr w17, [x16, CONTEXT_Cpsr]
     msr nzcv, x17
     ldp fp, lr, [x16, CONTEXT_Fp]
-    ldr x17, [x16, CONTEXT_Sp]
-    mov sp, x17
-    ldr x17, [x16, CONTEXT_Pc]
+    ldp x16, x17, [x16, CONTEXT_Sp] // Context_Pc is right after Context_Sp
+    mov sp, x16
     br x17
 
 LOCAL_LABEL(No_Restore_CONTEXT_CONTROL):
-   ret
+    ret
 
 LEAF_END RtlRestoreContext, _TEXT

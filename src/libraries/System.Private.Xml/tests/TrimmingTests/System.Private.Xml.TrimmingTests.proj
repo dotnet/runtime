@@ -4,6 +4,8 @@
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="XmlSchema.Write.cs" />
     <TestConsoleAppSourceFiles Include="XmlSerializer.Deserialize.cs" />
+    <TestConsoleAppSourceFiles Include="XmlSerializer.Deserialize.SealerOpt.cs"
+                               ExtraTrimmerArgs="--enable-opt sealer" />
     <TestConsoleAppSourceFiles Include="XmlSerializer.Serialize.cs" />
     <TestConsoleAppSourceFiles Include="XslCompiledTransformTests.cs" />
   </ItemGroup>

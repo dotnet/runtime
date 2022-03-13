@@ -15,17 +15,4 @@
       want to ensure we use the correct packages. -->
     <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
   </PropertyGroup>
-
-  <!-- Set up the default output and intermediate paths -->
-  <PropertyGroup>
-    <OSPlatformConfig>$(OutputRid).$(Configuration)</OSPlatformConfig>
-    <BaseOutputRootPath>$(ArtifactsBinDir)$(OSPlatformConfig)\</BaseOutputRootPath>
-    <IntermediateOutputRootPath>$(ArtifactsObjDir)$(OSPlatformConfig)\</IntermediateOutputRootPath>
-
-    <!-- Produce assets into the specified blob feed. -->
-    <AssetOutputPath Condition="'$(DotNetOutputBlobFeedDir)' != ''">$(DotNetOutputBlobFeedDir)assets/</AssetOutputPath>
-    <AssetOutputPath Condition="'$(AssetOutputPath)'==''">$(ArtifactsShippingPackagesDir)</AssetOutputPath>
-
-    <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(ArtifactsShippingPackagesDir)</SymbolPackageOutputPath>
-  </PropertyGroup>
 </Project>

@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
@@ -12,14 +10,12 @@ namespace System.Xml
     /// </devdoc>
     public class XmlQualifiedName
     {
-        private string _name;
-        private string _ns;
         private int _hash;
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public static readonly XmlQualifiedName Empty = new XmlQualifiedName(string.Empty);
+        public static readonly XmlQualifiedName Empty = new(string.Empty);
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -36,26 +32,18 @@ namespace System.Xml
         /// </devdoc>
         public XmlQualifiedName(string? name, string? ns)
         {
-            _ns = ns ?? string.Empty;
-            _name = name ?? string.Empty;
+            Namespace = ns ?? string.Empty;
+            Name = name ?? string.Empty;
         }
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string Namespace
-        {
-            get { return _ns; }
-        }
-
+        public string Namespace { get; private set; }
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string Name
-        {
-            get { return _name; }
-        }
-
+        public string Name { get; private set; }
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -63,7 +51,7 @@ namespace System.Xml
         {
             if (_hash == 0)
             {
-                _hash = Name.GetHashCode() /*+ Namespace.GetHashCode()*/; // for perf reasons we are not taking ns's hashcode.
+                _hash = Name.GetHashCode(); /*+ Namespace.GetHashCode()*/ // for perf reasons we are not taking ns's hashcode.
             }
             return _hash;
         }
@@ -71,17 +59,13 @@ namespace System.Xml
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public bool IsEmpty
-        {
-            get { return Name.Length == 0 && Namespace.Length == 0; }
-        }
-
+        public bool IsEmpty => Name.Length == 0 && Namespace.Length == 0;
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         public override string ToString()
         {
-            return Namespace.Length == 0 ? Name : string.Concat(Namespace, ":", Name);
+            return Namespace.Length == 0 ? Name : $"{Namespace}:{Name}";
         }
 
         /// <devdoc>
@@ -89,18 +73,12 @@ namespace System.Xml
         /// </devdoc>
         public override bool Equals([NotNullWhen(true)] object? other)
         {
-            if ((object)this == other)
+            if (ReferenceEquals(this, other))
             {
                 return true;
             }
 
-            XmlQualifiedName? qname = other as XmlQualifiedName;
-            if (qname != null)
-            {
-                return (Name == qname.Name && Namespace == qname.Namespace);
-            }
-
-            return false;
+            return other is XmlQualifiedName qName && Name == qName.Name && Namespace == qName.Namespace;
         }
 
         /// <devdoc>
@@ -108,11 +86,15 @@ namespace System.Xml
         /// </devdoc>
         public static bool operator ==(XmlQualifiedName? a, XmlQualifiedName? b)
         {
-            if ((object?)a == (object?)b)
+            if (ReferenceEquals(a, b))
+            {
                 return true;
+            }
 
             if (a is null || b is null)
+            {
                 return false;
+            }
 
             return a.Name == b.Name && a.Namespace == b.Namespace;
         }
@@ -128,44 +110,42 @@ namespace System.Xml
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public static string ToString(string name, string ns)
+        public static string ToString(string name, string? ns)
         {
-            return ns == null || ns.Length == 0 ? name : ns + ":" + name;
+            return ns == null || ns.Length == 0 ? name : $"{ns}:{name}";
         }
 
         // --------- Some useful internal stuff -----------------
         internal void Init(string? name, string? ns)
         {
-            _name = name ?? string.Empty;
-            _ns = ns ?? string.Empty;
+            Name = name ?? string.Empty;
+            Namespace = ns ?? string.Empty;
             _hash = 0;
         }
 
         internal void SetNamespace(string? ns)
         {
-            _ns = ns ?? string.Empty; // Not changing hash since ns is not used to compute hashcode
+            Namespace = ns ?? string.Empty; // Not changing hash since ns is not used to compute hashcode
         }
 
         internal void Verify()
         {
-            XmlConvert.VerifyNCName(_name);
-            if (_ns.Length != 0)
+            XmlConvert.VerifyNCName(Name);
+            if (Namespace.Length != 0)
             {
-                XmlConvert.ToUri(_ns);
+                XmlConvert.ToUri(Namespace);
             }
         }
 
         internal void Atomize(XmlNameTable nameTable)
         {
-            Debug.Assert(_name != null);
-            _name = nameTable.Add(_name);
-            _ns = nameTable.Add(_ns);
+            Name = nameTable.Add(Name);
+            Namespace = nameTable.Add(Namespace);
         }
 
         internal static XmlQualifiedName Parse(string s, IXmlNamespaceResolver nsmgr, out string prefix)
         {
-            string localName;
-            ValidateNames.ParseQNameThrow(s, out prefix, out localName);
+            ValidateNames.ParseQNameThrow(s, out prefix, out string localName);
 
             string? uri = nsmgr.LookupNamespace(prefix);
             if (uri == null)
@@ -174,11 +154,9 @@ namespace System.Xml
                 {
                     throw new XmlException(SR.Xml_UnknownNs, prefix);
                 }
-                else
-                {
-                    // Re-map namespace of empty prefix to string.Empty when there is no default namespace declared
-                    uri = string.Empty;
-                }
+
+                // Re-map namespace of empty prefix to string.Empty when there is no default namespace declared
+                uri = string.Empty;
             }
 
             return new XmlQualifiedName(localName, uri);

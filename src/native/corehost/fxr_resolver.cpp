@@ -100,13 +100,8 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
             pal::get_default_installation_dir(&default_install_location);
         }
 
-        pal::string_t self_registered_config_location;
-        pal::string_t self_registered_message;
-        if (pal::get_dotnet_self_registered_config_location(&self_registered_config_location))
-        {
-            self_registered_message =
-                pal::string_t(_X(" or register the runtime location in [") + self_registered_config_location + _X("]"));
-        }
+        pal::string_t self_registered_config_location = pal::get_dotnet_self_registered_config_location();
+        pal::string_t self_registered_message = _X(" or register the runtime location in [") + self_registered_config_location + _X("]");
 
         trace::error(_X("A fatal error occurred. The required library %s could not be found.\n"
             "If this is a self-contained application, that library should exist in [%s].\n"

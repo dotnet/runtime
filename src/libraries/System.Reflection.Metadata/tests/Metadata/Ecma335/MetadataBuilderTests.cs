@@ -804,39 +804,9 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
 
             builder = new MetadataBuilder();
-            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeDefinitionHandle(1));
-            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeDefinitionHandle(1));
-            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
-
-            builder = new MetadataBuilder();
             builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeDefinitionHandle(2));
             builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeDefinitionHandle(1));
-            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
-
-            builder = new MetadataBuilder();
-            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeReferenceHandle(2));
-            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeReferenceHandle(1));
-            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
-
-            builder = new MetadataBuilder();
-            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeSpecificationHandle(2));
-            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeSpecificationHandle(1));
-            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
-
-            builder = new MetadataBuilder();
-            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeReferenceHandle(1));
-            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeDefinitionHandle(1));
-            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
-
-            builder = new MetadataBuilder();
-            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeSpecificationHandle(1));
-            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeReferenceHandle(1));
-            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
-
-            builder = new MetadataBuilder();
-            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeSpecificationHandle(1));
-            builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeDefinitionHandle(1));
-            Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
+            builder.ValidateOrder(); // ok
         }
 
         [Fact]

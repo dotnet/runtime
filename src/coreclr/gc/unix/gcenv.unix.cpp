@@ -28,6 +28,10 @@
 #undef min
 #undef max
 
+#ifndef __has_cpp_attribute
+#define __has_cpp_attribute(x) (0)
+#endif
+
 #if __has_cpp_attribute(fallthrough)
 #define FALLTHROUGH [[fallthrough]]
 #else
@@ -67,7 +71,6 @@
 #include <mach/mach_port.h>
 #include <mach/mach_host.h>
 
-#if defined(HOST_ARM64)
 #include <mach/task.h>
 #include <mach/vm_map.h>
 extern "C"
@@ -79,12 +82,11 @@ extern "C"
         if (machret != KERN_SUCCESS)                                        \
         {                                                                   \
             char _szError[1024];                                            \
-            snprintf(_szError, _countof(_szError), "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
+            snprintf(_szError, ARRAY_SIZE(_szError), "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
             mach_error(_szError, machret);                                  \
             abort();                                                        \
         }                                                                   \
     } while (false)
-#endif // defined(HOST_ARM64)
 
 #endif // __APPLE__
 
@@ -100,7 +102,9 @@ extern "C"
 #   define __NR_membarrier  389
 #  elif defined(__aarch64__)
 #   define __NR_membarrier  283
-#  elif
+#  elif defined(__loongarch64)
+#   define __NR_membarrier  283
+#  else
 #   error Unknown architecture
 #  endif
 # endif
@@ -161,7 +165,7 @@ FOR_ALL_NUMA_FUNCTIONS
 
 #endif // HAVE_NUMA_H
 
-#if defined(HOST_ARM) || defined(HOST_ARM64)
+#if defined(HOST_ARM) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_CONF
 #else
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_ONLN
@@ -372,7 +376,7 @@ bool GCToOSInterface::Initialize()
     {
         s_flushUsingMemBarrier = TRUE;
     }
-#if !(defined(TARGET_OSX) && defined(HOST_ARM64))
+#ifndef TARGET_OSX
     else
     {
         assert(g_helperPage == 0);
@@ -404,7 +408,7 @@ bool GCToOSInterface::Initialize()
             return false;
         }
     }
-#endif // !(defined(TARGET_OSX) && defined(HOST_ARM64))
+#endif // !TARGET_OSX
 
     InitializeCGroup();
 
@@ -544,7 +548,7 @@ void GCToOSInterface::FlushProcessWriteBuffers()
         status = pthread_mutex_unlock(&g_flushProcessWriteBuffersMutex);
         assert(status == 0 && "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-#if defined(TARGET_OSX) && defined(HOST_ARM64)
+#ifdef TARGET_OSX
     else
     {
         mach_msg_type_number_t cThreads;
@@ -570,7 +574,7 @@ void GCToOSInterface::FlushProcessWriteBuffers()
         machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
         CHECK_MACH("vm_deallocate()", machret);
     }
-#endif // defined(TARGET_OSX) && defined(HOST_ARM64)
+#endif // TARGET_OSX
 }
 
 // Break into a debugger. Uses a compiler intrinsic if one is available,
@@ -781,8 +785,13 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
     if (st != 0)
 #endif
     {
+#if HAVE_POSIX_MADVISE
         // In case the MADV_FREE is not supported, use MADV_DONTNEED
         st = posix_madvise(address, size, MADV_DONTNEED);
+#else
+        // If we don't have posix_madvise, report failure
+        st = EINVAL;
+#endif
     }
 
     return (st == 0);
@@ -939,7 +948,12 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     {
         int64_t cacheSizeFromSysctl = 0;
         size_t sz = sizeof(cacheSizeFromSysctl);
-        const bool success = sysctlbyname("hw.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
+        const bool success = false
+            // macOS-arm64: Since macOS 12.0, Apple added ".perflevelX." to determinate cache sizes for efficiency 
+            // and performance cores separetely. "perflevel0" stands for "performance"
+            || sysctlbyname("hw.perflevel0.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
+            // macOS-arm64: these report cache sizes for efficiency cores only:
+            || sysctlbyname("hw.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
             || sysctlbyname("hw.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
             || sysctlbyname("hw.l1dcachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0;
         if (success)
@@ -1467,10 +1481,24 @@ bool GCToOSInterface::ParseGCHeapAffinitizeRangesEntry(const char** config_strin
 }
 
 // Initialize the critical section
-void CLRCriticalSection::Initialize()
+bool CLRCriticalSection::Initialize()
 {
-    int st = pthread_mutex_init(&m_cs.mutex, NULL);
-    assert(st == 0);
+    pthread_mutexattr_t mutexAttributes;
+    int st = pthread_mutexattr_init(&mutexAttributes);
+    if (st != 0)
+    {
+        return false;
+    }
+
+    st = pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
+    if (st == 0)
+    {
+        st = pthread_mutex_init(&m_cs.mutex, &mutexAttributes);
+    }
+
+    pthread_mutexattr_destroy(&mutexAttributes);
+
+    return (st == 0);
 }
 
 // Destroy the critical section

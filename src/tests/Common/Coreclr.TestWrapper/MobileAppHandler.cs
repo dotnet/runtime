@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,6 +23,12 @@ namespace CoreclrTestLib
         {
             //install or uninstall mobile app
             int exitCode = -100;
+
+            if (action == "install" && (File.Exists($"{testBinaryBase}/.retry") || File.Exists($"{testBinaryBase}/.reboot")))
+            {
+                return exitCode;
+            }
+
             string outputFile = Path.Combine(reportBase, action, $"{category}_{action}.output.txt");
             string errorFile = Path.Combine(reportBase, action, $"{category}_{action}.error.txt");
             bool platformValueFlag = true;
@@ -81,6 +88,11 @@ namespace CoreclrTestLib
                         }
                     }
 
+                    if (action == "install")
+                    {
+                        cmdStr += " --timeout 00:02:30";
+                    }
+
                     using (Process process = new Process())
                     {
                         if (OperatingSystem.IsWindows())
@@ -108,6 +120,22 @@ namespace CoreclrTestLib
                         {
                             // Process completed.
                             exitCode = process.ExitCode;
+
+                            // See https://github.com/dotnet/xharness/blob/main/src/Microsoft.DotNet.XHarness.Common/CLI/ExitCode.cs
+                            // 78 - PACKAGE_INSTALLATION_FAILURE
+                            // 81 - DEVICE_NOT_FOUND
+                            // 85 - ADB_DEVICE_ENUMERATION_FAILURE
+                            // 86 - PACKAGE_INSTALLATION_TIMEOUT
+                            // 88 - SIMULATOR_FAILURE
+                            // 89 - DEVICE_FAILURE
+                            var retriableCodes = new[] { 78, 81, 85, 86, 88, 89 };
+                            if (action == "install" && retriableCodes.Contains(exitCode))
+                            {
+                                CreateRetryFile($"{testBinaryBase}/.retry", exitCode, category);
+                                CreateRetryFile($"{testBinaryBase}/.reboot", exitCode, category);
+                                return exitCode;
+                            }
+
                             Task.WaitAll(copyOutput, copyError);
                         }
                         else
@@ -125,7 +153,7 @@ namespace CoreclrTestLib
                                     cmdStr, timeout, startTime.ToString(), endTime.ToString());
                             errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}, start: {2}, end: {3})",
                                     cmdStr, timeout, startTime.ToString(), endTime.ToString());
-                            
+
                             process.Kill(entireProcessTree: true);
                         }
                     }
@@ -152,8 +180,16 @@ namespace CoreclrTestLib
             {
                 cmdPrefix = "-c";
             }
-            
+
             return $"{cmdPrefix} \"{cmd}\"";
+        }
+
+        private static void CreateRetryFile(string fileName, int exitCode, string appName)
+        {
+            using (StreamWriter writer = new StreamWriter(fileName))  
+            {
+                writer.WriteLine($"appName: {appName}; exitCode: {exitCode}"); 
+            }
         }
     }
 }

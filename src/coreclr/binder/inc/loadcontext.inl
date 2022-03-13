@@ -18,7 +18,6 @@ template <DWORD dwIncludeFlags>
 LoadContext<dwIncludeFlags>::LoadContext() :
     SHash<AssemblyHashTraits<ContextEntry *, dwIncludeFlags> >::SHash()
 {
-    m_cRef = 1;
 }
 
 template <DWORD dwIncludeFlags>
@@ -31,25 +30,6 @@ LoadContext<dwIncludeFlags>::~LoadContext()
         delete pContextEntry;
     }
     this->RemoveAll();
-}
-
-template <DWORD dwIncludeFlags>
-ULONG LoadContext<dwIncludeFlags>::AddRef()
-{
-    return InterlockedIncrement(&m_cRef);
-}
-
-template <DWORD dwIncludeFlags>
-ULONG LoadContext<dwIncludeFlags>::Release()
-{
-    ULONG ulRef = InterlockedDecrement(&m_cRef);
-
-    if (ulRef == 0)
-    {
-        delete this;
-    }
-
-    return ulRef;
 }
 
 template <DWORD dwIncludeFlags>
@@ -69,7 +49,7 @@ HRESULT LoadContext<dwIncludeFlags>::Register(BindResult *pBindResult)
 
     SAFE_NEW(pContextEntry, ContextEntry);
 
-    pContextEntry->SetIsInGAC(pBindResult->GetIsInGAC());
+    pContextEntry->SetIsInTPA(pBindResult->GetIsInTPA());
     pContextEntry->SetAssemblyName(pBindResult->GetAssemblyName(), TRUE /* fAddRef */);
     pContextEntry->SetAssembly(pBindResult->GetAssembly());
 

@@ -31,6 +31,8 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 
 #include "pal/palinternal.h"
 
+#include <clrconfignocache.h>
+
 #include <errno.h>
 #include <signal.h>
 
@@ -114,10 +116,6 @@ struct sigaction g_previous_sigabrt;
 
 #if !HAVE_MACH_EXCEPTIONS
 
-// Offset of the local variable containing pointer to windows style context in the common_signal_handler function.
-// This offset is relative to the frame pointer.
-int g_common_signal_handler_context_locvar_offset = 0;
-
 // TOP of special stack for handling stack overflow
 volatile void* g_stackOverflowHandlerStack = NULL;
 
@@ -145,9 +143,15 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
     TRACE("Initializing signal handlers %04x\n", flags);
 
 #if !HAVE_MACH_EXCEPTIONS
-    char* enableAlternateStackCheck = getenv("COMPlus_EnableAlternateStackCheck");
+    g_enable_alternate_stack_check = false;
 
-    g_enable_alternate_stack_check = enableAlternateStackCheck && (strtoul(enableAlternateStackCheck, NULL, 10) != 0);
+    CLRConfigNoCache stackCheck = CLRConfigNoCache::Get("EnableAlternateStackCheck", /*noprefix*/ false, &getenv);
+    if (stackCheck.IsSet())
+    {
+        DWORD value;
+        if (stackCheck.TryAsInteger(10, value))
+            g_enable_alternate_stack_check = (value != 0);
+    }
 #endif
 
     if (flags & PAL_INITIALIZE_REGISTER_SIGNALS)
@@ -232,8 +236,11 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
     }
 
 #ifdef INJECT_ACTIVATION_SIGNAL
-    handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, &g_previous_activation);
-    g_registered_activation_handler = true;
+    if (flags & PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL)
+    {
+        handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, &g_previous_activation);
+        g_registered_activation_handler = true;
+    }
 #endif
 
     return TRUE;
@@ -845,6 +852,15 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
     // We can get EAGAIN when printing stack overflow stack trace and when other threads hit
     // stack overflow too. Those are held in the sigsegv_handler with blocked signals until
     // the process exits.
+
+#ifdef __APPLE__
+    // On Apple, pthread_kill is not allowed to be sent to dispatch queue threads
+    if (status == ENOTSUP)
+    {
+        return ERROR_NOT_SUPPORTED;
+    }
+#endif
+
     if ((status != 0) && (status != EAGAIN))
     {
         // Failure to send the signal is fatal. There are only two cases when sending
@@ -922,11 +938,12 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 #if !HAVE_MACH_EXCEPTIONS
     sigset_t signal_set;
     CONTEXT signalContextRecord;
+    CONTEXT* signalContextRecordPtr = &signalContextRecord;
     EXCEPTION_RECORD exceptionRecord;
     native_context_t *ucontext;
 
     ucontext = (native_context_t *)sigcontext;
-    g_common_signal_handler_context_locvar_offset = (int)((char*)&signalContextRecord - (char*)__builtin_frame_address(0));
+    g_hardware_exception_context_locvar_offset = (int)((char*)&signalContextRecordPtr - (char*)__builtin_frame_address(0));
 
     if (code == (SIGSEGV | StackOverflowFlag))
     {

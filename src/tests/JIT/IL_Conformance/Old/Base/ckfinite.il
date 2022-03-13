@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly ckfinite.exe{}
+.assembly 'ckfinite'{}
 
 .class public _ckfinite {
 

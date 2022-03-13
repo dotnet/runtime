@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.Tests
@@ -108,6 +109,82 @@ namespace System.IO.Tests
             var result = await sw.ReadToEndAsync();
 
             Assert.Equal(5000, result.Length);
+        }
+
+        [Fact]
+        public async Task ReadToEndAsync_WithCancellationToken()
+        {
+            using var sw = new StreamReader(GetLargeStream());
+            var result = await sw.ReadToEndAsync(default);
+
+            Assert.Equal(5000, result.Length);
+        }
+
+        [Fact]
+        public async Task ReadToEndAsync_WithCanceledCancellationToken()
+        {
+            using var sw = new StreamReader(GetLargeStream());
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+            var token = cts.Token;
+
+            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await sw.ReadToEndAsync(token));
+            Assert.Equal(token, ex.CancellationToken);
+        }
+
+        [OuterLoop("It creates 1GB file")]
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+        public async Task ReadToEndAsync_WithCancellation()
+        {
+            string path = GetTestFilePath();
+            CreateLargeFile(path);
+
+            using StreamReader reader = File.OpenText(path);
+            using CancellationTokenSource cts = new();
+            var token = cts.Token;
+
+            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            {
+                Task<string> readToEndTask = reader.ReadToEndAsync(token);
+
+                // This is a time-sensitive test where the cancellation needs to happen before the async read completes.
+                // A sleep may be too long a delay, so spin-wait for a very short duration before canceling.
+                SpinWait spinner = default;
+                while (!spinner.NextSpinWillYield)
+                {
+                    spinner.SpinOnce(sleep1Threshold: -1);
+                }
+
+                cts.Cancel();
+                await readToEndTask;
+            });
+            Assert.Equal(token, ex.CancellationToken);
+        }
+
+        private void CreateLargeFile(string path)
+        {
+            const string sentence = "A very large file used for testing StreamReader cancellation. 0123456789012345678901234567890123456789.";
+            const int repeatCount = 10_000_000;
+            Encoding encoding = Encoding.UTF8;
+
+            using FileStream fs = File.OpenWrite(path);
+            long fileSize = encoding.GetByteCount(sentence) * repeatCount;
+
+            try
+            {
+                fs.SetLength(fileSize);
+            }
+            catch (IOException)
+            {
+                throw new SkipTestException($"Unable to run {ReadToEndAsync_WithCancellation} due to lack of available disk space");
+            }
+
+            using StreamWriter streamWriter = new StreamWriter(fs, encoding);
+            for (int i = 0; i < repeatCount; i++)
+            {
+                streamWriter.WriteLine(sentence);
+            }
         }
 
         [Fact]
@@ -299,6 +376,27 @@ namespace System.IO.Tests
             sr.Read(temp, 0, 1);
             var data = sr.ReadLine();
             Assert.Equal(valueString.Substring(1, valueString.IndexOf('\r') - 1), data);
+        }
+
+        [Fact]
+        public async Task VanillaReadLineAsync()
+        {
+            var baseInfo = GetCharArrayStream();
+            var sr = baseInfo.Item2;
+
+            string valueString = new string(baseInfo.Item1);
+
+            var data = await sr.ReadLineAsync();
+            Assert.Equal(valueString.Substring(0, valueString.IndexOf('\r')), data);
+
+            data = await sr.ReadLineAsync(default);
+            Assert.Equal(valueString.Substring(valueString.IndexOf('\r') + 1, 3), data);
+
+            data = await sr.ReadLineAsync();
+            Assert.Equal(valueString.Substring(valueString.IndexOf('\n') + 1, 2), data);
+
+            data = await sr.ReadLineAsync(default);
+            Assert.Equal((valueString.Substring(valueString.LastIndexOf('\n') + 1)), data);
         }
 
         [Fact]
@@ -507,7 +605,6 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(0, false)]
         [InlineData(0, true)]
         [InlineData(1, false)]

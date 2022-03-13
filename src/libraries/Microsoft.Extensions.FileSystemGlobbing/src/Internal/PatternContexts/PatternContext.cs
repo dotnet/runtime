@@ -9,8 +9,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
 {
     public abstract class PatternContext<TFrame> : IPatternContext
     {
-        private Stack<TFrame> _stack = new Stack<TFrame>();
-        protected TFrame Frame;
+        private Stack<TFrame?> _stack = new();
+        protected TFrame? Frame;
 
         public virtual void Declare(Action<IPathSegment, bool> declare) { }
 
@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
             Frame = _stack.Pop();
         }
 
-        protected void PushDataFrame(TFrame frame)
+        protected void PushDataFrame(TFrame? frame)
         {
             _stack.Push(Frame);
             Frame = frame;

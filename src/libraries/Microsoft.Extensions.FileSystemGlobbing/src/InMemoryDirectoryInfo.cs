@@ -23,22 +23,19 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// </summary>
         /// <param name="rootDir">The root directory that this FileSystem will use.</param>
         /// <param name="files">Collection of file names. If relative paths <paramref name="rootDir"/> will be prepended to the paths.</param>
-        public InMemoryDirectoryInfo(string rootDir, IEnumerable<string> files)
+        public InMemoryDirectoryInfo(string rootDir, IEnumerable<string>? files)
             : this(rootDir, files, false)
         {
         }
 
-        private InMemoryDirectoryInfo(string rootDir, IEnumerable<string> files, bool normalized)
+        private InMemoryDirectoryInfo(string rootDir, IEnumerable<string>? files, bool normalized)
         {
             if (string.IsNullOrEmpty(rootDir))
             {
                 throw new ArgumentNullException(nameof(rootDir));
             }
 
-            if (files == null)
-            {
-                files = new List<string>();
-            }
+            files ??= new List<string>();
 
             Name = Path.GetFileName(rootDir);
             if (normalized)
@@ -69,13 +66,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         public override string Name { get; }
 
         /// <inheritdoc />
-        public override DirectoryInfoBase ParentDirectory
-        {
-            get
-            {
-                return new InMemoryDirectoryInfo(Path.GetDirectoryName(FullName), _files, true);
-            }
-        }
+        public override DirectoryInfoBase? ParentDirectory =>
+            new InMemoryDirectoryInfo(Path.GetDirectoryName(FullName)!, _files, true);
 
         /// <inheritdoc />
         public override IEnumerable<FileSystemInfoBase> EnumerateFileSystemInfos()
@@ -99,8 +91,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
                 else
                 {
                     string name = file.Substring(0, endSegment);
-                    List<string> list;
-                    if (!dict.TryGetValue(name, out list))
+                    if (!dict.TryGetValue(name, out List<string>? list))
                     {
                         dict[name] = new List<string> { file };
                     }
@@ -145,7 +136,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// </summary>
         /// <param name="path">The filename.</param>
         /// <returns>Instance of <see cref="FileInfoBase"/> if the file exists, null otherwise.</returns>
-        public override FileInfoBase GetFile(string path)
+        public override FileInfoBase? GetFile(string path)
         {
             string normPath = Path.GetFullPath(path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
             foreach (string file in _files)

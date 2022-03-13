@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Metadata
 {
     internal sealed class ReflectionMemberAccessor : MemberAccessor
     {
-        private class ConstructorContext
+        private sealed class ConstructorContext
         {
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
             private readonly Type _type;
@@ -41,7 +41,7 @@ namespace System.Text.Json.Serialization.Metadata
             return new ConstructorContext(type).CreateInstance;
         }
 
-        public override JsonTypeInfo.ParameterizedConstructorDelegate<T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor)
+        public override Func<object[], T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor)
         {
             Type type = typeof(T);
 

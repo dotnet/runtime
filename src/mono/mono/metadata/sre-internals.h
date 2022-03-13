@@ -100,7 +100,7 @@ mono_reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb,
 gboolean
 mono_reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoReflectionCtorBuilder *mb,
 						 MonoError *error);
-							    
+
 guint32
 mono_reflection_resolution_scope_from_image (MonoDynamicImage *assembly, MonoImage *image);
 

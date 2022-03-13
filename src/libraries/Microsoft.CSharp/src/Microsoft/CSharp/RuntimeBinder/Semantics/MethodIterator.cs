@@ -10,7 +10,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed partial class CMemberLookupResults
     {
-        public class CMethodIterator
+        public sealed class CMethodIterator
         {
             // Inputs.
             private readonly AggregateSymbol _context;

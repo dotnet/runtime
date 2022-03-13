@@ -14,9 +14,8 @@ namespace System.IO.Strategies
     // this type defines a set of stateless FileStream/FileStreamStrategy helper methods
     internal static partial class FileStreamHelpers
     {
-        // Async completion/return codes shared by:
-        // - AsyncWindowsFileStreamStrategy.ValueTaskSource
-        // - Net5CompatFileStreamStrategy.CompletionSource
+        // Async completion/return codes used by
+        // SafeFileHandle.OverlappedValueTaskSource
         internal static class TaskSourceCodes
         {
             internal const long NoResult = 0;
@@ -27,10 +26,10 @@ namespace System.IO.Strategies
             internal const ulong ResultMask = ((ulong)uint.MaxValue) << 32;
         }
 
-        private static OSFileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, bool isAsync) =>
+        private static OSFileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, bool isAsync) =>
             isAsync ?
-                new AsyncWindowsFileStreamStrategy(handle, access, share) :
-                new SyncWindowsFileStreamStrategy(handle, access, share);
+                new AsyncWindowsFileStreamStrategy(handle, access) :
+                new SyncWindowsFileStreamStrategy(handle, access);
 
         private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize) =>
             (options & FileOptions.Asynchronous) != 0 ?
@@ -119,26 +118,6 @@ namespace System.IO.Strategies
             if (!Interop.Kernel32.UnlockFile(handle, positionLow, positionHigh, lengthLow, lengthHigh))
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error(handle.Path);
-            }
-        }
-
-        internal static unsafe void SetFileLength(SafeFileHandle handle, long length)
-        {
-            var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
-            {
-                EndOfFile = length
-            };
-
-            if (!Interop.Kernel32.SetFileInformationByHandle(
-                handle,
-                Interop.Kernel32.FileEndOfFileInfo,
-                &eofInfo,
-                (uint)sizeof(Interop.Kernel32.FILE_END_OF_FILE_INFO)))
-            {
-                int errorCode = Marshal.GetLastPInvokeError();
-                if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
-                    throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_FileLengthTooBig);
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
             }
         }
 
@@ -327,7 +306,7 @@ namespace System.IO.Strategies
             }
         }
 
-        /// <summary>Used by AsyncWindowsFileStreamStrategy and Net5CompatFileStreamStrategy CopyToAsync to enable awaiting the result of an overlapped I/O operation with minimal overhead.</summary>
+        /// <summary>Used by AsyncWindowsFileStreamStrategy.CopyToAsync to enable awaiting the result of an overlapped I/O operation with minimal overhead.</summary>
         private sealed unsafe class AsyncCopyToAwaitable : ICriticalNotifyCompletion
         {
             /// <summary>Sentinel object used to indicate that the I/O operation has completed before being awaited.</summary>

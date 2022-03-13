@@ -10,7 +10,7 @@
 inline PTR_MethodDescChunk EEClass::GetChunks()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_pChunks.GetValueMaybeNull(PTR_HOST_MEMBER_TADDR(EEClass, this, m_pChunks));
+    return m_pChunks;
 }
 
 //*******************************************************************************
@@ -20,7 +20,7 @@ inline void EEClassOptionalFields::Init()
 {
     LIMITED_METHOD_CONTRACT;
     m_pDictLayout = NULL;
-    m_pVarianceInfo.SetValueMaybeNull(NULL);
+    m_pVarianceInfo = NULL;
 #ifdef FEATURE_COMINTEROP
     m_pSparseVTableMap = NULL;
     m_pCoClassForIntf = TypeHandle();

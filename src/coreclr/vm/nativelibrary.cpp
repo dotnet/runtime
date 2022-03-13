@@ -318,27 +318,14 @@ namespace
 #endif // !TARGET_UNIX
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
-        AppDomain* pDomain = GetAppDomain();
-        CLRPrivBinderCoreCLR *pTPABinder = pDomain->GetTPABinderContext();
-
-        PEFile *pManifestFile = pAssembly->GetManifestFile();
-        PTR_ICLRPrivBinder pBindingContext = pManifestFile->GetBindingContext();
+        PEAssembly *pManifestFile = pAssembly->GetPEAssembly();
+        PTR_AssemblyBinder pBinder = pManifestFile->GetAssemblyBinder();
 
         //Step 0: Check if  the assembly was bound using TPA.
-        //        The Binding Context can be null or an overridden TPA context
-        if (pBindingContext == NULL)
-        {
-            // If we do not have any binder associated, then return to the default resolution mechanism.
-            return NULL;
-        }
+        AssemblyBinder *pCurrentBinder = pBinder;
 
-        UINT_PTR assemblyBinderID = 0;
-        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
-
-        ICLRPrivBinder *pCurrentBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
-
-        // For assemblies bound via TPA binder, we should use the standard mechanism to make the pinvoke call.
-        if (AreSameBinderInstance(pCurrentBinder, pTPABinder))
+        // For assemblies bound via default binder, we should use the standard mechanism to make the pinvoke call.
+        if (pCurrentBinder->IsDefault())
         {
             return NULL;
         }
@@ -355,7 +342,7 @@ namespace
         GCPROTECT_BEGIN(pUnmanagedDllName);
 
         // Get the pointer to the managed assembly load context
-        INT_PTR ptrManagedAssemblyLoadContext = ((CLRPrivBinderAssemblyLoadContext *)pCurrentBinder)->GetManagedAssemblyLoadContext();
+        INT_PTR ptrManagedAssemblyLoadContext = pCurrentBinder->GetManagedAssemblyLoadContext();
 
         // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll method.
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
@@ -376,28 +363,8 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        PTR_ICLRPrivBinder pBindingContext = pAssembly->GetManifestFile()->GetBindingContext();
-        if (pBindingContext == NULL)
-        {
-            // GetBindingContext() returns NULL for System.Private.CoreLib
-            return NULL;
-        }
-
-        UINT_PTR assemblyBinderID = 0;
-        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
-
-        AppDomain *pDomain = GetAppDomain();
-        ICLRPrivBinder *pCurrentBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
-
-        // The code here deals with two implementations of ICLRPrivBinder interface:
-        //    - CLRPrivBinderCoreCLR for the TPA binder in the default ALC, and
-        //    - CLRPrivBinderAssemblyLoadContext for custom ALCs.
-        // in order obtain the associated ALC handle.
-        INT_PTR ptrManagedAssemblyLoadContext = AreSameBinderInstance(pCurrentBinder, pDomain->GetTPABinderContext())
-            ? ((CLRPrivBinderCoreCLR *)pCurrentBinder)->GetManagedAssemblyLoadContext()
-            : ((CLRPrivBinderAssemblyLoadContext *)pCurrentBinder)->GetManagedAssemblyLoadContext();
-
-        return ptrManagedAssemblyLoadContext;
+        PTR_AssemblyBinder pBinder = pAssembly->GetPEAssembly()->GetAssemblyBinder();
+        return pBinder->GetManagedAssemblyLoadContext();
     }
 
     NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaAssemblyLoadContextEvent(Assembly * pAssembly, PCWSTR wszLibName)
@@ -494,7 +461,7 @@ namespace
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
 
-        SString path = pAssembly->GetManifestFile()->GetPath();
+        SString path = pAssembly->GetPEAssembly()->GetPath();
 
         SString::Iterator lastPathSeparatorIter = path.End();
         if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
@@ -559,7 +526,7 @@ namespace
             SString::CIterator it = libName.Begin();
             if (libName.Find(it, PLATFORM_SHARED_LIB_SUFFIX_W))
             {
-                it += COUNTOF(PLATFORM_SHARED_LIB_SUFFIX_W);
+                it += ARRAY_SIZE(PLATFORM_SHARED_LIB_SUFFIX_W);
                 containsSuffix = it == libName.End() || *it == (WCHAR)'.';
             }
 
@@ -643,7 +610,7 @@ namespace
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
 
-#if defined(FEATURE_CORESYSTEM) && !defined(TARGET_UNIX)
+#if !defined(TARGET_UNIX)
         // Try to go straight to System32 for Windows API sets. This is replicating quick check from
         // the OS implementation of api sets.
         if (IsWindowsAPISet(wszLibName))
@@ -654,7 +621,7 @@ namespace
                 return hmod;
             }
         }
-#endif // FEATURE_CORESYSTEM && !TARGET_UNIX
+#endif // !TARGET_UNIX
 
         if (g_hostpolicy_embedded)
         {
@@ -681,7 +648,7 @@ namespace
         // (both of these are typically done to smooth over cross-platform differences).
         // We try to dlopen with such variations on the original.
         const WCHAR* prefixSuffixCombinations[MaxVariationCount] = {};
-        int numberOfVariations = COUNTOF(prefixSuffixCombinations);
+        int numberOfVariations = ARRAY_SIZE(prefixSuffixCombinations);
         DetermineLibNameVariations(prefixSuffixCombinations, &numberOfVariations, wszLibName, libNameIsRelativePath);
         for (int i = 0; i < numberOfVariations; i++)
         {
@@ -804,7 +771,7 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryByName(LPCWSTR libraryName, Asse
     }
     else
     {
-        GetDllImportSearchPathFlags(callingAssembly->GetManifestModule(),
+        GetDllImportSearchPathFlags(callingAssembly->GetModule(),
                                     &dllImportSearchPathFlags, &searchAssemblyDirectory);
     }
 

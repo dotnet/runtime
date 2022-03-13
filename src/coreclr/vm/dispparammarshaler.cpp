@@ -192,7 +192,7 @@ void DispParamInterfaceMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJEC
     IUnknown *pUnk = bByref ? *V_UNKNOWNREF(pSrcVar) : V_UNKNOWN(pSrcVar);
 
     // Convert the IP to an OBJECTREF.
-    GetObjectRefFromComIP(pDestObj, pUnk, m_pClassMT, /* pItfMT = */ NULL, m_bClassIsHint ? ObjFromComIP::CLASS_IS_HINT : ObjFromComIP::NONE);
+    GetObjectRefFromComIP(pDestObj, pUnk, m_pClassMT, m_bClassIsHint ? ObjFromComIP::CLASS_IS_HINT : ObjFromComIP::NONE);
 }
 
 void DispParamInterfaceMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIANT *pDestVar)

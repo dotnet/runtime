@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
 
         private readonly StringComparison _comparisonType;
 
-        public WildcardPathSegment(string beginsWith, List<string> contains, string endsWith, StringComparison comparisonType)
+        public WildcardPathSegment(string beginsWith!!, List<string> contains!!, string endsWith!!, StringComparison comparisonType)
         {
             BeginsWith = beginsWith;
             Contains = contains;

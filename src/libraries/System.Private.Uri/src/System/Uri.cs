@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
@@ -120,6 +120,11 @@ namespace System
             FragmentIriCanonical = 0x40000000000,
             IriCanonical = 0x78000000000,
             UnixPath = 0x100000000000,
+
+            /// <summary>
+            /// Disables any validation/normalization past the authority. Fragments will always be empty. GetComponents will throw for Path/Query.
+            /// </summary>
+            DisablePathAndQueryCanonicalization = 0x200000000000,
 
             /// <summary>
             /// Used to ensure that InitializeAndValidate is only called once per Uri instance and only from an override of InitializeAndValidate
@@ -267,6 +272,8 @@ namespace System
             return syntax is null || syntax.InFact(UriSyntaxFlags.AllowIriParsing);
         }
 
+        internal bool DisablePathAndQueryCanonicalization => (_flags & Flags.DisablePathAndQueryCanonicalization) != 0;
+
         internal bool UserDrivenParsing
         {
             get
@@ -355,11 +362,8 @@ namespace System
         //  a user, or that was copied & pasted from a document. That is, we do not
         //  expect already encoded URI to be supplied.
         //
-        public Uri(string uriString)
+        public Uri(string uriString!!)
         {
-            if (uriString is null)
-                throw new ArgumentNullException(nameof(uriString));
-
             CreateThis(uriString, false, UriKind.Absolute);
             DebugSetLeftCtor();
         }
@@ -369,12 +373,9 @@ namespace System
         //
         //  Uri constructor. Assumes that input string is canonically escaped
         //
-        [Obsolete("The constructor has been deprecated. Please use new Uri(string). The dontEscape parameter is deprecated and is always false. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public Uri(string uriString, bool dontEscape)
+        [Obsolete("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(string) instead.")]
+        public Uri(string uriString!!, bool dontEscape)
         {
-            if (uriString == null)
-                throw new ArgumentNullException(nameof(uriString));
-
             CreateThis(uriString, dontEscape, UriKind.Absolute);
             DebugSetLeftCtor();
         }
@@ -385,12 +386,9 @@ namespace System
         //  Uri combinatorial constructor. Do not perform character escaping if
         //  DontEscape is true
         //
-        [Obsolete("The constructor has been deprecated. Please new Uri(Uri, string). The dontEscape parameter is deprecated and is always false. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public Uri(Uri baseUri, string? relativeUri, bool dontEscape)
+        [Obsolete("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(Uri, string) instead.")]
+        public Uri(Uri baseUri!!, string? relativeUri, bool dontEscape)
         {
-            if (baseUri is null)
-                throw new ArgumentNullException(nameof(baseUri));
-
             if (!baseUri.IsAbsoluteUri)
                 throw new ArgumentOutOfRangeException(nameof(baseUri));
 
@@ -401,12 +399,20 @@ namespace System
         //
         // Uri(string, UriKind);
         //
-        public Uri(string uriString, UriKind uriKind)
+        public Uri(string uriString!!, UriKind uriKind)
         {
-            if (uriString is null)
-                throw new ArgumentNullException(nameof(uriString));
-
             CreateThis(uriString, false, uriKind);
+            DebugSetLeftCtor();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Uri"/> class with the specified URI and additional <see cref="UriCreationOptions"/>.
+        /// </summary>
+        /// <param name="uriString">A string that identifies the resource to be represented by the <see cref="Uri"/> instance.</param>
+        /// <param name="creationOptions">Options that control how the <seealso cref="Uri"/> is created and behaves.</param>
+        public Uri(string uriString!!, in UriCreationOptions creationOptions)
+        {
+            CreateThis(uriString, false, UriKind.Absolute, in creationOptions);
             DebugSetLeftCtor();
         }
 
@@ -417,11 +423,8 @@ namespace System
         //  also be an absolute URI, in which case the resultant URI is constructed
         //  entirely from it
         //
-        public Uri(Uri baseUri, string? relativeUri)
+        public Uri(Uri baseUri!!, string? relativeUri)
         {
-            if (baseUri is null)
-                throw new ArgumentNullException(nameof(baseUri));
-
             if (!baseUri.IsAbsoluteUri)
                 throw new ArgumentOutOfRangeException(nameof(baseUri));
 
@@ -519,11 +522,8 @@ namespace System
         // Uri(Uri , Uri )
         // Note: a static Create() method should be used by users, not this .ctor
         //
-        public Uri(Uri baseUri, Uri relativeUri)
+        public Uri(Uri baseUri!!, Uri relativeUri)
         {
-            if (baseUri is null)
-                throw new ArgumentNullException(nameof(baseUri));
-
             if (!baseUri.IsAbsoluteUri)
                 throw new ArgumentOutOfRangeException(nameof(baseUri));
 
@@ -1639,6 +1639,9 @@ namespace System
             // canonicalize the comparand, making comparison possible
             if (obj is null)
             {
+                if (DisablePathAndQueryCanonicalization)
+                    return false;
+
                 if (!(comparand is string s))
                     return false;
 
@@ -1648,6 +1651,9 @@ namespace System
                 if (!TryCreate(s, UriKind.RelativeOrAbsolute, out obj))
                     return false;
             }
+
+            if (DisablePathAndQueryCanonicalization != obj.DisablePathAndQueryCanonicalization)
+                return false;
 
             if (ReferenceEquals(OriginalString, obj.OriginalString))
             {
@@ -1747,11 +1753,8 @@ namespace System
             return string.Equals(selfUrl, otherUrl, IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
         }
 
-        public Uri MakeRelativeUri(Uri uri)
+        public Uri MakeRelativeUri(Uri uri!!)
         {
-            if (uri is null)
-                throw new ArgumentNullException(nameof(uri));
-
             if (IsNotAbsoluteUri || uri.IsNotAbsoluteUri)
                 throw new InvalidOperationException(SR.net_uri_NotAbsolute);
 
@@ -2553,7 +2556,7 @@ namespace System
         //
         internal string GetParts(UriComponents uriParts, UriFormat formatAs)
         {
-            return GetComponents(uriParts, formatAs);
+            return InternalGetComponents(uriParts, formatAs);
         }
 
         private string GetEscapedParts(UriComponents uriParts)
@@ -3158,9 +3161,6 @@ namespace System
             idx = _info.Offset.Path;
             origIdx = _info.Offset.Path;
 
-            //Some uris do not have a query
-            //    When '?' is passed as delimiter, then it's special case
-            //    so both '?' and '#' will work as delimiters
             if (buildIriStringFromPath)
             {
                 DebugAssertInCtor();
@@ -3180,6 +3180,45 @@ namespace System
 
                 _info.Offset.Path = (ushort)_string.Length;
                 idx = _info.Offset.Path;
+            }
+
+            // If the user explicitly disabled canonicalization, only figure out the offsets
+            if (DisablePathAndQueryCanonicalization)
+            {
+                if (buildIriStringFromPath)
+                {
+                    DebugAssertInCtor();
+                    _string += _originalUnicodeString.Substring(origIdx);
+                }
+
+                string str = _string;
+
+                if (IsImplicitFile || (syntaxFlags & UriSyntaxFlags.MayHaveQuery) == 0)
+                {
+                    idx = str.Length;
+                }
+                else
+                {
+                    idx = str.IndexOf('?');
+                    if (idx == -1)
+                    {
+                        idx = str.Length;
+                    }
+                }
+
+                _info.Offset.Query = (ushort)idx;
+                _info.Offset.Fragment = (ushort)str.Length; // There is no fragment in UseRawTarget mode
+                _info.Offset.End = (ushort)str.Length;
+
+                goto Done;
+            }
+
+            //Some uris do not have a query
+            //    When '?' is passed as delimiter, then it's special case
+            //    so both '?' and '#' will work as delimiters
+            if (buildIriStringFromPath)
+            {
+                DebugAssertInCtor();
 
                 int offset = origIdx;
                 if (IsImplicitFile || ((syntaxFlags & (UriSyntaxFlags.MayHaveQuery | UriSyntaxFlags.MayHaveFragment)) == 0))
@@ -3859,6 +3898,12 @@ namespace System
 
             Debug.Assert((_flags & Flags.HasUserInfo) == 0 && (_flags & Flags.HostTypeMask) == 0);
 
+            // need to build new Iri'zed string
+            if (hostNotUnicodeNormalized)
+            {
+                newHost = _originalUnicodeString.Substring(0, startInput);
+            }
+
             //Special case is an empty authority
             if (idx == length || ((ch = pString[idx]) == '/' || (ch == '\\' && StaticIsFile(syntax)) || ch == '#' || ch == '?'))
             {
@@ -3879,12 +3924,6 @@ namespace System
                 }
 
                 return idx;
-            }
-
-            // need to build new Iri'zed string
-            if (hostNotUnicodeNormalized)
-            {
-                newHost = _originalUnicodeString.Substring(0, startInput);
             }
 
             string? userInfoString = null;
@@ -4853,7 +4892,7 @@ namespace System
 
             bool convBackSlashes = basePart.Syntax.InFact(UriSyntaxFlags.ConvertPathSlashes);
 
-            string? left = null;
+            string? left;
 
             // check for network or local absolute path
             if (c1 == '/' || (c1 == '\\' && convBackSlashes))
@@ -5064,12 +5103,9 @@ namespace System
         // Throws:
         //  ArgumentNullException, InvalidOperationException
         //
-        [Obsolete("The method has been deprecated. Please use MakeRelativeUri(Uri uri). https://go.microsoft.com/fwlink/?linkid=14202")]
-        public string MakeRelative(Uri toUri)
+        [Obsolete("Uri.MakeRelative has been deprecated. Use MakeRelativeUri(Uri uri) instead.")]
+        public string MakeRelative(Uri toUri!!)
         {
-            if (toUri == null)
-                throw new ArgumentNullException(nameof(toUri));
-
             if (IsNotAbsoluteUri || toUri.IsNotAbsoluteUri)
                 throw new InvalidOperationException(SR.net_uri_NotAbsolute);
 
@@ -5080,7 +5116,7 @@ namespace System
         }
 
         /// <internalonly/>
-        [Obsolete("The method has been deprecated. It is not used by the system. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("Uri.Canonicalize has been deprecated and is not supported.")]
         protected virtual void Canonicalize()
         {
             // this method if suppressed by the derived class
@@ -5090,7 +5126,7 @@ namespace System
         }
 
         /// <internalonly/>
-        [Obsolete("The method has been deprecated. It is not used by the system. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("Uri.Parse has been deprecated and is not supported.")]
         protected virtual void Parse()
         {
             // this method if suppressed by the derived class
@@ -5100,7 +5136,7 @@ namespace System
         }
 
         /// <internalonly/>
-        [Obsolete("The method has been deprecated. It is not used by the system. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("Uri.Escape has been deprecated and is not supported.")]
         protected virtual void Escape()
         {
             // this method if suppressed by the derived class
@@ -5117,7 +5153,7 @@ namespace System
         //  UTF-8 sequences (e.g. %C4%D2 == 'Latin capital Ligature Ij')
         //
         /// <internalonly/>
-        [Obsolete("The method has been deprecated. Please use GetComponents() or static UnescapeDataString() to unescape a Uri component or a string. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("Uri.Unescape has been deprecated. Use GetComponents() or Uri.UnescapeDataString() to unescape a Uri component or a string.")]
         protected virtual string Unescape(string path)
         {
             // This method is dangerous since it gives path unescaping control
@@ -5131,7 +5167,7 @@ namespace System
             return new string(dest, 0, count);
         }
 
-        [Obsolete("The method has been deprecated. Please use GetComponents() or static EscapeDataString() to escape a Uri component or a string. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("Uri.EscapeString has been deprecated. Use GetComponents() or Uri.EscapeDataString to escape a Uri component or a string.")]
         protected static string EscapeString(string? str) =>
             str is null ? string.Empty :
             UriHelper.EscapeString(str, checkExistingEscaped: true, UriHelper.UnreservedReservedTable, '?', '#');
@@ -5142,7 +5178,7 @@ namespace System
         //  Check for any invalid or problematic character sequences
         //
         /// <internalonly/>
-        [Obsolete("The method has been deprecated. It is not used by the system. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("Uri.CheckSecurity has been deprecated and is not supported.")]
         protected virtual void CheckSecurity()
         {
             // This method just does not make sense
@@ -5158,7 +5194,7 @@ namespace System
         //  true if <character> is reserved else false
         //
         /// <internalonly/>
-        [Obsolete("The method has been deprecated. It is not used by the system. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("Uri.IsReservedCharacter has been deprecated and is not supported.")]
         protected virtual bool IsReservedCharacter(char character)
         {
             // This method just does not make sense as protected virtual
@@ -5186,7 +5222,7 @@ namespace System
         //  true if <character> should be escaped else false
         //
         /// <internalonly/>
-        [Obsolete("The method has been deprecated. It is not used by the system. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("Uri.IsExcludedCharacter has been deprecated and is not supported.")]
         protected static bool IsExcludedCharacter(char character)
         {
             // This method just does not make sense as protected
@@ -5229,7 +5265,7 @@ namespace System
         //  true if <character> would be a treated as a bad file system character
         //  else false
         //
-        [Obsolete("The method has been deprecated. It is not used by the system. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("Uri.IsBadFileSystemCharacter has been deprecated and is not supported.")]
         protected virtual bool IsBadFileSystemCharacter(char character)
         {
             // This method just does not make sense as protected virtual

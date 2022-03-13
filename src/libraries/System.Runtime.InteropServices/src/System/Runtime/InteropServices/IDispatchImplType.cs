@@ -3,7 +3,7 @@
 
 namespace System.Runtime.InteropServices
 {
-    [Obsolete("The IDispatchImplAttribute is deprecated.", error: false)]
+    [Obsolete("IDispatchImplAttribute and IDispatchImplType have been deprecated and are not supported.")]
     public enum IDispatchImplType
     {
         CompatibleImpl = 2,

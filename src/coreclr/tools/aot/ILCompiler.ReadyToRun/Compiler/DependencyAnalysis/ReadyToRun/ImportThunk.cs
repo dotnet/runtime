@@ -18,6 +18,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Eager,
             Lazy,
             DelayLoadHelper,
+            DelayLoadHelperWithExistingIndirectionCell,
             VirtualStubDispatch,
         }
 
@@ -31,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// Import thunks are used to call a runtime-provided helper which fixes up an indirection cell in a particular
         /// import section. Optionally they may also contain a relocation for a specific indirection cell to fix up.
         /// </summary>
-        public ImportThunk(NodeFactory factory, ReadyToRunHelper helperId, ImportSectionNode containingImportSection, bool useVirtualCall)
+        public ImportThunk(NodeFactory factory, ReadyToRunHelper helperId, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
         {
             _helperCell = factory.GetReadyToRunHelperCell(helperId);
             _containingImportSection = containingImportSection;
@@ -39,6 +40,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (useVirtualCall)
             {
                 _thunkKind = Kind.VirtualStubDispatch;
+            }
+            else if (useJumpableStub)
+            {
+                _thunkKind = Kind.DelayLoadHelperWithExistingIndirectionCell;
             }
             else if (helperId == ReadyToRunHelper.GetString)
             {
@@ -61,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             sb.Append("DelayLoadHelper->");
             _helperCell.AppendMangledName(nameMangler, sb);
-            sb.Append($"(ImportSection:{_containingImportSection.Name})");
+            sb.Append($"(ImportSection:{_containingImportSection.Name},Kind:{_thunkKind})");
         }
 
         protected override string GetName(NodeFactory factory)

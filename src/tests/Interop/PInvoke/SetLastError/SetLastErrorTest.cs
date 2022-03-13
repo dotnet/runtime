@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 class SetLastErrorTest
 {
@@ -28,7 +28,7 @@ class SetLastErrorTest
             int expected = Marshal.GetLastPInvokeError();
             SetLastErrorNative.SetError_Default(expected + 1, shouldSetError: true);
             int actual = Marshal.GetLastPInvokeError();
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
         // SetLastError=false
@@ -36,7 +36,7 @@ class SetLastErrorTest
             int expected = Marshal.GetLastPInvokeError();
             SetLastErrorNative.SetError_False(expected + 1, shouldSetError: true);
             int actual = Marshal.GetLastPInvokeError();
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
         // SetLastError=true
@@ -45,7 +45,7 @@ class SetLastErrorTest
             expected++;
             SetLastErrorNative.SetError_True(expected, shouldSetError: true);
             int actual = Marshal.GetLastPInvokeError();
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
     }
 
@@ -59,7 +59,7 @@ class SetLastErrorTest
         // Calling a P/Invoke with SetLastError=true should clear any existing error.
         SetLastErrorNative.SetError_True(error, shouldSetError: false);
         int actual = Marshal.GetLastPInvokeError();
-        Assert.AreEqual(0, actual);
+        Assert.Equal(0, actual);
     }
 
     static int Main(string[] args)

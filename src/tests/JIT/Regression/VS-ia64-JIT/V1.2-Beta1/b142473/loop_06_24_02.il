@@ -14,11 +14,11 @@
 {
   .ver 0:0:0:0
 }
-.assembly legacy library test
+.assembly legacy library 'loop_06_24_02'
 {
   .ver 0:0:0:0
 }
-.module hello.exe
+.assembly extern xunit.core {}
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
@@ -32,6 +32,9 @@
 {
   .method public static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  16
     .locals init (int64 V_0,

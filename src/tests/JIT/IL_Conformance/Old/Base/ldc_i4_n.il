@@ -70,5 +70,5 @@ FAIL:
 }
 }
 
-.assembly ldc_i4_n.exe {}
+.assembly ldc_i4_n {}
 

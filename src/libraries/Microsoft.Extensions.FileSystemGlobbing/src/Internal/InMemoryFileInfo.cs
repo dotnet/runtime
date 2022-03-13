@@ -21,12 +21,6 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
 
         public override string Name { get; }
 
-        public override DirectoryInfoBase ParentDirectory
-        {
-            get
-            {
-                return _parent;
-            }
-        }
+        public override DirectoryInfoBase ParentDirectory => _parent;
     }
 }

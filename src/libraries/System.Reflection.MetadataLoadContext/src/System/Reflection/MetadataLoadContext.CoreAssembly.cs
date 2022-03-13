@@ -14,7 +14,6 @@ namespace System.Reflection
         // Cache loaded coreAssembly and core types.
         internal RoAssembly? TryGetCoreAssembly(string? coreAssemblyName, out Exception? e)
         {
-            e = null;
             Debug.Assert(_coreAssembly == null);
             if (coreAssemblyName == null)
             {

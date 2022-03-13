@@ -13,6 +13,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
     {
         private SharedTestState sharedTestState;
         private string startupHookVarName = "DOTNET_STARTUP_HOOKS";
+        private string startupHookRuntimeConfigName = "STARTUP_HOOKS";
         private string startupHookSupport = "System.StartupHookProvider.IsSupported";
 
         public StartupHooks(StartupHooks.SharedTestState fixture)
@@ -103,6 +104,64 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining("Hello from startup hook!")
                 .And.HaveStdOutContaining("Hello from startup hook with dependency!")
                 .And.HaveStdOutContaining("Hello World");
+        }
+
+        [Fact]
+        public void Muxer_activation_of_RuntimeConfig_StartupHook_Succeeds()
+        {
+            var fixture = sharedTestState.PortableAppFixture.Copy();
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            var startupHookFixture = sharedTestState.StartupHookFixture.Copy();
+            var startupHookDll = startupHookFixture.TestProject.AppDll;
+
+            RuntimeConfig.FromFile(fixture.TestProject.RuntimeConfigJson)
+                .WithProperty(startupHookRuntimeConfigName, startupHookDll)
+                .Save();
+
+            // RuntimeConfig defined startup hook
+            dotnet.Exec(appDll)
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello from startup hook!")
+                .And.HaveStdOutContaining("Hello World");
+        }
+
+        [Fact]
+        public void Muxer_activation_of_RuntimeConfig_And_Environment_StartupHooks_SucceedsInExpectedOrder()
+        {
+            var fixture = sharedTestState.PortableAppFixture.Copy();
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            var startupHookFixture = sharedTestState.StartupHookFixture.Copy();
+            var startupHookDll = startupHookFixture.TestProject.AppDll;
+
+            RuntimeConfig.FromFile(fixture.TestProject.RuntimeConfigJson)
+                .WithProperty(startupHookRuntimeConfigName, startupHookDll)
+                .Save();
+
+            var startupHook2Fixture = sharedTestState.StartupHookWithDependencyFixture.Copy();
+            var startupHook2Dll = startupHook2Fixture.TestProject.AppDll;
+
+            // include any char to counter output from other threads such as in #57243
+            const string wildcardPattern = @"[\r\n\s.]*";
+
+            // RuntimeConfig and Environment startup hooks in expected order
+            dotnet.Exec(appDll)
+                .EnvironmentVariable(startupHookVarName, startupHook2Dll)
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutMatching("Hello from startup hook with dependency!" +
+                                        wildcardPattern +
+                                        "Hello from startup hook!" +
+                                        wildcardPattern +
+                                        "Hello World");
         }
 
         // Empty startup hook variable
@@ -379,7 +438,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining(String.Format(expectedError, Path.GetFullPath(startupHookMissingDll)));
+                .And.HaveStdErrContaining(string.Format(expectedError, Path.GetFullPath(startupHookMissingDll)));
 
             // Missing dll is detected after previous hooks run
             startupHookVar = startupHookDll + Path.PathSeparator + startupHookMissingDll;
@@ -390,7 +449,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdOutContaining("Hello from startup hook!")
-                .And.HaveStdErrContaining(String.Format(expectedError, Path.GetFullPath((startupHookMissingDll))));
+                .And.HaveStdErrContaining(string.Format(expectedError, Path.GetFullPath((startupHookMissingDll))));
         }
 
         // Run the app with an invalid startup hook assembly
@@ -524,7 +583,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining(String.Format(expectedError, startupHookWithInstanceMethodDll));
+                .And.HaveStdErrContaining(string.Format(expectedError, startupHookWithInstanceMethodDll));
 
             // Initialize method takes parameters
             var startupHookWithParameterFixture = sharedTestState.StartupHookWithParameterFixture.Copy();
@@ -535,7 +594,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining(String.Format(expectedError, startupHookWithParameterDll));
+                .And.HaveStdErrContaining(string.Format(expectedError, startupHookWithParameterDll));
 
             // Initialize method has non-void return type
             var startupHookWithReturnTypeFixture = sharedTestState.StartupHookWithReturnTypeFixture.Copy();
@@ -546,7 +605,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining(String.Format(expectedError, startupHookWithReturnTypeDll));
+                .And.HaveStdErrContaining(string.Format(expectedError, startupHookWithReturnTypeDll));
 
             // Initialize method that has multiple methods with an incorrect signature
             var startupHookWithMultipleIncorrectSignaturesFixture = sharedTestState.StartupHookWithMultipleIncorrectSignaturesFixture.Copy();
@@ -557,7 +616,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining(String.Format(expectedError, startupHookWithMultipleIncorrectSignaturesDll));
+                .And.HaveStdErrContaining(string.Format(expectedError, startupHookWithMultipleIncorrectSignaturesDll));
 
             // Signature problem is caught after previous hooks have run
             var startupHookVar = startupHookDll + Path.PathSeparator + startupHookWithMultipleIncorrectSignaturesDll;
@@ -568,7 +627,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdOutContaining("Hello from startup hook!")
-                .And.HaveStdErrContaining(String.Format(expectedError, startupHookWithMultipleIncorrectSignaturesDll));
+                .And.HaveStdErrContaining(string.Format(expectedError, startupHookWithMultipleIncorrectSignaturesDll));
         }
 
         private static void RemoveLibraryFromDepsJson(string depsJsonPath, string libraryName)

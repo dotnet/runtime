@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
@@ -16,18 +14,8 @@ namespace System.Net.Http.Headers
         private HttpHeaderValueCollection<string>? _contentEncoding;
         private HttpHeaderValueCollection<string>? _contentLanguage;
 
-        public ICollection<string> Allow
-        {
-            get
-            {
-                if (_allow == null)
-                {
-                    _allow = new HttpHeaderValueCollection<string>(KnownHeaders.Allow.Descriptor,
-                        this, HeaderUtilities.TokenValidator);
-                }
-                return _allow;
-            }
-        }
+        public ICollection<string> Allow =>
+            _allow ??= new HttpHeaderValueCollection<string>(KnownHeaders.Allow.Descriptor, this);
 
         public ContentDispositionHeaderValue? ContentDisposition
         {
@@ -37,31 +25,11 @@ namespace System.Net.Http.Headers
 
         // Must be a collection (and not provide properties like "GZip", "Deflate", etc.) since the
         // order matters!
-        public ICollection<string> ContentEncoding
-        {
-            get
-            {
-                if (_contentEncoding == null)
-                {
-                    _contentEncoding = new HttpHeaderValueCollection<string>(KnownHeaders.ContentEncoding.Descriptor,
-                        this, HeaderUtilities.TokenValidator);
-                }
-                return _contentEncoding;
-            }
-        }
+        public ICollection<string> ContentEncoding =>
+            _contentEncoding ??= new HttpHeaderValueCollection<string>(KnownHeaders.ContentEncoding.Descriptor, this);
 
-        public ICollection<string> ContentLanguage
-        {
-            get
-            {
-                if (_contentLanguage == null)
-                {
-                    _contentLanguage = new HttpHeaderValueCollection<string>(KnownHeaders.ContentLanguage.Descriptor,
-                        this, HeaderUtilities.TokenValidator);
-                }
-                return _contentLanguage;
-            }
-        }
+        public ICollection<string> ContentLanguage =>
+            _contentLanguage ??= new HttpHeaderValueCollection<string>(KnownHeaders.ContentLanguage.Descriptor, this);
 
         public long? ContentLength
         {

@@ -236,7 +236,7 @@ namespace ILCompiler
         private readonly IEnumerable<string> _inputFiles;
 
         private readonly string _compositeRootPath;
-        
+
         private readonly bool _resilient;
 
         private readonly int _parallelism;
@@ -329,7 +329,7 @@ namespace ILCompiler
 
             _profileData = profileData;
 
-            _fileLayoutOptimizer = new ReadyToRunFileLayoutOptimizer(methodLayoutAlgorithm, fileLayoutAlgorithm, profileData, _nodeFactory);
+            _fileLayoutOptimizer = new ReadyToRunFileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileData, _nodeFactory);
         }
 
         private readonly static string s_folderUpPrefix = ".." + Path.DirectorySeparatorChar;
@@ -400,7 +400,9 @@ namespace ILCompiler
             }
 
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
-            DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule, outputFile);
+            // Re-written components shouldn't have any additional diagnostic information - only information about the forwards.
+            // Even with all of this, we might be modifying the image in a silly manner - adding a directory when if didn't have one.
+            DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule, outputFile, shouldAddNiPdb: false, shouldGeneratePerfmap: false);
             NodeFactory componentFactory = new NodeFactory(
                 _nodeFactory.TypeSystemContext,
                 _nodeFactory.CompilationModuleGroup,
@@ -490,7 +492,7 @@ namespace ILCompiler
                 var fieldType = field.FieldType;
                 if (!fieldType.IsValueType)
                     continue;
-                
+
                 if (!IsLayoutFixedInCurrentVersionBubble(fieldType))
                 {
                     return false;
@@ -515,7 +517,7 @@ namespace ILCompiler
             {
                 return false;
             }
-            
+
             type = type.BaseType;
 
             if (type != null)
@@ -536,11 +538,6 @@ namespace ILCompiler
             }
 
             return true;
-        }
-
-        public TypeDesc GetTypeOfRuntimeType()
-        {
-            return TypeSystemContext.SystemModule.GetKnownType("System", "RuntimeType");
         }
 
         // Compilation is broken into phases which interact with dependency analysis

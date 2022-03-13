@@ -43,6 +43,8 @@ uc_addr (unw_tdep_context_t *uc, int reg)
 {
   if (reg >= UNW_ARM_R0 && reg < UNW_ARM_R0 + 16)
     return &uc->regs[reg - UNW_ARM_R0];
+  else if (reg >= UNW_ARM_D0 && reg <= UNW_ARM_D15)
+    return &uc->fpregs[reg - UNW_ARM_D0];
   else
     return NULL;
 }
