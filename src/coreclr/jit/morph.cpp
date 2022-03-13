@@ -14734,18 +14734,19 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
     JITDUMP("\nMorphing UMOD [%06u] to And/Sub\n", dspTreeID(tree));
 
     assert(tree->OperIs(GT_UMOD));
-    assert(tree->gtOp2->IsIntegralConstAbsPow2());
+    assert(tree->gtOp2->IsIntegralConstUnsignedPow2());
 
-    var_types type = tree->TypeGet();
+    const var_types type = tree->TypeGet();
 
-    GenTree* const sub    = gtNewOperNode(GT_SUB, type, tree->gtOp2, gtNewOneConNode(type));
-    GenTree* const andSub = gtNewOperNode(GT_AND, type, tree->gtOp1, sub);
+    const size_t cnsValue = ((UINT64)tree->gtOp2->AsIntConCommon()->IntegralValue()) - 1;
+    GenTree* const and    = gtNewOperNode(GT_AND, type, tree->gtOp1, gtNewIconNode(cnsValue, type));
 
-    INDEBUG(andSub->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+    INDEBUG(and->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
+    DEBUG_DESTROY_NODE(tree->gtOp2);
     DEBUG_DESTROY_NODE(tree);
 
-    return andSub;
+    return and;
 }
 
 //------------------------------------------------------------------------------
