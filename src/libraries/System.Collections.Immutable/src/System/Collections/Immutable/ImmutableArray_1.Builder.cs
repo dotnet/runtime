@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 
 namespace System.Collections.Immutable
 {
