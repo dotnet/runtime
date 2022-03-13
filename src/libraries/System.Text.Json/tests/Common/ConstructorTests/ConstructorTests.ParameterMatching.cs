@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -833,7 +833,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ArgumentDeserialization_Honors_JsonInclude()
         {
-            Point_MembersHave_JsonInclude point = new Point_MembersHave_JsonInclude(1, 2,3);
+            Point_MembersHave_JsonInclude point = new Point_MembersHave_JsonInclude(1, 2, 3);
 
             string json = await JsonSerializerWrapperForString.SerializeWrapper(point);
             Assert.Contains(@"""X"":1", json);
