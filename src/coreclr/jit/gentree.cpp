@@ -17956,8 +17956,6 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
         case NI_FMA_MultiplySubtractNegated:
         case NI_FMA_MultiplySubtractNegatedScalar:
         case NI_FMA_MultiplySubtractScalar:
-        case NI_X86Base_DivRem:
-        case NI_X86Base_X64_DivRem:
         {
             return true;
         }
