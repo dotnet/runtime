@@ -493,7 +493,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case InstructionSet_Vector128:
             return impBaseIntrinsic(intrinsic, clsHnd, method, sig, simdBaseJitType, retType, simdSize);
         case InstructionSet_X86Base:
-            return impX86BaseIntrinsic(intrinsic, method, sig);
+            return impX86BaseIntrinsic(intrinsic, method, sig, simdBaseJitType);
         case InstructionSet_SSE:
             return impSSEIntrinsic(intrinsic, method, sig);
         case InstructionSet_SSE2:
@@ -551,13 +551,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         return nullptr;
     }
 
-    var_types simdBaseType = TYP_UNKNOWN;
-
-    if (intrinsic != NI_X86Base_Pause)
-    {
-        simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-        assert(varTypeIsArithmetic(simdBaseType));
-    }
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
 
     switch (intrinsic)
     {
@@ -2205,7 +2200,10 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 }
 
 
-GenTree* Compiler::impX86BaseIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impX86BaseIntrinsic(NamedIntrinsic        intrinsic,
+                                       CORINFO_METHOD_HANDLE method,
+                                       CORINFO_SIG_INFO*     sig,
+                                       CorInfoType           simdBaseJitType)
 {
     GenTree* retNode = nullptr;
     GenTree* op1     = nullptr;
@@ -2222,6 +2220,7 @@ GenTree* Compiler::impX86BaseIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_
         {
             assert(sig->numArgs == 0);
             assert(retType == TYP_VOID);
+            assert(simdBaseJitType == CORINFO_TYPE_UNDEF);
 
             retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
             break;
@@ -2233,12 +2232,16 @@ GenTree* Compiler::impX86BaseIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_
             assert(sig->numArgs == 3);
             assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
             assert(retType == TYP_STRUCT);
+            assert(simdBaseJitType != CORINFO_TYPE_UNDEF);
 
             op3 = impPopStack().val;
             op2 = impPopStack().val;
             op1 = impPopStack().val;
 
             GenTreeHWIntrinsic* divRemIntrinsic = gtNewScalarHWIntrinsicNode(retType, op1, op2, op3, intrinsic);
+
+            // Store the type from signature into SIMD base type for convenience
+            divRemIntrinsic->SetSimdBaseJitType(simdBaseJitType);
 
             const unsigned lclNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg intrinsic"));
             impAssignTempGen(lclNum, divRemIntrinsic, sig->retTypeSigClass, (unsigned)CHECK_SPILL_ALL);

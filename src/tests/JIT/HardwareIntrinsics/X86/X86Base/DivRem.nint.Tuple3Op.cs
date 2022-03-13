@@ -237,7 +237,7 @@ namespace JIT.HardwareIntrinsics.X86
             (var ret1, var ret2) = result;
             var isUnexpectedResult = false;
 
-             nint expectedQuotient = ((nint)1 << (IntPtr.Size * 4)) - 1;   nint expectedReminder = -2; isUnexpectedResult = (expectedQuotient != ret1) || (expectedReminder != ret2);
+             nint expectedQuotient = ((nint)1 << (IntPtr.Size * 4)) - 1;  nint expectedReminder = -2; isUnexpectedResult = (expectedQuotient != ret1) || (expectedReminder != ret2);
 
             if (isUnexpectedResult)
             {

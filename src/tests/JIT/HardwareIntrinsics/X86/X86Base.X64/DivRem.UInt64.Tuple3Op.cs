@@ -75,7 +75,7 @@ namespace JIT.HardwareIntrinsics.X86
 
                 testStruct._fld1 = 1;
                 testStruct._fld2 = 1;
-                testStruct._fld3 = 0x100000001;
+                testStruct._fld3 = 0x8000000000000000;
 
                 return testStruct;
             }
@@ -103,7 +103,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             _clsVar1 = 1;
             _clsVar2 = 1;
-            _clsVar3 = 0x100000001;
+            _clsVar3 = 0x8000000000000000;
         }
 
         public ScalarTernOpTupleTest__DivRemUInt64()
@@ -112,11 +112,11 @@ namespace JIT.HardwareIntrinsics.X86
 
             _fld1 = 1;
             _fld2 = 1;
-            _fld3 = 0x100000001;
+            _fld3 = 0x8000000000000000;
 
             _data1 = 1;
             _data2 = 1;
-            _data3 = 0x100000001;
+            _data3 = 0x8000000000000000;
         }
 
         public bool IsSupported => X86Base.X64.IsSupported;
@@ -237,7 +237,7 @@ namespace JIT.HardwareIntrinsics.X86
             (var ret1, var ret2) = result;
             var isUnexpectedResult = false;
 
-            ulong expectedQuotient = 0xFFFFFFFF; ulong expectedReminder = 2;  isUnexpectedResult = (expectedQuotient != ret1) || (expectedReminder != ret2);
+            ulong expectedQuotient = 2;          ulong expectedReminder = 1;  isUnexpectedResult = (expectedQuotient != ret1) || (expectedReminder != ret2);
 
             if (isUnexpectedResult)
             {
