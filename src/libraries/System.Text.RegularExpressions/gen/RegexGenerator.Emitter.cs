@@ -783,8 +783,11 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine();
 
                     // We found the literal.  Walk backwards from it finding as many matches as we can against the loop.
-                    writer.WriteLine("int prev = i;");
-                    writer.WriteLine($"while ((uint)--prev < (uint)slice.Length && {MatchCharacterClass(hasTextInfo, options, "slice[prev]", target.LoopNode.Str!, caseInsensitive: false, negate: false, additionalDeclarations, requiredHelpers)});");
+                    writer.WriteLine("int prev = i - 1;");
+                    using (EmitBlock(writer, $"while ((uint)prev < (uint)slice.Length && {MatchCharacterClass(hasTextInfo, options, "slice[prev]", target.LoopNode.Str!, caseInsensitive: false, negate: false, additionalDeclarations, requiredHelpers)})"))
+                    {
+                        writer.WriteLine("prev--;");
+                    }
                     writer.WriteLine();
 
                     if (target.LoopNode.M > 0)
