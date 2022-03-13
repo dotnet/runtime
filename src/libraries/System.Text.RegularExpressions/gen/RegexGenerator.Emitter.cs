@@ -2332,7 +2332,7 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     WritePrefix();
                                     string sourceSpan = sliceStaticPos > 0 ? $"{sliceSpan}.Slice({sliceStaticPos})" : sliceSpan;
-                                    writer.Write($"!global::System.MemoryExtensions.StartsWith({sourceSpan}, {Literal(caseInsensitiveString)}, global::System.StringComparison.OrdinalIgnoreCase)");
+                                    writer.Write($"!{sourceSpan}.StartsWith({Literal(caseInsensitiveString)}, StringComparison.OrdinalIgnoreCase)");
                                     prevDescription = $"Match the string {Literal(caseInsensitiveString)} (ordinal case-insensitive)";
                                     wroteClauses = true;
 
