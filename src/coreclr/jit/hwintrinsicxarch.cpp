@@ -2200,7 +2200,6 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
     return retNode;
 }
 
-
 GenTree* Compiler::impX86BaseIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_METHOD_HANDLE method,
                                        CORINFO_SIG_INFO*     sig,
