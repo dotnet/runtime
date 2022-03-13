@@ -956,7 +956,7 @@ namespace System.Text.RegularExpressions.Generator
             // Declare some locals.
             string sliceSpan = "slice";
             writer.WriteLine("int pos = base.runtextpos;");
-            writer.WriteLine($"int original_pos = pos;");
+            writer.WriteLine($"int matchStart = pos;");
             bool hasTimeout = EmitLoopTimeoutCounterIfNeeded(writer, rm);
             bool hasTextInfo = EmitInitializeCultureForTryMatchAtCurrentPositionIfNecessary(writer, rm, analysis);
             writer.Flush();
@@ -997,7 +997,7 @@ namespace System.Text.RegularExpressions.Generator
                 EmitAdd(writer, "pos", sliceStaticPos); // TransferSliceStaticPosToPos would also slice, which isn't needed here
             }
             writer.WriteLine("base.runtextpos = pos;");
-            writer.WriteLine("base.Capture(0, original_pos, pos);");
+            writer.WriteLine("base.Capture(0, matchStart, pos);");
             writer.WriteLine("return true;");
 
             // We're done with the match.
