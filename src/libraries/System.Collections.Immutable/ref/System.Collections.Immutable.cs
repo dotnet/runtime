@@ -235,12 +235,17 @@ namespace System.Collections.Immutable
             public void Clear() { }
             public bool Contains(T item) { throw null; }
             public void CopyTo(T[] array, int index) { }
+            public void CopyTo(T[] destination) { throw null; }
+            public void CopyTo(int sourceIndex, T[] destination, int destinationIndex, int length) { throw null; }
             public System.Collections.Generic.IEnumerator<T> GetEnumerator() { throw null; }
             public int IndexOf(T item) { throw null; }
             public int IndexOf(T item, int startIndex) { throw null; }
             public int IndexOf(T item, int startIndex, int count) { throw null; }
+            public int IndexOf(T item, int startIndex, IEqualityComparer<T>? equalityComparer) { throw null; }
             public int IndexOf(T item, int startIndex, int count, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
             public void Insert(int index, T item) { }
+            public void InsertRange(int index, IEnumerable<T> items) { throw null; }
+            public void InsertRange(int index, ImmutableArray<T> items) { throw null; }
             public ref readonly T ItemRef(int index) { throw null; }
             public int LastIndexOf(T item) { throw null; }
             public int LastIndexOf(T item, int startIndex) { throw null; }
@@ -248,7 +253,14 @@ namespace System.Collections.Immutable
             public int LastIndexOf(T item, int startIndex, int count, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
             public System.Collections.Immutable.ImmutableArray<T> MoveToImmutable() { throw null; }
             public bool Remove(T element) { throw null; }
+            public void Remove(T item, IEqualityComparer<T>? equalityComparer) { throw null; }
+            public void RemoveAll(Predicate<T> match) { throw null; }
             public void RemoveAt(int index) { }
+            public void RemoveRange(int index, int length) { throw null; }
+            public void RemoveRange(IEnumerable<T> items) { throw null; }
+            public void RemoveRange(IEnumerable<T> items, IEqualityComparer<T>? equalityComparer) { throw null; }
+            public void Replace(T oldValue, T newValue) { throw null; }
+            public void Replace(T oldValue, T newValue, IEqualityComparer<T>? equalityComparer) { throw null; }
             public void Reverse() { }
             public void Sort() { }
             public void Sort(System.Collections.Generic.IComparer<T>? comparer) { }
@@ -1004,6 +1016,7 @@ namespace System.Collections.Immutable
             public void ExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
             public System.Collections.Immutable.ImmutableSortedSet<T>.Enumerator GetEnumerator() { throw null; }
             public void IntersectWith(System.Collections.Generic.IEnumerable<T> other) { }
+            public int IndexOf(T item) { throw null; }
             public bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
             public bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
             public bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
