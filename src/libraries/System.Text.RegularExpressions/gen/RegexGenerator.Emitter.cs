@@ -760,7 +760,15 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(target.LoopNode.Kind is RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic);
                 Debug.Assert(target.LoopNode.N == int.MaxValue);
 
-                using (EmitBlock(writer, "while (true)"))
+                FinishEmitBlock block = default;
+                if (target.LoopNode.M > 0)
+                {
+                    // If there's no lower bound on the loop, then once we find the literal, we know we have a valid starting position to try.
+                    // If there is a lower bound, then we need a loop, as we could find the literal but it might not be prefixed with enough
+                    // appropriate characters to satisfy the minimum bound.
+                    block = EmitBlock(writer, "while (true)");
+                }
+                using (block)
                 {
                     writer.WriteLine($"ReadOnlySpan<char> slice = inputSpan.Slice(pos);");
                     writer.WriteLine();
@@ -776,11 +784,20 @@ namespace System.Text.RegularExpressions.Generator
                             3 => $"IndexOfAny({Literal(literalChars[0])}, {Literal(literalChars[1])}, {Literal(literalChars[2])});",
                             _ => $"IndexOfAny({Literal(new string(literalChars))});",
                         });
-                    using (EmitBlock(writer, $"if (i < 0)"))
+
+                    FinishEmitBlock indexOfFoundBlock = default;
+                    if (target.LoopNode.M > 0)
                     {
-                        writer.WriteLine("break;");
+                        using (EmitBlock(writer, $"if (i < 0)"))
+                        {
+                            writer.WriteLine("break;");
+                        }
+                        writer.WriteLine();
                     }
-                    writer.WriteLine();
+                    else
+                    {
+                        indexOfFoundBlock = EmitBlock(writer, $"if (i >= 0)");
+                    }
 
                     // We found the literal.  Walk backwards from it finding as many matches as we can against the loop.
                     writer.WriteLine("int prev = i - 1;");
@@ -808,6 +825,8 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine("base.runtextpos = pos + prev + 1;");
                     writer.WriteLine("base.runtrackpos = pos + i;");
                     writer.WriteLine("return true;");
+
+                    indexOfFoundBlock.Dispose();
                 }
             }
 
