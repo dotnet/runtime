@@ -22,8 +22,8 @@
     <!-- If we're publishing self-contained, we include all the binaries produced by publish, including facades. -->
     <ExcludeFromClosure Remove="@(ExcludeFromClosure)" />
   </ItemGroup>
-  <ItemGroup Condition="'$(NativeAotSupported)' != 'true' and '$(TargetOS)' != 'windows'">
-    <IgnoredReference Include="@(WindowsDesktopCoreAppLibrary)" />
+  <ItemGroup Condition="'$(NativeAotSupported)' != 'true'">
+    <IgnoredReference Condition="'$(TargetOS)' != 'windows'" Include="@(WindowsDesktopCoreAppLibrary)" />
     <IgnoredReference Include="System.Data.SqlClient" />
     <IgnoredReference Include="System.Data.Odbc" />
     <IgnoredReference Include="System.Data.OleDb" />
