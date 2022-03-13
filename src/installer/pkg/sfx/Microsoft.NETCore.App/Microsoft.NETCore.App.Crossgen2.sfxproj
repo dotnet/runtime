@@ -23,7 +23,7 @@
     <ExcludeFromClosure Remove="@(ExcludeFromClosure)" />
   </ItemGroup>
   <ItemGroup Condition="'$(NativeAotSupported)' != 'true'">
-    <IgnoredReference Condition="'$(TargetOS)' != 'windows'" Include="@(WindowsDesktopCoreAppLibrary)" />
+    <IgnoredReference Include="@(WindowsDesktopCoreAppLibrary)" />
     <IgnoredReference Include="System.Data.SqlClient" />
     <IgnoredReference Include="System.Data.Odbc" />
     <IgnoredReference Include="System.Data.OleDb" />
