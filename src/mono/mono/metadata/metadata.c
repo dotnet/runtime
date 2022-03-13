@@ -7596,6 +7596,10 @@ mono_metadata_get_corresponding_field_from_generic_type_definition (MonoClassFie
 	if (!mono_class_is_ginst (m_field_get_parent (field)))
 		return field;
 
+	/*
+	 * metadata-update: nothing to do. can't add fields to existing generic
+	 * classes; for new gtds added in updates, this is correct.
+	 */
 	gtd = mono_class_get_generic_class (m_field_get_parent (field))->container_class;
 	offset = field - m_class_get_fields (m_field_get_parent (field));
 	return m_class_get_fields (gtd) + offset;

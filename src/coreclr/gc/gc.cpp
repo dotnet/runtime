@@ -12414,6 +12414,9 @@ void gc_heap::distribute_free_regions()
 
             if (num_regions_to_decommit[kind] > 0)
             {
+                // remember how many regions we had on the decommit list already due to aging
+                size_t num_regions_to_decommit_before = global_regions_to_decommit[kind].get_num_free_regions();
+
                 // put the highest regions on the decommit list
                 global_region_allocator.move_highest_free_regions (num_regions_to_decommit[kind]*region_factor[kind],
                                                                    kind == basic_free_region,
@@ -12424,7 +12427,9 @@ void gc_heap::distribute_free_regions()
 
                 if (kind == basic_free_region)
                 {
-                    assert (global_regions_to_decommit[kind].get_num_free_regions() == (size_t)num_regions_to_decommit[kind]);
+                    // we should now have num_regions_to_decommit[kind] regions more on the decommit list
+                    assert (global_regions_to_decommit[kind].get_num_free_regions() ==
+                            num_regions_to_decommit_before + (size_t)num_regions_to_decommit[kind]);
                 }
                 else
                 {

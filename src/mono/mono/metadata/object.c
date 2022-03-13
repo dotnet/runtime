@@ -852,11 +852,18 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			if (m_type_is_byref (field->type))
 				break;
 
-			if (static_fields && field->offset == -1)
+			/* metadadta-update: added fields aren't stored in the object, don't
+			 * contribute to the GC descriptor. */
+			if (m_field_is_from_update (field))
+				continue;
+
+			int field_offset = m_field_get_offset (field);
+
+			if (static_fields && field_offset == -1)
 				/* special static */
 				continue;
 
-			pos = field->offset / TARGET_SIZEOF_VOID_P;
+			pos = field_offset / TARGET_SIZEOF_VOID_P;
 			pos += offset;
 
 			type = mono_type_get_underlying_type (field->type);
@@ -871,7 +878,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_OBJECT:
 			case MONO_TYPE_ARRAY:
-				g_assert ((field->offset % wordsize) == 0);
+				g_assert ((m_field_get_offset (field) % wordsize) == 0);
 
 				g_assert (pos < size || pos <= max_size);
 				bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
@@ -879,7 +886,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 				break;
 			case MONO_TYPE_GENERICINST:
 				if (!mono_type_generic_inst_is_valuetype (type)) {
-					g_assert ((field->offset % wordsize) == 0);
+					g_assert ((m_field_get_offset (field) % wordsize) == 0);
 
 					bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
 					*max_set = MAX (*max_set, pos);
@@ -2073,6 +2080,9 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 			continue;
 		if (mono_field_is_deleted (field))
 			continue;
+		/* metadata-update: added fields are stored external to the object, and don't contribute to the bitmap */
+		if (m_field_is_from_update (field))
+			continue;
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
 			gint32 special_static = m_class_has_no_special_static_fields (klass) ? SPECIAL_STATIC_NONE : field_is_special_static (klass, field);
 			if (special_static != SPECIAL_STATIC_NONE) {
@@ -2757,7 +2767,10 @@ mono_field_set_value_internal (MonoObject *obj, MonoClassField *field, void *val
 	if ((field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 		return;
 
-	dest = (char*)obj + field->offset;
+	/* TODO: metadata-update: implement support for added fields */
+	g_assert (!m_field_is_from_update (field));
+
+	dest = (char*)obj + m_field_get_offset (field);
 	mono_copy_value (field->type, dest, value, value && field->type->type == MONO_TYPE_PTR);
 }
 
@@ -2845,8 +2858,11 @@ mono_field_get_addr (MonoObject *obj, MonoVTable *vt, MonoClassField *field)
 
 	if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 		return mono_static_field_get_addr (vt, field);
-	else
-		return (guint8*)obj + field->offset;
+	else {
+		/* TODO: metadata-update: implement support for added fields */
+		g_assert (!m_field_is_from_update (field));
+		return (guint8*)obj + m_field_get_offset (field);
+	}
 }
 
 guint8*
@@ -2867,7 +2883,7 @@ mono_static_field_get_addr (MonoVTable *vt, MonoClassField *field)
 		mono_error_assert_ok (error);
 		src = (guint8 *)mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 	} else {
-		src = (guint8*)mono_vtable_get_static_field_data (vt) + field->offset;
+		src = (guint8*)mono_vtable_get_static_field_data (vt) + m_field_get_offset (field);
 	}
 
 	return src;
@@ -2910,7 +2926,10 @@ mono_field_get_value_internal (MonoObject *obj, MonoClassField *field, void *val
 
 	g_return_if_fail (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC));
 
-	src = (char*)obj + field->offset;
+	/* TODO: metadata-update: implement me */
+	g_assert (!m_field_is_from_update (field));
+
+	src = (char*)obj + m_field_get_offset (field);
 	mono_copy_value (field->type, value, src, TRUE);
 }
 
@@ -7776,7 +7795,8 @@ mono_class_value_size (MonoClass *klass, guint32 *align)
 gpointer
 mono_vtype_get_field_addr (gpointer vtype, MonoClassField *field)
 {
-	return ((char*)vtype) + field->offset - MONO_ABI_SIZEOF (MonoObject);
+	g_assert (!m_field_is_from_update (field));
+	return ((char*)vtype) + m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject);
 }
 
 static GString *

@@ -2002,11 +2002,11 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			if (!mini_is_gsharedvt_variable_klass (param_class)) {
 				MonoClassField *length_field = mono_class_get_field_from_name_full (target_method->klass, "_length", NULL);
 				g_assert (length_field);
-				int offset_length = length_field->offset - sizeof (MonoObject);
+				int offset_length = m_field_get_offset (length_field) - sizeof (MonoObject);
 
 				MonoClassField *ptr_field = mono_class_get_field_from_name_full (target_method->klass, "_pointer", NULL);
 				g_assert (ptr_field);
-				int offset_pointer = ptr_field->offset - sizeof (MonoObject);
+				int offset_pointer = m_field_get_offset (ptr_field) - sizeof (MonoObject);
 
 				int size = mono_class_array_element_size (param_class);
 				interp_add_ins (td, MINT_GETITEM_SPAN);
@@ -2024,7 +2024,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		} else if (!strcmp (tm, "get_Length")) {
 			MonoClassField *length_field = mono_class_get_field_from_name_full (target_method->klass, "_length", NULL);
 			g_assert (length_field);
-			int offset_length = length_field->offset - sizeof (MonoObject);
+			int offset_length = m_field_get_offset (length_field) - sizeof (MonoObject);
 			interp_add_ins (td, MINT_LDLEN_SPAN);
 			td->last_ins->data [0] = offset_length;
 			td->sp--;
@@ -5775,7 +5775,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					goto_if_nok (error, exit);
 				} else {
 					td->sp--;
-					int foffset = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : field->offset;
+					/* TODO: metadata-update: implement me. If it's an added field, emit a call to the helper method instead of MINT_LDFLDA_UNSAFE */
+					g_assert (!m_field_is_from_update (field));
+					int foffset = m_class_is_valuetype (klass) ? m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject) : m_field_get_offset (field);
 					if (td->sp->type == STACK_TYPE_O) {
 						interp_add_ins (td, MINT_LDFLDA);
 						td->last_ins->data [0] = foffset;
@@ -5818,10 +5820,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_emit_sfld_access (td, field, field_klass, mt, TRUE, error);
 					goto_if_nok (error, exit);
 				} else if (td->sp [-1].type == STACK_TYPE_VT) {
+					/* TODO: metadata-update: implement me */
+					g_assert (!m_field_is_from_update (field));
 					int size = 0;
 					/* First we pop the vt object from the stack. Then we push the field */
 #ifdef NO_UNALIGNED_ACCESS
-					if (field->offset % SIZEOF_VOID_P != 0) {
+					if (m_field_get_offset (field) % SIZEOF_VOID_P != 0) {
 						if (mt == MINT_TYPE_I8 || mt == MINT_TYPE_R8)
 							size = 8;
 					}
@@ -5830,7 +5834,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					g_assert (m_class_is_valuetype (klass));
 					td->sp--;
 					interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-					td->last_ins->data [0] = field->offset - MONO_ABI_SIZEOF (MonoObject);
+					td->last_ins->data [0] = m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject);
 					td->last_ins->data [1] = mt;
 					if (mt == MINT_TYPE_VT)
 						size = field_size;
@@ -5842,6 +5846,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						push_type (td, stack_type [mt], field_klass);
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				} else {
+					/* TODO: metadata-update: implement me */
+					g_assert (!m_field_is_from_update (field));
 					int opcode = MINT_LDFLD_I1 + mt - MINT_TYPE_I1;
 #ifdef NO_UNALIGNED_ACCESS
 					if ((mt == MINT_TYPE_I8 || mt == MINT_TYPE_R8) && field->offset % SIZEOF_VOID_P != 0)
@@ -5850,7 +5856,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_add_ins (td, opcode);
 					td->sp--;
 					interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-					td->last_ins->data [0] = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : field->offset;
+					td->last_ins->data [0] = m_class_is_valuetype (klass) ? m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject) : m_field_get_offset (field);
 					if (mt == MINT_TYPE_VT) {
 						int size = mono_class_value_size (field_klass, NULL);
 						g_assert (size < G_MAXUINT16);
@@ -5892,6 +5898,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					mono_class_vtable_checked (field_klass, error);
 					goto_if_nok (error, exit);
 				} else {
+					/* TODO: metadata-update: implement me */
+					g_assert (!m_field_is_from_update (field));
 					int opcode = MINT_STFLD_I1 + mt - MINT_TYPE_I1;
 #ifdef NO_UNALIGNED_ACCESS
 					if ((mt == MINT_TYPE_I8 || mt == MINT_TYPE_R8) && field->offset % SIZEOF_VOID_P != 0)
@@ -5900,7 +5908,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_add_ins (td, opcode);
 					td->sp -= 2;
 					interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
-					td->last_ins->data [0] = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : field->offset;
+					td->last_ins->data [0] = m_class_is_valuetype (klass) ? m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject) : m_field_get_offset (field);
 					if (mt == MINT_TYPE_VT) {
 						/* the vtable of the field might not be initialized at this point */
 						mono_class_vtable_checked (field_klass, error);
