@@ -1094,9 +1094,9 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 				p = buf;
 				*p ++= DW_OP_plus_uconst;
 				if (m_class_is_valuetype (klass) && vtype)
-					encode_uleb128 (field->offset - MONO_ABI_SIZEOF (MonoObject), p, &p);
+					encode_uleb128 (m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject), p, &p);
 				else
-					encode_uleb128 (field->offset, p, &p);
+					encode_uleb128 (m_field_get_offset (field), p, &p);
 
 				emit_byte (w, p - buf);
 				emit_bytes (w, buf, p - buf);
