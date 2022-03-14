@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -426,5 +427,38 @@ namespace System.Reflection.Metadata
 
             });
         }
+
+	internal static Type CheckReflectedType(Assembly assm, string nameSpace, string typeName, Action<Type> moreChecks = null, [CallerMemberName] string callerMemberName = "", [CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = 0)
+	{
+	    var ty = assm.GetType($"{nameSpace}.{typeName}");
+	    Assert.True(ty != null, $"{callerFilePath}:{callerLineNumber}: expected Assembly.GetType for '{typeName}' to return non-null in {callerMemberName}");
+	    Assert.True(typeName == ty.Name, $"{callerFilePath}:{callerLineNumber}: returned type has unexpected name '{ty.Name}' (expected: '{typeName}') in {callerMemberName}");
+	    if (moreChecks != null)
+		moreChecks(ty);
+	    return ty;
+	}
+
+	[ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+	public static void TestReflectionAddNewType()
+	{
+	    ApplyUpdateUtil.TestCase(static () =>
+	    {
+		const string ns = "System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType";
+		var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.ZExistingClass).Assembly;
+
+		CheckReflectedType(assm, ns, "ZExistingClass");
+
+		ApplyUpdateUtil.ApplyUpdate(assm);
+
+		CheckReflectedType(assm, ns, "ZExistingClass");
+		CheckReflectedType(assm, ns, "IExistingInterface");
+
+		CheckReflectedType(assm, ns, "NewToplevelClass");
+		CheckReflectedType(assm, ns, "NewToplevelStruct");
+		CheckReflectedType(assm, ns, "INewInterface");
+
+
+	    });
+	}
     }
 }
