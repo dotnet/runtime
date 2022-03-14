@@ -1817,9 +1817,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 //
 void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 {
-#ifdef TARGET_XARCH
-    assert(node->OperIs(GT_DIV, GT_UDIV));
-#endif
+    assert(node->OperIs(GT_DIV, GT_UDIV, GT_MOD));
 
     // ARM doesn't have a div instruction with an immediate operand
 }
