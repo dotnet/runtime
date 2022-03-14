@@ -650,7 +650,7 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
         return nullptr;
     }
 
-    size_t cnsValue = divisor->AsIntConCommon()->IntegralValue() - 1;
+    ssize_t cnsValue = static_cast<ssize_t>(divisor->AsIntConCommon()->IntegralValue()) - 1;
 
     BlockRange().Remove(divisor);
 
@@ -1817,7 +1817,9 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 //
 void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 {
+#ifdef TARGET_XARCH
     assert(node->OperIs(GT_DIV, GT_UDIV));
+#endif
 
     // ARM doesn't have a div instruction with an immediate operand
 }
