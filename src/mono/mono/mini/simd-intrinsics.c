@@ -1388,7 +1388,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return NULL;
 		return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
 	case SN_op_UnaryPlus:
-		if (fsig->param_count != 2)
+		if (fsig->param_count != 1)
 			return NULL;
 		return args [0];
 	default:
