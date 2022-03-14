@@ -6335,8 +6335,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_64BIT
-            bool preferIndir =
-                isBoxedStatic || isStaticReadOnlyInited || (IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr));
+            bool preferIndir = true;
 #else  // !TARGET_64BIT
             bool preferIndir = isBoxedStatic;
 #endif // !TARGET_64BIT
