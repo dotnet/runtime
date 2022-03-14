@@ -371,7 +371,7 @@ namespace System.Text.RegularExpressions.Symbolic
             return SymbolicRegexNode<TElement>.CreateDisableBacktrackingSimulation(this, child);
         }
 
-        internal SymbolicRegexNode<T> Transform<T>(SymbolicRegexNode<TElement> sr, SymbolicRegexBuilder<T> builder, Func<TElement, T> predicateTransformer) where T : notnull
+        internal SymbolicRegexNode<T> Transform<T>(SymbolicRegexNode<TElement> sr, SymbolicRegexBuilder<T> builder, Func<SymbolicRegexBuilder<T>, TElement, T> predicateTransformer) where T : notnull
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
@@ -412,7 +412,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 case SymbolicRegexNodeKind.Singleton:
                     Debug.Assert(sr._set is not null);
-                    return builder.CreateSingleton(predicateTransformer(sr._set));
+                    return builder.CreateSingleton(predicateTransformer(builder, sr._set));
 
                 case SymbolicRegexNodeKind.Loop:
                     Debug.Assert(sr._left is not null);
