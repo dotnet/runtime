@@ -2770,7 +2770,7 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
             // to have a constant as the first operand.
             //
 
-            if (hiSrc1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+            if (hiSrc1->OperIs(GT_LCL_VAR, GT_LCL_FLD) && IsInvariantInRange(hiSrc1, hiCmp))
             {
                 BlockRange().Remove(hiSrc1);
                 BlockRange().InsertBefore(hiCmp, hiSrc1);
