@@ -77,7 +77,7 @@ namespace DebuggerTests
                }
            });
 
-        [ConditionalTheory(nameof(RunningOnChrome))]
+        [Theory]
         [MemberData(nameof(InstanceMethodsTestData), parameters: "DebuggerTests.EvaluateTestsStructWithProperties")]
         [MemberData(nameof(InstanceMethodsTestData), parameters: "DebuggerTests.EvaluateTestsClassWithProperties")]
         public async Task EvaluateInstanceMethodArguments(string type, string method, string bp_function_name, bool is_async)
@@ -100,7 +100,7 @@ namespace DebuggerTests
                    ("me.DTProp.Second + (me.IntProp - 5)", TNumber(DTProp.Second + 4)));
            });
 
-        [ConditionalTheory(nameof(RunningOnChrome))]
+        [Theory]
         [MemberData(nameof(InstanceMethodsTestData), parameters: "DebuggerTests.EvaluateTestsStructWithProperties")]
         [MemberData(nameof(InstanceMethodsTestData), parameters: "DebuggerTests.EvaluateTestsClassWithProperties")]
         public async Task EvaluateMethodLocals(string type, string method, string bp_function_name, bool is_async)
@@ -192,7 +192,7 @@ namespace DebuggerTests
                }
            });
 
-        [ConditionalTheory(nameof(RunningOnChrome))]
+        [Theory]
         [MemberData(nameof(InstanceMethodForTypeMembersTestData), parameters: "DebuggerTests.EvaluateTestsStructWithProperties")]
         [MemberData(nameof(InstanceMethodForTypeMembersTestData), parameters: "DebuggerTests.EvaluateTestsClassWithProperties")]
         public async Task EvaluateExpressionsWithDeepMemberAccesses(string prefix, int bias, string type, string method, string bp_function_name, bool _)
@@ -216,7 +216,7 @@ namespace DebuggerTests
                    ($"local_dt.Date.Year * 10", TNumber(10)));
            });
 
-        [ConditionalTheory(nameof(RunningOnChrome))]
+        [Theory]
         [InlineData("")]
         [InlineData("this.")]
         public async Task InheritedAndPrivateMembersInAClass(string prefix)
@@ -251,7 +251,7 @@ namespace DebuggerTests
                }
            });
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [Fact]
         public async Task EvaluateSimpleExpressions() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
@@ -292,7 +292,7 @@ namespace DebuggerTests
             { "DebuggerTests.EvaluateTestsStructWithProperties", "EvaluateShadowAsync", "MoveNext" },
         };
 
-        [ConditionalTheory(nameof(RunningOnChrome))]
+        [Theory]
         [MemberData(nameof(ShadowMethodArgsTestData))]
         public async Task LocalsAndArgsShadowingThisMembers(string type_name, string method, string bp_function_name) => await CheckInspectLocalsAtBreakpointSite(
             type_name, method, 2, bp_function_name,
@@ -471,7 +471,7 @@ namespace DebuggerTests
                    ("this.NullIfAIsNotZero.foo", "ReferenceError"));
            });
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [Fact]
         public async Task EvaluatePropertyThatThrows()
         => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateTestsClassWithProperties", "InstanceMethod", /*line_offset*/1, "InstanceMethod",
@@ -493,7 +493,7 @@ namespace DebuggerTests
         }
 
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         [Trait("Category", "windows-failing")] // https://github.com/dotnet/runtime/issues/65744
         [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/65744
         public async Task EvaluateSimpleMethodCallsError() => await CheckInspectLocalsAtBreakpointSite(
@@ -519,7 +519,7 @@ namespace DebuggerTests
                 AssertEqual("Unable to evaluate method 'MyMethod'", res.Error["message"]?.Value<string>(), "wrong error message");
            });
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [Fact]
         public async Task EvaluateSimpleMethodCallsWithoutParms() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
@@ -537,7 +537,7 @@ namespace DebuggerTests
            });
 
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [Fact]
         public async Task EvaluateSimpleMethodCallsWithConstParms() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
@@ -561,7 +561,7 @@ namespace DebuggerTests
                     ("this.CallMethodWithChar('a')", TString("str_const_a")));
            });
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [Fact]
         public async Task EvaluateSimpleMethodCallsWithVariableParms() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
@@ -579,7 +579,7 @@ namespace DebuggerTests
                     ("this.CallMethodWithObj(this.objToTest)", TNumber(10)));
            });
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [Fact]
         public async Task EvaluateExpressionsWithElementAccessByConstant() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
@@ -594,7 +594,7 @@ namespace DebuggerTests
                    ("f.textArray[0]", TString("1")));
            });
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [Fact]
         public async Task EvaluateExpressionsWithElementAccessByLocalVariable() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
@@ -610,7 +610,7 @@ namespace DebuggerTests
                 
            });
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [Fact]
         public async Task EvaluateExpressionsWithElementAccessByMemberVariables() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
@@ -628,7 +628,7 @@ namespace DebuggerTests
                 
            });
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [Fact]
         public async Task EvaluateExpressionsWithElementAccessNested() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
@@ -645,7 +645,7 @@ namespace DebuggerTests
                 
            });
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [Fact]
         public async Task EvaluateExpressionsWithElementAccessMultidimentional() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
@@ -691,7 +691,7 @@ namespace DebuggerTests
                 CheckNumber(props, "a", 11);
            });
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [Fact]
         public async Task EvaluateStaticClass() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
@@ -709,7 +709,7 @@ namespace DebuggerTests
                     ("DebuggerTests.EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
            });
 
-        [ConditionalTheory(nameof(RunningOnChrome))]
+        [Theory]
         [MemberData(nameof(EvaluateStaticClassFromStaticMethodTestData), parameters: "DebuggerTests.EvaluateMethodTestsClass")]
         // [MemberData(nameof(EvaluateStaticClassFromStaticMethodTestData), parameters: "EvaluateMethodTestsClass")]
         public async Task EvaluateStaticClassFromStaticMethod(string type, string method, string bp_function_name, bool is_async)
@@ -731,7 +731,7 @@ namespace DebuggerTests
                     ("DebuggerTests.EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
            });
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [Fact]
         public async Task EvaluateNonStaticClassWithStaticFields() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass", "EvaluateAsyncMethods", 3, "EvaluateAsyncMethods",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateAsyncMethods'); })",
@@ -750,7 +750,7 @@ namespace DebuggerTests
                     ("EvaluateNonStaticClassWithStaticFields.StaticPropertyWithError", TString("System.Exception: not implemented")));
            });
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [Fact]
         public async Task EvaluateStaticClassesNested() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass", "EvaluateMethods", 3, "EvaluateMethods",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
@@ -769,7 +769,7 @@ namespace DebuggerTests
                     ("EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticPropertyWithError", TString("System.Exception: not implemented 3")));
            });
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [Fact]
         public async Task EvaluateStaticClassesNestedWithNoNamespace() => await CheckInspectLocalsAtBreakpointSite(
             "NoNamespaceClass", "EvaluateMethods", 1, "EvaluateMethods",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] NoNamespaceClass:EvaluateMethods'); })",
@@ -889,7 +889,7 @@ namespace DebuggerTests
                     }, "testNoneProps#1");
            });
 
-        [ConditionalTheory(nameof(RunningOnChrome))]
+        [Theory]
         [InlineData("EvaluateBrowsableProperties", "TestEvaluateFieldsNever", "testFieldsNever", 10)]
         [InlineData("EvaluateBrowsableProperties", "TestEvaluatePropertiesNever", "testPropertiesNever", 10)]
         [InlineData("EvaluateBrowsableStaticProperties", "TestEvaluateFieldsNever", "testFieldsNever", 10)]
@@ -942,7 +942,7 @@ namespace DebuggerTests
                     }, "testCollapsedProps#1");
            });
         
-        [ConditionalTheory(nameof(RunningOnChrome))]
+        [Theory]
         [InlineData("EvaluateBrowsableProperties", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
         [InlineData("EvaluateBrowsableProperties", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
         [InlineData("EvaluateBrowsableStaticProperties", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
@@ -1042,7 +1042,7 @@ namespace DebuggerTests
                 Assert.Equal(getterProps[0]?["value"]?["value"]?.Value<int>(), 123);
             });
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateMethodWithDefaultParam() => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.DefaultParamMethods", "Evaluate", 2, "Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.DefaultParamMethods:Evaluate'); 1 }})",

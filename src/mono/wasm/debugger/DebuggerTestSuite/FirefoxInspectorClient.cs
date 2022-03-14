@@ -110,6 +110,16 @@ class FirefoxInspectorClient : InspectorClient
         }
         if (res["applicationType"] != null)
             return null;
+        if (res["resultID"] != null)
+        {
+            if (res["type"]?.Value<string>() == "evaluationResult")
+            {
+                var messageId = new MessageIdFirefox("", 0, res["from"].Value<string>());
+                if (pending_cmds.Remove(messageId, out var item))
+                    item.SetResult(Result.FromJsonFirefox(res));
+            }
+            return null;
+        }
         if (res["from"] != null)
         {
             var messageId = new MessageIdFirefox("", 0, res["from"].Value<string>());
@@ -189,14 +199,10 @@ class FirefoxInspectorClient : InspectorClient
         if (args == null)
             args = new JObject();
 
-        var tcs = new TaskCompletionSource<Result>();        
-        if (method != "evaluateJSAsync")
-        {
-            var msgId = new MessageIdFirefox("", 0, args["to"].Value<string>());
-            pending_cmds[msgId] = tcs;
-        }
-        else
-            tcs.SetResult(Result.Ok(new JObject()));
+        var tcs = new TaskCompletionSource<Result>();
+        MessageId msgId;
+        msgId = new MessageIdFirefox("", 0, args["to"].Value<string>());
+        pending_cmds[msgId] = tcs;
         Send(args, token);
         return tcs.Task;
     }

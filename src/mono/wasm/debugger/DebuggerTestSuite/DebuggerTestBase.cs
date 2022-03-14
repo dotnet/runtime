@@ -1096,7 +1096,7 @@ namespace DebuggerTests
             return (locals, locals_internal, locals_private);
         }
 
-        internal async Task<(JToken, Result)> EvaluateOnCallFrame(string id, string expression, bool expect_ok = true)
+        internal virtual async Task<(JToken, Result)> EvaluateOnCallFrame(string id, string expression, bool expect_ok = true)
         {
             var evaluate_req = JObject.FromObject(new
             {

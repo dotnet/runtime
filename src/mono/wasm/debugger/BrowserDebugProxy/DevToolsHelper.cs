@@ -184,7 +184,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         })
                     });
                 }
-                else
+                else if (obj["result"]?["preview"] != null)
                 {
                     o = JObject.FromObject(new
                     {
@@ -194,15 +194,29 @@ namespace Microsoft.WebAssembly.Diagnostics
                         })
                     });
                 }
+                else
+                {
+                    o = JObject.FromObject(new
+                    {
+                        result = JObject.FromObject(new
+                        {
+                            value = obj["result"]
+                        })
+                    });
+                }
             }
             else if (obj["result"] != null)
+            {
                 o = JObject.FromObject(new
                 {
                     result = JObject.FromObject(new
                     {
-                        value = obj["result"]
+                        value = obj["result"],
+                        type = obj["resultType"],
+                        description = obj["resultDescription"]
                     })
                 });
+            }
             else
             {
                 o = JObject.FromObject(new

@@ -163,7 +163,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
 
         var bp1_res = await cli.SendCommand("setBreakpoint", bp1_req, token);
         Assert.True(expect_ok == bp1_res.IsOk);
-        await Task.Delay(200);
+        await Task.Delay(400);
         return bp1_res;
     }
     internal override async Task<JObject> EvaluateAndCheck(
@@ -472,9 +472,42 @@ public class DebuggerTestFirefox : DebuggerTestBase
             }));
 
         bp1_res.Value["locations"] = arr;
-        await Task.Delay(200);
+        await Task.Delay(400);
         return bp1_res;
     }
+
+    internal override async Task<(JToken, Result)> EvaluateOnCallFrame(string id, string expression, bool expect_ok = true)
+    {
+        var o = JObject.FromObject(new
+        {
+            to = client.ConsoleActorId,
+            type = "evaluateJSAsync",
+            text = expression,
+            options = new { eager = true, mapped = new { @await = true } }
+        });
+        var res = await cli.SendCommand("evaluateJSAsync", o, token);
+        if (res.IsOk)
+        {
+            if (res.Value["result"]["value"] is JObject)
+            {
+                var actor = res.Value["result"]["value"]["actor"].Value<string>();
+                var resObj = JObject.FromObject(new
+                {
+                    type = res.Value["result"]["value"]["type"],
+                    className = res.Value["result"]["value"]["class"],
+                    description = res.Value["result"]["value"]["description"],
+                    objectId = actor
+                });
+                if (actor.StartsWith("dotnet:valuetype:"))
+                    resObj["isValueType"] = true;
+                return (resObj, res);
+            }
+            return (res.Value["result"], res);
+        }
+
+        return (null, res);
+    }
+    
     internal override bool SkipProperty(string propertyName)
     {
         if (propertyName == "isEnum")

@@ -705,21 +705,33 @@ namespace Microsoft.WebAssembly.Diagnostics
                             Frame scope = context.CallStack.First<Frame>();
 
                             var resolver = new MemberReferenceResolver(this, context, sessionId, scope.Id, logger);
-
                             JObject retValue = await resolver.Resolve(args?["text"]?.Value<string>(), token);
                             if (retValue == null)
-                            {
                                 retValue = await EvaluateExpression.CompileAndRunTheExpression(args?["text"]?.Value<string>(), resolver, token);
-                            }
                             var osend = JObject.FromObject(new
                             {
                                 type = "evaluationResult",
                                 resultID,
                                 hasException = false,
                                 input = args?["text"],
-                                result = retValue["value"],
                                 from = args["to"].Value<string>()
                             });
+                            if (retValue["type"].Value<string>() == "object")
+                            {
+                                osend["result"] = JObject.FromObject(new
+                                {
+                                    type = retValue["type"],
+                                    @class = retValue["className"],
+                                    description = retValue["description"],
+                                    actor = retValue["objectId"],
+                                });
+                            }
+                            else
+                            {
+                                osend["result"] = retValue["value"];
+                                osend["resultType"] = retValue["type"];
+                                osend["resultDescription"] = retValue["description"];
+                            }
                             await SendEvent(sessionId, "", osend, token);
                         }
                         else
