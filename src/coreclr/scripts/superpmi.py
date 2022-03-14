@@ -370,11 +370,6 @@ merge_mch_parser.add_argument("-pattern", required=True, help=merge_mch_pattern_
 ################################################################################
 # Helper functions
 ################################################################################
-def get_time_prefix():
-    """ Return a string to use as a print prefix for output. Currently, a time string for the current time.
-    """
-    return "{} ".format(datetime.datetime.now().strftime("[%H:%M:%S]"))
-
 def run_and_log(command, log_level=logging.DEBUG):
     """ Return a command and log its output to the debug logger
 
@@ -386,8 +381,7 @@ def run_and_log(command, log_level=logging.DEBUG):
         Process return code
     """
 
-    print_prefix = get_time_prefix()
-    logging.log(log_level, "%sInvoking: %s", print_prefix, " ".join(command))
+    logging.log(log_level, "Invoking: %s", " ".join(command))
     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     stdout_output, _ = proc.communicate()
     for line in stdout_output.decode('utf-8', errors='replace').splitlines():  # There won't be any stderr output since it was piped to stdout
@@ -408,7 +402,7 @@ def write_file_to_log(filepath, log_level=logging.DEBUG):
     if not os.path.exists(filepath):
         return
 
-    logging.log(log_level, "%s============== Contents of %s", get_time_prefix(), filepath)
+    logging.log(log_level, "============== Contents of %s", filepath)
 
     with open(filepath) as file_handle:
         lines = file_handle.readlines()
@@ -416,7 +410,7 @@ def write_file_to_log(filepath, log_level=logging.DEBUG):
         for line in lines:
             logging.log(log_level, line)
 
-    logging.log(log_level, "%s============== End contents of %s", get_time_prefix(), filepath)
+    logging.log(log_level, "============== End contents of %s", filepath)
 
 # Functions to verify the OS and architecture. They take an instance of CoreclrArguments,
 # which is used to find the list of legal OS and architectures
@@ -508,7 +502,7 @@ class AsyncSubprocessHelper:
 
         print_prefix = ""
         if self.verbose:
-            print_prefix = "{}[{}:{}]: ".format(get_time_prefix(), index, size)
+            print_prefix = "[{}:{}]: ".format(index, size)
 
         await async_callback(print_prefix, item, *extra_args)
 
@@ -737,7 +731,7 @@ class SuperPMICollect:
                 complus_env["ZapDisable"] = "1"
                 complus_env["ReadyToRun"] = "0"
 
-            logging.debug("%sStarting collection.", get_time_prefix())
+            logging.debug("Starting collection.")
             logging.debug("")
 
             def set_and_report_env(env, root_env, complus_env = None):
@@ -766,7 +760,8 @@ class SuperPMICollect:
 
             ################################################################################################ Do collection using given collection command (e.g., script)
             if self.collection_command is not None:
-                logging.debug("%sStarting collection using command", get_time_prefix())
+                logging.debug("Starting collection using command")
+                begin_time = datetime.datetime.now()
 
                 collection_command_env = env_copy.copy()
                 collection_complus_env = complus_env.copy()
@@ -784,11 +779,14 @@ class SuperPMICollect:
                 stdout_output, _ = proc.communicate()
                 for line in stdout_output.decode('utf-8', errors='replace').splitlines():  # There won't be any stderr output since it was piped to stdout
                     logging.debug(line)
+
+                elapsed_time = datetime.datetime.now() - begin_time
+                logging.debug("Done. Elapsed time: %s", elapsed_time)
             ################################################################################################ end of "self.collection_command is not None"
 
             ################################################################################################ Do collection using PMI
             if self.coreclr_args.pmi is True:
-                logging.debug("%sStarting collection using PMI", get_time_prefix())
+                logging.debug("Starting collection using PMI")
 
                 async def run_pmi(print_prefix, assembly, self):
                     """ Run pmi over all dlls
@@ -797,6 +795,8 @@ class SuperPMICollect:
                     command = [self.corerun, self.pmi_location, "DRIVEALL", assembly]
                     command_string = " ".join(command)
                     logging.debug("%s%s", print_prefix, command_string)
+
+                    begin_time = datetime.datetime.now()
 
                     # Save the stdout and stderr to files, so we can see if PMI wrote any interesting messages.
                     # Use the name of the assembly as the basename of the file. mkstemp() will ensure the file
@@ -835,6 +835,9 @@ class SuperPMICollect:
                         else:
                             raise ose
 
+                    elapsed_time = datetime.datetime.now() - begin_time
+                    logging.debug("%sDone. Elapsed time: %s", print_prefix, elapsed_time)
+
                 # Set environment variables.
                 pmi_command_env = env_copy.copy()
                 pmi_complus_env = complus_env.copy()
@@ -860,7 +863,7 @@ class SuperPMICollect:
 
             ################################################################################################ Do collection using crossgen2
             if self.coreclr_args.crossgen2 is True:
-                logging.debug("%sStarting collection using crossgen2", get_time_prefix())
+                logging.debug("Starting collection using crossgen2")
 
                 async def run_crossgen2(print_prefix, assembly, self):
                     """ Run crossgen2 over all dlls
@@ -921,6 +924,8 @@ class SuperPMICollect:
                     command_string = " ".join(command)
                     logging.debug("%s%s", print_prefix, command_string)
 
+                    begin_time = datetime.datetime.now()
+
                     # Save the stdout and stderr to files, so we can see if crossgen2 wrote any interesting messages.
                     # Use the name of the assembly as the basename of the file. mkstemp() will ensure the file
                     # is unique.
@@ -960,6 +965,9 @@ class SuperPMICollect:
                     # Delete the response file unless we are skipping cleanup
                     if not self.coreclr_args.skip_cleanup:
                         os.remove(rsp_filepath)
+
+                    elapsed_time = datetime.datetime.now() - begin_time
+                    logging.debug("%sDone. Elapsed time: %s", print_prefix, elapsed_time)
 
                 # Set environment variables.
                 crossgen2_command_env = env_copy.copy()
@@ -2807,8 +2815,11 @@ def setup_args(args):
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
+    formatter = logging.Formatter("[%(asctime)s] %(message)s", datefmt="%H:%M:%S")
+
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setLevel(logging.DEBUG)
+    stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
 
     # Parse the arguments
@@ -2879,6 +2890,7 @@ def setup_args(args):
             os.remove(log_file)
         file_handler = logging.FileHandler(log_file, encoding='utf8')
         file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
         logging.critical("================ Logging to %s", log_file)
 
