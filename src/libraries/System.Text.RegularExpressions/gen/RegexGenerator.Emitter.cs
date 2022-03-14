@@ -158,41 +158,43 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"    /// <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>");
             writer.WriteLine($"    private sealed class Runner : RegexRunner");
             writer.WriteLine($"    {{");
-
-            // Main implementation methods
             writer.WriteLine($"        // Description:");
             DescribeExpression(writer, rm.Tree.Root.Child(0), "        // ", analysis); // skip implicit root capture
             writer.WriteLine();
-
             writer.WriteLine($"        /// <summary>Scan the <paramref name=\"inputSpan\"/> starting from base.runtextstart for the next match.</summary>");
             writer.WriteLine($"        /// <param name=\"inputSpan\">The text being scanned by the regular expression.</param>");
             writer.WriteLine($"        protected override void Scan(ReadOnlySpan<char> inputSpan)");
             writer.WriteLine($"        {{");
             writer.Indent += 3;
-            EmitScan(writer, rm);
+            (bool needsTryFind, bool needsTryMatch) = EmitScan(writer, rm);
             writer.Indent -= 3;
             writer.WriteLine($"        }}");
-            writer.WriteLine();
-
-            writer.WriteLine($"        /// <summary>Search <paramref name=\"inputSpan\"/> starting from base.runtextpos for the next location a match could possibly start.</summary>");
-            writer.WriteLine($"        /// <param name=\"inputSpan\">The text being scanned by the regular expression.</param>");
-            writer.WriteLine($"        /// <returns>true if a possible match was found; false if no more matches are possible.</returns>");
-            writer.WriteLine($"        private bool TryFindNextPossibleStartingPosition(ReadOnlySpan<char> inputSpan)");
-            writer.WriteLine($"        {{");
-            writer.Indent += 3;
-            EmitTryFindNextPossibleStartingPosition(writer, rm, requiredHelpers);
-            writer.Indent -= 3;
-            writer.WriteLine($"        }}");
-            writer.WriteLine();
-            writer.WriteLine($"        /// <summary>Determine whether <paramref name=\"inputSpan\"/> at base.runtextpos is a match for the regular expression.</summary>");
-            writer.WriteLine($"        /// <param name=\"inputSpan\">The text being scanned by the regular expression.</param>");
-            writer.WriteLine($"        /// <returns>true if the regular expression matches at the current position; otherwise, false.</returns>");
-            writer.WriteLine($"        private bool TryMatchAtCurrentPosition(ReadOnlySpan<char> inputSpan)");
-            writer.WriteLine($"        {{");
-            writer.Indent += 3;
-            EmitTryMatchAtCurrentPosition(writer, rm, analysis, requiredHelpers);
-            writer.Indent -= 3;
-            writer.WriteLine($"        }}");
+            if (needsTryFind)
+            {
+                writer.WriteLine();
+                writer.WriteLine($"        /// <summary>Search <paramref name=\"inputSpan\"/> starting from base.runtextpos for the next location a match could possibly start.</summary>");
+                writer.WriteLine($"        /// <param name=\"inputSpan\">The text being scanned by the regular expression.</param>");
+                writer.WriteLine($"        /// <returns>true if a possible match was found; false if no more matches are possible.</returns>");
+                writer.WriteLine($"        private bool TryFindNextPossibleStartingPosition(ReadOnlySpan<char> inputSpan)");
+                writer.WriteLine($"        {{");
+                writer.Indent += 3;
+                EmitTryFindNextPossibleStartingPosition(writer, rm, requiredHelpers);
+                writer.Indent -= 3;
+                writer.WriteLine($"        }}");
+            }
+            if (needsTryMatch)
+            {
+                writer.WriteLine();
+                writer.WriteLine($"        /// <summary>Determine whether <paramref name=\"inputSpan\"/> at base.runtextpos is a match for the regular expression.</summary>");
+                writer.WriteLine($"        /// <param name=\"inputSpan\">The text being scanned by the regular expression.</param>");
+                writer.WriteLine($"        /// <returns>true if the regular expression matches at the current position; otherwise, false.</returns>");
+                writer.WriteLine($"        private bool TryMatchAtCurrentPosition(ReadOnlySpan<char> inputSpan)");
+                writer.WriteLine($"        {{");
+                writer.Indent += 3;
+                EmitTryMatchAtCurrentPosition(writer, rm, analysis, requiredHelpers);
+                writer.Indent -= 3;
+                writer.WriteLine($"        }}");
+            }
             writer.WriteLine($"    }}");
             writer.WriteLine($"}}");
         }
@@ -294,27 +296,88 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Emits the body of the Scan method override.</summary>
-        private static void EmitScan(IndentedTextWriter writer, RegexMethod rm)
+        private static (bool NeedsTryFind, bool NeedsTryMatch) EmitScan(IndentedTextWriter writer, RegexMethod rm)
         {
             bool rtl = (rm.Options & RegexOptions.RightToLeft) != 0;
+            bool needsTryFind = false, needsTryMatch = false;
+            RegexNode root = rm.Tree.Root.Child(0);
 
-            using (EmitBlock(writer, "while (TryFindNextPossibleStartingPosition(inputSpan))"))
+            // We can alway emit our most general purpose scan loop, but there are common situations we can easily check
+            // for where we can emit simpler/better code instead.
+            if (root.Kind is RegexNodeKind.Empty)
             {
-                if (rm.MatchTimeout != Timeout.Infinite)
+                // Emit a capture for the current position of length 0.  This is rare to see with a real-world pattern,
+                // but it's very common as part of exploring the source generator, because it's what you get when you
+                // start out with an empty pattern.
+                writer.WriteLine("// The pattern matches the empty string.");
+                writer.WriteLine($"int pos = base.runtextpos;");
+                writer.WriteLine($"base.Capture(0, pos, pos);");
+            }
+            else if (root.Kind is RegexNodeKind.Nothing)
+            {
+                // Emit nothing.  This is rare in production and not something to we need optimize for, but as with
+                // empty, it's helpful as a learning exposition tool.
+                writer.WriteLine("// The pattern never matches anything.");
+            }
+            else if (root.Kind is RegexNodeKind.Multi or RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set && (root.Options & RegexOptions.IgnoreCase) == 0)
+            {
+                // If the whole expression is just one or more characters, we can rely on the FindOptimizations spitting out
+                // an IndexOf that will find the exact sequence or not, and we don't need to do additional checking beyond that.
+                needsTryFind = true;
+                using (EmitBlock(writer, "if (TryFindNextPossibleStartingPosition(inputSpan))"))
+                {
+                    writer.WriteLine("// The search in TryFindNextPossibleStartingPosition performed the entire match.");
+                    writer.WriteLine($"int start = base.runtextpos;");
+                    writer.WriteLine($"int end = base.runtextpos = start {(!rtl ? "+" : "-")} {(root.Kind == RegexNodeKind.Multi ? root.Str!.Length : 1)};");
+                    writer.WriteLine($"base.Capture(0, start, end);");
+                }
+            }
+            else if (rm.Tree.FindOptimizations.FindMode is
+                    FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning or
+                    FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start or
+                    FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Start or
+                    FindNextStartingPositionMode.LeadingAnchor_RightToLeft_End)
+            {
+                // If the expression is anchored in such a way that there's one and only one possible position that can match,
+                // we don't need a scan loop, just a single check and match.
+                needsTryFind = needsTryMatch = true;
+                writer.WriteLine("// The pattern is anchored.  Validate the current position and try to match at it only.");
+                using (EmitBlock(writer, "if (TryFindNextPossibleStartingPosition(inputSpan) && !TryMatchAtCurrentPosition(inputSpan))"))
+                {
+                    writer.WriteLine($"base.runtextpos = {(!rtl ? "inputSpan.Length" : "0")};");
+                }
+            }
+            else if (rm.MatchTimeout == Timeout.Infinite)
+            {
+                // Emit the general purpose scan loop, without timeouts.
+                needsTryFind = needsTryMatch = true;
+                writer.WriteLine($"// Search until we can't find a valid starting position, we find a match, or we reach the end of the input.");
+                writer.WriteLine($"while (TryFindNextPossibleStartingPosition(inputSpan) &&");
+                writer.WriteLine($"       !TryMatchAtCurrentPosition(inputSpan) &&");
+                writer.WriteLine($"       base.runtextpos != {(!rtl ? "inputSpan.Length" : "0")})");
+                using (EmitBlock(writer, null))
+                {
+                    writer.WriteLine($"base.runtextpos{(!rtl ? "++" : "--")};");
+                }
+            }
+            else
+            {
+                // Emit the general purpose scan loop, with timeouts.
+                needsTryFind = needsTryMatch = true;
+                writer.WriteLine("// Search until we can't find a valid starting position, we find a match, or we reach the end of the input.");
+                using (EmitBlock(writer, "while (TryFindNextPossibleStartingPosition(inputSpan))"))
                 {
                     writer.WriteLine("base.CheckTimeout();");
+                    using (EmitBlock(writer, $"if (TryMatchAtCurrentPosition(inputSpan) || base.runtextpos == {(!rtl ? "inputSpan.Length" : "0")})"))
+                    {
+                        writer.WriteLine("return;");
+                    }
                     writer.WriteLine();
+                    writer.WriteLine($"base.runtextpos{(!rtl ? "++" : "--")};");
                 }
-
-                writer.WriteLine("// If we find a match at the current position, or we have reached the end of the input, we are done.");
-                using (EmitBlock(writer, $"if (TryMatchAtCurrentPosition(inputSpan) || base.runtextpos == {(!rtl ? "inputSpan.Length" : "0")})"))
-                {
-                    writer.WriteLine("return;");
-                }
-                writer.WriteLine();
-
-                writer.WriteLine($"base.runtextpos{(!rtl ? "++" : "--")};");
             }
+
+            return (needsTryFind, needsTryMatch);
         }
 
         /// <summary>Emits the body of the TryFindNextPossibleStartingPosition.</summary>
@@ -923,29 +986,6 @@ namespace System.Text.RegularExpressions.Generator
             Debug.Assert(node.Kind == RegexNodeKind.Capture, "Every generated tree should begin with a capture node");
             Debug.Assert(node.ChildCount() == 1, "Capture nodes should have one child");
             node = node.Child(0);
-
-            // In some limited cases, TryFindNextPossibleStartingPosition will only return true if it successfully matched the whole expression.
-            // We can special case these to do essentially nothing in TryMatchAtCurrentPosition other than emit the capture.
-            switch (node.Kind)
-            {
-                case RegexNodeKind.Multi or RegexNodeKind.Notone or RegexNodeKind.One or RegexNodeKind.Set when !IsCaseInsensitive(node):
-                    // This is the case for single and multiple characters, though the whole thing is only guaranteed
-                    // to have been validated in TryFindNextPossibleStartingPosition when doing case-sensitive comparison.
-                    writer.WriteLine($"int start = base.runtextpos;");
-                    writer.WriteLine($"int end = start {((node.Options & RegexOptions.RightToLeft) == 0 ? "+" : "-")} {(node.Kind == RegexNodeKind.Multi ? node.Str!.Length : 1)};");
-                    writer.WriteLine("base.Capture(0, start, end);");
-                    writer.WriteLine("base.runtextpos = end;");
-                    writer.WriteLine("return true;");
-                    return;
-
-                case RegexNodeKind.Empty:
-                    // This case isn't common in production, but it's very common when first getting started with the
-                    // source generator and seeing what happens as you add more to expressions.  When approaching
-                    // it from a learning perspective, this is very common, as it's the empty string you start with.
-                    writer.WriteLine("base.Capture(0, base.runtextpos, base.runtextpos);");
-                    writer.WriteLine("return true;");
-                    return;
-            }
 
             // In some cases, we need to emit declarations at the beginning of the method, but we only discover we need them later.
             // To handle that, we build up a collection of all the declarations to include, track where they should be inserted,

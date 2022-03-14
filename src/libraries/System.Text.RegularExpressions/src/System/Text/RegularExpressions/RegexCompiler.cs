@@ -4616,52 +4616,127 @@ namespace System.Text.RegularExpressions
 
         protected void EmitScan(RegexOptions options, DynamicMethod tryFindNextStartingPositionMethod, DynamicMethod tryMatchAtCurrentPositionMethod)
         {
+            // As with the source generator, we can emit special code for common circumstances rather than always emitting
+            // the most general purpose scan loop.  Unlike the source generator, however, code appearance isn't important
+            // here, so we don't handle all of the same cases, e.g. we don't special case Empty or Nothing, as they're
+            // not worth spending any code on.
+
             bool rtl = (options & RegexOptions.RightToLeft) != 0;
+            RegexNode root = _regexTree!.Root.Child(0);
             Label returnLabel = DefineLabel();
 
-            // while (TryFindNextPossibleStartingPosition(text))
-            Label whileLoopBody = DefineLabel();
-            MarkLabel(whileLoopBody);
-            Ldthis();
-            Ldarg_1();
-            Call(tryFindNextStartingPositionMethod);
-            BrfalseFar(returnLabel);
-
-            if (_hasTimeout)
+            if (root.Kind is RegexNodeKind.Multi or RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set && (root.Options & RegexOptions.IgnoreCase) == 0)
             {
-                // CheckTimeout();
+                // If the whole expression is just one or more characters, we can rely on the FindOptimizations spitting out
+                // an IndexOf that will find the exact sequence or not, and we don't need to do additional checking beyond that.
+
+                // if (!TryFindNextPossibleStartingPosition(inputSpan)) return;
                 Ldthis();
-                Call(s_checkTimeoutMethod);
-            }
+                Ldarg_1();
+                Call(tryFindNextStartingPositionMethod);
+                Brfalse(returnLabel);
 
-            // if (TryMatchAtCurrentPosition(text) || runtextpos == text.length) // or == 0 for rtl
-            //   return;
-            Ldthis();
-            Ldarg_1();
-            Call(tryMatchAtCurrentPositionMethod);
-            BrtrueFar(returnLabel);
-            Ldthisfld(s_runtextposField);
-            if (!rtl)
+                // int start = base.runtextpos;
+                LocalBuilder start = DeclareInt32();
+                Mvfldloc(s_runtextposField, start);
+
+                // int end = base.runtextpos = start +/- length;
+                LocalBuilder end = DeclareInt32();
+                Ldloc(start);
+                Ldc((root.Kind == RegexNodeKind.Multi ? root.Str!.Length : 1) * (!rtl ? 1 : -1));
+                Add();
+                Stloc(end);
+                Ldthis();
+                Ldloc(end);
+                Stfld(s_runtextposField);
+
+                // base.Capture(0, start, end);
+                Ldthis();
+                Ldc(0);
+                Ldloc(start);
+                Ldloc(end);
+                Call(s_captureMethod);
+            }
+            else if (_regexTree.FindOptimizations.FindMode is
+                    FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning or
+                    FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start or
+                    FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Start or
+                    FindNextStartingPositionMode.LeadingAnchor_RightToLeft_End)
             {
-                Ldarga_s(1);
-                Call(s_spanGetLengthMethod);
+                // If the expression is anchored in such a way that there's one and only one possible position that can match,
+                // we don't need a scan loop, just a single check and match.
+
+                // if (!TryFindNextPossibleStartingPosition(inputSpan)) return;
+                Ldthis();
+                Ldarg_1();
+                Call(tryFindNextStartingPositionMethod);
+                Brfalse(returnLabel);
+
+                // if (TryMatchAtCurrentPosition(inputSpan)) return;
+                Ldthis();
+                Ldarg_1();
+                Call(tryMatchAtCurrentPositionMethod);
+                Brtrue(returnLabel);
+
+                // base.runtextpos = inputSpan.Length; // or 0 for rtl
+                Ldthis();
+                if (!rtl)
+                {
+                    Ldarga_s(1);
+                    Call(s_spanGetLengthMethod);
+                }
+                else
+                {
+                    Ldc(0);
+                }
+                Stfld(s_runtextposField);
             }
             else
             {
-                Ldc(0);
+                // while (TryFindNextPossibleStartingPosition(text))
+                Label whileLoopBody = DefineLabel();
+                MarkLabel(whileLoopBody);
+                Ldthis();
+                Ldarg_1();
+                Call(tryFindNextStartingPositionMethod);
+                BrfalseFar(returnLabel);
+
+                if (_hasTimeout)
+                {
+                    // CheckTimeout();
+                    Ldthis();
+                    Call(s_checkTimeoutMethod);
+                }
+
+                // if (TryMatchAtCurrentPosition(text) || runtextpos == text.length) // or == 0 for rtl
+                //   return;
+                Ldthis();
+                Ldarg_1();
+                Call(tryMatchAtCurrentPositionMethod);
+                BrtrueFar(returnLabel);
+                Ldthisfld(s_runtextposField);
+                if (!rtl)
+                {
+                    Ldarga_s(1);
+                    Call(s_spanGetLengthMethod);
+                }
+                else
+                {
+                    Ldc(0);
+                }
+                Ceq();
+                BrtrueFar(returnLabel);
+
+                // runtextpos += 1 // or -1 for rtl
+                Ldthis();
+                Ldthisfld(s_runtextposField);
+                Ldc(!rtl ? 1 : -1);
+                Add();
+                Stfld(s_runtextposField);
+
+                // End loop body.
+                BrFar(whileLoopBody);
             }
-            Ceq();
-            BrtrueFar(returnLabel);
-
-            // runtextpos += 1 // or -1 for rtl
-            Ldthis();
-            Ldthisfld(s_runtextposField);
-            Ldc(!rtl ? 1 : -1);
-            Add();
-            Stfld(s_runtextposField);
-
-            // End loop body.
-            BrFar(whileLoopBody);
 
             // return;
             MarkLabel(returnLabel);
