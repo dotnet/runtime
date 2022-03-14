@@ -601,7 +601,6 @@ DebuggerJitInfo * FrameInfo::GetJitInfoFromFrame() const
 
     DebuggerJitInfo *ji = NULL;
 
-    // @todo - we shouldn't need both a MD and an IP here.
     EX_TRY
     {
         _ASSERTE(this->md != NULL);

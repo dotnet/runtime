@@ -1946,6 +1946,10 @@ BOOL DebuggerController::AddILPatch(AppDomain * pAppDomain, Module *module,
     BOOL fOk = FALSE;
 
     DebuggerMethodInfo *dmi = g_pDebugger->GetOrCreateMethodInfo(module, md); // throws
+    LOG((LF_CORDB,LL_INFO10000,"DC::AILP: dmi:0x%p, mdToken:0x%x, mdFilter:0x%p, "
+            "encVer:%zu, offset:0x%zx <- isIL:%d, Mod:0x%p\n",
+            dmi, md, pMethodDescFilter, encVersion, offset, offsetIsIL, module));
+
     if (dmi == NULL)
     {
         return false;
