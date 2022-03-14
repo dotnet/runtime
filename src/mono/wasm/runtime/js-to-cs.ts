@@ -93,8 +93,8 @@ export function _js_to_mono_obj_root(should_add_in_flight: boolean, js_obj: any,
             js_string_to_mono_string_interned_root(js_obj, <any>result);
             return;
         case typeof js_obj === "boolean":
-            // FIXME
-            result.value = _box_js_bool(js_obj);
+            setI32(runtimeHelpers._box_buffer, js_obj ? 1 : 0);
+            cwraps.mono_wasm_box_primitive_ref(runtimeHelpers._class_boolean, runtimeHelpers._box_buffer, 4, result.address);
             return;
         case isThenable(js_obj) === true: {
             _wrap_js_thenable_as_task_root(js_obj, result);
@@ -141,12 +141,6 @@ function _extract_mono_obj_root(should_add_in_flight: boolean, js_obj: any, resu
 
         corebindings._create_cs_owned_proxy_ref(js_handle, wasm_type_id, should_add_in_flight ? 1 : 0, result.address);
     }
-}
-
-export function _box_js_bool(js_obj: boolean): MonoObject {
-    setI32(runtimeHelpers._box_buffer, js_obj ? 1 : 0);
-    cwraps.mono_wasm_box_primitive_ref(runtimeHelpers._class_boolean, runtimeHelpers._box_buffer, 4, runtimeHelpers._box_root.address);
-    return runtimeHelpers._box_root.value;
 }
 
 // https://github.com/Planeshifter/emscripten-examples/blob/master/01_PassingArrays/sum_post.js

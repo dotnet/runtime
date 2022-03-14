@@ -107,7 +107,6 @@ export interface t_Cwraps {
     mono_wasm_invoke_method_ref(method: MonoMethod, this_arg: MonoObjectRef, params: VoidPtr, out_exc: MonoObjectRef, out_result: MonoObjectRef): void;
     mono_wasm_string_get_utf8(str: MonoString): CharPtr;
     mono_wasm_string_from_utf16_ref(str: CharPtr, len: number, result: MonoObjectRef): void;
-    mono_wasm_get_obj_type(str: MonoObject): number;
     mono_wasm_array_length(array: MonoArray): number;
 
     mono_wasm_array_get_ref(array: MonoObjectRef, idx: number, result: MonoObjectRef): void;
@@ -126,6 +125,8 @@ export interface t_Cwraps {
     mono_wasm_get_type_name(ty: MonoType): string;
     mono_wasm_get_type_aqn(ty: MonoType): string;
 
+    // Deprecated
+    mono_wasm_get_obj_type(str: MonoObject): number;
     // Deprecated
     mono_wasm_invoke_method(method: MonoMethod, this_arg: MonoObject, params: VoidPtr, out_exc: MonoObjectRef): MonoObject;
     // Deprecated
