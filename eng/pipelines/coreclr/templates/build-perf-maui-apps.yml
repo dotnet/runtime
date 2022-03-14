@@ -16,7 +16,6 @@ parameters:
   archiveExtension: ''
   archiveType: ''
   tarCompression: ''
-  appname: ''
 
 
 steps:
@@ -185,7 +184,7 @@ steps:
       cp MauiTesting.csproj.bak MauiTesting.csproj
     displayName: Build MAUI iOS
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
-    
+
   - script: |
       chmod -R a+r .
       ../dotnet publish -bl:MauiMacCatalyst.binlog -f net6.0-maccatalyst -c Release
