@@ -171,6 +171,14 @@ jobs:
           artifactFileName: 'MauiAndroidApp.tar.gz'
           artifactName: 'MauiAndroidApp'
           displayName: 'Maui Android App'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiAndroidPodcast.tar.gz'
+          artifactName: 'MauiAndroidPodcast'
+          displayName: 'Maui Android Podcast'
+          
 
     # Download iOSMono tests and MauiiOS/MacCatalyst
     - ${{ if eq(parameters.runtimeType, 'iOSMono') }}:

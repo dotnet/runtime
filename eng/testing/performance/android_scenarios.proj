@@ -41,9 +41,21 @@
         <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
         <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
+    <HelixWorkItem Include="SOD - Maui Android Podcast APK Size"> 
+        <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+        <PreCommands>cd $(ScenarioDirectory)mauiandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiAndroidPodcast.apk .; $(Python) pre.py --apk-name MauiAndroidPodcast.apk</PreCommands>
+        <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
+        <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
     <HelixWorkItem Include="SOD - Maui Android Extracted Size"> 
         <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
         <PreCommands>cd $(ScenarioDirectory)mauiandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiAndroidDefault.apk .; $(Python) pre.py --unzip --apk-name MauiAndroidDefault.apk</PreCommands>
+        <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
+        <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
+    <HelixWorkItem Include="SOD - Maui Android Podcast Extracted Size"> 
+        <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+        <PreCommands>cd $(ScenarioDirectory)mauiandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiAndroidPodcast.apk .; $(Python) pre.py --unzip --apk-name MauiAndroidPodcast.apk</PreCommands>
         <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
         <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
@@ -65,11 +77,22 @@
       <Command>$(Python) test.py devicestartup --device-type android --package-path pub\MauiAndroidDefault.apk --package-name com.companyname.mauitesting --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
+    <HelixWorkItem Include="Device Startup - Android Maui Podcast">
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)mauiandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiAndroidPodcast.apk .;$(Python) pre.py --apk-name MauiAndroidPodcast.apk</PreCommands>
+      <Command>$(Python) test.py devicestartup --device-type android --package-path pub\MauiAndroidPodcast.apk --package-name com.Microsoft.NetConf2021.Maui --scenario-name &quot;%(Identity)&quot;</Command>
+      <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
     <HelixWorkItem Include="Device Startup - Android Maui DefaultTesting NoAnimation">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)mauiandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiAndroidDefault.apk .;$(Python) pre.py --apk-name MauiAndroidDefault.apk</PreCommands>
       <Command>$(Python) test.py devicestartup --device-type android --package-path pub\MauiAndroidDefault.apk --package-name com.companyname.mauitesting --scenario-name &quot;%(Identity)&quot; --disable-animations</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
+        <HelixWorkItem Include="Device Startup - Android Maui Podcast NoAnimation">
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)mauiandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiAndroidPodcast.apk .;$(Python) pre.py --apk-name MauiAndroidPodcast.apk</PreCommands>
+      <Command>$(Python) test.py devicestartup --device-type android --package-path pub\MauiAndroidPodcast.apk --package-name com.Microsoft.NetConf2021.Maui --scenario-name &quot;%(Identity)&quot; --disable-animations</Command>
+      <PostCommands>$(Python) post.py</PostCommands>
   </ItemGroup>
 </Project>
