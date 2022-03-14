@@ -124,7 +124,6 @@ function _convert_exception_for_method_call(result: WasmRoot<MonoString>, except
     return err;
 }
 
-
 /*
 args_marshal is a string with one character per parameter that tells how to marshal it, here are the valid values:
 
@@ -141,43 +140,45 @@ m: raw mono object. Don't use it unless you know what you're doing
 
 to suppress marshaling of the return value, place '!' at the end of args_marshal, i.e. 'ii!' instead of 'ii'
 */
-export function call_method(method: MonoMethod, this_arg: MonoObject | undefined, args_marshal: string/*ArgsMarshalString*/, args: ArrayLike<any>): any {
+export function call_method_ref(method: MonoMethod, this_arg: WasmRoot<MonoObject> | MonoObjectRef | undefined, args_marshal: string/*ArgsMarshalString*/, args: ArrayLike<any>): any {
     // HACK: Sometimes callers pass null or undefined, coerce it to 0 since that's what wasm expects
-    this_arg = coerceNull(this_arg);
-    const this_arg_root = this_arg ? mono_wasm_new_root(this_arg) : null;
-    const this_arg_ref = this_arg ? (<any>this_arg_root).address : MonoObjectRefNull;
-    try {
-        // Detect someone accidentally passing the wrong type of value to method
-        if (typeof method !== "number")
-            throw new Error(`method must be an address in the native heap, but was '${method}'`);
-        if (!method)
-            throw new Error("no method specified");
+    let this_arg_ref : MonoObjectRef | undefined = undefined;
+    if (typeof (this_arg) === "number")
+        this_arg_ref = this_arg;
+    else if (typeof (this_arg) === "object")
+        this_arg_ref = (<any>this_arg).address;
+    else
+        this_arg_ref = <any>coerceNull(this_arg);
 
-        const needs_converter = _verify_args_for_method_call(args_marshal, args);
+    // Detect someone accidentally passing the wrong type of value to method
+    if (typeof method !== "number")
+        throw new Error(`method must be an address in the native heap, but was '${method}'`);
+    if (!method)
+        throw new Error("no method specified");
+    if (typeof (this_arg_ref) !== "number")
+        throw new Error(`this_arg must be a root instance, the address of a root, or undefined, but was ${this_arg}`);
 
-        let buffer = VoidPtrNull, converter = undefined, argsRootBuffer = undefined;
-        let is_result_marshaled = true;
+    const needs_converter = _verify_args_for_method_call(args_marshal, args);
 
-        // TODO: Only do this if the signature needs marshalling
-        _create_temp_frame();
+    let buffer = VoidPtrNull, converter = undefined, argsRootBuffer = undefined;
+    let is_result_marshaled = true;
 
-        // check if the method signature needs argument mashalling
-        if (needs_converter) {
-            converter = _compile_converter_for_marshal_string(args_marshal);
+    // TODO: Only do this if the signature needs marshalling
+    _create_temp_frame();
 
-            is_result_marshaled = _decide_if_result_is_marshaled(converter, args.length);
+    // check if the method signature needs argument mashalling
+    if (needs_converter) {
+        converter = _compile_converter_for_marshal_string(args_marshal);
 
-            argsRootBuffer = _get_args_root_buffer_for_method_call(converter, null);
+        is_result_marshaled = _decide_if_result_is_marshaled(converter, args.length);
 
-            const scratchBuffer = _get_buffer_for_method_call(converter, null);
+        argsRootBuffer = _get_args_root_buffer_for_method_call(converter, null);
 
-            buffer = converter.compiled_variadic_function!(scratchBuffer, argsRootBuffer, method, args);
-        }
-        return _call_method_with_converted_args(method, this_arg_ref, converter, null, buffer, is_result_marshaled, argsRootBuffer);
-    } finally {
-        if (this_arg_root)
-            this_arg_root.release();
+        const scratchBuffer = _get_buffer_for_method_call(converter, null);
+
+        buffer = converter.compiled_variadic_function!(scratchBuffer, argsRootBuffer, method, args);
     }
+    return _call_method_with_converted_args(method, <any>this_arg_ref, converter, null, buffer, is_result_marshaled, argsRootBuffer);
 }
 
 
@@ -244,7 +245,6 @@ function _call_method_with_converted_args(
     is_result_marshaled: boolean, argsRootBuffer?: WasmRootBuffer
 ): any {
     const resultRoot = mono_wasm_new_root<MonoString>(), exceptionRoot = mono_wasm_new_root<MonoObject>();
-    // TODO: Create new invoke_method variant that writes the result into resultRoot directly
     cwraps.mono_wasm_invoke_method_ref(method, this_arg_ref, buffer, exceptionRoot.address, resultRoot.address);
     return _handle_exception_and_produce_result_for_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled);
 }
@@ -257,7 +257,7 @@ export function call_static_method(fqn: string, args: any[], signature: string/*
     if (typeof signature === "undefined")
         signature = mono_method_get_call_signature(method);
 
-    return call_method(method, undefined, signature, args);
+    return call_method_ref(method, undefined, signature, args);
 }
 
 export function mono_bind_static_method(fqn: string, signature?: string/*ArgsMarshalString*/): Function {
@@ -288,7 +288,7 @@ export function mono_bind_assembly_entry_point(assembly: string, signature?: str
     return async function (...args: any[]) {
         if (args.length > 0 && Array.isArray(args[0]))
             args[0] = js_array_to_mono_array(args[0], true, false);
-        return call_method(method, undefined, signature!, args);
+        return call_method_ref(method, undefined, signature!, args);
     };
 }
 
@@ -512,10 +512,11 @@ export function wrap_error_root(is_exception: Int32Ptr | null, ex: any, result: 
     js_string_to_mono_string_root(res, <any>result);
 }
 
+// fixme: ref
 export function mono_method_get_call_signature(method: MonoMethod, mono_obj?: MonoObject): string/*ArgsMarshalString*/ {
     const instanceRoot = mono_wasm_new_root(mono_obj);
     try {
-        return call_method(runtimeHelpers.get_call_sig, undefined, "im", [method, instanceRoot.value]);
+        return call_method_ref(runtimeHelpers.get_call_sig, undefined, "im", [method, instanceRoot.value]);
     } finally {
         instanceRoot.release();
     }

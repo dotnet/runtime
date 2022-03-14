@@ -29,6 +29,7 @@ let _text_encoder_utf8: TextEncoder | undefined = undefined;
 const ws_send_buffer_blocking_threshold = 65536;
 const emptyBuffer = new Uint8Array();
 
+// fixme: ref
 export function mono_wasm_web_socket_open(uri: MonoString, subProtocols: MonoArray, on_close: MonoObject, web_socket_js_handle: Int32Ptr, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const result_root = mono_wasm_new_external_root<MonoObject>(result_address);
     const uri_root = mono_wasm_new_root(uri);
@@ -108,6 +109,7 @@ export function mono_wasm_web_socket_open(uri: MonoString, subProtocols: MonoArr
     }
 }
 
+// fixme: ref
 export function mono_wasm_web_socket_send(webSocket_js_handle: JSHandle, buffer_ptr: MonoObject, offset: number, length: number, message_type: number, end_of_message: boolean, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const result_root = mono_wasm_new_external_root<MonoObject>(result_address);
     const buffer_root = mono_wasm_new_root(buffer_ptr);
@@ -137,6 +139,7 @@ export function mono_wasm_web_socket_send(webSocket_js_handle: JSHandle, buffer_
     }
 }
 
+// fixme: ref
 export function mono_wasm_web_socket_receive(webSocket_js_handle: JSHandle, buffer_ptr: MonoObject, offset: number, length: number, response_ptr: MonoObject, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const result_root = mono_wasm_new_external_root<MonoObject>(result_address);
     const buffer_root = mono_wasm_new_root(buffer_ptr);
