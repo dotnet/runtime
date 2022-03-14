@@ -508,7 +508,7 @@ namespace System.Reflection.Metadata
 
 		CheckReflectedType(assm, allTypes, ns, "ZExistingClass+NewNestedClass");
 
-		CheckReflectedType(assm, allTypes, ns, "NewToplevelClass", static (ty) => {
+		var newTy = CheckReflectedType(assm, allTypes, ns, "NewToplevelClass", static (ty) => {
 		    var nested = ty.GetNestedType("AlsoNested");
 		    var allNested = ty.GetNestedTypes();
 
@@ -517,13 +517,32 @@ namespace System.Reflection.Metadata
 
 		    Assert.Equal(1, allNested.Length);
 		    Assert.Same(nested, allNested[0]);
+
+		    var allInterfaces = ty.GetInterfaces();
+
+		    Assert.Equal (2, allInterfaces.Length);
+		    bool hasICloneable = false, hasINewInterface = false;
+		    for (int i = 0; i < allInterfaces.Length; ++i) {
+			var itf = allInterfaces[i];
+			if (itf.Name == "ICloneable")
+			    hasICloneable = true;
+			if (itf.Name == "IExistingInterface")
+			    hasINewInterface = true;
+		    }
+		    Assert.True (hasICloneable);
+		    Assert.True (hasINewInterface);
 		});
 		CheckReflectedType(assm, allTypes, ns, "NewGenericClass`1");
 		CheckReflectedType(assm, allTypes, ns, "NewToplevelStruct");
 		CheckReflectedType(assm, allTypes, ns, "INewInterface");
 		CheckReflectedType(assm, allTypes, ns, "NewEnum");
 
+		// make some instances using reflection and use them through known interfaces
+		var o = Activator.CreateInstance (newTy);
 
+		var i = (System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.IExistingInterface)o;
+
+		Assert.Equal ("123", i.ItfMethod (123));
 	    });
 	}
     }
