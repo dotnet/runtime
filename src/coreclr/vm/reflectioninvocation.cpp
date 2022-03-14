@@ -369,7 +369,7 @@ struct ByRefToNullable  {
     }
 };
 
-static OBJECTREF InvokeArrayConstructor2(TypeHandle th, OBJECTREF** objs, int argCnt)
+static OBJECTREF InvokeArrayConstructor(TypeHandle th, OBJECTREF** objs, int argCnt)
 {
     CONTRACTL {
         THROWS;
@@ -403,46 +403,6 @@ static OBJECTREF InvokeArrayConstructor2(TypeHandle th, OBJECTREF** objs, int ar
 
         ARG_SLOT value;
         InvokeUtil::CreatePrimitiveValue(ELEMENT_TYPE_I4, oType, *objs[i], &value);
-        memcpyNoGCRefs(indexes + i, ArgSlotEndianessFixup(&value, sizeof(INT32)), sizeof(INT32));
-    }
-
-    return AllocateArrayEx(th, indexes, argCnt);
-}
-
-static OBJECTREF InvokeArrayConstructor(TypeHandle th, Span<OBJECTREF>* objs, int argCnt)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // Validate the argCnt an the Rank. Also allow nested SZARRAY's.
-    _ASSERTE(argCnt == (int) th.GetRank() || argCnt == (int) th.GetRank() * 2 ||
-             th.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
-
-    // Validate all of the parameters.  These all typed as integers
-    int allocSize = 0;
-    if (!ClrSafeInt<int>::multiply(sizeof(INT32), argCnt, allocSize))
-        COMPlusThrow(kArgumentException, IDS_EE_SIGTOOCOMPLEX);
-
-    INT32* indexes = (INT32*) _alloca((size_t)allocSize);
-    ZeroMemory(indexes, allocSize);
-
-    for (DWORD i=0; i<(DWORD)argCnt; i++)
-    {
-        if (!objs->GetAt(i))
-            COMPlusThrowArgumentException(W("parameters"), W("Arg_NullIndex"));
-
-        MethodTable* pMT = objs->GetAt(i)->GetMethodTable();
-        CorElementType oType = TypeHandle(pMT).GetVerifierCorElementType();
-
-        if (!InvokeUtil::IsPrimitiveType(oType) || !InvokeUtil::CanPrimitiveWiden(ELEMENT_TYPE_I4,oType))
-            COMPlusThrow(kArgumentException,W("Arg_PrimWiden"));
-
-        ARG_SLOT value;
-        InvokeUtil::CreatePrimitiveValue(ELEMENT_TYPE_I4, oType, objs->GetAt(i), &value);
         memcpyNoGCRefs(indexes + i, ArgSlotEndianessFixup(&value, sizeof(INT32)), sizeof(INT32));
     }
 
@@ -576,7 +536,7 @@ public:
     }
 };
 
-FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod2,
+FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     Object *target,
     OBJECTREF** objs, // An array of byrefs
     SignatureNative* pSigUNSAFE,
@@ -620,7 +580,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod2,
         // If we are invoking a constructor on an array then we must
         // handle this specially.
         if (ownerType.IsArray()) {
-            gc.retVal = InvokeArrayConstructor2(ownerType,
+            gc.retVal = InvokeArrayConstructor(ownerType,
                                                objs,
                                                gc.pSig->NumFixedArgs());
             goto Done;
@@ -946,6 +906,7 @@ Done:
 }
 FCIMPLEND
 
+<<<<<<< HEAD
 FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     Object *target,
     Span<OBJECTREF>* objs,
@@ -1361,6 +1322,8 @@ Done:
 }
 FCIMPLEND
 
+=======
+>>>>>>> 96d47f8bff6 (Remove scaffolding; remove Assert)
 struct SkipStruct {
     StackCrawlMark* pStackMark;
     MethodDesc*     pMeth;

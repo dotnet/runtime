@@ -1005,7 +1005,6 @@ void GCFrame::Pop()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        PRECONDITION(m_Next != NULL);
         PRECONDITION(m_pCurThread != NULL);
     }
     CONTRACTL_END;

@@ -222,8 +222,7 @@ class RuntimeMethodHandle {
 public:
     static FCDECL1(ReflectMethodObject*, GetCurrentMethod, StackCrawlMark* stackMark);
 
-    static FCDECL5(Object*, InvokeMethod, Object *target, Span<OBJECTREF>* objs, SignatureNative* pSig, CLR_BOOL fConstructor, CLR_BOOL* pRethrow);
-    static FCDECL5(Object*, InvokeMethod2, Object *target, OBJECTREF** objs, SignatureNative* pSig, CLR_BOOL fConstructor, CLR_BOOL* pRethrow);
+    static FCDECL5(Object*, InvokeMethod, Object *target, OBJECTREF** objs, SignatureNative* pSig, CLR_BOOL fConstructor, CLR_BOOL* pRethrow);
 
     struct StreamingContextData {
         Object * additionalContext;  // additionalContex was changed from OBJECTREF to Object to avoid having a
