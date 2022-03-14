@@ -1987,8 +1987,11 @@ void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStar
     }
     else
     {
-        // R12 doesn't hold arguments or return values, so can be used as temp.
-        regNumber tmpReg = REG_R12;
+        // We always save LR for return address hijacking and it will be
+        // restored after this point, so it is available for use here. The
+        // other possibility is r12 but it is not available as it can be used
+        // for the target address for fast tailcalls.
+        regNumber tmpReg = REG_LR;
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, frameSize);
         if (*pUnwindStarted)
         {
