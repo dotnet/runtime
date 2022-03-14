@@ -898,6 +898,8 @@ static guint16 sri_vector_methods [] = {
 	SN_ToVector128Unsafe,
 	SN_ToVector256,
 	SN_ToVector256Unsafe,
+	SN_WidenLower,
+	SN_WidenUpper,
 	SN_WithElement,
 	SN_Xor,
 };
@@ -1307,6 +1309,27 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		ins->sreg3 = args [1]->dreg;
 		ins->inst_c1 = arg0_type;
 		return ins;
+	}
+	case SN_WidenLower:
+	case SN_WidenUpper: {
+#ifdef TARGET_ARM64
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+
+		int op = id == SN_WidenLower ? OP_XLOWER : OP_XUPPER;
+		MonoInst *lower_or_upper_half = emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
+
+		if (type_enum_is_float (arg0_type)) {
+			return emit_simd_ins (cfg, klass, OP_ARM64_FCVTL, lower_or_upper_half->dreg, -1);
+		} else {
+			int zero = alloc_ireg (cfg);
+			MONO_EMIT_NEW_ICONST (cfg, zero, 0);
+			op = type_enum_is_unsigned (arg0_type) ? OP_ARM64_USHLL : OP_ARM64_SSHLL;
+			return emit_simd_ins (cfg, klass, op, lower_or_upper_half->dreg, zero);
+		}
+#else
+		return NULL;
+#endif
 	}
 	case SN_WithLower:
 	case SN_WithUpper: {
