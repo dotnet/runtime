@@ -3088,7 +3088,7 @@ mono_image_init_name_cache (MonoImage *image)
 	mono_image_unlock (image);
 }
 
-/*FIXME Only dynamic assemblies should allow this operation.*/
+/*FIXME Only dynamic assemblies or metadata-update should allow this operation.*/
 /**
  * mono_image_add_to_name_cache:
  */

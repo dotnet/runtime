@@ -11,6 +11,7 @@
 #include "mono/component/hot_reload-internals.h"
 
 #include <glib.h>
+#include <mono/metadata/image.h>
 #include "mono/metadata/assembly-internals.h"
 #include "mono/metadata/mono-hash-internals.h"
 #include "mono/metadata/metadata-internals.h"
@@ -1777,6 +1778,26 @@ hot_reload_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_token, 
 	return found;
 }
 
+/**
+ * Adds the given newly-added class to the image name cache.  Except if the
+ * class is nested (has one of the nested visibility flags), since those are
+ * looked up differently.
+ */
+static void
+add_typedef_to_image_name_cache (MonoImage *image_base, uint32_t log_token)
+{
+	uint32_t cols[MONO_TYPEDEF_SIZE];
+	uint32_t row = mono_metadata_token_index (log_token);
+	mono_metadata_decode_row (&image_base->tables[MONO_TABLE_TYPEDEF], row - 1, cols, MONO_TYPEDEF_SIZE);
+	uint32_t visib = cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+
+	if (visib >= TYPE_ATTRIBUTE_NESTED_PUBLIC && visib <= TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM)
+		return;
+	const char *name_space = mono_metadata_string_heap (image_base, cols[MONO_TYPEDEF_NAMESPACE]);
+	const char *name = mono_metadata_string_heap (image_base, cols[MONO_TYPEDEF_NAME]);
+	mono_image_add_to_name_cache (image_base, name_space, name, row);
+}
+
 /* do actuall enclog application */
 static gboolean
 apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, MonoImage *image_dmeta, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
@@ -2001,11 +2022,13 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			if (is_addition) {
 				/* Adding a new class. ok */
 				switch (func_code) {
-				case ENC_FUNC_DEFAULT:
+				case ENC_FUNC_DEFAULT: {
 					/* ok, added a new class */
 					/* TODO: do things here */
 					pass2_context_add_skeleton (ctx, log_token);
+					add_typedef_to_image_name_cache (image_base, log_token);
 					break;
+				}
 				case ENC_FUNC_ADD_METHOD:
 				case ENC_FUNC_ADD_FIELD:
 					/* ok, adding a new field or method to a new class */
