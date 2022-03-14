@@ -400,6 +400,9 @@ namespace System.Text.RegularExpressions.Generator
             int additionalDeclarationsIndent = writer.Indent;
             writer.WriteLine();
 
+            const string NoMatchFound = "NoMatchFound";
+            bool noMatchFoundLabelNeeded = false;
+
             // Generate length check.  If the input isn't long enough to possibly match, fail quickly.
             // It's rare for min required length to be 0, so we don't bother special-casing the check,
             // especially since we want the "return false" code regardless.
@@ -475,9 +478,11 @@ namespace System.Text.RegularExpressions.Generator
             }
             writer.WriteLine();
 
-            const string NoStartingPositionFound = "NoStartingPositionFound";
             writer.WriteLine("// No match found.");
-            writer.WriteLine($"{NoStartingPositionFound}:");
+            if (noMatchFoundLabelNeeded)
+            {
+                writer.WriteLine($"{NoMatchFound}:");
+            }
             writer.WriteLine($"base.runtextpos = {(!rtl ? "inputSpan.Length" : "0")};");
             writer.WriteLine("return false;");
 
@@ -612,7 +617,8 @@ namespace System.Text.RegularExpressions.Generator
                             writer.WriteLine("int newlinePos = inputSpan.Slice(pos).IndexOf('\\n');");
                             using (EmitBlock(writer, "if ((uint)newlinePos > inputSpan.Length - pos - 1)"))
                             {
-                                Goto(NoStartingPositionFound);
+                                noMatchFoundLabelNeeded = true;
+                                Goto(NoMatchFound);
                             }
                             writer.WriteLine("pos = newlinePos + pos + 1;");
 
@@ -624,7 +630,8 @@ namespace System.Text.RegularExpressions.Generator
                                 _ => $"if (pos > inputSpan.Length - {minRequiredLength})"
                             }))
                             {
-                                Goto(NoStartingPositionFound);
+                                noMatchFoundLabelNeeded = true;
+                                Goto(NoMatchFound);
                             }
                         }
                         writer.WriteLine();
@@ -736,7 +743,8 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine($"int indexOfPos = {indexOf};");
                         using (EmitBlock(writer, "if (indexOfPos < 0)"))
                         {
-                            Goto(NoStartingPositionFound);
+                            noMatchFoundLabelNeeded = true;
+                            Goto(NoMatchFound);
                         }
                         writer.WriteLine("i += indexOfPos;");
                         writer.WriteLine();
@@ -745,7 +753,8 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             using (EmitBlock(writer, $"if (i >= span.Length - {minRequiredLength - 1})"))
                             {
-                                Goto(NoStartingPositionFound);
+                                noMatchFoundLabelNeeded = true;
+                                Goto(NoMatchFound);
                             }
                             writer.WriteLine();
                         }
