@@ -94,6 +94,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0037`__ | AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported. |
 |  __`SYSLIB0038`__ | SerializationFormat.Binary is obsolete and should not be used. See https://aka.ms/serializationformat-binary-obsolete for more information. |
 |  __`SYSLIB0039`__ | TLS versions 1.0 and 1.1 have known vulnerabilities and are not recommended. Use a newer TLS version instead, or use SslProtocols.None to defer to OS defaults. |
+|  __`SYSLIB0040`__ | EncryptionPolicy.NoEncryption and AllowEncryption significantly reduce security and should not be used in production code. |
 
 ## Analyzer Warnings
 

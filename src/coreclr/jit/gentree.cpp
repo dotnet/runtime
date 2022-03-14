@@ -863,6 +863,31 @@ unsigned GenTree::GetMultiRegCount(Compiler* comp) const
 }
 
 //---------------------------------------------------------------
+// gtGetContainedRegMask: Get the reg mask of the node including
+//    contained nodes (recursive).
+//
+// Arguments:
+//    None
+//
+// Return Value:
+//    Reg Mask of GenTree node.
+//
+regMaskTP GenTree::gtGetContainedRegMask()
+{
+    if (!isContained())
+    {
+        return gtGetRegMask();
+    }
+
+    regMaskTP mask = 0;
+    for (GenTree* operand : Operands())
+    {
+        mask |= operand->gtGetContainedRegMask();
+    }
+    return mask;
+}
+
+//---------------------------------------------------------------
 // gtGetRegMask: Get the reg mask of the node.
 //
 // Arguments:
@@ -20810,7 +20835,8 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
     else if (varTypeIsFloating(simdBaseType))
     {
         // var tmp1 = op1.ToVector128Unsafe();
-        // return AdvSimd.Arm64.ConvertToSingleLower(tmp1);
+        // var tmp2 = AdvSimd.InsertScalar(tmp1, op2);
+        // return AdvSimd.Arm64.ConvertToSingleLower(tmp2);
 
         CorInfoType tmp2BaseJitType = CORINFO_TYPE_DOUBLE;
 
@@ -20825,8 +20851,9 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
     else
     {
         // var tmp1 = op1.ToVector128Unsafe();
-        // var tmp2 = AdvSimd.InsertScalar(tmp1.AsUInt64(), 1, op2.AsUInt64());
-        // return AdvSimd.ExtractNarrowingUpper(tmp2).As<T>();
+        // var tmp2 = AdvSimd.InsertScalar(tmp1.AsUInt64(), 1, op2.AsUInt64()).As<T>(); - signed integer use int64,
+        // unsigned integer use uint64
+        // return AdvSimd.ExtractNarrowingLower(tmp2);
 
         CorInfoType tmp2BaseJitType = varTypeIsSigned(simdBaseType) ? CORINFO_TYPE_LONG : CORINFO_TYPE_ULONG;
 

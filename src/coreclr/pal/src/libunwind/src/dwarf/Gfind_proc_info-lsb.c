@@ -866,9 +866,9 @@ remote_lookup (unw_addr_space_t as,
                unw_word_t table, size_t table_size, int32_t rel_ip,
                struct table_entry *e, int32_t *last_ip_offset, void *arg)
 {
-  unsigned long table_len = table_size / sizeof (struct table_entry);
+  size_t table_len = table_size / sizeof (struct table_entry);
   unw_accessors_t *a = unw_get_accessors_int (as);
-  unsigned long lo, hi, mid;
+  size_t lo, hi, mid;
   unw_word_t e_addr = 0;
   int32_t start = 0;
   int ret;

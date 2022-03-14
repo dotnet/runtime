@@ -3076,7 +3076,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             // Arm64 Apple has a special ABI for passing small size arguments on stack,
             // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
             // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
-            argAlignBytes = eeGetArgAlignment(argType, isFloatHfa);
+            argAlignBytes = eeGetArgSizeAlignment(argType, isFloatHfa);
         }
 
         //
@@ -5254,7 +5254,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     }
 
 #ifdef FEATURE_SIMD
-    if (featureSIMD && varTypeIsStruct(elemTyp) && structSizeMightRepresentSIMDType(elemSize))
+    if (supportSIMDTypes() && varTypeIsStruct(elemTyp) && structSizeMightRepresentSIMDType(elemSize))
     {
         // If this is a SIMD type, this is the point at which we lose the type information,
         // so we need to set the correct type on the GT_IND.
@@ -6335,8 +6335,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_64BIT
-            bool preferIndir =
-                isBoxedStatic || isStaticReadOnlyInited || (IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr));
+            bool preferIndir = true;
 #else  // !TARGET_64BIT
             bool preferIndir = isBoxedStatic;
 #endif // !TARGET_64BIT
@@ -6773,15 +6772,6 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     unsigned calleeArgStackSize = 0;
     unsigned callerArgStackSize = info.compArgStackSize;
 
-    for (unsigned index = 0; index < argInfo->ArgCount(); ++index)
-    {
-        fgArgTabEntry* arg = argInfo->GetArgEntry(index, false);
-
-        calleeArgStackSize = roundUp(calleeArgStackSize, arg->GetByteAlignment());
-        calleeArgStackSize += arg->GetStackByteSize();
-    }
-    calleeArgStackSize = GetOutgoingArgByteSize(calleeArgStackSize);
-
     auto reportFastTailCallDecision = [&](const char* thisFailReason) {
         if (failReason != nullptr)
         {
@@ -6832,6 +6822,46 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 #endif // DEBUG
     };
 
+    for (unsigned index = 0; index < argInfo->ArgCount(); ++index)
+    {
+        fgArgTabEntry* arg = argInfo->GetArgEntry(index, false);
+
+        calleeArgStackSize = roundUp(calleeArgStackSize, arg->GetByteAlignment());
+        calleeArgStackSize += arg->GetStackByteSize();
+#ifdef TARGET_ARM
+        if (arg->IsSplit())
+        {
+            reportFastTailCallDecision("Splitted argument in callee is not supported on ARM32");
+            return false;
+        }
+#endif // TARGET_ARM
+    }
+    calleeArgStackSize = GetOutgoingArgByteSize(calleeArgStackSize);
+
+#ifdef TARGET_ARM
+    if (compHasSplitParam)
+    {
+        reportFastTailCallDecision("Splitted argument in caller is not supported on ARM32");
+        return false;
+    }
+
+    if (compIsProfilerHookNeeded())
+    {
+        reportFastTailCallDecision("Profiler is not supported on ARM32");
+        return false;
+    }
+
+    // On ARM32 we have only one non-parameter volatile register and we need it
+    // for the GS security cookie check. We could technically still tailcall
+    // when the callee does not use all argument registers, but we keep the
+    // code simple here.
+    if (getNeedsGSSecurityCookie())
+    {
+        reportFastTailCallDecision("Not enough registers available due to the GS security cookie check");
+        return false;
+    }
+#endif
+
     if (!opts.compFastTailCalls)
     {
         reportFastTailCallDecision("Configuration doesn't allow fast tail calls");
@@ -6843,6 +6873,15 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         reportFastTailCallDecision("Fast tail calls are not performed under tail call stress");
         return false;
     }
+
+#ifdef TARGET_ARM
+    if (callee->IsR2RRelativeIndir() || callee->HasNonStandardAddedArgs(this))
+    {
+        reportFastTailCallDecision(
+            "Method with non-standard args passed in callee saved register cannot be tail called");
+        return false;
+    }
+#endif
 
     // Note on vararg methods:
     // If the caller is vararg method, we don't know the number of arguments passed by caller's caller.
@@ -7252,6 +7291,14 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         failTailCall("Might turn into an intrinsic");
         return nullptr;
     }
+
+#ifdef TARGET_ARM
+    if (call->gtCallMoreFlags & GTF_CALL_M_WRAPPER_DELEGATE_INV)
+    {
+        failTailCall("Non-standard calling convention");
+        return nullptr;
+    }
+#endif
 
     if (call->IsNoReturn() && !call->IsTailPrefixedCall())
     {

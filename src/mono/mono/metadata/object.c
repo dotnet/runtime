@@ -852,11 +852,18 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			if (m_type_is_byref (field->type))
 				break;
 
-			if (static_fields && field->offset == -1)
+			/* metadadta-update: added fields aren't stored in the object, don't
+			 * contribute to the GC descriptor. */
+			if (m_field_is_from_update (field))
+				continue;
+
+			int field_offset = m_field_get_offset (field);
+
+			if (static_fields && field_offset == -1)
 				/* special static */
 				continue;
 
-			pos = field->offset / TARGET_SIZEOF_VOID_P;
+			pos = field_offset / TARGET_SIZEOF_VOID_P;
 			pos += offset;
 
 			type = mono_type_get_underlying_type (field->type);
@@ -871,7 +878,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_OBJECT:
 			case MONO_TYPE_ARRAY:
-				g_assert ((field->offset % wordsize) == 0);
+				g_assert ((m_field_get_offset (field) % wordsize) == 0);
 
 				g_assert (pos < size || pos <= max_size);
 				bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
@@ -879,7 +886,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 				break;
 			case MONO_TYPE_GENERICINST:
 				if (!mono_type_generic_inst_is_valuetype (type)) {
-					g_assert ((field->offset % wordsize) == 0);
+					g_assert ((m_field_get_offset (field) % wordsize) == 0);
 
 					bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
 					*max_set = MAX (*max_set, pos);
@@ -1137,6 +1144,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 		*/
 		/*printf ("new descriptor: %p 0x%x for %s.%s\n", class->gc_descr, bitmap [0], class->name_space, class->name);*/
 
+#ifdef ENABLE_WEAK_ATTR
 		if (m_class_has_weak_fields (klass)) {
 			gsize *weak_bitmap = NULL;
 			int weak_bitmap_nbits = 0;
@@ -1173,6 +1181,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 			mono_class_set_weak_bitmap (klass, weak_bitmap_nbits, weak_bitmap);
 			mono_loader_unlock ();
 		}
+#endif
 
 		gc_descr = mono_gc_make_descr_for_object (bitmap, max_set + 1, m_class_get_instance_size (klass));
 	}
@@ -2071,6 +2080,9 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 			continue;
 		if (mono_field_is_deleted (field))
 			continue;
+		/* metadata-update: added fields are stored external to the object, and don't contribute to the bitmap */
+		if (m_field_is_from_update (field))
+			continue;
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
 			gint32 special_static = m_class_has_no_special_static_fields (klass) ? SPECIAL_STATIC_NONE : field_is_special_static (klass, field);
 			if (special_static != SPECIAL_STATIC_NONE) {
@@ -2755,7 +2767,10 @@ mono_field_set_value_internal (MonoObject *obj, MonoClassField *field, void *val
 	if ((field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 		return;
 
-	dest = (char*)obj + field->offset;
+	/* TODO: metadata-update: implement support for added fields */
+	g_assert (!m_field_is_from_update (field));
+
+	dest = (char*)obj + m_field_get_offset (field);
 	mono_copy_value (field->type, dest, value, value && field->type->type == MONO_TYPE_PTR);
 }
 
@@ -2843,8 +2858,11 @@ mono_field_get_addr (MonoObject *obj, MonoVTable *vt, MonoClassField *field)
 
 	if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 		return mono_static_field_get_addr (vt, field);
-	else
-		return (guint8*)obj + field->offset;
+	else {
+		/* TODO: metadata-update: implement support for added fields */
+		g_assert (!m_field_is_from_update (field));
+		return (guint8*)obj + m_field_get_offset (field);
+	}
 }
 
 guint8*
@@ -2865,7 +2883,7 @@ mono_static_field_get_addr (MonoVTable *vt, MonoClassField *field)
 		mono_error_assert_ok (error);
 		src = (guint8 *)mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 	} else {
-		src = (guint8*)mono_vtable_get_static_field_data (vt) + field->offset;
+		src = (guint8*)mono_vtable_get_static_field_data (vt) + m_field_get_offset (field);
 	}
 
 	return src;
@@ -2908,7 +2926,10 @@ mono_field_get_value_internal (MonoObject *obj, MonoClassField *field, void *val
 
 	g_return_if_fail (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC));
 
-	src = (char*)obj + field->offset;
+	/* TODO: metadata-update: implement me */
+	g_assert (!m_field_is_from_update (field));
+
+	src = (char*)obj + m_field_get_offset (field);
 	mono_copy_value (field->type, value, src, TRUE);
 }
 
@@ -4943,8 +4964,10 @@ object_new_common_tail (MonoObject *o, MonoClass *klass, MonoError *error)
 	if (G_UNLIKELY (m_class_has_finalize (klass)))
 		mono_object_register_finalizer (o);
 
+#ifdef ENABLE_WEAK_ATTR
 	if (G_UNLIKELY (m_class_has_weak_fields (klass)))
 		mono_gc_register_obj_with_weak_fields (o);
+#endif
 
 	return o;
 }
@@ -4968,8 +4991,10 @@ object_new_handle_common_tail (MonoObjectHandle o, MonoClass *klass, MonoError *
 	if (G_UNLIKELY (m_class_has_finalize (klass)))
 		mono_object_register_finalizer_handle (o);
 
+#ifdef ENABLE_WEAK_ATTR
 	if (G_UNLIKELY (m_class_has_weak_fields (klass)))
 		mono_gc_register_object_with_weak_fields (o);
+#endif
 
 	return o;
 }
@@ -5543,15 +5568,6 @@ mono_array_clone_checked (MonoArray *array_raw, MonoError *error)
 }
 
 /* helper macros to check for overflow when calculating the size of arrays */
-#ifdef MONO_BIG_ARRAYS
-#define MYGUINT64_MAX 0x0000FFFFFFFFFFFFUL
-#define MYGUINT_MAX MYGUINT64_MAX
-#define CHECK_ADD_OVERFLOW_UN(a,b) \
-	    (G_UNLIKELY ((guint64)(MYGUINT64_MAX) - (guint64)(b) < (guint64)(a)))
-#define CHECK_MUL_OVERFLOW_UN(a,b) \
-	    (G_UNLIKELY (((guint64)(a) > 0) && ((guint64)(b) > 0) &&	\
-					 ((guint64)(b) > ((MYGUINT64_MAX) / (guint64)(a)))))
-#else
 #define MYGUINT32_MAX 4294967295U
 #define MYGUINT_MAX MYGUINT32_MAX
 #define CHECK_ADD_OVERFLOW_UN(a,b) \
@@ -5559,7 +5575,6 @@ mono_array_clone_checked (MonoArray *array_raw, MonoError *error)
 #define CHECK_MUL_OVERFLOW_UN(a,b) \
 	    (G_UNLIKELY (((guint32)(a) > 0) && ((guint32)(b) > 0) &&			\
 					 ((guint32)(b) > ((MYGUINT32_MAX) / (guint32)(a)))))
-#endif
 
 gboolean
 mono_array_calc_byte_len (MonoClass *klass, uintptr_t len, uintptr_t *res)
@@ -7780,7 +7795,8 @@ mono_class_value_size (MonoClass *klass, guint32 *align)
 gpointer
 mono_vtype_get_field_addr (gpointer vtype, MonoClassField *field)
 {
-	return ((char*)vtype) + field->offset - MONO_ABI_SIZEOF (MonoObject);
+	g_assert (!m_field_is_from_update (field));
+	return ((char*)vtype) + m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject);
 }
 
 static GString *

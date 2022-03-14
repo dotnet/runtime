@@ -153,13 +153,13 @@ unsafe partial class Test
         }
 
         [ConditionalFact]
-        public async Task GeneratedDllImport_NoDiagnostic()
+        public async Task LibraryImport_NoDiagnostic()
         {
             string source = @$"
 using System.Runtime.InteropServices;
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method();
 }}
 partial class Test

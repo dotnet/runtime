@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -66,8 +65,8 @@ namespace System.Linq.Expressions.Tests
             {
                 Type delType = Expression.GetDelegateType(typeArgs);
                 Assert.True(typeof(MulticastDelegate).IsAssignableFrom(delType));
-                Assert.DoesNotMatch(new Regex(@"System\.Action"), delType.FullName);
-                Assert.DoesNotMatch(new Regex(@"System\.Func"), delType.FullName);
+                Assert.DoesNotContain("System.Action", delType.FullName);
+                Assert.DoesNotContain("System.Func", delType.FullName);
                 Reflection.MethodInfo method = delType.GetMethod("Invoke");
                 Assert.Equal(typeArgs.Last(), method.ReturnType);
                 Assert.Equal(typeArgs.Take(typeArgs.Length - 1), method.GetParameters().Select(p => p.ParameterType));
@@ -92,8 +91,8 @@ namespace System.Linq.Expressions.Tests
             {
                 Type delType = Expression.GetDelegateType(delegateArgs);
                 Assert.True(typeof(MulticastDelegate).IsAssignableFrom(delType));
-                Assert.DoesNotMatch(new Regex(@"System\.Action"), delType.FullName);
-                Assert.DoesNotMatch(new Regex(@"System\.Func"), delType.FullName);
+                Assert.DoesNotContain("System.Action", delType.FullName);
+                Assert.DoesNotContain("System.Func", delType.FullName);
                 Reflection.MethodInfo method = delType.GetMethod("Invoke");
                 Assert.Equal(typeof(void), method.ReturnType);
                 Assert.Equal(typeArgs, method.GetParameters().Select(p => p.ParameterType));

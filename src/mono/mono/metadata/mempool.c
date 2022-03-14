@@ -41,7 +41,7 @@
 #define MONO_MEMPOOL_MINSIZE 512
 #endif
 
-// The --with-malloc-mempools debug-build flag causes mempools to be allocated in single-element blocks, so tools like Valgrind can run better.
+// The USE_MALLOC_FOR_MEMPOOLS debug-build flag causes mempools to be allocated in single-element blocks, so tools like Valgrind can run better.
 #if USE_MALLOC_FOR_MEMPOOLS
 #define INDIVIDUAL_ALLOCATIONS
 #define MONO_MEMPOOL_PREFER_INDIVIDUAL_ALLOCATION_SIZE 0

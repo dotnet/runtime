@@ -25,10 +25,10 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = $@"
 using System.Runtime.InteropServices;
-{CodeSnippets.GeneratedDllImportAttributeDeclaration}
+{CodeSnippets.LibraryImportAttributeDeclaration}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method();
 }}
 ";
@@ -47,7 +47,7 @@ partial class Test
         [InlineData(TestTargetFramework.Core)]
         [InlineData(TestTargetFramework.Standard)]
         [InlineData(TestTargetFramework.Net5)]
-        public async Task TargetFrameworkNotSupported_NoGeneratedDllImport_NoDiagnostic(TestTargetFramework targetFramework)
+        public async Task TargetFrameworkNotSupported_NoLibraryImport_NoDiagnostic(TestTargetFramework targetFramework)
         {
             string source = @"
 using System.Runtime.InteropServices;
@@ -79,10 +79,10 @@ namespace NS
 }
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method1(NS.MyClass c);
 
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method2(int i, List<int> list);
 }
 ";
@@ -117,10 +117,10 @@ namespace NS
 }
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial NS.MyClass Method1();
 
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial List<int> Method2();
 }
 ";
@@ -150,7 +150,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method(char c, string s);
 }
 ";
@@ -178,10 +178,10 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial char Method1();
 
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial string Method2();
 }
 ";
@@ -209,10 +209,10 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method1([MarshalAs(UnmanagedType.BStr)] int i1, int i2);
 
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method2(int i1, [MarshalAs(UnmanagedType.FunctionPtr)] bool b2);
 }
 ";
@@ -242,11 +242,11 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.BStr)]
     public static partial int Method1(int i);
 
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.FunctionPtr)]
     public static partial bool Method2(int i);
 }
@@ -277,11 +277,11 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     [return: MarshalAs(1)]
     public static partial int Method1(int i);
 
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial int Method2([MarshalAs((short)0)] bool b);
 }
 ";
@@ -317,11 +317,11 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.I4, SafeArraySubType=VarEnum.VT_I4)]
     public static partial int Method1(int i);
 
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial int Method2([MarshalAs(UnmanagedType.I1, IidParameterIndex = 1)] bool b);
 }
 ";
@@ -350,10 +350,10 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"", StringMarshalling = StringMarshalling.Utf8)]
+    [LibraryImport(""DoesNotExist"", StringMarshalling = StringMarshalling.Utf8)]
     public static partial void Method1(string s);
 
-    [GeneratedDllImport(""DoesNotExist"", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Native))]
+    [LibraryImport(""DoesNotExist"", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Native))]
     public static partial void Method2(string s);
 
     struct Native
@@ -362,7 +362,7 @@ partial class Test
         public string ToManaged() => default;
     }
 }
-" + CodeSnippets.GeneratedDllImportAttributeDeclaration;
+" + CodeSnippets.LibraryImportAttributeDeclaration;
 
             // Compile against Standard so that we generate forwarders
             Compilation comp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
@@ -373,13 +373,13 @@ partial class Test
             {
                 (new DiagnosticResult(GeneratorDiagnostics.CannotForwardToDllImport))
                     .WithSpan(6, 32, 6, 39)
-                    .WithArguments($"{nameof(TypeNames.GeneratedDllImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Utf8)}"),
+                    .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Utf8)}"),
                 (new DiagnosticResult(GeneratorDiagnostics.CannotForwardToDllImport))
                     .WithSpan(9, 32, 9, 39)
-                    .WithArguments($"{nameof(TypeNames.GeneratedDllImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Custom)}"),
+                    .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Custom)}"),
                 (new DiagnosticResult(GeneratorDiagnostics.CannotForwardToDllImport))
                     .WithSpan(9, 32, 9, 39)
-                    .WithArguments($"{nameof(TypeNames.GeneratedDllImportAttribute)}{Type.Delimiter}{nameof(GeneratedDllImportAttribute.StringMarshallingCustomType)}", $"{nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Custom)}"),
+                    .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(LibraryImportAttribute.StringMarshallingCustomType)}", $"{nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Custom)}"),
                 (new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails))
                     .WithSpan(9, 47, 9, 48)
             };
@@ -396,10 +396,10 @@ using System.Runtime.InteropServices;
 {CodeSnippets.DisableRuntimeMarshalling}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"", StringMarshalling = StringMarshalling.Custom)]
+    [LibraryImport(""DoesNotExist"", StringMarshalling = StringMarshalling.Custom)]
     public static partial void Method1(out int i);
 
-    [GeneratedDllImport(""DoesNotExist"", StringMarshalling = StringMarshalling.Utf8, StringMarshallingCustomType = typeof(Native))]
+    [LibraryImport(""DoesNotExist"", StringMarshalling = StringMarshalling.Utf8, StringMarshallingCustomType = typeof(Native))]
     public static partial void Method2(out int i);
 
     struct Native
@@ -417,9 +417,9 @@ partial class Test
             DiagnosticResult[] expectedDiags = new DiagnosticResult[]
             {
                 (new DiagnosticResult(GeneratorDiagnostics.InvalidStringMarshallingConfiguration))
-                    .WithSpan(6, 6, 6, 86),
+                    .WithSpan(6, 6, 6, 81),
                 (new DiagnosticResult(GeneratorDiagnostics.InvalidStringMarshallingConfiguration))
-                    .WithSpan(9, 6, 9, 130)
+                    .WithSpan(9, 6, 9, 125)
             };
             VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
             var newCompDiags = newComp.GetDiagnostics();
@@ -433,10 +433,10 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static void Method() { }
 
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static extern void ExternMethod();
 }
 ";
@@ -465,7 +465,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public partial void Method();
 }
 ";
@@ -492,10 +492,10 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method1<T>();
 
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method2<T, U>();
 }
 ";
@@ -528,7 +528,7 @@ partial class Test
 using System.Runtime.InteropServices;
 {typeKind} Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method();
 }}
 ";
@@ -563,7 +563,7 @@ using System.Runtime.InteropServices;
 {{
     partial class TestInner
     {{
-        [GeneratedDllImport(""DoesNotExist"")]
+        [LibraryImport(""DoesNotExist"")]
         static partial void Method();
     }}
 }}
