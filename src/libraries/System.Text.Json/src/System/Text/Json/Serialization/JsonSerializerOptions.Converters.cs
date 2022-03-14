@@ -32,7 +32,7 @@ namespace System.Text.Json
         {
             // s_typeInfoCreationFunc is the last field assigned.
             // Use it as the sentinel to ensure that all dependencies are initialized.
-            if (s_typeInfoCreationFunc is null)
+            if (Volatile.Read(ref s_typeInfoCreationFunc) is null)
             {
                 s_defaultSimpleConverters = GetDefaultSimpleConverters();
                 s_defaultFactoryConverters = GetDefaultFactoryConverters();
