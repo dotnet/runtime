@@ -34,3 +34,6 @@ RUN sudo apt-get install libnss3 -y \
     && apt-get install libpango-1.0-0 -y \
     && apt-get install libcairo2 -y \
     && apt-get install libasound2 -y 
+
+#install firefox dependecies to run debugger tests:
+RUN sudo apt-get install packagekit-gtk3-module

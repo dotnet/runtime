@@ -28,6 +28,27 @@ public class DebuggerTestFirefox : DebuggerTestBase
         client = insp.Client as FirefoxInspectorClient;
     }
 
+    protected override string BrowserName()
+    {
+        return "firefox";
+    }
+    protected override string BrowserPathLinux()
+    {
+        return "firefox";
+    }
+    protected override string BrowserExecutableLinux()
+    {
+        return "firefox";
+    }
+    protected override string BrowserPathWin()
+    {
+        return "firefox";
+    }
+    protected override string BrowserExecutableWin()
+    {
+        return "firefox.exe";
+    }
+
     internal override string[] ProbeList()
     {
         string [] ret = {
@@ -43,7 +64,8 @@ public class DebuggerTestFirefox : DebuggerTestBase
 
     internal override string InitParms()
     {
-        return "-headless -private -start-debugger-server ";
+        string baseDir = Path.Combine(Path.GetDirectoryName(typeof(DebuggerTestBase).Assembly.Location), "..", "..", BrowserName());
+        return $"-profile \"{baseDir}\" -headless -private -start-debugger-server ";
     }
 
     internal override string UrlToRemoteDebugging()

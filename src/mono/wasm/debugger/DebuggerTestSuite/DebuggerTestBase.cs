@@ -45,6 +45,27 @@ namespace DebuggerTests
         static string s_debuggerTestAppPath;
         static int s_idCounter = -1;
 
+        protected virtual string BrowserName()
+        {
+            return "chrome";
+        }
+        protected virtual string BrowserPathLinux()
+        {
+            return "chrome-linux";
+        }
+        protected virtual string BrowserExecutableLinux()
+        {
+            return "chrome";
+        }
+        protected virtual string BrowserPathWin()
+        {
+            return "chrome-win";
+        }
+        protected virtual string BrowserExecutableWin()
+        {
+            return "chrome.exe";
+        }
+
         public int Id { get; init; }
 
         protected static string DebuggerTestAppPath
@@ -130,10 +151,10 @@ namespace DebuggerTests
 
                 // Look for a browser installed in artifacts, for local runs
                 string baseDir = Path.Combine(Path.GetDirectoryName(typeof(DebuggerTestBase).Assembly.Location), "..", "..");
-                string path = Path.Combine(baseDir, "chrome", "chrome-linux", "chrome");
+                string path = Path.Combine(baseDir, BrowserName(), BrowserPathLinux(), BrowserExecutableLinux());
                 if (File.Exists(path))
                     return path;
-                path = Path.Combine(baseDir, "chrome", "chrome-win", "chrome.exe");
+                path = Path.Combine(baseDir, BrowserName(), BrowserPathWin(), BrowserExecutableWin());
                 if (File.Exists(path))
                     return path;
 
