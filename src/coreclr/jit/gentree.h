@@ -8130,6 +8130,7 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex) const
 #endif // !defined(TARGET_64BIT)
 #endif // FEATURE_MULTIREG_RET
 
+#ifdef FEATURE_HW_INTRINSICS
     if (OperIsHWIntrinsic())
     {
         assert(TypeGet() == TYP_STRUCT);
@@ -8149,6 +8150,7 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex) const
         return AsHWIntrinsic()->Op(1)->TypeGet();
 #endif
     }
+#endif // FEATURE_HW_INTRINSICS
 
     if (OperIsScalarLocal())
     {
