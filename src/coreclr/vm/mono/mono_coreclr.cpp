@@ -668,7 +668,7 @@ extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_class_get_method_from_name(Mono
                 MetaSig     methodSig(method);
 
                 DWORD numArgs = methodSig.NumFixedArgs();
-                if (numArgs == param_count)
+                if (numArgs == (DWORD)param_count)
                 {
                     return (MonoMethod*)method;
                 }
