@@ -442,7 +442,11 @@ namespace System.Reflection.Metadata
 	    var fullName = $"{nameSpace}.{typeName}";
 	    var ty = assm.GetType(fullName);
 	    Assert.True(ty != null, $"{callerFilePath}:{callerLineNumber}: expected Assembly.GetType for '{typeName}' to return non-null in {callerMemberName}");
-	    Assert.True(typeName == ty.Name, $"{callerFilePath}:{callerLineNumber}: returned type has unexpected name '{ty.Name}' (expected: '{typeName}') in {callerMemberName}");
+	    int nestedIdx = typeName.LastIndexOf('+');
+	    string comparisonName = typeName;
+	    if (nestedIdx != -1)
+		comparisonName = typeName.Substring(nestedIdx+1);
+	    Assert.True(comparisonName == ty.Name, $"{callerFilePath}:{callerLineNumber}: returned type has unexpected name '{ty.Name}' (expected: '{comparisonName}') in {callerMemberName}");
 	    Assert.True(ContainsTypeWithName (allTypes, fullName), $"{callerFilePath}:{callerLineNumber}: expected Assembly.GetTypes to contain '{fullName}', but it didn't in {callerMemberName}");
 	    if (moreChecks != null)
 		moreChecks(ty);
@@ -460,17 +464,32 @@ namespace System.Reflection.Metadata
 		var allTypes = assm.GetTypes();
 
 		CheckReflectedType(assm, allTypes, ns, "ZExistingClass");
+		CheckReflectedType(assm, allTypes, ns, "ZExistingClass+PreviousNestedClass");
 
 		ApplyUpdateUtil.ApplyUpdate(assm);
 
 		allTypes = assm.GetTypes();
 
 		CheckReflectedType(assm, allTypes, ns, "ZExistingClass");
+		CheckReflectedType(assm, allTypes, ns, "ZExistingClass+PreviousNestedClass");
 		CheckReflectedType(assm, allTypes, ns, "IExistingInterface");
 
-		CheckReflectedType(assm, allTypes, ns, "NewToplevelClass");
+		CheckReflectedType(assm, allTypes, ns, "ZExistingClass+NewNestedClass");
+
+		CheckReflectedType(assm, allTypes, ns, "NewToplevelClass", static (ty) => {
+		    var nested = ty.GetNestedType("AlsoNested");
+		    var allNested = ty.GetNestedTypes();
+
+		    Assert.Equal("AlsoNested", nested.Name);
+		    Assert.Same(ty, nested.DeclaringType);
+
+		    Assert.Equal(1, allNested.Length);
+		    Assert.Same(nested, allNested[0]);
+		});
+		CheckReflectedType(assm, allTypes, ns, "NewGenericClass`1");
 		CheckReflectedType(assm, allTypes, ns, "NewToplevelStruct");
 		CheckReflectedType(assm, allTypes, ns, "INewInterface");
+		CheckReflectedType(assm, allTypes, ns, "NewEnum");
 
 
 	    });

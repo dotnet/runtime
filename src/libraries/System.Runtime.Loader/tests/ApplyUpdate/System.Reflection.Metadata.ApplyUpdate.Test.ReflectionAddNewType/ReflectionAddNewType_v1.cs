@@ -11,6 +11,7 @@ public interface IExistingInterface {
 
 public class ZExistingClass
 {
+    public class PreviousNestedClass { }
     public class NewNestedClass {};
 }
 
@@ -19,8 +20,16 @@ public class NewToplevelClass : IExistingInterface, ICloneable {
         return i.ToString();
     }
 
-    public object Clone() {
+    public virtual object Clone() {
         return new NewToplevelClass();
+    }
+
+    public class AlsoNested { }
+}
+
+public class NewGenericClass<T> : NewToplevelClass {
+    public override object Clone() {
+	return new NewGenericClass<T>();
     }
 }
 
@@ -29,4 +38,8 @@ public struct NewToplevelStruct  {
 
 public interface INewInterface : IExistingInterface {
     public int AddedItfMethod (string s);
+}
+
+public enum NewEnum {
+    Red, Yellow, Green
 }

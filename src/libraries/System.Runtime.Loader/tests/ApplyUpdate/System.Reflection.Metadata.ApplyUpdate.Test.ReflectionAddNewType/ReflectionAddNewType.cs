@@ -11,4 +11,5 @@ public interface IExistingInterface {
 
 public class ZExistingClass
 {
+    public class PreviousNestedClass { }
 }
