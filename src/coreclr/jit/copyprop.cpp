@@ -312,7 +312,7 @@ void Compiler::optCopyPropPushDef(GenTreeOp*           asg,
     {
         assert((lclNode->gtFlags & GTF_VAR_DEF) != 0);
 
-        // Quirk: do not collect defs from PHIs. Preserves previous behavior.
+        // TODO-CQ: design better heuristics for propagation and remove this condition.
         if (!asg->IsPhiDefn())
         {
             ssaDefNum = GetSsaNumForLocalVarDef(lclNode);
