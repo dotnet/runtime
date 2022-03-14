@@ -172,7 +172,7 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                invoker ??= new MethodInvoker(InvokeNonEmit, ArgumentTypes);
+                invoker ??= new MethodInvoker(this);
                 return invoker;
             }
         }
@@ -354,7 +354,7 @@ namespace System.Reflection
             return MonoMethodInfo.GetParametersInfo(mhandle, this).Length;
         }
 
-        private RuntimeType[] ArgumentTypes
+        internal RuntimeType[] ArgumentTypes
         {
             get
             {
@@ -382,19 +382,47 @@ namespace System.Reflection
          * Exceptions thrown by the called method propagate normally.
          */
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern object? InternalInvoke(object? obj, in Span<object?> parameters, out Exception? exc);
+        internal extern object? InternalInvoke(object? obj, in Span<IntPtr> parameters, out Exception? exc);
+
+        internal object? InternalInvoke(object? obj, Span<object?> parameters, out Exception? exc)
+        {
+            unsafe
+            {
+                // Convert to Span<IntPtr>.
+                int parametersLength = parameters.Length;
+                IntPtr* stackStorage = stackalloc IntPtr[parametersLength];
+                for (int i = 0; i < parametersLength; i++)
+                {
+                    stackStorage[i] = (IntPtr)Unsafe.AsPointer(ref parameters[i]);
+                }
+
+                Span<IntPtr> refParameters = new(stackStorage, parametersLength);
+                return InternalInvoke(obj, refParameters, out exc);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object? InvokeNonEmit(object? obj, Span<object?> arguments, BindingFlags invokeAttr)
+        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr** byrefParameters, BindingFlags invokeAttr)
         {
             Exception? exc;
             object? o;
+
+            // Convert the byref array to a ref array.
+            // The native code could also be adapted to take byref pointers to avoid this conversion.
+            int parametersLength = ArgumentTypes.Length;
+            IntPtr* stackStorage = stackalloc IntPtr[parametersLength];
+            for (int i = 0; i < parametersLength; i++)
+            {
+                stackStorage[i] = *byrefParameters[i];
+            }
+
+            Span<IntPtr> refParameters = new(stackStorage, parametersLength);
 
             if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
                 try
                 {
-                    o = InternalInvoke(obj, arguments, out exc);
+                    o = InternalInvoke(obj, refParameters, out exc);
                 }
                 catch (Mono.NullByRefReturnException)
                 {
@@ -413,7 +441,7 @@ namespace System.Reflection
             {
                 try
                 {
-                    o = InternalInvoke(obj, arguments, out exc);
+                    o = InternalInvoke(obj, refParameters, out exc);
                 }
                 catch (Mono.NullByRefReturnException)
                 {
@@ -786,7 +814,7 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                invoker ??= new ConstructorInvoker(InvokeNonEmit, ArgumentTypes);
+                invoker ??= new ConstructorInvoker(this);
                 return invoker;
             }
         }
@@ -825,7 +853,7 @@ namespace System.Reflection
             return pi == null ? 0 : pi.Length;
         }
 
-        private RuntimeType[] ArgumentTypes
+        internal RuntimeType[] ArgumentTypes
         {
             get
             {
@@ -857,18 +885,33 @@ namespace System.Reflection
          * to match the types of the method signature.
          */
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern object InternalInvoke(object? obj, in Span<object?> parameters, out Exception exc);
+        internal extern object InternalInvoke(object? obj, in Span<IntPtr> parameters, out Exception exc);
 
-        private object? InvokeNonEmit(object? obj, Span<object?> parameters, BindingFlags invokeAttr)
+        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr** byrefParameters, BindingFlags invokeAttr)
         {
             Exception exc;
             object? o;
+            Span<IntPtr> refParameters = default;
+
+            if (byrefParameters != null)
+            {
+                // Convert the byref array to a ref array.
+                // The native code could also be adapted to take byref pointers to avoid this conversion.
+                int parametersLength = ArgumentTypes.Length;
+                IntPtr* refParametersStorage = stackalloc IntPtr[parametersLength];
+                for (int i = 0; i < parametersLength; i++)
+                {
+                    refParametersStorage[i] = *byrefParameters[i];
+                }
+
+                refParameters = new(refParametersStorage, parametersLength);
+            }
 
             if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
                 try
                 {
-                    o = InternalInvoke(obj, parameters, out exc);
+                    o = InternalInvoke(obj, refParameters, out exc);
                 }
                 catch (MethodAccessException)
                 {
@@ -885,7 +928,7 @@ namespace System.Reflection
             }
             else
             {
-                o = InternalInvoke(obj, parameters, out exc);
+                o = InternalInvoke(obj, refParameters, out exc);
             }
 
             if (exc != null)

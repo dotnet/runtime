@@ -112,6 +112,63 @@ namespace System.Reflection
             return o is RtFieldInfo m && m.m_fieldHandle == m_fieldHandle;
         }
 
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal object? GetValueNonEmit(object? obj)
+        {
+            RuntimeType? declaringType = this.DeclaringType as RuntimeType;
+            RuntimeType fieldType = (RuntimeType)FieldType;
+            bool domainInitialized = false;
+
+            if (declaringType == null)
+            {
+                return RuntimeFieldHandle.GetValue(this, obj, fieldType, null, ref domainInitialized);
+            }
+            else
+            {
+                domainInitialized = declaringType.DomainInitialized;
+                object? retVal = RuntimeFieldHandle.GetValue(this, obj, fieldType, declaringType, ref domainInitialized);
+                declaringType.DomainInitialized = domainInitialized;
+                return retVal;
+            }
+        }
+
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal void SetValueNonEmit(object? obj, object? value)
+        {
+            RuntimeType? declaringType = DeclaringType as RuntimeType;
+            RuntimeType fieldType = (RuntimeType)FieldType;
+            bool domainInitialized = false;
+
+            if (declaringType == null)
+            {
+                RuntimeFieldHandle.SetValue(
+                    this,
+                    obj,
+                    value,
+                    fieldType,
+                    Attributes,
+                    declaringType: null,
+                    ref domainInitialized);
+            }
+            else
+            {
+                domainInitialized = declaringType.DomainInitialized;
+
+                RuntimeFieldHandle.SetValue(
+                    this,
+                    obj,
+                    value,
+                    fieldType,
+                    Attributes,
+                    declaringType,
+                    ref domainInitialized);
+
+                declaringType.DomainInitialized = domainInitialized;
+            }
+        }
+
         #endregion
 
         #region MemberInfo Overrides
@@ -129,8 +186,8 @@ namespace System.Reflection
         #endregion
 
         #region FieldInfo Overrides
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override object? GetValue(object? obj)
         {
             InvocationFlags invocationFlags = InvocationFlags;
@@ -146,13 +203,13 @@ namespace System.Reflection
 
             CheckConsistency(obj);
 
-            return Invoker.InvokeGetter(obj);
+            return Invoker.GetValue(obj);
         }
 
         public override object GetRawConstantValue() { throw new InvalidOperationException(); }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override object? GetValueDirect(TypedReference obj)
         {
             if (obj.IsNull)
@@ -162,8 +219,8 @@ namespace System.Reflection
             return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, &obj, (RuntimeType?)DeclaringType);
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
             InvocationFlags invocationFlags = InvocationFlags;
@@ -183,11 +240,11 @@ namespace System.Reflection
             bool _ = false;
             fieldType.CheckValue(ref value, ref _, binder, culture, invokeAttr);
 
-            Invoker.InvokeSetter(obj, value);
+            Invoker.SetValue(obj, value);
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override void SetValueDirect(TypedReference obj, object value)
         {
             if (obj.IsNull)

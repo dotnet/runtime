@@ -107,6 +107,8 @@ namespace System.Reflection
             }
         }
 
+        internal RuntimeType[] Arguments => Signature.Arguments;
+
         internal BindingFlags BindingFlags => m_bindingFlags;
 
         internal RuntimeMethodInfo? GetParentDefinition()
@@ -308,7 +310,7 @@ namespace System.Reflection
 
         public override CallingConventions CallingConvention => Signature.CallingConvention;
 
-        private RuntimeType[] ArgumentTypes => Signature.Arguments;
+        internal RuntimeType[] ArgumentTypes => Signature.Arguments;
 
         [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
         public override MethodBody? GetMethodBody()
@@ -349,14 +351,14 @@ namespace System.Reflection
             unsafe
             {
                 StackAllocatedByRefs byrefStorage = default;
-                IntPtr* unsafeParameters = (IntPtr*)&byrefStorage;
+                IntPtr** unsafeByrefParameters = (IntPtr**)&byrefStorage;
                 StackAllocedArguments argStorage = default;
                 Span<object?> parametersOut = new(ref argStorage._arg0, 1);
                 Span<object?> parameters = new(ref parameter, 1);
 
                 CheckArguments(
                     ref parametersOut,
-                    unsafeParameters,
+                    unsafeByrefParameters,
                     ref _,
                     parameters,
                     ArgumentTypes,
@@ -364,10 +366,31 @@ namespace System.Reflection
                     culture,
                     invokeAttr);
 
-                retValue = Invoker.InvokeUnsafe(obj, unsafeParameters, invokeAttr);
+                retValue = Invoker.InvokeUnsafe(obj, unsafeByrefParameters, invokeAttr);
             }
 
             return retValue;
+        }
+
+        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr** arguments, BindingFlags invokeAttr)
+        {
+            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+            {
+                bool rethrow = false;
+
+                try
+                {
+                    return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false, out rethrow);
+                }
+                catch (Exception e) when (!rethrow)
+                {
+                    throw new TargetInvocationException(e);
+                }
+            }
+            else
+            {
+                return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false, out _);
+            }
         }
 
         #endregion

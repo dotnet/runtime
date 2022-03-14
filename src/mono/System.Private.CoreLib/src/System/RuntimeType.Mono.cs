@@ -1656,10 +1656,13 @@ namespace System
                 throw new MissingMethodException("Cannot create an abstract class '{0}'.", FullName);
             }
 
-            return ctor.Invoker.Invoke(
-                obj: null,
-                Span<object?>.Empty,
-                wrapExceptions ? BindingFlags.Default : BindingFlags.DoNotWrapExceptions);
+            unsafe
+            {
+                return ctor.Invoker.InvokeUnsafe(
+                    obj: null,
+                    args: default,
+                    wrapExceptions ? BindingFlags.Default : BindingFlags.DoNotWrapExceptions);
+            }
         }
 
         internal void CheckValue(
@@ -2005,7 +2008,10 @@ namespace System
             if (ctor is null || !ctor.IsPublic)
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, gt!));
 
-            return ctor.Invoker.Invoke(obj: null, Span<object?>.Empty, BindingFlags.Default)!;
+            unsafe
+            {
+                return ctor.Invoker.InvokeUnsafe(obj: null, args: default, BindingFlags.Default)!;
+            }
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

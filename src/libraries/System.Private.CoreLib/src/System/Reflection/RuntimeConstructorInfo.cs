@@ -139,13 +139,13 @@ namespace System.Reflection
                     if (argCount <= MaxStackAllocArgCount)
                     {
                         StackAllocatedByRefs byrefStorage = default;
-                        IntPtr* unsafeParameters = (IntPtr*)&byrefStorage;
+                        IntPtr** unsafeByrefParameters = (IntPtr**)&byrefStorage;
                         StackAllocedArguments argStorage = default;
                         parametersOut = new Span<object?>(ref argStorage._arg0, argCount);
 
                         CheckArguments(
                             ref parametersOut,
-                            unsafeParameters,
+                            unsafeByrefParameters,
                             ref copyBack,
                             parameters,
                             ArgumentTypes,
@@ -153,20 +153,20 @@ namespace System.Reflection
                             culture,
                             invokeAttr);
 
-                        Invoker.InvokeUnsafe(obj, unsafeParameters, invokeAttr);
+                        Invoker.InvokeUnsafe(obj, unsafeByrefParameters, invokeAttr);
                     }
                     else
                     {
                         parametersOut = new Span<object?>(new object[argCount]);
-                        IntPtr* unsafeParameters = stackalloc IntPtr[argCount];
-                        GCFrameRegistration reg = new(unsafeParameters, (uint)argCount, areByRefs: true);
+                        IntPtr** unsafeByrefParameters = stackalloc IntPtr*[argCount];
+                        GCFrameRegistration reg = new(unsafeByrefParameters, (uint)argCount, areByRefs: true);
 
                         try
                         {
                             RegisterForGCReporting(&reg);
                             CheckArguments(
                                 ref parametersOut,
-                                unsafeParameters,
+                                unsafeByrefParameters,
                                 ref copyBack,
                                 parameters,
                                 ArgumentTypes,
@@ -174,7 +174,7 @@ namespace System.Reflection
                                 culture,
                                 invokeAttr);
 
-                            Invoker.InvokeUnsafe(obj, unsafeParameters, invokeAttr);
+                            Invoker.InvokeUnsafe(obj, unsafeByrefParameters, invokeAttr);
                         }
                         finally
                         {
@@ -232,13 +232,13 @@ namespace System.Reflection
                     if (argCount <= MaxStackAllocArgCount)
                     {
                         StackAllocatedByRefs byrefStorage = default;
-                        IntPtr* unsafeParameters = (IntPtr*)&byrefStorage;
+                        IntPtr** unsafeByrefParameters = (IntPtr**)&byrefStorage;
                         StackAllocedArguments argStorage = default;
                         parametersOut = new Span<object?>(ref argStorage._arg0, argCount);
 
                         CheckArguments(
                             ref parametersOut,
-                            unsafeParameters,
+                            unsafeByrefParameters,
                             ref copyBack,
                             parameters,
                             ArgumentTypes,
@@ -246,20 +246,20 @@ namespace System.Reflection
                             culture,
                             invokeAttr);
 
-                        retValue = Invoker.InvokeUnsafe(obj: null, unsafeParameters, invokeAttr);
+                        retValue = Invoker.InvokeUnsafe(obj: null, unsafeByrefParameters, invokeAttr);
                     }
                     else
                     {
                         parametersOut = new Span<object?>(new object[argCount]);
-                        IntPtr* unsafeParameters = stackalloc IntPtr[argCount];
-                        GCFrameRegistration reg = new(unsafeParameters, (uint)argCount, areByRefs: true);
+                        IntPtr** unsafeByrefParameters = stackalloc IntPtr*[argCount];
+                        GCFrameRegistration reg = new(unsafeByrefParameters, (uint)argCount, areByRefs: true);
 
                         try
                         {
                             RegisterForGCReporting(&reg);
                             CheckArguments(
                                 ref parametersOut,
-                                unsafeParameters,
+                                unsafeByrefParameters,
                                 ref copyBack,
                                 parameters,
                                 ArgumentTypes,
@@ -267,7 +267,7 @@ namespace System.Reflection
                                 culture,
                                 invokeAttr);
 
-                            retValue = Invoker.InvokeUnsafe(obj: null, unsafeParameters, invokeAttr);
+                            retValue = Invoker.InvokeUnsafe(obj: null, unsafeByrefParameters, invokeAttr);
                         }
                         finally
                         {

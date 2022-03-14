@@ -24,6 +24,7 @@ namespace System.Reflection.Emit
         internal bool m_skipVisibility;
         internal RuntimeType? m_typeOwner; // can be null
         private DynamicMethodInvoker? _invoker;
+        private Signature? _signature;
 
         // We want the creator of the DynamicMethod to control who has access to the
         // DynamicMethod (just like we do for delegates). However, a user can get to
@@ -424,10 +425,21 @@ namespace System.Reflection.Emit
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                _invoker ??= new DynamicMethodInvoker(
-                    new Signature(m_methodHandle!, m_parameterTypes!, m_returnType, CallingConvention));
+                _invoker ??= new DynamicMethodInvoker(this);
 
                 return _invoker;
+            }
+        }
+
+        internal Signature Signature
+        {
+            get
+            {
+                Debug.Assert(m_methodHandle != null);
+                Debug.Assert(m_parameterTypes != null);
+
+                _signature ??= new Signature(m_methodHandle, m_parameterTypes, m_returnType, CallingConvention);
+                return _signature;
             }
         }
 
@@ -447,7 +459,7 @@ namespace System.Reflection.Emit
 
             // verify arguments
             int argCount = (parameters != null) ? parameters.Length : 0;
-            if (Invoker.Signature.Arguments.Length != argCount)
+            if (Signature.Arguments.Length != argCount)
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
 
             object? retValue;
@@ -467,42 +479,42 @@ namespace System.Reflection.Emit
                     if (argCount <= MaxStackAllocArgCount)
                     {
                         StackAllocatedByRefs byrefStorage = default;
-                        IntPtr* unsafeParameters = (IntPtr*)&byrefStorage;
+                        IntPtr** unsafeByrefParameters = (IntPtr**)&byrefStorage;
                         StackAllocedArguments argStorage = default;
                         parametersOut = new Span<object?>(ref argStorage._arg0, argCount);
 
                         CheckArguments(
                             ref parametersOut,
-                            unsafeParameters,
+                            unsafeByrefParameters,
                             ref copyBack,
                             parameters,
-                            Invoker.Signature.Arguments,
+                            Signature.Arguments,
                             binder,
                             culture,
                             invokeAttr);
 
-                        retValue = Invoker.InvokeUnsafe(obj, unsafeParameters, invokeAttr);
+                        retValue = Invoker.InvokeUnsafe(obj, unsafeByrefParameters, invokeAttr);
                     }
                     else
                     {
                         parametersOut = new Span<object?>(new object[argCount]);
-                        IntPtr* unsafeParameters = stackalloc IntPtr[argCount];
-                        GCFrameRegistration reg = new(unsafeParameters, (uint)argCount, areByRefs: true);
+                        IntPtr** unsafeByrefParameters = stackalloc IntPtr*[argCount];
+                        GCFrameRegistration reg = new(unsafeByrefParameters, (uint)argCount, areByRefs: true);
 
                         try
                         {
                             RegisterForGCReporting(&reg);
                             CheckArguments(
                                 ref parametersOut,
-                                unsafeParameters,
+                                unsafeByrefParameters,
                                 ref copyBack,
                                 parameters,
-                                Invoker.Signature.Arguments,
+                                Signature.Arguments,
                                 binder,
                                 culture,
                                 invokeAttr);
 
-                            retValue = Invoker.InvokeUnsafe(obj, unsafeParameters, invokeAttr);
+                            retValue = Invoker.InvokeUnsafe(obj, unsafeByrefParameters, invokeAttr);
                         }
                         finally
                         {
@@ -524,6 +536,27 @@ namespace System.Reflection.Emit
 
             GC.KeepAlive(this);
             return retValue;
+        }
+
+        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr** arguments, BindingFlags invokeAttr)
+        {
+            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+            {
+                bool rethrow = false;
+
+                try
+                {
+                    return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false, out rethrow);
+                }
+                catch (Exception e) when (!rethrow)
+                {
+                    throw new TargetInvocationException(e);
+                }
+            }
+            else
+            {
+                return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false, out _);
+            }
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)

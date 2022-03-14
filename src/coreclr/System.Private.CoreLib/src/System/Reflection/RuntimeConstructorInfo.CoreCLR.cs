@@ -94,6 +94,34 @@ namespace System.Reflection
         private RuntimeType ReflectedTypeInternal => m_reflectedTypeCache.GetRuntimeType();
 
         internal BindingFlags BindingFlags => m_bindingFlags;
+
+
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal unsafe object InvokeNonEmitUnsafe(object? obj, IntPtr** args, BindingFlags invokeAttr)
+        {
+            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+            {
+                bool rethrow = false;
+
+                try
+                {
+                    return RuntimeMethodHandle.InvokeMethod(obj, (void**)args, Signature, isConstructor: obj is null, out rethrow)!;
+                }
+                catch (OutOfMemoryException)
+                {
+                    throw; // Re-throw for backward compatibility.
+                }
+                catch (Exception ex) when (!rethrow)
+                {
+                    throw new TargetInvocationException(ex);
+                }
+            }
+            else
+            {
+                return RuntimeMethodHandle.InvokeMethod(obj, (void**)args, Signature, isConstructor: obj is null, out _)!;
+            }
+        }
         #endregion
 
         #region Object Overrides

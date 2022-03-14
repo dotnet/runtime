@@ -2,20 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
-namespace System.Reflection
+namespace System.Reflection.Emit
 {
-    internal sealed partial class MethodInvoker
+    internal sealed partial class DynamicMethodInvoker
     {
-        internal InvocationFlags _invocationFlags;
-        private readonly RuntimeMethodInfo _methodInfo;
         private readonly bool _hasRefs;
+        private readonly DynamicMethod _dynamicMethod;
 
-        public MethodInvoker(RuntimeMethodInfo methodInfo)
+        public DynamicMethodInvoker(DynamicMethod dynamicMethod)
         {
-            _methodInfo = methodInfo;
+            _dynamicMethod = dynamicMethod;
 
-            RuntimeType[] sigTypes = methodInfo.ArgumentTypes;
+            RuntimeType[] sigTypes = dynamicMethod.Signature.Arguments;
             for (int i = 0; i < sigTypes.Length; i++)
             {
                 if (sigTypes[i].IsByRef)
@@ -28,12 +28,10 @@ namespace System.Reflection
 
         public bool HasRefs => _hasRefs;
 
-        [DebuggerStepThrough]
-        [DebuggerHidden]
         public unsafe object? InvokeUnsafe(object? obj, IntPtr** args, BindingFlags invokeAttr)
         {
             // Todo: add strategy for calling IL Emit-based version
-            return _methodInfo.InvokeNonEmitUnsafe(obj, args, invokeAttr);
+            return _dynamicMethod.InvokeNonEmitUnsafe(obj, args, invokeAttr);
         }
     }
 }

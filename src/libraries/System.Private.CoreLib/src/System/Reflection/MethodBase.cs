@@ -142,7 +142,7 @@ namespace System.Reflection
 
         private protected unsafe void CheckArguments(
             ref Span<object?> parametersOut,
-            IntPtr* unsafeParameters,
+            IntPtr** unsafeByrefParameters,
             ref bool copyBack,
             ReadOnlySpan<object?> parameters,
             RuntimeType[] sigTypes,
@@ -179,7 +179,7 @@ namespace System.Reflection
                 // considered user-visible to threads which may still be holding on to returned instances.
                 parametersOut[i] = arg;
 
-                unsafeParameters[i] = (IntPtr)Unsafe.AsPointer(ref parametersOut[i]);
+                unsafeByrefParameters[i] = (IntPtr*)Unsafe.AsPointer(ref parametersOut[i]);
             }
         }
 
