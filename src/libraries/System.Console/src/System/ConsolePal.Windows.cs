@@ -353,7 +353,7 @@ namespace System
                                 continue;
                         }
 
-                        char ch = (char)ir.keyEvent.uChar;
+                        char ch = ir.keyEvent.uChar;
 
                         // In a Alt+NumPad unicode sequence, when the alt key is released uChar will represent the final unicode character, we need to
                         // surface this. VirtualKeyCode for this event will be Alt from the Alt-Up key event. This is probably not the right code,
@@ -392,7 +392,7 @@ namespace System
             bool alt = (state & (ControlKeyState.LeftAltPressed | ControlKeyState.RightAltPressed)) != 0;
             bool control = (state & (ControlKeyState.LeftCtrlPressed | ControlKeyState.RightCtrlPressed)) != 0;
 
-            ConsoleKeyInfo info = new ConsoleKeyInfo((char)ir.keyEvent.uChar, (ConsoleKey)ir.keyEvent.virtualKeyCode, shift, alt, control);
+            ConsoleKeyInfo info = new ConsoleKeyInfo(ir.keyEvent.uChar, (ConsoleKey)ir.keyEvent.virtualKeyCode, shift, alt, control);
 
             if (!intercept)
                 Console.Write(ir.keyEvent.uChar);

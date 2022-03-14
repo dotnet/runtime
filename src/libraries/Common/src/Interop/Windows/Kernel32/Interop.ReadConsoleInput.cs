@@ -16,7 +16,7 @@ internal static partial class Interop
         internal short repeatCount;
         internal short virtualKeyCode;
         internal short virtualScanCode;
-        internal ushort uChar; // Union between WCHAR and ASCII char
+        internal char uChar; // Union between WCHAR and ASCII char
         internal int controlKeyState;
     }
 
