@@ -22,7 +22,6 @@
 #include <math.h>
 #include <locale.h>
 
-#include <mono/utils/gc_wrapper.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-logger-internals.h>

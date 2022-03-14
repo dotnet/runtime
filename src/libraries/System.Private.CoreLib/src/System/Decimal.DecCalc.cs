@@ -19,8 +19,6 @@ namespace System
 
         internal bool IsNegative => _flags < 0;
 
-        internal int Scale => (byte)(_flags >> ScaleShift);
-
         private ulong Low64 => _lo64;
 
         private static ref DecCalc AsMutable(ref decimal d) => ref Unsafe.As<decimal, DecCalc>(ref d);

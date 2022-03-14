@@ -181,7 +181,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CanConfigureAppConfigurationFromFile()
         {
             HostApplicationBuilder builder = CreateEmptyBuilder();
@@ -432,7 +431,6 @@ namespace Microsoft.Extensions.Hosting.Tests
 
         [Theory]
         [MemberData(nameof(ConfigureHostOptionsTestInput))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CanConfigureHostOptionsWithDefaults(BackgroundServiceExceptionBehavior testBehavior, TimeSpan testShutdown)
         {
             var builder = new HostApplicationBuilder();

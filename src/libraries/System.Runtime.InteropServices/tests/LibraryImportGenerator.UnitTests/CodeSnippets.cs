@@ -8,9 +8,9 @@ namespace LibraryImportGenerator.UnitTests
     internal static class CodeSnippets
     {
         /// <summary>
-        /// Partially define attribute for pre-.NET 6.0
+        /// Partially define attribute for pre-.NET 7.0
         /// </summary>
-        public static readonly string GeneratedDllImportAttributeDeclaration = @"
+        public static readonly string LibraryImportAttributeDeclaration = @"
 namespace System.Runtime.InteropServices
 {
     internal enum StringMarshalling
@@ -20,9 +20,9 @@ namespace System.Runtime.InteropServices
         Utf16,
     }
 
-    sealed class GeneratedDllImportAttribute : System.Attribute
+    sealed class LibraryImportAttribute : System.Attribute
     {
-        public GeneratedDllImportAttribute(string a) { }
+        public LibraryImportAttribute(string a) { }
         public StringMarshalling StringMarshalling { get; set; }
         public Type StringMarshallingCustomType { get; set; }
     }
@@ -30,42 +30,42 @@ namespace System.Runtime.InteropServices
 ";
 
         /// <summary>
-        /// Trivial declaration of GeneratedDllImport usage
+        /// Trivial declaration of LibraryImport usage
         /// </summary>
         public static readonly string TrivialClassDeclarations = @"
 using System.Runtime.InteropServices;
 partial class Basic
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial void Method1();
 
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method2();
 
-    [System.Runtime.InteropServices.GeneratedDllImportAttribute(""DoesNotExist"")]
+    [System.Runtime.InteropServices.LibraryImportAttribute(""DoesNotExist"")]
     public static partial void Method3();
 
-    [System.Runtime.InteropServices.GeneratedDllImport(""DoesNotExist"")]
+    [System.Runtime.InteropServices.LibraryImport(""DoesNotExist"")]
     public static partial void Method4();
 }
 ";
         /// <summary>
-        /// Trivial declaration of GeneratedDllImport usage
+        /// Trivial declaration of LibraryImport usage
         /// </summary>
         public static readonly string TrivialStructDeclarations = @"
 using System.Runtime.InteropServices;
 partial struct Basic
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial void Method1();
 
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method2();
 
-    [System.Runtime.InteropServices.GeneratedDllImportAttribute(""DoesNotExist"")]
+    [System.Runtime.InteropServices.LibraryImportAttribute(""DoesNotExist"")]
     public static partial void Method3();
 
-    [System.Runtime.InteropServices.GeneratedDllImport(""DoesNotExist"")]
+    [System.Runtime.InteropServices.LibraryImport(""DoesNotExist"")]
     public static partial void Method4();
 }
 ";
@@ -90,7 +90,7 @@ sealed class Dummy2Attribute : Attribute
 partial class Test
 {
     [DummyAttribute]
-    [GeneratedDllImport(""DoesNotExist""), Dummy2Attribute(""string value"")]
+    [LibraryImport(""DoesNotExist""), Dummy2Attribute(""string value"")]
     public static partial void Method();
 }
 ";
@@ -106,7 +106,7 @@ namespace NS
     {
         partial class Test
         {
-            [GeneratedDllImport(""DoesNotExist"")]
+            [LibraryImport(""DoesNotExist"")]
             public static partial void Method1();
         }
     }
@@ -115,7 +115,7 @@ namespace NS.InnerNS
 {
     partial class Test
     {
-        [GeneratedDllImport(""DoesNotExist"")]
+        [LibraryImport(""DoesNotExist"")]
         public static partial void Method2();
     }
 }
@@ -132,7 +132,7 @@ namespace NS
     {
         partial class InnerClass
         {
-            [GeneratedDllImport(""DoesNotExist"")]
+            [LibraryImport(""DoesNotExist"")]
             public static partial void Method();
         }
     }
@@ -140,7 +140,7 @@ namespace NS
     {
         partial struct InnerStruct
         {
-            [GeneratedDllImport(""DoesNotExist"")]
+            [LibraryImport(""DoesNotExist"")]
             public static partial void Method();
         }
     }
@@ -148,7 +148,7 @@ namespace NS
     {
         partial struct InnerStruct
         {
-            [GeneratedDllImport(""DoesNotExist"")]
+            [LibraryImport(""DoesNotExist"")]
             public static partial void Method();
         }
     }
@@ -156,7 +156,7 @@ namespace NS
     {
         partial class InnerClass
         {
-            [GeneratedDllImport(""DoesNotExist"")]
+            [LibraryImport(""DoesNotExist"")]
             public static partial void Method();
         }
     }
@@ -170,12 +170,12 @@ namespace NS
 using System.Runtime.InteropServices;
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method1();
 }
 unsafe partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial int* Method2();
 }
 ";
@@ -186,19 +186,19 @@ unsafe partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"", EntryPoint=""UserDefinedEntryPoint"")]
+    [LibraryImport(""DoesNotExist"", EntryPoint=""UserDefinedEntryPoint"")]
     public static partial void NotAnExport();
 }
 ";
 
         /// <summary>
-        /// Declaration with all GeneratedDllImport named arguments.
+        /// Declaration with all LibraryImport named arguments.
         /// </summary>
-        public static readonly string AllGeneratedDllImportNamedArguments = @"
+        public static readonly string AllLibraryImportNamedArguments = @"
 using System.Runtime.InteropServices;
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"",
+    [LibraryImport(""DoesNotExist"",
         StringMarshalling = StringMarshalling.Utf16,
         EntryPoint = ""UserDefinedEntryPoint"",
         SetLastError = true)]
@@ -219,19 +219,19 @@ partial class Test
     private const int One = 1;
     private const int Two = 2;
 
-    [GeneratedDllImport(nameof(Test),
+    [LibraryImport(nameof(Test),
         StringMarshalling = (StringMarshalling)2,
         EntryPoint = EntryPointName,
         SetLastError = IsFalse)]
     public static partial void Method1();
 
-    [GeneratedDllImport(nameof(Test),
+    [LibraryImport(nameof(Test),
         StringMarshalling = (StringMarshalling)Two,
         EntryPoint = EntryPointName,
         SetLastError = !IsTrue)]
     public static partial void Method2();
 
-    [GeneratedDllImport(nameof(Test),
+    [LibraryImport(nameof(Test),
         StringMarshalling = (StringMarshalling)2,
         EntryPoint = EntryPointName,
         SetLastError = 0 != 1)]
@@ -246,7 +246,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method(int t = 0);
 }
 ";
@@ -259,7 +259,7 @@ using System.Runtime.InteropServices;
 partial class Test
 {
     [LCIDConversion(0)]
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method();
 }
 ";
@@ -296,11 +296,11 @@ namespace NS
 
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(NS.MyCustomMarshaler), MarshalCookie=""COOKIE1"")]
     public static partial bool Method1([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(NS.MyCustomMarshaler), MarshalCookie=""COOKIE2"")]bool t);
 
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = ""NS.MyCustomMarshaler"", MarshalCookie=""COOKIE3"")]
     public static partial bool Method2([MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = ""NS.MyCustomMarshaler"", MarshalCookie=""COOKIE4"")]bool t);
 }
@@ -316,21 +316,21 @@ using System.Runtime.InteropServices;
 namespace System.Runtime.InteropServices
 {
     // Prefix with ATTRIBUTE so the lengths will match during check.
-    sealed class ATTRIBUTEGeneratedDllImportAttribute : Attribute
+    sealed class ATTRIBUTELibraryImportAttribute : Attribute
     {
-        public ATTRIBUTEGeneratedDllImportAttribute(string a) { }
+        public ATTRIBUTELibraryImportAttribute(string a) { }
     }
 }
 
 partial class Test
 {
-    [ATTRIBUTEGeneratedDllImportAttribute(""DoesNotExist"")]
+    [ATTRIBUTELibraryImportAttribute(""DoesNotExist"")]
     public static partial void Method1();
 
-    [ATTRIBUTEGeneratedDllImport(""DoesNotExist"")]
+    [ATTRIBUTELibraryImport(""DoesNotExist"")]
     public static partial void Method2();
 
-    [System.Runtime.InteropServices.ATTRIBUTEGeneratedDllImport(""DoesNotExist"")]
+    [System.Runtime.InteropServices.ATTRIBUTELibraryImport(""DoesNotExist"")]
     public static partial void Method3();
 }
 ";
@@ -345,7 +345,7 @@ using System.Runtime.InteropServices;
 {preDeclaration}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"", StringMarshalling = StringMarshalling.{value})]
+    [LibraryImport(""DoesNotExist"", StringMarshalling = StringMarshalling.{value})]
     public static partial {typename} Method(
         {typename} p,
         in {typename} pIn,
@@ -365,7 +365,7 @@ using System.Runtime.InteropServices;
 {preDeclaration}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"", StringMarshallingCustomType = typeof({stringMarshallingCustomTypeName}))]
+    [LibraryImport(""DoesNotExist"", StringMarshallingCustomType = typeof({stringMarshallingCustomTypeName}))]
     public static partial {typeName} Method(
         {typeName} p,
         in {typeName} pIn,
@@ -397,7 +397,7 @@ using System.Runtime.InteropServices;
 {preDeclaration}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial {typeName} Method(
         {typeName} p,
         in {typeName} pIn,
@@ -413,7 +413,7 @@ using System.Runtime.InteropServices;
 {preDeclaration}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial {typeName} Method(
         {typeName} p,
         in {typeName} pIn,
@@ -428,7 +428,7 @@ using System.Runtime.InteropServices;
 {preDeclaration}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static unsafe partial {typeName} Method(
         {typeName} p,
         in {typeName} pIn,
@@ -446,7 +446,7 @@ using System.Runtime.InteropServices;
 {preDeclaration}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method(
         [{attributeName}] {typeName} p);
 }}";
@@ -460,7 +460,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void {methodName}(
         int {paramName});
 }}";
@@ -472,7 +472,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.{unmanagedType})]
     public static partial {typeName} Method(
         [MarshalAs(UnmanagedType.{unmanagedType})] {typeName} p,
@@ -489,7 +489,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.{unmanagedType})]
     public static unsafe partial {typeName} Method(
         [MarshalAs(UnmanagedType.{unmanagedType})] {typeName} p,
@@ -515,7 +515,7 @@ namespace NS
 
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial MyEnum Method(
         MyEnum p,
         in MyEnum pIn,
@@ -535,7 +535,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"", SetLastError = true)]
+    [LibraryImport(""DoesNotExist"", SetLastError = true)]
     public static partial {typeName} Method({typeName} p);
 }}";
 
@@ -569,7 +569,7 @@ using System.Runtime.InteropServices;
 {preDeclaration}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     [return:MarshalAs(UnmanagedType.LPArray, SizeConst=10)]
     public static partial {elementType}[] Method(
         {elementType}[] p,
@@ -588,7 +588,7 @@ using System.Runtime.InteropServices;
 {DisableRuntimeMarshalling}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method(
         {(isByRef ? "ref" : "")} {sizeParamType} pRefSize,
         [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=0)] ref int[] pRef
@@ -603,7 +603,7 @@ using System.Runtime.InteropServices;
 {preDeclaration}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method(
         [MarshalAs(UnmanagedType.LPArray, ArraySubType=UnmanagedType.{nestedMarshalInfo})] {elementType}[] pRef
         );
@@ -619,7 +619,7 @@ using System.Runtime.InteropServices;
 {preDeclaration}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     [return: MarshalUsing(typeof({nativeTypeName}))]
     public static partial {typeName} Method(
         [MarshalUsing(typeof({nativeTypeName}))] {typeName} p,
@@ -857,7 +857,7 @@ unsafe ref struct Native
 
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method(
         S s,
         in S sIn);
@@ -889,7 +889,7 @@ using System.Runtime.InteropServices;
 {preDeclaration}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method(
         {byRefKind} {typeName} p);
 }}";
@@ -899,7 +899,7 @@ using System.Runtime.InteropServices;
 {preDeclaration}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method(
         {typeName} p);
 }}";
@@ -909,7 +909,7 @@ using System.Runtime.InteropServices;
 {preDeclaration}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial {typeName} Method();
 }}";
 
@@ -1019,7 +1019,7 @@ class MySafeHandle : SafeHandle
 partial class Test
 {{
 #if {define}
-    [System.Runtime.InteropServices.GeneratedDllImport(""DoesNotExist"")]
+    [System.Runtime.InteropServices.LibraryImport(""DoesNotExist"")]
     public static partial int Method(
         int p,
         in int pIn,
@@ -1033,7 +1033,7 @@ using System.Runtime.InteropServices;
 partial class Test
 {{
 #if {define}
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial int Method(
         int p,
         in int pIn,
@@ -1048,7 +1048,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
 #if {define}
     public static partial int Method(
         int p,
@@ -1067,7 +1067,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
 #if {define}
     public static partial int Method(
         int p,
@@ -1133,7 +1133,7 @@ using System.Runtime.InteropServices;
 {DisableRuntimeMarshalling}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     [return:MarshalUsing(ConstantElementCount=10)]
     public static partial {collectionType} Method(
         {collectionType} p,
@@ -1174,7 +1174,7 @@ using System.Runtime.InteropServices;
 {DisableRuntimeMarshalling}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     [return:MarshalUsing(typeof({marshallerType}), ConstantElementCount=10)]
     public static partial {collectionType} Method(
         [MarshalUsing(typeof({marshallerType}))] {collectionType} p,
@@ -1195,7 +1195,7 @@ using System.Runtime.InteropServices;
 {DisableRuntimeMarshalling}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial int Method(
         [MarshalUsing(typeof({marshallerType}), CountElementName = MarshalUsingAttribute.ReturnsCountValue)] out {collectionType} pOut
         );
@@ -1210,7 +1210,7 @@ using System.Runtime.InteropServices;
 {DisableRuntimeMarshalling}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method(
         {(isByRef ? "ref" : "")} {sizeParamType} pRefSize,
         [MarshalUsing(CountElementName = ""pRefSize"")] ref int[] pRef
@@ -1224,7 +1224,7 @@ using System.Runtime.InteropServices;
 {DisableRuntimeMarshalling}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method(
         int pRefSize,
         [MarshalUsing(ConstantElementCount = 10, CountElementName = ""pRefSize"")] ref int[] pRef
@@ -1236,7 +1236,7 @@ using System.Runtime.InteropServices;
 {DisableRuntimeMarshalling}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method(
         int pRefSize,
         [MarshalUsing(CountElementName = null)] ref int[] pRef
@@ -1262,7 +1262,7 @@ using System.Runtime.InteropServices;
 [assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     [return:MarshalUsing(ConstantElementCount=10)]
     [return:MarshalUsing(typeof(IntWrapper), ElementIndirectionLevel = 1)]
     public static partial TestCollection<int> Method(
@@ -1288,7 +1288,7 @@ using System.Runtime.InteropServices;
 [assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method(
         [MarshalUsing(typeof(IntWrapper), ElementIndirectionLevel = 1)] [MarshalUsing(typeof(IntWrapper), ElementIndirectionLevel = 1)] TestCollection<int> p);
 }
@@ -1306,7 +1306,7 @@ using System.Runtime.InteropServices;
 [assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method(
         [MarshalUsing(typeof(IntWrapper), ElementIndirectionLevel = 2)] TestCollection<int> p);
 }
@@ -1324,7 +1324,7 @@ using System.Runtime.InteropServices;
 [assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     [return:MarshalUsing(ConstantElementCount=10)]
     [return:MarshalAs(UnmanagedType.LPArray, SizeConst=10)]
     public static partial int[] Method();
@@ -1336,7 +1336,7 @@ using System.Runtime.InteropServices;
 [assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     [return:MarshalUsing(CountElementName=MarshalUsingAttribute.ReturnsCountValue)]
     public static partial int[] Method();
 }
@@ -1347,7 +1347,7 @@ using System.Runtime.InteropServices;
 [assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method(
         [MarshalUsing(CountElementName=""arr"")] ref int[] arr
     );
@@ -1358,7 +1358,7 @@ using System.Runtime.InteropServices;
 [assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method(
         [MarshalUsing(CountElementName=""arr2"")] ref int[] arr,
         [MarshalUsing(CountElementName=""arr"")] ref int[] arr2
@@ -1370,7 +1370,7 @@ using System.Runtime.InteropServices;
 [assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method(
         [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=1)] ref int[] arr,
         [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=0)] ref int[] arr2
@@ -1383,7 +1383,7 @@ using System.Runtime.InteropServices;
 [assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 partial class Test
 {
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial void Method(
         [MarshalUsing(CountElementName=""arr0"", ElementIndirectionLevel = 0)]
         [MarshalUsing(CountElementName=""arr1"", ElementIndirectionLevel = 1)]
@@ -1460,9 +1460,9 @@ partial class Test
 using System.Runtime.InteropServices;
 partial struct Basic
 {{
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial ref {typeName} RefReturn();
-    [GeneratedDllImport(""DoesNotExist"")]
+    [LibraryImport(""DoesNotExist"")]
     public static partial ref readonly {typeName} RefReadonlyReturn();
 }}";
 
@@ -1471,7 +1471,7 @@ using System.Runtime.InteropServices;
 
 partial struct Basic
 {
-    [GeneratedDllImport(""DoesNotExist"", SetLa)]
+    [LibraryImport(""DoesNotExist"", SetLa)]
     public static partial void Method();
 }
 ";
@@ -1480,7 +1480,7 @@ using System.Runtime.InteropServices;
 
 partial struct Basic
 {
-    [GeneratedDllImport(DoesNotExist)]
+    [LibraryImport(DoesNotExist)]
     public static partial void Method();
 }
 ";
@@ -1489,7 +1489,7 @@ using System.Runtime.InteropServices;
 
 partial struct Basic
 {
-    [GeneratedDllImport(""DoesNotExist"", SetLastError = ""Foo"")]
+    [LibraryImport(""DoesNotExist"", SetLastError = ""Foo"")]
     public static partial void Method();
 }
 ";

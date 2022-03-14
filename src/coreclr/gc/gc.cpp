@@ -5500,10 +5500,6 @@ gc_heap::compute_new_ephemeral_size()
         padding_size, (total_ephemeral_size - padding_size)));
 }
 
-#ifdef _MSC_VER
-#pragma warning(disable:4706) // "assignment within conditional expression" is intentional in this function.
-#endif // _MSC_VER
-
 heap_segment*
 gc_heap::soh_get_segment_to_expand()
 {
@@ -5621,10 +5617,6 @@ gc_heap::soh_get_segment_to_expand()
     return result;
 }
 #endif //!USE_REGIONS
-
-#ifdef _MSC_VER
-#pragma warning(default:4706)
-#endif // _MSC_VER
 
 //returns 0 in case of allocation failure
 heap_segment*
@@ -12178,7 +12170,7 @@ void region_free_list::print (int hn, const char* msg, int* ages)
         }
 
         dprintf (3, ("[%s] h%2d age %d region %Ix (%Id)%s",
-            msg, hn, (int)heap_segment_age_in_free (region), 
+            msg, hn, (int)heap_segment_age_in_free (region),
             heap_segment_mem (region), get_region_committed_size (region),
             ((heap_segment_committed (region) == heap_segment_reserved (region)) ? "(FC)" : "")));
     }
@@ -12331,7 +12323,7 @@ void gc_heap::distribute_free_regions()
                 {
                     num_decommit_regions_by_time++;
                     size_decommit_regions_by_time += get_region_committed_size (region);
-                    dprintf (REGIONS_LOG, ("h%2d region %Ix age %2d, decommit", 
+                    dprintf (REGIONS_LOG, ("h%2d region %Ix age %2d, decommit",
                         i, heap_segment_mem (region), heap_segment_age_in_free (region)));
                     region_free_list::unlink_region (region);
                     region_free_list::add_region (region, global_regions_to_decommit);
@@ -12422,6 +12414,9 @@ void gc_heap::distribute_free_regions()
 
             if (num_regions_to_decommit[kind] > 0)
             {
+                // remember how many regions we had on the decommit list already due to aging
+                size_t num_regions_to_decommit_before = global_regions_to_decommit[kind].get_num_free_regions();
+
                 // put the highest regions on the decommit list
                 global_region_allocator.move_highest_free_regions (num_regions_to_decommit[kind]*region_factor[kind],
                                                                    kind == basic_free_region,
@@ -12432,7 +12427,9 @@ void gc_heap::distribute_free_regions()
 
                 if (kind == basic_free_region)
                 {
-                    assert (global_regions_to_decommit[kind].get_num_free_regions() == (size_t)num_regions_to_decommit[kind]);
+                    // we should now have num_regions_to_decommit[kind] regions more on the decommit list
+                    assert (global_regions_to_decommit[kind].get_num_free_regions() ==
+                            num_regions_to_decommit_before + (size_t)num_regions_to_decommit[kind]);
                 }
                 else
                 {
@@ -15834,10 +15831,6 @@ BOOL gc_heap::short_on_end_of_seg (heap_segment* seg)
     return !sufficient_p;
 }
 
-#ifdef _MSC_VER
-#pragma warning(disable:4706) // "assignment within conditional expression" is intentional in this function.
-#endif // _MSC_VER
-
 inline
 BOOL gc_heap::a_fit_free_list_p (int gen_number,
                                  size_t size,
@@ -16113,10 +16106,6 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
 exit:
     return can_fit;
 }
-
-#ifdef _MSC_VER
-#pragma warning(default:4706)
-#endif // _MSC_VER
 
 BOOL gc_heap::a_fit_segment_end_p (int gen_number,
                                    heap_segment* seg,
@@ -20678,7 +20667,7 @@ void gc_heap::gc1()
 
     if (n < max_generation)
     {
-        int highest_gen_number = 
+        int highest_gen_number =
 #ifdef USE_REGIONS
             max_generation;
 #else //USE_REGIONS
@@ -20912,6 +20901,7 @@ void gc_heap::gc1()
             for (int gen = 0; gen <= limit; gen++)
             {
                 size_t total_desired = 0;
+                size_t total_already_consumed = 0;
 
                 for (int i = 0; i < gc_heap::n_heaps; i++)
                 {
@@ -20925,10 +20915,21 @@ void gc_heap::gc1()
                         break;
                     }
                     total_desired = temp_total_desired;
+                    // for gen 1 and gen 2, there may have been some incoming size
+                    // already accounted for
+                    assert ((ptrdiff_t)dd_desired_allocation (dd) >= dd_new_allocation (dd));
+                    size_t already_consumed = dd_desired_allocation (dd) - dd_new_allocation (dd);
+                    size_t temp_total_already_consumed = total_already_consumed + already_consumed;
+
+                    // we should never have an overflow here as the consumed size should always fit in a size_t
+                    assert (temp_total_already_consumed >= total_already_consumed);
+                    total_already_consumed = temp_total_already_consumed;
                 }
 
                 size_t desired_per_heap = Align (total_desired/gc_heap::n_heaps,
                                                     get_alignment_constant (gen <= max_generation));
+
+                size_t already_consumed_per_heap = total_already_consumed / gc_heap::n_heaps;
 
                 if (gen == 0)
                 {
@@ -20973,7 +20974,7 @@ void gc_heap::gc1()
                     dynamic_data* dd = hp->dynamic_data_of (gen);
                     dd_desired_allocation (dd) = desired_per_heap;
                     dd_gc_new_allocation (dd) = desired_per_heap;
-                    dd_new_allocation (dd) = desired_per_heap;
+                    dd_new_allocation (dd) = desired_per_heap - already_consumed_per_heap;
 
                     if (gen == 0)
                     {
@@ -22586,11 +22587,11 @@ void gc_heap::equalize_promoted_bytes()
         {
             dprintf (REGIONS_LOG, ("before equalize: gen: %d avg surv: %Id max_surv: %Id imbalance: %d", gen_idx, avg_surv_per_heap, max_surv_per_heap, max_surv_per_heap*100/avg_surv_per_heap));
         }
-        // 
+        //
         // step 2:
         //   remove regions from surplus heaps until all heaps are <= average
         //   put removed regions into surplus regions
-        // 
+        //
         // step 3:
         //   put regions into size classes by survivorship
         //   put deficit heaps into size classes by deficit
@@ -24980,7 +24981,7 @@ size_t gc_heap::committed_size()
 
         while (seg)
         {
-            uint8_t* start = 
+            uint8_t* start =
 #ifdef USE_REGIONS
                 get_region_start (seg);
 #else
@@ -29541,7 +29542,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #if defined(USE_REGIONS) && defined(BACKGROUND_GC)
         if (should_update_end_mark_size())
         {
-            background_soh_size_end_mark += generation_end_seg_allocated (older_gen) - 
+            background_soh_size_end_mark += generation_end_seg_allocated (older_gen) -
                                             r_older_gen_end_seg_allocated;
         }
 #endif //USE_REGIONS && BACKGROUND_GC
@@ -30340,7 +30341,7 @@ void gc_heap::thread_final_regions (bool compact_p)
 
         while (max_gen_tail_region)
         {
-            background_soh_size_end_mark += heap_segment_allocated (max_gen_tail_region) - 
+            background_soh_size_end_mark += heap_segment_allocated (max_gen_tail_region) -
                                             heap_segment_mem (max_gen_tail_region);
 
             max_gen_tail_region = heap_segment_next (max_gen_tail_region);
@@ -30777,7 +30778,7 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
 
     int plan_gen_num = heap_segment_plan_gen_num (region);
     generation_allocation_size (generation_of (plan_gen_num)) += heap_segment_survived (region);
-    dprintf (REGIONS_LOG, ("sip: g%d alloc size is now %Id", plan_gen_num, 
+    dprintf (REGIONS_LOG, ("sip: g%d alloc size is now %Id", plan_gen_num,
         generation_allocation_size (generation_of (plan_gen_num))));
 }
 
@@ -39412,6 +39413,8 @@ void gc_heap::compute_new_dynamic_data (int gen_number)
         // When we are in the low latency mode, we can still be
         // condemning more than gen1's 'cause of induced GCs.
         dd_desired_allocation (dd) = low_latency_alloc;
+        dd_gc_new_allocation (dd) = dd_desired_allocation (dd);
+        dd_new_allocation (dd) = dd_gc_new_allocation (dd);
     }
     else
     {
@@ -39461,13 +39464,15 @@ void gc_heap::compute_new_dynamic_data (int gen_number)
         {
             dd_desired_allocation (dd) = desired_new_allocation (dd, out, gen_number, 0);
         }
+        dd_gc_new_allocation (dd) = dd_desired_allocation (dd);
+
+        // we may have had some incoming objects during this GC -
+        // adjust the consumed budget for these
+        dd_new_allocation (dd) = dd_gc_new_allocation (dd) - in;
     }
 
     gen_data->pinned_surv = dd_pinned_survived_size (dd);
     gen_data->npinned_surv = dd_survived_size (dd) - dd_pinned_survived_size (dd);
-
-    dd_gc_new_allocation (dd) = dd_desired_allocation (dd);
-    dd_new_allocation (dd) = dd_gc_new_allocation (dd);
 
     dd_promoted_size (dd) = out;
     if (gen_number == max_generation)
@@ -43691,7 +43696,7 @@ HRESULT GCHeap::Initialize()
     }
 
 #ifdef USE_REGIONS
-    gc_heap::regions_range = (size_t)GCConfig::GetGCRegionsRange();
+    gc_heap::regions_range = (size_t)GCConfig::GetGCRegionRange();
 #endif //USE_REGIONS
 
 #ifdef HOST_64BIT
@@ -43942,7 +43947,7 @@ HRESULT GCHeap::Initialize()
 #ifdef MULTIPLE_HEAPS
     gc_heap::soh_segment_size /= 4;
 #endif //MULTIPLE_HEAPS
-    size_t gc_region_size = (size_t)GCConfig::GetGCRegionsSize();
+    size_t gc_region_size = (size_t)GCConfig::GetGCRegionSize();
     if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * 19) > gc_heap::regions_range))
     {
         return E_OUTOFMEMORY;
@@ -46027,7 +46032,7 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
     heap_segment* gen0_seg = generation_start_segment (gen);
     while (gen0_seg)
     {
-        uint8_t* end = in_range_for_segment (current_alloc_allocated, gen0_seg) ? 
+        uint8_t* end = in_range_for_segment (current_alloc_allocated, gen0_seg) ?
                        current_alloc_allocated : heap_segment_allocated (gen0_seg);
         gen0_size += end - heap_segment_mem (gen0_seg);
 
@@ -46050,7 +46055,7 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
     if (gc_heap::current_c_gc_state == c_gc_state_planning)
     {
         // During BGC sweep since we can be deleting SOH segments, we avoid walking the segment
-        // list. 
+        // list.
         generation* oldest_gen = pGenGCHeap->generation_of (max_generation);
         totsize = pGenGCHeap->background_soh_size_end_mark - generation_free_list_space (oldest_gen) - generation_free_obj_space (oldest_gen);
         stop_gen_index--;

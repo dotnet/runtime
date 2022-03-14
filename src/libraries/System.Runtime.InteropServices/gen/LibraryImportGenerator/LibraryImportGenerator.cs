@@ -61,7 +61,7 @@ namespace Microsoft.Interop
                     {
                         MethodDeclarationSyntax syntax = (MethodDeclarationSyntax)context.Node;
                         if (context.SemanticModel.GetDeclaredSymbol(syntax, ct) is IMethodSymbol methodSymbol
-                            && methodSymbol.GetAttributes().Any(static attribute => attribute.AttributeClass?.ToDisplayString() == TypeNames.GeneratedDllImportAttribute))
+                            && methodSymbol.GetAttributes().Any(static attribute => attribute.AttributeClass?.ToDisplayString() == TypeNames.LibraryImportAttribute))
                         {
                             return new { Syntax = syntax, Symbol = methodSymbol };
                         }
@@ -321,9 +321,9 @@ namespace Microsoft.Interop
             };
         }
 
-        private static LibraryImportData? ProcessGeneratedDllImportAttribute(AttributeData attrData)
+        private static LibraryImportData? ProcessLibraryImportAttribute(AttributeData attrData)
         {
-            // Found the GeneratedDllImport, but it has an error so report the error.
+            // Found the LibraryImport, but it has an error so report the error.
             // This is most likely an issue with targeting an incorrect TFM.
             if (attrData.AttributeClass?.TypeKind is null or TypeKind.Error)
             {
@@ -418,7 +418,7 @@ namespace Microsoft.Interop
             foreach (AttributeData attr in symbol.GetAttributes())
             {
                 if (attr.AttributeClass is not null
-                    && attr.AttributeClass.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
+                    && attr.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
                 {
                     generatedDllImportAttr = attr;
                 }
@@ -444,8 +444,8 @@ namespace Microsoft.Interop
 
             var generatorDiagnostics = new GeneratorDiagnostics();
 
-            // Process the GeneratedDllImport attribute
-            LibraryImportData? libraryImportData = ProcessGeneratedDllImportAttribute(generatedDllImportAttr!);
+            // Process the LibraryImport attribute
+            LibraryImportData? libraryImportData = ProcessLibraryImportAttribute(generatedDllImportAttr!);
 
             if (libraryImportData is null)
             {
@@ -472,7 +472,7 @@ namespace Microsoft.Interop
 
             if (lcidConversionAttr is not null)
             {
-                // Using LCIDConversion with GeneratedDllImport is not supported
+                // Using LCIDConversion with LibraryImport is not supported
                 generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
             }
 
@@ -552,7 +552,7 @@ namespace Microsoft.Interop
             {
                 diagnostics.ReportCannotForwardToDllImport(
                     userDeclaredMethod,
-                    $"{nameof(TypeNames.GeneratedDllImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}",
+                    $"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}",
                     $"{nameof(StringMarshalling)}{Type.Delimiter}{pinvokeData.StringMarshalling}");
 
                 pinvokeData = pinvokeData with { IsUserDefined = pinvokeData.IsUserDefined & ~LibraryImportMember.StringMarshalling };
@@ -562,7 +562,7 @@ namespace Microsoft.Interop
             {
                 diagnostics.ReportCannotForwardToDllImport(
                     userDeclaredMethod,
-                    $"{nameof(TypeNames.GeneratedDllImportAttribute)}{Type.Delimiter}{nameof(LibraryImportMember.StringMarshallingCustomType)}");
+                    $"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(LibraryImportMember.StringMarshallingCustomType)}");
 
                 pinvokeData = pinvokeData with { IsUserDefined = pinvokeData.IsUserDefined & ~LibraryImportMember.StringMarshallingCustomType };
             }

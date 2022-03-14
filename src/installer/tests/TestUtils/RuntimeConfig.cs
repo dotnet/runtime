@@ -97,6 +97,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         private string _rollForward;
         private int? _rollForwardOnNoCandidateFx;
         private bool? _applyPatches;
+        private string _tfm;
         private readonly string _path;
         private readonly List<Framework> _frameworks = new List<Framework>();
         private readonly List<Framework> _includedFrameworks = new List<Framework>();
@@ -227,6 +228,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return this;
         }
 
+        public RuntimeConfig WithTfm(string tfm)
+        {
+            _tfm = tfm;
+            return this;
+        }
+
         public RuntimeConfig WithProperty(string name, string value)
         {
             _properties.Add(new Tuple<string, string>(name, value));
@@ -269,6 +276,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 runtimeOptions.Add(
                     Constants.ApplyPatchesSetting.RuntimeConfigPropertyName,
                     _applyPatches.Value);
+            }
+
+            if (_tfm is not null)
+            {
+                runtimeOptions.Add(
+                    Constants.Tfm.RuntimeConfigPropertyName,
+                    _tfm);
             }
 
             if (_properties.Count > 0)

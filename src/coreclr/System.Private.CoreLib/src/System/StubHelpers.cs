@@ -581,7 +581,7 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler__ClearNative")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler__ClearNative")]
         internal static partial void ClearNative(IntPtr pUnk);
     }  // class InterfaceMarshaler
 #endif // FEATURE_COMINTEROP

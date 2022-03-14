@@ -65,6 +65,7 @@
       - $(RunAOTCompilationAfterBuild)      - Run AOT compilation even after Build. By default, it is run only for publish.
                                               Defaults to false.
       - $(WasmAotProfilePath)               - Path to an AOT profile file.
+      - $(WasmExceptionHandling)            - Enable support for the WASM Exception Handling feature.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -84,6 +85,7 @@
 
   <PropertyGroup>
     <WasmDedup Condition="'$(WasmDedup)' == ''">false</WasmDedup>
+    <WasmExceptionHandling Condition="'$(WasmExceptionHandling)' == ''">false</WasmExceptionHandling>
 
     <!--<WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'LLVMOnlyInterp'">false</WasmStripAOTAssemblies>-->
     <!--<WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>-->

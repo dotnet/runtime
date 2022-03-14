@@ -9646,6 +9646,9 @@ calli_end:
 
 			if (is_instance)
 				g_assert (field->offset);
+			/* metadata-update: no hot reload in the JIT.  But if it was supported,
+			 * field->offset here could be wrong for added (m_field_is_from_update)
+			 * fields */
 			foffset = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject): field->offset;
 			if (il_op == MONO_CEE_STFLD) {
 				sp [1] = convert_value (cfg, field->type, sp [1]);
@@ -12254,6 +12257,7 @@ mono_op_no_side_effects (int opcode)
 	case OP_RMOVE:
 	case OP_VZERO:
 	case OP_XZERO:
+	case OP_XONES:
 	case OP_ICONST:
 	case OP_I8CONST:
 	case OP_ADD_IMM:

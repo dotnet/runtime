@@ -22,7 +22,7 @@ using System.Runtime.InteropServices;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method();
 }
 
@@ -52,7 +52,7 @@ struct Native
 using System.Runtime.InteropServices;
 partial class C
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial void Method();
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
@@ -73,7 +73,7 @@ using System.Runtime.InteropServices;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method();
 }
 
@@ -103,7 +103,7 @@ struct Native
 using System.Runtime.InteropServices;
 partial class C
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial void Method();
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
@@ -131,10 +131,10 @@ partial class C
         {
             string source = $@"
 using System.Runtime.InteropServices;
-{CodeSnippets.GeneratedDllImportAttributeDeclaration}
+{CodeSnippets.LibraryImportAttributeDeclaration}
 partial class C
 {{
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool Method();
 }}";
@@ -163,7 +163,7 @@ using System.Runtime.CompilerServices;
 [module:SkipLocalsInit]
 partial class C
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method();
 }
 
@@ -195,7 +195,7 @@ using System.Runtime.CompilerServices;
 [SkipLocalsInit]
 partial class C
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method();
 }
 
@@ -227,7 +227,7 @@ using System.Runtime.CompilerServices;
 partial class C
 {
     [SkipLocalsInit]
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method();
 }
 

@@ -47,9 +47,9 @@ namespace Microsoft.Interop.Analyzers
             context.RegisterCompilationStartAction(
                 compilationContext =>
                 {
-                    // Nothing to do if the GeneratedDllImportAttribute is not in the compilation
-                    INamedTypeSymbol? generatedDllImportAttrType = compilationContext.Compilation.GetTypeByMetadataName(TypeNames.GeneratedDllImportAttribute);
-                    if (generatedDllImportAttrType == null)
+                    // Nothing to do if the LibraryImportAttribute is not in the compilation
+                    INamedTypeSymbol? libraryImportAttrType = compilationContext.Compilation.GetTypeByMetadataName(TypeNames.LibraryImportAttribute);
+                    if (libraryImportAttrType == null)
                         return;
 
                     INamedTypeSymbol? marshalAsAttrType = compilationContext.Compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute);
@@ -77,11 +77,11 @@ namespace Microsoft.Interop.Analyzers
             if (dllImportData == null)
                 return;
 
-            // Ignore methods already marked GeneratedDllImport
+            // Ignore methods already marked LibraryImport
             // This can be the case when the generator creates an extern partial function for blittable signatures.
             foreach (AttributeData attr in method.GetAttributes())
             {
-                if (attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
+                if (attr.AttributeClass?.ToDisplayString() == TypeNames.LibraryImportAttribute)
                 {
                     return;
                 }

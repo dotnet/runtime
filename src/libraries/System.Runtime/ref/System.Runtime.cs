@@ -2085,6 +2085,7 @@ namespace System
         public Decimal(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public Decimal(ulong value) { throw null; }
+        public byte Scale { get { throw null; } }
         public static System.Decimal Add(System.Decimal d1, System.Decimal d2) { throw null; }
         public static System.Decimal Ceiling(System.Decimal d) { throw null; }
         public static int Compare(System.Decimal d1, System.Decimal d2) { throw null; }
