@@ -6,11 +6,13 @@
 #else
  #include <sys/mman.h>
 #endif
+
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <cassert>
 #include <cstdlib>
 #include <unordered_map>
+
 #include "gcenv.base.h"
 #include "gcinterface.h"
 
@@ -27,10 +29,10 @@ static const char* sUnityGC = "UnityGC";
 #if defined(TARGET_WINDOWS)
 #define UNITYGC_EXPORT __declspec(dllexport)
 #else
-#define UNITYGC_EXPORT 
+#define UNITYGC_EXPORT
 #endif
 #else
-#define UNITYGC_EXPORT 
+#define UNITYGC_EXPORT
 #endif
 
 class GCHeap : public IGCHeap
@@ -151,7 +153,7 @@ public:
     // Gets memory related information the last GC observed. Depending on the last arg, this could
     // be any last GC that got recorded, or of the kind specified by this arg. All info below is
     // what was observed by that last GC.
-    // 
+    //
     // highMemLoadThreshold - physical memory load (in percentage) when GC will start to
     //   react aggressively to reclaim memory.
     // totalPhysicalMem - the total amount of phyiscal memory available on the machine and the memory
@@ -160,7 +162,7 @@ public:
     // lastRecordedHeapSizeBytes - total managed heap size.
     // lastRecordedFragmentation - total fragmentation in the managed heap.
     // totalCommittedBytes - total committed bytes by the managed heap.
-    // promotedBytes - promoted bytes. 
+    // promotedBytes - promoted bytes.
     // pinnedObjectCount - # of pinned objects observed.
     // finalizationPendingCount - # of objects ready for finalization.
     // index - the index of the GC.
@@ -187,7 +189,6 @@ public:
                                uint64_t* genInfoRaw,
                                uint64_t* pauseInfoRaw,
                                int kind)
-    
     {
         assert(0);
     }
@@ -797,7 +798,7 @@ class GCHandleStore : public IGCHandleStore
         return handle;
     }
 
-    // helpers 
+    // helpers
     Object* GetDependentHandleSecondary(OBJECTHANDLE handle)
     {
         auto iter = m_dependentHandleSecondary.find(handle);
@@ -812,7 +813,7 @@ class GCHandleStore : public IGCHandleStore
         *(Object**)handle = nullptr;
     }
 
-    
+
     void StoreObjectInHandle(OBJECTHANDLE handle, Object* object)
     {
         *(Object**)handle = object;

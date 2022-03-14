@@ -1,4 +1,5 @@
 #include "common.h"
+
 #include "MonoCoreClr.h"
 #include <coreclrhost.h>
 
@@ -30,7 +31,7 @@
 #define PATH_SEPARATOR ';'
 #else
 #define EXPORT_API __attribute__((visibility("default")))
-#define EXPORT_CC 
+#define EXPORT_CC
 #define PATH_SEPARATOR ':'
 #endif
 
@@ -462,7 +463,7 @@ MonoClass * mono_class_from_name(MonoImage *image, const char* name_space, const
     SString::Iterator i = fullTypeName.Begin();
     while (fullTypeName.Find(i, W('/')))
         fullTypeName.Replace(i, W('+'));
-    
+
     TypeHandle retTypeHandle = TypeName::GetTypeManaged(fullTypeName.GetUnicode(), domainAssembly, FALSE, ignoreCase, TRUE, NULL, NULL);
 
     if (!retTypeHandle.IsNull())
@@ -662,8 +663,8 @@ extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_class_get_method_from_name(Mono
         while (iterator.IsValid())
         {
             auto method = iterator.GetMethodDesc();
-
             if (strcmp(method->GetName(), name) == 0)
+
             {
                 MetaSig     methodSig(method);
 
@@ -675,7 +676,7 @@ extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_class_get_method_from_name(Mono
             }
             iterator.Next();
         }
-        klass_clr = klass_clr->GetParentMethodTable();  
+        klass_clr = klass_clr->GetParentMethodTable();
     }
     return NULL;
 }
@@ -845,7 +846,7 @@ extern "C" EXPORT_API MonoProperty* EXPORT_CC mono_class_get_properties(MonoClas
 extern "C" EXPORT_API MonoProperty* EXPORT_CC mono_class_get_property_from_name(MonoClass *klass, const char *name)
 {
     // CoreCLR does not have easy support for iterating on properties on a MethodTable.
-    // So instead, we look for the property's "get" method. This will not work for set-only 
+    // So instead, we look for the property's "get" method. This will not work for set-only
     // properties, but is sufficient for our needs for now.
     SString propertyName(SString::Utf8, "get_");
     propertyName += SString(SString::Utf8, name);
@@ -1093,7 +1094,7 @@ MonoObject* CreateAttributeInstance(MonoCustomAttrInfo_clr* attributes, mdCustom
                 CA.GetU2(&u2);
                 argslots[slotIndex] = u2;
                 break;
-            }        
+            }
         case ELEMENT_TYPE_I4:
         case ELEMENT_TYPE_U4:
             {
@@ -1101,7 +1102,7 @@ MonoObject* CreateAttributeInstance(MonoCustomAttrInfo_clr* attributes, mdCustom
                 CA.GetU4(&u4);
                 argslots[slotIndex] = u4;
                 break;
-            }          
+            }
         case ELEMENT_TYPE_I8:
         case ELEMENT_TYPE_U8:
             {
@@ -1109,19 +1110,19 @@ MonoObject* CreateAttributeInstance(MonoCustomAttrInfo_clr* attributes, mdCustom
                 CA.GetU8(&u8);
                 argslots[slotIndex] = u8;
                 break;
-            }          
+            }
         case ELEMENT_TYPE_R4:
             {
                 float f = CA.GetR4();
                 argslots[slotIndex] = *(INT32*)(&f);
                 break;
-            }           
+            }
         case ELEMENT_TYPE_R8:
             {
                 double d = CA.GetR8();
                 argslots[slotIndex] = *(INT64*)(&d);
                 break;
-            }          
+            }
         case ELEMENT_TYPE_CLASS:
         case ELEMENT_TYPE_STRING:
             {
@@ -1246,7 +1247,7 @@ extern "C" EXPORT_API MonoObject* EXPORT_CC mono_custom_attrs_get_attr(MonoCusto
         return NULL;
 
     mdCustomAttribute mdAttribute;
-    while (attributes->import->EnumNext(&iterator, &mdAttribute))    
+    while (attributes->import->EnumNext(&iterator, &mdAttribute))
     {
         mdToken tkCtor;
         if (attributes->import->GetCustomAttributeProps(mdAttribute, &tkCtor) == S_OK)
@@ -1264,13 +1265,13 @@ extern "C" EXPORT_API MonoObject* EXPORT_CC mono_custom_attrs_get_attr(MonoCusto
                                                                         ClassLoader::PermitUninstDefOrRef,
                                                                         tdNoTypes).AsMethodTable();
 
-                        if (mono_class_is_subclass_of(attr_klass, requested_klass, false))                                                                    
+                        if (mono_class_is_subclass_of(attr_klass, requested_klass, false))
                             return CreateAttributeInstance(attributes, mdAttribute, attr_klass);
                     }
                 }
             }
         }
-    }    
+    }
 
     return NULL;
 }
@@ -1379,7 +1380,7 @@ extern "C" EXPORT_API gboolean EXPORT_CC mono_custom_attrs_has_attr(MonoCustomAt
         }
     }
 
-    attributes->import->EnumClose(&iterator);   
+    attributes->import->EnumClose(&iterator);
     return found;
 }
 
@@ -1509,7 +1510,7 @@ extern "C" EXPORT_API gboolean EXPORT_CC mono_domain_set(MonoDomain *domain, gbo
 extern "C" EXPORT_API void EXPORT_CC mono_domain_unload(MonoDomain* domain)
 {
     TRACE_API("%p", domain);
-    
+
 #if UNITY_SUPPORT_DOMAIN_UNLOAD
 
     domain_unload(domain);
@@ -1527,10 +1528,10 @@ struct MonoInternalCallFrame
 
 // We currently need to wrap Unity icalls called from managed code mono_enter/exit_internal_call.
 // This has two reasons:
-// 1. We want to set up a CoreCLR stack frame for the icall to make call stack unwinding work 
-// (so we can get managed stack traces which cross native frames, as verified by the 
+// 1. We want to set up a CoreCLR stack frame for the icall to make call stack unwinding work
+// (so we can get managed stack traces which cross native frames, as verified by the
 // can_get_full_stack_trace_in_internal_method test).
-// 2. We want to switch the thread to preemptive GC mode when running our icalls, to avoid delays and 
+// 2. We want to switch the thread to preemptive GC mode when running our icalls, to avoid delays and
 // deadlocks when the GC waits for the icall to finish.
 //
 // Now, the problem is that this adds some overhead to calling icalls, which is not insignificant for
@@ -1549,8 +1550,8 @@ extern "C" EXPORT_API void EXPORT_CC mono_enter_internal_call(MonoInternalCallFr
     // calling it from Burst code (in which case GetThread() may not be valid if the worker thread is not attached).
     ((MonoInternalCallFrame*)_frame)->didSetupFrame = GetThread() != NULL && GetThread()->PreemptiveGCDisabled();
 
-    // FCalls in CoreCLR always run in cooperative mode, as they are not written in a way which is 
-    // safe to use for the precice GC. However, for Unity ICalls (which use the same transition mechanism), 
+    // FCalls in CoreCLR always run in cooperative mode, as they are not written in a way which is
+    // safe to use for the precice GC. However, for Unity ICalls (which use the same transition mechanism),
     // we cannot do that. Our icalls may often take non-trivial amounst of time, and in some cases use locking
     // mechanisms, which can cause a deadlock, if we need to wait for it to exit to start GC on another thread.
     // Because we disable the precise GC in Unity, we should be safe to interrupt our icalls for GC.
@@ -1580,7 +1581,7 @@ extern "C" EXPORT_API unsigned short EXPORT_CC mono_error_get_error_code (MonoEr
 
 extern "C" EXPORT_API const char* EXPORT_CC mono_error_get_message (MonoError * error)
 {
-    
+
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
@@ -1814,7 +1815,7 @@ extern "C" EXPORT_API void EXPORT_CC mono_gc_wbarrier_generic_store(gpointer ptr
 extern "C" EXPORT_API void EXPORT_CC mono_gc_wbarrier_set_field (MonoObject * obj, gpointer field_ptr, MonoObject * value)
 {
     GCX_COOP();
-    
+
     SetObjectReference((OBJECTREF*)field_ptr, ObjectToOBJECTREF((MonoObject_clr*)value));
 }
 
@@ -1891,7 +1892,7 @@ extern "C" EXPORT_API guint32 EXPORT_CC mono_gchandle_new(MonoObject * obj, gboo
 
     auto id = ++handleId;
     g_gc_map_id_to_handle.Add(id, objhandle);
- 
+
     return id;
 }
 
@@ -1905,7 +1906,7 @@ extern "C" EXPORT_API guint32 EXPORT_CC mono_gchandle_new_weakref(MonoObject *ob
 
     auto id = ++handleId;
     g_gc_map_id_to_handle.Add(id, objhandle);
- 
+
     return id;
 }
 
@@ -1913,7 +1914,7 @@ extern "C" EXPORT_API MonoObject* EXPORT_CC mono_gchandle_get_target_v2(uintptr_
 {
     GCX_COOP();
     // TODO: This method is not accurate with Cooperative/Preemptive mode
-    
+
     OBJECTHANDLE objectHandle = (OBJECTHANDLE)gchandle;
     OBJECTREF objref = ObjectFromHandle(objectHandle);
     return (MonoObject*)OBJECTREFToObject(objref);
@@ -1966,7 +1967,7 @@ extern "C" EXPORT_API uintptr_t EXPORT_CC mono_gchandle_new_weakref_v2(MonoObjec
     OBJECTHANDLE rawHandle = track_resurrection ?
         GetAppDomain()->CreateLongWeakHandle(objref) :
         GetAppDomain()->CreateShortWeakHandle(objref);
-    
+
     return (uintptr_t)rawHandle;
 }
 
@@ -2229,7 +2230,7 @@ extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *fi
     g_add_internal_lock.Init(CrstMonoICalls);
 
     HRESULT hr;
-    
+
     if (!g_CLRRuntimeHost)
     {
         const char* entrypointExecutable = "/dev/null";
@@ -2319,7 +2320,7 @@ extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *fi
 
     AppDomain *pCurDomain = SystemDomain::GetCurrentDomain();
     gRootDomain = gCurrentDomain = (MonoDomain*)pCurDomain;
-    
+
 
     //coreClrHelperAssembly->EnsureActive();
     //gCoreCLRHelperAssembly = (MonoImage*)coreClrHelperAssembly;
@@ -2408,10 +2409,10 @@ extern "C" EXPORT_API char* EXPORT_CC mono_method_full_name(MonoMethod* method, 
     if (signature)
     {
         fullName += InlineSString<2>(SString::Utf8, " (");
-            
+
         MonoMethodSignature* sig = mono_method_signature(method);
         gpointer iter = NULL;
-    
+
         MonoType *paramType = mono_signature_get_params(sig, &iter);
         if (paramType)
         {
@@ -3720,7 +3721,7 @@ extern "C" void EXPORT_CC mono_debug_assert_dialog(const char *szFile, int iLine
 extern "C" EXPORT_API void EXPORT_CC mono_unity_domain_unload(MonoDomain * domain, MonoUnityExceptionFunc callback)
 {
     TRACE_API("%p %p", domain, callback);
-    
+
 #if UNITY_SUPPORT_DOMAIN_UNLOAD
     MonoObject *exc = domain_unload(domain);
     if (exc)
