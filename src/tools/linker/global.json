@@ -8,7 +8,7 @@
     "dotnet": "6.0.100"
   },
   "msbuild-sdks": {
-    "Microsoft.DotNet.Arcade.Sdk": "7.0.0-beta.22154.3",
+    "Microsoft.DotNet.Arcade.Sdk": "7.0.0-beta.22157.6",
     "Microsoft.FIX-85B6-MERGE-9C38-CONFLICT": "1.0.0",
     "Microsoft.NET.Sdk.IL": "7.0.0-preview.3.22157.1"
   }
