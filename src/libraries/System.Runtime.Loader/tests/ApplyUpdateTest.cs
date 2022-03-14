@@ -428,11 +428,22 @@ namespace System.Reflection.Metadata
             });
         }
 
-	internal static Type CheckReflectedType(Assembly assm, string nameSpace, string typeName, Action<Type> moreChecks = null, [CallerMemberName] string callerMemberName = "", [CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = 0)
+	private static bool ContainsTypeWithName(Type[] types, string fullName)
 	{
-	    var ty = assm.GetType($"{nameSpace}.{typeName}");
+	    foreach (var ty in types) {
+		if (ty.FullName == fullName)
+		    return true;
+	    }
+	    return false;
+	}
+
+	internal static Type CheckReflectedType(Assembly assm, Type[] allTypes, string nameSpace, string typeName, Action<Type> moreChecks = null, [CallerMemberName] string callerMemberName = "", [CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = 0)
+	{
+	    var fullName = $"{nameSpace}.{typeName}";
+	    var ty = assm.GetType(fullName);
 	    Assert.True(ty != null, $"{callerFilePath}:{callerLineNumber}: expected Assembly.GetType for '{typeName}' to return non-null in {callerMemberName}");
 	    Assert.True(typeName == ty.Name, $"{callerFilePath}:{callerLineNumber}: returned type has unexpected name '{ty.Name}' (expected: '{typeName}') in {callerMemberName}");
+	    Assert.True(ContainsTypeWithName (allTypes, fullName), $"{callerFilePath}:{callerLineNumber}: expected Assembly.GetTypes to contain '{fullName}', but it didn't in {callerMemberName}");
 	    if (moreChecks != null)
 		moreChecks(ty);
 	    return ty;
@@ -446,16 +457,20 @@ namespace System.Reflection.Metadata
 		const string ns = "System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType";
 		var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.ZExistingClass).Assembly;
 
-		CheckReflectedType(assm, ns, "ZExistingClass");
+		var allTypes = assm.GetTypes();
+
+		CheckReflectedType(assm, allTypes, ns, "ZExistingClass");
 
 		ApplyUpdateUtil.ApplyUpdate(assm);
 
-		CheckReflectedType(assm, ns, "ZExistingClass");
-		CheckReflectedType(assm, ns, "IExistingInterface");
+		allTypes = assm.GetTypes();
 
-		CheckReflectedType(assm, ns, "NewToplevelClass");
-		CheckReflectedType(assm, ns, "NewToplevelStruct");
-		CheckReflectedType(assm, ns, "INewInterface");
+		CheckReflectedType(assm, allTypes, ns, "ZExistingClass");
+		CheckReflectedType(assm, allTypes, ns, "IExistingInterface");
+
+		CheckReflectedType(assm, allTypes, ns, "NewToplevelClass");
+		CheckReflectedType(assm, allTypes, ns, "NewToplevelStruct");
+		CheckReflectedType(assm, allTypes, ns, "INewInterface");
 
 
 	    });

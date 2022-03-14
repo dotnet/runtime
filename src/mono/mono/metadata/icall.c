@@ -5048,9 +5048,8 @@ image_get_type (MonoImage *image, MonoTableInfo *tdef, int table_idx, int count,
 static MonoArrayHandle
 mono_module_get_types (MonoImage *image, MonoArrayHandleOut exceptions, MonoBoolean exportedOnly, MonoError *error)
 {
-	/* FIXME: metadata-update */
 	MonoTableInfo *tdef = &image->tables [MONO_TABLE_TYPEDEF];
-	int rows = table_info_get_rows (tdef);
+	int rows = mono_metadata_table_num_rows (image, MONO_TABLE_TYPEDEF);
 	int i, count;
 
 	/* we start the count from 1 because we skip the special type <Module> */
