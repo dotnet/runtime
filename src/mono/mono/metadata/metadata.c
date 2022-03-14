@@ -39,6 +39,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/unlocked.h>
 #include <mono/utils/mono-counters.h>
+#include <mono/utils/mono-logger-internals.h>
 
 /* Auxiliary structure used for caching inflated signatures */
 typedef struct {
@@ -4884,17 +4885,25 @@ mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, Mono
 
 	error_init (error);
 
-	if (!tdef->base)
+	if (!tdef->base && !meta->has_updates)
 		return TRUE;
 
 	loc.idx = mono_metadata_token_index (index);
 	loc.col_idx = MONO_INTERFACEIMPL_CLASS;
 	loc.t = tdef;
 
-	/* FIXME: metadata-update */
+	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
 
-	if (!mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator))
+	if (!found && !meta->has_updates)
 		return TRUE;
+
+	if (G_UNLIKELY (meta->has_updates)) {
+		if (!found && !mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator)) {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "NO Found interfaces for class 0x%08x", index);
+			return TRUE;
+		}
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Found interfaces for class 0x%08x starting at 0x%08x", index, loc.result);
+	}
 
 	start = loc.result;
 	/*
@@ -4907,7 +4916,7 @@ mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, Mono
 			break;
 	}
 	pos = start;
-	int rows = table_info_get_rows (tdef);
+	int rows = mono_metadata_table_num_rows (meta, MONO_TABLE_INTERFACEIMPL);
 	while (pos < rows) {
 		mono_metadata_decode_row (tdef, pos, cols, MONO_INTERFACEIMPL_SIZE);
 		if (cols [MONO_INTERFACEIMPL_CLASS] != loc.idx)

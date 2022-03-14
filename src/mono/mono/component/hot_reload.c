@@ -2262,6 +2262,11 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			 */
 			break;
 		}
+		case MONO_TABLE_INTERFACEIMPL: {
+			g_assert (is_addition);
+			/* added rows ok (for added classes). will be processed when the MonoClass is created. */
+			break;
+		}
 		default: {
 			g_assert (token_index > table_info_get_rows (&image_base->tables [token_table]));
 			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
