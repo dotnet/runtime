@@ -550,15 +550,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         default:
         {
-        //    unreached();
-#ifdef DEBUG
-            char message[256];
-            _snprintf_s(message, ArrLen(message), _TRUNCATE, "NYI: Unimplemented node type %s",
-                        GenTree::OpName(treeNode->OperGet()));
-            NYIRAW(message);
-#else
-            NYI("unimplemented node");
-#endif
+            unreached();
         }
         break;
     }
