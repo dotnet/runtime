@@ -55,7 +55,8 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanLastIndexOfSpan = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
-        private static readonly MethodInfo s_spanStartsWith = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanStartsWithSpan = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanStartsWithSpanComparison = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<char>), typeof(ReadOnlySpan<char>), typeof(StringComparison) })!;
         private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string) })!;
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_textInfoToLowerMethod = typeof(TextInfo).GetMethod("ToLower", new Type[] { typeof(char) })!;
@@ -1404,6 +1405,10 @@ namespace System.Text.RegularExpressions
             // Generated code successfully.
             return;
 
+            // Whether the node has RegexOptions.IgnoreCase set.
+            // TODO: https://github.com/dotnet/runtime/issues/61048. We should be able to delete this and all usage sites once
+            // IgnoreCase is erradicated from the tree.  The only place it should possibly be left after that work is in a Backreference,
+            // and that can do this check directly as needed.
             static bool IsCaseInsensitive(RegexNode node) => (node.Options & RegexOptions.IgnoreCase) != 0;
 
             // Slices the inputSpan starting at pos until end and stores it into slice.
@@ -2367,103 +2372,102 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.End:
                     case RegexNodeKind.EndZ:
                         EmitAnchors(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.Boundary:
                     case RegexNodeKind.NonBoundary:
                     case RegexNodeKind.ECMABoundary:
                     case RegexNodeKind.NonECMABoundary:
                         EmitBoundary(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.Multi:
                         EmitMultiChar(node, emitLengthChecksIfRequired);
-                        break;
+                        return;
 
                     case RegexNodeKind.One:
                     case RegexNodeKind.Notone:
                     case RegexNodeKind.Set:
                         EmitSingleChar(node, emitLengthChecksIfRequired);
-                        break;
+                        return;
 
                     case RegexNodeKind.Oneloop:
                     case RegexNodeKind.Notoneloop:
                     case RegexNodeKind.Setloop:
                         EmitSingleCharLoop(node, subsequent, emitLengthChecksIfRequired);
-                        break;
+                        return;
 
                     case RegexNodeKind.Onelazy:
                     case RegexNodeKind.Notonelazy:
                     case RegexNodeKind.Setlazy:
                         EmitSingleCharLazy(node, subsequent, emitLengthChecksIfRequired);
-                        break;
+                        return;
 
                     case RegexNodeKind.Oneloopatomic:
                     case RegexNodeKind.Notoneloopatomic:
                     case RegexNodeKind.Setloopatomic:
                         EmitSingleCharAtomicLoop(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.Loop:
                         EmitLoop(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.Lazyloop:
                         EmitLazy(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.Alternate:
                         EmitAlternation(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.Concatenate:
                         EmitConcatenation(node, subsequent, emitLengthChecksIfRequired);
-                        break;
+                        return;
 
                     case RegexNodeKind.Atomic:
                         EmitAtomic(node, subsequent);
-                        break;
+                        return;
 
                     case RegexNodeKind.Backreference:
                         EmitBackreference(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.BackreferenceConditional:
                         EmitBackreferenceConditional(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.ExpressionConditional:
                         EmitExpressionConditional(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.Capture:
                         EmitCapture(node, subsequent);
-                        break;
+                        return;
 
                     case RegexNodeKind.PositiveLookaround:
                         EmitPositiveLookaroundAssertion(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.NegativeLookaround:
                         EmitNegativeLookaroundAssertion(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.Nothing:
                         BrFar(doneLabel);
-                        break;
+                        return;
 
                     case RegexNodeKind.Empty:
                         // Emit nothing.
-                        break;
+                        return;
 
                     case RegexNodeKind.UpdateBumpalong:
                         EmitUpdateBumpalong(node);
-                        break;
-
-                    default:
-                        Debug.Fail($"Unexpected node type: {node.Kind}");
-                        break;
+                        return;
                 }
+
+                // All nodes should have been handled.
+                Debug.Fail($"Unexpected node type: {node.Kind}");
             }
 
             // Emits the node for an atomic.
@@ -2534,19 +2538,44 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.Kind is RegexNodeKind.Concatenate, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() >= 2, $"Expected at least 2 children, found {node.ChildCount()}");
 
-                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
-
                 // Emit the code for each child one after the other.
                 int childCount = node.ChildCount();
                 for (int i = 0; i < childCount; i++)
                 {
                     // If we can find a subsequence of fixed-length children, we can emit a length check once for that sequence
-                    // and then skip the individual length checks for each.
-                    if (!rtl && emitLengthChecksIfRequired && node.TryGetJoinableLengthCheckChildRange(i, out int requiredLength, out int exclusiveEnd))
+                    // and then skip the individual length checks for each. We can also discover case-insensitive sequences that
+                    // can be checked efficiently with methods like StartsWith.
+                    if ((node.Options & RegexOptions.RightToLeft) == 0 &&
+                        emitLengthChecksIfRequired &&
+                        node.TryGetJoinableLengthCheckChildRange(i, out int requiredLength, out int exclusiveEnd))
                     {
                         EmitSpanLengthCheck(requiredLength);
                         for (; i < exclusiveEnd; i++)
                         {
+                            if (node.TryGetOrdinalCaseInsensitiveString(i, exclusiveEnd, out int nodesConsumed, out string? caseInsensitiveString))
+                            {
+                                // if (!sliceSpan.Slice(sliceStaticPause).StartsWith(caseInsensitiveString, StringComparison.OrdinalIgnoreCase)) goto doneLabel;
+                                if (sliceStaticPos > 0)
+                                {
+                                    Ldloca(slice);
+                                    Ldc(sliceStaticPos);
+                                    Call(s_spanSliceIntMethod);
+                                }
+                                else
+                                {
+                                    Ldloc(slice);
+                                }
+                                Ldstr(caseInsensitiveString);
+                                Call(s_stringAsSpanMethod);
+                                Ldc((int)StringComparison.OrdinalIgnoreCase);
+                                Call(s_spanStartsWithSpanComparison);
+                                BrfalseFar(doneLabel);
+
+                                sliceStaticPos += caseInsensitiveString.Length;
+                                i += nodesConsumed - 1;
+                                continue;
+                            }
+
                             EmitNode(node.Child(i), GetSubsequent(i, node, subsequent), emitLengthChecksIfRequired: false);
                         }
 
@@ -2910,7 +2939,7 @@ namespace System.Text.RegularExpressions
                     Call(s_spanSliceIntMethod);
                     Ldstr(str);
                     Call(s_stringAsSpanMethod);
-                    Call(s_spanStartsWith);
+                    Call(s_spanStartsWithSpan);
                     BrfalseFar(doneLabel);
                     sliceStaticPos += str.Length;
                 }

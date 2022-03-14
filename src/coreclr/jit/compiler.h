@@ -8878,8 +8878,10 @@ private:
 
 #ifdef FEATURE_SIMD
 
+#ifndef TARGET_ARM64
     // Should we support SIMD intrinsics?
     bool featureSIMD;
+#endif
 
     // Should we recognize SIMD types?
     // We always do this on ARM64 to support HVA types.
@@ -10533,6 +10535,10 @@ public:
 #endif
 
     unsigned compArgSize; // total size of arguments in bytes (including register args (lvIsRegArg))
+
+#ifdef TARGET_ARM
+    bool compHasSplitParam;
+#endif
 
     unsigned compMapILargNum(unsigned ILargNum);      // map accounting for hidden args
     unsigned compMapILvarNum(unsigned ILvarNum);      // map accounting for hidden args

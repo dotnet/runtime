@@ -950,7 +950,7 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
                                                         CorInfoType*          simdBaseJitType,
                                                         unsigned*             sizeBytes)
 {
-    assert(featureSIMD);
+    assert(supportSIMDTypes());
     assert(simdBaseJitType != nullptr);
     assert(sizeBytes != nullptr);
 
@@ -1798,7 +1798,7 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
 
 void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
 {
-    if (!featureSIMD || opts.OptimizationDisabled())
+    if (!supportSIMDTypes() || opts.OptimizationDisabled())
     {
         return;
     }
@@ -1891,7 +1891,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                                     unsigned              methodFlags,
                                     int                   memberRef)
 {
-    assert(featureSIMD);
+    assert(supportSIMDTypes());
 
     // Exit early if we are not in one of the SIMD types.
     if (!isSIMDClass(clsHnd))
