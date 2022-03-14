@@ -25590,7 +25590,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
             {
                 gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
-                generation *gen = generation_of (gen_number);
+                generation *gen = hp->generation_of (gen_number);
                 for (heap_segment *region = generation_start_segment (gen); region != nullptr; region = heap_segment_next (region))
                 {
                     uint8_t* addr = heap_segment_mem (region);
@@ -32308,7 +32308,7 @@ void gc_heap::relocate_phase (int condemned_gen_number,
             {
                 gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
-                generation *gen = generation_of (gen_number);
+                generation *gen = hp->generation_of (gen_number);
                 for (heap_segment *region = generation_start_segment (gen); region != nullptr; region = heap_segment_next (region))
                 {
                     uint8_t* addr = heap_segment_mem (region);
