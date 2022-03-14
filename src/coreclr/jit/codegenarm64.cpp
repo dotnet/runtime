@@ -10071,7 +10071,7 @@ void CodeGen::genCodeForMadd(GenTreeOp* tree)
 // genCodeForMsub: Emit a msub (Multiply-Subtract) instruction
 //
 // Arguments:
-//     tree - GT_MSUB tree where op2 is GT_SUB
+//     tree - GT_MSUB tree where op2 is GT_MUL
 //
 void CodeGen::genCodeForMsub(GenTreeOp* tree)
 {
