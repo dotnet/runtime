@@ -12,9 +12,18 @@ namespace System.Diagnostics
         private const long TicksPerMillisecond = 10000;
         private const long TicksPerSecond = TicksPerMillisecond * 1000;
 
-        private long _elapsed;
-        private long _startTimeStamp;
-        private bool _isRunning;
+        // _state is 0 when unstarted.
+        //
+        // _state stores a timestamp if it is positive
+        // and an elapsed time if it is negative.
+        //
+        // The distinction between unstarted and
+        // stopped with an elapsed time of 0 is intentionally
+        // ignored.
+        //
+        // Resuming is supported by backdating the newer
+        // timestamp by the previous elapsed time.
+        private long _state;
 
         // "Frequency" stores the frequency of the high-resolution performance counter,
         // if one exists. Otherwise it will store TicksPerSecond.
@@ -36,11 +45,17 @@ namespace System.Diagnostics
         public void Start()
         {
             // Calling start on a running Stopwatch is a no-op.
-            if (!_isRunning)
+            if (_state > 0)
             {
-                _startTimeStamp = GetTimestamp();
-                _isRunning = true;
+                return;
             }
+
+            // If we're unstarted, _state == 0 .
+            //
+            // If we have an existing elapsed time
+            // it's -(elapsed time) so adding _state
+            // backdates the new timestamp accordingly.
+            _state = GetTimestamp() + _state;
         }
 
         public static Stopwatch StartNew()
@@ -53,44 +68,34 @@ namespace System.Diagnostics
         public void Stop()
         {
             // Calling stop on a stopped Stopwatch is a no-op.
-            if (_isRunning)
+            if (_state > 0)
             {
                 long endTimeStamp = GetTimestamp();
-                long elapsedThisPeriod = endTimeStamp - _startTimeStamp;
-                _elapsed += elapsedThisPeriod;
-                _isRunning = false;
+                long elapsedThisPeriod = endTimeStamp - _state;
 
-                if (_elapsed < 0)
-                {
-                    // When measuring small time periods the Stopwatch.Elapsed*
-                    // properties can return negative values.  This is due to
-                    // bugs in the basic input/output system (BIOS) or the hardware
-                    // abstraction layer (HAL) on machines with variable-speed CPUs
-                    // (e.g. Intel SpeedStep).
+                // Buggy BIOS ir HAL can result in negative durations
+                // clip to a zero in that case.
+                elapsedThisPeriod = Math.Max(elapsedThisPeriod, 0);
 
-                    _elapsed = 0;
-                }
+                // Negative states encode an elapsed time.
+                _state = -elapsedThisPeriod;
             }
         }
 
         public void Reset()
         {
-            _elapsed = 0;
-            _isRunning = false;
-            _startTimeStamp = 0;
+            _state = 0;
         }
 
         // Convenience method for replacing {sw.Reset(); sw.Start();} with a single sw.Restart()
         public void Restart()
         {
-            _elapsed = 0;
-            _startTimeStamp = GetTimestamp();
-            _isRunning = true;
+            _state = GetTimestamp();
         }
 
         public bool IsRunning
         {
-            get { return _isRunning; }
+            get { return _state > 0; }
         }
 
         public TimeSpan Elapsed
@@ -130,17 +135,22 @@ namespace System.Diagnostics
         // Get the elapsed ticks.
         private long GetRawElapsedTicks()
         {
-            long timeElapsed = _elapsed;
+            long stateCopy = _state;
 
-            if (_isRunning)
+            // Unstarted, or stopped with an elapsed time > 0 .
+            if (stateCopy <= 0)
             {
-                // If the Stopwatch is running, add elapsed time since
-                // the Stopwatch is started last time.
-                long currentTimeStamp = GetTimestamp();
-                long elapsedUntilNow = currentTimeStamp - _startTimeStamp;
-                timeElapsed += elapsedUntilNow;
+                return Math.Abs(stateCopy);
             }
-            return timeElapsed;
+
+            long currentTimeStamp = GetTimestamp();
+            long elapsedSoFar = currentTimeStamp - stateCopy;
+
+            // Buggy BIOS or HAL can result in negative durations
+            // clip to a zero in that case.
+            elapsedSoFar = Math.Max(elapsedSoFar, 0);
+
+            return elapsedSoFar;
         }
 
         // Get the elapsed ticks.
