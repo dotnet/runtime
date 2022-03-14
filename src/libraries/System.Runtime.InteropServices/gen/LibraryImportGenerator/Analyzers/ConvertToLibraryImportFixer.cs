@@ -201,7 +201,7 @@ namespace Microsoft.Interop.Analyzers
                 return methodSyntax;
 
             // We wouldn't have offered this code fix if the LibraryImport type isn't available, so we can be sure it isn't null here.
-            INamedTypeSymbol generatedDllImportAttrType = editor.SemanticModel.Compilation.GetTypeByMetadataName(TypeNames.GeneratedDllImportAttribute)!;
+            INamedTypeSymbol libraryImportAttrType = editor.SemanticModel.Compilation.GetTypeByMetadataName(TypeNames.LibraryImportAttribute)!;
 
             // Make sure the method has the DllImportAttribute
             if (!TryGetAttribute(methodSymbol, dllImportAttrType, out AttributeData? dllImportAttr))
@@ -215,7 +215,7 @@ namespace Microsoft.Interop.Analyzers
                 generator,
                 dllImportSyntax,
                 methodSymbol,
-                generatedDllImportAttrType,
+                libraryImportAttrType,
                 entryPointSuffix,
                 out SyntaxNode? unmanagedCallConvAttributeMaybe);
 
@@ -436,7 +436,7 @@ namespace Microsoft.Interop.Analyzers
             SyntaxGenerator generator,
             AttributeSyntax dllImportSyntax,
             IMethodSymbol methodSymbol,
-            INamedTypeSymbol generatedDllImportAttrType,
+            INamedTypeSymbol libraryImportAttrType,
             char? entryPointSuffix,
             out SyntaxNode? unmanagedCallConvAttributeMaybe)
         {
@@ -448,7 +448,7 @@ namespace Microsoft.Interop.Analyzers
             // Create LibraryImport based on the DllImport attribute
             SyntaxNode libraryImportSyntax = generator.ReplaceNode(dllImportSyntax,
                 dllImportSyntax.Name,
-                generator.TypeExpression(generatedDllImportAttrType));
+                generator.TypeExpression(libraryImportAttrType));
 
             // Update attribute arguments for LibraryImport
             bool hasEntryPointAttributeArgument = false;

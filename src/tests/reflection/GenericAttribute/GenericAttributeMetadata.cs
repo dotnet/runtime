@@ -17,8 +17,6 @@ using System.Runtime.CompilerServices;
 [assembly: MultiAttribute<bool>()]
 [assembly: MultiAttribute<bool>(true)]
 
-[module: SingleAttribute<long>()]
-
 [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Property, AllowMultiple = false)]
 public class SingleAttribute<T> : Attribute
 {

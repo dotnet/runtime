@@ -609,6 +609,7 @@ struct MSLAYOUT DacpTieredVersionData
         OptimizationTier_QuickJitted,
         OptimizationTier_OptimizedTier1,
         OptimizationTier_ReadyToRun,
+        OptimizationTier_OptimizedTier1OSR,
     };
 
     CLRDATA_ADDRESS NativeCodeAddr;

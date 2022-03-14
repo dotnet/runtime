@@ -63,6 +63,7 @@
     <Compile Include="System\Text\RegularExpressions\Symbolic\CharKind.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\CharSetSolver.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\DerivativeEffect.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\DgmlWriter.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\DfaMatchingState.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\IBooleanAlgebra.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\ICharAlgebra.cs" />
@@ -82,10 +83,6 @@
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexSet.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\TransitionRegex.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\TransitionRegexKind.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\Dgml\DgmlWriter.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\Dgml\IAutomaton.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\Dgml\Move.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\Dgml\RegexAutomaton.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\GeneratorHelper.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\IgnoreCaseRelation.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\IgnoreCaseRelationGenerator.cs" />

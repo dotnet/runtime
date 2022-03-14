@@ -13,7 +13,7 @@ internal static partial class Interop
         public const int LOAD_LIBRARY_AS_DATAFILE = 0x00000002;
         public const int LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x00000800;
 
-        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Kernel32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         public static partial SafeLibraryHandle LoadLibraryExW(string lpwLibFileName, IntPtr hFile, uint dwFlags);
     }
 }
