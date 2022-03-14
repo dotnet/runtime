@@ -7,6 +7,10 @@
 #include <stdint.h>
 #include <assert.h>
 
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/class.h>
+#include <mono/metadata/loader.h>
+#include <mono/metadata/object.h>
 #include <mono/jit/jit.h>
 
 //JS funcs

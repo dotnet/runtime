@@ -166,7 +166,7 @@ namespace Microsoft.Extensions.Logging
 
             private IDisposable? _disposable0;
             private IDisposable? _disposable1;
-            private readonly IDisposable[]? _disposable;
+            private readonly IDisposable?[]? _disposable;
 
             public Scope(int count)
             {
@@ -176,7 +176,7 @@ namespace Microsoft.Extensions.Logging
                 }
             }
 
-            public void SetDisposable(int index, IDisposable disposable)
+            public void SetDisposable(int index, IDisposable? disposable)
             {
                 switch (index)
                 {
@@ -204,10 +204,7 @@ namespace Microsoft.Extensions.Logging
                         int count = _disposable.Length;
                         for (int index = 0; index != count; ++index)
                         {
-                            if (_disposable[index] != null)
-                            {
-                                _disposable[index].Dispose();
-                            }
+                            _disposable[index]?.Dispose();
                         }
                     }
 

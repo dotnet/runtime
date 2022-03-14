@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="Dispatch/CMakeLists.txt" />
+    <CMakeProjectReference Include="Dispatch/CMakeLists.txt" />
     <ProjectReference Include="../NETServer/NETServer.csproj" />
   </ItemGroup>
 </Project>

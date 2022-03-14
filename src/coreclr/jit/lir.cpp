@@ -1359,7 +1359,7 @@ public:
             }
 
             AliasSet::NodeInfo nodeInfo(compiler, node);
-            if (nodeInfo.IsLclVarRead() && !unusedDefs.Contains(node))
+            if (nodeInfo.IsLclVarRead() && node->IsValue() && !unusedDefs.Contains(node))
             {
                 jitstd::list<GenTree*>* reads;
                 if (!unusedLclVarReads.TryGetValue(nodeInfo.LclNum(), &reads))
@@ -1387,13 +1387,36 @@ public:
                         unsigned writeEnd   = writeStart + genTypeSize(node->TypeGet());
                         if ((readEnd > writeStart) && (writeEnd > readStart))
                         {
-                            JITDUMP(
-                                "Write to unaliased local overlaps outstanding read (write: %u..%u, read: %u..%u)\n",
-                                writeStart, writeEnd, readStart, readEnd);
-                            JITDUMP("Read:\n");
-                            DISPTREERANGE(const_cast<LIR::Range&>(*range), read);
-                            JITDUMP("Write:\n");
-                            DISPTREERANGE(const_cast<LIR::Range&>(*range), node);
+                            JITDUMP("Write to local overlaps outstanding read (write: %u..%u, read: %u..%u)\n",
+                                    writeStart, writeEnd, readStart, readEnd);
+
+                            LIR::Use use;
+                            bool     found = const_cast<LIR::Range*>(range)->TryGetUse(read, &use);
+                            GenTree* user  = found ? use.User() : nullptr;
+
+                            for (GenTree* rangeNode : *range)
+                            {
+                                const char* prefix = nullptr;
+                                if (rangeNode == read)
+                                {
+                                    prefix = "read:  ";
+                                }
+                                else if (rangeNode == node)
+                                {
+                                    prefix = "write: ";
+                                }
+                                else if (rangeNode == user)
+                                {
+                                    prefix = "user:  ";
+                                }
+                                else
+                                {
+                                    prefix = "       ";
+                                }
+
+                                compiler->gtDispLIRNode(rangeNode, prefix);
+                            }
+
                             assert(!"Write to unaliased local overlaps outstanding read");
                             break;
                         }

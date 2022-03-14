@@ -3912,7 +3912,6 @@ mono_runtime_set_main_args (int argc, char* argv[])
 		utf8_arg = mono_utf8_from_external (argv[i]);
 		if (utf8_arg == NULL) {
 			g_print ("\nCannot determine the text encoding for argument %d (%s).\n", i, argv [i]);
-			g_print ("Please add the correct encoding to MONO_EXTERNAL_ENCODINGS and try again.\n");
 			exit (-1);
 		}
 
@@ -3960,7 +3959,6 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 			 * string.
 			 */
 			g_print ("\nCannot determine the text encoding for the assembly location: %s\n", fullpath);
-			g_print ("Please add the correct encoding to MONO_EXTERNAL_ENCODINGS and try again.\n");
 			exit (-1);
 		}
 
@@ -3970,7 +3968,6 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 		utf8_fullpath = mono_utf8_from_external (argv[0]);
 		if(utf8_fullpath == NULL) {
 			g_print ("\nCannot determine the text encoding for the assembly location: %s\n", argv[0]);
-			g_print ("Please add the correct encoding to MONO_EXTERNAL_ENCODINGS and try again.\n");
 			exit (-1);
 		}
 	}
@@ -3984,7 +3981,6 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 		if(utf8_arg==NULL) {
 			/* Ditto the comment about Invalid UTF-8 here */
 			g_print ("\nCannot determine the text encoding for argument %d (%s).\n", i, argv[i]);
-			g_print ("Please add the correct encoding to MONO_EXTERNAL_ENCODINGS and try again.\n");
 			exit (-1);
 		}
 
@@ -6223,31 +6219,6 @@ mono_string_new_checked (const char *text, MonoError *error)
 
 	g_free (ut);
 
-/*FIXME g_utf8_get_char, g_utf8_next_char and g_utf8_validate are not part of eglib.*/
-#if 0
-	gunichar2 *str;
-	const gchar *end;
-	int len;
-	MonoString *o = NULL;
-
-	if (!g_utf8_validate (text, -1, &end)) {
-		mono_error_set_argument (error, "text", "Not a valid utf8 string");
-		goto leave;
-	}
-
-	len = g_utf8_strlen (text, -1);
-	o = mono_string_new_size_checked (len, error);
-	if (!o)
-		goto leave;
-	str = mono_string_chars_internal (o);
-
-	while (text < end) {
-		*str++ = g_utf8_get_char (text);
-		text = g_utf8_next_char (text);
-	}
-
-leave:
-#endif
 	return o;
 }
 

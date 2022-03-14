@@ -63,9 +63,11 @@ namespace System.Threading
         private static partial AppDomainTimerSafeHandle CreateAppDomainTimer(uint dueTime, int id);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AppDomainTimer_Change")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool ChangeAppDomainTimer(AppDomainTimerSafeHandle handle, uint dueTime);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AppDomainTimer_Delete")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool DeleteAppDomainTimer(IntPtr handle);
 
         #endregion

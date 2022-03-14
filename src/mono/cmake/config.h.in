@@ -321,9 +321,6 @@
 /* Disable support code for the LLDB plugin. */
 #cmakedefine DISABLE_LLDB 1
 
-/* Disable support for .mdb symbol files. */
-#cmakedefine DISABLE_MDB 1
-
 /* Disable assertion messages. */
 #cmakedefine DISABLE_ASSERT_MESSAGES 1
 
@@ -935,12 +932,6 @@
 
 /* Define to 1 if you have the <getopt.h> header file. */
 #cmakedefine HAVE_GETOPT_H 1
-
-/* Define to 1 if you have the <iconv.h> header file. */
-#cmakedefine HAVE_ICONV_H 1
-
-/* Define to 1 if you have the `iconv' library (-liconv). */
-#cmakedefine HAVE_LIBICONV 1
 
 /* Icall symbol map enabled */
 #cmakedefine ENABLE_ICALL_SYMBOL_MAP 1

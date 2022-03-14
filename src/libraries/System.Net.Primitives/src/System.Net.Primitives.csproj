@@ -86,6 +86,9 @@
              Link="Common\Interop\Windows\SChannel\Interop.SchProtocols.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.ErrorCodes.cs"
              Link="Common\Interop\Windows\WinSock\Interop.ErrorCodes.cs" />
+    <!-- Common -->
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" 
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\Net\SocketException.Windows.cs" />

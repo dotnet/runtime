@@ -5,20 +5,16 @@ namespace System.Text.RegularExpressions
 {
     internal sealed class CompiledRegexRunner : RegexRunner
     {
-        private readonly Action<RegexRunner> _goMethod;
-        private readonly Func<RegexRunner, bool> _findFirstCharMethod;
+        private readonly ScanDelegate _scanMethod;
 
-        public CompiledRegexRunner(Action<RegexRunner> go, Func<RegexRunner, bool> findFirstChar, int trackCount)
+        internal delegate void ScanDelegate(RegexRunner runner, ReadOnlySpan<char> text);
+
+        public CompiledRegexRunner(ScanDelegate scan)
         {
-            _goMethod = go;
-            _findFirstCharMethod = findFirstChar;
-            runtrackcount = trackCount;
+            _scanMethod = scan;
         }
 
-        protected override void Go() => _goMethod(this);
-
-        protected override bool FindFirstChar() => _findFirstCharMethod(this);
-
-        protected override void InitTrackCount() { }
+        protected internal override void Scan(ReadOnlySpan<char> text)
+            => _scanMethod(this, text);
     }
 }

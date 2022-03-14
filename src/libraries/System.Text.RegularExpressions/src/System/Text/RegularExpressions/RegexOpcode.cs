@@ -5,7 +5,7 @@ namespace System.Text.RegularExpressions
 {
     /// <summary>Opcodes written by <see cref="RegexWriter"/> and used by <see cref="RegexInterpreter"/> to process a regex.</summary>
     /// <remarks>
-    /// <see cref="RegexCode"/> stores an int[] containing all of the codes that make up the instructions for
+    /// <see cref="RegexInterpreterCode"/> stores an int[] containing all of the codes that make up the instructions for
     /// the interpreter to process the regular expression.  The array contains a packed sequence of operations,
     /// each of which is an <see cref="RegexOpcode"/> stored as an int, followed immediately by all of the operands
     /// required for that operation.  For example, the subexpression `a{2,7}[^b]` would be represented as the sequence

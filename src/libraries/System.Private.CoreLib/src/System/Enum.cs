@@ -8,7 +8,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
 
 // The code below includes partial support for float/double and
 // pointer sized enums.
@@ -483,7 +482,7 @@ namespace System
             return result;
         }
 
-        public static bool TryParse(Type enumType, string? value, out object? result) =>
+        public static bool TryParse(Type enumType, string? value, [NotNullWhen(true)] out object? result) =>
             TryParse(enumType, value, ignoreCase: false, out result);
 
         /// <summary>
@@ -493,10 +492,10 @@ namespace System
         /// <param name="value">The span representation of the name or numeric value of one or more enumerated constants.</param>
         /// <param name="result">When this method returns <see langword="true"/>, an object containing an enumeration constant representing the parsed value.</param>
         /// <returns><see langword="true"/> if the conversion succeeded; <see langword="false"/> otherwise.</returns>
-        public static bool TryParse(Type enumType, ReadOnlySpan<char> value, out object? result) =>
+        public static bool TryParse(Type enumType, ReadOnlySpan<char> value, [NotNullWhen(true)] out object? result) =>
           TryParse(enumType, value, ignoreCase: false, out result);
 
-        public static bool TryParse(Type enumType, string? value, bool ignoreCase, out object? result) =>
+        public static bool TryParse(Type enumType, string? value, bool ignoreCase, [NotNullWhen(true)] out object? result) =>
             TryParse(enumType, value, ignoreCase, throwOnFailure: false, out result);
 
         /// <summary>
@@ -507,10 +506,10 @@ namespace System
         /// <param name="ignoreCase"><see langword="true"/> to read <paramref name="enumType"/> in case insensitive mode; <see langword="false"/> to read <paramref name="enumType"/> in case sensitive mode.</param>
         /// <param name="result">When this method returns <see langword="true"/>, an object containing an enumeration constant representing the parsed value.</param>
         /// <returns><see langword="true"/> if the conversion succeeded; <see langword="false"/> otherwise.</returns>
-        public static bool TryParse(Type enumType, ReadOnlySpan<char> value, bool ignoreCase, out object? result) =>
+        public static bool TryParse(Type enumType, ReadOnlySpan<char> value, bool ignoreCase, [NotNullWhen(true)] out object? result) =>
             TryParse(enumType, value, ignoreCase, throwOnFailure: false, out result);
 
-        private static bool TryParse(Type enumType, string? value, bool ignoreCase, bool throwOnFailure, out object? result)
+        private static bool TryParse(Type enumType, string? value, bool ignoreCase, bool throwOnFailure, [NotNullWhen(true)] out object? result)
         {
             if (value == null)
             {
@@ -525,7 +524,7 @@ namespace System
             return TryParse(enumType, value.AsSpan(), ignoreCase, throwOnFailure, out result);
         }
 
-        private static bool TryParse(Type enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, out object? result)
+        private static bool TryParse(Type enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, [NotNullWhen(true)] out object? result)
         {
             // Validation on the enum type itself.  Failures here are considered non-parsing failures
             // and thus always throw rather than returning false.

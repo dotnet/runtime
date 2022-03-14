@@ -16,7 +16,6 @@ namespace Microsoft.Interop
         private static readonly Utf16StringMarshaller s_utf16String = new();
         private static readonly Utf8StringMarshaller s_utf8String = new();
         private static readonly AnsiStringMarshaller s_ansiString = new AnsiStringMarshaller(s_utf8String);
-        private static readonly PlatformDefinedStringMarshaller s_platformDefinedString = new PlatformDefinedStringMarshaller(s_utf16String, s_utf8String);
 
         private static readonly Forwarder s_forwarder = new();
         private static readonly BlittableMarshaller s_blittable = new();
@@ -77,7 +76,10 @@ namespace Microsoft.Interop
                     return s_blittable;
 
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: NoMarshallingInfo }:
-                    return s_winBool; // [Compat] Matching the default for the built-in runtime marshallers.
+                    throw new MarshallingNotSupportedException(info, context)
+                    {
+                        NotSupportedDetails = Resources.MarshallingBoolAsUndefinedNotSupported
+                    };
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1 or UnmanagedType.U1, _) }:
                     return s_byteBool;
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.U4 or UnmanagedType.Bool, _) }:
@@ -149,11 +151,6 @@ namespace Microsoft.Interop
                         {
                             NotSupportedDetails = string.Format(Resources.MarshallingCharAsSpecifiedCharSetNotSupported, CharSet.Ansi)
                         };
-                    case CharEncoding.PlatformDefined:
-                        throw new MarshallingNotSupportedException(info, context) // [Compat] See conversion of CharSet.Auto.
-                        {
-                            NotSupportedDetails = string.Format(Resources.MarshallingCharAsSpecifiedCharSetNotSupported, CharSet.Auto)
-                        };
                 }
             }
 
@@ -196,8 +193,6 @@ namespace Microsoft.Interop
                         return s_utf16String;
                     case CharEncoding.Utf8:
                         return s_utf8String;
-                    case CharEncoding.PlatformDefined:
-                        return s_platformDefinedString;
                 }
             }
 

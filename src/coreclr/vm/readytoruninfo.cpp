@@ -823,7 +823,7 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
         return false;
 
     // If R2R code is disabled for this module, simply behave as if it is never found
-    if (m_readyToRunCodeDisabled)
+    if (ReadyToRunCodeDisabled())
         return false;
 
     if (m_pgoInstrumentationDataHashtable.IsNull())
@@ -890,7 +890,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
         goto done;
 
     // If R2R code is disabled for this module, simply behave as if it is never found
-    if (m_readyToRunCodeDisabled)
+    if (ReadyToRunCodeDisabled())
         goto done;
 
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
@@ -1077,7 +1077,7 @@ BOOL ReadyToRunInfo::MethodIterator::Next()
     }
     CONTRACTL_END;
 
-    if (m_pInfo->m_readyToRunCodeDisabled)
+    if (m_pInfo->ReadyToRunCodeDisabled())
         return FALSE;
 
     // Enumerate non-generic methods
