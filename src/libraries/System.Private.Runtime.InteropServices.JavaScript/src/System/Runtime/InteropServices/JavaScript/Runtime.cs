@@ -100,7 +100,7 @@ namespace System.Runtime.InteropServices.JavaScript
             FIRST = BUFFER_TOO_SMALL
         }
 
-        public static string GetCallSignature(IntPtr _methodHandle, object? objForRuntimeType)
+        public static string GetCallSignatureRef(IntPtr _methodHandle, in object? objForRuntimeType)
         {
             var methodHandle = GetMethodHandleFromIntPtr(_methodHandle);
 

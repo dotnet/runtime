@@ -12,7 +12,7 @@ import { conv_string_root } from "./strings";
 import corebindings from "./corebindings";
 import cwraps from "./cwraps";
 import { get_js_owned_object_by_gc_handle_ref, js_owned_gc_handle_symbol, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, _js_owned_object_finalized, _js_owned_object_registry, _lookup_js_owned_object, _register_js_owned_object, _use_finalization_registry } from "./gc-handles";
-import { mono_method_get_call_signature, call_method_ref, wrap_error_root } from "./method-calls";
+import { mono_method_get_call_signature_ref, call_method_ref, wrap_error_root } from "./method-calls";
 import { _js_to_mono_obj_root } from "./js-to-cs";
 import { _are_promises_supported, _create_cancelable_promise } from "./cancelable-promise";
 import { getU32, getI32, getF32, getF64 } from "./memory";
@@ -215,7 +215,7 @@ export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle, after_
             }
 
             if (typeof result[delegate_invoke_signature_symbol] === "undefined") {
-                result[delegate_invoke_signature_symbol] = mono_method_get_call_signature(result[delegate_invoke_symbol], delegateRoot.value);
+                result[delegate_invoke_signature_symbol] = mono_method_get_call_signature_ref(result[delegate_invoke_symbol], delegateRoot);
             }
         } finally {
             delegateRoot.release();

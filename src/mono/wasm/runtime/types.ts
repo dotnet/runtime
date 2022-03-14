@@ -127,7 +127,7 @@ export const enum AssetBehaviours {
 }
 
 export type RuntimeHelpers = {
-    get_call_sig: MonoMethod;
+    get_call_sig_ref: MonoMethod;
     runtime_namespace: string;
     runtime_classname: string;
     wasm_runtime_class: MonoClass;
@@ -139,6 +139,8 @@ export type RuntimeHelpers = {
     _box_buffer: VoidPtr;
     _unbox_buffer: VoidPtr;
     _box_root: any;
+    // A WasmRoot that is guaranteed to contain 0
+    _null_root: any;
     _class_int32: MonoClass;
     _class_uint32: MonoClass;
     _class_double: MonoClass;

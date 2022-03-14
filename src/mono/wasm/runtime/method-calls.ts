@@ -255,7 +255,7 @@ export function call_static_method(fqn: string, args: any[], signature: string/*
     const method = mono_method_resolve(fqn);
 
     if (typeof signature === "undefined")
-        signature = mono_method_get_call_signature(method);
+        signature = mono_method_get_call_signature_ref(method, undefined);
 
     return call_method_ref(method, undefined, signature, args);
 }
@@ -266,7 +266,7 @@ export function mono_bind_static_method(fqn: string, signature?: string/*ArgsMar
     const method = mono_method_resolve(fqn);
 
     if (typeof signature === "undefined")
-        signature = mono_method_get_call_signature(method);
+        signature = mono_method_get_call_signature_ref(method, undefined);
 
     return mono_bind_method(method, null, signature!, fqn);
 }
@@ -283,7 +283,7 @@ export function mono_bind_assembly_entry_point(assembly: string, signature?: str
         throw new Error("Could not find entry point for assembly: " + assembly);
 
     if (!signature)
-        signature = mono_method_get_call_signature(method);
+        signature = mono_method_get_call_signature_ref(method, undefined);
 
     return async function (...args: any[]) {
         if (args.length > 0 && Array.isArray(args[0]))
@@ -513,13 +513,11 @@ export function wrap_error_root(is_exception: Int32Ptr | null, ex: any, result: 
 }
 
 // fixme: ref
-export function mono_method_get_call_signature(method: MonoMethod, mono_obj?: MonoObject): string/*ArgsMarshalString*/ {
-    const instanceRoot = mono_wasm_new_root(mono_obj);
-    try {
-        return call_method_ref(runtimeHelpers.get_call_sig, undefined, "im", [method, instanceRoot.value]);
-    } finally {
-        instanceRoot.release();
-    }
+export function mono_method_get_call_signature_ref(method: MonoMethod, mono_obj?: WasmRoot<MonoObject>): string/*ArgsMarshalString*/ {
+    return call_method_ref(
+        runtimeHelpers.get_call_sig_ref, undefined, "im",
+        [method, mono_obj ? mono_obj.address : runtimeHelpers._null_root.address]
+    );
 }
 
 export function mono_method_resolve(fqn: string): MonoMethod {
