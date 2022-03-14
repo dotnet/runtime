@@ -510,11 +510,7 @@ namespace System.Collections.Immutable
                 {
                     if (match(_elements[i]))
                     {
-                        if (removeIndices == null)
-                        {
-                            removeIndices = new List<int>();
-                        }
-
+                        removeIndices ??= new List<int>();
                         removeIndices.Add(i);
                     }
                 }
