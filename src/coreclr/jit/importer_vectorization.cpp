@@ -484,14 +484,6 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVar*   data,
         return nullptr;
     }
 
-    if ((compIsForInlining() ? (fgBBcount + impInlineRoot()->fgBBcount) : (fgBBcount)) > 20)
-    {
-        // We don't want to unroll too much and in big methods
-        // TODO-Unroll-CQ: come up with some better heuristic/budget
-        JITDUMP("impExpandHalfConstEquals: method has too many BBs (>20) - not profitable to expand.\n");
-        return nullptr;
-    }
-
     const genTreeOps cmpOp         = startsWith ? GT_GE : GT_EQ;
     GenTree*         elementsCount = gtNewIconNode(len);
     GenTree*         lenCheckNode;
