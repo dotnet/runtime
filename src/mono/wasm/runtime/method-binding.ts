@@ -389,11 +389,9 @@ export function _decide_if_result_is_marshaled(converter: Converter, argc: numbe
     }
 }
 
-export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null, args_marshal: string/*ArgsMarshalString*/, friendly_name: string): Function {
+export function mono_bind_method(method: MonoMethod, this_arg: null, args_marshal: string/*ArgsMarshalString*/, friendly_name: string): Function {
     if (typeof (args_marshal) !== "string")
         throw new Error("args_marshal argument invalid, expected string");
-    this_arg = coerceNull(this_arg);
-    const this_arg_root = this_arg ? mono_wasm_new_root(this_arg) : null;
 
     let converter: Converter | null = null;
     if (typeof (args_marshal) === "string") {
@@ -425,7 +423,6 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
         _unbox_mono_obj_root_with_known_nonprimitive_type,
         invoke_method_ref: cwraps.mono_wasm_invoke_method_ref,
         method,
-        this_arg_root,
         token,
         unbox_buffer,
         unbox_buffer_size,
@@ -498,8 +495,7 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
     // The end result is that bound method invocations don't always allocate, so no more nursery GCs. Yay! -kg
     body.push(
         "",
-        // TODO: Create new invoke_method variant that writes the result into resultRoot directly
-        "invoke_method_ref (method, this_arg_root ? this_arg_root.address : 0, buffer, exceptionRoot.address, resultRoot.address);",
+        "invoke_method_ref (method, 0, buffer, exceptionRoot.address, resultRoot.address);",
         `_handle_exception_for_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
         "",
         "let resultPtr = resultRoot.value, result = undefined;"

@@ -44,12 +44,13 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void TypedArrayCopyFromRef(int jsHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult, out object result);
 
+        // FIXME: Why are these IntPtr?
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void WebSocketSend(int webSocketJSHandle, IntPtr messagePtr, int offset, int length, int messageType, bool endOfMessage, out int promiseJSHandle, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void WebSocketReceive(int webSocketJSHandle, IntPtr bufferPtr, int offset, int length, IntPtr responsePtr, out int promiseJSHandle, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void WebSocketOpen(string uri, object[]? subProtocols, Delegate onClosed, out int webSocketJSHandle, out int promiseJSHandle, out int exceptionalResult, out object result);
+        internal static extern void WebSocketOpenRef(string uri, object[]? subProtocols, in Delegate onClosed, out int webSocketJSHandle, out int promiseJSHandle, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void WebSocketAbort(int webSocketJSHandle, out int exceptionalResult, out string result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

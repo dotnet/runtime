@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_wasm_new_root, WasmRoot, mono_wasm_new_external_root } from "./roots";
+import { mono_wasm_new_root, mono_wasm_new_external_root } from "./roots";
+import { setI32 } from "./memory";
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
 import { PromiseControl, _create_cancelable_promise } from "./cancelable-promise";
@@ -12,7 +13,7 @@ import { wrap_error_root } from "./method-calls";
 import { conv_string_root } from "./strings";
 import { JSHandle, MonoArray, MonoObject, MonoString, MonoObjectRef } from "./types";
 import { Module } from "./imports";
-import { Int32Ptr } from "./types/emscripten";
+import { Int32Ptr, VoidPtr } from "./types/emscripten";
 
 const wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
 const wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");
@@ -30,11 +31,12 @@ const ws_send_buffer_blocking_threshold = 65536;
 const emptyBuffer = new Uint8Array();
 
 // fixme: ref
-export function mono_wasm_web_socket_open(uri: MonoString, subProtocols: MonoArray, on_close: MonoObject, web_socket_js_handle: Int32Ptr, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+export function mono_wasm_web_socket_open_ref(uri: MonoString, subProtocols: MonoArray, on_close: MonoObjectRef, web_socket_js_handle: Int32Ptr, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const result_root = mono_wasm_new_external_root<MonoObject>(result_address);
     const uri_root = mono_wasm_new_root(uri);
     const sub_root = mono_wasm_new_root(subProtocols);
-    const on_close_root = mono_wasm_new_root(on_close);
+    const on_close_root = mono_wasm_new_root();
+    on_close_root.copy_from_address(on_close);
     try {
         const js_uri = conv_string_root(uri_root);
         if (!js_uri) {
@@ -80,10 +82,10 @@ export function mono_wasm_web_socket_open(uri: MonoString, subProtocols: MonoArr
             // send close to any pending receivers, to wake them
             const receive_promise_queue = ws[wasm_ws_pending_receive_promise_queue];
             receive_promise_queue.drain((receive_promise_control) => {
-                const response_root = receive_promise_control.response_root;
-                Module.setValue(<any>response_root.value + 0, 0, "i32");// count
-                Module.setValue(<any>response_root.value + 4, 2, "i32");// type:close
-                Module.setValue(<any>response_root.value + 8, 1, "i32");// end_of_message: true
+                const response_ptr = receive_promise_control.response_ptr;
+                setI32(<any>response_ptr + 0, 0);// count
+                setI32(<any>response_ptr + 4, 2);// type:close
+                setI32(<any>response_ptr + 8, 1);// end_of_message: true
                 receive_promise_control.resolve(null);
             });
         };
@@ -110,9 +112,8 @@ export function mono_wasm_web_socket_open(uri: MonoString, subProtocols: MonoArr
 }
 
 // fixme: ref
-export function mono_wasm_web_socket_send(webSocket_js_handle: JSHandle, buffer_ptr: MonoObject, offset: number, length: number, message_type: number, end_of_message: boolean, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+export function mono_wasm_web_socket_send(webSocket_js_handle: JSHandle, buffer_ptr: VoidPtr, offset: number, length: number, message_type: number, end_of_message: boolean, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const result_root = mono_wasm_new_external_root<MonoObject>(result_address);
-    const buffer_root = mono_wasm_new_root(buffer_ptr);
     try {
         const ws = mono_wasm_get_jsobj_from_js_handle(webSocket_js_handle);
         if (!ws)
@@ -122,7 +123,7 @@ export function mono_wasm_web_socket_send(webSocket_js_handle: JSHandle, buffer_
             throw new Error("InvalidState: The WebSocket is not connected.");
         }
 
-        const whole_buffer = _mono_wasm_web_socket_send_buffering(ws, buffer_root, offset, length, message_type, end_of_message);
+        const whole_buffer = _mono_wasm_web_socket_send_buffering(ws, buffer_ptr, offset, length, message_type, end_of_message);
 
         if (!end_of_message || !whole_buffer) {
             result_root.clear(); // we are done buffering synchronously, no promise
@@ -135,19 +136,12 @@ export function mono_wasm_web_socket_send(webSocket_js_handle: JSHandle, buffer_
     }
     finally {
         result_root.release();
-        buffer_root.release();
     }
 }
 
 // fixme: ref
-export function mono_wasm_web_socket_receive(webSocket_js_handle: JSHandle, buffer_ptr: MonoObject, offset: number, length: number, response_ptr: MonoObject, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+export function mono_wasm_web_socket_receive(webSocket_js_handle: JSHandle, buffer_ptr: VoidPtr, offset: number, length: number, response_ptr: VoidPtr, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const result_root = mono_wasm_new_external_root<MonoObject>(result_address);
-    const buffer_root = mono_wasm_new_root(buffer_ptr);
-    const response_root = mono_wasm_new_root(response_ptr);
-    const release_buffer = () => {
-        buffer_root.release();
-        response_root.release();
-    };
 
     try {
         const ws = mono_wasm_get_jsobj_from_js_handle(webSocket_js_handle);
@@ -166,19 +160,18 @@ export function mono_wasm_web_socket_receive(webSocket_js_handle: JSHandle, buff
                 throw new Error("ERR20: Invalid WS state");// assert
             }
             // finish synchronously
-            _mono_wasm_web_socket_receive_buffering(receive_event_queue, buffer_root, offset, length, response_root);
-            release_buffer();
+            _mono_wasm_web_socket_receive_buffering(receive_event_queue, buffer_ptr, offset, length, response_ptr);
 
             Module.setValue(thenable_js_handle, 0, "i32");
             result_root.clear();
             return;
         }
-        const { promise, promise_control } = _create_cancelable_promise(release_buffer, release_buffer);
+        const { promise, promise_control } = _create_cancelable_promise(undefined, undefined);
         const receive_promise_control = promise_control as ReceivePromiseControl;
-        receive_promise_control.buffer_root = buffer_root;
+        receive_promise_control.buffer_ptr = buffer_ptr;
         receive_promise_control.buffer_offset = offset;
         receive_promise_control.buffer_length = length;
-        receive_promise_control.response_root = response_root;
+        receive_promise_control.response_ptr = response_ptr;
         receive_promise_queue.enqueue(receive_promise_control);
 
         const { then_js_handle } = _wrap_js_thenable_as_task_root(promise, result_root);
@@ -371,19 +364,19 @@ function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: Message
     while (promise_queue.getLength() && event_queue.getLength()) {
         const promise_control = promise_queue.dequeue()!;
         _mono_wasm_web_socket_receive_buffering(event_queue,
-            promise_control.buffer_root, promise_control.buffer_offset, promise_control.buffer_length,
-            promise_control.response_root);
+            promise_control.buffer_ptr, promise_control.buffer_offset, promise_control.buffer_length,
+            promise_control.response_ptr);
         promise_control.resolve(null);
     }
     prevent_timer_throttling();
 }
 
-function _mono_wasm_web_socket_receive_buffering(event_queue: Queue<any>, buffer_root: WasmRoot<MonoObject>, buffer_offset: number, buffer_length: number, response_root: WasmRoot<MonoObject>) {
+function _mono_wasm_web_socket_receive_buffering(event_queue: Queue<any>, buffer_ptr: VoidPtr, buffer_offset: number, buffer_length: number, response_ptr: VoidPtr) {
     const event = event_queue.peek();
 
     const count = Math.min(buffer_length, event.data.length - event.offset);
     if (count > 0) {
-        const targetView = Module.HEAPU8.subarray(<any>buffer_root.value + buffer_offset, <any>buffer_root.value + buffer_offset + buffer_length);
+        const targetView = Module.HEAPU8.subarray(<any>buffer_ptr + buffer_offset, <any>buffer_ptr + buffer_offset + buffer_length);
         const sourceView = event.data.subarray(event.offset, event.offset + count);
         targetView.set(sourceView, 0);
         event.offset += count;
@@ -392,15 +385,15 @@ function _mono_wasm_web_socket_receive_buffering(event_queue: Queue<any>, buffer
     if (end_of_message) {
         event_queue.dequeue();
     }
-    Module.setValue(<any>response_root.value + 0, count, "i32");
-    Module.setValue(<any>response_root.value + 4, event.type, "i32");
-    Module.setValue(<any>response_root.value + 8, end_of_message, "i32");
+    setI32(<any>response_ptr + 0, count);
+    setI32(<any>response_ptr + 4, event.type);
+    setI32(<any>response_ptr + 8, end_of_message);
 }
 
-function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, buffer_root: WasmRoot<MonoObject>, buffer_offset: number, length: number, message_type: number, end_of_message: boolean): Uint8Array | string | null {
+function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, buffer_ptr: VoidPtr, buffer_offset: number, length: number, message_type: number, end_of_message: boolean): Uint8Array | string | null {
     let buffer = ws[wasm_ws_pending_send_buffer];
     let offset = 0;
-    const message_ptr = <any>buffer_root.value + buffer_offset;
+    const message_ptr = <any>buffer_ptr + buffer_offset;
 
     if (buffer) {
         offset = ws[wasm_ws_pending_send_buffer_offset];
@@ -479,8 +472,8 @@ type WebSocketExtension = WebSocket & {
 }
 
 type ReceivePromiseControl = PromiseControl & {
-    response_root: WasmRoot<MonoObject>
-    buffer_root: WasmRoot<MonoObject>
+    response_ptr: VoidPtr
+    buffer_ptr: VoidPtr
     buffer_offset: number
     buffer_length: number
 }

@@ -336,7 +336,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static Task<object> WebSocketOpen(string uri, object[]? subProtocols, Delegate onClosed, out JSObject webSocket, out int promiseJSHandle)
         {
-            Interop.Runtime.WebSocketOpen(uri, subProtocols, onClosed, out int webSocketJSHandle, out promiseJSHandle, out int exception, out object res);
+            Interop.Runtime.WebSocketOpenRef(uri, subProtocols, onClosed, out int webSocketJSHandle, out promiseJSHandle, out int exception, out object res);
             if (exception != 0)
                 throw new JSException((string)res);
             webSocket = new JSObject((IntPtr)webSocketJSHandle);
