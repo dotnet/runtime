@@ -1673,6 +1673,21 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
         }
     }
 
+    // Find "a - b * c" in order to emit MSUB
+    if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(node) && !node->isContained() && node->OperIs(GT_SUB) &&
+        !node->gtOverflow() && op2->OperIs(GT_MUL) && !op2->isContained() && !op2->gtOverflow() && varTypeIsIntegral(op2))
+    {
+        GenTree* a = op1;
+        GenTree* b = op2->gtGetOp1();
+        GenTree* c = op2->gtGetOp2();
+
+        if (!a->isContained() && !b->isContained() && !c->isContained())
+        {
+            node->ChangeOper(GT_MSUB);
+            MakeSrcContained(node, op2);
+        }
+    }
+
     // Change ADD TO ADDEX for ADD(X, CAST(Y)) or ADD(CAST(X), Y) where CAST is int->long
     // or for ADD(LSH(X, CNS), X) or ADD(X, LSH(X, CNS)) where CNS is in the (0..typeWidth) range
     if (node->OperIs(GT_ADD) && !op1->isContained() && !op2->isContained() && varTypeIsIntegral(node) &&

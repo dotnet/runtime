@@ -306,6 +306,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForMadd(treeNode->AsOp());
             break;
 
+        case GT_MSUB:
+            genCodeForMsub(treeNode->AsOp());
+            break;
+
         case GT_INC_SATURATE:
             genCodeForIncSaturate(treeNode);
             break;
