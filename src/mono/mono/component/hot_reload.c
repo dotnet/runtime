@@ -1686,12 +1686,14 @@ skeleton_add_member (MonoAddedDefSkeleton *sk, uint32_t member_token)
 
 typedef struct Pass2Context {
 	GArray *skeletons; /* Skeleton for each new added type definition */
+	GArray *nested_class_worklist; /* List of tokens in the NestedClass table to re-visit at the end of the pass */
 } Pass2Context;
 
 static void
 pass2_context_init (Pass2Context *ctx)
 {
 	ctx->skeletons = g_array_new (FALSE, TRUE, sizeof(MonoAddedDefSkeleton));
+	ctx->nested_class_worklist = g_array_new (FALSE, TRUE, sizeof(uint32_t));
 }
 
 static void
@@ -1699,6 +1701,8 @@ pass2_context_destroy (Pass2Context *ctx)
 {
 	if (ctx->skeletons)
 		g_array_free (ctx->skeletons, TRUE);
+	if (ctx->nested_class_worklist)
+		g_array_free (ctx->nested_class_worklist, TRUE);
 }
 
 static void
@@ -1779,23 +1783,94 @@ hot_reload_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_token, 
 }
 
 /**
- * Adds the given newly-added class to the image name cache.  Except if the
- * class is nested (has one of the nested visibility flags), since those are
- * looked up differently.
+ * Adds the given newly-added class to the image, updating various data structures (e.g. name cache).
  */
 static void
-add_typedef_to_image_name_cache (MonoImage *image_base, uint32_t log_token)
+add_typedef_to_image_metadata (MonoImage *image_base, uint32_t log_token)
 {
 	uint32_t cols[MONO_TYPEDEF_SIZE];
 	uint32_t row = mono_metadata_token_index (log_token);
 	mono_metadata_decode_row (&image_base->tables[MONO_TABLE_TYPEDEF], row - 1, cols, MONO_TYPEDEF_SIZE);
 	uint32_t visib = cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_VISIBILITY_MASK;
 
-	if (visib >= TYPE_ATTRIBUTE_NESTED_PUBLIC && visib <= TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM)
+	/*
+	 * Add the class name to the name chache. Except if the
+	 * class is nested (has one of the nested visibility flags), since those are
+	 * looked up differently.
+	 */
+	gboolean isNested = (visib >= TYPE_ATTRIBUTE_NESTED_PUBLIC && visib <= TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM);
+	if (!isNested) {
+		const char *name_space = mono_metadata_string_heap (image_base, cols[MONO_TYPEDEF_NAMESPACE]);
+		const char *name = mono_metadata_string_heap (image_base, cols[MONO_TYPEDEF_NAME]);
+		mono_image_add_to_name_cache (image_base, name_space, name, row);
+	}
+}
+
+/**
+ * Given a row in the NestedClass table, add it to the worklist if the enclosing type isn't a skeleton.
+ */
+static void
+add_nested_class_to_worklist (Pass2Context *ctx, MonoImage *image_base, uint32_t log_token)
+{
+	uint32_t cols[MONO_TABLE_NESTEDCLASS];
+	mono_metadata_decode_row (&image_base->tables[MONO_TABLE_NESTEDCLASS], mono_metadata_token_index (log_token) - 1, cols, MONO_NESTED_CLASS_SIZE);
+	/* if the enclosing clas hasn't been created yet, don't do anything.  mono_class_setup_nested_types() will pick up the new row */
+	if (pass2_context_is_skeleton (ctx, cols[MONO_NESTED_CLASS_ENCLOSING]))
 		return;
-	const char *name_space = mono_metadata_string_heap (image_base, cols[MONO_TYPEDEF_NAMESPACE]);
-	const char *name = mono_metadata_string_heap (image_base, cols[MONO_TYPEDEF_NAME]);
-	mono_image_add_to_name_cache (image_base, name_space, name, row);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: adding nested class row 0x%08x (enclosing: 0x%08x, nested: 0x%08x) to worklist", log_token, cols[MONO_NESTED_CLASS_ENCLOSING], cols[MONO_NESTED_CLASS_NESTED]);
+
+	g_array_append_val (ctx->nested_class_worklist, log_token);
+}
+
+/**
+ * For any enclosing classes that already had their nested classes property initialized,
+ * add any newly-added classes the the nested classes list.
+ *
+ * This has to be called late because we construct the nested class - which
+ * could have been a skeleton.
+ */
+static gboolean
+pass2_update_nested_classes (Pass2Context *ctx, MonoImage *image_base, MonoError *error)
+{
+	if (!ctx->nested_class_worklist)
+		return TRUE;
+	GArray *arr = ctx->nested_class_worklist;
+	for (int i = 0; i < arr->len; ++i) {
+		uint32_t log_token = g_array_index (arr, uint32_t, i);
+
+		uint32_t cols[MONO_TABLE_NESTEDCLASS];
+		mono_metadata_decode_row (&image_base->tables[MONO_TABLE_NESTEDCLASS], mono_metadata_token_index (log_token) - 1, cols, MONO_NESTED_CLASS_SIZE);
+		/* if the enclosing clas hasn't been created yet, don't do anything.  mono_class_setup_nested_types() will pick up the new row */
+		uint32_t enclosing_typedef_row = cols[MONO_NESTED_CLASS_ENCLOSING];
+		if (pass2_context_is_skeleton (ctx, enclosing_typedef_row))
+			continue;
+		
+		MonoClass *enclosing_klass = mono_class_get_checked (image_base, mono_metadata_make_token (MONO_TABLE_TYPEDEF, enclosing_typedef_row), error);
+		return_val_if_nok (error, FALSE);
+		g_assert (enclosing_klass);
+		/* enclosing class is set up, but noone asked for its nested classes yet.  Nothing to do here. */
+		if (!m_class_is_nested_classes_inited (enclosing_klass))
+			continue;
+		MonoClass *klass = mono_class_get_checked (image_base, mono_metadata_make_token (MONO_TABLE_TYPEDEF, cols[MONO_NESTED_CLASS_NESTED]), error);
+		return_val_if_nok (error, FALSE);
+		g_assert (klass);
+
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: worklist row 0x%08x adding to enclosing 0x%08x, the nested class 0x%08x", log_token, cols[MONO_NESTED_CLASS_ENCLOSING], cols[MONO_NESTED_CLASS_NESTED]);
+		GList *nested_classes = mono_class_get_nested_classes_property (enclosing_klass);
+
+		/* make a list node for the new class */
+		GList *new_list = mono_g_list_prepend_image (image_base, NULL, klass);
+
+		/* either set the property to the new node, or append the new node to the existing list */
+		if (!nested_classes) {
+			mono_class_set_nested_classes_property (enclosing_klass, new_list);
+		} else {
+			g_list_concat (nested_classes, new_list);
+		}
+	}
+
+	return TRUE;
+
 }
 
 /* do actuall enclog application */
@@ -2026,7 +2101,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 					/* ok, added a new class */
 					/* TODO: do things here */
 					pass2_context_add_skeleton (ctx, log_token);
-					add_typedef_to_image_name_cache (image_base, log_token);
+					add_typedef_to_image_metadata (image_base, log_token);
 					break;
 				}
 				case ENC_FUNC_ADD_METHOD:
@@ -2047,6 +2122,11 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			/* modifying an existing class by adding a method or field, etc. */
 			g_assert (!is_addition);
 			g_assert (func_code != ENC_FUNC_DEFAULT);
+			break;
+		}
+		case MONO_TABLE_NESTEDCLASS: {
+			g_assert (is_addition);
+			add_nested_class_to_worklist (ctx, image_base, log_token);
 			break;
 		}
 		case MONO_TABLE_PROPERTYMAP: {
@@ -2192,6 +2272,9 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 
 
 	if (!baseline_info_consume_skeletons (ctx, image_base, base_info, error))
+		return FALSE;
+
+	if (!pass2_update_nested_classes (ctx, image_base, error))
 		return FALSE;
 
 	return TRUE;
