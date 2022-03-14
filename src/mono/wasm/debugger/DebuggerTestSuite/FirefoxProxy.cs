@@ -65,7 +65,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
     internal override string InitParms()
     {
         string baseDir = Path.Combine(Path.GetDirectoryName(typeof(DebuggerTestBase).Assembly.Location), "..", "..", BrowserName());
-        if (File.Exists(Path.Combine(baseDir, "prefs.js"))
+        if (File.Exists(Path.Combine(baseDir, "prefs.js")))
             return $"-profile \"{baseDir}\" -headless -private -start-debugger-server ";
         return $"-headless -private -start-debugger-server ";
     }
