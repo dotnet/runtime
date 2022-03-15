@@ -15,8 +15,11 @@ internal static partial class Interop
         internal short wRepeatCount;
         internal short wVirtualKeyCode;
         internal short wVirtualScanCode;
-        internal char uChar; // Union between WCHAR and ASCII char
+        private short _uChar; // Union between WCHAR and ASCII char
         internal int dwControlKeyState;
+
+        // _uChar is stored as short to avoid any ambiguity for interop marshaling
+        internal char uChar => (char)_uChar;
     }
 
     // Really, this is a union of KeyEventRecords and other types.
