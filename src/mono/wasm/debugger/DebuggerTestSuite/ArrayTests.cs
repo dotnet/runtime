@@ -558,7 +558,7 @@ namespace DebuggerTests
                 label: "this#0");
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         [Trait("Category", "windows-failing")] // https://github.com/dotnet/runtime/issues/65742
         [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/65742
         public async Task InvalidArrayId() => await CheckInspectLocalsAtBreakpointSite(

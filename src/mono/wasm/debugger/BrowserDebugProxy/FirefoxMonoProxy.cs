@@ -16,35 +16,60 @@ using System.Net.WebSockets;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    public class MessageIdFirefox : MessageId
+    internal class FirefoxExecutionContext : ExecutionContext
+    {
+        internal string ActorName { get; set; }
+        internal string ThreadName { get; set; }
+        internal string GlobalName { get; set; }
+
+        public FirefoxExecutionContext(MonoSDBHelper sdbAgent, int id, string actorName) : base(sdbAgent, id, actorName)
+        {
+            ActorName = actorName;
+        }
+
+        private int evaluateExpressionResultId;
+
+        public int GetResultID()
+        {
+            return Interlocked.Increment(ref evaluateExpressionResultId);
+        }
+    }
+
+    public class FirefoxMessageId : MessageId
     {
         public readonly string toId;
 
-        public MessageIdFirefox(string sessionId, int id, string toId):base(sessionId, id)
+        public FirefoxMessageId(string sessionId, int id, string toId):base(sessionId, id)
         {
             this.toId = toId;
         }
 
-        public static implicit operator SessionId(MessageIdFirefox id) => new SessionId(id.sessionId);
+        public static implicit operator SessionId(FirefoxMessageId id) => new SessionId(id.sessionId);
 
         public override string ToString() => $"msg-{sessionId}:::{id}:::{toId}";
 
         public override int GetHashCode() => (sessionId?.GetHashCode() ?? 0) ^ (toId?.GetHashCode() ?? 0) ^ id.GetHashCode();
 
-        public override bool Equals(object obj) => (obj is MessageIdFirefox) ? ((MessageIdFirefox)obj).sessionId == sessionId && ((MessageIdFirefox)obj).id == id && ((MessageIdFirefox)obj).toId == toId : false;
+        public override bool Equals(object obj) => (obj is FirefoxMessageId) ? ((FirefoxMessageId)obj).sessionId == sessionId && ((FirefoxMessageId)obj).id == id && ((FirefoxMessageId)obj).toId == toId : false;
     }
+
     internal class FirefoxMonoProxy : MonoProxy
     {
         private int portBrowser;
         private TcpClient ide;
         private TcpClient browser;
-        private string actorName = "";
-        private string threadName = "";
-        private string globalName = "";
 
         public FirefoxMonoProxy(ILoggerFactory loggerFactory, int portBrowser) : base(loggerFactory, null)
         {
             this.portBrowser = portBrowser;
+        }
+
+        internal FirefoxExecutionContext GetContextFixefox(SessionId sessionId)
+        {
+            if (contexts.TryGetValue(sessionId, out ExecutionContext context))
+                return context as FirefoxExecutionContext;
+            Console.WriteLine("vou dar erro");
+            throw new ArgumentException($"Invalid Session: \"{sessionId}\"", nameof(sessionId));
         }
 
         private async Task<string> ReadOne(TcpClient socket, CancellationToken token)
@@ -234,7 +259,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (res["prototype"] != null || res["frames"] != null)
             {
-                var msgId = new MessageIdFirefox(null, 0, res["from"].Value<string>());
+                var msgId = new FirefoxMessageId(null, 0, res["from"].Value<string>());
                 OnResponse(msgId, Result.FromJsonFirefox(res));
             }
             else if (res["resultID"] == null)
@@ -255,10 +280,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 else if (res["result"] is JObject && res["result"]["type"].Value<string>() == "object" && res["result"]["class"].Value<string>() == "Array")
                 {
-                    var msgIdNew = new MessageIdFirefox(null, 0, res["result"]["actor"].Value<string>());
+                    var msgIdNew = new FirefoxMessageId(null, 0, res["result"]["actor"].Value<string>());
                     var id = int.Parse(res["resultID"].Value<string>().Split('-')[1]);
 
-                    var msgId = new MessageIdFirefox(null, id + 1, "");
+                    var msgId = new FirefoxMessageId(null, id + 1, "");
                     var pendingTask = pending_cmds[msgId];
                     pending_cmds.Remove(msgId);
                     pending_cmds.Add(msgIdNew, pendingTask);
@@ -272,7 +297,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 else
                 {
                     var id = int.Parse(res["resultID"].Value<string>().Split('-')[1]);
-                    var msgId = new MessageIdFirefox(null, id + 1, "");
+                    var msgId = new FirefoxMessageId(null, id + 1, "");
                     if (pending_cmds.ContainsKey(msgId))
                         OnResponse(msgId, Result.FromJsonFirefox(res));
                     else
@@ -314,10 +339,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (method == "evaluateJSAsync")
                 {
                     int id = Interlocked.Increment(ref next_cmd_id);
-                    msgId = new MessageIdFirefox(sessionId.sessionId, id, "");
+                    msgId = new FirefoxMessageId(sessionId.sessionId, id, "");
                 }
                 else
-                    msgId = new MessageIdFirefox(sessionId.sessionId, 0, args["to"].Value<string>());
+                    msgId = new FirefoxMessageId(sessionId.sessionId, 0, args["to"].Value<string>());
                 pending_cmds[msgId] = tcs;
                 await Send(this.browser, args, token);
 
@@ -351,17 +376,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (messageArgs != null && messageArgs.Count == 2)
                     {
                         if (messageArgs[0].Value<string>() == MonoConstants.RUNTIME_IS_READY && messageArgs[1].Value<string>() == MonoConstants.RUNTIME_IS_READY_ID)
-                        {
-                            await OnDefaultContext(sessionId, new ExecutionContext(new MonoSDBHelper (this, logger, sessionId), 0, actorName), token);
                             await RuntimeReady(sessionId, token);
-                        }
                     }
                 }
                 return true;
             }
             if (args["frame"] != null && args["type"] == null)
             {
-                actorName = args["frame"]["consoleActor"].Value<string>();
+                OnDefaultContextUpdate(sessionId, new FirefoxExecutionContext(new MonoSDBHelper (this, logger, sessionId), 0, args["frame"]["consoleActor"].Value<string>()));
                 return false;
             }
 
@@ -374,7 +396,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 case "paused":
                     {
-                        ExecutionContext ctx = GetContext(sessionId);
+                        var ctx = GetContextFixefox(sessionId);
                         var topFunc = args["frame"]["displayName"].Value<string>();
                         switch (topFunc)
                         {
@@ -397,8 +419,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             if (message["resourceType"].Value<string>() == "thread-state" && message["state"].Value<string>() == "paused")
                             {
-                                ExecutionContext ctx = GetContext(sessionId);
-                                if (ctx.PausedOnWasm)
+                                var context = GetContextFixefox(sessionId);
+                                if (context.PausedOnWasm)
                                 {
                                     await SendPauseToBrowser(sessionId, args, token);
                                     return true;
@@ -407,21 +429,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                             if (message["resourceType"].Value<string>() != "console-message")
                                 continue;
                             var messageArgs = message["message"]?["arguments"]?.Value<JArray>();
-                            globalName = args["from"].Value<string>();
+                            var ctx = GetContextFixefox(sessionId);
+                            ctx.GlobalName = args["from"].Value<string>();
                             if (messageArgs != null && messageArgs.Count == 2)
                             {
                                 if (messageArgs[0].Value<string>() == MonoConstants.RUNTIME_IS_READY && messageArgs[1].Value<string>() == MonoConstants.RUNTIME_IS_READY_ID)
-                                {
-                                    await OnDefaultContext(sessionId, new ExecutionContext(new MonoSDBHelper (this, logger, sessionId), 0, actorName), token);
                                     await RuntimeReady(sessionId, token);
-                                }
                             }
                         }
                         break;
                     }
                 case "target-available-form":
                     {
-                        actorName = args["target"]["consoleActor"].Value<string>();
+                        OnDefaultContextUpdate(sessionId, new FirefoxExecutionContext(new MonoSDBHelper (this, logger, sessionId), 0, args["target"]["consoleActor"].Value<string>()));
                         break;
                     }
             }
@@ -465,7 +485,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 case "attach":
                     {
-                        threadName = args["to"].Value<string>();
+                        var ctx = GetContextFixefox(sessionId);
+                        ctx.ThreadName = args["to"].Value<string>();
                         break;
                     }
                 case "source":
@@ -500,8 +521,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
                             return false;
-                        Result resp = await SendCommand(sessionId, "", args, token);
-
                         var req = JObject.FromObject(new
                         {
                             url = args["location"]["sourceUrl"].Value<string>(),
@@ -514,6 +533,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (bp.Value != null)
                         {
                             bp.Value.UpdateCondition(args["options"]?["condition"]?.Value<string>());
+                            await SendCommand(sessionId, "", args, token);
                             return true;
                         }
 
@@ -534,6 +554,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             Log("verbose", $"BP req {args}");
                             await SetBreakpoint(sessionId, store, request, !loaded, token);
                         }
+                        await SendCommand(sessionId, "", args, token);
                         return true;
                     }
                 case "removeBreakpoint":
@@ -643,7 +664,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         if (!DotnetObjectId.TryParse(args?["to"], out DotnetObjectId objectId))
                             return false;
-                        ExecutionContext ctx = GetContext(sessionId);
+                        var ctx = GetContextFixefox(sessionId);
                         if (ctx.CallStack == null)
                             return false;
                         Frame scope = ctx.CallStack.FirstOrDefault(s => s.Id == objectId.Value);
@@ -671,7 +692,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 case "frames":
                     {
-                        ExecutionContext ctx = GetContext(sessionId);
+                        ExecutionContext ctx = GetContextFixefox(sessionId);
                         if (ctx.PausedOnWasm)
                         {
                             try
@@ -691,7 +712,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 case "evaluateJSAsync":
                     {
-                        ExecutionContext context = GetContext(sessionId);
+                        var context = GetContextFixefox(sessionId);
                         if (context.CallStack != null)
                         {
                             var resultID = $"runtimeResult-{context.GetResultID()}";
@@ -766,7 +787,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (!res.IsOk)
                 return false;
 
-            ExecutionContext context = GetContext(sessionId);
+            var context = GetContextFixefox(sessionId);
             byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
             using var retDebuggerCmdReader = new MonoBinaryReader(newBytes);
             retDebuggerCmdReader.ReadBytes(11);
@@ -859,19 +880,20 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         protected override async Task SendResume(SessionId id, CancellationToken token)
         {
+            var ctx = GetContextFixefox(id);
             await SendCommand(id, "", JObject.FromObject(new
             {
-                to = threadName,
+                to = ctx.ThreadName,
                 type = "resume"
             }), token);
         }
 
         internal override Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token)
         {
-            // {"to":"server1.conn0.child10/consoleActor2","type":"evaluateJSAsync","text":"console.log(\"oi thays \")","frameActor":"server1.conn0.child10/frame36"}
+            var ctx = GetContextFixefox(id);
             var o = JObject.FromObject(new
             {
-                to = actorName,
+                to = ctx.ActorName,
                 type = "evaluateJSAsync",
                 text = cmd.expression,
                 options = new { eager = true, mapped = new { await = true } }
@@ -882,6 +904,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal override async Task OnSourceFileAdded(SessionId sessionId, SourceFile source, ExecutionContext context, CancellationToken token)
         {
             //different behavior when debugging from VSCode and from Firefox
+            var ctx = context as FirefoxExecutionContext;
             Log("debug", $"sending {source.Url} {context.Id} {sessionId.sessionId}");
             var obj = JObject.FromObject(new
             {
@@ -894,13 +917,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 dotNetUrl = source.DotNetUrl
             });
             JObject sourcesJObj;
-            if (globalName != "")
+            if (ctx.GlobalName != "")
             {
                 sourcesJObj = JObject.FromObject(new
                 {
                     type = "resource-available-form",
                     resources = new JArray(obj),
-                    from = globalName
+                    from = ctx.GlobalName
                 });
             }
             else
@@ -909,7 +932,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     type = "newSource",
                     source = obj,
-                    from = threadName
+                    from = ctx.ThreadName
                 });
             }
             await SendEvent(sessionId, "", sourcesJObj, token);
@@ -973,6 +996,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         protected async Task<bool> GetFrames(SessionId sessionId, ExecutionContext context, JObject args, CancellationToken token)
         {
+            var ctx = context as FirefoxExecutionContext;
             var orig_callframes = await SendCommand(sessionId, "frames", args, token);
 
             var callFrames = new List<object>();
@@ -1036,7 +1060,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var o = JObject.FromObject(new
             {
                 frames = callFrames,
-                from = threadName
+                from = ctx.ThreadName
             });
 
             await SendEvent(sessionId, "", o, token);

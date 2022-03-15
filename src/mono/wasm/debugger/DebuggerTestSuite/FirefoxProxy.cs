@@ -77,7 +77,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
 
     internal override async Task<string> ExtractConnUrl (string str, ILogger<TestHarnessProxy> logger)
     {
-        await Task.Delay(1);
+        await Task.CompletedTask;
         return UrlToRemoteDebugging();
     }
 
@@ -163,7 +163,6 @@ public class DebuggerTestFirefox : DebuggerTestBase
 
         var bp1_res = await cli.SendCommand("setBreakpoint", bp1_req, token);
         Assert.True(expect_ok == bp1_res.IsOk);
-        await Task.Delay(400);
         return bp1_res;
     }
     internal override async Task<JObject> EvaluateAndCheck(
@@ -202,7 +201,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
         Assert.Equal(expected_loc_str, loc_str);
     }
 
-    internal async Task<JObject> ConvertFirefoxToDefaultFormat(JArray frames, JObject wait_res)
+    internal JObject ConvertFirefoxToDefaultFormat(JArray frames, JObject wait_res)
     {
         var callFrames = new JArray();
         foreach (var frame in frames)
@@ -234,7 +233,6 @@ public class DebuggerTestFirefox : DebuggerTestBase
             });
             callFrames.Add(callFrame);
         }
-        await Task.Delay(1);
         return JObject.FromObject(new 
                 { 
                     callFrames,
@@ -472,7 +470,6 @@ public class DebuggerTestFirefox : DebuggerTestBase
             }));
 
         bp1_res.Value["locations"] = arr;
-        await Task.Delay(400);
         return bp1_res;
     }
 
@@ -549,7 +546,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
 
         JToken top_frame = frames.Value["result"]?["value"]?["frames"]?[0];
 
-        wait_res = await ConvertFirefoxToDefaultFormat(frames.Value["result"]?["value"]?["frames"] as JArray, wait_res);
+        wait_res = ConvertFirefoxToDefaultFormat(frames.Value["result"]?["value"]?["frames"] as JArray, wait_res);
 
         return wait_res;
     }

@@ -407,8 +407,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int ThreadId { get; set; }
         public int Id { get; set; }
 
-        private int evaluateExpressionResultId;
-
         public bool PausedOnWasm { get; set; }
 
         public string PauseKind { get; set; }
@@ -437,11 +435,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 return store;
             }
-        }
-
-        public int GetResultID()
-        {
-            return Interlocked.Increment(ref evaluateExpressionResultId);
         }
 
         public PerScopeCache GetCacheForScope(int scopeId)

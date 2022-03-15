@@ -1146,9 +1146,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        protected async Task OnDefaultContext(SessionId sessionId, ExecutionContext context, CancellationToken token)
+        protected void OnDefaultContextUpdate(SessionId sessionId, ExecutionContext context)
         {
-            Log("verbose", "Default context created, clearing state and sending events");
             if (UpdateContext(sessionId, context, out ExecutionContext previousContext))
             {
                 foreach (KeyValuePair<string, BreakpointRequest> kvp in previousContext.BreakpointRequests)
@@ -1157,7 +1156,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 context.PauseOnExceptions = previousContext.PauseOnExceptions;
             }
+        }
 
+        protected async Task OnDefaultContext(SessionId sessionId, ExecutionContext context, CancellationToken token)
+        {
+            Log("verbose", "Default context created, clearing state and sending events");
+            OnDefaultContextUpdate(sessionId, context);
             if (await IsRuntimeAlreadyReadyAlready(sessionId, token))
                 await RuntimeReady(sessionId, token);
         }

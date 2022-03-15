@@ -114,7 +114,7 @@ class FirefoxInspectorClient : InspectorClient
         {
             if (res["type"]?.Value<string>() == "evaluationResult")
             {
-                var messageId = new MessageIdFirefox("", 0, res["from"].Value<string>());
+                var messageId = new FirefoxMessageId("", 0, res["from"].Value<string>());
                 if (pending_cmds.Remove(messageId, out var item))
                     item.SetResult(Result.FromJsonFirefox(res));
             }
@@ -122,7 +122,7 @@ class FirefoxInspectorClient : InspectorClient
         }
         if (res["from"] != null)
         {
-            var messageId = new MessageIdFirefox("", 0, res["from"].Value<string>());
+            var messageId = new FirefoxMessageId("", 0, res["from"].Value<string>());
             if (pending_cmds.Remove(messageId, out var item))
             {
                 item.SetResult(Result.FromJsonFirefox(res));
@@ -201,7 +201,7 @@ class FirefoxInspectorClient : InspectorClient
 
         var tcs = new TaskCompletionSource<Result>();
         MessageId msgId;
-        msgId = new MessageIdFirefox("", 0, args["to"].Value<string>());
+        msgId = new FirefoxMessageId("", 0, args["to"].Value<string>());
         pending_cmds[msgId] = tcs;
         Send(args, token);
         return tcs.Task;
