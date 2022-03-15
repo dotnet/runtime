@@ -5079,9 +5079,9 @@ mono_class_get_fields_internal (MonoClass *klass, gpointer *iter)
 MonoMethod*
 mono_class_get_methods (MonoClass* klass, gpointer *iter)
 {
-	MonoMethod** method;
 	if (!iter)
 		return NULL;
+	MonoImage *image = m_class_get_image (klass);
 	if (!*iter) {
 		mono_class_setup_methods (klass);
 
@@ -5090,23 +5090,33 @@ mono_class_get_methods (MonoClass* klass, gpointer *iter)
 		 * We can't fail lookup of methods otherwise the runtime will burst in flames on all sort of places.
 		 * FIXME we should better report this error to the caller
 		 */
-		if (!klass_methods)
+		if (!klass_methods && !image->has_updates)
 			return NULL;
+		uint32_t idx = 0;
 		/* start from the first */
 		if (mono_class_get_method_count (klass)) {
-			*iter = &klass_methods [0];
+			// idx is 1 more than the method we just returned
+			*iter = GUINT_TO_POINTER (idx + 1);
 			return klass_methods [0];
 		} else {
 			/* no method */
-			return NULL;
+			if (G_LIKELY (!image->has_updates))
+				return NULL;
+			else
+				*iter = 0;
 		}
 	}
-	method = (MonoMethod **)*iter;
-	method++;
-	if (method < &m_class_get_methods (klass) [mono_class_get_method_count (klass)]) {
-		*iter = method;
-		return *method;
+	// idx is 1 more than the method we returned on the previous iteration
+	uint32_t idx = GPOINTER_TO_UINT (*iter);
+	if (idx < mono_class_get_method_count (klass)) {
+		// if we're still in range, return the next method and advance iter 1 past it.
+		MonoMethod *method = m_class_get_methods (klass) [idx];
+		idx++;
+		*iter = GUINT_TO_POINTER (idx);
+		return method;
 	}
+	if (G_UNLIKELY (image->has_updates))
+		return mono_metadata_update_added_methods_iter (klass, iter);
 	return NULL;
 }
 

@@ -76,4 +76,7 @@ mono_metadata_update_get_typedef_skeleton (MonoImage *base_image, uint32_t typed
 gpointer
 mono_metadata_update_get_static_field_addr (MonoClassField *field);
 
+MonoMethod *
+mono_metadata_update_added_methods_iter (MonoClass *klass, gpointer *iter);
+
 #endif /*__MONO_METADATA_UPDATE_H__*/

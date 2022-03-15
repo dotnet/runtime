@@ -122,6 +122,9 @@ hot_reload_find_method_by_name (MonoClass *klass, const char *name, int param_co
 static gboolean
 hot_reload_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_method_idx, uint32_t *method_count,  uint32_t *first_field_idx, uint32_t *field_count);
 
+static MonoMethod *
+hot_reload_added_methods_iter (MonoClass *klass, gpointer *iter);
+
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error);
 
@@ -151,6 +154,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_get_static_field_addr,
 	&hot_reload_find_method_by_name,
 	&hot_reload_get_typedef_skeleton,
+	&hot_reload_added_methods_iter,
 };
 
 MonoComponentHotReload *
@@ -2951,4 +2955,43 @@ hot_reload_find_method_by_name (MonoClass *klass, const char *name, int param_co
 	}
 
 	return res;
+}
+
+static MonoMethod *
+hot_reload_added_methods_iter (MonoClass *klass, gpointer *iter)
+{
+	g_assert (iter);
+	// invariant: idx is one past the method we previously returned.
+	uint32_t idx = GPOINTER_TO_UINT (*iter);
+	g_assert (idx >= mono_class_get_method_count (klass));
+
+	GSList *members = hot_reload_get_added_members (klass);
+	if (!members)
+		return NULL;
+	// expect to only see class defs here.  Rationale: adding methods to generic classes is not
+	// allowed (if a generation adds a new generic class, it won't be here - those methods will
+	// be in the normal iteration code, not here.
+	g_assert (m_class_get_class_kind (klass) == MONO_CLASS_DEF);
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Iterating added methods of 0x%08x idx = %u", m_class_get_type_token (klass), idx);
+
+	// go through the added members incrementing cur_count until it's equal to idx or we run out
+	// of added members.
+	int cur_count = mono_class_get_method_count (klass);
+	for (GSList *ptr = members; ptr; ptr = ptr->next) {
+		uint32_t token = GPOINTER_TO_UINT(ptr->data);
+		if (mono_metadata_token_table (token) != MONO_TABLE_METHOD)
+			continue;
+		if (cur_count == idx) {
+			// found a method, advance iter and return the method.
+			*iter = GUINT_TO_POINTER (1+idx);
+			ERROR_DECL (local_error);
+			MonoMethod *method = mono_get_method_checked (m_class_get_image (klass), token, klass, NULL, local_error);
+			mono_error_cleanup (local_error);
+			return method;
+		}
+		cur_count++;
+	}
+	// ran out of added methods, iteration is finished.
+	return NULL;
 }
