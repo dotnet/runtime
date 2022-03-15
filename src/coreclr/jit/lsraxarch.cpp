@@ -2214,7 +2214,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 assert(numArgs == 3);
                 assert(dstCount == 2);
-                assert(!isRMW);
+                assert(isRMW);
 
                 // DIV implicitly put op1(lower) to EAX and op2(upper) to EDX
                 srcCount += BuildOperandUses(op1, RBM_EAX);
