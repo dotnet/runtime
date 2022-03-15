@@ -10,7 +10,7 @@ using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
 {
-    public sealed partial class Region : MarshalByRefObject, IDisposable
+    public sealed class Region : MarshalByRefObject, IDisposable
     {
 #if FINALIZATION_WATCH
         private string allocationSite = Graphics.GetAllocationStack();
@@ -72,6 +72,15 @@ namespace System.Drawing
         {
             Gdip.CheckStatus(Gdip.GdipCloneRegion(new HandleRef(this, NativeRegion), out IntPtr region));
             return new Region(region);
+        }
+        public void ReleaseHrgn(IntPtr regionHandle)
+        {
+            if (regionHandle == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(nameof(regionHandle));
+            }
+
+            Interop.Gdi32.DeleteObject(new HandleRef(this, regionHandle));
         }
 
         public void Dispose()

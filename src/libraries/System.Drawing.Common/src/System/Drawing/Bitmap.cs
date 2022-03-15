@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Drawing.Imaging;
+using System.Drawing.Internal;
 using System.IO;
 using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
@@ -14,7 +15,7 @@ namespace System.Drawing
             "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
-    public sealed partial class Bitmap : Image
+    public sealed class Bitmap : Image
     {
         private static readonly Color s_defaultTransparentColor = Color.LightGray;
 
@@ -51,6 +52,26 @@ namespace System.Drawing
 
         public Bitmap(Stream stream) : this(stream, false)
         {
+        }
+
+        public unsafe Bitmap(Stream stream!!, bool useIcm)
+        {
+            using DrawingCom.IStreamWrapper streamWrapper = DrawingCom.GetComWrapper(new GPStream(stream));
+
+            IntPtr bitmap = IntPtr.Zero;
+            if (useIcm)
+            {
+                Gdip.CheckStatus(Gdip.GdipCreateBitmapFromStreamICM(streamWrapper.Ptr, &bitmap));
+            }
+            else
+            {
+                Gdip.CheckStatus(Gdip.GdipCreateBitmapFromStream(streamWrapper.Ptr, &bitmap));
+            }
+
+            ValidateImage(bitmap);
+
+            SetNativeImage(bitmap);
+            EnsureSave(this, null, stream);
         }
 
         public Bitmap(Type type, string resource) : this(GetResourceStream(type, resource))
