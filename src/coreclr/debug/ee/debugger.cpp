@@ -4064,11 +4064,13 @@ GetSetFrameHelper::Init(MethodDesc *pMD)
     mdSignature mdLocalSig = (decoderOldIL.GetLocalVarSigTok()) ? (decoderOldIL.GetLocalVarSigTok()):
                                                                   (mdSignatureNil);
 
+    PCCOR_SIGNATURE pLocalSig = NULL;
+    ULONG cbLocalSigSize = 0;
+
     PCCOR_SIGNATURE pCallSig;
     DWORD cbCallSigSize;
 
     pMD->GetSig(&pCallSig, &cbCallSigSize);
-
     if (pCallSig != NULL)
     {
         // Yes, we do need to pass in the text because this might be generic function!
@@ -4102,17 +4104,15 @@ GetSetFrameHelper::Init(MethodDesc *pMD)
     }
 
     // allocation of pArgSig succeeded
-    ULONG cbSig = 0;
-    PCCOR_SIGNATURE pLocalSig = NULL;
     if (mdLocalSig != mdSignatureNil)
     {
-        IfFailGo(pMD->GetModule()->GetMDImport()->GetSigFromToken(mdLocalSig, &cbSig, &pLocalSig));
+        IfFailGo(pMD->GetModule()->GetMDImport()->GetSigFromToken(mdLocalSig, &cbLocalSigSize, &pLocalSig));
     }
     if (pLocalSig != NULL)
     {
         SigTypeContext tmpContext(pMD);
         pLocSig = new (interopsafe, nothrow) MetaSig(pLocalSig,
-                                                     cbSig,
+                                                     cbLocalSigSize,
                                                      pMD->GetModule(),
                                                      &tmpContext,
                                                      MetaSig::sigLocalVars);
