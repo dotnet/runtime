@@ -116,9 +116,6 @@ steps:
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
       chmod -R a+rx .
       ./dotnet-install.sh --channel 6.0.3xx --quality daily --install-dir .
-      # Temporarily copy over the sdk-manifests from teh 6.0.2 install to the 6.0.3 install while we wait for the bundle manifest update.
-      ./dotnet-install.sh --channel 6.0.2xx --quality daily --install-dir dotnet602
-      cp -rfv dotnet602/sdk-manifests/6.0.200/* ./sdk-manifests/6.0.300/
       ./dotnet --info
       ./dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/main.json --configfile NuGet.config
     displayName: Install MAUI workload
