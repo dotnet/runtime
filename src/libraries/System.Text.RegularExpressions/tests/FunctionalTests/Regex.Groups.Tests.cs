@@ -955,7 +955,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 regex = await RegexHelpers.GetRegexAsync(engine, pattern, options);
             }
-            catch (NotSupportedException) when (RegexHelpers.IsNonBacktracking(engine))
+            catch (Exception e) when (e is NotSupportedException or ArgumentOutOfRangeException && RegexHelpers.IsNonBacktracking(engine))
             {
                 // Some constructs are not supported in NonBacktracking mode, such as: if-then-else, lookaround, and backreferences
                 return;
