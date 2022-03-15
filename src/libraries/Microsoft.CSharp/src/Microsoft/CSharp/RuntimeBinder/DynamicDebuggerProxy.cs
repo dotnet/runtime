@@ -475,6 +475,8 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
             }
 
+            // This property value is used by the debugger EE as the message
+            // displayed when a dynamic object has no members.
             public string Empty
             {
                 get

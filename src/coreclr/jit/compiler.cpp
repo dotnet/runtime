@@ -1885,7 +1885,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compQmarkRationalized = false;
     compQmarkUsed         = false;
     compFloatingPointUsed = false;
-    compUnsafeCastUsed    = false;
 
     compSuppressedZeroInit = false;
 
@@ -2667,8 +2666,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif // DEBUG
 
 #ifdef FEATURE_SIMD
+
+#ifndef TARGET_ARM64
     // Minimum bar for availing SIMD benefits is SSE2 on AMD64/x86.
     featureSIMD = jitFlags->IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD);
+#endif
+
     setUsesSIMDTypes(false);
 #endif // FEATURE_SIMD
 
@@ -9756,7 +9759,7 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 //
 var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 {
-    if (varTypeIsIntegral(tree))
+    if (varTypeIsArithmetic(tree))
     {
 #if defined(TARGET_XARCH)
         // Just an optimization for XARCH - smaller mov

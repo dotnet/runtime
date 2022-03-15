@@ -153,11 +153,11 @@ if(CLR_CMAKE_HOST_WIN32)
     # files for cross os compilation
     include_directories(include/win)
 
+    add_definitions(-D_CRT_DECLARE_NONSTDC_NAMES)
+
     # Warnings in release builds
     add_compile_options(-wd4068) # ignore unknown pragma warnings (gcc pragmas)
-    add_compile_options(-wd4146) # minus operator applied to unsigned
     add_compile_options(-wd4244) # possible loss of data
-    add_compile_options(-wd4267) # possible loss of data
     add_compile_options(-wd4334) # 32-bit shift implicitly converted to 64 bits
 
     # Disable warning due to incorrect format specifier in debugging printf via the Debug macro

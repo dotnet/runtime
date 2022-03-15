@@ -252,6 +252,10 @@ namespace ILCompiler
                 case ReadyToRunHelperId.FieldHandle:
                     return ((FieldDesc)targetOfLookup).OwningType.IsRuntimeDeterminedSubtype;
 
+                case ReadyToRunHelperId.ConstrainedDirectCall:
+                    return ((ConstrainedCallInfo)targetOfLookup).Method.IsRuntimeDeterminedExactMethod
+                        || ((ConstrainedCallInfo)targetOfLookup).ConstrainedType.IsRuntimeDeterminedSubtype;
+
                 default:
                     throw new NotImplementedException();
             }
@@ -642,5 +646,13 @@ namespace ILCompiler
                 }
             }
         }
+    }
+
+    public sealed class ConstrainedCallInfo
+    {
+        public readonly TypeDesc ConstrainedType;
+        public readonly MethodDesc Method;
+        public ConstrainedCallInfo(TypeDesc constrainedType, MethodDesc method)
+            => (ConstrainedType, Method) = (constrainedType, method);
     }
 }

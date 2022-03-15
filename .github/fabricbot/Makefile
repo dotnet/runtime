@@ -1,4 +1,4 @@
 generate:
-	node scripts/updateAreaPodConfigs.js
+	node updateAreaPodConfigs.js
 
 .DEFAULT_GOAL := generate

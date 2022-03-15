@@ -6359,7 +6359,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
                                           Interval*    upperVectorInterval,
                                           BasicBlock*  block)
 {
-    JITDUMP("Adding UpperVectorRestore for RP #%d ", refPosition->rpNum);
+    JITDUMP("Inserting UpperVectorRestore for RP #%d ", refPosition->rpNum);
     Interval* lclVarInterval = upperVectorInterval->relatedInterval;
     assert(lclVarInterval->isLocalVar == true);
     regNumber lclVarReg = lclVarInterval->physReg;
@@ -6407,7 +6407,6 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     simdNode->SetRegNum(restoreReg);
 
     LIR::Range& blockRange = LIR::AsRange(block);
-    JITDUMP("Adding UpperVectorRestore ");
     if (tree != nullptr)
     {
         JITDUMP("before %d.%s:\n", tree->gtTreeID, GenTree::OpName(tree->gtOper));
@@ -6826,13 +6825,17 @@ void LinearScan::resolveRegisters()
                     Interval* localVarInterval = interval->relatedInterval;
                     if ((localVarInterval->physReg != REG_NA) && !localVarInterval->isPartiallySpilled)
                     {
-                        // If the localVar is in a register, it must be in a register that is not trashed by
-                        // the current node (otherwise it would have already been spilled).
-                        assert((genRegMask(localVarInterval->physReg) & getKillSetForNode(treeNode)) == RBM_NONE);
-                        // If we have allocated a register to spill it to, we will use that; otherwise, we will spill it
-                        // to the stack.  We can use as a temp register any non-arg caller-save register.
-                        currentRefPosition->referent->recentRefPosition = currentRefPosition;
-                        insertUpperVectorSave(treeNode, currentRefPosition, currentRefPosition->getInterval(), block);
+                        if (!currentRefPosition->skipSaveRestore)
+                        {
+                            // If the localVar is in a register, it must be in a register that is not trashed by
+                            // the current node (otherwise it would have already been spilled).
+                            assert((genRegMask(localVarInterval->physReg) & getKillSetForNode(treeNode)) == RBM_NONE);
+                            // If we have allocated a register to spill it to, we will use that; otherwise, we will
+                            // spill it to the stack.  We can use as a temp register any non-arg caller-save register.
+                            currentRefPosition->referent->recentRefPosition = currentRefPosition;
+                            insertUpperVectorSave(treeNode, currentRefPosition, currentRefPosition->getInterval(),
+                                                  block);
+                        }
                         localVarInterval->isPartiallySpilled = true;
                     }
                 }
@@ -6856,7 +6859,10 @@ void LinearScan::resolveRegisters()
                     assert((localVarInterval->assignedReg != nullptr) &&
                            (localVarInterval->assignedReg->regNum == localVarInterval->physReg) &&
                            (localVarInterval->assignedReg->assignedInterval == localVarInterval));
-                    insertUpperVectorRestore(treeNode, currentRefPosition, interval, block);
+                    if (!currentRefPosition->skipSaveRestore)
+                    {
+                        insertUpperVectorRestore(treeNode, currentRefPosition, interval, block);
+                    }
                 }
                 localVarInterval->isPartiallySpilled = false;
             }
@@ -8105,10 +8111,10 @@ void LinearScan::resolveEdges()
                         if (!foundMismatch)
                         {
                             foundMismatch = true;
-                            printf("Found mismatched var locations after resolution!\n");
+                            JITDUMP("Found mismatched var locations after resolution!\n");
                         }
-                        printf(" V%02u: " FMT_BB " to " FMT_BB ": %s to %s\n", interval->varNum, predBlock->bbNum,
-                               block->bbNum, getRegName(fromReg), getRegName(toReg));
+                        JITDUMP(" V%02u: " FMT_BB " to " FMT_BB ": %s to %s\n", interval->varNum, predBlock->bbNum,
+                                block->bbNum, getRegName(fromReg), getRegName(toReg));
                     }
                 }
             }
@@ -9259,7 +9265,7 @@ void LinearScan::lsraGetOperandString(GenTree*          tree,
         {
             Compiler* compiler = JitTls::GetCompiler();
 
-            if (!tree->gtHasReg())
+            if (!tree->gtHasReg(compiler))
             {
                 _snprintf_s(operandString, operandStringLength, operandStringLength, "STK%s", lastUseChar);
             }
@@ -9272,8 +9278,7 @@ void LinearScan::lsraGetOperandString(GenTree*          tree,
 
                 if (tree->IsMultiRegNode())
                 {
-                    unsigned regCount = tree->IsMultiRegLclVar() ? compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt
-                                                                 : tree->GetMultiRegCount();
+                    unsigned regCount = tree->GetMultiRegCount(compiler);
                     for (unsigned regIndex = 1; regIndex < regCount; regIndex++)
                     {
                         charCount = _snprintf_s(operandString, operandStringLength, operandStringLength, ",%s%s",
@@ -9304,7 +9309,7 @@ void LinearScan::lsraDispNode(GenTree* tree, LsraTupleDumpMode mode, bool hasDes
         {
             spillChar = 'S';
         }
-        if (!hasDest && tree->gtHasReg())
+        if (!hasDest && tree->gtHasReg(compiler))
         {
             // A node can define a register, but not produce a value for a parent to consume,
             // i.e. in the "localDefUse" case.
@@ -9340,7 +9345,7 @@ void LinearScan::lsraDispNode(GenTree* tree, LsraTupleDumpMode mode, bool hasDes
     {
         if (mode == LinearScan::LSRA_DUMP_POST && tree->gtFlags & GTF_SPILLED)
         {
-            assert(tree->gtHasReg());
+            assert(tree->gtHasReg(compiler));
         }
         lsraGetOperandString(tree, mode, operandString, operandStringLength);
         printf("%-15s =", operandString);
@@ -9374,7 +9379,7 @@ void LinearScan::lsraDispNode(GenTree* tree, LsraTupleDumpMode mode, bool hasDes
     }
     else if (tree->OperIs(GT_ASG))
     {
-        assert(!tree->gtHasReg());
+        assert(!tree->gtHasReg(compiler));
         printf("  asg%s  ", GenTree::OpName(tree->OperGet()));
     }
     else
