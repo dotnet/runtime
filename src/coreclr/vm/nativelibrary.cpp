@@ -17,6 +17,8 @@ extern bool g_hostpolicy_embedded;
 #define PLATFORM_SHARED_LIB_SUFFIX_W PAL_SHLIB_SUFFIX_W
 #define PLATFORM_SHARED_LIB_PREFIX_W PAL_SHLIB_PREFIX_W
 #else // !TARGET_UNIX
+// The default for Windows OS is ".DLL". This causes issues with case-sensitive file systems on Windows.
+// We are using the lowercase version due to historical precedence and how common it is now.
 #define PLATFORM_SHARED_LIB_SUFFIX_W W(".dll")
 #define PLATFORM_SHARED_LIB_PREFIX_W W("")
 #endif // !TARGET_UNIX
@@ -574,21 +576,16 @@ namespace
 
         int varCount = 0;
 
-        // The purpose of following code is to workaround LoadLibrary limitation:
-        // LoadLibrary won't append extension if filename itself contains '.'. Thus it will break the following scenario:
-        // [DllImport("A.B")] // The full name for file is "A.B.dll". This is common code pattern for cross-platform PInvoke
-        // The workaround for above scenario is to call LoadLibrary with "A.B" first, if it fails, then call LoadLibrary with "A.B.dll"
+        // The runtime will always append the '.dll' extension unless the name ends with a "."
+        // or with an existing known extension. This is done due to issues with case-sensitive file systems
+        // on Windows that only search for ".DLL" as opposed to the more common ".dll".
         auto it = libName.Begin();
-        if (!libNameIsRelativePath ||
-            !libName.Find(it, W('.')) ||
-            libName.EndsWith(W(".")) ||
-            libName.EndsWithCaseInsensitive(W(".dll")) ||
-            libName.EndsWithCaseInsensitive(W(".exe")))
+        if (libName.EndsWith(W("."))
+            || libName.EndsWithCaseInsensitive(W(".dll"))
+            || libName.EndsWithCaseInsensitive(W(".exe")))
         {
-            // Follow LoadLibrary rules in MSDN doc: https://msdn.microsoft.com/en-us/library/windows/desktop/ms684175(v=vs.85).aspx
-            // If the string specifies a full path, the function searches only that path for the module.
-            // If the string specifies a module name without a path and the file name extension is omitted, the function appends the default library extension .dll to the module name.
-            // To prevent the function from appending .dll to the module name, include a trailing point character (.) in the module name string.
+            // Follow LoadLibrary rules in MSDN doc: https://docs.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya
+            // To prevent the function from appending ".DLL" to the module name, include a trailing point character (.) in the module name string.
             libNameVariations[varCount++] = NameFmt;
         }
         else
