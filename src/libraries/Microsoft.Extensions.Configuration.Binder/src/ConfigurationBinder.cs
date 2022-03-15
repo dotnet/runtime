@@ -400,7 +400,6 @@ namespace Microsoft.Extensions.Configuration
             return instance;
         }
 
-
         private static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type)
         {
             if (type.IsInterface || type.IsAbstract)
