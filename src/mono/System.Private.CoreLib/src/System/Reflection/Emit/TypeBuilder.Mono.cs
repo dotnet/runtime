@@ -145,7 +145,7 @@ namespace System.Reflection.Emit
                 this.parent = typeof(object);
 
             // skip .<Module> ?
-            table_idx = mb.get_next_table_index(this, 0x02, 1);
+            table_idx = mb.get_next_table_index(0x02, 1);
             this.fullname = GetFullName();
         }
 
@@ -1372,11 +1372,13 @@ namespace System.Reflection.Emit
             }
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType()
         {
             return new ArrayType(this, 0);
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank)
         {
             if (rank < 1)
@@ -1389,6 +1391,7 @@ namespace System.Reflection.Emit
             return new ByRefType(this);
         }
 
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] typeArguments)
         {
@@ -1641,9 +1644,9 @@ namespace System.Reflection.Emit
             this.parent = ResolveUserType(this.parent);
         }
 
-        internal int get_next_table_index(object obj, int table, int count)
+        internal int get_next_table_index(int table, int count)
         {
-            return pmodule.get_next_table_index(obj, table, count);
+            return pmodule.get_next_table_index(table, count);
         }
 
         [ComVisible(true)]

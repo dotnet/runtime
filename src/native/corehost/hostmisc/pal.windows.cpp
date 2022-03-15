@@ -597,7 +597,7 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     if (CreateDirectoryW(extraction_dir.c_str(), NULL) == 0 &&
         GetLastError() != ERROR_ALREADY_EXISTS)
     {
-        trace::error(_X("Failed to create default extraction directory [%s]. %s, error code: %d"), extraction_dir.c_str(), pal::strerror(errno), GetLastError());
+        trace::error(_X("Failed to create default extraction directory [%s]. %s, error code: %d"), extraction_dir.c_str(), pal::strerror(errno).c_str(), GetLastError());
         return false;
     }
 

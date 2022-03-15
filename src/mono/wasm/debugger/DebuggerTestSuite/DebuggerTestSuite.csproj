@@ -5,6 +5,17 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RunAnalyzers>false</RunAnalyzers>
     <IsTestProject>true</IsTestProject>
+    <VersionsPropsFile>$(MSBuildThisFileDirectory)..\..\BrowsersForTesting.props</VersionsPropsFile>
+    <BrowserHost Condition="$([MSBuild]::IsOSPlatform('windows'))">windows</BrowserHost>
+    <InstallChromeForDebuggerTests Condition="'$(InstallChromeForDebuggerTests)' == '' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallChromeForDebuggerTests>
+  </PropertyGroup>
+
+  <Import Project="$(VersionsPropsFile)" />
+
+  <PropertyGroup>
+    <ChromeDir>$(ArtifactsBinDir)DebuggerTestSuite\chrome\</ChromeDir>
+    <ChromeStampDir>$(ArtifactsBinDir)DebuggerTestSuite\</ChromeStampDir>
+    <ChromeStampFile>$(ChromeStampDir).install-chrome-$(ChromiumRevision).stamp</ChromeStampFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +28,10 @@
     <ProjectReference Include="..\BrowserDebugHost\BrowserDebugHost.csproj" />
     <ProjectReference Include="..\BrowserDebugProxy\BrowserDebugProxy.csproj" />
     <ProjectReference Include="..\tests\debugger-test\debugger-test.csproj" ReferenceOutputAssembly="false" Private="false" />
+
+    <PackageReference Include="Serilog.Extensions.Logging.File" Version="2.0.0" />
+    <!-- needed for ConditionalFact etc -->
+    <ProjectReference Include="$(RepoRoot)src\libraries\Common\tests\TestUtilities\TestUtilities.csproj" />
   </ItemGroup>
 
   <Target Name="CopyTestZipForHelix"
@@ -29,5 +44,33 @@
     </ItemGroup>
 
     <Copy SourceFiles="@(_FilesToCopy)" DestinationFiles="$(ArchiveDirForHelix)\%(TargetPath)\%(RecursiveDir)%(FileName)%(Extension)" />
+  </Target>
+
+  <Target Name="DownloadAndInstallChrome"
+          AfterTargets="Build"
+          Condition="!Exists($(ChromeStampFile)) and '$(InstallChromeForDebuggerTests)' == 'true'">
+
+    <ItemGroup>
+      <_StampFile Include="$(ChromeStampDir).install-chrome*.stamp" />
+    </ItemGroup>
+
+    <Delete Files="@(_StampFile)" />
+    <RemoveDir Directories="$(ChromeDir)" />
+
+    <DownloadFile SourceUrl="$(ChromiumUrl)" DestinationFolder="$(ChromeDir)" SkipUnchangedFiles="true">
+      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
+    </DownloadFile>
+    <Unzip SourceFiles="$(_DownloadedFile)" DestinationFolder="$(ChromeDir)" />
+
+    <PropertyGroup>
+      <_ChromeBinaryPath>$([MSBuild]::NormalizePath($(ChromeDir), $(ChromiumDirName), $(ChromiumBinaryName)))</_ChromeBinaryPath>
+    </PropertyGroup>
+
+    <Error Text="Cannot find chrome at $(_ChromeBinaryPath) in the downloaded copy"
+           Condition="!Exists($(_ChromeBinaryPath))" />
+
+    <Exec Command="chmod +x $(_ChromeBinaryPath)" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
+
+    <Touch Files="$(ChromeStampFile)" AlwaysCreate="true" />
   </Target>
 </Project>

@@ -9,7 +9,7 @@
     <Compile Include="WeakReferenceTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
   <PropertyGroup>
     <CLRTestNeedTarget>1</CLRTestNeedTarget>

@@ -1067,7 +1067,7 @@ static void
 print_field_value (const char *field_ptr, MonoClassField *field, int type_offset)
 {
 	MonoType *type;
-	g_print ("At %p (ofs: %2d) %s: ", field_ptr, field->offset + type_offset, mono_field_get_name (field));
+	g_print ("At %p (ofs: %2d) %s: ", field_ptr, m_field_is_from_update (field) ? -1 : (field->offset + type_offset), mono_field_get_name (field));
 	type = mono_type_get_underlying_type (field->type);
 
 	switch (type->type) {
@@ -1155,6 +1155,9 @@ objval_describe (MonoClass *klass, const char *addr)
 		while ((field = mono_class_get_fields_internal (p, &iter))) {
 			if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
 				continue;
+			/* TODO: metadata-update: print something here */
+			if (m_field_is_from_update (field))
+				continue;
 
 			if (p != klass && !printed_header) {
 				const char *sep;
@@ -1229,7 +1232,11 @@ mono_class_describe_statics (MonoClass* klass)
 			if (!(field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA)))
 				continue;
 
-			field_ptr = (const char*)addr + field->offset;
+			/* TODO: metadata-update: print something for added fields? */
+			if (m_field_is_from_update (field))
+				continue;
+			
+			field_ptr = (const char*)addr + m_field_get_offset (field);
 
 			print_field_value (field_ptr, field, 0);
 		}

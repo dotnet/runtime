@@ -227,7 +227,7 @@ namespace System.Reflection.Emit
             basic_init(this);
 
             // Netcore only allows one module per assembly
-            manifest_module = new ModuleBuilder(this, "RefEmit_InMemoryManifestModule", false);
+            manifest_module = new ModuleBuilder(this, "RefEmit_InMemoryManifestModule");
             modules = new ModuleBuilder[] { manifest_module };
         }
 
@@ -236,6 +236,7 @@ namespace System.Reflection.Emit
             get { return base.ReflectionOnly; }
         }
 
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
             if (name == null)
@@ -244,6 +245,7 @@ namespace System.Reflection.Emit
             return new AssemblyBuilder(name, access);
         }
 
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             AssemblyBuilder ab = DefineDynamicAssembly(name, access);

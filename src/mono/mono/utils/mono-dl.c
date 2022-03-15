@@ -346,18 +346,7 @@ mono_dl_symbol (MonoDl *module, const char *name, void **symbol)
 	if (module->dl_fallback) {
 		sym = module->dl_fallback->symbol_func (module->handle, name, &err, module->dl_fallback->user_data);
 	} else {
-#if MONO_DL_NEED_USCORE
-		{
-			const size_t length = strlen (name);
-			char *usname = g_new (char, length + 2);
-			*usname = '_';
-			memcpy (usname + 1, name, length + 1);
-			sym = mono_dl_lookup_symbol (module, usname);
-			g_free (usname);
-		}
-#else
 		sym = mono_dl_lookup_symbol (module, name);
-#endif
 	}
 
 	if (sym) {

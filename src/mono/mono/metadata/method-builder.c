@@ -11,7 +11,7 @@
  */
 
 #include "config.h"
-#include "loader.h"
+#include <mono/metadata/loader.h>
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/method-builder.h"
 #include "mono/metadata/method-builder-internals.h"

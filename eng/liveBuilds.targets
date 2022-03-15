@@ -183,6 +183,7 @@
         $(LibrariesNativeArtifactsPath)dotnet.d.ts;
         $(LibrariesNativeArtifactsPath)package.json;
         $(LibrariesNativeArtifactsPath)dotnet.wasm;
+        $(LibrariesNativeArtifactsPath)dotnet.js.symbols;
         $(LibrariesNativeArtifactsPath)dotnet.timezones.blat;
         $(LibrariesNativeArtifactsPath)*.dat;"
         IsNative="true" />

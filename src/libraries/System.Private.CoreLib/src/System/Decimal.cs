@@ -260,8 +260,8 @@ namespace System
         // The possible binary representations of a particular value are all
         // equally valid, and all are numerically equivalent.
         //
-        public Decimal(int[] bits) :
-            this((ReadOnlySpan<int>)(bits ?? throw new ArgumentNullException(nameof(bits))))
+        public Decimal(int[] bits!!) :
+            this((ReadOnlySpan<int>)bits)
         {
         }
 
@@ -325,6 +325,11 @@ namespace System
             this = d;
             _flags = flags;
         }
+
+        /// <summary>
+        /// Gets the scaling factor of the decimal, which is a number from 0 to 28 that represents the number of decimal digits.
+        /// </summary>
+        public byte Scale => (byte)(_flags >> ScaleShift);
 
         // Returns the absolute value of the given Decimal. If d is
         // positive, the result is d. If d is negative, the result

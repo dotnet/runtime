@@ -9,7 +9,6 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     [PlatformSpecific(TestPlatforms.Windows)]
     public class RandomAccess_Mixed : FileSystemTest
     {

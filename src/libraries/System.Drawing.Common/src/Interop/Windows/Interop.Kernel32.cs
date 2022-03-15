@@ -11,10 +11,10 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         public static partial int GetSystemDefaultLCID();
 
-        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "GlobalAlloc", SetLastError = true)]
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "GlobalAlloc", SetLastError = true)]
         internal static partial IntPtr IntGlobalAlloc(int uFlags, UIntPtr dwBytes); // size should be 32/64bits compatible
 
         internal static IntPtr GlobalAlloc(int uFlags, uint dwBytes)
@@ -22,7 +22,7 @@ internal static partial class Interop
             return IntGlobalAlloc(uFlags, new UIntPtr(dwBytes));
         }
 
-        [GeneratedDllImport(Libraries.Gdi32, CharSet = CharSet.Auto, ExactSpelling = true, SetLastError = true)]
+        [LibraryImport(Libraries.Gdi32, SetLastError = true)]
         internal static partial IntPtr SelectObject(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]

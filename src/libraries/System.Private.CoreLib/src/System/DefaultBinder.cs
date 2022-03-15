@@ -617,8 +617,7 @@ namespace System
             {
                 foreach (Type index in indexes)
                 {
-                    if (index == null)
-                        throw new ArgumentNullException(nameof(indexes));
+                    ArgumentNullException.ThrowIfNull(index, nameof(indexes));
                 }
             }
 
@@ -768,7 +767,7 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static MethodBase? ExactBinding(MethodBase[] match!!, Type[] types, ParameterModifier[]? modifiers)
+        public static MethodBase? ExactBinding(MethodBase[] match!!, Type[] types)
         {
             MethodBase[] aExactMatches = new MethodBase[match.Length];
             int cExactMatches = 0;
@@ -808,7 +807,7 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match!!, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
+        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match!!, Type? returnType, Type[]? types)
         {
             PropertyInfo? bestMatch = null;
             int typesLength = (types != null) ? types.Length : 0;

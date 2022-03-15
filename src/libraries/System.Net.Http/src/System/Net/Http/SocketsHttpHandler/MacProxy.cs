@@ -111,11 +111,8 @@ namespace System.Net.Http
             return null;
         }
 
-        public bool IsBypassed(Uri targetUri)
+        public bool IsBypassed(Uri targetUri!!)
         {
-            if (targetUri == null)
-                throw new ArgumentNullException(nameof(targetUri));
-
             Uri? proxyUri = GetProxy(targetUri);
             return Equals(proxyUri, targetUri) || proxyUri == null;
         }

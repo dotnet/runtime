@@ -150,7 +150,7 @@ namespace Wasm.Build.Tests
         private const string s_resourcesProjectTemplate =
             @$"<Project Sdk=""Microsoft.NET.Sdk"">
               <PropertyGroup>
-                <TargetFramework>{s_targetFramework}</TargetFramework>
+                <TargetFramework>{DefaultTargetFramework}</TargetFramework>
                 <OutputType>Exe</OutputType>
                 <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
                 <WasmMainJSPath>test-main.js</WasmMainJSPath>

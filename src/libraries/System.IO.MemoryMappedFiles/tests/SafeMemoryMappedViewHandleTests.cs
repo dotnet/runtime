@@ -66,7 +66,7 @@ namespace System.IO.MemoryMappedFiles.Tests
             Assert.NotNull(handle);
         }
 
-        [GeneratedDllImport("libc")]
+        [LibraryImport("libc")]
         private static unsafe partial SafeMemoryMappedViewHandle mmap(IntPtr addr, nint lengthint, int prot, int flags, int fd, nuint offset);
     }
 }

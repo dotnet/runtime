@@ -4286,7 +4286,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_FCONV_TO_I4:
-		case OP_FCONV_TO_I:
 			s390_cfdbr (code, ins->dreg, 5, ins->sreg1);
 			break;
 		case OP_FCONV_TO_U4:
@@ -4341,7 +4340,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_RCONV_TO_I4:
-		case OP_RCONV_TO_I:
 			s390_cfebr (code, ins->dreg, 5, ins->sreg1);
 			break;
 		case OP_RCONV_TO_U4:

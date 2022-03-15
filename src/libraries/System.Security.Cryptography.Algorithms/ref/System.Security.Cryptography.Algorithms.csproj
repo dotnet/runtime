@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <NoWarn>$(NoWarn);SYSLIB0021;SYSLIB0022</NoWarn>
     <Nullable>enable</Nullable>
   </PropertyGroup>

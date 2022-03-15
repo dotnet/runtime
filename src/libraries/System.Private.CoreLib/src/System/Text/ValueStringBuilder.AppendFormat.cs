@@ -13,12 +13,11 @@ namespace System.Text
 
         public void AppendFormat(string format, params object?[] args)
         {
-            if (args == null)
+            if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in AppendFormatHelper.
-                string paramName = (format == null) ? nameof(format) : nameof(args);
-                throw new ArgumentNullException(paramName);
+                ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
             AppendFormatHelper(null, format, new ParamsArray(args));
@@ -32,27 +31,14 @@ namespace System.Text
 
         public void AppendFormat(IFormatProvider? provider, string format, params object?[] args)
         {
-            if (args == null)
+            if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in AppendFormatHelper.
-                string paramName = (format == null) ? nameof(format) : nameof(args);
-                throw new ArgumentNullException(paramName);
+                ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
             AppendFormatHelper(provider, format, new ParamsArray(args));
-        }
-
-        internal void AppendSpanFormattable<T>(T value, string? format, IFormatProvider? provider) where T : ISpanFormattable
-        {
-            if (value.TryFormat(_chars.Slice(_pos), out int charsWritten, format, provider))
-            {
-                _pos += charsWritten;
-            }
-            else
-            {
-                Append(value.ToString(format, provider));
-            }
         }
 
         // Copied from StringBuilder, can't be done via generic extension
