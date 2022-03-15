@@ -71,7 +71,7 @@ namespace System.Diagnostics
             if (IsRunning)
             {
                 long endTimeStamp = GetTimestamp();
-                
+
                 // Subtract the old timestamp from the new timestamp
                 // so elapsedThisPeriod is already negative (which we need
                 // for _state).
@@ -80,13 +80,13 @@ namespace System.Diagnostics
                 long elapsedThisPeriod = _state - endTimeStamp;
 
                 // Buggy BIOS ir HAL can result in negative durations
-                // (which are POSITIVE elapsedThisPeriod values) clip 
+                // (which are POSITIVE elapsedThisPeriod values) clip
                 // to a zero in that case.
                 if (elapsedThisPeriod > 0)
                 {
                     elapsedThisPeriod = 0;
                 }
-                
+
                 _state = elapsedThisPeriod;
             }
         }
