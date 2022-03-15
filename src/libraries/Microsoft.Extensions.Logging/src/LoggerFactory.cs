@@ -215,7 +215,7 @@ namespace Microsoft.Extensions.Logging
                     loggerInformation.ProviderType,
                     loggerInformation.Category,
                     out LogLevel? minLevel,
-                    out Func<string?, string?, LogLevel?, bool>? filter);
+                    out Func<string?, string?, LogLevel, bool>? filter);
 
                 if (minLevel is not null and > LogLevel.Critical)
                 {
