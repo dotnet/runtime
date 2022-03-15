@@ -1445,6 +1445,17 @@ namespace System.Text.RegularExpressions
                     return Child(0);
             }
 
+            // If any node in the concatenation is a Nothing, the concatenation itself is a Nothing.
+            int childCount = ChildCount();
+            for (int i = 0; i < childCount; i++)
+            {
+                RegexNode child = Child(i);
+                if (child.Kind == RegexNodeKind.Nothing)
+                {
+                    return child;
+                }
+            }
+
             // Coalesce adjacent loops.  This helps to minimize work done by the interpreter, minimize code gen,
             // and also help to reduce catastrophic backtracking.
             ReduceConcatenationWithAdjacentLoops();

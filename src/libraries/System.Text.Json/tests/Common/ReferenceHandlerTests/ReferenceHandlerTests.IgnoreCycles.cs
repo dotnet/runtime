@@ -11,8 +11,13 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public class ReferenceHandlerTests_IgnoreCycles
+    public abstract partial class ReferenceHandlerTests_IgnoreCycles : SerializerTests
     {
+        public ReferenceHandlerTests_IgnoreCycles(JsonSerializerWrapperForString stringSerializer, JsonSerializerWrapperForStream streamSerializer)
+            : base(stringSerializer, streamSerializer)
+        {
+        }
+
         private static readonly JsonSerializerOptions s_optionsIgnoreCycles =
             new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.IgnoreCycles, DefaultBufferSize = 1 };
 
@@ -128,6 +133,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/66421")]
+#endif
         public async Task IgnoreCycles_OnRecursiveDictionary()
         {
             var root = new RecursiveDictionary();
@@ -174,6 +182,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/66421")]
+#endif
         public async Task IgnoreCycles_OnRecursiveList()
         {
             var root = new RecursiveList();
@@ -228,14 +239,17 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/66421")]
+#endif
         public async Task IgnoreCycles_DoesNotSupportPreserveSemantics()
         {
             // Object
             var node = new NodeWithExtensionData();
             node.Next = node;
-            string json = SerializeWithPreserve(node);
+            string json = await SerializeWithPreserve(node);
 
-            node = JsonSerializer.Deserialize<NodeWithExtensionData>(json, s_optionsIgnoreCycles);
+            node = await JsonSerializerWrapperForString.DeserializeWrapper<NodeWithExtensionData>(json, s_optionsIgnoreCycles);
             Assert.True(node.MyOverflow.ContainsKey("$id"));
             Assert.True(node.Next.MyOverflow.ContainsKey("$ref"));
 
@@ -247,31 +261,34 @@ namespace System.Text.Json.Serialization.Tests
             // Dictionary
             var dictionary = new RecursiveDictionary();
             dictionary.Add("self", dictionary);
-            json = SerializeWithPreserve(dictionary);
+            json = await SerializeWithPreserve(dictionary);
 
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<RecursiveDictionary>(json, s_optionsIgnoreCycles));
+            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<RecursiveDictionary>(json, s_optionsIgnoreCycles));
             using var ms2 = new MemoryStream(Encoding.UTF8.GetBytes(json));
             await Assert.ThrowsAsync<JsonException>(() => JsonSerializer.DeserializeAsync<RecursiveDictionary>(ms2, s_optionsIgnoreCycles).AsTask());
 
             // List
             var list = new RecursiveList();
             list.Add(list);
-            json = SerializeWithPreserve(list);
+            json = await SerializeWithPreserve(list);
 
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<RecursiveList>(json, s_optionsIgnoreCycles));
+            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<RecursiveList>(json, s_optionsIgnoreCycles));
             using var ms3 = new MemoryStream(Encoding.UTF8.GetBytes(json));
             await Assert.ThrowsAsync<JsonException>(() => JsonSerializer.DeserializeAsync<RecursiveList>(ms3, s_optionsIgnoreCycles).AsTask());
         }
 
         [Fact]
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/66421")]
+#endif
         public async Task IgnoreCycles_DoesNotSupportPreserveSemantics_Polymorphic()
         {
             // Object
             var node = new NodeWithObjectProperty();
             node.Next = node;
-            string json = SerializeWithPreserve(node);
+            string json = await SerializeWithPreserve(node);
 
-            node = JsonSerializer.Deserialize<NodeWithObjectProperty>(json, s_optionsIgnoreCycles);
+            node = await JsonSerializerWrapperForString.DeserializeWrapper<NodeWithObjectProperty>(json, s_optionsIgnoreCycles);
             JsonElement nodeAsJsonElement = Assert.IsType<JsonElement>(node.Next);
             Assert.True(nodeAsJsonElement.GetProperty("$ref").GetString() == "1");
 
@@ -283,15 +300,15 @@ namespace System.Text.Json.Serialization.Tests
             // Dictionary
             var dictionary = new Dictionary<string, object>();
             dictionary.Add("self", dictionary);
-            json = SerializeWithPreserve(dictionary);
+            json = await SerializeWithPreserve(dictionary);
 
-            dictionary = JsonSerializer.Deserialize<Dictionary<string, object>>(json, s_optionsIgnoreCycles);
+            dictionary = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, object>>(json, s_optionsIgnoreCycles);
         }
 
-        private string SerializeWithPreserve<T>(T value)
+        private async Task<string> SerializeWithPreserve<T>(T value)
         {
             var opts = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };
-            return JsonSerializer.Serialize(value, opts);
+            return await JsonSerializerWrapperForString.SerializeWrapper(value, opts);
         }
 
         [Fact]
@@ -321,12 +338,12 @@ namespace System.Text.Json.Serialization.Tests
             // This converter turns the object into a string.
             opts.Converters.Add(new PersonConverter());
 
-            var person = new Person { Name = "John" };
+            Person person = new() { Name = "John" };
 
-            await Test_Serialize_And_SerializeAsync(new { Person1 = person, Person2 = person },
+            await Test_Serialize_And_SerializeAsync(new PersonHolder { Person1 = person, Person2 = person },
                 expected: @"{""Person1"":""John"",""Person2"":""John""}", opts);
 
-            await Test_Serialize_And_SerializeAsync(new { Person1 = (object)person, Person2 = (object)person },
+            await Test_Serialize_And_SerializeAsync(new BoxedPersonHolder { Person1 = person, Person2 = person },
                 expected: @"{""Person1"":""John"",""Person2"":""John""}", opts);
 
             await Test_Serialize_And_SerializeAsync(new List<Person> { person, person },
@@ -334,6 +351,18 @@ namespace System.Text.Json.Serialization.Tests
 
             await Test_Serialize_And_SerializeAsync(new List<object> { person, person },
                 expected: @"[""John"",""John""]", opts);
+        }
+
+        public class PersonHolder
+        {
+            public Person Person1 { get; set; }
+            public Person Person2 { get; set; }
+        }
+
+        public class BoxedPersonHolder
+        {
+            public object Person1 { get; set; }
+            public object Person2 { get; set; }
         }
 
         [Fact]
@@ -427,20 +456,20 @@ namespace System.Text.Json.Serialization.Tests
 
             if (objType != typeof(object))
             {
-                json = JsonSerializer.Serialize(obj, options);
+                json = await JsonSerializerWrapperForString.SerializeWrapper(obj, options);
                 Assert.Equal(expected, json);
 
                 using var ms1 = new MemoryStream();
-                await JsonSerializer.SerializeAsync(ms1, obj, options).ConfigureAwait(false);
+                await JsonSerializerWrapperForStream.SerializeWrapper(ms1, obj, options).ConfigureAwait(false);
                 json = Encoding.UTF8.GetString(ms1.ToArray());
                 Assert.Equal(expected, json);
             }
 
-            json = JsonSerializer.Serialize(obj, objType, options);
+            json = await JsonSerializerWrapperForString.SerializeWrapper(obj, objType, options);
             Assert.Equal(expected, json);
 
             using var ms2 = new MemoryStream();
-            await JsonSerializer.SerializeAsync(ms2, obj, objType, options).ConfigureAwait(false);
+            await JsonSerializerWrapperForStream.SerializeWrapper(ms2, obj, objType, options).ConfigureAwait(false);
             json = Encoding.UTF8.GetString(ms2.ToArray());
             Assert.Equal(expected, json);
         }
@@ -452,20 +481,20 @@ namespace System.Text.Json.Serialization.Tests
 
             if (objType != typeof(object))
             {
-                json = JsonSerializer.Serialize(obj, options);
+                json = await JsonSerializerWrapperForString.SerializeWrapper(obj, options);
                 VerifySubstringExistsNTimes(json, expectedSubstring, expectedTimes);
 
                 using var ms1 = new MemoryStream();
-                await JsonSerializer.SerializeAsync(ms1, obj, options).ConfigureAwait(false);
+                await JsonSerializerWrapperForStream.SerializeWrapper(ms1, obj, options).ConfigureAwait(false);
                 json = Encoding.UTF8.GetString(ms1.ToArray());
                 VerifySubstringExistsNTimes(json, expectedSubstring, expectedTimes);
             }
 
-            json = JsonSerializer.Serialize(obj, objType, options);
+            json = await JsonSerializerWrapperForString.SerializeWrapper(obj, objType, options);
             VerifySubstringExistsNTimes(json, expectedSubstring, expectedTimes);
 
             using var ms2 = new MemoryStream();
-            await JsonSerializer.SerializeAsync(ms2, obj, objType, options).ConfigureAwait(false);
+            await JsonSerializerWrapperForStream.SerializeWrapper(ms2, obj, objType, options).ConfigureAwait(false);
             json = Encoding.UTF8.GetString(ms2.ToArray());
             VerifySubstringExistsNTimes(json, expectedSubstring, expectedTimes);
 
@@ -488,68 +517,68 @@ namespace System.Text.Json.Serialization.Tests
             return type.GetProperty(Next).GetValue(obj);
         }
 
-        private class NodeWithObjectProperty
+        public class NodeWithObjectProperty
         {
             public object Next { get; set; }
         }
 
-        private class NodeWithNodeProperty
+        public class NodeWithNodeProperty
         {
             public NodeWithNodeProperty Next { get; set; }
         }
 
-        private class ClassWithGenericProperty<T>
+        public class ClassWithGenericProperty<T>
         {
             public T Foo { get; set; }
         }
 
-        private class TreeNode<T>
+        public class TreeNode<T>
         {
             public T Left { get; set; }
             public T Right { get; set; }
         }
 
-        interface IValueNodeWithObjectProperty
+        public interface IValueNodeWithObjectProperty
         {
             public object Next { get; set; }
         }
 
-        private struct ValueNodeWithObjectProperty : IValueNodeWithObjectProperty
+        public struct ValueNodeWithObjectProperty : IValueNodeWithObjectProperty
         {
             public object Next { get; set; }
         }
 
-        interface IValueNodeWithIValueNodeProperty
+        public interface IValueNodeWithIValueNodeProperty
         {
             public IValueNodeWithIValueNodeProperty Next { get; set; }
         }
 
-        private struct ValueNodeWithIValueNodeProperty : IValueNodeWithIValueNodeProperty
+        public struct ValueNodeWithIValueNodeProperty : IValueNodeWithIValueNodeProperty
         {
             public IValueNodeWithIValueNodeProperty Next { get; set; }
         }
 
-        private class EmptyClass { }
-        private struct EmptyStruct { }
+        public class EmptyClass { }
+        public struct EmptyStruct { }
 
-        private class EmptyClassWithExtensionProperty
+        public class EmptyClassWithExtensionProperty
         {
             [JsonExtensionData]
             public Dictionary<string, object> MyOverflow { get; set; } = new Dictionary<string, object>();
         }
 
-        private class NodeWithExtensionData
+        public class NodeWithExtensionData
         {
             [JsonExtensionData]
             public Dictionary<string, object> MyOverflow { get; set; } = new Dictionary<string, object>();
             public NodeWithExtensionData Next { get; set; }
         }
 
-        private class RecursiveDictionary : Dictionary<string, RecursiveDictionary> { }
+        public class RecursiveDictionary : Dictionary<string, RecursiveDictionary> { }
 
-        private class RecursiveList : List<RecursiveList> { }
+        public class RecursiveList : List<RecursiveList> { }
 
-        private class Person
+        public class Person
         {
             public string Name { get; set; }
             public object DayOfBirth { get; set; }
