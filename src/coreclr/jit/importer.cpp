@@ -4228,7 +4228,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     impPopStack();
 
                     // See if we can optimize even further, to a handle compare.
-                    optTree = gtFoldTypeCompare(optTree);
+                    optTree = gtFoldTypeCompare(optTree->AsOp());
 
                     // See if we can now fold a handle compare to a constant.
                     optTree = gtFoldExpr(optTree);

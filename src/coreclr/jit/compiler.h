@@ -3559,7 +3559,7 @@ public:
                                    GenTree*               op2,
                                    CorInfoInlineTypeCheck typeCheckInliningResult);
     GenTree* gtFoldExprCall(GenTreeCall* call);
-    GenTree* gtFoldTypeCompare(GenTree* tree);
+    GenTree* gtFoldTypeCompare(GenTreeOp* tree);
     GenTree* gtFoldTypeEqualityCall(bool isEq, GenTree* op1, GenTree* op2);
 
     // Options to control behavior of gtTryRemoveBoxUpstreamEffects

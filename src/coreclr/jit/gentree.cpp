@@ -12065,7 +12065,7 @@ GenTree* Compiler::gtCreateHandleCompare(genTreeOps             oper,
 //    And potentially optimizes away the need to obtain actual
 //    RuntimeType objects to do the comparison.
 
-GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
+GenTree* Compiler::gtFoldTypeCompare(GenTreeOp* tree)
 {
     // Only handle EQ and NE
     // (maybe relop vs null someday)
@@ -12075,46 +12075,57 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         return tree;
     }
 
-    GenTree* const op1 = tree->AsOp()->gtOp1;
-    GenTree* const op2 = tree->AsOp()->gtOp2;
+    GenTree* const op1 = tree->gtGetOp1();
+    GenTree* const op2 = tree->gtGetOp2();
 
-    GenTreeIndir*  ind    = nullptr;
-    GenTreeIntCon* intCns = nullptr;
-    if (op1->OperIs(GT_CNS_INT) && op2->OperIs(GT_IND))
+    // Try to clean up redundant checks after GDV if any, e.g.:
+    // IND(obj) <relop> cns where we know the exact type of obj
+    GenTreeIndir*        ind    = nullptr;
+    CORINFO_CLASS_HANDLE cnsCls = NO_CLASS_HANDLE;
+    if (op2->OperIs(GT_IND))
     {
-        intCns = op1->AsIntCon();
         ind    = op2->AsIndir();
+        cnsCls = gtGetHelperArgClassHandle(op1);
     }
-    else if (op2->OperIs(GT_CNS_INT) && op1->OperIs(GT_IND))
+    else if (op1->OperIs(GT_IND))
     {
-        intCns = op2->AsIntCon();
         ind    = op1->AsIndir();
+        ind    = op1->AsIndir();
+        cnsCls = gtGetHelperArgClassHandle(op2);
     }
 
-    // Try to clean up redundant checks after GDV if any
-    if ((ind != nullptr) && (ind->Addr() != nullptr) && ind->Addr()->TypeIs(TYP_REF) && fgGlobalMorph)
+    if ((cnsCls != NO_CLASS_HANDLE) && ind->Addr()->TypeIs(TYP_REF))
     {
         bool                 isExact   = false;
         bool                 isNonNull = false;
-        CORINFO_CLASS_HANDLE cls1      = gtGetClassHandle(ind->Addr(), &isExact, &isNonNull);
-        CORINFO_CLASS_HANDLE cls2      = reinterpret_cast<CORINFO_CLASS_HANDLE>(intCns->IconValue());
+        CORINFO_CLASS_HANDLE objCls    = gtGetClassHandle(ind->Addr(), &isExact, &isNonNull);
 
-        if ((cls1 != nullptr) && (cls1 == cls2) && isExact)
+        if ((objCls != NO_CLASS_HANDLE) && isExact &&
+            (info.compCompHnd->compareTypesForEquality(objCls, cnsCls) != TypeCompareState::May))
         {
-            GenTree* newNode     = ind->Addr();
+            GenTree* clsNode     = gtNewIconEmbClsHndNode(cnsCls);
             GenTree* sideEffList = nullptr;
             gtExtractSideEffList(ind, &sideEffList);
-            if (sideEffList == nullptr)
+
+            // Most likely we'll have to keep the IND as a nullcheck
+            if (sideEffList != nullptr)
             {
-                newNode = gtNewIconNode(oper == GT_EQ ? 1 : 0);
+                clsNode = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffList, clsNode);
+                gtUpdateNodeSideEffects(clsNode);
+            }
+
+            JITDUMP("Morphing IND(obj) relop cls2:\n");
+            DISPTREE(tree);
+            if (ind == op1)
+            {
+                tree->gtOp1 = clsNode;
             }
             else
             {
-                newNode = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffList, gtNewIconNode(oper == GT_EQ ? 1 : 0));
-                newNode->gtFlags |= (sideEffList->gtFlags & GTF_ALL_EFFECT);
+                tree->gtOp2 = clsNode;
             }
-            newNode->gtFlags |= (tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE));
-            return newNode;
+            JITDUMP("\nto cls1 relop cls2:\n");
+            DISPTREE(tree);
         }
     }
 
@@ -12136,8 +12147,8 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     if ((op1Kind == TPK_Handle) && (op2Kind == TPK_Handle))
     {
         JITDUMP("Optimizing compare of types-from-handles to instead compare handles\n");
-        GenTree*             op1ClassFromHandle = tree->AsOp()->gtOp1->AsCall()->gtCallArgs->GetNode();
-        GenTree*             op2ClassFromHandle = tree->AsOp()->gtOp2->AsCall()->gtCallArgs->GetNode();
+        GenTree*             op1ClassFromHandle = tree->gtGetOp1()->AsCall()->gtCallArgs->GetNode();
+        GenTree*             op2ClassFromHandle = tree->gtGetOp2()->AsCall()->gtCallArgs->GetNode();
         CORINFO_CLASS_HANDLE cls1Hnd            = NO_CLASS_HANDLE;
         CORINFO_CLASS_HANDLE cls2Hnd            = NO_CLASS_HANDLE;
 
