@@ -3959,7 +3959,7 @@ void region_allocator::move_highest_free_regions (int64_t n, bool small_region_p
             heap_segment* region = get_region_info (region_address_of (index));
             if (is_free_region (region))
             {
-                if (n >= current_num_units)
+                if (n >= current_num_units && !region_free_list::is_on_free_list (region, to_free_list))
                 {
                     n -= current_num_units;
 
@@ -12139,6 +12139,13 @@ void region_free_list::add_region_descending (heap_segment* region, region_free_
 {
     free_region_kind kind = get_region_kind (region);
     to_free_list[kind].add_region_in_descending_order (region);
+}
+
+bool region_free_list::is_on_free_list (heap_segment* region, region_free_list free_list[count_free_region_kinds])
+{
+    region_free_list* rfl = heap_segment_containing_free_list (region);
+    free_region_kind kind = get_region_kind (region);
+    return rfl == &free_list[kind];
 }
 
 void region_free_list::age_free_regions()
