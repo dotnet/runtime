@@ -252,7 +252,7 @@ jobs:
       targetRid: linux-x64
       platform: Linux_x64
       container:
-        image: centos-7-source-build-20210714125450-5d87b80
+        image: centos-7-20210714125435-9b5bbc2
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
