@@ -32,10 +32,10 @@ namespace Microsoft.Extensions.Caching.Memory
 
             MemoryCacheStatistics stats = cache.GetCurrentStatistics();
 
-            Assert.Equal(300, stats.TotalRequests);
+            Assert.Equal(200, stats.TotalMisses);
             Assert.Equal(100, stats.TotalHits);
-            Assert.Equal(1, stats.CurrentEntryCount);
-            VerifyCurrentSize(2, sizeLimitIsSet, stats);
+            // Assert.Equal(1, stats.CurrentEntryCount);
+            VerifyCurrentEstimatedSize(2, sizeLimitIsSet, stats);
         }
 
         [Theory]
@@ -56,15 +56,15 @@ namespace Microsoft.Extensions.Caching.Memory
             MemoryCacheStatistics stats = cache.GetCurrentStatistics();
 
             Assert.Equal(1, stats.CurrentEntryCount);
-            Assert.Equal(2, stats.TotalRequests);
+            Assert.Equal(0, stats.TotalMisses);
             Assert.Equal(2, stats.TotalHits);
-            VerifyCurrentSize(3, sizeLimitIsSet, stats);
+            VerifyCurrentEstimatedSize(3, sizeLimitIsSet, stats);
         }
 
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void GetCurrentStatistics_UpdateAfterExistingItemExpired_CurrentSizeResets(bool sizeLimitIsSet)
+        public void GetCurrentStatistics_UpdateAfterExistingItemExpired_CurrentEstimatedSizeResets(bool sizeLimitIsSet)
         {
             const string Key = "myKey";
 
@@ -82,14 +82,14 @@ namespace Microsoft.Extensions.Caching.Memory
                 MemoryCacheStatistics stats = cache.GetCurrentStatistics();
                 Assert.Equal(1,  cache.Count);
                 Assert.Equal(1,  stats.CurrentEntryCount);
-                VerifyCurrentSize(5, sizeLimitIsSet, stats);
+                VerifyCurrentEstimatedSize(5, sizeLimitIsSet, stats);
 
                 expirationToken.HasChanged = true;
                 cache.Set(Key, new object(), mc.AddExpirationToken(expirationToken));
                 stats = cache.GetCurrentStatistics();
                 Assert.Equal(0,  cache.Count);
                 Assert.Equal(0,  stats.CurrentEntryCount);
-                VerifyCurrentSize(0, sizeLimitIsSet, stats);
+                VerifyCurrentEstimatedSize(0, sizeLimitIsSet, stats);
             }
         }
 
@@ -98,6 +98,7 @@ namespace Microsoft.Extensions.Caching.Memory
         [InlineData(false)]
         public void GetCurrentStatistics_EntrySizesAreOne_MultithreadedCacheUpdates_CountAndSizeRemainInSync(bool sizeLimitIsSet)
         {
+            bool statsGetInaccurateDuringHeavyLoad = false;
             const int numEntries = 100;
             Random random = new Random();
 
@@ -110,10 +111,16 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 for (int i = 0; i < numEntries; i++)
                 {
+                    var expirationToken = new TestExpirationToken() { ActiveChangeCallbacks = true };
                     cache.Set($"key{i}", $"value{i}",
                         new MemoryCacheEntryOptions { Size = 1 }
-                            .AddExpirationToken(new TestExpirationToken()
-                                { ActiveChangeCallbacks = true }));
+                            .AddExpirationToken(expirationToken));
+
+                    if (random.Next(numEntries) < numEntries * 0.25)
+                    {
+                        // Set to expired 25% of the time
+                        expirationToken.HasChanged = true;
+                    }
                 }
             }
 
@@ -129,7 +136,14 @@ namespace Microsoft.Extensions.Caching.Memory
                     {
                         cache.TryGetValue($"key{random.Next(numEntries)}", out _);
                         var stats = cache.GetCurrentStatistics();
-                        VerifyCurrentSize(stats.CurrentEntryCount, sizeLimitIsSet, stats);
+
+                        // set flag when stats go out of sync
+                        if ((stats.CurrentEntryCount != cache.Count)
+                            || (sizeLimitIsSet && stats.CurrentEstimatedSize != stats.CurrentEntryCount))
+                        {
+                            statsGetInaccurateDuringHeavyLoad = true;
+                        }
+
                         await Task.Yield();
                     }
                 });
@@ -137,24 +151,31 @@ namespace Microsoft.Extensions.Caching.Memory
 
             for (int i = 0; i < 1000; i++)
             {
-                FillCache();
                 cache.Compact(1);
+                FillCache();
             }
 
             done = true;
 
             Task.WaitAll(backgroundAccessTasks);
+
+            // even if the values are not exact during heavy multithreaded operations, 
+            // once done, the count and size eventually become fixed to expected value
+            var finalStats = cache.GetCurrentStatistics();
+            Assert.True(statsGetInaccurateDuringHeavyLoad);
+            Assert.Equal(cache.Count, finalStats.CurrentEntryCount);
+            VerifyCurrentEstimatedSize(finalStats.CurrentEntryCount, sizeLimitIsSet, finalStats);
         }
 
-        private void VerifyCurrentSize(long expected, bool sizeLimitIsSet, MemoryCacheStatistics stats)
+        private void VerifyCurrentEstimatedSize (long expected, bool sizeLimitIsSet, MemoryCacheStatistics stats)
         {
             if (sizeLimitIsSet)
             {
-                Assert.Equal(expected, stats.CurrentSize);
+                Assert.Equal(expected, stats.CurrentEstimatedSize );
             }
             else
             {
-                Assert.Null(stats.CurrentSize);
+                Assert.Null(stats.CurrentEstimatedSize );
             }
         }
     }

@@ -9,8 +9,13 @@ namespace Microsoft.Extensions.Caching.Memory
     /// <summary>
     /// Holds a snapshot of statistics for a memory cache.
     /// </summary>
-    public struct MemoryCacheStatistics
+    public class MemoryCacheStatistics
     {
+        /// <summary>
+        /// Initializes an instance of MemoryCacheStatistics.
+        /// </summary>
+        public MemoryCacheStatistics() { }
+
         /// <summary>
         /// A snapshot of entry count at the current state
         /// </summary>
@@ -19,15 +24,15 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// A snapshot of size at the current state
         /// </summary>
-        public long? CurrentSize { get; init; }
+        public long? CurrentEstimatedSize { get; init; }
 
         /// <summary>
-        /// Total number of requests
+        /// Total number of cache misses
         /// </summary>
-        public long TotalRequests { get; init; }
+        public long TotalMisses { get; init; }
 
         /// <summary>
-        /// Total number of hits
+        /// Total number of cache hits
         /// </summary>
         public long TotalHits { get; init; }
     }

@@ -27,9 +27,8 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private CoherentState _coherentState;
         private bool _disposed;
-        private readonly object _sync = new object();
         private long _totalHits;
-        private long _totalRequests;
+        private long _totalMisses;
         private DateTimeOffset _lastExpirationScan;
 
         /// <summary>
@@ -208,22 +207,6 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <inheritdoc />
         public bool TryGetValue(object key!!, out object? result)
         {
-            bool gotValue = TryGetValueInternal(key, out result);
-            lock (_sync)
-            {
-                _totalRequests++;
-                if (gotValue)
-                {
-                    _totalHits++;
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private bool TryGetValueInternal(object key!!, out object? result)
-        {
             CheckDisposed();
 
             DateTimeOffset utcNow = _options.Clock!.UtcNow;
@@ -247,6 +230,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
                     StartScanForExpiredItemsIfNeeded(utcNow);
 
+                    Interlocked.Increment(ref _totalHits);
                     return true;
                 }
                 else
@@ -259,6 +243,7 @@ namespace Microsoft.Extensions.Caching.Memory
             StartScanForExpiredItemsIfNeeded(utcNow);
 
             result = null;
+            Interlocked.Increment(ref _totalMisses);
             return false;
         }
 
@@ -303,31 +288,13 @@ namespace Microsoft.Extensions.Caching.Memory
 
         public MemoryCacheStatistics GetCurrentStatistics()
         {
-            lock (_sync)
+            return new MemoryCacheStatistics()
             {
-                if (_options.SizeLimit.HasValue)
-                {
-                    lock (_coherentState._sync)
-                    {
-                        return new MemoryCacheStatistics()
-                        {
-                            TotalRequests = _totalRequests,
-                            TotalHits = _totalHits,
-                            CurrentEntryCount = _coherentState._cacheCount,
-                            CurrentSize = Size
-                        };
-                    }
-                }
-
-                return new MemoryCacheStatistics()
-                {
-                    TotalRequests = _totalRequests,
-                    TotalHits = _totalHits,
-                    CurrentEntryCount = Count,
-                    CurrentSize = null
-                };
-            }
-
+                TotalMisses = _totalMisses,
+                TotalHits = _totalHits,
+                CurrentEntryCount = Count,
+                CurrentEstimatedSize = _options.SizeLimit.HasValue ? Size : null
+            };
         }
 
         internal void EntryExpired(CacheEntry entry)
