@@ -39,7 +39,11 @@ namespace System.Diagnostics
 
         public Stopwatch()
         {
-            Reset();
+        }
+
+        private Stopwatch(long initialState)
+        {
+            _state = initialState;
         }
 
         public void Start()
@@ -60,8 +64,8 @@ namespace System.Diagnostics
 
         public static Stopwatch StartNew()
         {
-            Stopwatch s = new Stopwatch();
-            s.Start();
+            long initialState = GetTimestamp();
+            Stopwatch s = new Stopwatch(initialState);
             return s;
         }
 
