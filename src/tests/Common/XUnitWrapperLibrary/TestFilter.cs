@@ -90,6 +90,12 @@ public class TestFilter
     }
 
     private readonly ISearchClause? _filter;
+
+    // Test exclusion list is a compatibility measure allowing for a smooth migration
+    // away from the legacy issues.targets issue tracking system. Before we migrate
+    // all tests to the new model, it's easier to keep bug exclusions in the existing
+    // issues.targets file as a split model would be very confusing for developers
+    // and test monitors.
     private readonly HashSet<string>? _testExclusionList;
 
     public TestFilter(string? filterString, HashSet<string>? testExclusionList)
