@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <!-- The below breaking changes are all due to new nullable annotations that are being added in this release -->
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Microsoft.Extensions.Logging.FilterLoggingBuilderExtensions.AddFilter(Microsoft.Extensions.Logging.ILoggingBuilder,System.Func{System.String,System.String,Microsoft.Extensions.Logging.LogLevel,System.Boolean})</Target>
