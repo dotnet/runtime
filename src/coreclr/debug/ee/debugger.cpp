@@ -2711,10 +2711,14 @@ DebuggerJitInfo *Debugger::GetJitInfoWorker(MethodDesc *fd, const BYTE *pbAddr, 
         return NULL;
     }
 
-    if (pbAddr != NULL)
+    if (pbAddr == NULL)
+    {
+        dji = dmi->GetLatestJitInfo(fd);
+    }
+#ifndef DACCESS_COMPILE
+    else
     {
         PCODE startAddr = g_pEEInterface->GetNativeCodeStartAddress((PCODE)pbAddr);
-#ifndef DACCESS_COMPILE
         if (startAddr == NULL)
         {
             LOG((LF_CORDB,LL_INFO1000,"D::GJIW: Couldn't find a DJI by address 0x%p, "
@@ -2743,13 +2747,8 @@ DebuggerJitInfo *Debugger::GetJitInfoWorker(MethodDesc *fd, const BYTE *pbAddr, 
         {
             dji = dmi->FindOrCreateInitAndAddJitInfo(fd, startAddr);
         }
+    }
 #endif // !DACCESS_COMPILE
-    }
-
-    if (dji == NULL)
-    {
-        dji = dmi->GetLatestJitInfo(fd);
-    }
 
     if (pMethInfo)
     {

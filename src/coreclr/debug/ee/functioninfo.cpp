@@ -2333,44 +2333,6 @@ void DebuggerMethodInfoTable::DeleteEntryDMI(DebuggerMethodInfoEntry *entry)
 
 #endif // #ifndef DACCESS_COMPILE
 
-DebuggerJitInfo *DebuggerJitInfo::GetJitInfoByAddress(const BYTE *pbAddr)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(g_pDebugger->HasDebuggerDataLock());
-    }
-    CONTRACTL_END;
-
-    DebuggerJitInfo *dji = this;
-
-#ifdef LOGGING
-    LOG((LF_CORDB,LL_INFO10000,"DJI:GJIBA finding DJI "
-            "corresponding to addr 0x%p, starting with 0x%p\n", pbAddr, dji));
-#endif //LOGGING
-
-    // If it's not NULL, but not in the range m_addrOfCode to end of function,
-    //  then get the previous one.
-    while( dji != NULL &&
-           !CodeRegionInfo::GetCodeRegionInfo(dji).IsMethodAddress(pbAddr))
-    {
-        LOG((LF_CORDB,LL_INFO10000,"DJI:GJIBA: pbAddr 0x%p is not in code "
-            "0x%p (size:0x%p)\n", pbAddr, dji->m_addrOfCode,
-            dji->m_sizeOfCode));
-        dji = dji->m_prevJitInfo;
-    }
-
-#ifdef LOGGING
-    if (dji == NULL)
-    {
-        LOG((LF_CORDB,LL_INFO10000,"DJI:GJIBA couldn't find a DJI "
-            "corresponding to addr 0x%p\n", pbAddr));
-    }
-#endif //LOGGING
-    return dji;
-}
-
 PTR_DebuggerJitInfo DebuggerMethodInfo::GetLatestJitInfo(MethodDesc *mdesc)
 {
     // dac checks ngen'ed image content first, so

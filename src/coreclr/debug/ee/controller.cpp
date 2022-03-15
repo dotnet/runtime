@@ -6414,8 +6414,7 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
                     continue;
 
                 dji = info->m_activeFrame.GetJitInfoFromFrame();
-                if (dji == NULL)
-                   continue;
+                _ASSERTE(dji != NULL);
 
                 // Note: we used to pass in the IP from the active frame to GetJitInfo, but there seems to be no value
                 // in that, and it was causing problems creating a stepper while sitting in ndirect stubs after we'd
