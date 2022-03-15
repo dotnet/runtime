@@ -121,6 +121,13 @@ namespace System.Net.Security.Tests
                     Assert.Contains("SSL_ERROR_SSL", e.InnerException.Message);
                     Assert.NotNull(e.InnerException.InnerException);
                     Assert.Contains("protocol", e.InnerException.InnerException.Message);
+
+                    e = await Assert.ThrowsAsync<AuthenticationException>(() => clientAuthenticationTask);
+
+                    Assert.NotNull(e.InnerException);
+                    Assert.Contains("SSL_ERROR_SSL", e.InnerException.Message);
+                    Assert.NotNull(e.InnerException.InnerException);
+                    Assert.Contains("protocol", e.InnerException.InnerException.Message);
                 }
             }
 
@@ -275,8 +282,11 @@ namespace System.Net.Security.Tests
                     return sendClientCertificate ? clientCertificate : null;
                 };
 
-                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate,
-                                                                                                      AllowRenegotiation = false  };
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
+                {
+                    ServerCertificate = serverCertificate,
+                    AllowRenegotiation = false
+                };
                 serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
                 {
                     if (negotiateClientCertificateCalled && sendClientCertificate)
@@ -353,7 +363,7 @@ namespace System.Net.Security.Tests
                 // Send application data instead of Client hello.
                 await client.WriteAsync(new byte[500], cts.Token);
                 // Fail as it is not allowed to receive non handshake frames during handshake.
-                await Assert.ThrowsAsync<InvalidOperationException>(()=> t);
+                await Assert.ThrowsAsync<InvalidOperationException>(() => t);
             }
         }
 
@@ -404,7 +414,7 @@ namespace System.Net.Security.Tests
                 int read = await server.ReadAsync(buffer, cts.Token);
 
                 // Fail as there are still some undrained data (incomplete incoming TLS frame)
-                await Assert.ThrowsAsync<InvalidOperationException>(()=>
+                await Assert.ThrowsAsync<InvalidOperationException>(() =>
                     server.NegotiateClientCertificateAsync(cts.Token)
                 );
 
@@ -732,7 +742,7 @@ namespace System.Net.Security.Tests
         {
             int split = Random.Shared.Next(0, certificates.serverChain.Count - 1);
 
-            var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
+            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
             clientOptions.RemoteCertificateValidationCallback =
                 (sender, certificate, chain, sslPolicyErrors) =>
                 {
@@ -794,7 +804,7 @@ namespace System.Net.Security.Tests
         public async Task SslStream_UntrustedCaWithCustomCallback_Throws(bool customCallback)
         {
             string errorMessage;
-            var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
+            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
             if (customCallback)
             {
                 clientOptions.RemoteCertificateValidationCallback =
@@ -864,7 +874,7 @@ namespace System.Net.Security.Tests
                 }
             }
 
-            var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost",  };
+            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost", };
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
             clientOptions.LocalCertificateSelectionCallback = (sender, target, certificates, remoteCertificate, issuers) => clientCertificate;
 
@@ -908,7 +918,7 @@ namespace System.Net.Security.Tests
                 c.Dispose();
             }
 
-            foreach (SslStream s in  streams)
+            foreach (SslStream s in streams)
             {
                 s.Dispose();
             }
