@@ -194,3 +194,9 @@ mono_metadata_update_added_methods_iter (MonoClass *klass, gpointer *iter)
 {
 	return mono_component_hot_reload()->added_methods_iter (klass, iter);
 }
+
+MonoClassField *
+mono_metadata_update_added_fields_iter (MonoClass *klass, gboolean lazy, gpointer *iter)
+{
+	return mono_component_hot_reload()->added_fields_iter (klass, lazy, iter);
+}
