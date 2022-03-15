@@ -68,7 +68,7 @@ ac_check_headers (
   sys/types.h sys/stat.h sys/filio.h sys/sockio.h sys/utime.h sys/un.h sys/syscall.h sys/uio.h sys/param.h
   sys/prctl.h sys/socket.h sys/utsname.h sys/select.h sys/poll.h sys/wait.h sts/auxv.h sys/resource.h
   sys/ioctl.h sys/errno.h sys/sendfile.h sys/statvfs.h sys/statfs.h sys/mman.h sys/mount.h sys/time.h sys/random.h
-  strings.h stdint.h unistd.h signal.h setjmp.h syslog.h netdb.h utime.h semaphore.h libproc.h alloca.h ucontext.h pwd.h elf.h
+  strings.h stdint.h unistd.h signal.h setjmp.h syslog.h netdb.h utime.h semaphore.h alloca.h ucontext.h pwd.h elf.h
   gnu/lib-names.h netinet/tcp.h netinet/in.h link.h arpa/inet.h unwind.h poll.h wchar.h linux/magic.h
   android/legacy_signal_inlines.h execinfo.h pthread.h pthread_np.h net/if.h dirent.h
   CommonCrypto/CommonDigest.h dlfcn.h getopt.h pwd.h alloca.h
@@ -77,7 +77,7 @@ ac_check_headers (
 ac_check_funcs (
   sigaction kill clock_nanosleep backtrace_symbols mkstemp mmap
   getrusage dladdr sysconf getrlimit prctl nl_langinfo
-  sched_getaffinity sched_setaffinity getpwuid_r readlink chmod lstat getdtablesize ftruncate msync
+  sched_getaffinity sched_setaffinity getpwuid_r chmod lstat getdtablesize ftruncate msync
   getpeername utime utimes openlog closelog atexit popen strerror_r inet_pton inet_aton
   shm_open poll getfsstat mremap posix_fadvise vsnprintf sendfile statfs statvfs setpgid system
   fork execv execve waitpid localtime_r mkdtemp getrandom execvp strlcpy stpcpy strtok_r rewinddir

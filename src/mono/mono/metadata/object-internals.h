@@ -2119,11 +2119,11 @@ mono_gc_wbarrier_value_copy_internal (void* dest, const void* src, int count, Mo
 void
 mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src);
 
-MONO_COMPONENT_API char *
-mono_runtime_get_managed_cmd_line (void);
+MONO_COMPONENT_API int
+mono_runtime_get_main_args_argc_raw (void);
 
-char *
-mono_runtime_get_cmd_line (int argc, char **argv);
+MONO_COMPONENT_API char**
+mono_runtime_get_main_args_argv_raw (void);
 
 #ifdef HOST_WASM
 int

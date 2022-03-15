@@ -39,12 +39,10 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/environment.h>
-#include <mono/metadata/environment-internals.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/coree.h>
-#include <mono/metadata/w32process.h>
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-hwcap.h"
 #include "mono/utils/mono-logger-internals.h"
@@ -2556,7 +2554,6 @@ mono_main (int argc, char* argv[])
 #endif
 
 	mono_set_defaults (mini_verbose_level, opt);
-	mono_set_os_args (argc, argv);
 
 	domain = mini_init (argv [i], forced_version);
 

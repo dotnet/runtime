@@ -135,10 +135,10 @@ load_buffer (
 	for (; i < event_count; ++i) {
 		EventPipeEventPayload payload;
 		gchar *event_data = NULL;
-		size_t event_data_len = 0;
+		uint32_t event_data_len = 0;
 		if (!perf_test) {
 			event_data = g_strdup_printf (event_instance_data, i);
-			event_data_len = strlen (event_data) + 1;
+			event_data_len = (uint32_t)strlen (event_data) + 1;
 		}else {
 			event_data = (gchar *)TEST_EVENT_DATA;
 			event_data_len = ARRAY_SIZE (TEST_EVENT_DATA);

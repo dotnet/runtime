@@ -39,8 +39,6 @@
 #include <mono/metadata/environment.h>
 #include "mono/metadata/profiler-private.h"
 #include <mono/metadata/reflection-internals.h>
-#include <mono/metadata/w32event.h>
-#include <mono/metadata/w32process.h>
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/runtime.h>
@@ -103,12 +101,6 @@ static MonoCoopMutex ldstr_section;
 /* Used by remoting proxies */
 static MonoMethod *create_proxy_for_type_method;
 static MonoGHashTable *ldstr_table;
-
-static GString *
-quote_escape_and_append_string (char *src_str, GString *target_str);
-
-static GString *
-format_cmd_line (int argc, char **argv, gboolean add_host);
 
 /**
  * mono_runtime_object_init:
@@ -3892,6 +3884,26 @@ mono_runtime_get_main_args_handle (MonoError *error)
 	}
 leave:
 	HANDLE_FUNCTION_RETURN_REF (MonoArray, array);
+}
+
+/**
+ * mono_runtime_get_main_args_argc_raw:
+ * \returns number of arguments from the command line
+ */
+int
+mono_runtime_get_main_args_argc_raw ()
+{
+	return num_main_args;
+}
+
+/**
+ * mono_runtime_get_main_args_argc_raw:
+ * \returns array of strings from the command line
+ */
+char**
+mono_runtime_get_main_args_argv_raw ()
+{
+	return main_args;
 }
 
 static void
@@ -7794,122 +7806,6 @@ mono_vtype_get_field_addr (gpointer vtype, MonoClassField *field)
 {
 	g_assert (!m_field_is_from_update (field));
 	return ((char*)vtype) + m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject);
-}
-
-static GString *
-quote_escape_and_append_string (char *src_str, GString *target_str)
-{
-#ifdef HOST_WIN32
-	char quote_char = '\"';
-	char escape_chars[] = "\"\\";
-#else
-	char quote_char = '\'';
-	char escape_chars[] = "\'\\";
-#endif
-
-	gboolean need_quote = FALSE;
-	gboolean need_escape = FALSE;
-
-	for (char *pos = src_str; *pos; ++pos) {
-		if (isspace (*pos))
-			need_quote = TRUE;
-		if (strchr (escape_chars, *pos))
-			need_escape = TRUE;
-	}
-
-	if (need_quote)
-		target_str = g_string_append_c (target_str, quote_char);
-
-	if (need_escape) {
-		for (char *pos = src_str; *pos; ++pos) {
-			if (strchr (escape_chars, *pos))
-				target_str = g_string_append_c (target_str, '\\');
-			target_str = g_string_append_c (target_str, *pos);
-		}
-	} else {
-		target_str = g_string_append (target_str, src_str);
-	}
-
-	if (need_quote)
-		target_str = g_string_append_c (target_str, quote_char);
-
-	return target_str;
-}
-
-static GString *
-format_cmd_line (int argc, char **argv, gboolean add_host)
-{
-	size_t total_size = 0;
-	char *host_path = NULL;
-	GString *cmd_line = NULL;
-
-	if (add_host) {
-#if !defined(HOST_WIN32) && defined(HAVE_GETPID)
-		host_path = mono_w32process_get_path (getpid ());
-#elif defined(HOST_WIN32)
-		gunichar2 *host_path_ucs2 = NULL;
-		guint32 host_path_ucs2_len = 0;
-		if (mono_get_module_filename (NULL, &host_path_ucs2, &host_path_ucs2_len)) {
-			host_path = g_utf16_to_utf8 (host_path_ucs2, -1, NULL, NULL, NULL);
-			g_free (host_path_ucs2);
-		}
-#endif
-	}
-
-	if (host_path)
-		// quote + string + quote
-		total_size += strlen (host_path) + 2;
-
-	for (int i = 0; i < argc; ++i) {
-		if (argv [i]) {
-			if (total_size > 0) {
-				// add space
-				total_size++;
-			}
-			// quote + string + quote
-			total_size += strlen (argv [i]) + 2;
-		}
-	}
-
-	// String will grow if needed, so not over allocating
-	// to handle case of escaped characters in arguments, if
-	// that happens string will automatically grow.
-	cmd_line = g_string_sized_new (total_size + 1);
-
-	if (cmd_line) {
-		if (host_path)
-			cmd_line = quote_escape_and_append_string (host_path, cmd_line);
-
-		for (int i = 0; i < argc; ++i) {
-			if (argv [i]) {
-				if (cmd_line->len > 0) {
-					// add space
-					cmd_line = g_string_append_c (cmd_line, ' ');
-				}
-				cmd_line = quote_escape_and_append_string (argv [i], cmd_line);
-			}
-		}
-	}
-
-	g_free (host_path);
-
-	return cmd_line;
-}
-
-char *
-mono_runtime_get_cmd_line (int argc, char **argv)
-{
-	MONO_REQ_GC_NEUTRAL_MODE;
-	GString *cmd_line = format_cmd_line (num_main_args, main_args, FALSE);
-	return cmd_line ? g_string_free (cmd_line, FALSE) : NULL;
-}
-
-char *
-mono_runtime_get_managed_cmd_line (void)
-{
-	MONO_REQ_GC_NEUTRAL_MODE;
-	GString *cmd_line = format_cmd_line (num_main_args, main_args, TRUE);
-	return cmd_line ? g_string_free (cmd_line, FALSE) : NULL;
 }
 
 #if NEVER_DEFINED

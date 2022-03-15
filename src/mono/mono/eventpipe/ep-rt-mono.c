@@ -26,7 +26,8 @@
 #include <mono/mini/mini-runtime.h>
 #include <mono/sgen/sgen-conf.h>
 #include <mono/sgen/sgen-tagged-pointer.h>
-#include "mono/utils/mono-logger-internals.h"
+#include <mono/utils/mono-logger-internals.h>
+#include <minipal/getexepath.h>
 #include <runtime_version.h>
 #include <clretwallmain.h>
 
@@ -1123,6 +1124,18 @@ ep_rt_mono_rand_try_get_bytes (
 	uint8_t *buffer,
 	size_t buffer_size);
 
+char *
+ep_rt_mono_get_cmd_line (bool add_host);
+
+ep_rt_file_handle_t
+ep_rt_mono_file_open_write(const ep_char8_t *path);
+
+bool
+ep_rt_mono_file_close (ep_rt_file_handle_t handle);
+
+bool
+ep_rt_mono_file_write (ep_rt_file_handle_t handle, const uint8_t *buffer, uint32_t numbytes, uint32_t *byteswritten);
+
 EventPipeThread *
 ep_rt_mono_thread_get_or_create (void);
 
@@ -2069,6 +2082,252 @@ ep_rt_mono_rand_try_get_bytes (
 	return mono_rand_try_get_bytes (&_ep_rt_mono_rand_provider, (guchar *)buffer, (gssize)buffer_size, error);
 }
 
+static GString *
+quote_escape_and_append_string (char *src_str, GString *target_str)
+{
+#ifdef HOST_WIN32
+	char quote_char = '\"';
+	char escape_chars[] = "\"\\";
+#else
+	char quote_char = '\'';
+	char escape_chars[] = "\'\\";
+#endif
+
+	gboolean need_quote = FALSE;
+	gboolean need_escape = FALSE;
+
+	for (char *pos = src_str; *pos; ++pos) {
+		if (isspace (*pos))
+			need_quote = TRUE;
+		if (strchr (escape_chars, *pos))
+			need_escape = TRUE;
+	}
+
+	if (need_quote)
+		target_str = g_string_append_c (target_str, quote_char);
+
+	if (need_escape) {
+		for (char *pos = src_str; *pos; ++pos) {
+			if (strchr (escape_chars, *pos))
+				target_str = g_string_append_c (target_str, '\\');
+			target_str = g_string_append_c (target_str, *pos);
+		}
+	} else {
+		target_str = g_string_append (target_str, src_str);
+	}
+
+	if (need_quote)
+		target_str = g_string_append_c (target_str, quote_char);
+
+	return target_str;
+}
+
+char *
+ep_rt_mono_get_managed_cmd_line ()
+{
+	MONO_REQ_GC_NEUTRAL_MODE;
+
+	int argc = mono_runtime_get_main_args_argc_raw ();
+	if (argc == 0)
+		return NULL;
+
+	// managed cmdline -> native host + managed argv (which includes the entrypoint assembly)
+	size_t total_size = 0;
+	char *host_path = NULL;
+	char **argv = mono_runtime_get_main_args_argv_raw ();
+	GString *cmd_line = NULL;
+
+	host_path = minipal_getexepath();
+
+	if (host_path)
+		// quote + string + quote
+		total_size += strlen (host_path) + 2;
+
+	for (int i = 0; i < argc; ++i) {
+		if (argv [i]) {
+			if (total_size > 0) {
+				// add space
+				total_size++;
+			}
+			// quote + string + quote
+			total_size += strlen (argv [i]) + 2;
+		}
+	}
+
+	// String will grow if needed, so not over allocating
+	// to handle case of escaped characters in arguments, if
+	// that happens string will automatically grow.
+	cmd_line = g_string_sized_new (total_size + 1);
+
+	if (cmd_line) {
+		if (host_path)
+			cmd_line = quote_escape_and_append_string (host_path, cmd_line);
+
+		for (int i = 0; i < argc; ++i) {
+			if (argv [i]) {
+				if (cmd_line->len > 0) {
+					// add space
+					cmd_line = g_string_append_c (cmd_line, ' ');
+				}
+				cmd_line = quote_escape_and_append_string (argv [i], cmd_line);
+			}
+		}
+	}
+
+	g_free (host_path);
+
+	return cmd_line ? g_string_free (cmd_line, FALSE) : NULL;
+}
+
+char *
+ep_rt_mono_get_os_cmd_line ()
+{
+	MONO_REQ_GC_NEUTRAL_MODE;
+
+	// we only return the native host here since getting the full commandline is complicated and
+	// it's not super important to have the correct value since it'll only be used during startup
+	// until we have the managed commandline
+	return minipal_getexepath();
+}
+
+#ifdef HOST_WIN32
+
+ep_rt_file_handle_t
+ep_rt_mono_file_open_write(const ep_char8_t *path)
+{
+	if (!path)
+		return INVALID_HANDLE_VALUE;
+
+	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16_string (path, -1);
+
+	if (!path_utf16)
+		return INVALID_HANDLE_VALUE;
+
+	ep_rt_file_handle_t res;
+	MONO_ENTER_GC_SAFE;
+	res = (ep_rt_file_handle_t)CreateFileW (path_utf16, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	MONO_EXIT_GC_SAFE;
+	ep_rt_utf16_string_free (path_utf16);
+
+	return res;
+}
+
+bool
+ep_rt_mono_file_close (ep_rt_file_handle_t handle)
+{
+	bool res;
+	MONO_ENTER_GC_SAFE;
+	res = CloseHandle (handle);
+	MONO_EXIT_GC_SAFE;
+	return res;
+}
+
+static void
+win32_io_interrupt_handler (void* ignored)
+{
+}
+
+bool
+ep_rt_mono_file_write (ep_rt_file_handle_t handle, const uint8_t *buffer, uint32_t numbytes, uint32_t *byteswritten)
+{
+	bool res;
+	MonoThreadInfo *info = mono_thread_info_current ();
+	gboolean alerted = FALSE;
+
+	if (info) {
+		mono_thread_info_install_interrupt (win32_io_interrupt_handler, NULL, &alerted);
+		if (alerted) {
+			return FALSE;
+		}
+		mono_win32_enter_blocking_io_call (info, handle);
+	}
+
+	MONO_ENTER_GC_SAFE;
+	if (info && mono_thread_info_is_interrupt_state (info)) {
+		res = FALSE;
+	} else {
+		res = WriteFile (handle, buffer, numbytes, (PDWORD)byteswritten, NULL) ? TRUE : FALSE;
+	}
+	MONO_EXIT_GC_SAFE;
+
+	if (info) {
+		mono_win32_leave_blocking_io_call (info, handle);
+		mono_thread_info_uninstall_interrupt (&alerted);
+	}
+
+	return res;
+}
+
+#else
+
+#include <fcntl.h>
+#include <unistd.h>
+
+ep_rt_file_handle_t
+ep_rt_mono_file_open_write(const ep_char8_t *path)
+{
+	int fd;
+	mode_t perms = 0666;
+
+	if (!path)
+		return INVALID_HANDLE_VALUE;
+
+	MONO_ENTER_GC_SAFE;
+	fd = creat (path, perms);
+	MONO_EXIT_GC_SAFE;
+
+	if (fd == -1)
+		return INVALID_HANDLE_VALUE;
+
+	return (ep_rt_file_handle_t)(ptrdiff_t)fd;
+}
+
+bool
+ep_rt_mono_file_close (ep_rt_file_handle_t handle)
+{
+	int fd = (int)(ptrdiff_t)handle;
+
+	MONO_ENTER_GC_SAFE;
+	close (fd);
+	MONO_EXIT_GC_SAFE;
+
+	return TRUE;
+}
+
+bool
+ep_rt_mono_file_write (ep_rt_file_handle_t handle, const uint8_t *buffer, uint32_t numbytes, uint32_t *byteswritten)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	int fd = (int)(ptrdiff_t)handle;
+	uint32_t ret;
+	MonoThreadInfo *info = mono_thread_info_current ();
+
+	if (byteswritten != NULL)
+		*byteswritten = 0;
+
+	do {
+		MONO_ENTER_GC_SAFE;
+		ret = write (fd, buffer, numbytes);
+		MONO_EXIT_GC_SAFE;
+	} while (ret == -1 && errno == EINTR &&
+		 !mono_thread_info_is_interrupt_state (info));
+
+	if (ret == -1) {
+		if (errno == EINTR)
+			ret = 0;
+		else
+			return FALSE;
+	}
+
+	if (byteswritten != NULL)
+		*byteswritten = ret;
+
+	return TRUE;
+}
+
+#endif // HOST_WIN32
+
 EventPipeThread *
 ep_rt_mono_thread_get_or_create (void)
 {
@@ -2224,7 +2483,7 @@ static const int64_t SECS_TO_NS = 1000000000;
 static const int64_t MSECS_TO_MIS = 1000;
 
 /* clock_gettime () is found by configure on Apple builds, but its only present from ios 10, macos 10.12, tvos 10 and watchos 3 */
-#if defined (HAVE_CLOCK_MONOTONIC) && (defined(TARGET_IOS) || defined(TARGET_OSX) || defined(TARGET_WATCHOS) || defined(TARGET_TVOS))
+#if defined (HAVE_CLOCK_MONOTONIC) && (defined(HOST_IOS) || defined(HOST_OSX) || defined(HOST_WATCHOS) || defined(HOST_TVOS))
 #undef HAVE_CLOCK_MONOTONIC
 #endif
 
@@ -2375,7 +2634,7 @@ ep_rt_mono_system_timestamp_get (void)
 
 #ifndef HOST_WIN32
 #if defined(__APPLE__)
-#if defined (TARGET_OSX)
+#if defined (HOST_OSX)
 G_BEGIN_DECLS
 gchar ***_NSGetEnviron(void);
 G_END_DECLS
@@ -2383,7 +2642,7 @@ G_END_DECLS
 #else
 static char *_ep_rt_mono_environ[1] = { NULL };
 #define environ _ep_rt_mono_environ
-#endif /* defined (TARGET_OSX) */
+#endif /* defined (HOST_OSX) */
 #else
 G_BEGIN_DECLS
 extern char **environ;
