@@ -23,16 +23,18 @@ namespace Microsoft.Interop.Analyzers
             public const string NativeTypeMustBePointerSized = Prefix + "006";
             public const string CustomMarshallerTypeMustHaveRequiredShape = Prefix + "007";
             public const string CustomMarshallerTypeMustSupportDirection = Prefix + "008";
-            public const string Unused = Prefix + "009";
+            public const string ProvidedMethodsNotSpecifiedInShape = Prefix + "009";
             public const string GetPinnableReferenceShouldSupportAllocatingMarshallingFallback = Prefix + "010";
             public const string CallerAllocMarshallingShouldSupportAllocatingMarshallingFallback = Prefix + "011";
             public const string CallerAllocConstructorMustHaveStackBufferSize = Prefix + "012";
-            public const string RefValuePropertyUnsupported = Prefix + "014";
+            public const string TwoStageMarshallingNativeTypesMustMatch = Prefix + "013";
+            public const string LinearCollectionElementTypesMustMatch = Prefix + "014";
+            public const string RefValuePropertyUnsupported = Prefix + "015";
             public const string NativeGenericTypeMustBeClosedOrMatchArity = Prefix + "016";
-            public const string MarshallerGetPinnableReferenceRequiresTwoStageMarshalling = Prefix + "018";
+            public const string MarshallerGetPinnableReferenceRequiresTwoStageMarshalling = Prefix + "017";
 
             // Migration from DllImport to LibraryImport
-            public const string ConvertToLibraryImport = Prefix + "015";
+            public const string ConvertToLibraryImport = Prefix + "018";
         }
 
         internal static LocalizableResourceString GetResourceString(string resourceName)

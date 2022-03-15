@@ -60,7 +60,7 @@ namespace Microsoft.Interop
             }
             CustomTypeMarshallerKind kind = CustomTypeMarshallerKind.Value;
             ITypeSymbol? managedType = attr.ConstructorArguments[0].Value as ITypeSymbol;
-            if (attr.ConstructorArguments.Length >= 1)
+            if (attr.ConstructorArguments.Length > 1)
             {
                 if (attr.ConstructorArguments[1].Value is not int i)
                 {

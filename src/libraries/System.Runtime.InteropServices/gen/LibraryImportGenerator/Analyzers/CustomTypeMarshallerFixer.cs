@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,12 +14,16 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Editing;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Microsoft.Interop.Analyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, LanguageNames.VisualBasic), Shared]
     public class CustomTypeMarshallerFixer : CodeFixProvider
     {
+        private const string AddMissingCustomTypeMarshallerMembersKey = nameof(AddMissingCustomTypeMarshallerMembersKey);
+        private const string AddMissingCustomTypeMarshallerFeaturesKey = nameof(AddMissingCustomTypeMarshallerFeaturesKey);
+
         private class CustomFixAllProvider : DocumentBasedFixAllProvider
         {
             protected override async Task<Document> FixAllAsync(FixAllContext fixAllContext, Document document, ImmutableArray<Diagnostic> diagnostics)
@@ -27,16 +32,64 @@ namespace Microsoft.Interop.Analyzers
                 if (root == null)
                     return document;
 
-                var editor = await DocumentEditor.CreateAsync(document, fixAllContext.CancellationToken).ConfigureAwait(false);
+                DocumentEditor editor = await DocumentEditor.CreateAsync(document, fixAllContext.CancellationToken).ConfigureAwait(false);
 
-                foreach (var diagnosticsBySpan in diagnostics.GroupBy(d => d.Location.SourceSpan))
+                switch (fixAllContext.CodeActionEquivalenceKey)
                 {
-                    SyntaxNode node = root.FindNode(diagnosticsBySpan.Key);
-                    var (missingMemberNames, _) = GetRequiredShapeMissingMemberNames(diagnosticsBySpan);
-                    ITypeSymbol marshallerType = (ITypeSymbol)editor.SemanticModel.GetDeclaredSymbol(node);
-                    editor.ReplaceNode(node, (node, gen) => AddMissingMembers(node, marshallerType, missingMemberNames, editor.SemanticModel.Compilation, gen, fixAllContext.CancellationToken));
+                    case AddMissingCustomTypeMarshallerMembersKey:
+                        foreach (IGrouping<TextSpan, Diagnostic> diagnosticsBySpan in diagnostics.GroupBy(d => d.Location.SourceSpan))
+                        {
+                            SyntaxNode node = root.FindNode(diagnosticsBySpan.Key);
+
+                            AddMissingMembers(fixAllContext, editor, diagnosticsBySpan, node);
+                        }
+                        break;
+                    case AddMissingCustomTypeMarshallerFeaturesKey:
+                        foreach (IGrouping<TextSpan, Diagnostic> diagnosticsBySpan in diagnostics.GroupBy(d => d.Location.SourceSpan))
+                        {
+                            SyntaxNode node = root.FindNode(diagnosticsBySpan.Key);
+
+                            await AddMissingFeatures(fixAllContext, editor, diagnosticsBySpan, node).ConfigureAwait(false);
+                        }
+                        break;
+                    default:
+                        break;
                 }
+
                 return editor.GetChangedDocument();
+            }
+
+            private static void AddMissingMembers(FixAllContext fixAllContext, DocumentEditor editor, IEnumerable<Diagnostic> diagnostics, SyntaxNode node)
+            {
+                var (missingMemberNames, _) = GetRequiredShapeMissingMemberNames(diagnostics);
+                ITypeSymbol marshallerType = (ITypeSymbol)editor.SemanticModel.GetDeclaredSymbol(node);
+                editor.ReplaceNode(
+                    node,
+                    (node, gen) =>
+                        CustomTypeMarshallerFixer.AddMissingMembers(
+                            node,
+                            marshallerType,
+                            missingMemberNames,
+                            editor.SemanticModel.Compilation,
+                            gen));
+            }
+
+            private static async Task AddMissingFeatures(FixAllContext fixAllContext, DocumentEditor editor, IEnumerable<Diagnostic> diagnostics, SyntaxNode node)
+            {
+                var (featuresToAdd, _) = GetFeaturesToAdd(diagnostics);
+                ITypeSymbol marshallerType = (ITypeSymbol)editor.SemanticModel.GetDeclaredSymbol(node);
+                AttributeData customTypeMarshallerAttribute = marshallerType.GetAttributes().FirstOrDefault(attr => attr.AttributeClass.ToDisplayString() == TypeNames.CustomTypeMarshallerAttribute);
+
+                SyntaxNode attributeSyntax = await customTypeMarshallerAttribute.ApplicationSyntaxReference!.GetSyntaxAsync(fixAllContext.CancellationToken).ConfigureAwait(false);
+
+                editor.ReplaceNode(
+                    attributeSyntax,
+                    (node, gen) =>
+                        CustomTypeMarshallerFixer.AddMissingFeatures(
+                            gen.GetName(node),
+                            customTypeMarshallerAttribute,
+                            featuresToAdd,
+                            gen));
             }
         }
 
@@ -45,7 +98,8 @@ namespace Microsoft.Interop.Analyzers
         public override ImmutableArray<string> FixableDiagnosticIds { get; } =
             ImmutableArray.Create(
                 AnalyzerDiagnostics.Ids.CustomMarshallerTypeMustHaveRequiredShape,
-                AnalyzerDiagnostics.Ids.CallerAllocMarshallingShouldSupportAllocatingMarshallingFallback);
+                AnalyzerDiagnostics.Ids.CallerAllocMarshallingShouldSupportAllocatingMarshallingFallback,
+                AnalyzerDiagnostics.Ids.ProvidedMethodsNotSpecifiedInShape);
 
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -55,16 +109,28 @@ namespace Microsoft.Interop.Analyzers
                 return;
 
             SyntaxNode node = root.FindNode(context.Span);
-            var (missingMemberNames, diagnostics) = GetRequiredShapeMissingMemberNames(context.Diagnostics);
+            var (missingMemberNames, missingMembersDiagnostics) = GetRequiredShapeMissingMemberNames(context.Diagnostics);
 
-            if (diagnostics.Count > 0)
+            if (missingMembersDiagnostics.Count > 0)
             {
                 context.RegisterCodeFix(
                     CodeAction.Create(
                         Resources.AddMissingCustomTypeMarshallerMembers,
                         ct => AddMissingMembers(doc, node, missingMemberNames, ct),
-                        nameof(Resources.AddMissingCustomTypeMarshallerMembers)),
-                    diagnostics);
+                        AddMissingCustomTypeMarshallerMembersKey),
+                    missingMembersDiagnostics);
+            }
+
+            var (featuresToAdd, featuresToAddDiagnostics) = GetFeaturesToAdd(context.Diagnostics);
+
+            if (featuresToAddDiagnostics.Count > 0 && featuresToAdd != CustomTypeMarshallerFeatures.None)
+            {
+                context.RegisterCodeFix(
+                    CodeAction.Create(
+                        Resources.AddMissingFeaturesToCustomTypeMarshaller,
+                        ct => AddMissingFeatures(doc, node, featuresToAdd, ct),
+                        AddMissingCustomTypeMarshallerFeaturesKey),
+                    featuresToAddDiagnostics);
             }
         }
 
@@ -77,7 +143,7 @@ namespace Microsoft.Interop.Analyzers
                 if (diagnostic.Id == AnalyzerDiagnostics.Ids.CustomMarshallerTypeMustHaveRequiredShape)
                 {
                     requiredShapeDiagnostics.Add(diagnostic);
-                    if (diagnostic.Properties.TryGetValue(CustomTypeMarshallerAnalyzer.MissingMemberNames.MissingMemberNameKey, out string missingMembers))
+                    if (diagnostic.Properties.TryGetValue(CustomTypeMarshallerAnalyzer.MissingMemberNames.Key, out string missingMembers))
                     {
                         missingMemberNames.AddRange(missingMembers.Split(CustomTypeMarshallerAnalyzer.MissingMemberNames.Delimiter));
                     }
@@ -86,13 +152,85 @@ namespace Microsoft.Interop.Analyzers
 
             return (missingMemberNames, requiredShapeDiagnostics);
         }
+        private static (CustomTypeMarshallerFeatures featuresToAdd, List<Diagnostic> fixedDiagnostics) GetFeaturesToAdd(IEnumerable<Diagnostic> diagnostics)
+        {
+            List<Diagnostic> featuresToAddDiagnostics = new();
+            CustomTypeMarshallerFeatures featuresToAdd = CustomTypeMarshallerFeatures.None;
+            foreach (var diagnostic in diagnostics)
+            {
+                if (diagnostic.Id == AnalyzerDiagnostics.Ids.ProvidedMethodsNotSpecifiedInShape)
+                {
+                    featuresToAddDiagnostics.Add(diagnostic);
+                    if (diagnostic.Properties.TryGetValue(CustomTypeMarshallerAnalyzer.MissingFeaturesKey, out string missingFeatures)
+                        && Enum.TryParse(missingFeatures, out CustomTypeMarshallerFeatures featuresValue))
+                    {
+                        featuresToAdd |= featuresValue;
+                    }
+                }
+            }
+
+            return (featuresToAdd, featuresToAddDiagnostics);
+        }
+        private static async Task<Document> AddMissingFeatures(Document doc, SyntaxNode node, CustomTypeMarshallerFeatures featuresToAdd, CancellationToken ct)
+        {
+            var editor = await DocumentEditor.CreateAsync(doc, ct).ConfigureAwait(false);
+            var gen = editor.Generator;
+
+            ISymbol marshallerType = editor.SemanticModel.GetDeclaredSymbol(node, ct);
+
+            AttributeData customTypeMarshallerAttribute = marshallerType.GetAttributes().FirstOrDefault(attr => attr.AttributeClass.ToDisplayString() == TypeNames.CustomTypeMarshallerAttribute);
+
+            SyntaxNode attributeSyntax = await customTypeMarshallerAttribute.ApplicationSyntaxReference!.GetSyntaxAsync(ct).ConfigureAwait(false);
+
+            SyntaxNode updatedDeclaration = AddMissingFeatures(gen.GetName(attributeSyntax), customTypeMarshallerAttribute, featuresToAdd, gen);
+
+            editor.ReplaceNode(attributeSyntax, updatedDeclaration);
+
+            return editor.GetChangedDocument();
+        }
+
+        private static SyntaxNode AddMissingFeatures(string attributeName, AttributeData? customTypeMarshallerAttribute, CustomTypeMarshallerFeatures featuresToAdd, SyntaxGenerator gen)
+        {
+            SyntaxNode newAttributeSyntax = gen.Attribute(attributeName);
+
+            newAttributeSyntax = gen.AddAttributeArguments(newAttributeSyntax, customTypeMarshallerAttribute.ConstructorArguments.Select(a => gen.AttributeArgument(gen.TypedConstantExpression(a))));
+
+            CustomTypeMarshallerFeatures newFeaturesValue = featuresToAdd;
+            int? featuresArgLocation = null;
+
+            newAttributeSyntax = gen.AddAttributeArguments(newAttributeSyntax, customTypeMarshallerAttribute.NamedArguments
+                .Where((a, i) =>
+                {
+                    if (a.Key == "Features")
+                    {
+                        // Capture the original location of the 'Features' named argument so we can update it "in place".
+                        featuresArgLocation = customTypeMarshallerAttribute.ConstructorArguments.Length + i;
+                        newFeaturesValue |= (CustomTypeMarshallerFeatures)a.Value.Value;
+                        return false;
+                    }
+                    return true;
+                })
+                .Select(a => gen.AttributeArgument(a.Key, gen.TypedConstantExpression(a.Value))));
+
+            SyntaxNode featureAttributeArgument = gen.AttributeArgument("Features",
+                gen.GetEnumValueAsFlagsExpression(
+                    customTypeMarshallerAttribute.AttributeClass.GetMembers(ManualTypeMarshallingHelper.CustomMarshallerAttributeFields.Features).OfType<IPropertySymbol>().First().Type,
+                    (int)newFeaturesValue,
+                    includeZeroValueFlags: false));
+
+            newAttributeSyntax = featuresArgLocation is null
+                ? gen.AddAttributeArguments(newAttributeSyntax, new[] { featureAttributeArgument })
+                : gen.InsertAttributeArguments(newAttributeSyntax, featuresArgLocation.Value, new[] { featureAttributeArgument });
+
+            return newAttributeSyntax;
+        }
 
         private static async Task<Document> AddMissingMembers(Document doc, SyntaxNode node, List<string> missingMemberNames, CancellationToken ct)
         {
             var editor = await DocumentEditor.CreateAsync(doc, ct).ConfigureAwait(false);
             var gen = editor.Generator;
 
-            SyntaxNode updatedDeclaration = AddMissingMembers(node, (ITypeSymbol)editor.SemanticModel.GetDeclaredSymbol(node, ct), missingMemberNames, editor.SemanticModel.Compilation, gen, ct);
+            SyntaxNode updatedDeclaration = AddMissingMembers(node, (ITypeSymbol)editor.SemanticModel.GetDeclaredSymbol(node, ct), missingMemberNames, editor.SemanticModel.Compilation, gen);
 
             editor.ReplaceNode(node, updatedDeclaration);
 
@@ -100,7 +238,7 @@ namespace Microsoft.Interop.Analyzers
         }
 
         private static SyntaxNode AddMissingMembers(SyntaxNode node, ITypeSymbol
-            marshallerType, List<string> missingMemberNames, Compilation compilation, SyntaxGenerator gen, CancellationToken ct)
+            marshallerType, List<string> missingMemberNames, Compilation compilation, SyntaxGenerator gen)
         {
             INamedTypeSymbol @byte = compilation.GetSpecialType(SpecialType.System_Byte);
             INamedTypeSymbol @object = compilation.GetSpecialType(SpecialType.System_Object);

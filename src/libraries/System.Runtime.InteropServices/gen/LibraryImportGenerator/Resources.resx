@@ -398,4 +398,43 @@
   <data name="AddMissingCustomTypeMarshallerMembers" xml:space="preserve">
     <value>Add missing custom type marshaller members</value>
   </data>
+  <data name="AddMissingFeaturesToCustomTypeMarshaller" xml:space="preserve">
+    <value>Add missing features to the 'CustomTypeMarshallerAttribute' attribute</value>
+  </data>
+  <data name="CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureDescription" xml:space="preserve">
+    <value>A marshaller type that provides a constructor taking a caller-allocated 'Span&lt;byte&gt;' should specify that it supports the 'CallerAllocatedBuffer' feature.</value>
+  </data>
+  <data name="CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureMessage" xml:space="preserve">
+    <value>The type '{0}' provides a constructor taking a caller-allocated 'Span&lt;byte&gt;' but does not specify that it supports the 'CallerAllocatedBuffer' feature. The constructor will not be used unless the feature is specified.</value>
+  </data>
+  <data name="FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureDescription" xml:space="preserve">
+    <value>A marshaller type that provides a 'FreeNative' method should specify that it supports the 'UnmanagedResources' feature.</value>
+  </data>
+  <data name="FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureMessage" xml:space="preserve">
+    <value>The type '{0}' provides a 'FreeNative' method but does not specify that it supports the 'UnmanagedResources' feature. The method will not be used unless the feature is specified.</value>
+  </data>
+  <data name="FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription" xml:space="preserve">
+    <value>A marshaller type that provides a 'FromNativeValue' method should specify that it supports the 'TwoStageMarshalling' feature.</value>
+  </data>
+  <data name="FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage" xml:space="preserve">
+    <value>The type '{0}' provides a 'FromNativeValue' method but does not specify that it supports the 'TwoStageMarshalling' feature. The method will not be used unless the feature is specified.</value>
+  </data>
+  <data name="LinearCollectionElementTypesMustMatchDescription" xml:space="preserve">
+    <value>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'.</value>
+  </data>
+  <data name="LinearCollectionElementTypesMustMatchMessage" xml:space="preserve">
+    <value>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'</value>
+  </data>
+  <data name="ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription" xml:space="preserve">
+    <value>A marshaller type that provides a 'ToNativeValue' method should specify that it supports the 'TwoStageMarshalling' feature.</value>
+  </data>
+  <data name="ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage" xml:space="preserve">
+    <value>The type '{0}' provides a 'ToNativeValue' method but does not specify that it supports the 'TwoStageMarshalling' feature. The method will not be used unless the feature is specified.</value>
+  </data>
+  <data name="TwoStageMarshallingNativeTypesMustMatchDescription" xml:space="preserve">
+    <value>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same.</value>
+  </data>
+  <data name="TwoStageMarshallingNativeTypesMustMatchMessage" xml:space="preserve">
+    <value>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same</value>
+  </data>
 </root>
