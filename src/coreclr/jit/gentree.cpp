@@ -12075,8 +12075,8 @@ GenTree* Compiler::gtFoldTypeCompare(GenTreeOp* tree)
         return tree;
     }
 
-    GenTree* const op1 = tree->gtGetOp1();
-    GenTree* const op2 = tree->gtGetOp2();
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
 
     // Try to clean up redundant checks after GDV if any, e.g.:
     // IND(obj) <relop> cns where we know the exact type of obj
@@ -12126,6 +12126,8 @@ GenTree* Compiler::gtFoldTypeCompare(GenTreeOp* tree)
             }
             JITDUMP("\nto cls1 relop cls2:\n");
             DISPTREE(tree);
+            op1 = tree->gtGetOp1();
+            op2 = tree->gtGetOp2();
         }
     }
 
@@ -12377,7 +12379,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree)
     // The handle could be a literal constant
     if ((tree->OperGet() == GT_CNS_INT) && (tree->TypeGet() == TYP_I_IMPL))
     {
-        assert(tree->IsIconHandle(GTF_ICON_CLASS_HDL));
+        if (!tree->IsIconHandle(GTF_ICON_CLASS_HDL))
+        {
+            return NO_CLASS_HANDLE;
+        }
         result = (CORINFO_CLASS_HANDLE)tree->AsIntCon()->gtCompileTimeHandle;
     }
     // Or the result of a runtime lookup
@@ -12397,7 +12402,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree)
             if ((handleTreeInternal->OperGet() == GT_CNS_INT) && (handleTreeInternal->TypeGet() == TYP_I_IMPL))
             {
                 // These handle constants should be class handles.
-                assert(handleTreeInternal->IsIconHandle(GTF_ICON_CLASS_HDL));
+                if (!handleTreeInternal->IsIconHandle(GTF_ICON_CLASS_HDL))
+                {
+                    return NO_CLASS_HANDLE;
+                }
                 result = (CORINFO_CLASS_HANDLE)handleTreeInternal->AsIntCon()->gtCompileTimeHandle;
             }
         }
