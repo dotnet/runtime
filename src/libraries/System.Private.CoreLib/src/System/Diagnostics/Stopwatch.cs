@@ -45,7 +45,7 @@ namespace System.Diagnostics
         public void Start()
         {
             // Calling start on a running Stopwatch is a no-op.
-            if (_state > 0)
+            if (IsRunning)
             {
                 return;
             }
@@ -68,17 +68,26 @@ namespace System.Diagnostics
         public void Stop()
         {
             // Calling stop on a stopped Stopwatch is a no-op.
-            if (_state > 0)
+            if (IsRunning)
             {
                 long endTimeStamp = GetTimestamp();
-                long elapsedThisPeriod = endTimeStamp - _state;
+                
+                // Subtract the old timestamp from the new timestamp
+                // so elapsedThisPeriod is already negative (which we need
+                // for _state).
+                //
+                // This saves an extra negation later.
+                long elapsedThisPeriod = _state - endTimeStamp;
 
                 // Buggy BIOS ir HAL can result in negative durations
-                // clip to a zero in that case.
-                elapsedThisPeriod = Math.Max(elapsedThisPeriod, 0);
-
-                // Negative states encode an elapsed time.
-                _state = -elapsedThisPeriod;
+                // (which are POSITIVE elapsedThisPeriod values) clip 
+                // to a zero in that case.
+                if (elapsedThisPeriod > 0)
+                {
+                    elapsedThisPeriod = 0;
+                }
+                
+                _state = elapsedThisPeriod;
             }
         }
 
@@ -140,15 +149,11 @@ namespace System.Diagnostics
             // Unstarted, or stopped with an elapsed time > 0 .
             if (stateCopy <= 0)
             {
-                return Math.Abs(stateCopy);
+                return -stateCopy;
             }
 
             long currentTimeStamp = GetTimestamp();
             long elapsedSoFar = currentTimeStamp - stateCopy;
-
-            // Buggy BIOS or HAL can result in negative durations
-            // clip to a zero in that case.
-            elapsedSoFar = Math.Max(elapsedSoFar, 0);
 
             return elapsedSoFar;
         }
