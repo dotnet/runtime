@@ -326,7 +326,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForBfiz(treeNode->AsOp());
             break;
 
-        case GT_CS_NEG_MI:
+        case GT_CSNEG_MI:
             genCodeForCond(treeNode->AsOp());
             break;
 #endif // TARGET_ARM64

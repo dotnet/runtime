@@ -680,7 +680,7 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
     BlockRange().InsertAfter(cns2, falseExpr);
     LowerNode(falseExpr);
 
-    GenTree* const cc = comp->gtNewOperNode(GT_CS_NEG_MI, type, trueExpr, falseExpr);
+    GenTree* const cc = comp->gtNewOperNode(GT_CSNEG_MI, type, trueExpr, falseExpr);
     cc->gtFlags |= GTF_USE_FLAGS;
 
     JITDUMP("Lower: optimize X MOD POW2");

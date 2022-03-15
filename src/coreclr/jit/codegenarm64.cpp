@@ -10161,7 +10161,7 @@ void CodeGen::genCodeForAddEx(GenTreeOp* tree)
 //
 void CodeGen::genCodeForCond(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_CS_NEG_MI));
+    assert(tree->OperIs(GT_CSNEG_MI));
     assert(!(tree->gtFlags & GTF_SET_FLAGS) && (tree->gtFlags & GTF_USE_FLAGS));
     genConsumeOperands(tree);
 
@@ -10169,7 +10169,7 @@ void CodeGen::genCodeForCond(GenTreeOp* tree)
     insCond     cond;
     switch (tree->OperGet())
     {
-        case GT_CS_NEG_MI:
+        case GT_CSNEG_MI:
         {
             ins  = INS_csneg;
             cond = INS_COND_MI;
