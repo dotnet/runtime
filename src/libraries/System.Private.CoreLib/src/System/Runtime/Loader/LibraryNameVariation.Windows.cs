@@ -15,10 +15,9 @@ namespace System.Runtime.Loader
 
             yield return new LibraryNameVariation(string.Empty, string.Empty);
 
-            // Follow LoadLibrary rules if forOSLoader is true
-            if (isRelativePath &&
-                !libName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) &&
-                !libName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            if (!libName.EndsWith(".", StringComparison.OrdinalIgnoreCase)
+                && !libName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
+                && !libName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {
                 yield return new LibraryNameVariation(string.Empty, LibraryNameSuffix);
             }
