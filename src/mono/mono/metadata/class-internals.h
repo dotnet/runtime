@@ -1401,9 +1401,11 @@ mono_class_get_exception_data (MonoClass *klass);
 void
 mono_class_set_exception_data (MonoClass *klass, MonoErrorBoxed *value);
 
+MONO_COMPONENT_API
 GList*
 mono_class_get_nested_classes_property (MonoClass *klass);
 
+MONO_COMPONENT_API
 void
 mono_class_set_nested_classes_property (MonoClass *klass, GList *value);
 
