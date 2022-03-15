@@ -563,7 +563,7 @@ table_info_find_in_base (const MonoTableInfo *table, MonoImage **base_out, int *
 
 	if (tbl_index) {
 		size_t s = ALIGN_TO (sizeof (MonoTableInfo), sizeof (gpointer));
-		*tbl_index = ((intptr_t) table - (intptr_t) base->tables) / s;
+		*tbl_index = (int)(((intptr_t) table - (intptr_t) base->tables) / s);
 	}
 	return TRUE;
 }
@@ -2382,7 +2382,7 @@ hot_reload_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_ta
 	int tbl_index;
 	{
 		size_t s = ALIGN_TO (sizeof (MonoTableInfo), sizeof (gpointer));
-		tbl_index = ((intptr_t) base_table - (intptr_t) base_image->tables) / s;
+		tbl_index = (int)(((intptr_t) base_table - (intptr_t) base_image->tables) / s);
 	}
 
 	DeltaInfo *delta_info = NULL;

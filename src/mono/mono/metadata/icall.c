@@ -6782,7 +6782,7 @@ mono_add_internal_call_internal (const char *name, gconstpointer method)
 static int
 concat_class_name (char *buf, int bufsize, MonoClass *klass)
 {
-	int nspacelen, cnamelen;
+	size_t nspacelen, cnamelen;
 	nspacelen = strlen (m_class_get_name_space (klass));
 	cnamelen = strlen (m_class_get_name (klass));
 	if (nspacelen + cnamelen + 2 > bufsize)
@@ -6793,7 +6793,7 @@ concat_class_name (char *buf, int bufsize, MonoClass *klass)
 	}
 	memcpy (buf + nspacelen, m_class_get_name (klass), cnamelen);
 	buf [nspacelen + cnamelen] = 0;
-	return nspacelen + cnamelen;
+	return (int)(nspacelen + cnamelen);
 }
 
 static void
@@ -6818,7 +6818,8 @@ mono_lookup_internal_call_full_with_flags (MonoMethod *method, gboolean warn_on_
 	char *tmpsig = NULL;
 	char mname [2048];
 	char *classname = NULL;
-	int typelen = 0, mlen, siglen;
+	int typelen = 0;
+	size_t mlen, siglen;
 	gconstpointer res = NULL;
 	gboolean locked = FALSE;
 

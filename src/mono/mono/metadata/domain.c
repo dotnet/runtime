@@ -818,7 +818,7 @@ get_runtime_by_version (const char *version)
 {
 	int n;
 	int max = G_N_ELEMENTS (supported_runtimes);
-	int vlen;
+	size_t vlen;
 
 	if (!version)
 		return NULL;

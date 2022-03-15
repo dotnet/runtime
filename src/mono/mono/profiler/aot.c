@@ -445,10 +445,10 @@ emit_int32 (MonoProfiler *prof, gint32 value)
 static void
 emit_string (MonoProfiler *prof, const char *str)
 {
-	int len = strlen (str);
+	size_t len = strlen (str);
 
-	emit_int32 (prof, len);
-	emit_bytes (prof, (guint8*)str, len);
+	emit_int32 (prof, (gint32)len);
+	emit_bytes (prof, (guint8*)str, (int)len);
 }
 
 static void
@@ -640,7 +640,7 @@ prof_save (MonoProfiler *prof, FILE* file)
 
 	gint32 version = (AOT_PROFILER_MAJOR_VERSION << 16) | AOT_PROFILER_MINOR_VERSION;
 	sprintf (magic, AOT_PROFILER_MAGIC);
-	emit_bytes (prof, (guint8*)magic, strlen (magic));
+	emit_bytes (prof, (guint8*)magic, (int)strlen (magic));
 	emit_int32 (prof, version);
 
 	GHashTable *all_methods = g_hash_table_new (NULL, NULL);

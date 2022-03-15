@@ -2137,10 +2137,9 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 #if defined (HOST_WIN32)
 	{
 		gchar *tmp_fn;
-		int i;
 
 		tmp_fn = g_strdup (fname);
-		for (i = strlen (tmp_fn) - 1; i >= 0; i--) {
+		for (size_t i = strlen (tmp_fn) - 1; i >= 0; i--) {
 			if (tmp_fn [i] == '/')
 				tmp_fn [i] = '\\';
 		}
@@ -2335,7 +2334,7 @@ parse_public_key (const gchar *key, gchar** pubkey, gboolean *is_ecma)
 	//both pubkey and is_ecma are required arguments
 	g_assert (pubkey && is_ecma);
 
-	keylen = strlen (key) >> 1;
+	keylen = (gint)strlen (key) >> 1;
 	if (keylen < 1)
 		return FALSE;
 
@@ -2367,7 +2366,7 @@ parse_public_key (const gchar *key, gchar** pubkey, gboolean *is_ecma)
 
 	/* We need the first 16 bytes
 	* to check whether this key is valid or not */
-	pkeylen = strlen (pkey) >> 1;
+	pkeylen = (gint)strlen (pkey) >> 1;
 	if (pkeylen < 16)
 		return FALSE;
 
@@ -2726,7 +2725,7 @@ unquote (const char *str)
 	if (str == NULL)
 		return NULL;
 
-	slen = strlen (str);
+	slen = (gint)strlen (str);
 	if (slen < 2)
 		return NULL;
 

@@ -3285,7 +3285,7 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 
 	if ((nested = (char*)strchr (name, '/'))) {
 		int pos = nested - name;
-		int len = strlen (name);
+		size_t len = strlen (name);
 		if (len > 1023)
 			return NULL;
 		memcpy (buf, name, len + 1);

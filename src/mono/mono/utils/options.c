@@ -122,16 +122,16 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 		/* Compute flag name */
 		char *arg_copy = g_strdup (arg);
 		char *optname = arg_copy;
-		int len = strlen (arg);
+		size_t len = strlen (arg);
 		int equals_sign_index = -1;
 		/* Handle no- prefix */
 		if (optname [0] == 'n' && optname [1] == 'o' && optname [2] == '-') {
 			optname += 3;
 		} else {
 			/* Handle option=value */
-			for (int i = 0; i < len; ++i) {
+			for (size_t i = 0; i < len; ++i) {
 				if (optname [i] == '=') {
-					equals_sign_index = i;
+					equals_sign_index = (int)i;
 					optname [i] = '\0';
 					break;
 				}
