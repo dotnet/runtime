@@ -3730,7 +3730,13 @@ public:
     PER_HEAP
     void exit_gc_done_event_lock();
 
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED
+    uint8_t*  ephemeral_low;      //lowest ephemeral address
+
+    PER_HEAP_ISOLATED
+    uint8_t*  ephemeral_high;     //highest ephemeral address
+#else //!USE_REGIONS
     PER_HEAP
     uint8_t*  ephemeral_low;      //lowest ephemeral address
 

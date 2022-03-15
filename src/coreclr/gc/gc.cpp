@@ -2324,6 +2324,11 @@ VOLATILE(c_gc_state) gc_heap::current_c_gc_state = c_gc_state_free;
 VOLATILE(BOOL) gc_heap::gc_background_running = FALSE;
 #endif //BACKGROUND_GC
 
+#ifdef USE_REGIONS
+uint8_t*    gc_heap::ephemeral_low;
+uint8_t*    gc_heap::ephemeral_high;
+#endif //USE_REGIONS
+
 #ifndef MULTIPLE_HEAPS
 #ifdef SPINLOCK_HISTORY
 int         gc_heap::spinlock_info_index = 0;
@@ -25569,6 +25574,8 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
         grow_mark_list_piece();
 
         memset (map_region_to_generation, 0x22, region_count*sizeof(map_region_to_generation[0]));
+        ephemeral_low = MAX_PTR;
+        ephemeral_high = nullptr;
         for (int gen_number = soh_gen0; gen_number <= soh_gen1; gen_number++)
         {
 #ifdef MULTIPLE_HEAPS
@@ -25585,6 +25592,8 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
                     uint8_t* addr = heap_segment_mem (region);
                     size_t index = (size_t)addr >> gc_heap::min_segment_size_shr;
                     map_region_to_generation_skewed[index] = 0xf0 | (uint8_t)gen_number;
+                    ephemeral_low = min (ephemeral_low, addr);
+                    ephemeral_high = max (ephemeral_high, heap_segment_reserved (region));
                 }
             }
         }
@@ -36773,7 +36782,7 @@ gc_heap::mark_through_cards_helper (uint8_t** poo, size_t& n_gen,
     assert (nhigh == 0);
     assert (next_boundary == 0);
     uint8_t* child_object = *poo;
-    if (!is_in_heap_range (child_object))
+    if ((child_object < ephemeral_low) || (ephemeral_high <= child_object))
         return;
 
     size_t child_region_index = (size_t)child_object >> gc_heap::min_segment_size_shr;
