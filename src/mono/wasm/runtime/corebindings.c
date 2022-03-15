@@ -76,7 +76,7 @@ void core_initialize_internals ()
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_typed_array_new_ref (char *arr, int length, int size, int type, MonoArray **result)
 {
-	MonoClass *typeClass = mono_get_byte_class(); // default is Byte
+	MonoClass * volatile typeClass = mono_get_byte_class(); // default is Byte
 	switch (type) {
 	case MARSHAL_ARRAY_BYTE:
 		typeClass = mono_get_sbyte_class();
@@ -101,7 +101,7 @@ mono_wasm_typed_array_new_ref (char *arr, int length, int size, int type, MonoAr
 		break;
 	}
 
-	MonoArray *buffer;
+	MonoArray * volatile buffer;
 
 	buffer = mono_array_new (mono_get_root_domain(), typeClass, length);
 	memcpy(mono_array_addr_with_size(buffer, sizeof(char), 0), arr, length * size);
@@ -116,9 +116,9 @@ mono_wasm_unbox_enum (MonoObject *obj)
 	if (!obj)
 		return 0;
 
-	MonoType *type = mono_class_get_type (mono_object_get_class(obj));
+	MonoType * volatile type = mono_class_get_type (mono_object_get_class(obj));
 
-	void *ptr = mono_object_unbox (obj);
+	void * volatile ptr = mono_object_unbox (obj);
 	switch (mono_type_get_type(mono_type_get_underlying_type (type))) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:

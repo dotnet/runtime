@@ -157,6 +157,7 @@ function js_typedarray_to_heap(typedArray: TypedArray) {
     return heapBytes;
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function js_typed_array_to_array_ref(js_obj: any, result: WasmRoot<MonoArray>): void {
     // JavaScript typed arrays are array-like objects and provide a mechanism for accessing
     // raw binary data. (...) To achieve maximum flexibility and efficiency, JavaScript typed arrays

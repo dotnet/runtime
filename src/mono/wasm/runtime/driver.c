@@ -677,9 +677,10 @@ mono_wasm_box_primitive_ref (MonoClass *klass, void *value, int value_size, Mono
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void *params[], MonoObject **out_exc, MonoObject **out_result)
+mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void *params[], MonoObject **_out_exc, MonoObject **out_result)
 {
-	MonoObject* temp_exc = NULL;
+	MonoObject * volatile * out_exc = _out_exc;
+	MonoObject * volatile temp_exc = NULL;
 	if (out_exc)
 		*out_exc = NULL;
 	else
@@ -688,16 +689,16 @@ mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void 
 	MONO_ENTER_GC_UNSAFE;
 	if (out_result) {
 		*out_result = NULL;
-		mono_gc_wbarrier_generic_store_atomic(out_result, mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, out_exc));
+		mono_gc_wbarrier_generic_store_atomic(out_result, mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, (MonoObject **)out_exc));
 	} else {
-		mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, out_exc);
+		mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, (MonoObject **)out_exc);
 	}
 
 	if (*out_exc && out_result) {
-		MonoObject *exc2 = NULL;
-		mono_gc_wbarrier_generic_store_atomic(out_result, (MonoObject*)mono_object_to_string (*out_exc, &exc2));
+		MonoObject * volatile exc2 = NULL;
+		mono_gc_wbarrier_generic_store_atomic((void *)out_result, (MonoObject*)mono_object_to_string (*out_exc, (MonoObject **)&exc2));
 		if (exc2)
-			mono_gc_wbarrier_generic_store_atomic(out_result, (MonoObject*)mono_string_new (root_domain, "Exception Double Fault"));
+			mono_gc_wbarrier_generic_store_atomic((void *)out_result, (MonoObject*)mono_string_new (root_domain, "Exception Double Fault"));
 	}
 	MONO_EXIT_GC_UNSAFE;
 }
@@ -706,8 +707,8 @@ mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void 
 MonoObject*
 mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[], MonoObject **out_exc)
 {
-	MonoObject* result = NULL;
-	mono_wasm_invoke_method_ref (method, &this_arg, params, out_exc, &result);
+	MonoObject * volatile result = NULL;
+	mono_wasm_invoke_method_ref (method, &this_arg, params, out_exc, (MonoObject **)&result);
 
 	MonoMethodSignature *sig = mono_method_signature (method);
 	MonoType *type = mono_signature_get_return_type (sig);
@@ -838,7 +839,7 @@ void mono_wasm_ensure_classes_resolved ()
 		resolved_datetimeoffset_class = 1;
 	}
 	if (!uri_class && !resolved_uri_class) {
-		MonoException** exc = NULL;
+		MonoException ** volatile exc = NULL;
 		uri_class = mono_get_uri_class(exc);
 		resolved_uri_class = 1;
 	}
@@ -977,7 +978,7 @@ mono_wasm_get_obj_type (MonoObject *obj)
 }
 
 // This code runs inside a gc unsafe region
-int _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (MonoObject *obj, void *result, int result_capacity) {
+int _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (MonoObject * volatile obj, void *result, int result_capacity) {
 	void **resultP = result;
 	int *resultI = result;
 	int64_t *resultL = result;
@@ -1157,8 +1158,8 @@ mono_wasm_obj_array_new_ref (int size, MonoArray **result)
 EMSCRIPTEN_KEEPALIVE MonoArray*
 mono_wasm_obj_array_new (int size)
 {
-	MonoArray *result = NULL;
-	mono_wasm_obj_array_new_ref(size, &result);
+	MonoArray * volatile result = NULL;
+	mono_wasm_obj_array_new_ref(size, (MonoArray **)&result);
 	return result;
 }
 
@@ -1283,3 +1284,25 @@ EMSCRIPTEN_KEEPALIVE char *
 mono_wasm_get_type_aqn (MonoType * typePtr) {
 	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
 }
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_write_managed_pointer_unsafe (MonoObject ** volatile destination, MonoObject * volatile source) {
+	mono_gc_wbarrier_generic_store_atomic(destination, source);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_copy_managed_pointer (MonoObject ** volatile destination, MonoObject ** volatile source) {
+	mono_gc_wbarrier_generic_store_atomic(destination, *source);
+}
+
+#ifdef ENABLE_AOT_PROFILER
+
+void mono_profiler_init_aot (const char *desc);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_load_profiler_aot (const char *desc)
+{
+	mono_profiler_init_aot (desc);
+}
+
+#endif

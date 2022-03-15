@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { WasmRoot, WasmRootBuffer, mono_wasm_new_root } from "./roots";
-import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull, MonoType, MarshalType } from "./types";
+import { MonoClass, MonoMethod, MonoObject, VoidPtrNull, MonoType, MarshalType } from "./types";
 import { BINDING, Module, runtimeHelpers } from "./imports";
 import { js_to_mono_enum, _js_to_mono_obj_root, _js_to_mono_uri_root } from "./js-to-cs";
 import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "./strings";
