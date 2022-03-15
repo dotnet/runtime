@@ -50,7 +50,7 @@ public struct S0
     }
 }
 
-public class Program
+public class Runtime_66624
 {
     public static IRuntime s_rt;
     public static C0 s_1 = new C0(0, 0, 0);
@@ -59,7 +59,7 @@ public class Program
     {
         CollectibleALC alc = new CollectibleALC();
         System.Reflection.Assembly asm = alc.LoadFromAssemblyPath(System.Reflection.Assembly.GetExecutingAssembly().Location);
-        System.Reflection.MethodInfo mi = asm.GetType(typeof(Program).FullName).GetMethod(nameof(MainInner));
+        System.Reflection.MethodInfo mi = asm.GetType(typeof(Runtime_66624).FullName).GetMethod(nameof(MainInner));
         System.Type runtimeTy = asm.GetType(typeof(Runtime).FullName);
         return (int)mi.Invoke(null, new object[] { System.Activator.CreateInstance(runtimeTy) });
     }
