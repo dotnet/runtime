@@ -1,9 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO.Enumeration;
 using System.Threading;
-using Internal;
 
 namespace System.IO
 {
@@ -28,10 +28,7 @@ namespace System.IO
             }
 
             // Create destination directory if not exists
-            if (!DirectoryExists(destinationPath))
-            {
-                CreateDirectory(destinationPath);
-            }
+            CreateDirectory(destinationPath);
 
             cancellationToken.ThrowIfCancellationRequested();
             var fse = new FileSystemEnumerable<(string childPath, bool isDirectory)>(sourcePath,
@@ -50,30 +47,22 @@ namespace System.IO
                     }
 
                     string destFilePath = Path.Join(destinationPath, basePath);
-                    if (isDirectory && !DirectoryExists(destFilePath))
+                    if (isDirectory)
                     {
-                        Directory.CreateDirectory(destFilePath);
+                        CreateDirectory(destFilePath);
                     }
                     else
                     {
-                        // If parent directory was not created in previous case, create it
-                        DirectoryInfo? parentDir = Directory.GetParent(destFilePath);
-                        if (parentDir is { Exists: false })
-                        {
-                            CreateDirectory(parentDir.FullName);
-                        }
-
-                        // Don't copy if file already exists
-                        if (skipExistingFiles && File.Exists(destFilePath))
-                        {
-                            continue;
-                        }
-
-                        CopyFile(childPath, destFilePath, true);
+                        // Don't copy if file already exists and user opted-in to skip existing files.
+                        CopyFile(childPath, destFilePath, overwrite: skipExistingFiles);
                     }
                 }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PathTooLongException)
                 {
+                    if (ex.Message.Contains(destinationPath))
+                    {
+                        throw;
+                    }
                     success = false;
                 }
             }

@@ -289,8 +289,8 @@ namespace System.IO
         /// <summary>
         /// Copies a directory into another directory.
         /// </summary>
-        /// <param name="sourcePath">The source path</param>
-        /// <param name="destinationPath">The destination path</param>
+        /// <param name="sourcePath">The source path.</param>
+        /// <param name="destinationPath">The destination path.</param>
         /// <param name="recursive"><see langword="true" /> to copy directories, subdirectories, and files in <paramref name="sourcePath"/>; otherwise, <see langword="false" />.</param>
         /// <returns><see langword="true"/> if the operation succeeded in copying all the specified files and directories; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="IOException">A write operation fails</exception>
@@ -300,16 +300,16 @@ namespace System.IO
         /// <summary>
         /// Copies a directory into another directory.
         /// </summary>
-        /// <param name="sourcePath">The source path</param>
-        /// <param name="destinationPath">The destination path</param>
+        /// <param name="sourcePath">The source path.</param>
+        /// <param name="destinationPath">The destination path.</param>
         /// <param name="recursive"><see langword="true" /> to copy directories, subdirectories, and files in <paramref name="sourcePath"/>; otherwise, <see langword="false" />.</param>
         /// <param name="skipExistingFiles"><see langword="true" /> to skip overwrite of existing files in <paramref name="destinationPath"/>; otherwise, <see langword="false" />.</param>
-        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" /></param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
         /// <returns><see langword="true"/> if the operation succeeded in copying all the specified files and directories; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="IOException">A write operation fails</exception>
         /// <remarks>
         /// <paramref name="recursive"/> specifies whether only the top-level files (<see langword="false"/>) should be copied or also subordinate ones (<see langword="true"/>).
-        /// If <paramref name="skipExistingFiles"/> is <see langword="false"/>, an <see cref="IOException"/> is thrown on an already existing file.
+        /// If <paramref name="skipExistingFiles"/> is <see langword="false"/>, existing files will be overwritten.
         /// </remarks>
         public static bool Copy(string sourcePath, string destinationPath, bool recursive, bool skipExistingFiles = true, CancellationToken cancellationToken = default)
         {

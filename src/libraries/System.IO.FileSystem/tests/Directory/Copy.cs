@@ -3,6 +3,7 @@
 
 using System.IO.Tests;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.IO.FileSystem.Tests
@@ -12,8 +13,8 @@ namespace System.IO.FileSystem.Tests
         [Fact]
         public void Copy()
         {
-            const string sourceDirName = $"Test_source_{nameof(Copy)}";
-            const string destDirName = $"Test_target_{nameof(Copy)}";
+            string sourceDirName = GetTestFilePath();
+            string destDirName = GetTestFilePath();
             CancellationToken cancellationToken = new();
 
             // Prerequisites
@@ -33,122 +34,76 @@ namespace System.IO.FileSystem.Tests
 
             // Create file which does not exist in target folder
             string firstPath = Path.Combine(sourceDirName, "first.txt");
-            using (StreamWriter firstStreamSource = File.CreateText(firstPath))
-            {
-                firstStreamSource.WriteLine("Test");
-            }
+            File.WriteAllText(firstPath, "Test");
 
             // Create file which does exist in target folder
             string secondPathSource = Path.Combine(sourceDirName, "test.txt");
-            using (StreamWriter secondStreamSource = File.CreateText(secondPathSource))
-            {
-                secondStreamSource.WriteLine("Test");
-            }
+            File.WriteAllText(secondPathSource, "Test");
 
             string secondPathDest = Path.Combine(destDirName, "test.txt");
-            using (StreamWriter secondStreamDest = File.CreateText(secondPathDest))
-            {
-                secondStreamDest.WriteLine("Test");
-            }
+            File.WriteAllText(secondPathDest, "Test");
 
             // Do file system operation
-            Directory.Copy(sourceDirName, destDirName, false, false, cancellationToken);
-
-            // Validate cancellation
-            Assert.False(cancellationToken.IsCancellationRequested);
+            bool result = Directory.Copy(sourceDirName, destDirName, false, true, cancellationToken);
+            Assert.True(result);
         }
 
         [Fact]
         public void Copy_SkipExistingFiles()
         {
-            const string sourceDirName = $"Test_source_{nameof(Copy_SkipExistingFiles)}";
-            const string destDirName = $"Test_target_{nameof(Copy_SkipExistingFiles)}";
+            string sourceDirName = GetTestFilePath();
+            string destDirName = GetTestFilePath();
             CancellationToken cancellationToken = new();
 
             // Prerequisites
             // Create source folder
-            if (Directory.Exists(sourceDirName))
-            {
-                Directory.Delete(sourceDirName, true);
-            }
             Directory.CreateDirectory(sourceDirName);
 
             // Create destination folder
-            if (Directory.Exists(destDirName))
-            {
-                Directory.Delete(destDirName, true);
-            }
             Directory.CreateDirectory(destDirName);
 
             // Create file which does not exist in target folder
             string firstPath = Path.Combine(sourceDirName, "first.txt");
-            using (StreamWriter firstStreamSource = File.CreateText(firstPath))
-            {
-                firstStreamSource.WriteLine("Test");
-            }
+            File.WriteAllText(firstPath, "Test");
 
             // Create file which does exist in target folder
             string secondPathSource = Path.Combine(sourceDirName, "test.txt");
-            using (StreamWriter secondStreamSource = File.CreateText(secondPathSource))
-            {
-                secondStreamSource.WriteLine("Test");
-            }
+            File.WriteAllText(secondPathSource, "Test");
 
             string secondPathDest = Path.Combine(destDirName, "test.txt");
-            using (StreamWriter secondStreamDest = File.CreateText(secondPathDest))
-            {
-                secondStreamDest.WriteLine("Test");
-            }
+            File.WriteAllText(secondPathDest, "Test");
 
             // Do file system operation
-            Directory.Copy(sourceDirName, destDirName, false, true, cancellationToken);
-
-            // Validate cancellation
-            Assert.False(cancellationToken.IsCancellationRequested);
+            bool result = Directory.Copy(sourceDirName, destDirName, false, true, cancellationToken);
+            Assert.True(result);
         }
 
         [Fact]
         public void Copy_Recursive()
         {
-            const string sourceDirName = $"Test_source_{nameof(Copy_Recursive)}";
-            const string destDirName = $"Test_target_{nameof(Copy_Recursive)}";
+            string sourceDirName = GetTestFilePath();
+            string destDirName = GetTestFilePath();
             CancellationToken cancellationToken = new();
 
             // Prerequisites
             // Create source folder
-            if (Directory.Exists(sourceDirName))
-            {
-                Directory.Delete(sourceDirName, true);
-            }
             Directory.CreateDirectory(sourceDirName);
 
             // Create destination folder
-            if (Directory.Exists(destDirName))
-            {
-                Directory.Delete(destDirName, true);
-            }
             Directory.CreateDirectory(destDirName);
 
             string sourceTopLevelFilePath = Path.Combine(sourceDirName, "top-level.txt");
-            using (StreamWriter sourceTopLevelFileStream = File.CreateText(sourceTopLevelFilePath))
-            {
-                sourceTopLevelFileStream.WriteLine("Test");
-            }
+            File.WriteAllText(sourceTopLevelFilePath, "Test");
 
             string sourceSecondLevelDirectoryPath = Path.Combine(sourceDirName, "subdir");
             Directory.CreateDirectory(sourceSecondLevelDirectoryPath);
 
             string sourceThirdLevelFilePath = Path.Combine(sourceSecondLevelDirectoryPath, "test.txt");
-            using (StreamWriter sourceThirdLevelFileStream = File.CreateText(sourceThirdLevelFilePath))
-            {
-                sourceThirdLevelFileStream.WriteLine("Test");
-            }
+            File.WriteAllText(sourceThirdLevelFilePath, "Test");
 
-            // Do file system opreation
-            Directory.Copy(sourceDirName, destDirName, true, false, cancellationToken);
-
-            // Validate cancellation
-            Assert.False(cancellationToken.IsCancellationRequested);
+            // Do file system operation
+            bool result = Directory.Copy(sourceDirName, destDirName, true, false, cancellationToken);
+            Assert.True(result);
 
             // Validate copied files
             string destTopLevelFilePath = Path.Combine(destDirName, "top-level.txt");
@@ -162,8 +117,84 @@ namespace System.IO.FileSystem.Tests
         [Fact]
         public void Copy_NonRecursive()
         {
-            const string sourceDirName = $"Test_source_{nameof(Copy_NonRecursive)}";
-            const string destDirName = $"Test_target_{nameof(Copy_NonRecursive)}";
+            string sourceDirName = GetTestFilePath();
+            string destDirName = GetTestFilePath();
+            CancellationToken cancellationToken = new();
+
+            // Prerequisites
+            // Create source folder
+            Directory.CreateDirectory(sourceDirName);
+
+            // Create destination folder
+            Directory.CreateDirectory(destDirName);
+
+            string sourceTopLevelFilePath = Path.Combine(sourceDirName, "top-level.txt");
+            File.WriteAllText(sourceTopLevelFilePath, "Test");
+
+            string sourceSecondLevelDirectoryPath = Path.Combine(sourceDirName, "subdir");
+            Directory.CreateDirectory(sourceSecondLevelDirectoryPath);
+
+            string sourceThirdLevelFilePath = Path.Combine(sourceSecondLevelDirectoryPath, "test.txt");
+            File.WriteAllText(sourceThirdLevelFilePath, "Test");
+
+            // Do file system opreation
+            bool result = Directory.Copy(sourceDirName, destDirName, false, false, cancellationToken);
+            Assert.True(result);
+
+            // Validate copied files
+            string destTopLevelFilePath = Path.Combine(destDirName, "top-level.txt");
+            string destSecondLevelDirectoryPath = Path.Combine(destDirName, "subdir");
+            string destThirdLevelFilePath = Path.Combine(destSecondLevelDirectoryPath, "test.txt");
+
+            Assert.True(File.Exists(destTopLevelFilePath));
+
+            // False because we only want to copy top level files (= non-recursive)
+            Assert.False(File.Exists(destThirdLevelFilePath));
+        }
+
+        [Fact]
+        public void Copy_Cancellation()
+        {
+            string sourceDirName = GetTestFilePath();
+            string destDirName = GetTestFilePath();
+            var cancellationTokenSource = new CancellationTokenSource();
+
+            // Prerequisites
+            // Create source folder
+            if (Directory.Exists(sourceDirName))
+            {
+                Directory.Delete(sourceDirName, true);
+            }
+            Directory.CreateDirectory(sourceDirName);
+
+            // Create destination folder
+            if (Directory.Exists(destDirName))
+            {
+                Directory.Delete(destDirName, true);
+            }
+            Directory.CreateDirectory(destDirName);
+
+            // Create file which does not exist in target folder
+            string firstPath = Path.Combine(sourceDirName, "first.txt");
+            File.WriteAllText(firstPath, "Test");
+
+            // Create file which does exist in target folder
+            string secondPathSource = Path.Combine(sourceDirName, "test.txt");
+            File.WriteAllText(secondPathSource, "Test");
+
+            string secondPathDest = Path.Combine(destDirName, "test.txt");
+            File.WriteAllText(secondPathDest, "Test");
+
+            // Validate cancellation
+            cancellationTokenSource.Cancel();
+            Assert.Throws<OperationCanceledException>(() => Directory.Copy(sourceDirName, destDirName, false, true, cancellationTokenSource.Token));
+        }
+
+        [Fact]
+        public void Copy_WriteFailure()
+        {
+            string sourceDirName = GetTestFilePath();
+            string destDirName = GetTestFilePath();
             CancellationToken cancellationToken = new();
 
             // Prerequisites
@@ -181,36 +212,21 @@ namespace System.IO.FileSystem.Tests
             }
             Directory.CreateDirectory(destDirName);
 
-            string sourceTopLevelFilePath = Path.Combine(sourceDirName, "top-level.txt");
-            using (StreamWriter sourceTopLevelFileStream = File.CreateText(sourceTopLevelFilePath))
-            {
-                sourceTopLevelFileStream.WriteLine("Test");
-            }
+            // Create file which does not exist in target folder
+            string firstPath = Path.Combine(sourceDirName, "first.txt");
+            File.WriteAllText(firstPath, "Test");
 
-            string sourceSecondLevelDirectoryPath = Path.Combine(sourceDirName, "subdir");
-            Directory.CreateDirectory(sourceSecondLevelDirectoryPath);
+            // Create file which does exist in target folder
+            string secondPathSource = Path.Combine(sourceDirName, "test.txt");
+            File.WriteAllText(secondPathSource, "Test");
 
-            string sourceThirdLevelFilePath = Path.Combine(sourceSecondLevelDirectoryPath, "test.txt");
-            using (StreamWriter sourceThirdLevelFileStream = File.CreateText(sourceThirdLevelFilePath))
-            {
-                sourceThirdLevelFileStream.WriteLine("Test");
-            }
+            string secondPathDest = Path.Combine(destDirName, "test.txt");
+            File.WriteAllText(secondPathDest, "Test");
 
-            // Do file system opreation
-            Directory.Copy(sourceDirName, destDirName, false, false, cancellationToken);
-
-            // Validate cancellation
-            Assert.False(cancellationToken.IsCancellationRequested);
-
-            // Validate copied files
-            string destTopLevelFilePath = Path.Combine(destDirName, "top-level.txt");
-            string destSecondLevelDirectoryPath = Path.Combine(destDirName, "subdir");
-            string destThirdLevelFilePath = Path.Combine(destSecondLevelDirectoryPath, "test.txt");
-
-            Assert.True(File.Exists(destTopLevelFilePath));
-
-            // False because we only want to copy top level files (= non-recursive)
-            Assert.False(File.Exists(destThirdLevelFilePath));
+            // Leave handle open to tell the operating system that this object is used
+            // We need this to validate the exception
+            using SafeFileHandle _ = File.OpenHandle(secondPathDest, share: FileShare.None);
+            Assert.Throws<UnauthorizedAccessException>(() => Directory.Copy(sourceDirName, destDirName, false, true, cancellationToken));
         }
     }
 }
