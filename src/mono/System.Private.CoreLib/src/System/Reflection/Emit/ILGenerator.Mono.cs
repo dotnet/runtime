@@ -236,6 +236,9 @@ namespace System.Reflection.Emit
             this.token_gen = token_gen;
         }
 
+        [MemberNotNullWhen(true, nameof(open_blocks))]
+        private bool InExceptionBlock => open_blocks != null && open_blocks.Count > 0;
+
         private void make_room(int nbytes)
         {
             if (code_len + nbytes < code.Length)
@@ -342,9 +345,7 @@ namespace System.Reflection.Emit
 
         public virtual void BeginCatchBlock(Type exceptionType)
         {
-            open_blocks ??= new Int32Stack(defaultExceptionStackSize);
-
-            if (open_blocks.Count <= 0)
+            if (!InExceptionBlock)
                 throw new NotSupportedException("Not in an exception block");
             if (exceptionType != null && exceptionType.IsUserType)
                 throw new NotSupportedException("User defined subclasses of System.Type are not yet supported.");
@@ -370,10 +371,7 @@ namespace System.Reflection.Emit
 
         public virtual void BeginExceptFilterBlock()
         {
-            if (open_blocks == null)
-                open_blocks = new Int32Stack(defaultExceptionStackSize);
-
-            if (open_blocks.Count <= 0)
+            if (!InExceptionBlock)
                 throw new NotSupportedException("Not in an exception block");
             InternalEndClause();
 
@@ -383,8 +381,7 @@ namespace System.Reflection.Emit
         public virtual Label BeginExceptionBlock()
         {
             //System.Console.WriteLine ("Begin Block");
-            if (open_blocks == null)
-                open_blocks = new Int32Stack(defaultExceptionStackSize);
+            Int32Stack open_blocks = this.open_blocks ??= new Int32Stack(defaultExceptionStackSize);
 
             if (ex_handlers != null)
             {
@@ -405,10 +402,7 @@ namespace System.Reflection.Emit
 
         public virtual void BeginFaultBlock()
         {
-            if (open_blocks == null)
-                open_blocks = new Int32Stack(defaultExceptionStackSize);
-
-            if (open_blocks.Count <= 0)
+            if (!InExceptionBlock)
                 throw new NotSupportedException("Not in an exception block");
 
             if (ex_handlers![cur_block].LastClauseType() == ILExceptionBlock.FILTER_START)
@@ -424,10 +418,7 @@ namespace System.Reflection.Emit
 
         public virtual void BeginFinallyBlock()
         {
-            if (open_blocks == null)
-                open_blocks = new Int32Stack(defaultExceptionStackSize);
-
-            if (open_blocks.Count <= 0)
+            if (!InExceptionBlock)
                 throw new NotSupportedException("Not in an exception block");
 
             InternalEndClause();
@@ -876,10 +867,7 @@ namespace System.Reflection.Emit
 
         public virtual void EndExceptionBlock()
         {
-            if (open_blocks == null)
-                open_blocks = new Int32Stack(defaultExceptionStackSize);
-
-            if (open_blocks.Count <= 0)
+            if (!InExceptionBlock)
                 throw new NotSupportedException("Not in an exception block");
 
             if (ex_handlers![cur_block].LastClauseType() == ILExceptionBlock.FILTER_START)
