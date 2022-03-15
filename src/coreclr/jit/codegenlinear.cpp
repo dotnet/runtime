@@ -1213,22 +1213,15 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 // TODO-Cleanup: The following code could probably be further merged and cleaned up.
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             // Load local variable from its home location.
-            // In most cases the tree type will indicate the correct type to use for the load.
-            // However, if it is NOT a normalizeOnLoad lclVar (i.e. NOT a small int that always gets
-            // widened when loaded into a register), and its size is not the same as the actual register type
-            // of the lclVar, then we need to change the type of the tree node when loading.
-            // This situation happens due to "optimizations" that avoid a cast and
-            // simply retype the node when using long type lclVar as an int.
-            // While loading the int in that case would work for this use of the lclVar, if it is
-            // later used as a long, we will have incorrectly truncated the long.
-            // In the normalizeOnLoad case ins_Load will return an appropriate sign- or zero-
-            // extending load.
-            var_types lclActualType = varDsc->GetActualRegisterType();
-            assert(lclActualType != TYP_UNDEF);
-            if (spillType != lclActualType && !varTypeIsGC(spillType) && !varDsc->lvNormalizeOnLoad())
+            // Never allow truncating the locals here, otherwise a subsequent
+            // use of the local with a wider type would see the truncated
+            // value. We do allow wider loads as those can be efficient even
+            // when unaligned and might be smaller encoding wise (on xarch).
+            var_types lclLoadType = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : varDsc->GetActualRegisterType();
+            assert(lclLoadType != TYP_UNDEF);
+            if (genTypeSize(spillType) < genTypeSize(lclLoadType))
             {
-                assert(!varTypeIsGC(varDsc));
-                spillType = lclActualType;
+                spillType = lclLoadType;
             }
 #elif defined(TARGET_ARM)
 // No normalizing for ARM
