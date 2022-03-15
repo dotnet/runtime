@@ -328,6 +328,7 @@ namespace System.IO
         /// </summary>
         /// <param name="path">The file to read.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>The async enumerable that represents all the lines of the file, or the lines that are the result of a query.</returns>
         public static IAsyncEnumerable<string> ReadLinesAsync(string path, CancellationToken cancellationToken = default)
             => ReadLinesAsync(path, Encoding.UTF8, cancellationToken);
 
@@ -337,6 +338,7 @@ namespace System.IO
         /// <param name="path">The file to read.</param>
         /// <param name="encoding">The encoding that is applied to the contents of the file.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>The async enumerable that represents all the lines of the file, or the lines that are the result of a query.</returns>
         public static IAsyncEnumerable<string> ReadLinesAsync(string path, Encoding encoding, CancellationToken cancellationToken = default)
         {
             Validate(path, encoding);
