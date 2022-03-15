@@ -125,6 +125,9 @@ hot_reload_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_token, 
 static MonoMethod *
 hot_reload_added_methods_iter (MonoClass *klass, gpointer *iter);
 
+static MonoClassField *
+hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy, gpointer *iter);
+
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error);
 
@@ -155,6 +158,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_find_method_by_name,
 	&hot_reload_get_typedef_skeleton,
 	&hot_reload_added_methods_iter,
+	&hot_reload_added_fields_iter,
 };
 
 MonoComponentHotReload *
@@ -2977,7 +2981,7 @@ hot_reload_added_methods_iter (MonoClass *klass, gpointer *iter)
 
 	// go through the added members incrementing cur_count until it's equal to idx or we run out
 	// of added members.
-	int cur_count = mono_class_get_method_count (klass);
+	uint32_t cur_count = mono_class_get_method_count (klass);
 	for (GSList *ptr = members; ptr; ptr = ptr->next) {
 		uint32_t token = GPOINTER_TO_UINT(ptr->data);
 		if (mono_metadata_token_table (token) != MONO_TABLE_METHOD)
@@ -2994,4 +2998,35 @@ hot_reload_added_methods_iter (MonoClass *klass, gpointer *iter)
 	}
 	// ran out of added methods, iteration is finished.
 	return NULL;
+}
+
+static MonoClassField *
+hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy G_GNUC_UNUSED, gpointer *iter)
+{
+	MonoClassMetadataUpdateInfo *info = mono_class_get_metadata_update_info (klass);
+	if (!info)
+		return NULL;
+
+	/* FIXME: this needs locking in the multi-threaded case.  There could be an update happening that resizes the array. */
+	GPtrArray *added_fields = info->added_fields;
+	uint32_t count = added_fields->len;
+
+	// invariant: idx is one past the field we previously returned.
+	uint32_t idx = GPOINTER_TO_UINT(*iter);
+
+	g_assert (idx >= mono_class_get_field_count (klass));
+
+	uint32_t field_idx = idx - mono_class_get_field_count (klass);
+	
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Iterating added fields of 0x%08x idx = %u", m_class_get_type_token (klass), field_idx);
+
+	// if the field index is one past the last added field, we're done
+	if (field_idx == count)
+		return NULL;
+	g_assert (field_idx < count);
+	MonoClassMetadataUpdateField *field = g_ptr_array_index (added_fields, field_idx);
+
+	idx++;
+	*iter = GUINT_TO_POINTER (idx);
+	return &field->field;
 }

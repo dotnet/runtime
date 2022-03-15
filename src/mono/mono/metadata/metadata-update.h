@@ -79,4 +79,7 @@ mono_metadata_update_get_static_field_addr (MonoClassField *field);
 MonoMethod *
 mono_metadata_update_added_methods_iter (MonoClass *klass, gpointer *iter);
 
+MonoClassField *
+mono_metadata_update_added_fields_iter (MonoClass *klass, gboolean lazy, gpointer *iter);
+
 #endif /*__MONO_METADATA_UPDATE_H__*/
