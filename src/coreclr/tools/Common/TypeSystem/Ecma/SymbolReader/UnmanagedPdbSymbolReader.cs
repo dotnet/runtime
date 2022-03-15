@@ -1065,13 +1065,19 @@ namespace Internal.TypeSystem.Ecma
                     var func = (delegate* unmanaged<IntPtr, IntPtr*, int*, int*, bool*, int>)(*(*(void***)Inst + 11));
                     var handle = GCHandle.Alloc(documents, GCHandleType.Pinned);
                     int hr;
-                    fixed (int* linesPtr = lines)
-                    fixed (int* columnsPtr = columns)
-                    fixed (bool* definedPtr = &defined)
+                    try
                     {
-                        hr = func(Inst, (IntPtr*)handle.AddrOfPinnedObject(), linesPtr, columnsPtr, definedPtr);
+                        fixed (int* linesPtr = lines)
+                        fixed (int* columnsPtr = columns)
+                        fixed (bool* definedPtr = &defined)
+                        {
+                            hr = func(Inst, (IntPtr*)handle.AddrOfPinnedObject(), linesPtr, columnsPtr, definedPtr);
+                        }
                     }
-                    handle.Free();
+                    finally
+                    {
+                        handle.Free();
+                    }
                     return hr;
                 }
 
@@ -1154,9 +1160,6 @@ namespace Internal.TypeSystem.Ecma
             {
                 private bool _disposed = false;
 
-                // This is not actually called in any code path right now. Rather than implement this
-                // without testing, it's been lefted throwing an exception. If this code path is ever
-                // reached, it can be implemented and tested.
                 public unsafe int GetMethod(int methodToken, out ISymUnmanagedMethod? method)
                 {
                     // ISymUnmanagedReader::GetMethod is slot 7 (0-based)
