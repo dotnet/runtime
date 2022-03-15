@@ -246,7 +246,7 @@ namespace System.IO
                     uint flags = hidden ? _fileCache.UserFlags | (uint)Interop.Sys.UserFlags.UF_HIDDEN :
                                           _fileCache.UserFlags & ~(uint)Interop.Sys.UserFlags.UF_HIDDEN;
                     int rv = handle is not null ? Interop.Sys.FChflags(handle, flags) :
-                                                  Interop.Sys.LChflags(path!, flags);
+                                                  Interop.Sys.LChflags(path, flags);
                     Interop.CheckIo(rv, path, asDirectory);
                 }
             }
