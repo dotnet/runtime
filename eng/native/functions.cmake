@@ -143,8 +143,38 @@ function(preprocess_file inputFilename outputFilename)
                               PROPERTIES GENERATED TRUE)
 endfunction()
 
-# preprocess_compile_asm(TARGET target ASM_FILES file1 [file2 ...] OUTPUT_OBJECTS [variableName])
-function(preprocess_compile_asm)
+# preprocess_files(PreprocessedFilesList [fileToPreprocess1 [fileToPreprocess2 ...]])
+function(preprocess_files PreprocessedFilesList)
+  set(FilesToPreprocess ${ARGN})
+  foreach(ASM_FILE IN LISTS FilesToPreprocess)
+    # Inserts a custom command in CMake build to preprocess each asm source file
+    get_filename_component(name ${ASM_FILE} NAME_WE)
+    file(TO_CMAKE_PATH "${CMAKE_CURRENT_BINARY_DIR}/${name}.asm" ASM_PREPROCESSED_FILE)
+    preprocess_file(${ASM_FILE} ${ASM_PREPROCESSED_FILE})
+    list(APPEND PreprocessedFiles ${ASM_PREPROCESSED_FILE})
+  endforeach()
+  set(${PreprocessedFilesList} ${PreprocessedFiles} PARENT_SCOPE)
+endfunction()
+
+function(set_exports_linker_option exports_filename)
+    if(LD_GNU OR LD_SOLARIS)
+        # Add linker exports file option
+        if(LD_SOLARIS)
+            set(EXPORTS_LINKER_OPTION -Wl,-M,${exports_filename} PARENT_SCOPE)
+        else()
+            set(EXPORTS_LINKER_OPTION -Wl,--version-script=${exports_filename} PARENT_SCOPE)
+        endif()
+    elseif(LD_OSX)
+        # Add linker exports file option
+        set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${exports_filename} PARENT_SCOPE)
+    endif()
+endfunction()
+
+# compile_asm(TARGET target ASM_FILES file1 [file2 ...] OUTPUT_OBJECTS [variableName])
+# CMake does not support the ARM or ARM64 assemblers on Windows when using the
+# MSBuild generator. When the MSBuild generator is in use, we manually compile the assembly files
+# using this function.
+function(compile_asm)
   set(options "")
   set(oneValueArgs TARGET OUTPUT_OBJECTS)
   set(multiValueArgs ASM_FILES)
@@ -155,10 +185,7 @@ function(preprocess_compile_asm)
   set (ASSEMBLED_OBJECTS "")
 
   foreach(ASM_FILE ${COMPILE_ASM_ASM_FILES})
-    # Inserts a custom command in CMake build to preprocess each asm source file
     get_filename_component(name ${ASM_FILE} NAME_WE)
-    file(TO_CMAKE_PATH "${CMAKE_CURRENT_BINARY_DIR}/${name}.asm" ASM_PREPROCESSED_FILE)
-    preprocess_file(${ASM_FILE} ${ASM_PREPROCESSED_FILE})
 
     # Produce object file where CMake would store .obj files for an OBJECT library.
     # ex: artifacts\obj\coreclr\Windows_NT.arm64.Debug\src\vm\wks\cee_wks.dir\Debug\AsmHelpers.obj
@@ -166,9 +193,9 @@ function(preprocess_compile_asm)
 
     # Need to compile asm file using custom command as include directories are not provided to asm compiler
     add_custom_command(OUTPUT ${OBJ_FILE}
-                        COMMAND "${CMAKE_ASM_MASM_COMPILER}" -g ${ASM_INCLUDE_DIRECTORIES} -o ${OBJ_FILE} ${ASM_PREPROCESSED_FILE}
-                        DEPENDS ${ASM_PREPROCESSED_FILE}
-                        COMMENT "Assembling ${ASM_PREPROCESSED_FILE} ---> \"${CMAKE_ASM_MASM_COMPILER}\" -g ${ASM_INCLUDE_DIRECTORIES} -o ${OBJ_FILE} ${ASM_PREPROCESSED_FILE}")
+                        COMMAND "${CMAKE_ASM_COMPILER}" -g ${ASM_INCLUDE_DIRECTORIES} -o ${OBJ_FILE} ${ASM_FILE}
+                        DEPENDS ${ASM_FILE}
+                        COMMENT "Assembling ${ASM_FILE} ---> \"${CMAKE_ASM_COMPILER}\" -g ${ASM_INCLUDE_DIRECTORIES} -o ${OBJ_FILE} ${ASM_FILE}")
 
     # mark obj as source that does not require compile
     set_source_files_properties(${OBJ_FILE} PROPERTIES EXTERNAL_OBJECT TRUE)
