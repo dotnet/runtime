@@ -3717,10 +3717,6 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (!strcmp (class_ns, "System.Numerics") && !strcmp (class_name, "Vector")){
 		return emit_sri_vector (cfg, cmethod, fsig, args);
 	}
-
-	if (!strcmp (class_ns, "System.Numerics") && !strcmp (class_name, "Vector`1")){
-		return emit_vector64_vector128_t (cfg, cmethod, fsig, args);
-	}
 #endif // defined(TARGET_ARM64)
 
 	return emit_simd_intrinsics (class_ns, class_name, cfg, cmethod, fsig, args);
