@@ -2796,7 +2796,7 @@ void DacDbiInterfaceImpl::GetMethodDescParams(
     *pcGenericClassTypeParams = cGenericClassTypeParams;
 
     TypeHandle   thSpecificClass;
-    MethodDesc * pSpecificMethod;
+    MethodDesc * pSpecificMethod = NULL;
 
     // Try to retrieve a more specific MethodDesc and TypeHandle via the generics type token.
     // The generics token is not always guaranteed to be available.

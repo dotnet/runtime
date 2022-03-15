@@ -2726,7 +2726,7 @@ HRESULT CordbRefEnum::Next(ULONG celt, COR_GC_REFERENCE refs[], ULONG *pceltFetc
                     {
                         CordbAppDomain *pDomain = process->LookupOrCreateAppDomain(dacRefs[i].vmDomain);
 
-                        ICorDebugAppDomain *pAppDomain;
+                        ICorDebugAppDomain *pAppDomain = NULL;
                         ICorDebugValue *pOutObject = NULL;
                         if (dacRefs[i].pObject & 1)
                         {
@@ -11468,7 +11468,7 @@ void CordbWin32EventThread::Win32EventLoop()
         rghWaitSet[0] = m_threadControlEvent;
 
         DWORD dwWaitTimeout = INFINITE;
-
+        event = {};
         if (m_pProcess != NULL)
         {
             // Process is always built on Native debugging pipeline, so it needs to always be prepared to call WFDE

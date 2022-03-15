@@ -3333,8 +3333,8 @@ void PrettyPrintOverrideDecl(ULONG i, __inout __nullterminated char* szString, v
         // In that case the full "method" syntax must be used
         if ((TypeFromToken(tkOverrider) == mdtMethodDef) && !needsFullTokenPrint)
         {
-            PCCOR_SIGNATURE pComSigDecl;
-            ULONG cComSigDecl;
+            PCCOR_SIGNATURE pComSigDecl = NULL;
+            ULONG cComSigDecl = 0;
             mdToken tkDeclSigTok = tkDecl;
             bool successfullyGotDeclSig = false;
             bool successfullyGotBodySig = false;
