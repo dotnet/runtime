@@ -2534,10 +2534,6 @@ namespace System.Security.Cryptography.X509Certificates
         public void AddCountryOrRegion(string twoLetterCode) { }
         public void AddDomainComponent(string domainComponent) { }
         public void AddEmailAddress(string emailAddress) { }
-        public void AddEncoded(System.Security.Cryptography.Oid oid, byte[] encodedValue) { }
-        public void AddEncoded(System.Security.Cryptography.Oid oid, System.ReadOnlySpan<byte> encodedValue) { }
-        public void AddEncoded(string oidValue, byte[] encodedValue) { }
-        public void AddEncoded(string oidValue, System.ReadOnlySpan<byte> encodedValue) { }
         public void AddLocalityName(string localityName) { }
         public void AddOrganizationalUnitName(string organizationalUnitName) { }
         public void AddOrganizationName(string organizationName) { }

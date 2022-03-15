@@ -102,102 +102,6 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         /// <summary>
-        /// Adds a Relative Distinguished Name attribute identified by an OID.
-        /// </summary>
-        /// <param name="oidValue">The OID of the attribute.</param>
-        /// <param name="encodedValue">The pre-encoded value of the attribute.</param>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="oidValue" /> or <paramref name="encodedValue" /> is <see langword="null" />.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        /// <para>
-        ///   <paramref name="oidValue" /> is an empty string or not a valid OID.
-        /// </para>
-        /// <para>-or-</para>
-        /// <para>
-        ///   <paramref name="encodedValue" /> does not contain valid ASN.1 as defined by the Distinguished Encoding Rules (DER).
-        /// </para>
-        /// </exception>
-        public void AddEncoded(string oidValue, byte[] encodedValue!!)
-        {
-            ArgumentException.ThrowIfNullOrEmpty(oidValue);
-            EncodeComponent(oidValue, encodedValue);
-        }
-
-        /// <summary>
-        /// Adds a Relative Distinguished Name attribute identified by an OID.
-        /// </summary>
-        /// <param name="oidValue">The OID of the attribute.</param>
-        /// <param name="encodedValue">The pre-encoded value of the attribute.</param>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="oidValue" /> is <see langword="null" />.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        /// <para>
-        ///   <paramref name="oidValue" /> is an empty string or not a valid OID.
-        /// </para>
-        /// <para>-or-</para>
-        /// <para>
-        ///   <paramref name="encodedValue" /> does not contain valid ASN.1 as defined by the Distinguished Encoding Rules (DER).
-        /// </para>
-        /// </exception>
-        public void AddEncoded(string oidValue, ReadOnlySpan<byte> encodedValue)
-        {
-            ArgumentException.ThrowIfNullOrEmpty(oidValue);
-            EncodeComponent(oidValue, encodedValue);
-        }
-
-        /// <summary>
-        /// Adds a Relative Distinguished Name attribute identified by an OID.
-        /// </summary>
-        /// <param name="oid">The OID of the attribute.</param>
-        /// <param name="encodedValue">The pre-encoded value of the attribute.</param>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="oid" /> or <paramref name="encodedValue" /> is <see langword="null" />.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        /// <para>
-        ///   <paramref name="oid" /> does not contain a valid OID.
-        /// </para>
-        /// <para>-or-</para>
-        /// <para>
-        ///   <paramref name="encodedValue" /> does not contain valid ASN.1 as defined by the Distinguished Encoding Rules (DER).
-        /// </para>
-        /// </exception>
-        public void AddEncoded(Oid oid!!, byte[] encodedValue!!)
-        {
-            if (string.IsNullOrEmpty(oid.Value))
-                throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "oid.Value"), nameof(oid));
-
-            EncodeComponent(oid.Value, encodedValue);
-        }
-
-        /// <summary>
-        /// Adds a Relative Distinguished Name attribute identified by an OID.
-        /// </summary>
-        /// <param name="oid">The OID of the attribute.</param>
-        /// <param name="encodedValue">The pre-encoded value of the attribute.</param>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="oid" /> is <see langword="null" />.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        /// <para>
-        ///   <paramref name="oid" /> does not contain a valid OID.
-        /// </para>
-        /// <para>-or-</para>
-        /// <para>
-        ///   <paramref name="encodedValue" /> does not contain valid ASN.1 as defined by the Distinguished Encoding Rules (DER).
-        /// </para>
-        /// </exception>
-        public void AddEncoded(Oid oid!!, ReadOnlySpan<byte> encodedValue)
-        {
-            if (string.IsNullOrEmpty(oid.Value))
-                throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "oid.Value"), nameof(oid));
-
-            EncodeComponent(oid.Value, encodedValue);
-        }
-
-        /// <summary>
         /// Adds an email address attribute.
         /// </summary>
         /// <param name="emailAddress">The email address to add.</param>
@@ -478,29 +382,6 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_Asn1_InvalidStringContents, stringEncodingType), paramName);
                 }
-            }
-
-            _encodedComponents.Add(_writer.Encode());
-        }
-
-        private void EncodeComponent(
-            string oid,
-            ReadOnlySpan<byte> value,
-            [CallerArgumentExpression("value")] string? valueParamName = null)
-        {
-            if (!AsnDecoder.TryReadEncodedValue(value, AsnEncodingRules.DER, out _, out _, out _, out int bytesConsumed) ||
-                bytesConsumed != value.Length)
-            {
-                throw new ArgumentException(SR.Argument_Asn1_InvalidDer, valueParamName);
-            }
-
-            _writer.Reset();
-
-            using (_writer.PushSetOf())
-            using (_writer.PushSequence())
-            {
-                _writer.WriteObjectIdentifier(oid);
-                _writer.WriteEncodedValue(value);
             }
 
             _encodedComponents.Add(_writer.Encode());
