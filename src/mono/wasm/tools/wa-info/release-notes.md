@@ -1,3 +1,10 @@
+### Release version 0.0.6
+
+Changes:
+
+ * improve SIMD support
+ * add exception handling support - instructions
+
 ### Release version 0.0.5
 
 Changes:
