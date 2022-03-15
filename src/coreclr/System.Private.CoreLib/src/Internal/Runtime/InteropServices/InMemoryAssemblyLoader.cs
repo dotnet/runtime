@@ -24,13 +24,14 @@ namespace Internal.Runtime.InteropServices
         /// </summary>
         /// <param name="moduleHandle">The native module handle for the assembly.</param>
         /// <param name="assemblyPath">The path to the assembly (as a pointer to a UTF-16 C string).</param>
-        [RequiresUnreferencedCode("C++/CLI is not trim-compatible", Url = "https://aka.ms/dotnet-illink/nativehost")]
         public static unsafe void LoadInMemoryAssembly(IntPtr moduleHandle, IntPtr assemblyPath)
         {
             if (!IsSupported)
                 throw new NotSupportedException("This API is not enabled in trimmed scenarios. see https://aka.ms/dotnet-illink/nativehost for more details");
 
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
             LoadInMemoryAssemblyInContextImpl(moduleHandle, assemblyPath);
+#pragma warning restore IL2026
         }
 
         /// <summary>
@@ -41,7 +42,8 @@ namespace Internal.Runtime.InteropServices
         /// <param name="assemblyPath">The path to the assembly (as a pointer to a UTF-16 C string).</param>
         /// <param name="loadContext">Load context (currently must be IntPtr.Zero)</param>
         [UnmanagedCallersOnly]
-        [RequiresUnreferencedCode("C++/CLI is not trim-compatible", Url = "https://aka.ms/dotnet-illink/nativehost")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The same C++/CLI feature switch applies to LoadInMemoryAssembly and this function. We rely on the warning from LoadInMemoryAssembly.")]
         internal static unsafe void LoadInMemoryAssemblyInContext(IntPtr moduleHandle, IntPtr assemblyPath, IntPtr loadContext)
         {
             if (!IsSupported)

@@ -46,7 +46,7 @@ pal::hresult_t get_load_in_memory_assembly_delegate(pal::dll_t handle, load_in_m
         return status;
 
     return get_function_pointer(
-        _X("Internal.Runtime.InteropServices.InMemoryAssemblyLoader"),
+        _X("Internal.Runtime.InteropServices.InMemoryAssemblyLoader, System.Private.CoreLib"),
         _X("LoadInMemoryAssemblyInContext"),
         UNMANAGEDCALLERSONLY_METHOD,
         nullptr, // load context
