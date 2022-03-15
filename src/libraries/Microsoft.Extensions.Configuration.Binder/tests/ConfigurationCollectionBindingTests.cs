@@ -1246,7 +1246,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
         private class CustomListIndirectlyDerivedFromIEnumerable : IDerivedOne
         {
-            private readonly List<string> _items = new List<string> {"Item1", "Item2"};
+            private readonly List<string> _items = new List<string> { "Item1", "Item2" };
 
             public IEnumerator<string> GetEnumerator() => _items.GetEnumerator();
 
