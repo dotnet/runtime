@@ -10,9 +10,10 @@ using System.Runtime.InteropServices;
 
 public unsafe class Runtime_66585
 {
-    public static unsafe void Main()
+    public static unsafe int Main()
     {
         GetCaller()(0, 1, 2, 3);
+        return 100;
     }
 
     private static SLarge s_s;
