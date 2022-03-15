@@ -151,7 +151,11 @@ namespace Microsoft.Extensions.Caching.Memory
                         if (_options.SizeLimit.HasValue)
                         {
                             // The prior entry was removed, decrease the by the prior entry's size
-                            Interlocked.Add(ref coherentState._cacheSize, -priorEntry.Size!.Value);
+                            lock (coherentState._sync)
+                            {
+                                coherentState._cacheCount--;
+                                coherentState._cacheSize -= priorEntry.Size!.Value;
+                            }
                         }
                     }
                     else
@@ -172,7 +176,11 @@ namespace Microsoft.Extensions.Caching.Memory
                     if (_options.SizeLimit.HasValue)
                     {
                         // Entry could not be added, reset cache size
-                        Interlocked.Add(ref coherentState._cacheSize, -entry.Size!.Value);
+                        lock (coherentState._sync)
+                        {
+                            coherentState._cacheCount--;
+                            coherentState._cacheSize -= entry.Size!.Value;
+                        }
                     }
                     entry.SetExpired(EvictionReason.Replaced);
                     entry.InvokeEvictionCallbacks();
@@ -264,7 +272,11 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 if (_options.SizeLimit.HasValue)
                 {
-                    Interlocked.Add(ref coherentState._cacheSize, -entry.Size!.Value);
+                    lock (coherentState._sync)
+                    {
+                        coherentState._cacheCount--;
+                        coherentState._cacheSize -= entry.Size!.Value;
+                    }
                 }
 
                 entry.SetExpired(EvictionReason.Removed);
@@ -293,14 +305,27 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             lock (_sync)
             {
-                var currentStatistics = new MemoryCacheStatistics()
+                if (_options.SizeLimit.HasValue)
+                {
+                    lock (_coherentState._sync)
+                    {
+                        return new MemoryCacheStatistics()
+                        {
+                            TotalRequests = _totalRequests,
+                            TotalHits = _totalHits,
+                            CurrentEntryCount = _coherentState._cacheCount,
+                            CurrentSize = Size
+                        };
+                    }
+                }
+
+                return new MemoryCacheStatistics()
                 {
                     TotalRequests = _totalRequests,
                     TotalHits = _totalHits,
                     CurrentEntryCount = Count,
-                    CurrentSize = Size
+                    CurrentSize = null
                 };
-                return currentStatistics;
             }
 
         }
@@ -364,9 +389,13 @@ namespace Microsoft.Extensions.Caching.Memory
                     return true;
                 }
 
-                if (sizeRead == Interlocked.CompareExchange(ref coherentState._cacheSize, newSize, sizeRead))
+                lock (coherentState._sync)
                 {
-                    return false;
+                    if (sizeRead == Interlocked.CompareExchange(ref coherentState._cacheSize, newSize, sizeRead))
+                    {
+                        coherentState._cacheCount++;
+                        return false;
+                    }
                 }
             }
 
@@ -530,6 +559,8 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             internal ConcurrentDictionary<object, CacheEntry> _entries = new ConcurrentDictionary<object, CacheEntry>();
             internal long _cacheSize;
+            internal long _cacheCount;
+            internal readonly object _sync = new object();
 
             private ICollection<KeyValuePair<object, CacheEntry>> EntriesCollection => _entries;
 
@@ -543,7 +574,11 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     if (options.SizeLimit.HasValue)
                     {
-                        Interlocked.Add(ref _cacheSize, -entry.Size!.Value);
+                        lock (_sync)
+                        {
+                            _cacheCount--;
+                            _cacheSize -= entry.Size!.Value;
+                        }
                     }
                     entry.InvokeEvictionCallbacks();
                 }
