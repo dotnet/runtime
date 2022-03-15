@@ -188,3 +188,9 @@ mono_metadata_update_get_typedef_skeleton (MonoImage *base_image, uint32_t typed
 {
 	return mono_component_hot_reload()->get_typedef_skeleton (base_image, typedef_token, first_method_idx, method_count, first_field_idx, field_count);
 }
+
+MonoMethod *
+mono_metadata_update_added_methods_iter (MonoClass *klass, gpointer *iter)
+{
+	return mono_component_hot_reload()->added_methods_iter (klass, iter);
+}

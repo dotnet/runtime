@@ -89,6 +89,8 @@ hot_reload_stub_find_method_by_name (MonoClass *klass, const char *name, int par
 static gboolean
 hot_reload_stub_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_method_idx, uint32_t *method_count,  uint32_t *first_field_idx, uint32_t *field_count);
 
+static MonoMethod *
+hot_reload_stub_added_methods_iter (MonoClass *klass, gpointer *iter);
 
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_stub_available },
@@ -116,6 +118,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_stub_get_static_field_addr,
 	&hot_reload_stub_find_method_by_name,
 	&hot_reload_stub_get_typedef_skeleton,
+	&hot_reload_stub_added_methods_iter,
 };
 
 static bool
@@ -272,6 +275,12 @@ static gboolean
 hot_reload_stub_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_method_idx, uint32_t *method_count,  uint32_t *first_field_idx, uint32_t *field_count)
 {
 	return FALSE;
+}
+
+static MonoMethod *
+hot_reload_stub_added_methods_iter (MonoClass *klass, gpointer *iter)
+{
+	return NULL;
 }
 
 
