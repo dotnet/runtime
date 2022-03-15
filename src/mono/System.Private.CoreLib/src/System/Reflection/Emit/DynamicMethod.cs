@@ -247,16 +247,17 @@ namespace System.Reflection.Emit
             return new object[] { new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags()) };
         }
 
-        public override object[] GetCustomAttributes(Type attributeType,
-                                  bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
-                return new object[] { new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags()) };
-            else
-                return Array.Empty<object>();
+            {
+                // avoid calling CreateInstance() in the common case where the type is Attribute
+                object[] result = attributeType == typeof(Attribute) ? new Attribute[1] : (object[])Array.CreateInstance(attributeType, 1);
+                result[0] = new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags());
+                return result;
+            }
+
+            return (object[])Array.CreateInstance(attributeType.IsValueType || attributeType.ContainsGenericParameters ? typeof(object) : attributeType, 0);
         }
 
         public DynamicILInfo GetDynamicILInfo()

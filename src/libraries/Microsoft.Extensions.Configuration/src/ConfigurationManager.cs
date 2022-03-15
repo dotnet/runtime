@@ -66,7 +66,8 @@ namespace Microsoft.Extensions.Configuration
 
         IDictionary<string, object> IConfigurationBuilder.Properties => _properties;
 
-        IList<IConfigurationSource> IConfigurationBuilder.Sources => _sources;
+        /// <inheritdoc />
+        public IList<IConfigurationSource> Sources => _sources;
 
         // We cannot track the duration of the reference to the providers if this property is used.
         // If a configuration source is removed after this is accessed but before it's completely enumerated,

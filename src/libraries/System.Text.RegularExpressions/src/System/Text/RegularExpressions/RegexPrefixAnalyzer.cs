@@ -564,8 +564,10 @@ namespace System.Text.RegularExpressions
                 return null;
             }
 
-            // Find the first concatenation.
-            while ((node.Kind is RegexNodeKind.Atomic or RegexNodeKind.Capture) || (node.Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop && node.M > 0))
+            // Find the first concatenation.  We traverse through atomic and capture nodes as they don't effect flow control.  (We don't
+            // want to explore loops, even if they have a guaranteed iteration, because we may use information about the node to then
+            // skip the node's execution in the matching algorithm, and we would need to special-case only skipping the first iteration.)
+            while (node.Kind is RegexNodeKind.Atomic or RegexNodeKind.Capture)
             {
                 node = node.Child(0);
             }

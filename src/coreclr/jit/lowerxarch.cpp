@@ -187,6 +187,12 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
         {
             return replacementNode->gtNext;
         }
+
+        replacementNode = TryLowerAndOpToExtractLowestSetBit(binOp);
+        if (replacementNode != nullptr)
+        {
+            return replacementNode->gtNext;
+        }
     }
 #endif
 
@@ -3821,6 +3827,84 @@ GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
     ContainCheckHWIntrinsic(blsrNode);
 
     return blsrNode;
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::TryLowerAndOpToExtractLowestSetIsolatedBit: Lowers a tree AND(X, NEG(X)) to
+// HWIntrinsic::ExtractLowestSetBit
+//
+// Arguments:
+//    andNode - GT_AND node of integral type
+//
+// Return Value:
+//    Returns the replacement node if one is created else nullptr indicating no replacement
+//
+// Notes:
+//    Performs containment checks on the replacement node if one is created
+GenTree* Lowering::TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode)
+{
+    GenTree* opNode  = nullptr;
+    GenTree* negNode = nullptr;
+    if (andNode->gtGetOp1()->OperIs(GT_NEG))
+    {
+        negNode = andNode->gtGetOp1();
+        opNode  = andNode->gtGetOp2();
+    }
+    else if (andNode->gtGetOp2()->OperIs(GT_NEG))
+    {
+        negNode = andNode->gtGetOp2();
+        opNode  = andNode->gtGetOp1();
+    }
+
+    if (opNode == nullptr)
+    {
+        return nullptr;
+    }
+
+    GenTree* negOp = negNode->AsUnOp()->gtGetOp1();
+    if (!negOp->OperIs(GT_LCL_VAR) || !opNode->OperIs(GT_LCL_VAR) ||
+        (negOp->AsLclVar()->GetLclNum() != opNode->AsLclVar()->GetLclNum()))
+    {
+        return nullptr;
+    }
+
+    NamedIntrinsic intrinsic;
+    if (andNode->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64))
+    {
+        intrinsic = NamedIntrinsic::NI_BMI1_X64_ExtractLowestSetBit;
+    }
+    else if (comp->compOpportunisticallyDependsOn(InstructionSet_BMI1))
+    {
+        intrinsic = NamedIntrinsic::NI_BMI1_ExtractLowestSetBit;
+    }
+    else
+    {
+        return nullptr;
+    }
+
+    LIR::Use use;
+    if (!BlockRange().TryGetUse(andNode, &use))
+    {
+        return nullptr;
+    }
+
+    GenTreeHWIntrinsic* blsiNode = comp->gtNewScalarHWIntrinsicNode(andNode->TypeGet(), opNode, intrinsic);
+
+    JITDUMP("Lower: optimize AND(X, NEG(X)))\n");
+    DISPNODE(andNode);
+    JITDUMP("to:\n");
+    DISPNODE(blsiNode);
+
+    use.ReplaceWith(blsiNode);
+
+    BlockRange().InsertBefore(andNode, blsiNode);
+    BlockRange().Remove(andNode);
+    BlockRange().Remove(negNode);
+    BlockRange().Remove(negOp);
+
+    ContainCheckHWIntrinsic(blsiNode);
+
+    return blsiNode;
 }
 
 //----------------------------------------------------------------------------------------------

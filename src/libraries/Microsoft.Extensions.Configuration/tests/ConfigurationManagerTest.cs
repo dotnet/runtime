@@ -1184,6 +1184,38 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Same(config, ((IConfigurationBuilder)config).Build());
         }
 
+        [Fact]
+        public void ClearConfigurationSources()
+        {
+            // Arrange
+            var dic1 = new Dictionary<string, string>()
+            {
+                {"Mem1:KeyInMem1", "ValueInMem1"},
+            };
+            var dic2 = new Dictionary<string, string>()
+            {
+                {"Mem2:KeyInMem2", "ValueInMem2"},
+            };
+
+            var memConfigSrc1 = new MemoryConfigurationSource { InitialData = dic1 };
+            var memConfigSrc2 = new MemoryConfigurationSource { InitialData = dic2 };
+
+            var config = new ConfigurationManager();
+            IConfigurationBuilder configurationBuilder = config;
+
+            configurationBuilder.Add(memConfigSrc1);
+            configurationBuilder.Add(memConfigSrc2);
+
+            // Act
+            config.Sources.Clear();
+
+            // Assert
+            Assert.DoesNotContain(memConfigSrc1, config.Sources);
+            Assert.DoesNotContain(memConfigSrc2, config.Sources);
+            Assert.Null(config["Mem1:KeyInMem1"]);
+            Assert.Null(config["Mem2:KeyInMem2"]);
+        }
+
         private static string Get(IConfigurationProvider provider, string key)
         {
             string value;
