@@ -84,7 +84,7 @@ namespace Microsoft.Interop
         /// <returns>The resolved managed type, or <paramref name="managedType"/> if the provided type did not have any placeholders.</returns>
         public static ITypeSymbol? ResolveManagedType(ITypeSymbol? managedType, INamedTypeSymbol marshallerType, Compilation compilation)
         {
-            if (managedType is null or INamedTypeSymbol || !marshallerType.IsGenericType)
+            if (managedType is null || !marshallerType.IsGenericType)
             {
                 return managedType;
             }

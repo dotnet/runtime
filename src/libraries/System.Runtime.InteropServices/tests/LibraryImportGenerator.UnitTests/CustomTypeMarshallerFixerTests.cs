@@ -1446,6 +1446,22 @@ struct Native
         }
 
         [ConditionalFact]
+        public async Task CustomTypeMarshallerForTypeWithPlaceholder_DoesNotReportDiagnostic()
+        {
+            string source = @"
+using System;
+using System.Runtime.InteropServices;
+
+[CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder), Direction = CustomTypeMarshallerDirection.In)]
+struct Native<T>
+{
+    public Native(T a) {}
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(source, source);
+        }
+
+        [ConditionalFact]
         public async Task CustomTypeMarshallerForArrayTypeWithPlaceholder_DoesNotReportDiagnostic()
         {
             string source = @"
