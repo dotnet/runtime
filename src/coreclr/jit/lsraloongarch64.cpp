@@ -1189,7 +1189,24 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         switch (blkNode->gtBlkOpKind)
         {
             case GenTreeBlk::BlkOpKindUnroll:
-                break;
+            {
+                if (dstAddr->isContained())
+                {
+                    // Since the dstAddr is contained the address will be computed in CodeGen.
+                    // This might require an integer register to store the value.
+                    buildInternalIntRegisterDefForNode(blkNode);
+                }
+
+                const bool isDstRegAddrAlignmentKnown = dstAddr->OperIsLocalAddr();
+
+                if (isDstRegAddrAlignmentKnown && (size > FP_REGSIZE_BYTES))
+                {
+                    // TODO-LoongArch64: For larger block sizes CodeGen can choose to use 16-byte SIMD instructions.
+                    // here just used a temp register.
+                    buildInternalFloatRegisterDefForNode(blkNode);
+                }
+            }
+            break;
 
             case GenTreeBlk::BlkOpKindHelper:
                 assert(!src->isContained());
@@ -1222,7 +1239,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             if (size >= 2 * REGSIZE_BYTES)
             {
                 // TODO-LoongArch64: We will use ld/st paired to reduce code size and improve performance
-                // so we need to reserve an extra internal register
+                // so we need to reserve an extra internal register.
                 buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
             }
 
@@ -1243,8 +1260,27 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             switch (blkNode->gtBlkOpKind)
             {
                 case GenTreeBlk::BlkOpKindUnroll:
+                {
                     buildInternalIntRegisterDefForNode(blkNode);
-                    break;
+
+                    const bool isSrcAddrLocal = src->OperIs(GT_LCL_VAR, GT_LCL_FLD) ||
+                                                ((srcAddrOrFill != nullptr) && srcAddrOrFill->OperIsLocalAddr());
+                    const bool isDstAddrLocal = dstAddr->OperIsLocalAddr();
+
+                    // TODO-LoongArch64: using 16-byte SIMD instructions.
+                    const bool srcAddrMayNeedReg =
+                        isSrcAddrLocal || ((srcAddrOrFill != nullptr) && srcAddrOrFill->isContained());
+                    const bool dstAddrMayNeedReg = isDstAddrLocal || dstAddr->isContained();
+
+                    // The following allocates an additional integer register in a case
+                    // when a load instruction and a store instruction cannot be encoded using offset
+                    // from a corresponding base register.
+                    if (srcAddrMayNeedReg && dstAddrMayNeedReg)
+                    {
+                        buildInternalIntRegisterDefForNode(blkNode);
+                    }
+                }
+                break;
 
                 case GenTreeBlk::BlkOpKindHelper:
                     dstAddrRegMask = RBM_ARG_0;

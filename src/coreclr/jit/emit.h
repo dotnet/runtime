@@ -597,7 +597,7 @@ protected:
         // TODO-LoongArch64: not include SIMD-vector.
         static_assert_no_msg(INS_count <= 512);
         instruction _idIns : 9;
-#else  // !(defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#else
         static_assert_no_msg(INS_count <= 256);
         instruction _idIns : 8;
 #endif // !(defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))

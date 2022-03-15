@@ -98,7 +98,7 @@
   #define REG_CALLEE_SAVED_ORDER   REG_S0,REG_S1,REG_S2,REG_S3,REG_S4,REG_S5,REG_S6,REG_S7,REG_S8
   #define RBM_CALLEE_SAVED_ORDER   RBM_S0,RBM_S1,RBM_S2,RBM_S3,RBM_S4,RBM_S5,RBM_S6,RBM_S7,RBM_S8
 
-  #define CNT_CALLEE_SAVED        (9)             //s0-s8, not including fp,ra.
+  #define CNT_CALLEE_SAVED        (10)             //s0-s8,fp.
   #define CNT_CALLEE_TRASH        (17)
   #define CNT_CALLEE_ENREG        (CNT_CALLEE_SAVED-1)
 

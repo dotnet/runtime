@@ -1048,14 +1048,12 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     {
                         firstAllocatedRegArgNum = varDscInfo->allocRegArg(arg2Type, 1);
                         varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, arg2Type));
-                        varDsc->lvIs4Field2            = (int)emitActualTypeSize(arg2Type) == 4 ? 1 : 0;
-                        varDscInfo->hasMultiSlotStruct = true;
+                        varDsc->lvIs4Field2 = (int)emitActualTypeSize(arg2Type) == 4 ? 1 : 0;
                     }
                     else if (cSlots > 1)
                     {
                         varDsc->lvIsSplit = 1;
                         varDsc->SetOtherArgReg(REG_STK);
-                        varDscInfo->hasMultiSlotStruct = true;
                         varDscInfo->setAllRegArgUsed(arg1Type);
                         varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
                     }
@@ -1066,7 +1064,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     if (cSlots == 2)
                     {
                         varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_I_IMPL));
-                        varDscInfo->hasMultiSlotStruct = true;
                     }
                 }
             }
