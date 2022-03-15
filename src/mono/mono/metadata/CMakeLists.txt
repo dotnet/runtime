@@ -22,13 +22,13 @@ set(ilgen_base_sources
     sgen-mono-ilgen.h)
 
 if(NOT ENABLE_ILGEN)
-addprefix(mono_ilgen_sources ../metadata "${ilgen_base_sources}")
-set_source_files_properties(${mono_ilgen_sources} PROPERTIES COMPILE_DEFINITIONS "HAVE_SGEN_GC")
-add_library(mono-ilgen STATIC "${mono_ilgen_sources}")
-target_link_libraries(mono-ilgen monoapi)
-install(TARGETS mono-ilgen LIBRARY)
+    addprefix(mono_ilgen_sources ../metadata "${ilgen_base_sources}")
+    set_source_files_properties(${mono_ilgen_sources} PROPERTIES COMPILE_DEFINITIONS "HAVE_SGEN_GC")
+    add_library(mono-ilgen STATIC "${mono_ilgen_sources}")
+    target_link_libraries(mono-ilgen monoapi)
+    install(TARGETS mono-ilgen LIBRARY)
 else()
-set(ilgen_sources ${ilgen_base_sources})
+    set(ilgen_sources ${ilgen_base_sources})
 endif()
 
 set(metadata_win32_sources
@@ -85,6 +85,7 @@ set(metadata_common_sources
     exception-internals.h
     w32file.h
     gc-internals.h
+    gc_wrapper.h
     icall.c
     icall-internals.h
     icall-def.h
@@ -192,23 +193,30 @@ set(metadata_gc_dependent_sources
      gc.c
      monitor.c)
 
-set(metadata_sgen_sources
-    sgen-bridge.c
-    sgen-bridge-internals.h
-    sgen-old-bridge.c
-    sgen-new-bridge.c
-    sgen-tarjan-bridge.c
-    sgen-toggleref.c
-    sgen-toggleref.h
-    sgen-stw.c
-    sgen-mono.c
-    sgen-mono.h
-    sgen-client-mono.h)
+if(MONO_GC STREQUAL "sgen")
+    set(metadata_gc_sources
+        sgen-bridge.c
+        sgen-bridge-internals.h
+        sgen-old-bridge.c
+        sgen-new-bridge.c
+        sgen-tarjan-bridge.c
+        sgen-toggleref.c
+        sgen-toggleref.h
+        sgen-stw.c
+        sgen-mono.c
+        sgen-mono.h
+        sgen-client-mono.h)
+    set(metadata_compile_definitions "HAVE_SGEN_GC")
+elseif(MONO_GC STREQUAL "boehm")
+    set(metadata_gc_sources
+        boehm-gc.c)
+    set(metadata_compile_definitions "HAVE_BOEHM_GC")
+endif()
 
 addprefix(metadata_gc_dependent_real_sources ../metadata "${metadata_gc_dependent_sources}")
-addprefix(metadata_sgen_real_sources ../metadata "${metadata_sgen_sources}")
+addprefix(metadata_gc_real_sources ../metadata "${metadata_gc_sources}")
 addprefix(ilgen_real_sources ../metadata "${ilgen_sources}")
-set_source_files_properties(${metadata_sgen_real_sources};${metadata_gc_dependent_real_sources};${ilgen_real_sources} PROPERTIES COMPILE_DEFINITIONS "HAVE_SGEN_GC")
+set_source_files_properties(${metadata_gc_real_sources};${metadata_gc_dependent_real_sources};${ilgen_real_sources} PROPERTIES COMPILE_DEFINITIONS "${metadata_compile_definitions}")
 
 #
 # We localize the usage of MONO_BINDIR etc. to just one source file, thus enabling
@@ -221,5 +229,4 @@ set(reloc_libdir "${CMAKE_INSTALL_LIBDIR}")
 
 set_source_files_properties(../metadata/mono-config-dirs.c PROPERTIES COMPILE_DEFINITIONS "MONO_BINDIR=\"${bindir}\";MONO_ASSEMBLIES=\"${assembliesdir}\";MONO_CFG_DIR=\"${confdir}\";MONO_RELOC_LIBDIR=\"../${reloc_libdir}\"")
 
-addprefix(metadata_sources ../metadata/ "${metadata_platform_sources};${metadata_common_sources};${metadata_gc_dependent_sources};${metadata_sgen_sources};${ilgen_sources}")
-
+addprefix(metadata_sources ../metadata/ "${metadata_platform_sources};${metadata_common_sources};${metadata_gc_dependent_sources};${metadata_gc_sources};${ilgen_sources}")

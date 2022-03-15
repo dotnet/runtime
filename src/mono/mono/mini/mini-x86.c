@@ -42,14 +42,6 @@
 #include "aot-runtime.h"
 #include "mini-runtime.h"
 
-#ifndef TARGET_WIN32
-#ifdef MONO_XEN_OPT
-static gboolean optimize_for_xen = TRUE;
-#else
-#define optimize_for_xen 0
-#endif
-#endif
-
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (math, "System", "Math")
 
 
@@ -2313,14 +2305,8 @@ mono_x86_emit_tls_get (guint8* code, int dreg, int tls_offset)
 		x86_patch (buf [0], code);
 	}
 #else
-	if (optimize_for_xen) {
-		x86_prefix (code, X86_GS_PREFIX);
-		x86_mov_reg_mem (code, dreg, 0, 4);
-		x86_mov_reg_membase (code, dreg, dreg, tls_offset, 4);
-	} else {
-		x86_prefix (code, X86_GS_PREFIX);
-		x86_mov_reg_mem (code, dreg, tls_offset, 4);
-	}
+	x86_prefix (code, X86_GS_PREFIX);
+	x86_mov_reg_mem (code, dreg, tls_offset, 4);
 #endif
 	return code;
 }
@@ -5478,16 +5464,6 @@ mono_arch_is_inst_imm (int opcode, int imm_opcode, gint64 imm)
 void
 mono_arch_finish_init (void)
 {
-	char *mono_no_tls = g_getenv ("MONO_NO_TLS");
-	if (!mono_no_tls) {
-#ifndef TARGET_WIN32
-#if MONO_XEN_OPT
-		optimize_for_xen = access ("/proc/xen", F_OK) == 0;
-#endif
-#endif
-	} else {
-		g_free (mono_no_tls);
-	}
 }
 
 // Linear handler, the bsearch head compare is shorter

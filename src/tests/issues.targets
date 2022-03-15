@@ -659,6 +659,21 @@
         </ExcludeList>
     </ItemGroup>
 
+    <!-- All OSX targets on CoreCLR Runtime -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsOSX)' == 'true' and '$(RuntimeFlavor)' == 'coreclr' ">
+        <ExcludeList Include="$(XunitTestBinBase)/profiler/eventpipe/eventpipe/*">
+            <Issue>https://github.com/dotnet/runtime/issues/66174</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- OSX x64 on CoreCLR Runtime -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsOSX)' == 'true' and '$(TargetArchitecture)' == 'x64' and '$(RuntimeFlavor)' == 'coreclr' ">
+    </ItemGroup>
+
+    <!-- OSX arm64 on CoreCLR Runtime -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsOSX)' == 'true' and '$(TargetArchitecture)' == 'arm64' and '$(RuntimeFlavor)' == 'coreclr' ">
+    </ItemGroup>
+
     <!-- Tests that need to be triaged for vararg usage as that is not supported -->
     <!-- Note these will only be excluded for unix platforms on all runtimes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' != 'true' ">

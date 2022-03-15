@@ -5552,7 +5552,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 			size = mono_marshal_type_size (field->type, info->fields [j].mspec,
 						       &align, TRUE, m_class_is_unicode (klass));
 			min_align = MAX (align, min_align);
-			info->fields [j].offset = field->offset - MONO_ABI_SIZEOF (MonoObject);
+			info->fields [j].offset = m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject);
 			info->native_size = MAX (info->native_size, info->fields [j].offset + size);
 			break;
 		}

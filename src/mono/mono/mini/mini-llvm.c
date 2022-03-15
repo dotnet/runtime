@@ -7331,7 +7331,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			// 256 == GS segment register
 			LLVMTypeRef ptrtype = LLVMPointerType (IntPtrType (), 256);
 #endif
-			// FIXME: XEN
 			values [ins->dreg] = LLVMBuildLoad (builder, LLVMBuildIntToPtr (builder, LLVMConstInt (IntPtrType (), ins->inst_offset, TRUE), ptrtype, ""), "");
 #elif defined(TARGET_AMD64) && defined(TARGET_OSX)
 			/* See mono_amd64_emit_tls_get () */
@@ -11001,6 +11000,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef lo = LLVMBuildExtractElement (builder, lhs, const_int32 (1), "");
 			LLVMValueRef result = LLVMBuildFAdd (builder, hi, lo, "arm64_faddp_scalar");
 			result = LLVMBuildInsertElement (builder, LLVMConstNull (ret_t), result, const_int32 (0), "");
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_ARM64_XADDV: {
+			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			LLVMTypeRef arg_t = LLVMTypeOf (lhs);
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (arg_t);
+			LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, &lhs, "arm64_xaddv");
 			values [ins->dreg] = result;
 			break;
 		}

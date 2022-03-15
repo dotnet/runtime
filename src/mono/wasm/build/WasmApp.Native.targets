@@ -158,7 +158,6 @@
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
       <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
       <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == ''">false</WasmEmitSymbolMap>
-      <WasmExceptionHandling Condition="'$(WasmExceptionHandling)' == ''">false</WasmExceptionHandling>
 
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
       <_WasmRuntimeICallTablePath>$(_WasmIntermediateOutputPath)runtime-icall-table.h</_WasmRuntimeICallTablePath>
@@ -367,14 +366,13 @@
     </ItemGroup>
   </Target>
 
-  <PropertyGroup>
-    <_WasmEHLib Condition="'$(WasmExceptionHandling)' == 'true'">libmono-wasm-eh-wasm.a</_WasmEHLib>
-    <_WasmEHLib Condition="'$(WasmExceptionHandling)' != 'true'">libmono-wasm-eh-js.a</_WasmEHLib>
-    <_WasmEHLibToExclude Condition="'$(WasmExceptionHandling)' == 'true'">libmono-wasm-eh-js.a</_WasmEHLibToExclude>
-    <_WasmEHLibToExclude Condition="'$(WasmExceptionHandling)' != 'true'">libmono-wasm-eh-wasm.a</_WasmEHLibToExclude>
-  </PropertyGroup>
-
   <Target Name="_WasmWriteRspFilesForLinking">
+	<PropertyGroup>
+      <_WasmEHLib Condition="'$(WasmExceptionHandling)' == 'true'">libmono-wasm-eh-wasm.a</_WasmEHLib>
+      <_WasmEHLib Condition="'$(WasmExceptionHandling)' != 'true'">libmono-wasm-eh-js.a</_WasmEHLib>
+      <_WasmEHLibToExclude Condition="'$(WasmExceptionHandling)' == 'true'">libmono-wasm-eh-js.a</_WasmEHLibToExclude>
+      <_WasmEHLibToExclude Condition="'$(WasmExceptionHandling)' != 'true'">libmono-wasm-eh-wasm.a</_WasmEHLibToExclude>
+	</PropertyGroup>
     <ItemGroup>
       <!-- order matters -->
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />

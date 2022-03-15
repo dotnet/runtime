@@ -15,13 +15,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Initializes the factory.</summary>
         public SymbolicRegexRunnerFactory(RegexTree regexTree, RegexOptions options, TimeSpan matchTimeout, CultureInfo culture)
         {
-            // RightToLeft and ECMAScript are currently not supported in conjunction with NonBacktracking.
-            if ((options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) != 0)
-            {
-                throw new NotSupportedException(
-                    SR.Format(SR.NotSupported_NonBacktrackingConflictingOption,
-                        (options & RegexOptions.RightToLeft) != 0 ? nameof(RegexOptions.RightToLeft) : nameof(RegexOptions.ECMAScript)));
-            }
+            Debug.Assert((options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) == 0);
 
             var converter = new RegexNodeConverter(culture, regexTree.CaptureNumberSparseMapping);
             CharSetSolver solver = CharSetSolver.Instance;

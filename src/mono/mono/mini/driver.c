@@ -1700,24 +1700,12 @@ mono_get_version_info (void)
 	g_string_append_printf (output, "\tSIGSEGV:       normal\n");
 #endif
 
-#ifdef HAVE_EPOLL
-	g_string_append_printf (output, "\tNotifications: epoll\n");
-#elif defined(HAVE_KQUEUE)
-	g_string_append_printf (output, "\tNotification:  kqueue\n");
-#else
-	g_string_append_printf (output, "\tNotification:  Thread + polling\n");
-#endif
-
 	g_string_append_printf (output, "\tArchitecture:  %s\n", MONO_ARCHITECTURE);
 	g_string_append_printf (output, "\tDisabled:      %s\n", DISABLED_FEATURES);
 
 	g_string_append_printf (output, "\tMisc:          ");
 #ifdef MONO_SMALL_CONFIG
 	g_string_append_printf (output, "smallconfig ");
-#endif
-
-#ifdef MONO_BIG_ARRAYS
-	g_string_append_printf (output, "bigarrays ");
 #endif
 
 #if !defined(DISABLE_SDB)
@@ -1886,11 +1874,7 @@ mono_set_use_smp (int use_smp)
 #if HAVE_SCHED_SETAFFINITY
 	if (!use_smp) {
 		unsigned long proc_mask = 1;
-#ifdef GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY
-		sched_setaffinity (getpid(), (gpointer)&proc_mask);
-#else
 		sched_setaffinity (getpid(), sizeof (unsigned long), (const cpu_set_t *)&proc_mask);
-#endif
 	}
 #endif
 }
@@ -2104,20 +2088,6 @@ mono_main (int argc, char* argv[])
 
 	if (g_hasenv ("MONO_NO_SMP"))
 		mono_set_use_smp (FALSE);
-
-#ifdef MONO_JEMALLOC_ENABLED
-
-	gboolean use_jemalloc = FALSE;
-#ifdef MONO_JEMALLOC_DEFAULT
-	use_jemalloc = TRUE;
-#endif
-	if (!use_jemalloc)
-		use_jemalloc = g_hasenv ("MONO_USE_JEMALLOC");
-
-	if (use_jemalloc)
-		mono_init_jemalloc ();
-
-#endif
 
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
@@ -2516,7 +2486,7 @@ mono_main (int argc, char* argv[])
 		}
 	}
 
-#if defined(DISABLE_HW_TRAPS) || defined(MONO_ARCH_DISABLE_HW_TRAPS)
+#if defined(MONO_ARCH_DISABLE_HW_TRAPS)
 	// Signal handlers not available
 	{
 		MonoDebugOptions *opt = mini_get_debug_options ();

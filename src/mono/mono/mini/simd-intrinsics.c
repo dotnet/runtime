@@ -469,6 +469,39 @@ emit_xones (MonoCompile *cfg, MonoClass *klass)
 	return emit_simd_ins (cfg, klass, OP_XONES, -1, -1);
 }
 
+#ifdef TARGET_ARM64
+static int type_to_extract_op (MonoTypeEnum type);
+static MonoType* get_vector_t_elem_type (MonoType *vector_type);
+
+static MonoInst*
+emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_type, MonoInst *arg)
+{
+	MonoClass *vector_class = mono_class_from_mono_type_internal (vector_type);
+	int vector_size = mono_class_value_size (vector_class, NULL);
+	MonoClass *element_class = mono_class_from_mono_type_internal (get_vector_t_elem_type (vector_type));
+	int element_size = mono_class_value_size (element_class, NULL);
+	gboolean has_single_element = vector_size == element_size;
+
+	// If there's just one element we need to extract it instead of summing the whole array
+	if (has_single_element) {
+		MonoInst *ins = emit_simd_ins (cfg, vector_class, type_to_extract_op (element_type), arg->dreg, -1);
+		ins->inst_c0 = 0;
+		ins->inst_c1 = element_type;
+		return ins;
+	}
+
+	MonoInst *ins = emit_simd_ins (cfg, vector_class, OP_ARM64_XADDV, arg->dreg, -1);
+
+	if (type_enum_is_float (element_type)) {
+		ins->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FADDV;
+	} else {
+		ins->inst_c0 = type_enum_is_unsigned (element_type) ? INTRINS_AARCH64_ADV_SIMD_UADDV : INTRINS_AARCH64_ADV_SIMD_SADDV;
+	}
+
+	return ins;
+}
+#endif
+
 static gboolean
 is_intrinsics_vector_type (MonoType *vector_type)
 {
@@ -831,6 +864,7 @@ static guint16 sri_vector_methods [] = {
 	SN_CreateScalar,
 	SN_CreateScalarUnsafe,
 	SN_Divide,
+	SN_Dot,
 	SN_Equals,
 	SN_EqualsAll,
 	SN_EqualsAny,
@@ -858,11 +892,14 @@ static guint16 sri_vector_methods [] = {
 	SN_OnesComplement,
 	SN_Sqrt,
 	SN_Subtract,
+	SN_Sum,
 	SN_ToScalar,
 	SN_ToVector128,
 	SN_ToVector128Unsafe,
 	SN_ToVector256,
 	SN_ToVector256Unsafe,
+	SN_WidenLower,
+	SN_WidenUpper,
 	SN_WithElement,
 	SN_Xor,
 };
@@ -1223,6 +1260,15 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
+	} 
+	case SN_Sum: {
+#ifdef TARGET_ARM64
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		return emit_sum_vector (cfg, fsig->params [0], arg0_type, args [0]);
+#else
+		return NULL;
+#endif
 	}
 	case SN_Sqrt: {
 #ifdef TARGET_ARM64
@@ -1263,6 +1309,27 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		ins->sreg3 = args [1]->dreg;
 		ins->inst_c1 = arg0_type;
 		return ins;
+	}
+	case SN_WidenLower:
+	case SN_WidenUpper: {
+#ifdef TARGET_ARM64
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+
+		int op = id == SN_WidenLower ? OP_XLOWER : OP_XUPPER;
+		MonoInst *lower_or_upper_half = emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
+
+		if (type_enum_is_float (arg0_type)) {
+			return emit_simd_ins (cfg, klass, OP_ARM64_FCVTL, lower_or_upper_half->dreg, -1);
+		} else {
+			int zero = alloc_ireg (cfg);
+			MONO_EMIT_NEW_ICONST (cfg, zero, 0);
+			op = type_enum_is_unsigned (arg0_type) ? OP_ARM64_USHLL : OP_ARM64_SSHLL;
+			return emit_simd_ins (cfg, klass, op, lower_or_upper_half->dreg, zero);
+		}
+#else
+		return NULL;
+#endif
 	}
 	case SN_WithLower:
 	case SN_WithUpper: {
