@@ -12,10 +12,10 @@ internal static partial class Interop
     internal struct KEY_EVENT_RECORD
     {
         internal BOOL bKeyDown;
-        internal short wRepeatCount;
-        internal short wVirtualKeyCode;
-        internal short wVirtualScanCode;
-        private short _uChar; // Union between WCHAR and ASCII char
+        internal ushort wRepeatCount;
+        internal ushort wVirtualKeyCode;
+        internal ushort wVirtualScanCode;
+        private ushort _uChar; // Union between WCHAR and ASCII char
         internal int dwControlKeyState;
 
         // _uChar is stored as short to avoid any ambiguity for interop marshaling
@@ -24,9 +24,9 @@ internal static partial class Interop
 
     // Really, this is a union of KeyEventRecords and other types.
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct InputRecord
+    internal struct INPUT_RECORD
     {
-        internal short eventType;
+        internal ushort EventType;
         internal KEY_EVENT_RECORD keyEvent;
         // This struct is a union!  Word alignment should take care of padding!
     }
