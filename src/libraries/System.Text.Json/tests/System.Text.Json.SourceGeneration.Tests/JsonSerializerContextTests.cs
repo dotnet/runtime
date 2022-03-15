@@ -24,7 +24,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public static void Converters_AndTypeInfoCreator_NotRooted_WhenMetadataNotPresent()
         {
             RemoteExecutor.Invoke(
-                () =>
+                static () =>
                 {
                     object[] objArr = new object[] { new MyStruct() };
 
@@ -38,6 +38,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                     // This test uses reflection to:
                     // - Access JsonSerializerOptions.s_defaultSimpleConverters
                     // - Access JsonSerializerOptions.s_defaultFactoryConverters
+                    // - Access JsonSerializerOptions.s_typeInfoCreationFunc
                     //
                     // If any of them changes, this test will need to be kept in sync.
 

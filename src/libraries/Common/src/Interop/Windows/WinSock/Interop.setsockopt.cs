@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
-        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static partial SocketError setsockopt(
             IntPtr handle,
             SocketOptionLevel optionLevel,
@@ -17,7 +17,7 @@ internal static partial class Interop
             ref Linger linger,
             int optionLength);
 
-        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static partial SocketError setsockopt(
             SafeSocketHandle socketHandle,
             SocketOptionLevel optionLevel,
@@ -25,7 +25,7 @@ internal static partial class Interop
             ref int optionValue,
             int optionLength);
 
-        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static unsafe partial SocketError setsockopt(
             SafeSocketHandle socketHandle,
             SocketOptionLevel optionLevel,
@@ -33,7 +33,7 @@ internal static partial class Interop
             byte* optionValue,
             int optionLength);
 
-        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static partial SocketError setsockopt(
             SafeSocketHandle socketHandle,
             SocketOptionLevel optionLevel,
@@ -41,7 +41,7 @@ internal static partial class Interop
             ref IntPtr pointer,
             int optionLength);
 
-        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static partial SocketError setsockopt(
             SafeSocketHandle socketHandle,
             SocketOptionLevel optionLevel,
@@ -49,7 +49,7 @@ internal static partial class Interop
             ref Linger linger,
             int optionLength);
 
-        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static partial SocketError setsockopt(
             SafeSocketHandle socketHandle,
             SocketOptionLevel optionLevel,
@@ -57,7 +57,7 @@ internal static partial class Interop
             ref IPMulticastRequest mreq,
             int optionLength);
 
-        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static partial SocketError setsockopt(
             SafeSocketHandle socketHandle,
             SocketOptionLevel optionLevel,

@@ -1951,6 +1951,11 @@ validate_struct_fields_overlaps (guint8 *layout_check, int layout_size, MonoClas
 		// try to call mono_class_setup_fields which is what we're doing already
 		field = &m_class_get_fields (klass) [i];
 		field_offset = field_offsets [i];
+		/*
+		 * metadata-update: adding fields to existing structs isn't supported; when a brand
+		 * new struct is added in an update, the fields will be in m_class_get_fields.  so
+		 * nothing new to do here.
+		 */
 
 		if (!field)
 			continue;
@@ -2475,6 +2480,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	// - Disallow on structs/static fields/nonref fields
 	gboolean has_weak_fields = FALSE;
 
+#ifdef ENABLE_WEAK_ATTR
 	if (mono_class_has_static_metadata (klass)) {
 		for (MonoClass *p = klass; p != NULL; p = p->parent) {
 			gpointer iter = NULL;
@@ -2489,6 +2495,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			}
 		}
 	}
+#endif
 
 	/*
 	 * Check that any fields of IsByRefLike type are instance

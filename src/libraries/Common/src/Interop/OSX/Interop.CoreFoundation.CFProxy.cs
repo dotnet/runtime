@@ -13,22 +13,22 @@ internal static partial class Interop
 {
     internal static partial class CoreFoundation
     {
-        [GeneratedDllImport(Libraries.CFNetworkLibrary)]
+        [LibraryImport(Libraries.CFNetworkLibrary)]
         internal static partial SafeCFDictionaryHandle CFNetworkCopySystemProxySettings();
 
-        [GeneratedDllImport(Libraries.CFNetworkLibrary)]
+        [LibraryImport(Libraries.CFNetworkLibrary)]
         internal static partial SafeCFArrayHandle CFNetworkCopyProxiesForURL(SafeCreateHandle url, SafeCFDictionaryHandle proxySettings);
 
         internal delegate void CFProxyAutoConfigurationResultCallback(IntPtr client, IntPtr proxyList, IntPtr error);
 
-        [GeneratedDllImport(Libraries.CFNetworkLibrary)]
+        [LibraryImport(Libraries.CFNetworkLibrary)]
         internal static partial CFRunLoopSourceRef CFNetworkExecuteProxyAutoConfigurationURL(
             IntPtr proxyAutoConfigURL,
             SafeCreateHandle targetURL,
             CFProxyAutoConfigurationResultCallback cb,
             ref CFStreamClientContext clientContext);
 
-        [GeneratedDllImport(Libraries.CFNetworkLibrary)]
+        [LibraryImport(Libraries.CFNetworkLibrary)]
         internal static partial CFRunLoopSourceRef CFNetworkExecuteProxyAutoConfigurationScript(
             IntPtr proxyAutoConfigurationScript,
             SafeCreateHandle targetURL,

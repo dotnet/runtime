@@ -624,15 +624,18 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, "this");
             }
 
-            public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+            public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
             {
-                if (attributeType == null)
-                    throw new ArgumentNullException(nameof(attributeType));
+                if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                    throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-                if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
-                    return new object[] { new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags()) };
-                else
-                    return Array.Empty<object>();
+                bool includeMethodImplAttribute = attributeType.IsAssignableFrom(typeof(MethodImplAttribute));
+                object[] result = CustomAttribute.CreateAttributeArrayHelper(attributeRuntimeType, includeMethodImplAttribute ? 1 : 0);
+                if (includeMethodImplAttribute)
+                {
+                    result[0] = new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags());
+                }
+                return result;
             }
 
             public override object[] GetCustomAttributes(bool inherit)

@@ -1567,6 +1567,10 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error)
 	 * Fetch all the field information.
 	 */
 	first_field_idx = mono_class_get_first_field_idx (klass);
+	/*
+	 * metadata-update: adding new enum fields isn't supported, so when this code runs, all the
+	 * fields are contiguous in metadata.
+	 */
 	for (i = 0; i < top; i++){
 		const char *sig;
 		guint32 cols [MONO_FIELD_SIZE];
@@ -2468,17 +2472,14 @@ mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoTyp
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	int i;
-
 	mono_class_setup_fields (klass);
 	if (mono_class_has_failure (klass))
 		return NULL;
 
 	while (klass) {
-		int fcount = mono_class_get_field_count (klass);
-		for (i = 0; i < fcount; ++i) {
-			MonoClassField *field = &m_class_get_fields (klass) [i];
-
+		gpointer iter = NULL;
+		MonoClassField *field;
+		while ((field = mono_class_get_fields_internal (klass, &iter))) {
 			if (strcmp (name, mono_field_get_name (field)) != 0)
 				continue;
 
@@ -2526,6 +2527,10 @@ mono_class_get_field_token (MonoClassField *field)
 				return mono_metadata_make_token (MONO_TABLE_FIELD, idx);
 			}
 		}
+		if (G_UNLIKELY (m_class_get_image (klass)->has_updates)) {
+			/* TODO: metadata-update: check if the field was added. */
+			g_assert_not_reached ();
+		}
 		klass = m_class_get_parent (klass);
 	}
 
@@ -2538,6 +2543,8 @@ mono_field_get_index (MonoClassField *field)
 {
 	int index = field - m_class_get_fields (m_field_get_parent (field));
 	g_assert (index >= 0 && index < mono_class_get_field_count (m_field_get_parent (field)));
+	/* TODO: metadata-update: check if the field was added */
+	g_assert (!m_class_get_image (m_field_get_parent (field))->has_updates);
 
 	return index;
 }
@@ -5033,6 +5040,7 @@ mono_class_get_fields_internal (MonoClass *klass, gpointer *iter)
 	MonoClassField* field;
 	if (!iter)
 		return NULL;
+	/* TODO: metadata-update - also iterate over the added fields */
 	if (!*iter) {
 		mono_class_setup_fields (klass);
 		if (mono_class_has_failure (klass))
@@ -5456,6 +5464,9 @@ mono_field_get_rva (MonoClassField *field, int swizzle)
 	MonoFieldDefaultValue *def_values;
 
 	g_assert (field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA);
+
+	/* TODO: metadata-update: make this work. */
+	g_assert (!m_field_is_from_update (field));
 
 	def_values = mono_class_get_field_def_values_with_swizzle (klass, swizzle);
 	if (!def_values) {
@@ -6512,6 +6523,9 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 static guint32
 mono_field_resolve_flags (MonoClassField *field)
 {
+	/* Fields in metadata updates are pre-resolved, so this method should not be called. */
+	g_assert (!m_field_is_from_update (field));
+
 	MonoClass *klass = m_field_get_parent (field);
 	MonoImage *image = m_class_get_image (klass);
 	MonoClass *gtd = mono_class_is_ginst (klass) ? mono_class_get_generic_type_definition (klass) : NULL;
@@ -6550,6 +6564,8 @@ mono_class_get_fields_lazy (MonoClass* klass, gpointer *iter)
 	MonoClassField* field;
 	if (!iter)
 		return NULL;
+	/* TODO: metadata-update: iterate over the added fields, too */
+	g_assert (!m_class_get_image (klass)->has_updates);
 	if (!*iter) {
 		mono_class_setup_basic_field_info (klass);
 		MonoClassField *klass_fields = m_class_get_fields (klass);

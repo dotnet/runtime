@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices
         {
             // Variant size is the size of 4 pointers (16 bytes) on a 32-bit processor,
             // and 3 pointers (24 bytes) on a 64-bit processor.
-            int variantSize = Marshal.SizeOf(typeof(Variant));
+            int variantSize = Marshal.SizeOf<Variant>();
             if (IntPtr.Size == 4)
             {
                 Debug.Assert(variantSize == (4 * IntPtr.Size));

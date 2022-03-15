@@ -8,7 +8,6 @@
  * are all about.
  */
 #ifdef __MSC_VER
-#pragma warning(disable:4244)   // conversion from 'unsigned int' to 'unsigned short', possible loss of data
 #pragma warning(disable:4189)   // local variable is initialized but not referenced
 #endif // __MSC_VER
 
@@ -43,6 +42,5 @@
 #endif // !TARGET_X86
 
 #ifdef __MSC_VER
-#pragma warning(default:4244)
 #pragma warning(default:4189)
 #endif // __MSC_VER

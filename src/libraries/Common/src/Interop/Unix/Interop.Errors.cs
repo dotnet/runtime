@@ -183,24 +183,24 @@ internal static partial class Interop
         }
 
 #if SERIAL_PORTS
-        [GeneratedDllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_ConvertErrorPlatformToPal")]
+        [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_ConvertErrorPlatformToPal")]
         internal static partial Error ConvertErrorPlatformToPal(int platformErrno);
 
-        [GeneratedDllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_ConvertErrorPalToPlatform")]
+        [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_ConvertErrorPalToPlatform")]
         internal static partial int ConvertErrorPalToPlatform(Error error);
 
-        [GeneratedDllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_StrErrorR")]
+        [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_StrErrorR")]
         private static unsafe partial byte* StrErrorR(int platformErrno, byte* buffer, int bufferSize);
 #else
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ConvertErrorPlatformToPal")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ConvertErrorPlatformToPal")]
         [SuppressGCTransition]
         internal static partial Error ConvertErrorPlatformToPal(int platformErrno);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ConvertErrorPalToPlatform")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ConvertErrorPalToPlatform")]
         [SuppressGCTransition]
         internal static partial int ConvertErrorPalToPlatform(Error error);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_StrErrorR")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_StrErrorR")]
         private static unsafe partial byte* StrErrorR(int platformErrno, byte* buffer, int bufferSize);
 #endif
     }

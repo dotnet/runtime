@@ -136,7 +136,7 @@ static inline int
 dwarf_readu8 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
               uint8_t *valp, void *arg)
 {
-  unw_word_t val, aligned_addr = *addr & -sizeof (unw_word_t);
+  unw_word_t val, aligned_addr = UNW_ALIGN(*addr, sizeof (unw_word_t));
   unw_word_t off = *addr - aligned_addr;
   int ret;
 

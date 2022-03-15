@@ -46,13 +46,13 @@ namespace System.Security.Cryptography
         }
 
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-            CngCommon.HashData(data, offset, count, hashAlgorithm);
+            HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
 
         protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-            CngCommon.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
+            HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
 
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-            CngCommon.HashData(data, hashAlgorithm);
+            HashOneShotHelpers.HashData(hashAlgorithm, data);
 
         private void ForceSetKeySize(int newKeySize)
         {

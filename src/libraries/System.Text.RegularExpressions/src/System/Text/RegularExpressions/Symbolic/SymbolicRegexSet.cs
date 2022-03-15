@@ -402,20 +402,6 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        internal SymbolicRegexSet<S> CreateDerivative(S elem, uint context)
-        {
-            // This function is mutually recursive with the one in SymbolicRegexNode, which has stack overflow avoidance
-            return CreateMulti(_builder, CreateDerivativesOfElems(elem, context), _kind);
-
-            IEnumerable<SymbolicRegexNode<S>> CreateDerivativesOfElems(S elem, uint context)
-            {
-                foreach (SymbolicRegexNode<S> s in this)
-                {
-                    yield return s.CreateDerivative(elem, context);
-                }
-            }
-        }
-
         internal SymbolicRegexSet<T> Transform<T>(SymbolicRegexBuilder<T> builderT, Func<S, T> predicateTransformer) where T : notnull
         {
             // This function is mutually recursive with the one in SymbolicRegexBuilder, which has stack overflow avoidance

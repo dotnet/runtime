@@ -106,7 +106,7 @@ namespace System.Text.RegularExpressions
             Regex? r = _regex;
             Debug.Assert(Text != null);
             return r != null ?
-                r.Run(false, Length, Text, _textbeg, _textend - _textbeg, _textpos)! :
+                r.RunSingleMatch(false, Length, Text, _textbeg, _textend - _textbeg, _textpos)! :
                 this;
         }
 
