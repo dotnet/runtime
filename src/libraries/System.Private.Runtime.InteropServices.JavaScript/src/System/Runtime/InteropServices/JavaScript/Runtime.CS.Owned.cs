@@ -89,7 +89,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         #region used from C# side
 
-        // TODO: Ref
         internal static bool ReleaseCSOwnedObject(JSObject objToRelease)
         {
             objToRelease.AssertNotDisposed();
@@ -102,7 +101,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return true;
         }
 
-        // TODO: Ref
         internal static IntPtr CreateCSOwnedObject(JSObject proxy, string typeName, params object[] parms)
         {
             Interop.Runtime.CreateCSOwnedObjectRef(typeName, parms, out int exception, out object res);

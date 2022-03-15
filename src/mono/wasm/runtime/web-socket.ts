@@ -110,7 +110,6 @@ export function mono_wasm_web_socket_open_ref(uri_address: MonoObjectRef, subPro
     }
 }
 
-// fixme: ref
 export function mono_wasm_web_socket_send(webSocket_js_handle: JSHandle, buffer_ptr: VoidPtr, offset: number, length: number, message_type: number, end_of_message: boolean, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const result_root = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
@@ -138,7 +137,6 @@ export function mono_wasm_web_socket_send(webSocket_js_handle: JSHandle, buffer_
     }
 }
 
-// fixme: ref
 export function mono_wasm_web_socket_receive(webSocket_js_handle: JSHandle, buffer_ptr: VoidPtr, offset: number, length: number, response_ptr: VoidPtr, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const result_root = mono_wasm_new_external_root<MonoObject>(result_address);
 

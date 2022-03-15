@@ -520,7 +520,6 @@ export function wrap_error_root(is_exception: Int32Ptr | null, ex: any, result: 
     js_string_to_mono_string_root(res, <any>result);
 }
 
-// fixme: ref
 export function mono_method_get_call_signature_ref(method: MonoMethod, mono_obj?: WasmRoot<MonoObject>): string/*ArgsMarshalString*/ {
     return call_method_ref(
         runtimeHelpers.get_call_sig_ref, undefined, "im",
