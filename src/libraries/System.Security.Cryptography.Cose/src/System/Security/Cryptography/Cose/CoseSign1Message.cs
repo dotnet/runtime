@@ -214,9 +214,20 @@ namespace System.Security.Cryptography.Cose
             var reader = new CborReader(encodedAlg);
             CborReaderState state = reader.PeekState();
 
-            if (state == CborReaderState.NegativeInteger || state == CborReaderState.UnsignedInteger)
+            if (state == CborReaderState.UnsignedInteger)
             {
-                int alg = reader.ReadInt32();
+                KnownCoseAlgorithms.ThrowUnsignedIntegerNotSupported(reader.ReadUInt64());
+            }
+            else if (state == CborReaderState.NegativeInteger)
+            {
+                ulong cborNegativeIntRepresentation = reader.ReadCborNegativeIntegerRepresentation();
+
+                if (cborNegativeIntRepresentation > long.MaxValue)
+                {
+                    KnownCoseAlgorithms.ThrowCborNegativeIntegerNotSupported(cborNegativeIntRepresentation);
+                }
+
+                long alg = checked(-1L - (long)cborNegativeIntRepresentation);
                 KnownCoseAlgorithms.ThrowIfNotSupported(alg);
 
                 if (reader.BytesRemaining != 0)
@@ -224,7 +235,7 @@ namespace System.Security.Cryptography.Cose
                     throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
                 }
 
-                return alg;
+                return (int)alg;
             }
 
             if (state == CborReaderState.TextString)

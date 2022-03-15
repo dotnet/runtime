@@ -474,5 +474,60 @@ namespace System.Security.Cryptography.Cose.Tests
                 return new object[] { useProtectedMap, encodedValue };
             }
         }
+
+        [Theory]
+        [InlineData(0L)]
+        [InlineData(long.MaxValue)]
+        [InlineData(long.MinValue)]
+        [InlineData(int.MinValue - 1L)]
+        [InlineData(int.MaxValue + 1L)]
+        public void SignWithInt64AlgorithmHeaderValue(long value)
+        {
+            var writer = new CborWriter();
+            writer.WriteInt64(value);
+
+            byte[] encodedValue = writer.Encode();
+
+            CoseHeaderMap protectedHeaders = new CoseHeaderMap();
+            protectedHeaders.SetEncodedValue(CoseHeaderLabel.Algorithm, encodedValue);
+
+            Assert.Throws<CryptographicException>(() => CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders));
+        }
+
+        [Theory]
+        [InlineData(0UL)]
+        [InlineData(ulong.MaxValue)]
+        [InlineData(long.MaxValue + 1UL)]
+        [InlineData(long.MaxValue - 1UL)]
+        public void SignWithUInt64AlgorithmHeaderValue(ulong value)
+        {
+            var writer = new CborWriter();
+            writer.WriteUInt64(value);
+
+            byte[] encodedValue = writer.Encode();
+
+            CoseHeaderMap protectedHeaders = new CoseHeaderMap();
+            protectedHeaders.SetEncodedValue(CoseHeaderLabel.Algorithm, encodedValue);
+
+            Assert.Throws<CryptographicException>(() => CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders));
+        }
+
+        [Theory]
+        [InlineData(0UL)]
+        [InlineData(ulong.MaxValue)]
+        [InlineData(long.MaxValue + 1UL)]
+        [InlineData(long.MaxValue - 1UL)]
+        public void SignWithCborNegativeIntegerRepresentationAlgorithmHeaderValue(ulong value)
+        {
+            var writer = new CborWriter();
+            writer.WriteCborNegativeIntegerRepresentation(value);
+
+            byte[] encodedValue = writer.Encode();
+
+            CoseHeaderMap protectedHeaders = new CoseHeaderMap();
+            protectedHeaders.SetEncodedValue(CoseHeaderLabel.Algorithm, encodedValue);
+
+            Assert.Throws<CryptographicException>(() => CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders));
+        }
     }
 }
