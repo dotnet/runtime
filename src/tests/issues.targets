@@ -177,15 +177,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i83/*">
             <Issue>Needs Triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/13241</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_do/**">
-            <Issue>https://github.com/dotnet/runtime/issues/13241</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Stress/ABI/stubs_do/**">
-            <Issue>https://github.com/dotnet/runtime/issues/13241</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/profiler/eventpipe/eventpipe/*">
             <Issue>TraceEvent can't parse unaligned floats on arm32</Issue>
         </ExcludeList>
