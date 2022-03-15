@@ -484,17 +484,22 @@ namespace System.Reflection.Metadata
 
 		    Assert.Equal (newMethod, ty.GetMethod ("NewMethod"));
 
-		    var allFields = ty.GetFields();
+		    var allFields = ty.GetFields(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public);
 
 		    FieldInfo newField = null;
+		    FieldInfo newStaticField = null;
 		    foreach (var fld in allFields)
 		    {
 			if (fld.Name == "NewField")
 			    newField = fld;
+			if (fld.Name == "NewStaticField")
+			    newStaticField = fld;
 		    }
 		    Assert.NotNull(newField);
+		    Assert.NotNull(newStaticField);
 
 		    Assert.Equal(newField, ty.GetField("NewField"));
+		    Assert.Equal(newStaticField, ty.GetField("NewStaticField", BindingFlags.Static | BindingFlags.Public));
 
 		});
 		CheckReflectedType(assm, allTypes, ns, "ZExistingClass+PreviousNestedClass");
