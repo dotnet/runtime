@@ -215,7 +215,7 @@ namespace System.DirectoryServices.Protocols
 #if NET7_0_OR_GREATER
         public static readonly unsafe int Size = sizeof(Marshaller.Native);
 
-        [CustomTypeMarshaller(typeof(LdapReferralCallback), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
+        [CustomTypeMarshaller(typeof(LdapReferralCallback), Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
         public unsafe struct Marshaller
         {
             public unsafe struct Native

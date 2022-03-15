@@ -636,7 +636,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // If fwdSubNode is an address-exposed local, forwarding it may lose optimizations.
     // (maybe similar for dner?)
     //
-    if (fwdSubNode->IsLocal())
+    if (fwdSubNode->OperIs(GT_LCL_VAR))
     {
         unsigned const   fwdLclNum = fwdSubNode->AsLclVarCommon()->GetLclNum();
         LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);

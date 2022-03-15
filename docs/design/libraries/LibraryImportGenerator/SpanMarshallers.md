@@ -55,7 +55,7 @@ Span marshalling would still be implemented with similar semantics as mentioned 
 
 ### Proposed extension to the custom type marshalling design
 
-Introduce a marshaller kind named `SpanCollection`.
+Introduce a marshaller kind named `LinearCollection`.
 
 ```diff
 namespace System.Runtime.InteropServices
@@ -75,7 +75,7 @@ namespace System.Runtime.InteropServices
   public enum CustomTypeMarshallerKind
   {
       Value,
-+     SpanCollection
++     LinearCollection
   }
 }
 ```
@@ -89,14 +89,14 @@ public ref struct Span<T>
   ...
 }
 
-[CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.SpanCollection)]
+[CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.LinearCollection)]
 public ref struct DefaultSpanMarshaler<T>
 {
   ...
 }
 ```
 
-The `CustomTypeMarshallerKind.SpanCollection` kind is applied to a generic marshaler type with the "SpanCollection marshaller shape" described below.
+The `CustomTypeMarshallerKind.LinearCollection` kind is applied to a generic marshaler type with the "LinearCollection marshaller shape" described below.
 
 #### Supporting generics
 
@@ -104,12 +104,12 @@ Since generic parameters cannot be used in attributes, open generic types will b
 
 If a `CustomTypeMarshaller`-attributed type is a marshaller for a type for a pointer, an array, or a combination of pointers and arrays, the `CustomTypeMarshallerAttribute.GenericPlaceholder` type can be used in the place of the first generic parameter of the marshaller type.
 
-#### SpanCollection marshaller shape
+#### LinearCollection marshaller shape
 
 A generic collection marshaller would be required to have the following shape, in addition to the requirements for marshaler types used with the `CustomTypeMarshallerKind.Value` shape, excluding the constructors.
 
 ```csharp
-[CustomTypeMarshaller(typeof(GenericCollection<, , ,...>), CustomTypeMarshallerKind.SpanCollection)]
+[CustomTypeMarshaller(typeof(GenericCollection<, , ,...>), CustomTypeMarshallerKind.LinearCollection)]
 public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
 {
     // this constructor is required if marshalling from native to managed is supported.
@@ -117,7 +117,7 @@ public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
     // these constructors are required if marshalling from managed to native is supported.
     public GenericContiguousCollectionMarshallerImpl(GenericCollection<T, U, V, ...> collection, int nativeSizeOfElement);
     public GenericContiguousCollectionMarshallerImpl(GenericCollection<T, U, V, ...> collection, Span<byte> stackSpace, int nativeSizeOfElement); // optional
-    
+
     public const int StackBufferSize = /* */; // required if the span-based constructor is supplied.
 
     /// <summary>
@@ -192,7 +192,7 @@ Alternatively, the `MarshalUsingAttribute` could provide a `Type ElementNativeTy
 This design could be used to provide a default marshaller for spans and arrays. Below is an example simple marshaller for `Span<T>`. This design does not include all possible optimizations, such as stack allocation, for simpilicity of the example.
 
 ```csharp
-[CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.SpanCollection)]
+[CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.LinearCollection)]
 public ref struct SpanMarshaler<T>
 {
     private Span<T> managedCollection;
@@ -245,7 +245,7 @@ struct WrappedInt
   public int ToManaged() => value;
 }
 
-[GeneratedDllImport("Native")]
+[LibraryImport("Native")]
 [return:MarshalUsing(CountElementName = nameof(length))]
 public static partial Span<int> DuplicateValues([MarshalUsing(typeof(WrappedInt), ElementIndirectionLevel = 1)] Span<int> values, int length);
 
@@ -282,14 +282,14 @@ If a managed or native representation of a collection has a non-contiguous eleme
 A new marshaller kind named `GenericCollection` could be added that would specify that the collection is noncontiguous in either managed or native representations. Then additional methods should be added to the generic collection model, and some methods would be removed:
 
 ```diff
-- [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.SpanCollection)]
+- [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.LinearCollection)]
 + [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.GenericCollection)]
 public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
 {
     // these constructors are required if marshalling from managed to native is supported.
     public GenericContiguousCollectionMarshallerImpl(GenericCollection<T, U, V, ...> collection, int nativeSizeOfElements);
     public GenericContiguousCollectionMarshallerImpl(GenericCollection<T, U, V, ...> collection, Span<byte> stackSpace, int nativeSizeOfElements); // optional
-    
+
     public const int StackBufferSize = /* */; // required if the span-based constructor is supplied.
 
 -    public Span<TCollectionElement> ManagedValues { get; }

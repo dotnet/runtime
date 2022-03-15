@@ -602,7 +602,7 @@ inline bool isRegParamType(var_types type)
 #endif // !TARGET_X86
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH)
 /*****************************************************************************/
 // Returns true if 'type' is a struct that can be enregistered for call args
 //                         or can be returned by value in multiple registers.
@@ -660,7 +660,7 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                typ
 
     return result;
 }
-#endif // TARGET_AMD64 || TARGET_ARM64
+#endif // TARGET_AMD64 || TARGET_ARMARCH
 
 /*****************************************************************************/
 
@@ -1115,8 +1115,13 @@ inline GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDL
 
         varDsc->lvFieldAccessed = 1;
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-        // These structs are passed by reference; we should probably be able to treat these
-        // as non-global refs, but downstream logic expects these to be marked this way.
+        // These structs are passed by reference and can easily become global
+        // references if those references are exposed. We clear out
+        // address-exposure information for these parameters when they are
+        // converted into references in fgRetypeImplicitByRefArgs() so we do
+        // not have the necessary information in morph to know if these
+        // indirections are actually global references, so we have to be
+        // conservative here.
         if (varDsc->lvIsParam)
         {
             fieldNode->gtFlags |= GTF_GLOB_REF;

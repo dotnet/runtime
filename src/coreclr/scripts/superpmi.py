@@ -531,7 +531,7 @@ class AsyncSubprocessHelper:
             tasks.append(self.__get_item__(item, count, size, async_callback, *extra_args))
             count += 1
 
-        # Inovke all the calls to __get_item__ concurrently and wait for them all to finish.
+        # Invoke all the calls to __get_item__ concurrently and wait for them all to finish.
         await asyncio.gather(*tasks)
 
     def run_to_completion(self, async_callback, *extra_args):
@@ -761,6 +761,7 @@ class SuperPMICollect:
             ################################################################################################ Do collection using given collection command (e.g., script)
             if self.collection_command is not None:
                 logging.debug("Starting collection using command")
+                begin_time = datetime.datetime.now()
 
                 collection_command_env = env_copy.copy()
                 collection_complus_env = complus_env.copy()
@@ -778,6 +779,9 @@ class SuperPMICollect:
                 stdout_output, _ = proc.communicate()
                 for line in stdout_output.decode('utf-8', errors='replace').splitlines():  # There won't be any stderr output since it was piped to stdout
                     logging.debug(line)
+
+                elapsed_time = datetime.datetime.now() - begin_time
+                logging.debug("Done. Elapsed time: %s", elapsed_time)
             ################################################################################################ end of "self.collection_command is not None"
 
             ################################################################################################ Do collection using PMI
@@ -791,6 +795,8 @@ class SuperPMICollect:
                     command = [self.corerun, self.pmi_location, "DRIVEALL", assembly]
                     command_string = " ".join(command)
                     logging.debug("%s%s", print_prefix, command_string)
+
+                    begin_time = datetime.datetime.now()
 
                     # Save the stdout and stderr to files, so we can see if PMI wrote any interesting messages.
                     # Use the name of the assembly as the basename of the file. mkstemp() will ensure the file
@@ -828,6 +834,9 @@ class SuperPMICollect:
                             logging.warning("Skipping file %s. Got error: %s", root_output_filename, ose)
                         else:
                             raise ose
+
+                    elapsed_time = datetime.datetime.now() - begin_time
+                    logging.debug("%sDone. Elapsed time: %s", print_prefix, elapsed_time)
 
                 # Set environment variables.
                 pmi_command_env = env_copy.copy()
@@ -915,6 +924,8 @@ class SuperPMICollect:
                     command_string = " ".join(command)
                     logging.debug("%s%s", print_prefix, command_string)
 
+                    begin_time = datetime.datetime.now()
+
                     # Save the stdout and stderr to files, so we can see if crossgen2 wrote any interesting messages.
                     # Use the name of the assembly as the basename of the file. mkstemp() will ensure the file
                     # is unique.
@@ -954,6 +965,9 @@ class SuperPMICollect:
                     # Delete the response file unless we are skipping cleanup
                     if not self.coreclr_args.skip_cleanup:
                         os.remove(rsp_filepath)
+
+                    elapsed_time = datetime.datetime.now() - begin_time
+                    logging.debug("%sDone. Elapsed time: %s", print_prefix, elapsed_time)
 
                 # Set environment variables.
                 crossgen2_command_env = env_copy.copy()
@@ -2801,8 +2815,11 @@ def setup_args(args):
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
+    formatter = logging.Formatter("[%(asctime)s] %(message)s", datefmt="%H:%M:%S")
+
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setLevel(logging.DEBUG)
+    stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
 
     # Parse the arguments
@@ -2873,6 +2890,7 @@ def setup_args(args):
             os.remove(log_file)
         file_handler = logging.FileHandler(log_file, encoding='utf8')
         file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
         logging.critical("================ Logging to %s", log_file)
 

@@ -213,6 +213,53 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
+        public async Task Diagnostic_CustomRegexGeneratorAttribute_ZeroArgCtor()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@"
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [RegexGenerator]
+                    private static partial Regex InvalidCtor();
+                }
+
+                namespace System.Text.RegularExpressions
+                {
+                    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+                    public sealed class RegexGeneratorAttribute : Attribute
+                    {
+                    }
+                }
+            ");
+
+            Assert.Equal("SYSLIB1040", Assert.Single(diagnostics).Id);
+        }
+
+        [Fact]
+        public async Task Diagnostic_CustomRegexGeneratorAttribute_FourArgCtor()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@"
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [RegexGenerator(""a"", RegexOptions.None, -1, ""b""]
+                    private static partial Regex InvalidCtor();
+                }
+
+                namespace System.Text.RegularExpressions
+                {
+                    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+                    public sealed class RegexGeneratorAttribute : Attribute
+                    {
+                        public RegexGeneratorAttribute(string pattern, RegexOptions options, int timeout, string somethingElse) { }
+                    }
+                }
+            ");
+
+            Assert.Equal("SYSLIB1040", Assert.Single(diagnostics).Id);
+        }
+
+        [Fact]
         public async Task Valid_ClassWithoutNamespace()
         {
             Assert.Empty(await RegexGeneratorHelper.RunGenerator(@"
@@ -282,6 +329,22 @@ namespace System.Text.RegularExpressions.Tests
 
                     [RegexGenerator(matchTimeoutMilliseconds: -1, pattern: ""ab"", options: RegexOptions.None)]
                     private static partial Regex Valid2();
+                }}
+            ", compile: true));
+        }
+
+        [Fact]
+        public async Task Valid_AdditionalAttributes()
+        {
+            Assert.Empty(await RegexGeneratorHelper.RunGenerator($@"
+                using System.Text.RegularExpressions;
+                using System.Diagnostics.CodeAnalysis;
+                partial class C
+                {{
+                    [SuppressMessage(""CATEGORY1"", ""SOMEID1"")]
+                    [RegexGenerator(""abc"")]
+                    [SuppressMessage(""CATEGORY2"", ""SOMEID2"")]
+                    private static partial Regex AdditionalAttributes();
                 }}
             ", compile: true));
         }
@@ -451,6 +514,52 @@ namespace System.Text.RegularExpressions.Tests
                 namespace D
                 {
                     internal interface IBlah { }
+                }
+            ", compile: true));
+        }
+
+        [Fact]
+        public async Task Valid_SameMethodNameInMultipleTypes()
+        {
+            Assert.Empty(await RegexGeneratorHelper.RunGenerator(@"
+                using System.Text.RegularExpressions;
+                namespace A
+                {
+                    public partial class B<U>
+                    {
+                        private partial class C<T>
+                        {
+                            [RegexGenerator(""1"")]
+                            public partial Regex Valid();
+                        }
+
+                        private partial class C<T1,T2>
+                        {
+                            [RegexGenerator(""2"")]
+                            private static partial Regex Valid();
+
+                            private partial class D
+                            {
+                                [RegexGenerator(""3"")]
+                                internal partial Regex Valid();
+                            }
+                        }
+
+                        private partial class E
+                        {
+                            [RegexGenerator(""4"")]
+                            private static partial Regex Valid();
+                        }
+                    }
+                }
+
+                partial class F
+                {
+                    [RegexGenerator(""5"")]
+                    public partial Regex Valid();
+
+                    [RegexGenerator(""6"")]
+                    public partial Regex Valid2();
                 }
             ", compile: true));
         }

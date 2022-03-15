@@ -44,7 +44,7 @@
   <ItemGroup Condition="'@(EnabledGenerators)' != ''
                         and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'LibraryImportGenerator'))
                         and '$(IncludeLibraryImportGeneratorSources)' == 'true'">
-    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\GeneratedDllImportAttribute.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\LibraryImportAttribute.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\CustomTypeMarshallerKind.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\CustomTypeMarshallerDirection.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\CustomTypeMarshallerFeatures.cs" />

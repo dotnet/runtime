@@ -76,7 +76,7 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [ConditionalFact]
-        public async Task AddingFileWithNewGeneratedDllImport_DoesNotRegenerateOriginalMethod()
+        public async Task AddingFileWithNewLibraryImport_DoesNotRegenerateOriginalMethod()
         {
             string source = CodeSnippets.BasicParametersAndModifiers<int>();
 
@@ -106,7 +106,7 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [ConditionalFact]
-        public async Task ReplacingFileWithNewGeneratedDllImport_DoesNotRegenerateStubsInOtherFiles()
+        public async Task ReplacingFileWithNewLibraryImport_DoesNotRegenerateStubsInOtherFiles()
         {
             Compilation comp1 = await TestUtils.CreateCompilation(new string[] { CodeSnippets.BasicParametersAndModifiers<int>(), CodeSnippets.BasicParametersAndModifiers<bool>() });
 

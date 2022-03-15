@@ -223,7 +223,7 @@ static gsize aot_code_high_addr = 0;
 /* Stats */
 static gint32 async_jit_info_size;
 
-#ifdef MONOTOUCH
+#ifdef TARGET_APPLE_MOBILE
 #define USE_PAGE_TRAMPOLINES (mscorlib_aot_module->use_page_trampolines)
 #else
 #define USE_PAGE_TRAMPOLINES 0
@@ -1792,7 +1792,7 @@ init_amodule_got (MonoAotModule *amodule, gboolean preinit)
 	mono_loader_unlock ();
 }
 
-#ifdef MONOTOUCH
+#ifdef TARGET_APPLE_MOBILE
 // Follow branch islands on ARM iOS machines.
 static inline guint8 *
 method_address_resolve (guint8 *code_addr)
@@ -5173,7 +5173,7 @@ mono_aot_get_plt_entry (host_mgreg_t *regs, guint8 *code)
 	g_assert_not_reached ();
 #endif
 
-#ifdef MONOTOUCH
+#ifdef TARGET_APPLE_MOBILE
 	while (target != NULL) {
 		if ((target >= (guint8*)(amodule->plt)) && (target < (guint8*)(amodule->plt_end)))
 			return target;
@@ -5463,7 +5463,7 @@ read_unwind_info (MonoAotModule *amodule, MonoTrampInfo *info, const char *symbo
 	return (guint32*)symbol_addr + 1;
 }
 
-#ifdef MONOTOUCH
+#ifdef TARGET_APPLE_MOBILE
 #include <mach/mach.h>
 
 static TrampolinePage* trampoline_pages [MONO_AOT_TRAMP_NUM];
@@ -5708,14 +5708,9 @@ get_numerous_trampoline (MonoAotTrampoline tramp_type, int n_got_slots, MonoAotM
 
 	mono_aot_lock ();
 
-#ifdef MONOTOUCH
-#define	MONOTOUCH_TRAMPOLINES_ERROR ". See http://docs.xamarin.com/ios/troubleshooting for instructions on how to fix this condition."
-#else
-#define	MONOTOUCH_TRAMPOLINES_ERROR ""
-#endif
 	if (amodule->trampoline_index [tramp_type] == amodule->info.num_trampolines [tramp_type]) {
-		g_error ("Ran out of trampolines of type %d in '%s' (limit %d)%s\n",
-				 tramp_type, image ? image->name : MONO_ASSEMBLY_CORLIB_NAME, amodule->info.num_trampolines [tramp_type], MONOTOUCH_TRAMPOLINES_ERROR);
+		g_error ("Ran out of trampolines of type %d in '%s' (limit %d)\n",
+				 tramp_type, image ? image->name : MONO_ASSEMBLY_CORLIB_NAME, amodule->info.num_trampolines [tramp_type]);
 	}
 	index = amodule->trampoline_index [tramp_type] ++;
 

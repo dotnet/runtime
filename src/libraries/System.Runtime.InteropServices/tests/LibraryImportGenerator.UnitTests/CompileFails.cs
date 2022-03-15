@@ -17,7 +17,7 @@ namespace LibraryImportGenerator.UnitTests
     {
         public static IEnumerable<object[]> CodeSnippetsToCompile()
         {
-            // Not GeneratedDllImportAttribute
+            // Not LibraryImportAttribute
             yield return new object[] { CodeSnippets.UserDefinedPrefixedAttributes, 0, 3 };
 
             // No explicit marshalling for char or string

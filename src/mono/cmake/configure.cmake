@@ -70,12 +70,12 @@ ac_check_headers (
   sys/ioctl.h sys/errno.h sys/sendfile.h sys/statvfs.h sys/statfs.h sys/mman.h sys/mount.h sys/time.h sys/random.h
   strings.h stdint.h unistd.h signal.h setjmp.h syslog.h netdb.h utime.h semaphore.h libproc.h alloca.h ucontext.h pwd.h elf.h
   gnu/lib-names.h netinet/tcp.h netinet/in.h link.h arpa/inet.h unwind.h poll.h wchar.h linux/magic.h
-  android/legacy_signal_inlines.h android/ndk-version.h execinfo.h pthread.h pthread_np.h net/if.h dirent.h
+  android/legacy_signal_inlines.h execinfo.h pthread.h pthread_np.h net/if.h dirent.h
   CommonCrypto/CommonDigest.h dlfcn.h getopt.h pwd.h alloca.h
   /usr/include/malloc.h)
 
 ac_check_funcs (
-  sigaction kill clock_nanosleep kqueue backtrace_symbols mkstemp mmap
+  sigaction kill clock_nanosleep backtrace_symbols mkstemp mmap
   getrusage dladdr sysconf getrlimit prctl nl_langinfo
   sched_getaffinity sched_setaffinity getpwuid_r readlink chmod lstat getdtablesize ftruncate msync
   getpeername utime utimes openlog closelog atexit popen strerror_r inet_pton inet_aton
@@ -166,6 +166,71 @@ if (HOST_LINUX OR HOST_ANDROID)
   set(CMAKE_REQUIRED_DEFINITIONS)
 endif()
 
+check_c_source_compiles(
+  "
+  int main(void)
+  {
+    static __thread int foo __attribute__((tls_model(\"initial-exec\")));
+    return 0;
+  }
+  "
+  HAVE_TLS_MODEL_ATTR)
+
+if (TARGET_RISCV32 OR TARGET_RISCV64)
+  check_c_source_compiles(
+    "
+    int main(void)
+    {
+      #ifdef __riscv_float_abi_double
+      #error \"double\"
+      #endif
+      return 0;
+    }
+    "
+    riscv_fpabi_result)
+
+    # check if the compile succeeded (-> not double)
+    if(riscv_fpabi_result EQUAL 0)
+      check_c_source_compiles(
+        "
+        int main(void)
+        {
+          #ifdef __riscv_float_abi_single
+          #error \"single\"
+          #endif
+          return 0;
+        }
+        "
+        riscv_fpabi_result)
+
+        # check if the compile succeeded (-> not single)
+        if(riscv_fpabi_result EQUAL 0)
+          check_c_source_compiles(
+            "
+            int main(void)
+            {
+              #ifdef __riscv_float_abi_soft
+              #error \"soft\"
+              #endif
+              return 0;
+            }
+            "
+            riscv_fpabi_result)
+
+            # check if the compile succeeded (-> not soft)
+            if(riscv_fpabi_result EQUAL 0)
+              message(FATAL_ERROR "Unable to detect RISC-V floating point abi.")
+            else()
+              set(RISCV_FPABI_SOFT 1)
+            endif()
+        else()
+            set(RISCV_FPABI_SINGLE 1)
+        endif()
+    else()
+        set(RISCV_FPABI_DOUBLE 1)
+    endif()
+endif()
+
 if(HOST_WIN32)
   # checking for this doesn't work for some reason, hardcode result
   set(HAVE_WINTERNL_H 1)
@@ -223,7 +288,6 @@ elseif(HOST_WASI)
   set(HAVE_SCHED_GETAFFINITY 0)
   set(HAVE_SCHED_SETAFFINITY 0)
   set(HAVE_GETIFADDRS 0)
-  set(HAVE_QP2GETIFADDRS 0)
   set(HAVE_GETADDRINFO 0)
   set(HAVE_GETHOSTBYNAME 0)
   set(HAVE_GETHOSTBYNAME2 0)

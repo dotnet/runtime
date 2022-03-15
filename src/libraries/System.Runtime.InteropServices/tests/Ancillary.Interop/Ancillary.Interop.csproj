@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(LibrariesProjectRoot)Common/src/System/Runtime/InteropServices/GeneratedDllImportAttribute.cs" Link="GeneratedDllImportAttribute.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common/src/System/Runtime/InteropServices/LibraryImportAttribute.cs" Link="LibraryImportAttribute.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common/src/System/Runtime/InteropServices/GeneratedMarshallingAttribute.cs" Link="GeneratedMarshallingAttribute.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common/src/System/Runtime/InteropServices/CustomTypeMarshallerKind.cs" Link="CustomTypeMarshallerKind.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common/src/System/Runtime/InteropServices/CustomTypeMarshallerDirection.cs" Link="CustomTypeMarshallerDirection.cs" />
