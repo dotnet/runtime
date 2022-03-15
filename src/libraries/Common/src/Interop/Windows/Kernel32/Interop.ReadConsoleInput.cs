@@ -16,7 +16,7 @@ internal static partial class Interop
         internal ushort wVirtualKeyCode;
         internal ushort wVirtualScanCode;
         private ushort _uChar; // Union between WCHAR and ASCII char
-        internal int dwControlKeyState;
+        internal uint dwControlKeyState;
 
         // _uChar is stored as short to avoid any ambiguity for interop marshaling
         internal char uChar => (char)_uChar;
