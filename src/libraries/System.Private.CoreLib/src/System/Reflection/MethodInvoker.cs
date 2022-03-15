@@ -9,7 +9,6 @@ namespace System.Reflection
     {
         internal InvocationFlags _invocationFlags;
         private readonly RuntimeMethodInfo _methodInfo;
-        private readonly bool _hasRefs;
 
         public MethodInvoker(RuntimeMethodInfo methodInfo)
         {
@@ -20,13 +19,13 @@ namespace System.Reflection
             {
                 if (sigTypes[i].IsByRef)
                 {
-                    _hasRefs = true;
+                    HasRefs = true;
                     break;
                 }
             }
         }
 
-        public bool HasRefs => _hasRefs;
+        public bool HasRefs { get; }
 
         [DebuggerStepThrough]
         [DebuggerHidden]

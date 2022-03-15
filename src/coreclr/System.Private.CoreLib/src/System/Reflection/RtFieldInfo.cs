@@ -116,7 +116,7 @@ namespace System.Reflection
         [DebuggerHidden]
         internal object? GetValueNonEmit(object? obj)
         {
-            RuntimeType? declaringType = this.DeclaringType as RuntimeType;
+            RuntimeType? declaringType = DeclaringType as RuntimeType;
             RuntimeType fieldType = (RuntimeType)FieldType;
             bool domainInitialized = false;
 

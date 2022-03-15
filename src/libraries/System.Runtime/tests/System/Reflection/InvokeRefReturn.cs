@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 using Xunit;
@@ -11,77 +10,6 @@ namespace System.Reflection.Tests
 {
     public class InvokeRefReturnNetcoreTests
     {
-        [Fact]
-        public void Test_Class()
-        {
-            MethodInfo mi = typeof(TestClass).GetMethod(nameof(TestClass.Initialize), BindingFlags.Instance | BindingFlags.Public);
-
-            int intField = 42;
-            int intProperty = 43;
-            string stringProperty = "Hello";
-
-            var obj = new TestClass();
-
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            for (long l = 0; l < 10_000_000; l++)
-            {
-                object ret = mi.Invoke(obj, BindingFlags.Default, null, new object[] { intField, intProperty, stringProperty }, null); //1977
-                //string str = (string)ret;
-                //object ret = mi.Invoke(obj, BindingFlags.Default, null, new object[] { intField, intProperty, stringProperty }, null); //1977
-
-                //object ret = mi.Invoke(obj, BindingFlags.SuppressChangeType, null, new object[] { intField, intProperty, stringProperty }, null); //804 456 (new)
-
-                //object ret = mi.Invoke(obj, BindingFlags.SuppressChangeType, null, new object[] { intField }, null); //631
-                //object ret = mi.Invoke(obj, new object[] { intField, intProperty, stringProperty });
-                //object ret = mi.InvokeDirect(obj, args);
-
-                //Assert.Equal(42, obj.MyIntField);
-                //Assert.Equal(43, obj.MyIntProperty);
-                //Assert.Equal("Hello", obj.MyStringProperty);
-            }
-            sw.Stop();
-
-            long ticks = sw.ElapsedMilliseconds;
-            throw new Exception("TIME:" + ticks);
-        }
-
-        [Fact]
-        public void Test_Class2()
-        {
-            MethodInfo mi = typeof(TestClass).GetMethod(nameof(TestClass.Initialize), BindingFlags.Instance | BindingFlags.Public);
-
-            int intField = 42;
-            int intProperty = 43;
-            string stringProperty = "Hello";
-
-            var obj = new TestClass();
-
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            for (long l = 0; l < 10_000_000; l++)
-            {
-                //obj = new TestClass();
-                object ret = mi.Invoke(obj, BindingFlags.SuppressChangeType, null, new object[] { intField, intProperty, stringProperty }, null); //1977
-
-                //object ret = mi.Invoke(obj, BindingFlags.Default, null, new object[] { intField, intProperty, stringProperty }, null); //1977
-
-                //object ret = mi.Invoke(obj, BindingFlags.SuppressChangeType, null, new object[] { intField, intProperty, stringProperty }, null); //804 456 (new)
-
-                //object ret = mi.Invoke(obj, BindingFlags.SuppressChangeType, null, new object[] { intField }, null); //631
-                //object ret = mi.Invoke(obj, new object[] { intField, intProperty, stringProperty });
-                //object ret = mi.InvokeDirect(obj, args);
-
-                //Assert.Equal(42, obj.MyIntField);
-                //Assert.Equal(43, obj.MyIntProperty);
-                //Assert.Equal("Hello", obj.MyStringProperty);
-            }
-            sw.Stop();
-
-            long ticks = sw.ElapsedMilliseconds;
-            throw new Exception("TIME:" + ticks);
-        }
-
         [Theory]
         [MemberData(nameof(RefReturnInvokeTestData))]
         public static void TestRefReturnPropertyGetValue<T>(T value)
@@ -248,59 +176,6 @@ namespace System.Reflection.Tests
             public TestClassIntPointer(int* value) { _value = value; }
             public ref int* RefReturningProp => ref _value;
             public ref int* NullRefReturningProp => ref *(int**)null;
-        }
-    }
-    internal sealed class TestClass
-    {
-        public int MyIntField;
-        public int MyIntProperty { get; set; }
-        public string MyStringProperty { get; set; }
-
-        // public void Initialize(out int myIntField, int myIntProperty, string myStringProperty)
-        public void Initialize(int myIntField, int myIntProperty, string myStringProperty)
-        {
-            MyIntField = myIntField;
-            MyIntProperty = myIntProperty;
-            MyStringProperty = myStringProperty;
-            //return "Hello";
-        }
-
-
-        public void Initialize1(int i)
-        {
-            string s = "SDF";
-            s += "sdg";
-        }
-
-        public void Initialize5(int myIntField, int myIntProperty, string myStringProperty, int p4, long p5)
-        {
-            MyIntField = myIntField;
-            MyIntProperty = myIntProperty;
-            MyStringProperty = myStringProperty;
-            p5 = 100;
-        }
-
-        public string InitializeAndReturn(int myIntField, int myIntProperty, string myStringProperty)
-        {
-            MyIntField = myIntField;
-            MyIntProperty = myIntProperty;
-            MyStringProperty = myStringProperty;
-            return MyStringProperty;
-        }
-
-        public string InitializeAndThrow(int myIntField, int myIntProperty, string myStringProperty)
-        {
-            throw new Exception("Hello");
-        }
-
-        public void AddToMyIntField(int value)
-        {
-            MyIntField += value;
-        }
-
-        public string ConcatToMyStringProperty(string value)
-        {
-            return MyStringProperty + value;
         }
     }
 }

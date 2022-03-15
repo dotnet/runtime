@@ -395,7 +395,7 @@ static OBJECTREF InvokeArrayConstructor(TypeHandle th, OBJECTREF** objs, int arg
         if (!*objs[i])
             COMPlusThrowArgumentException(W("parameters"), W("Arg_NullIndex"));
 
-        MethodTable* pMT = *objs[i]->GetMethodTable();
+        MethodTable* pMT = (*objs[i])->GetMethodTable();
         CorElementType oType = TypeHandle(pMT).GetVerifierCorElementType();
 
         if (!InvokeUtil::IsPrimitiveType(oType) || !InvokeUtil::CanPrimitiveWiden(ELEMENT_TYPE_I4,oType))

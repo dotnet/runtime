@@ -48,11 +48,8 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                unsafe // todo:remove
-                {
-                    m_invoker ??= new MethodInvoker(this);
-                    return m_invoker;
-                }
+                m_invoker ??= new MethodInvoker(this);
+                return m_invoker;
             }
         }
         #endregion
@@ -106,8 +103,6 @@ namespace System.Reflection
                 return m_signature ?? LazyCreateSignature();
             }
         }
-
-        internal RuntimeType[] Arguments => Signature.Arguments;
 
         internal BindingFlags BindingFlags => m_bindingFlags;
 

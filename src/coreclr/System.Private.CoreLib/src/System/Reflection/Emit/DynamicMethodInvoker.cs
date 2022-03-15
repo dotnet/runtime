@@ -8,7 +8,6 @@ namespace System.Reflection.Emit
 {
     internal sealed partial class DynamicMethodInvoker
     {
-        private readonly bool _hasRefs;
         private readonly DynamicMethod _dynamicMethod;
 
         public DynamicMethodInvoker(DynamicMethod dynamicMethod)
@@ -20,13 +19,13 @@ namespace System.Reflection.Emit
             {
                 if (sigTypes[i].IsByRef)
                 {
-                    _hasRefs = true;
+                    HasRefs = true;
                     break;
                 }
             }
         }
 
-        public bool HasRefs => _hasRefs;
+        public bool HasRefs { get; }
 
         public unsafe object? InvokeUnsafe(object? obj, IntPtr** args, BindingFlags invokeAttr)
         {

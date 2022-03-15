@@ -7,7 +7,6 @@ namespace System.Reflection
 {
     internal sealed partial class ConstructorInvoker
     {
-        private readonly bool _hasRefs;
         private readonly RuntimeConstructorInfo _constructorInfo;
         public InvocationFlags _invocationFlags;
 
@@ -20,13 +19,13 @@ namespace System.Reflection
             {
                 if (argTypes[i].IsByRef)
                 {
-                    _hasRefs = true;
+                    HasRefs = true;
                     break;
                 }
             }
         }
 
-        public bool HasRefs => _hasRefs;
+        public bool HasRefs { get; }
 
         [DebuggerStepThrough]
         [DebuggerHidden]
