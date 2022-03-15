@@ -4080,6 +4080,15 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
 {
     const bool tier0 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
     const bool tier1 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+
+    if (!opts.compMinOptsIsSet)
+    {
+        // If 'compMinOptsIsSet' is not set, just return here. Otherwise, if this method is called
+        // by the assertAbort(), we would recursively call assert while trying to get MinOpts()
+        // and eventually stackoverflow.
+        return "Optimization-Level-Not-Yet-Set";
+    }
+
     assert(!tier0 || !tier1); // We don't expect multiple TIER flags to be set at one time.
 
     if (tier0)
