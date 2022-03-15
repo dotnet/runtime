@@ -111,17 +111,25 @@ export type MONOType = typeof MONO;
 
 const BINDING = {
     //current "public" BINDING API
-    // Deprecated
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_obj_array_new: cwraps.mono_wasm_obj_array_new,
-    // Deprecated
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_obj_array_set: cwraps.mono_wasm_obj_array_set,
-    // Deprecated
+    /**
+     * @deprecated Not GC or thread safe
+     */
     js_string_to_mono_string,
     js_typed_array_to_array,
     js_to_mono_obj,
     mono_array_to_js_array,
     conv_string,
-    // Deprecated name
+    /**
+     * @deprecated Renamed to conv_string_root
+     */
     conv_string_rooted: conv_string_root,
     conv_string_root,
     bind_static_method: mono_bind_static_method,

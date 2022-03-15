@@ -226,7 +226,9 @@ export function js_string_to_mono_string_new_root(string: string, result: WasmRo
     Module._free(buffer);
 }
 
-// Deprecated
+/**
+ * @deprecated Not GC or thread safe
+ */
 export function js_string_to_mono_string_interned(string: string | symbol): MonoString {
     const temp = mono_wasm_new_root<MonoString>();
     try {
@@ -237,7 +239,9 @@ export function js_string_to_mono_string_interned(string: string | symbol): Mono
     }
 }
 
-// Deprecated
+/**
+ * @deprecated Not GC or thread safe
+ */
 export function js_string_to_mono_string(string: string): MonoString {
     const temp = mono_wasm_new_root<MonoString>();
     try {
@@ -248,7 +252,9 @@ export function js_string_to_mono_string(string: string): MonoString {
     }
 }
 
-// Deprecated
+/**
+ * @deprecated Not GC or thread safe
+ */
 export function js_string_to_mono_string_new(string: string): MonoString {
     const temp = mono_wasm_new_root<MonoString>();
     try {

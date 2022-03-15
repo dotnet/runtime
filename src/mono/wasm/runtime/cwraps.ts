@@ -93,7 +93,9 @@ export interface t_Cwraps {
     mono_wasm_add_satellite_assembly(name: string, culture: string, data: VoidPtr, size: number): void;
     mono_wasm_load_runtime(unused: string, debug_level: number): void;
 
-    // Deprecated
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_wasm_string_get_data(string: MonoString, outChars: CharPtrPtr, outLengthBytes: Int32Ptr, outIsInterned: Int32Ptr): void;
 
     // BINDING
@@ -125,15 +127,25 @@ export interface t_Cwraps {
     mono_wasm_get_type_name(ty: MonoType): string;
     mono_wasm_get_type_aqn(ty: MonoType): string;
 
-    // Deprecated
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_wasm_get_obj_type(str: MonoObject): number;
-    // Deprecated
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_wasm_invoke_method(method: MonoMethod, this_arg: MonoObject, params: VoidPtr, out_exc: MonoObjectRef): MonoObject;
-    // Deprecated
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_wasm_obj_array_new(size: number): MonoArray;
-    // Deprecated
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_wasm_array_get(array: MonoArray, idx: number): MonoObject;
-    // Deprecated
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_wasm_obj_array_set(array: MonoArray, idx: number, obj: MonoObject): void;
 
     //DOTNET

@@ -5,12 +5,14 @@ import { mono_wasm_new_root, mono_wasm_new_root_buffer, WasmRoot, WasmRootBuffer
 import {
     JSHandle, MonoArray, MonoMethod, MonoObject,
     MonoObjectNull, MonoString, coerceNull as coerceNull,
-    VoidPtrNull, MonoStringNull, MonoObjectRef, MonoObjectRefNull,
+    VoidPtrNull, MonoStringNull, MonoObjectRef,
     MonoStringRef
 } from "./types";
 import { BINDING, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
 import { _mono_array_root_to_js_array, _unbox_mono_obj_root } from "./cs-to-js";
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore used by unsafe export
 import { js_array_to_mono_array, _js_to_mono_obj_unsafe, _js_to_mono_obj_root } from "./js-to-cs";
 import {
     mono_bind_method,
@@ -319,6 +321,9 @@ export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: 
             if (typeof m === "undefined")
                 throw new Error("Method: '" + js_name + "' not found for: '" + Object.prototype.toString.call(obj) + "'");
             const res = m.apply(obj, js_args);
+
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore caller is unsafe also
             return _js_to_mono_obj_unsafe(true, res);
         } catch (ex) {
             return wrap_error(is_exception, ex);
@@ -618,6 +623,8 @@ export function mono_wasm_compile_function(code: MonoString, is_exception: Int32
         if (!res || typeof res !== "function")
             return wrap_error(is_exception, "Code must return an instance of a JavaScript function. Please use `return` statement to return a function.");
         Module.setValue(is_exception, 0, "i32");
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore caller is unsafe also
         return _js_to_mono_obj_unsafe(true, res);
     } catch (ex) {
         return wrap_error(is_exception, ex);

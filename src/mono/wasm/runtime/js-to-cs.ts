@@ -48,7 +48,9 @@ export function js_to_mono_obj(js_obj: any): MonoObject {
     }
 }
 
-// Deprecated
+/**
+ * @deprecated Not GC or thread safe
+ */
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function _js_to_mono_obj_unsafe(should_add_in_flight: boolean, js_obj: any): MonoObject {
     const temp = mono_wasm_new_root<MonoObject>();
