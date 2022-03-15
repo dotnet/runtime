@@ -254,7 +254,13 @@ declare function conv_string_root(root: WasmRoot<MonoString>): string | null;
  */
 declare function js_string_to_mono_string(string: string): MonoString;
 
+/**
+ * @deprecated Not GC or thread safe. For blazor use only
+ */
 declare function js_to_mono_obj(js_obj: any): MonoObject;
+/**
+ * @deprecated Not GC or thread safe
+ */
 declare function js_typed_array_to_array(js_obj: any): MonoArray;
 
 declare function unbox_mono_obj(mono_obj: MonoObject): any;

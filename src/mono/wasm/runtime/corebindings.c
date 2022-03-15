@@ -73,8 +73,8 @@ void core_initialize_internals ()
 #define MARSHAL_ARRAY_FLOAT 17
 #define MARSHAL_ARRAY_DOUBLE 18
 
-EMSCRIPTEN_KEEPALIVE MonoArray*
-mono_wasm_typed_array_new (char *arr, int length, int size, int type)
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_typed_array_new_ref (char *arr, int length, int size, int type, MonoArray **result)
 {
 	MonoClass *typeClass = mono_get_byte_class(); // default is Byte
 	switch (type) {
@@ -106,9 +106,10 @@ mono_wasm_typed_array_new (char *arr, int length, int size, int type)
 	buffer = mono_array_new (mono_get_root_domain(), typeClass, length);
 	memcpy(mono_array_addr_with_size(buffer, sizeof(char), 0), arr, length * size);
 
-	return buffer;
+	mono_gc_wbarrier_generic_store_atomic(result, (MonoObject *)buffer);
 }
 
+// TODO: Remove - no longer used? If not, convert to ref
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_unbox_enum (MonoObject *obj)
 {

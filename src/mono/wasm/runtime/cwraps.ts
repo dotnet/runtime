@@ -57,7 +57,7 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_assembly_get_entry_point", "number", ["number"]],
     ["mono_wasm_get_delegate_invoke_ref", "number", ["number"]],
     ["mono_wasm_string_array_new_ref", "void", ["number", "number"]],
-    ["mono_wasm_typed_array_new", "number", ["number", "number", "number", "number"]],
+    ["mono_wasm_typed_array_new_ref", "void", ["number", "number", "number", "number", "number"]],
     ["mono_wasm_class_get_type", "number", ["number"]],
     ["mono_wasm_type_get_class", "number", ["number"]],
     ["mono_wasm_get_type_name", "string", ["number"]],
@@ -123,7 +123,7 @@ export interface t_Cwraps {
     mono_wasm_intern_string_ref(strRef: MonoStringRef): void;
     mono_wasm_assembly_get_entry_point(assembly: MonoAssembly): MonoMethod;
     mono_wasm_string_array_new_ref(size: number, result: MonoObjectRef): void;
-    mono_wasm_typed_array_new(arr: VoidPtr, length: number, size: number, type: number): MonoArray;
+    mono_wasm_typed_array_new_ref(arr: VoidPtr, length: number, size: number, type: number, result: MonoObjectRef): void;
     mono_wasm_class_get_type(klass: MonoClass): MonoType;
     mono_wasm_type_get_class(ty: MonoType): MonoClass;
     mono_wasm_get_delegate_invoke_ref(delegate: MonoObjectRef): MonoMethod;

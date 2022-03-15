@@ -37,6 +37,9 @@ export function _js_to_mono_uri_root(should_add_in_flight: boolean, js_obj: any,
 }
 
 // this is only used from Blazor
+/**
+ * @deprecated Not GC or thread safe. For blazor use only
+ */
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function js_to_mono_obj(js_obj: any): MonoObject {
     const temp = mono_wasm_new_root<MonoObject>();
@@ -154,8 +157,7 @@ function js_typedarray_to_heap(typedArray: TypedArray) {
     return heapBytes;
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function js_typed_array_to_array(js_obj: any): MonoArray {
+export function js_typed_array_to_array_ref(js_obj: any, result: WasmRoot<MonoArray>): void {
     // JavaScript typed arrays are array-like objects and provide a mechanism for accessing
     // raw binary data. (...) To achieve maximum flexibility and efficiency, JavaScript typed arrays
     // split the implementation into buffers and views. A buffer (implemented by the ArrayBuffer object)
@@ -167,12 +169,25 @@ export function js_typed_array_to_array(js_obj: any): MonoArray {
     if (has_backing_array_buffer(js_obj) && js_obj.BYTES_PER_ELEMENT) {
         const arrayType = js_obj[wasm_type_symbol];
         const heapBytes = js_typedarray_to_heap(js_obj);
-        const bufferArray = cwraps.mono_wasm_typed_array_new(<any>heapBytes.byteOffset, js_obj.length, js_obj.BYTES_PER_ELEMENT, arrayType);
+        cwraps.mono_wasm_typed_array_new_ref(<any>heapBytes.byteOffset, js_obj.length, js_obj.BYTES_PER_ELEMENT, arrayType, result.address);
         Module._free(<any>heapBytes.byteOffset);
-        return bufferArray;
     }
     else {
         throw new Error("Object '" + js_obj + "' is not a typed array");
+    }
+}
+
+/**
+ * @deprecated Not GC or thread safe
+ */
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function js_typed_array_to_array(js_obj: any): MonoArray {
+    const temp = mono_wasm_new_root<MonoArray>();
+    try {
+        js_typed_array_to_array_ref(js_obj, temp);
+        return temp.value;
+    } finally {
+        temp.release();
     }
 }
 
