@@ -14159,8 +14159,7 @@ GenTree* Compiler::fgOptimizeBitwiseXor(GenTreeOp* xorOp)
     if (op2->IsIntegralConst(0))
     {
         /* "x ^ 0" is "x" */
-        DEBUG_DESTROY_NODE(xorOp);
-        DEBUG_DESTROY_NODE(op2);
+        DEBUG_DESTROY_NODE(xorOp, op2);
         return op1;
     }
     else if (op2->IsIntegralConst(-1))
