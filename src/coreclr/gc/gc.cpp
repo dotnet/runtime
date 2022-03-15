@@ -3957,9 +3957,9 @@ void region_allocator::move_highest_free_regions (int64_t n, bool small_region_p
         {
             uint32_t* index = current_index - (current_num_units - 1);
             heap_segment* region = get_region_info (region_address_of (index));
-            if (is_free_region (region))
+            if (is_free_region (region) && !region_free_list::is_on_free_list (region, to_free_list))
             {
-                if (n >= current_num_units && !region_free_list::is_on_free_list (region, to_free_list))
+                if (n >= current_num_units)
                 {
                     n -= current_num_units;
 
