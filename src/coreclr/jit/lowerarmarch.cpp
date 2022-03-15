@@ -1675,7 +1675,8 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 
     // Find "a - b * c" in order to emit MSUB
     if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(node) && !node->isContained() && node->OperIs(GT_SUB) &&
-        !node->gtOverflow() && op2->OperIs(GT_MUL) && !op2->isContained() && !op2->gtOverflow() && varTypeIsIntegral(op2))
+        !node->gtOverflow() && op2->OperIs(GT_MUL) && !op2->isContained() && !op2->gtOverflow() &&
+        varTypeIsIntegral(op2))
     {
         GenTree* a = op1;
         GenTree* b = op2->gtGetOp1();

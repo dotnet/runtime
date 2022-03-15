@@ -10087,8 +10087,8 @@ void CodeGen::genCodeForMsub(GenTreeOp* tree)
 
     // d = a - b * c
     // MSUB d, b, c, a
-    GetEmitter()->emitIns_R_R_R_R(INS_msub, emitActualTypeSize(tree), tree->GetRegNum(),
-                                  b->GetRegNum(), c->GetRegNum(), a->GetRegNum());
+    GetEmitter()->emitIns_R_R_R_R(INS_msub, emitActualTypeSize(tree), tree->GetRegNum(), b->GetRegNum(), c->GetRegNum(),
+                                  a->GetRegNum());
     genProduceReg(tree);
 }
 
