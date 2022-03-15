@@ -184,11 +184,7 @@ namespace System.IO
             => GetAttributes(handle: null, path, fileName, continueOnError);
 
         internal FileAttributes GetAttributes(SafeFileHandle handle, bool continueOnError = false)
-        {
-            ReadOnlySpan<char> path = handle.Path;
-            ReadOnlySpan<char> fileName = Path.GetFileName(path);
-            return GetAttributes(handle, path, fileName, continueOnError);
-        }
+            => GetAttributes(handle, handle.Path!, Path.GetFileName(handle.Path!), continueOnError);
 
         private FileAttributes GetAttributes(SafeFileHandle? handle, ReadOnlySpan<char> path, ReadOnlySpan<char> fileName, bool continueOnError = false)
         {
@@ -273,7 +269,7 @@ namespace System.IO
             if (newMode != _fileCache.Mode)
             {
                 int rv = handle is not null ? Interop.Sys.FChMod(handle, newMode) :
-                                              Interop.Sys.ChMod(path!, newMode);
+                                              Interop.Sys.ChMod(path, newMode);
                 Interop.CheckIo(rv, path, asDirectory);
             }
 
@@ -414,7 +410,7 @@ namespace System.IO
             }
 #endif
             int rv = handle is not null ? Interop.Sys.FUTimens(handle, buf) :
-                                          Interop.Sys.UTimensat(path!, buf);
+                                          Interop.Sys.UTimensat(path, buf);
             Interop.CheckIo(rv, path, asDirectory);
 
             // On OSX-like platforms, when the modification time is less than the creation time (including
@@ -537,17 +533,6 @@ namespace System.IO
         }
 
         private static string GetHandlePath(SafeFileHandle handle)
-        {
-            if (handle.Path is null)
-            {
-                ThrowHandleHasNoPath();
-            }
-            return handle.Path!;
-
-            static void ThrowHandleHasNoPath()
-            {
-                throw new ArgumentException(SR.Arg_HandleHasNoPath);
-            }
-        }
+            => handle.Path ?? throw new ArgumentException(SR.Arg_HandleHasNoPath);
     }
 }
