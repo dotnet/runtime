@@ -186,7 +186,7 @@ namespace System
         // only KeyUp until the key is released.
         private static bool IsKeyDownEvent(Interop.InputRecord ir)
         {
-            return (ir.eventType == Interop.KEY_EVENT && ir.keyEvent.keyDown != Interop.BOOL.FALSE);
+            return (ir.eventType == Interop.KEY_EVENT && ir.keyEvent.bKeyDown != Interop.BOOL.FALSE);
         }
 
         private static bool IsModKey(Interop.InputRecord ir)
@@ -194,7 +194,7 @@ namespace System
             // We should also skip over Shift, Control, and Alt, as well as caps lock.
             // Apparently we don't need to check for 0xA0 through 0xA5, which are keys like
             // Left Control & Right Control. See the ConsoleKey enum for these values.
-            short keyCode = ir.keyEvent.virtualKeyCode;
+            short keyCode = ir.keyEvent.wVirtualKeyCode;
             return ((keyCode >= 0x10 && keyCode <= 0x12)
                     || keyCode == 0x14 || keyCode == 0x90 || keyCode == 0x91);
         }
@@ -220,7 +220,7 @@ namespace System
         // unicode char alone when the Alt key is released.
         private static bool IsAltKeyDown(Interop.InputRecord ir)
         {
-            return (((ControlKeyState)ir.keyEvent.controlKeyState)
+            return (((ControlKeyState)ir.keyEvent.dwControlKeyState)
                               & (ControlKeyState.LeftAltPressed | ControlKeyState.RightAltPressed)) != 0;
         }
 
@@ -315,11 +315,11 @@ namespace System
                 {
                     // We had a previous keystroke with repeated characters.
                     ir = _cachedInputRecord;
-                    if (_cachedInputRecord.keyEvent.repeatCount == 0)
+                    if (_cachedInputRecord.keyEvent.wRepeatCount == 0)
                         _cachedInputRecord.eventType = -1;
                     else
                     {
-                        _cachedInputRecord.keyEvent.repeatCount--;
+                        _cachedInputRecord.keyEvent.wRepeatCount--;
                     }
                     // We will return one key from this method, so we decrement the
                     // repeatCount here, leaving the cachedInputRecord in the "queue".
@@ -339,7 +339,7 @@ namespace System
                             throw new InvalidOperationException(SR.InvalidOperation_ConsoleReadKeyOnFile);
                         }
 
-                        short keyCode = ir.keyEvent.virtualKeyCode;
+                        short keyCode = ir.keyEvent.wVirtualKeyCode;
 
                         // First check for non-keyboard events & discard them. Generally we tap into only KeyDown events and ignore the KeyUp events
                         // but it is possible that we are dealing with a Alt+NumPad unicode key sequence, the final unicode char is revealed only when
@@ -377,9 +377,9 @@ namespace System
                             continue;
                         }
 
-                        if (ir.keyEvent.repeatCount > 1)
+                        if (ir.keyEvent.wRepeatCount > 1)
                         {
-                            ir.keyEvent.repeatCount--;
+                            ir.keyEvent.wRepeatCount--;
                             _cachedInputRecord = ir;
                         }
                         break;
@@ -387,12 +387,12 @@ namespace System
                 }  // we did NOT have a previous keystroke with repeated characters.
             }
 
-            ControlKeyState state = (ControlKeyState)ir.keyEvent.controlKeyState;
+            ControlKeyState state = (ControlKeyState)ir.keyEvent.dwControlKeyState;
             bool shift = (state & ControlKeyState.ShiftPressed) != 0;
             bool alt = (state & (ControlKeyState.LeftAltPressed | ControlKeyState.RightAltPressed)) != 0;
             bool control = (state & (ControlKeyState.LeftCtrlPressed | ControlKeyState.RightCtrlPressed)) != 0;
 
-            ConsoleKeyInfo info = new ConsoleKeyInfo(ir.keyEvent.uChar, (ConsoleKey)ir.keyEvent.virtualKeyCode, shift, alt, control);
+            ConsoleKeyInfo info = new ConsoleKeyInfo(ir.keyEvent.uChar, (ConsoleKey)ir.keyEvent.wVirtualKeyCode, shift, alt, control);
 
             if (!intercept)
                 Console.Write(ir.keyEvent.uChar);

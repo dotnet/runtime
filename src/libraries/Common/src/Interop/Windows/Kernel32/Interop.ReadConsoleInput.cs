@@ -8,16 +8,15 @@ internal static partial class Interop
 {
     internal const short KEY_EVENT = 1;
 
-    // Windows's KEY_EVENT_RECORD
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct KeyEventRecord
+    internal struct KEY_EVENT_RECORD
     {
-        internal BOOL keyDown;
-        internal short repeatCount;
-        internal short virtualKeyCode;
-        internal short virtualScanCode;
+        internal BOOL bKeyDown;
+        internal short wRepeatCount;
+        internal short wVirtualKeyCode;
+        internal short wVirtualScanCode;
         internal char uChar; // Union between WCHAR and ASCII char
-        internal int controlKeyState;
+        internal int dwControlKeyState;
     }
 
     // Really, this is a union of KeyEventRecords and other types.
@@ -25,7 +24,7 @@ internal static partial class Interop
     internal struct InputRecord
     {
         internal short eventType;
-        internal KeyEventRecord keyEvent;
+        internal KEY_EVENT_RECORD keyEvent;
         // This struct is a union!  Word alignment should take care of padding!
     }
 
