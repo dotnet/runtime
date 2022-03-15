@@ -982,55 +982,33 @@ namespace System.Reflection.Emit
         public int EndCol;
     }
 
-    internal sealed class Int32Stack
+    internal sealed class Int32Stack : List<int>
     {
-        private int[] _array;
-        private int _size;
-
-        private const int _defaultCapacity = 10;
-
-        public Int32Stack()
+        public Int32Stack(int initialCapacity) : base(initialCapacity)
         {
-            _array = new int[_defaultCapacity];
-            _size = 0;
         }
-
-        public Int32Stack(int initialCapacity)
-        {
-            if (initialCapacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(initialCapacity), SR.ArgumentOutOfRange_NeedNonNegNum);
-
-            if (initialCapacity < _defaultCapacity)
-                initialCapacity = _defaultCapacity;
-            _array = new int[initialCapacity];
-            _size = 0;
-        }
-
-        public int Count => _size;
 
         public int Peek()
         {
-            if (_size == 0)
+            if (Count == 0)
                 throw new InvalidOperationException();
 
-            return _array[_size - 1];
+            return this[Count - 1];
         }
 
         public int Pop()
         {
-            if (_size == 0)
+            if (Count == 0)
                 throw new InvalidOperationException();
 
-            return _array[--_size];
+            int value = this[Count - 1];
+            RemoveAt(Count - 1);
+            return value;
         }
 
-        public void Push(int obj)
+        public void Push(int value)
         {
-            if (_size == _array.Length)
-            {
-                Array.Resize(ref _array, 2 * _array.Length);
-            }
-            _array[_size++] = obj;
+            Add(value);
         }
     }
 }
