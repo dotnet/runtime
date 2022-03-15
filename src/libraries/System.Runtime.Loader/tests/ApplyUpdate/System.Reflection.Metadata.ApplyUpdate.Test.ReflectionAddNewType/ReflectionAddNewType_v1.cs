@@ -19,6 +19,8 @@ public class ZExistingClass
 
     public int NewField;
 
+    public static DateTime NewStaticField;
+
     public double NewProp { get; set; }
 }
 
