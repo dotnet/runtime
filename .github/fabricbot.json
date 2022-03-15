@@ -403,7 +403,8 @@
             "area-System.Formats.Cbor"
           ],
           "mentionees": [
-            "dotnet/area-system-formats-cbor"
+            "dotnet/area-system-formats-cbor",
+            "vcsjones"
           ]
         },
         {
@@ -411,7 +412,8 @@
             "area-System.Formats.Asn1"
           ],
           "mentionees": [
-            "dotnet/area-system-formats-asn1"
+            "dotnet/area-system-formats-asn1",
+            "vcsjones"
           ]
         },
         {
