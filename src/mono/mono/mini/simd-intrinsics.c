@@ -1065,6 +1065,19 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR, -1, arg0_type, fsig, args);
 	case SN_CreateScalarUnsafe:
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
+	case SN_Dot: {
+#ifdef TARGET_ARM64
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+
+		int instc0 = type_enum_is_float (arg0_type) ? OP_FMUL : OP_IMUL;
+		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
+
+		return emit_sum_vector (cfg, fsig->params [0], arg0_type, pairwise_multiply);
+#else
+		return NULL;
+#endif
+	}
 	case SN_Equals:
 	case SN_EqualsAll:
 	case SN_EqualsAny: {
