@@ -502,13 +502,40 @@ namespace System.Reflection.Metadata
 
 		allTypes = assm.GetTypes();
 
-		CheckReflectedType(assm, allTypes, ns, "ZExistingClass");
+		CheckReflectedType(assm, allTypes, ns, "ZExistingClass", static (ty) =>
+		{
+		    var allMethods = ty.GetMethods();
+
+		    MethodInfo newMethod = null;
+		    foreach (var meth in allMethods)
+		    {
+			if (meth.Name == "NewMethod")
+			    newMethod = meth;
+		    }
+		    Assert.NotNull (newMethod);
+
+		    Assert.Equal (newMethod, ty.GetMethod ("NewMethod"));
+
+		    var allFields = ty.GetFields();
+
+		    FieldInfo newField = null;
+		    foreach (var fld in allFields)
+		    {
+			if (fld.Name == "NewField")
+			    newField = fld;
+		    }
+		    Assert.NotNull(newField);
+
+		    Assert.Equal(newField, ty.GetField("NewField"));
+
+		});
 		CheckReflectedType(assm, allTypes, ns, "ZExistingClass+PreviousNestedClass");
 		CheckReflectedType(assm, allTypes, ns, "IExistingInterface");
 
 		CheckReflectedType(assm, allTypes, ns, "ZExistingClass+NewNestedClass");
 
-		var newTy = CheckReflectedType(assm, allTypes, ns, "NewToplevelClass", static (ty) => {
+		var newTy = CheckReflectedType(assm, allTypes, ns, "NewToplevelClass", static (ty) =>
+		{
 		    var nested = ty.GetNestedType("AlsoNested");
 		    var allNested = ty.GetNestedTypes();
 
@@ -529,8 +556,8 @@ namespace System.Reflection.Metadata
 			if (itf.Name == "IExistingInterface")
 			    hasINewInterface = true;
 		    }
-		    Assert.True (hasICloneable);
-		    Assert.True (hasINewInterface);
+		    Assert.True(hasICloneable);
+		    Assert.True(hasINewInterface);
 		});
 		CheckReflectedType(assm, allTypes, ns, "NewGenericClass`1");
 		CheckReflectedType(assm, allTypes, ns, "NewToplevelStruct");
@@ -538,11 +565,11 @@ namespace System.Reflection.Metadata
 		CheckReflectedType(assm, allTypes, ns, "NewEnum");
 
 		// make some instances using reflection and use them through known interfaces
-		var o = Activator.CreateInstance (newTy);
+		var o = Activator.CreateInstance(newTy);
 
 		var i = (System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.IExistingInterface)o;
 
-		Assert.Equal ("123", i.ItfMethod (123));
+		Assert.Equal("123", i.ItfMethod(123));
 	    });
 	}
     }
