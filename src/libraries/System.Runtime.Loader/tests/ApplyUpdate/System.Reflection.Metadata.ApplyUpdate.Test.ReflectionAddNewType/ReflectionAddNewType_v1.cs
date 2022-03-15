@@ -13,6 +13,13 @@ public class ZExistingClass
 {
     public class PreviousNestedClass { }
     public class NewNestedClass {};
+
+
+    public string NewMethod (string s, int i) => s + i.ToString();
+
+    public int NewField;
+
+    public double NewProp { get; set; }
 }
 
 public class NewToplevelClass : IExistingInterface, ICloneable {
