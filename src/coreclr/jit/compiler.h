@@ -8878,23 +8878,6 @@ private:
     }
 
 #ifdef FEATURE_SIMD
-
-#ifndef TARGET_ARM64
-    // Should we support SIMD intrinsics?
-    bool featureSIMD;
-#endif
-
-    // Should we recognize SIMD types?
-    // We always do this on ARM64 to support HVA types.
-    bool supportSIMDTypes()
-    {
-#ifdef TARGET_ARM64
-        return true;
-#else
-        return featureSIMD;
-#endif
-    }
-
     // Have we identified any SIMD types?
     // This is currently used by struct promotion to avoid getting type information for a struct
     // field to see if it is a SIMD type, if we haven't seen any SIMD types or operations in
