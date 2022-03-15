@@ -50,6 +50,7 @@ namespace System.DirectoryServices.Protocols
         public static ConnectionHandle GetHandle() => s_handle;
     }
 
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public class SortKey
     {
         private string _name;

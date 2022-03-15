@@ -13,6 +13,7 @@ namespace System.DirectoryServices.Protocols
 {
     // Declared as partial in order to be able to set the different StructLayout
     // attributes in the Windows and Linux specific files.
+    // This is a layout-controlled struct, do not alter property ordering.
     internal partial struct SortKeyInterop
     {
         public SortKeyInterop(SortKey sortKey)
@@ -25,10 +26,10 @@ namespace System.DirectoryServices.Protocols
             ReverseOrder = sortKey.ReverseOrder;
         }
 
-        public string AttributeName { get; set; }
+        internal string AttributeName { get; set; }
 
-        public string MatchingRule { get; set; }
+        internal string MatchingRule { get; set; }
 
-        public bool ReverseOrder { get; set; }
+        internal bool ReverseOrder { get; set; }
     }
 }
