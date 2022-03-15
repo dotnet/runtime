@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.6.2)
 include(CheckCCompilerFlag)
-set(CMAKE_VERBOSE_MAKEFILE on)
 
 if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     # CMake 3.14.5 contains bug fixes for iOS
@@ -13,10 +12,6 @@ cmake_policy(SET CMP0042 NEW)
 
 project(CoreFX C)
 
-message(STATUS "Sapana Debug Navtive build")
-message(STATUS "CLR_CMAKE_TARGET_ARCH=${CLR_CMAKE_TARGET_ARCH}")
-message(STATUS "TARGET_ARCH_NAME=${TARGET_ARCH_NAME}")
-message(STATUS "CMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}")
 include(../../../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 

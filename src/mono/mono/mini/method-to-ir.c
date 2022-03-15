@@ -6824,7 +6824,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			float *f;
 			gboolean use_aotconst = FALSE;
 
-#if defined(TARGET_POWERPC) || defined(TARGET_POWERPC64)
+#ifdef TARGET_POWERPC
 			/* FIXME: Clean this up */
 			if (cfg->compile_aot)
 				use_aotconst = TRUE;
@@ -6856,7 +6856,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			double *d;
 			gboolean use_aotconst = FALSE;
 
-#if defined(TARGET_POWERPC) || defined(TARGET_POWERPC64)
+#ifdef TARGET_POWERPC
 			/* FIXME: Clean this up */
 			if (cfg->compile_aot)
 				use_aotconst = TRUE;
@@ -11446,7 +11446,7 @@ mono_ldptr:
 		cfg->cbb->next_bb = end_bblock;
 	}
 
-#if defined(TARGET_POWERPC) || defined(TARGET_POWERPC64) || defined(TARGET_X86)
+#if defined(TARGET_POWERPC) || defined(TARGET_X86)
 	if (cfg->compile_aot)
 		/* FIXME: The plt slots require a GOT var even if the method doesn't use it */
 		mono_get_got_var (cfg);
