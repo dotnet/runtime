@@ -21637,6 +21637,24 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(
                            /* isSimdAsHWIntrinsic */ false, op1, op2, op3);
 }
 
+GenTreeLclVar* Compiler::gtNewLclvForMultiRegIntrinsicNode(GenTreeHWIntrinsic* intrinsicNode, CORINFO_SIG_INFO* sig)
+{
+    assert(HWIntrinsicInfo::IsMultiReg(intrinsicNode->GetHWIntrinsicId()));
+
+    const unsigned lclNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg intrinsic"));
+    impAssignTempGen(lclNum, intrinsicNode, sig->retTypeSigClass, (unsigned)CHECK_SPILL_ALL);
+
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
+    // The following is to exclude the fields of the local to have SSA.
+    varDsc->lvIsMultiRegRet = true;
+
+    GenTreeLclVar* lclVar = gtNewLclvNode(lclNum, varDsc->lvType);
+    lclVar->SetDoNotCSE();
+    lclVar->SetMultiReg();
+
+    return lclVar;
+}
+
 // Returns true for the HW Intrinsic instructions that have MemoryLoad semantics, false otherwise
 bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
 {

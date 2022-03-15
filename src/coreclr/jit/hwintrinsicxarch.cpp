@@ -2243,18 +2243,7 @@ GenTree* Compiler::impX86BaseIntrinsic(NamedIntrinsic        intrinsic,
             // Store the type from signature into SIMD base type for convenience
             divRemIntrinsic->SetSimdBaseJitType(simdBaseJitType);
 
-            const unsigned lclNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg intrinsic"));
-            impAssignTempGen(lclNum, divRemIntrinsic, sig->retTypeSigClass, (unsigned)CHECK_SPILL_ALL);
-
-            LclVarDsc* varDsc = lvaGetDesc(lclNum);
-            // The following is to exclude the fields of the local to have SSA.
-            varDsc->lvIsMultiRegRet = true;
-
-            GenTreeLclVar* lclVar = gtNewLclvNode(lclNum, varDsc->lvType);
-            lclVar->SetDoNotCSE();
-            lclVar->SetMultiReg();
-
-            retNode = lclVar;
+            retNode = gtNewLclvForMultiRegIntrinsicNode(divRemIntrinsic, sig);
             break;
         }
 
