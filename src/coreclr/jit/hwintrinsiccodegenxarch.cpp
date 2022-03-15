@@ -1197,8 +1197,12 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node)
             // op1: EAX, op2: EDX, op3: free
             assert(op1Reg != REG_EDX);
             assert(op2Reg != REG_EAX);
-            assert(op3Reg != REG_EDX);
-            assert(op3Reg != REG_EAX);
+            if (op3->isUsedFromReg())
+            {
+                assert(op3Reg != REG_EDX);
+                assert(op3Reg != REG_EAX);
+            }
+
             emit->emitIns_Mov(INS_mov, attr, REG_EAX, op1Reg, /* canSkip */ true);
             emit->emitIns_Mov(INS_mov, attr, REG_EDX, op2Reg, /* canSkip */ true);
 
