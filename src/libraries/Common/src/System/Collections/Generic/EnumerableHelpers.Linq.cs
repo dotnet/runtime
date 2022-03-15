@@ -81,7 +81,6 @@ namespace System.Collections.Generic
             }
 
             LargeArrayBuilder<T> builder = new();
-
             builder.AddRange(source);
             return builder.ToArray();
         }
