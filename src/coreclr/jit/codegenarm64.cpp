@@ -10171,7 +10171,7 @@ void CodeGen::genCodeForCond(GenTreeOp* tree)
     {
         case GT_CS_NEG_MI:
         {
-            ins = INS_csneg;
+            ins  = INS_csneg;
             cond = INS_COND_MI;
             break;
         }
