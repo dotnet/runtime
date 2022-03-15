@@ -810,7 +810,7 @@
       <MonoExec>$(LocalMonoDotnet)</MonoExec>
     </PropertyGroup>
     <ItemGroup>
-      <AssembliesToPrecompile 
+      <AssembliesToPrecompile
           Include="$(LocalMonoDotnetDir)\shared\Microsoft.NETCore.App\**\*.dll"
           Exclude="$(LocalMonoDotnetDir)\shared\Microsoft.NETCore.App\**\System.Runtime.WindowsRuntime.dll" />
     </ItemGroup>
@@ -848,7 +848,7 @@
     <Error Condition="'$(Destination)' == ''" Text="Destination should not be empty" />
     <Error Condition="@(_MonoRuntimeArtifacts->Count()) &lt; 2" Text="Mono artifacts were not found at $(BinDir)" />
     <Message Text="Copying Mono Runtime artifacts from '$(BinDir)' to '$(Destination)'.'" Importance="High" />
-    <Copy SourceFiles="@(_MonoRuntimeArtifacts)" 
+    <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
           DestinationFolder="$(Destination)"
           OverwriteReadOnlyFiles="true" />
   </Target>
@@ -918,7 +918,7 @@
   <Target Name="RunLibrariesTest" DependsOnTargets="PatchLibrariesTesthost">
     <Error Condition="$(LibraryToTest) == ''" Text="LibraryToTest variable is not set" />
     <Error Condition="$(LibraryToTest.EndsWith('.Tests'))" Text="LibraryToTest should not end with .Tests, e.g. just 'System.Runtime'" />
-    <MSBuild Projects="$(RepoRoot)src\libraries\$(LibraryToTest)\tests\$(LibraryToTest).Tests.csproj" 
+    <MSBuild Projects="$(RepoRoot)src\libraries\$(LibraryToTest)\tests\$(LibraryToTest).Tests.csproj"
              Properties="Configuration=$(LibrariesTestConfig)" Targets="Test" />
   </Target>
 
