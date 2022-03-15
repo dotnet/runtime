@@ -249,6 +249,11 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     status = MsQuicApi.Api.ConfigurationLoadCredentialDelegate(configurationHandle, ref config);
                 }
 
+                if (status == 0x80090331 && MsQuicApi.Tls13MayBeDisabled)
+                {
+                    throw new QuicTlsVersionException(status);
+                }
+
                 QuicExceptionHelpers.ThrowIfFailed(status, "ConfigurationLoadCredential failed.");
             }
             catch
