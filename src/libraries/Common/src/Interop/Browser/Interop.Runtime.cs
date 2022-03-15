@@ -50,7 +50,7 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void WebSocketReceive(int webSocketJSHandle, IntPtr bufferPtr, int offset, int length, IntPtr responsePtr, out int promiseJSHandle, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void WebSocketOpenRef(string uri, object[]? subProtocols, in Delegate onClosed, out int webSocketJSHandle, out int promiseJSHandle, out int exceptionalResult, out object result);
+        internal static extern void WebSocketOpenRef(in string uri, in object[]? subProtocols, in Delegate onClosed, out int webSocketJSHandle, out int promiseJSHandle, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void WebSocketAbort(int webSocketJSHandle, out int exceptionalResult, out string result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

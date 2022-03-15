@@ -30,11 +30,10 @@ let _text_encoder_utf8: TextEncoder | undefined = undefined;
 const ws_send_buffer_blocking_threshold = 65536;
 const emptyBuffer = new Uint8Array();
 
-// fixme: ref
-export function mono_wasm_web_socket_open_ref(uri: MonoString, subProtocols: MonoArray, on_close: MonoObjectRef, web_socket_js_handle: Int32Ptr, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+export function mono_wasm_web_socket_open_ref(uri_address: MonoObjectRef, subProtocols: MonoObjectRef, on_close: MonoObjectRef, web_socket_js_handle: Int32Ptr, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const result_root = mono_wasm_new_external_root<MonoObject>(result_address);
-    const uri_root = mono_wasm_new_root(uri);
-    const sub_root = mono_wasm_new_root(subProtocols);
+    const uri_root = mono_wasm_new_external_root<MonoString>(uri_address);
+    const sub_root = mono_wasm_new_external_root<MonoArray>(subProtocols);
     const on_close_root = mono_wasm_new_root();
     on_close_root.copy_from_address(on_close);
     try {

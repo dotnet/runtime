@@ -23,6 +23,9 @@ export class StringDecoder {
         }
     }
 
+    /**
+     * @deprecated Not GC or thread safe
+     */
     copy(mono_string: MonoString): string | null {
         this.init_fields();
         if (mono_string === MonoStringNull)
@@ -100,6 +103,9 @@ let _interned_string_current_root_buffer_count = 0;
 export const string_decoder = new StringDecoder();
 export const mono_wasm_empty_string = "";
 
+/**
+ * @deprecated Not GC or thread safe
+ */
 export function conv_string(mono_obj: MonoString): string | null {
     return string_decoder.copy(mono_obj);
 }

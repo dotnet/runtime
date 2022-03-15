@@ -244,8 +244,14 @@ declare function mono_wasm_load_config(configFilePath: string): Promise<void>;
 
 declare function mono_wasm_load_icu_data(offset: VoidPtr): boolean;
 
+/**
+ * @deprecated Not GC or thread safe
+ */
 declare function conv_string(mono_obj: MonoString): string | null;
 declare function conv_string_root(root: WasmRoot<MonoString>): string | null;
+/**
+ * @deprecated Not GC or thread safe
+ */
 declare function js_string_to_mono_string(string: string): MonoString;
 
 declare function js_to_mono_obj(js_obj: any): MonoObject;
@@ -321,13 +327,25 @@ declare const MONO: {
 };
 declare type MONOType = typeof MONO;
 declare const BINDING: {
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_obj_array_new: (size: number) => MonoArray;
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_obj_array_set: (array: MonoArray, idx: number, obj: MonoObject) => void;
+    /**
+     * @deprecated Not GC or thread safe
+     */
     js_string_to_mono_string: typeof js_string_to_mono_string;
     js_typed_array_to_array: typeof js_typed_array_to_array;
     js_to_mono_obj: typeof js_to_mono_obj;
     mono_array_to_js_array: typeof mono_array_to_js_array;
     conv_string: typeof conv_string;
+    /**
+     * @deprecated Renamed to conv_string_root
+     */
     conv_string_rooted: typeof conv_string_root;
     conv_string_root: typeof conv_string_root;
     bind_static_method: typeof mono_bind_static_method;

@@ -107,6 +107,9 @@ export interface t_Cwraps {
     mono_wasm_assembly_find_type(assembly: MonoAssembly, namespace: string, name: string): MonoType;
     mono_wasm_assembly_find_method(klass: MonoClass, name: string, args: number): MonoMethod;
     mono_wasm_invoke_method_ref(method: MonoMethod, this_arg: MonoObjectRef, params: VoidPtr, out_exc: MonoObjectRef, out_result: MonoObjectRef): void;
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_wasm_string_get_utf8(str: MonoString): CharPtr;
     mono_wasm_string_from_utf16_ref(str: CharPtr, len: number, result: MonoObjectRef): void;
     mono_wasm_array_length(array: MonoArray): number;
@@ -149,6 +152,9 @@ export interface t_Cwraps {
     mono_wasm_obj_array_set(array: MonoArray, idx: number, obj: MonoObject): void;
 
     //DOTNET
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_wasm_string_from_js(str: string): MonoString;
 
     //INTERNAL

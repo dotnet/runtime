@@ -505,6 +505,9 @@ function _wrap_error_flag(is_exception: Int32Ptr | null, ex: any): string {
     return res;
 }
 
+/**
+ * @deprecated Not GC or thread safe
+ */
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function wrap_error(is_exception: Int32Ptr | null, ex: any): MonoString {
     const res = _wrap_error_flag(is_exception, ex);
