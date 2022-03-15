@@ -501,6 +501,28 @@ namespace System.Reflection.Metadata
 		    Assert.Equal(newField, ty.GetField("NewField"));
 		    Assert.Equal(newStaticField, ty.GetField("NewStaticField", BindingFlags.Static | BindingFlags.Public));
 
+		    // FIXME: finish this
+#if false
+		    var allProperties = ty.GetProperties();
+
+		    PropertyInfo newProp = null;
+		    foreach (var prop in allProperties)
+		    {
+			if (prop.Name == "NewProp")
+			    newProp = prop;
+		    }
+		    Assert.NotNull(newProp);
+
+		    Assert.Equal(newProp, ty.GetProperty("NewProp"));
+
+		    MethodInfo newPropGet = newProp.GetGetMethod();
+		    Assert.NotNull(newPropGet);
+		    MethodInfo newPropSet = newProp.GetSetMethod();
+		    Assert.NotNull(newPropSet);
+
+		    Assert.Equal("get_NewProp", newPropGet.Name);
+#endif
+
 		});
 		CheckReflectedType(assm, allTypes, ns, "ZExistingClass+PreviousNestedClass");
 		CheckReflectedType(assm, allTypes, ns, "IExistingInterface");
@@ -535,7 +557,17 @@ namespace System.Reflection.Metadata
 		CheckReflectedType(assm, allTypes, ns, "NewGenericClass`1");
 		CheckReflectedType(assm, allTypes, ns, "NewToplevelStruct");
 		CheckReflectedType(assm, allTypes, ns, "INewInterface");
-		CheckReflectedType(assm, allTypes, ns, "NewEnum");
+		CheckReflectedType(assm, allTypes, ns, "NewEnum", static (ty) => {
+#if false
+		    var names = Enum.GetNames (ty);
+		    Assert.Equal(3, names.Length);
+		    var vals = Enum.GetValues (ty);
+		    Assert.Equal(3, vals.Length);
+
+		    Assert.NotNull(Enum.Parse (ty, "Red"));
+		    Assert.NotNull(Enum.Parse (ty, "Yellow"));
+#endif
+		});
 
 		// make some instances using reflection and use them through known interfaces
 		var o = Activator.CreateInstance(newTy);
