@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set +x
+
 source_directory=$BUILD_SOURCESDIRECTORY
 core_root_directory=
 baseline_core_root_directory=
@@ -171,9 +173,10 @@ while (($# > 0)); do
   esac
 done
 
-if [[ "$repository" == "dotnet/performance" || "$repository" == "dotnet-performance" ]]; then
-    run_from_perf_repo=true
-fi
+repository="radical/performance"
+#if [[ "$repository" == "dotnet/performance" || "$repository" == "dotnet-performance" ]]; then
+    #run_from_perf_repo=true
+#fi
 
 if [ -z "$configurations" ]; then
     configurations="CompilationMode=$compilation_mode"
@@ -268,9 +271,10 @@ if [[ "$run_from_perf_repo" == true ]]; then
     performance_directory=$workitem_directory
     setup_arguments="--perf-hash $commit_sha $common_setup_arguments"
 else
-    git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
+    git clone --branch debug-ci --depth 1 --quiet https://github.com/radical/performance.git $performance_directory
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
+    git clone https://github.com/radical/BenchmarkDotNet.git $benchmark_directory
 
     docs_directory=$performance_directory/docs
     mv $docs_directory $workitem_directory
