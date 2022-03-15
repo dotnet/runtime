@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>wa_info</RootNamespace>
+    <ToolCommandName>wa-diff</ToolCommandName>
+    <PackAsTool>true</PackAsTool>
+    <Version>$(ProductVersion)</Version>
+    <Company>Microsoft Corporation</Company>
+    <Copyright>2022 Microsoft Corporation</Copyright>
+    <Authors>Radek Doulik</Authors>
+    <PackageOutputPath>nupkg</PackageOutputPath>
+    <PackageDescription>wa-diff is a tool that compares WebAssembly binary files</PackageDescription>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <RepositoryUrl>https://github.com/radekdoulik/wa-info</RepositoryUrl>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Extensions.cs" Link="Extensions.cs" />
+    <Compile Include="..\WasmOpcode.cs" Link="WasmOpcode.cs" />
+    <Compile Include="..\WasmReader.cs" Link="WasmReader.cs" />
+    <Compile Include="..\WasmSIMDOpcode.cs" Link="WasmSIMDOpcode.cs" />
+    <Compile Include="..\WasmStructs.cs" Link="WasmStructs.cs" />
+    <PackageReference Include="Mono.Options" Version="6.12.0.148" />
+    <None Include="README.md" Pack="true" PackagePath="\"/>
+    <None Include="LICENSE" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+
+</Project>

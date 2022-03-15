@@ -47,7 +47,7 @@ namespace WebAssemblyInfo
                 ReadSection();
         }
 
-        enum SectionId
+        protected enum SectionId
         {
             Custom = 0,
             Type,
@@ -64,17 +64,19 @@ namespace WebAssemblyInfo
             DataCount
         }
 
-        struct SectionInfo
+        protected struct SectionInfo
         {
             public SectionId id;
             public UInt32 size;
         }
-        List<SectionInfo> sections = new();
+        protected Dictionary<SectionId, SectionInfo> sections = new();
+        protected List<SectionId> sectionIds = new();
 
         void ReadSection()
         {
             var section = new SectionInfo() { id = (SectionId)Reader.ReadByte(), size = ReadU32() };
-            sections.Add(section);
+            sections[section.id] = section;
+            sectionIds.Add(section.id);
 
             if (Program.Verbose)
                 Console.Write($"Reading section: {section.id,9} size: {section.size,12}");
@@ -1238,10 +1240,11 @@ namespace WebAssemblyInfo
             Console.WriteLine($"  sections: {sections.Count}");
 
             int customSectionOffset = 0;
-            for (int i = 0; i < sections.Count; i++)
+            for (int i = 0; i < sectionIds.Count; i++)
             {
-                var sectionName = (sections[i].id == SectionId.Custom && customSectionOffset < customSectionNames.Count) ? $" name: {customSectionNames[customSectionOffset++]}" : "";
-                Console.WriteLine($"    id: {sections[i].id}{sectionName} size: {sections[i].size:N0}");
+                var id = sectionIds[i];
+                var sectionName = (id == SectionId.Custom && customSectionOffset < customSectionNames.Count) ? $" name: {customSectionNames[customSectionOffset++]}" : "";
+                Console.WriteLine($"    id: {id}{sectionName} size: {sections[id].size:N0}");
             }
         }
     }

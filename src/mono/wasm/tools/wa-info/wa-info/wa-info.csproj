@@ -6,7 +6,7 @@
     <RootNamespace>wa_info</RootNamespace>
     <ToolCommandName>wa-info</ToolCommandName>
     <PackAsTool>true</PackAsTool>
-    <Version>0.0.6</Version>
+    <Version>$(ProductVersion)</Version>
     <Company>Microsoft Corporation</Company>
     <Copyright>2021 Microsoft Corporation</Copyright>
     <Authors>Radek Doulik</Authors>

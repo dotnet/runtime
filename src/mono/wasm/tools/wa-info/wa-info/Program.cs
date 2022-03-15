@@ -83,7 +83,7 @@ namespace WebAssemblyInfo
         {
             var help = false;
             var options = new OptionSet {
-                $"Usage: wa-info.exe OPTIONS* file.wasm [file2.wasm ...]",
+                $"Usage: wa-info OPTIONS* file.wasm [file2.wasm ...]",
                 "",
                 "Provides information about WebAssembly file(s)",
                 "",
