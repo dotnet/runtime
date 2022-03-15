@@ -3966,9 +3966,6 @@ typedef POSVERSIONINFOEXA POSVERSIONINFOEX;
 typedef LPOSVERSIONINFOEXA LPOSVERSIONINFOEX;
 #endif
 
-#define IMAGE_FILE_MACHINE_I386              0x014c
-#define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
-
 typedef struct _SYSTEM_INFO {
     WORD wProcessorArchitecture_PAL_Undefined;
     WORD wReserved_PAL_Undefined; // NOTE: diff from winbase.h - no obsolete dwOemId union
@@ -5039,10 +5036,6 @@ public:
                                             catch (...) {}
 
 #define PAL_CPP_ENDTRY                  }
-
-#ifdef _MSC_VER
-#pragma warning(disable:4611) // interaction between '_setjmp' and C++ object destruction is non-portable
-#endif
 
 #define PAL_TRY_FOR_DLLMAIN(ParamType, paramDef, paramRef, _reason) PAL_TRY(ParamType, paramDef, paramRef)
 

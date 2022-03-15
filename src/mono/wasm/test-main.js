@@ -10,6 +10,10 @@
 const is_browser = typeof window != "undefined";
 const is_node = !is_browser && typeof process === 'object' && typeof process.versions === 'object' && typeof process.versions.node === 'string';
 
+if (is_node && process.versions.node.split(".")[0] < 14) {
+    throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}'`);
+}
+
 // if the engine doesn't provide a console
 if (typeof (console) === "undefined") {
     globalThis.console = {
@@ -94,6 +98,22 @@ if (is_browser) {
         console[m] = proxyConsoleMethod(`console.${m}`, send, true);
 }
 
+function stringify_as_error_with_stack(err) {
+    if (!err)
+        return "";
+
+    if (App && App.INTERNAL)
+        return App.INTERNAL.mono_wasm_stringify_as_error_with_stack(err);
+
+    if (err.stack)
+        return err.stack;
+
+    if (typeof err == "string")
+        return err;
+
+    return JSON.stringify(err);
+}
+
 if (typeof globalThis.crypto === 'undefined') {
     // **NOTE** this is a simple insecure polyfill for testing purposes only
     // /dev/random doesn't work on js shells, so define our own
@@ -153,16 +173,11 @@ loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
             App.init({ MONO, INTERNAL, BINDING, Module });
         },
         onAbort: (error) => {
-            console.log("ABORT: " + error);
-            const err = new Error();
-            console.log("Stacktrace: \n");
-            console.error(err.stack);
-            set_exit_code(1, error);
+            set_exit_code(1, stringify_as_error_with_stack(new Error()));
         },
     }))
 }).catch(function (err) {
-    console.error(err);
-    set_exit_code(1, "failed to load the dotnet.js file.\n" + err);
+    set_exit_code(1, "failed to load the dotnet.js file.\n" + stringify_as_error_with_stack(err));
 });
 
 const App = {
@@ -244,10 +259,12 @@ globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.
 
 function set_exit_code(exit_code, reason) {
     if (reason) {
-        console.error(`${JSON.stringify(reason)}`);
-        if (reason.stack) {
-            console.error(reason.stack);
-        }
+        if (reason instanceof Error)
+            console.error(stringify_as_error_with_stack(reason));
+        else if (typeof reason == "string")
+            console.error(reason);
+        else
+            console.error(JSON.stringify(reason));
     }
 
     if (is_browser) {

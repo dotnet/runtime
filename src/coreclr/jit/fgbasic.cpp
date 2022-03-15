@@ -2385,6 +2385,7 @@ void Compiler::fgMarkBackwardJump(BasicBlock* targetBlock, BasicBlock* sourceBlo
         }
     }
 
+    sourceBlock->bbFlags |= BBF_BACKWARD_JUMP_SOURCE;
     targetBlock->bbFlags |= BBF_BACKWARD_JUMP_TARGET;
 }
 

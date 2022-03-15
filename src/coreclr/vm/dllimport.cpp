@@ -436,12 +436,12 @@ public:
 
             if (callConvInfo & CORINFO_CALLCONV_HASTHIS)
             {
-                ((PTR_DynamicMethodDesc)pStubMD)->m_dwExtendedFlags &= ~mdStatic;
+                ((PTR_DynamicMethodDesc)pStubMD)->ClearFlags(DynamicMethodDesc::FlagStatic);
                 pStubMD->ClearStatic();
             }
             else
             {
-                ((PTR_DynamicMethodDesc)pStubMD)->m_dwExtendedFlags |= mdStatic;
+                ((PTR_DynamicMethodDesc)pStubMD)->SetFlags(DynamicMethodDesc::FlagStatic);
                 pStubMD->SetStatic();
             }
 
@@ -3825,19 +3825,6 @@ static void CreateNDirectStubWorker(StubState*               pss,
                             DEBUG_ARG(pSigDesc->m_pDebugClassName)
                             );
 
-    // If the return value is a SafeHandle or CriticalHandle, mark the stub method.
-    // Interop methods that use this stub will have an implicit reliability contract
-    // (see code:TAStackCrawlCallBack).
-    if (!SF_IsHRESULTSwapping(dwStubFlags))
-    {
-        if (marshalType == MarshalInfo::MARSHAL_TYPE_SAFEHANDLE ||
-            marshalType == MarshalInfo::MARSHAL_TYPE_CRITICALHANDLE)
-        {
-            if (pMD->IsDynamicMethod())
-                pMD->AsDynamicMethodDesc()->SetUnbreakable(true);
-        }
-    }
-
     if (SF_IsHRESULTSwapping(dwStubFlags))
     {
         if (msig.GetReturnType() != ELEMENT_TYPE_VOID)
@@ -3868,7 +3855,8 @@ static void CreateNDirectStubWorker(StubState*               pss,
         DynamicMethodDesc *pDMD = pMD->AsDynamicMethodDesc();
 
         pDMD->SetNativeStackArgSize(static_cast<WORD>(nativeStackSize));
-        pDMD->SetStubNeedsCOMStarted(fStubNeedsCOM);
+        if (fStubNeedsCOM)
+            pDMD->SetFlags(DynamicMethodDesc::FlagRequiresCOM);
     }
 
     // FinishEmit needs to know the native stack arg size so we call it after the number
@@ -5703,7 +5691,9 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
         UNREACHABLE_MSG("unexpected MethodDesc type");
     }
 
-    if (pStubMD != NULL && pStubMD->IsILStub() && pStubMD->AsDynamicMethodDesc()->IsStubNeedsCOMStarted())
+    if (pStubMD != NULL
+        && pStubMD->IsILStub()
+        && pStubMD->AsDynamicMethodDesc()->HasFlags(DynamicMethodDesc::FlagRequiresCOM))
     {
         // the stub uses COM so make sure that it is started
         EnsureComStarted();

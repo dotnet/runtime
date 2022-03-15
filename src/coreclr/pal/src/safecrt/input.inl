@@ -40,9 +40,6 @@
 
 #define UNALIGNED
 
-#define _BEGIN_SECURE_CRT_DEPRECATION_DISABLE
-#define _END_SECURE_CRT_DEPRECATION_DISABLE
-
 #define _CVTBUFSIZE (309+40) /* # of digits in max. dp value + slop */
 
 #define _MBTOWC(x,y,z) _minimal_chartowchar( x, y )
@@ -695,16 +692,12 @@ scanit:
                                     /* convert wide to multibyte */
                                     if (array_width >= ((size_t)MB_CUR_MAX))
                                     {
-_BEGIN_SECURE_CRT_DEPRECATION_DISABLE
                                         temp = wctomb((char *)pointer, ch);
-_END_SECURE_CRT_DEPRECATION_DISABLE
                                     }
                                     else
                                     {
                                         char tmpbuf[MB_LEN_MAX];
-_BEGIN_SECURE_CRT_DEPRECATION_DISABLE
                                         temp = wctomb(tmpbuf, ch);
-_END_SECURE_CRT_DEPRECATION_DISABLE
                                         if (temp > 0 && ((size_t)temp) > array_width)
                                         {
                                             /* We have exhausted the user's buffer */

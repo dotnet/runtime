@@ -1587,7 +1587,7 @@ m_field_get_meta_flags (MonoClassField *field)
 	return (unsigned int)(field->parent_and_flags & MONO_CLASS_FIELD_META_FLAG_MASK);
 }
 
-static inline gboolean
+static inline int
 m_field_get_offset (MonoClassField *field)
 {
 	g_assert (m_class_is_fields_inited (m_field_get_parent (field)));

@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.IO;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -174,6 +177,40 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.NotNull(converter);
                 Assert.True(converter is JsonConverter<TConverterReturn>);
             }
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/66232", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/66371", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))] 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void GetConverter_Poco_WriteThrowsNotSupportedException()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                JsonSerializerOptions options = new();
+                JsonConverter<Point_2D> converter = (JsonConverter<Point_2D>)options.GetConverter(typeof(Point_2D));
+
+                using var writer = new Utf8JsonWriter(new MemoryStream());
+                var value = new Point_2D(0, 0);
+
+                // Running the converter without priming the options instance
+                // for reflection-based serialization should throw NotSupportedException
+                // since it can't resolve reflection-based metadata.
+                Assert.Throws<NotSupportedException>(() => converter.Write(writer, value, options));
+                Debug.Assert(writer.BytesCommitted + writer.BytesPending == 0);
+
+                JsonSerializer.Serialize(42, options);
+
+                // Same operation should succeed when instance has been primed.
+                converter.Write(writer, value, options);
+                Debug.Assert(writer.BytesCommitted + writer.BytesPending > 0);
+                writer.Reset();
+
+                // State change should not leak into unrelated options instances.
+                var options2 = new JsonSerializerOptions();
+                options2.AddContext<JsonContext>();
+                Assert.Throws<NotSupportedException>(() => converter.Write(writer, value, options2));
+                Debug.Assert(writer.BytesCommitted + writer.BytesPending == 0);
+            }).Dispose();
         }
 
         [Fact]

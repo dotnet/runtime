@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(MSBuildThisFileDirectory)\Char\CMakeLists.txt" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)\LPStr\CMakeLists.txt" />
+    <CMakeProjectReference Include="$(MSBuildThisFileDirectory)\Char\CMakeLists.txt" />
+    <CMakeProjectReference Include="$(MSBuildThisFileDirectory)\LPStr\CMakeLists.txt" />
   </ItemGroup>
 </Project>

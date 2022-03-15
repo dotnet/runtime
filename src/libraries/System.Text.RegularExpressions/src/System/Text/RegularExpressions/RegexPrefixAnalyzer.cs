@@ -191,12 +191,11 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Finds sets at fixed-offsets from the beginning of the pattern/</summary>
-        /// <param name="tree">The RegexNode tree.</param>
+        /// <param name="root">The RegexNode tree root.</param>
         /// <param name="culture">The culture to use for any case conversions.</param>
         /// <param name="thorough">true to spend more time finding sets (e.g. through alternations); false to do a faster analysis that's potentially more incomplete.</param>
         /// <returns>The array of found sets, or null if there aren't any.</returns>
-        public static List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)>? FindFixedDistanceSets(
-            RegexTree tree, CultureInfo culture, bool thorough)
+        public static List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)>? FindFixedDistanceSets(RegexNode root, CultureInfo culture, bool thorough)
         {
             const int MaxLoopExpansion = 20; // arbitrary cut-off to avoid loops adding significant overhead to processing
             const int MaxFixedResults = 50; // arbitrary cut-off to avoid generating lots of sets unnecessarily
@@ -204,13 +203,7 @@ namespace System.Text.RegularExpressions
             // Find all fixed-distance sets.
             var results = new List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)>();
             int distance = 0;
-            TryFindFixedSets(tree.Root, results, ref distance, culture, thorough);
-#if DEBUG
-            foreach ((char[]? Chars, string Set, int Distance, bool CaseInsensitive) result in results)
-            {
-                Debug.Assert(result.Distance <= tree.MinRequiredLength, $"Min: {tree.MinRequiredLength}, Distance: {result.Distance}, Tree: {tree}");
-            }
-#endif
+            TryFindFixedSets(root, results, ref distance, culture, thorough);
 
             // Remove any sets that match everything; they're not helpful.  (This check exists primarily to weed
             // out use of . in Singleline mode.)
@@ -233,7 +226,7 @@ namespace System.Text.RegularExpressions
             // doesn't.
             if (results.Count == 0)
             {
-                (string CharClass, bool CaseInsensitive)? first = FindFirstCharClass(tree, culture);
+                (string CharClass, bool CaseInsensitive)? first = FindFirstCharClass(root, culture);
                 if (first is not null)
                 {
                     results.Add((null, first.Value.CharClass, 0, first.Value.CaseInsensitive));
@@ -540,10 +533,10 @@ namespace System.Text.RegularExpressions
         /// variable position, but this will find [ab] as it's instead looking for anything that under any
         /// circumstance could possibly start a match.
         /// </summary>
-        public static (string CharClass, bool CaseInsensitive)? FindFirstCharClass(RegexTree tree, CultureInfo culture)
+        public static (string CharClass, bool CaseInsensitive)? FindFirstCharClass(RegexNode root, CultureInfo culture)
         {
             var s = new RegexPrefixAnalyzer(stackalloc int[StackBufferSize]);
-            RegexFC? fc = s.RegexFCFromRegexTree(tree);
+            RegexFC? fc = s.RegexFCFromRegexTree(root);
             s.Dispose();
 
             if (fc == null || fc._nullable)
@@ -563,17 +556,18 @@ namespace System.Text.RegularExpressions
         /// Analyzes the pattern for a leading set loop followed by a non-overlapping literal. If such a pattern is found, an implementation
         /// can search for the literal and then walk backward through all matches for the loop until the beginning is found.
         /// </summary>
-        public static (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? FindLiteralFollowingLeadingLoop(RegexTree tree)
+        public static (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? FindLiteralFollowingLeadingLoop(RegexNode node)
         {
-            RegexNode node = tree.Root;
             if ((node.Options & RegexOptions.RightToLeft) != 0)
             {
                 // As a simplification, ignore RightToLeft.
                 return null;
             }
 
-            // Find the first concatenation.
-            while ((node.Kind is RegexNodeKind.Atomic or RegexNodeKind.Capture) || (node.Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop && node.M > 0))
+            // Find the first concatenation.  We traverse through atomic and capture nodes as they don't effect flow control.  (We don't
+            // want to explore loops, even if they have a guaranteed iteration, because we may use information about the node to then
+            // skip the node's execution in the matching algorithm, and we would need to special-case only skipping the first iteration.)
+            while (node.Kind is RegexNodeKind.Atomic or RegexNodeKind.Capture)
             {
                 node = node.Child(0);
             }
@@ -788,9 +782,9 @@ namespace System.Text.RegularExpressions
         /// through the tree and calls CalculateFC to emits code before
         /// and after each child of an interior node, and at each leaf.
         /// </summary>
-        private RegexFC? RegexFCFromRegexTree(RegexTree tree)
+        private RegexFC? RegexFCFromRegexTree(RegexNode root)
         {
-            RegexNode? curNode = tree.Root;
+            RegexNode? curNode = root;
             int curChild = 0;
 
             while (true)

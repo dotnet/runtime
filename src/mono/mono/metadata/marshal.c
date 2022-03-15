@@ -4003,11 +4003,18 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			mono_error_set_invalid_program (error, "method %s with UnmanagedCallersOnlyAttribute has types not usable when marshalling is disabled", mono_method_full_name (method, TRUE));
 			return NULL;
 		}
-		mspecs = g_new0 (MonoMarshalSpec*, invoke_sig->param_count + 1);
 	} else {
 		invoke = mono_get_delegate_invoke_internal (delegate_klass);
 		invoke_sig = mono_method_signature_internal (invoke);
-		mspecs = g_new0 (MonoMarshalSpec*, invoke_sig->param_count + 1);
+	}
+
+	if (invoke_sig->ret->type == MONO_TYPE_GENERICINST) {
+		mono_error_set_generic_error (error, "System.Runtime.InteropServices", "MarshalDirectiveException", "%s", "Cannot marshal 'return value': Non-blittable generic types cannot be marshaled.");
+		return NULL;
+	}
+
+	mspecs = g_new0 (MonoMarshalSpec*, invoke_sig->param_count + 1);
+	if (invoke) {
 		mono_method_get_marshal_info (invoke, mspecs);
 		marshalling_enabled = runtime_marshalling_enabled(m_class_get_image (delegate_klass));
 	}
@@ -5545,7 +5552,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 			size = mono_marshal_type_size (field->type, info->fields [j].mspec,
 						       &align, TRUE, m_class_is_unicode (klass));
 			min_align = MAX (align, min_align);
-			info->fields [j].offset = field->offset - MONO_ABI_SIZEOF (MonoObject);
+			info->fields [j].offset = m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject);
 			info->native_size = MAX (info->native_size, info->fields [j].offset + size);
 			break;
 		}

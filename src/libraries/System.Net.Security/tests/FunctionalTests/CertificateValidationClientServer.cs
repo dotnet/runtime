@@ -99,12 +99,7 @@ namespace System.Net.Security.Tests
                 if (delayCertificate)
                 {
                     // LocalCertificateSelectionCallback should be called with real remote certificate.
-                    if (!OperatingSystem.IsWindows())
-                    {
-                        // remote certificate does not work on windows.
-                        // https://github.com/dotnet/runtime/issues/63321
-                        Assert.NotNull(remoteCertificate);
-                    }
+                    Assert.NotNull(remoteCertificate);
                 }
             }
         }

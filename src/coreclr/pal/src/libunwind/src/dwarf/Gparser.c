@@ -390,9 +390,9 @@ run_cfi_program (struct dwarf_cursor *c, dwarf_state_record_t *sr,
           if (((ret = read_regnum (as, a, addr, &regnum, arg)) < 0)
               || ((ret = dwarf_read_uleb128 (as, a, addr, &val, arg)) < 0))
             break;
-          set_reg (sr, regnum, DWARF_WHERE_CFAREL, -(val * dci->data_align));
+          set_reg (sr, regnum, DWARF_WHERE_CFAREL, (unw_word_t)(-(unw_sword_t)val));
           Debug (15, "CFA_GNU_negative_offset_extended cfa+0x%lx\n",
-                 (long) -(val * dci->data_align));
+                 (long)(unw_word_t)(-(unw_sword_t)val));
           break;
 
         case DW_CFA_GNU_window_save:

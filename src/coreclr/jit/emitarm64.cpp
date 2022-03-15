@@ -12275,9 +12275,17 @@ void emitter::emitDispIns(
 
     emitDispInsOffs(offset, doffs);
 
-    /* Display the instruction hex code */
+    BYTE* pCodeRW = nullptr;
+    if (pCode != nullptr)
+    {
+        /* Display the instruction hex code */
+        assert(((pCode >= emitCodeBlock) && (pCode < emitCodeBlock + emitTotalHotCodeSize)) ||
+               ((pCode >= emitColdCodeBlock) && (pCode < emitColdCodeBlock + emitTotalColdCodeSize)));
 
-    emitDispInsHex(id, pCode, sz);
+        pCodeRW = pCode + writeableOffset;
+    }
+
+    emitDispInsHex(id, pCodeRW, sz);
 
     printf("      ");
 
