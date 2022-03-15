@@ -144,6 +144,12 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         GenTree* retBufArgNode = node->AsCall()->GetLclRetBufArgNode();
         if (retBufArgNode != nullptr)
         {
+            // If a copy/reload is inserted by LSRA, retrieve the returnBuffer
+            if (retBufArgNode->IsCopyOrReload())
+            {
+                retBufArgNode = retBufArgNode->AsCopyOrReload()->gtGetOp1();
+            }
+
             m_flags |= ALIAS_WRITES_LCL_VAR;
             m_lclNum  = retBufArgNode->AsLclVarCommon()->GetLclNum();
             m_lclOffs = retBufArgNode->AsLclVarCommon()->GetLclOffs();
