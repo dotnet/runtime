@@ -81,7 +81,7 @@ namespace Microsoft.Extensions.Logging
         public LoggerFilterRule(string? providerName, string? categoryName, Microsoft.Extensions.Logging.LogLevel? logLevel, System.Func<string?, string?, Microsoft.Extensions.Logging.LogLevel, bool>? filter) { }
         public string? CategoryName { get { throw null; } }
         public System.Func<string?, string?, Microsoft.Extensions.Logging.LogLevel, bool>? Filter { get { throw null; } }
-        public Microsoft.Extensions.Logging.LogLevel LogLevel { get { throw null; } }
+        public Microsoft.Extensions.Logging.LogLevel? LogLevel { get { throw null; } }
         public string? ProviderName { get { throw null; } }
         public override string ToString() { throw null; }
     }
