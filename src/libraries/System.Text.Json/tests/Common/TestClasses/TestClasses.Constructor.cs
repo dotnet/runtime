@@ -2326,18 +2326,18 @@ namespace System.Text.Json.Serialization.Tests
             = new MyEventsListerItem
             {
                 Campaign = "A very nice campaign",
-                EndDate = DateTime.UtcNow.AddDays(7),
+                EndDate = DateTimeTestHelpers.FixedDateTimeValue.AddDays(7),
                 EventId = 321,
                 EventName = "wonderful name",
                 Organization = "Local Animal Shelter",
-                StartDate = DateTime.UtcNow.AddDays(-7),
+                StartDate = DateTimeTestHelpers.FixedDateTimeValue.AddDays(-7),
                 TimeZone = TimeZoneInfo.Utc.DisplayName,
                 VolunteerCount = 15,
                 Tasks = Enumerable.Repeat(
                     new MyEventsListerItemTask
                     {
-                        StartDate = DateTime.UtcNow,
-                        EndDate = DateTime.UtcNow.AddDays(1),
+                        StartDate = DateTimeTestHelpers.FixedDateTimeValue,
+                        EndDate = DateTimeTestHelpers.FixedDateTimeValue.AddDays(1),
                         Name = "A very nice task to have"
                     }, 4).ToList()
             };
