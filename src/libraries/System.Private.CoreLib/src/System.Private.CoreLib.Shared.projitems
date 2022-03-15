@@ -1972,8 +1972,8 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.CopyFile.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.CopyFile.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Dl.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Dl.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.DynamicLoad.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.DynamicLoad.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ErrNo.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.ErrNo.cs</Link>

@@ -104,7 +104,7 @@ public class NativeLibraryTests : IDisposable
     {
         // DllImport doesn't add a prefix if the name is preceeded by a path specification.
         // Linux and Mac need both prefix and suffix
-        string libName = NativeLibraryToLoad.GetFileName();
+        string libName = Path.Combine(testBinDir, NativeLibraryToLoad.Name);
         EXPECT(LoadLibrary_WithAssembly(libName, assembly, null), TestResult.DllNotFound);
         EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, null), TestResult.ReturnFailure);
     }
