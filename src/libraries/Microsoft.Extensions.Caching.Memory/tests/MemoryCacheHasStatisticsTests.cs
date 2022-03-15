@@ -16,23 +16,6 @@ namespace Microsoft.Extensions.Caching.Memory
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void GetCurrentStatistics_Basic(bool sizeLimitIsSet)
-        {
-            var cache = sizeLimitIsSet ? 
-                new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 }) :
-                new MemoryCache(new MemoryCacheOptions { });
-
-            MemoryCacheStatistics stats = cache.GetCurrentStatistics();
-
-            Assert.Equal(0, stats.CurrentEntryCount);
-            Assert.Equal(0, stats.TotalRequests);
-            Assert.Equal(0, stats.TotalHits);
-            VerifyCurrentSize(0, sizeLimitIsSet, stats);
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
         public void GetCurrentStatistics_GetCache_UpdatesStatistics(bool sizeLimitIsSet)
         {
             var cache = sizeLimitIsSet ? 
@@ -40,12 +23,18 @@ namespace Microsoft.Extensions.Caching.Memory
                 new MemoryCache(new MemoryCacheOptions { });
 
             cache.Set("key", "value", new MemoryCacheEntryOptions { Size = 2 });
-            Assert.Equal("value", cache.Get("key"));
+            for (int i = 0; i < 100; i++)
+            {
+                Assert.Equal("value", cache.Get("key"));
+                Assert.Null(cache.Get("missingKey1"));            
+                Assert.Null(cache.Get("missingKey2"));            
+            }
+
             MemoryCacheStatistics stats = cache.GetCurrentStatistics();
 
+            Assert.Equal(300, stats.TotalRequests);
+            Assert.Equal(100, stats.TotalHits);
             Assert.Equal(1, stats.CurrentEntryCount);
-            Assert.Equal(1, stats.TotalRequests);
-            Assert.Equal(1, stats.TotalHits);
             VerifyCurrentSize(2, sizeLimitIsSet, stats);
         }
 
@@ -104,7 +93,58 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        // TODO: add more tests
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void GetCurrentStatistics_EntrySizesAreOne_MultithreadedCacheUpdates_CountAndSizeRemainInSync(bool sizeLimitIsSet)
+        {
+            const int numEntries = 100;
+            Random random = new Random();
+
+            var cache = new MemoryCache(sizeLimitIsSet ?
+                new MemoryCacheOptions { Clock = new SystemClock(), SizeLimit = 2000 } :
+                new MemoryCacheOptions { Clock = new SystemClock() }
+            );
+
+            void FillCache()
+            {
+                for (int i = 0; i < numEntries; i++)
+                {
+                    cache.Set($"key{i}", $"value{i}",
+                        new MemoryCacheEntryOptions { Size = 1 }
+                            .AddExpirationToken(new TestExpirationToken()
+                                { ActiveChangeCallbacks = true }));
+                }
+            }
+
+            // start a few tasks to access entries in the background
+            Task[] backgroundAccessTasks = new Task[Environment.ProcessorCount];
+            bool done = false;
+
+            for (int i = 0; i < backgroundAccessTasks.Length; i++)
+            {
+                backgroundAccessTasks[i] = Task.Run(async () =>
+                {
+                    while (!done)
+                    {
+                        cache.TryGetValue($"key{random.Next(numEntries)}", out _);
+                        var stats = cache.GetCurrentStatistics();
+                        VerifyCurrentSize(stats.CurrentEntryCount, sizeLimitIsSet, stats);
+                        await Task.Yield();
+                    }
+                });
+            }
+
+            for (int i = 0; i < 1000; i++)
+            {
+                FillCache();
+                cache.Compact(1);
+            }
+
+            done = true;
+
+            Task.WaitAll(backgroundAccessTasks);
+        }
 
         private void VerifyCurrentSize(long expected, bool sizeLimitIsSet, MemoryCacheStatistics stats)
         {
