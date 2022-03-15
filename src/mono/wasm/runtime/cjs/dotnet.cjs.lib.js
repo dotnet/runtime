@@ -58,7 +58,7 @@ const linked_functions = [
     "mono_wasm_web_socket_open_ref",
     "mono_wasm_web_socket_send",
     "mono_wasm_web_socket_receive",
-    "mono_wasm_web_socket_close",
+    "mono_wasm_web_socket_close_ref",
     "mono_wasm_web_socket_abort",
     "mono_wasm_compile_function",
 

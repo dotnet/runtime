@@ -379,7 +379,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static Task<object>? WebSocketClose(JSObject webSocket, int code, string? reason, bool waitForCloseReceived, out int promiseJSHandle)
         {
-            Interop.Runtime.WebSocketClose(webSocket.JSHandle, code, reason, waitForCloseReceived, out promiseJSHandle, out int exception, out object res);
+            Interop.Runtime.WebSocketCloseRef(webSocket.JSHandle, code, reason, waitForCloseReceived, out promiseJSHandle, out int exception, out object res);
             if (exception != 0)
                 throw new JSException((string)res);
 

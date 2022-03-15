@@ -52,7 +52,7 @@ import {
 import { mono_wasm_typed_array_copy_to_ref, mono_wasm_typed_array_from_ref, mono_wasm_typed_array_copy_from_ref, mono_wasm_load_bytes_into_heap } from "./buffers";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
-import { mono_wasm_web_socket_open_ref, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close, mono_wasm_web_socket_abort } from "./web-socket";
+import { mono_wasm_web_socket_open_ref, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close_ref, mono_wasm_web_socket_abort } from "./web-socket";
 import cwraps from "./cwraps";
 import {
     setI8, setI16, setI32, setI64,
@@ -310,7 +310,7 @@ export const __linker_exports: any = {
     mono_wasm_web_socket_open_ref,
     mono_wasm_web_socket_send,
     mono_wasm_web_socket_receive,
-    mono_wasm_web_socket_close,
+    mono_wasm_web_socket_close_ref,
     mono_wasm_web_socket_abort,
     mono_wasm_compile_function,
 

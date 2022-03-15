@@ -54,7 +54,7 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void WebSocketAbort(int webSocketJSHandle, out int exceptionalResult, out string result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void WebSocketClose(int webSocketJSHandle, int code, string? reason, bool waitForCloseReceived, out int promiseJSHandle, out int exceptionalResult, out object result);
+        internal static extern void WebSocketCloseRef(int webSocketJSHandle, int code, in string? reason, bool waitForCloseReceived, out int promiseJSHandle, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern string CancelPromise(int promiseJSHandle, out int exceptionalResult);
 

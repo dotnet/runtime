@@ -185,9 +185,9 @@ export function mono_wasm_web_socket_receive(webSocket_js_handle: JSHandle, buff
     }
 }
 
-export function mono_wasm_web_socket_close(webSocket_js_handle: JSHandle, code: number, reason: MonoString, wait_for_close_received: boolean, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+export function mono_wasm_web_socket_close_ref(webSocket_js_handle: JSHandle, code: number, reason: MonoObjectRef, wait_for_close_received: boolean, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const result_root = mono_wasm_new_external_root<MonoObject>(result_address);
-    const reason_root = mono_wasm_new_root(reason);
+    const reason_root = mono_wasm_new_external_root<MonoString>(reason);
     try {
         const ws = mono_wasm_get_jsobj_from_js_handle(webSocket_js_handle);
         if (!ws)
