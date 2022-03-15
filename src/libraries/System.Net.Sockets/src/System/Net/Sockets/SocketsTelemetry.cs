@@ -12,6 +12,7 @@ namespace System.Net.Sockets
     {
         public static readonly SocketsTelemetry Log = new SocketsTelemetry();
 
+        private PollingCounter? _currentOutgoingConnectAttemptsCounter;
         private PollingCounter? _outgoingConnectionsEstablishedCounter;
         private PollingCounter? _incomingConnectionsEstablishedCounter;
         private PollingCounter? _bytesReceivedCounter;
@@ -19,8 +20,9 @@ namespace System.Net.Sockets
         private PollingCounter? _datagramsReceivedCounter;
         private PollingCounter? _datagramsSentCounter;
 
-        private long _outgoingConnectionsEstablished;
-        private long _incomingConnectionsEstablished;
+        private static long _currentOutgoingConnectAttempts;
+        private static long _outgoingConnectionsEstablished;
+        private static long _incomingConnectionsEstablished;
         private long _bytesReceived;
         private long _bytesSent;
         private long _datagramsReceived;
@@ -75,17 +77,22 @@ namespace System.Net.Sockets
         }
 
         [NonEvent]
-        public void ConnectStart(Internals.SocketAddress address)
+        public static void ConnectStart(Internals.SocketAddress address)
         {
-            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
+            Interlocked.Increment(ref _currentOutgoingConnectAttempts);
+
+            if (Log.IsEnabled(EventLevel.Informational, EventKeywords.All))
             {
-                ConnectStart(address.ToString());
+                Log.ConnectStart(address.ToString());
             }
         }
 
         [NonEvent]
-        public void AfterConnect(SocketError error, string? exceptionMessage = null)
+        public static void AfterConnect(SocketError error, string? exceptionMessage = null)
         {
+            long newCount = Interlocked.Decrement(ref _currentOutgoingConnectAttempts);
+            Debug.Assert(newCount >= 0);
+
             if (error == SocketError.Success)
             {
                 Debug.Assert(exceptionMessage is null);
@@ -93,10 +100,10 @@ namespace System.Net.Sockets
             }
             else
             {
-                ConnectFailed(error, exceptionMessage);
+                Log.ConnectFailed(error, exceptionMessage);
             }
 
-            ConnectStop();
+            Log.ConnectStop();
         }
 
         [NonEvent]
@@ -118,7 +125,7 @@ namespace System.Net.Sockets
         }
 
         [NonEvent]
-        public void AfterAccept(SocketError error, string? exceptionMessage = null)
+        public static void AfterAccept(SocketError error, string? exceptionMessage = null)
         {
             if (error == SocketError.Success)
             {
@@ -127,10 +134,10 @@ namespace System.Net.Sockets
             }
             else
             {
-                AcceptFailed(error, exceptionMessage);
+                Log.AcceptFailed(error, exceptionMessage);
             }
 
-            AcceptStop();
+            Log.AcceptStop();
         }
 
         [NonEvent]
@@ -165,6 +172,10 @@ namespace System.Net.Sockets
             {
                 // This is the convention for initializing counters in the RuntimeEventSource (lazily on the first enable command).
 
+                _currentOutgoingConnectAttemptsCounter ??= new PollingCounter("current-outgoing-connect-attempts", this, () => Interlocked.Read(ref _currentOutgoingConnectAttempts))
+                {
+                    DisplayName = "Current Outgoing Connect Attempts",
+                };
                 _outgoingConnectionsEstablishedCounter ??= new PollingCounter("outgoing-connections-established", this, () => Interlocked.Read(ref _outgoingConnectionsEstablished))
                 {
                     DisplayName = "Outgoing Connections Established",

@@ -201,7 +201,7 @@ namespace System.Net.Sockets
 
         private void OnCompletedInternal()
         {
-            if (SocketsTelemetry.Log.IsEnabled()) AfterConnectAcceptTelemetry();
+            AfterConnectAcceptTelemetry();
 
             OnCompleted(this);
         }
@@ -216,11 +216,11 @@ namespace System.Net.Sockets
             switch (LastOperation)
             {
                 case SocketAsyncOperation.Accept:
-                    SocketsTelemetry.Log.AfterAccept(SocketError);
+                    SocketsTelemetry.AfterAccept(SocketError);
                     break;
 
                 case SocketAsyncOperation.Connect:
-                    SocketsTelemetry.Log.AfterConnect(SocketError);
+                    SocketsTelemetry.AfterConnect(SocketError);
                     break;
             }
         }
@@ -999,7 +999,7 @@ namespace System.Net.Sockets
                 FinishOperationSyncFailure(socketError, bytesTransferred, flags);
             }
 
-            if (SocketsTelemetry.Log.IsEnabled()) AfterConnectAcceptTelemetry();
+            AfterConnectAcceptTelemetry();
         }
 
         private static void LogBytesTransferEvents(SocketType? socketType, SocketAsyncOperation operation, int bytesTransferred)
