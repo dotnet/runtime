@@ -25,6 +25,7 @@
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/environment-internals.h>
 #include <mono/metadata/metadata-internals.h>
+#include "mono/utils/mono-logger-internals.h"
 #include <runtime_version.h>
 #include <mono/metadata/profiler.h>
 
@@ -870,14 +871,22 @@ inline
 bool
 ep_rt_config_value_get_enable (void)
 {
+	/*
 	bool enable = false;
 	gchar *value = g_getenv ("DOTNET_EnableEventPipe");
 	if (!value)
 		value = g_getenv ("COMPlus_EnableEventPipe");
-	if (value && atoi (value) == 1)
+	if (value && atoi (value) == 1) {
+		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DIAGNOSTICS, "STEVE: EnableEventPipe: TRUE");
 		enable = true;
+	}
+	else {
+		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DIAGNOSTICS, "STEVE: EnableEventPipe: FALSE");
+	}
 	g_free (value);
 	return enable;
+	*/
+	return true;
 }
 
 static
@@ -1409,6 +1418,8 @@ ep_rt_file_open_write (const ep_char8_t *path)
 {
 	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16_string (path, -1);
 	ep_return_null_if_nok (path_utf16 != NULL);
+
+	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DIAGNOSTICS, "STEVE: ep_rt_file_open_write");
 
 	gpointer file_handle = ep_rt_mono_w32file_create ((gunichar2 *)path_utf16, GENERIC_WRITE, FILE_SHARE_READ, CREATE_ALWAYS, FileAttributes_Normal);
 	ep_rt_utf16_string_free (path_utf16);
