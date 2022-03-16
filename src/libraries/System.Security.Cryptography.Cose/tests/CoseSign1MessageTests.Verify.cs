@@ -129,7 +129,7 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             var protectedHeaders = GetHeaderMapWithAlgorithm();
             protectedHeaders.SetValue(CoseHeaderLabel.Critical, ReadOnlySpan<byte>.Empty);
-            byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders, GetEmptyHeaderMap());
+            ReadOnlySpan<byte> encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders, GetEmptyHeaderMap());
 
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
             Assert.Throws<NotSupportedException>(() => msg.Verify(DefaultKey));
@@ -148,7 +148,7 @@ namespace System.Security.Cryptography.Cose.Tests
             var protectedHeaders = GetHeaderMapWithAlgorithm();
             protectedHeaders.SetValue(CoseHeaderLabel.CounterSignature, ReadOnlySpan<byte>.Empty);
 
-            byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders, GetEmptyHeaderMap());
+            ReadOnlySpan<byte> encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders, GetEmptyHeaderMap());
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
 
             Assert.Throws<NotSupportedException>(() => msg.Verify(DefaultKey));

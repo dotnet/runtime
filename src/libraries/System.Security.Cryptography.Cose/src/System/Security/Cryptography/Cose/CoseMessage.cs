@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Formats.Cbor;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography.Cose
@@ -46,19 +48,19 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        public static CoseSign1Message DecodeSign1(byte[] cborPayload)
+        public static CoseSign1Message DecodeSign1(ReadOnlySpan<byte> cborPayload)
         {
             try
             {
-                var reader = new CborReader(cborPayload);
-                CborTag? tag = DecodeTag(reader);
-                if (tag != null && tag != Sign1Tag)
+                unsafe
                 {
-                    throw new CryptographicException(SR.Format(SR.DecodeSign1IncorrectTag, tag));
-                }
+                    fixed (byte* ptr = &MemoryMarshal.GetReference(cborPayload))
+                    {
+                        using MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, cborPayload.Length);
 
-                CoseSign1Message message = DecodeCoseSign1Core(reader);
-                return reader.BytesRemaining == 0 ? message : throw new CryptographicException(SR.Format(SR.DecodeSign1ErrorWhileDecoding, SR.DecodeSign1MesageContainedTrailingData));
+                        return DecodeCoseSign1Core(new CborReader(manager.Memory));
+                    }
+                }
             }
             catch (Exception ex) when (ex is CborContentException or InvalidOperationException)
             {
@@ -66,17 +68,14 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        private static CborTag? DecodeTag(CborReader reader)
-        {
-            return reader.PeekState() switch
-            {
-                CborReaderState.Tag => reader.ReadTag(),
-                _ => null
-            };
-        }
-
         private static CoseSign1Message DecodeCoseSign1Core(CborReader reader)
         {
+            CborTag? tag = DecodeTag(reader);
+            if (tag != null && tag != Sign1Tag)
+            {
+                throw new CryptographicException(SR.Format(SR.DecodeSign1IncorrectTag, tag));
+            }
+
             int? arrayLength = reader.ReadStartArray();
             if (arrayLength != 4)
             {
@@ -96,7 +95,21 @@ namespace System.Security.Cryptography.Cose
             byte[] signature = DecodeSignature(reader);
             reader.ReadEndArray();
 
+            if (reader.BytesRemaining != 0)
+            {
+                throw new CryptographicException(SR.Format(SR.DecodeSign1ErrorWhileDecoding, SR.DecodeSign1MesageContainedTrailingData));
+            }
+
             return new CoseSign1Message(protectedHeader, unprotectedHeader, payload, signature, protectedHeaderAsBstr);
+        }
+
+        private static CborTag? DecodeTag(CborReader reader)
+        {
+            return reader.PeekState() switch
+            {
+                CborReaderState.Tag => reader.ReadTag(),
+                _ => null
+            };
         }
 
         private static void DecodeProtectedBucket(CborReader reader, CoseHeaderMap headerParameters, out byte[] protectedHeaderAsBstr)

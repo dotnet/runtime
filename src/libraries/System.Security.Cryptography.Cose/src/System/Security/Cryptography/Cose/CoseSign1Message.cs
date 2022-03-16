@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Cose
             : base(protectedHeader, unprotectedHeader, content, signature, protectedHeaderAsBstr) { }
 
         [UnsupportedOSPlatform("browser")]
-        public static byte[] Sign(byte[] content!!, ECDsa key!!, HashAlgorithmName hashAlgorithm, bool isDetached = false)
+        public static ReadOnlySpan<byte> Sign(ReadOnlySpan<byte> content, ECDsa key!!, HashAlgorithmName hashAlgorithm, bool isDetached = false)
         {
             byte[] encodedProtectedHeader = CreateEncodedProtectedHeader(KeyType.ECDsa, hashAlgorithm);
             byte[] toBeSigned = CreateToBeSigned(SigStructureCoxtextSign1, encodedProtectedHeader, content);
@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        public static byte[] Sign(byte[] content!!, RSA key!!, HashAlgorithmName hashAlgorithm, bool isDetached = false)
+        public static ReadOnlySpan<byte> Sign(ReadOnlySpan<byte> content, RSA key!!, HashAlgorithmName hashAlgorithm, bool isDetached = false)
         {
             byte[] encodedProtectedHeader = CreateEncodedProtectedHeader(KeyType.RSA, hashAlgorithm);
             byte[] toBeSigned = CreateToBeSigned(SigStructureCoxtextSign1, encodedProtectedHeader, content);
@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        public static byte[] Sign(byte[] content!!, AsymmetricAlgorithm key!!, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
+        public static ReadOnlySpan<byte> Sign(ReadOnlySpan<byte> content, AsymmetricAlgorithm key!!, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
         {
             KeyType keyType = key switch
             {

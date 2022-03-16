@@ -91,14 +91,14 @@ namespace System.Security.Cryptography.Cose.Tests
         }
 
         internal static void AssertSign1Message(
-            byte[] encodedMsg,
-            byte[]? expectedContent,
+            ReadOnlySpan<byte> encodedMsg,
+            ReadOnlySpan<byte> expectedContent,
             AsymmetricAlgorithm signingKey,
             List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedProtectedHeaders = null,
-            List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedUnprotectedHeaders = null)
+            List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedUnprotectedHeaders = null,
+            bool expectedDetachedContent = false)
         {
-            Assert.NotNull(encodedMsg);
-            var reader = new CborReader(encodedMsg);
+            var reader = new CborReader(encodedMsg.ToArray());
 
             // Start
             Assert.Equal((CborTag)18, reader.ReadTag());
@@ -111,13 +111,13 @@ namespace System.Security.Cryptography.Cose.Tests
             AssertSign1Headers(reader, expectedUnprotectedHeaders ?? GetEmptyExpectedHeaders());
 
             // Content
-            if (expectedContent != null)
+            if (expectedDetachedContent)
             {
-                AssertExtensions.SequenceEqual(expectedContent, reader.ReadByteString());
+                reader.ReadNull();
             }
             else
             {
-                reader.ReadNull();
+                AssertExtensions.SequenceEqual(expectedContent, reader.ReadByteString());
             }
 
             // Signature
@@ -132,11 +132,25 @@ namespace System.Security.Cryptography.Cose.Tests
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
             if (signingKey is ECDsa ecdsa)
             {
-                Assert.True(msg.Verify(ecdsa), "msg.Verify(ecdsa)");
+                if (expectedDetachedContent)
+                {
+                    Assert.True(msg.Verify(ecdsa, expectedContent), "msg.Verify(ecdsa, content)");
+                }
+                else
+                {
+                    Assert.True(msg.Verify(ecdsa), "msg.Verify(ecdsa)");
+                }
             }
             else if (signingKey is RSA rsa)
             {
-                Assert.True(msg.Verify(rsa), "msg.Verify(rsa)");
+                if (expectedDetachedContent)
+                {
+                    Assert.True(msg.Verify(rsa, expectedContent), "msg.Verify(rsa, content)");
+                }
+                else
+                {
+                    Assert.True(msg.Verify(rsa), "msg.Verify(rsa)");
+                }
             }
             else
             {
