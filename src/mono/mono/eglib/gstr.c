@@ -928,7 +928,7 @@ g_str_from_file_region (int fd, guint64 offset, gsize size)
 		return NULL;
 	buffer [size] = 0;
 	do {
-		status = read (fd, buffer, size);
+		status = g_read (fd, buffer, size);
 	} while (status == -1 && errno == EINTR);
 	if (status == -1){
 		g_free (buffer);

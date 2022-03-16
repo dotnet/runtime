@@ -240,13 +240,6 @@
 //
 #include <setjmp.h>
 
-//
-// Use of setjmp is temporary, we will eventually have compiler intrinsics to
-// disable the optimizations.  Besides, we don't actually execute setjmp in
-// these macros (or anywhere else in the VM on AMD64).
-//
-#pragma warning(disable:4611) // interaction between '_setjmp' and C++ object destruction is non-portable
-
 #ifdef _DEBUG
 //
 // Linked list of unmanaged methods preceeding a HelperMethodFrame push.  This

@@ -574,7 +574,7 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(PropertyCache == null);
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
-            JsonSerializerContext? context = Options._serializerContext;
+            JsonSerializerContext? context = Options.JsonSerializerContext;
             Debug.Assert(context != null);
 
             JsonPropertyInfo[] array;
@@ -630,7 +630,7 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(PropertyCache != null);
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
-            JsonSerializerContext? context = Options._serializerContext;
+            JsonSerializerContext? context = Options.JsonSerializerContext;
             Debug.Assert(context != null);
 
             JsonParameterInfoValues[] array;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
 
@@ -16,6 +17,18 @@ namespace System.IO
     {
         internal readonly List<DirectoryInfo> CreatedSubdirectories = new();
         internal readonly List<FileInfo> CreatedSubfiles = new();
+
+        public TempAclDirectory([CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
+            : base(IO.Path.Combine(IO.Path.GetTempPath(), PathGenerator.GenerateTestFileName(null, memberName, lineNumber)))
+        {
+        }
+
+        /// <summary>
+        /// the returned path can be used both as directory and as file name
+        /// </summary>
+        public string GenerateSubItemPath([CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
+            => IO.Path.Combine(Path, PathGenerator.GenerateTestFileName(null, memberName, lineNumber));
+
         protected override void DeleteDirectory()
         {
             try

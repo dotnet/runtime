@@ -5037,10 +5037,6 @@ public:
 
 #define PAL_CPP_ENDTRY                  }
 
-#ifdef _MSC_VER
-#pragma warning(disable:4611) // interaction between '_setjmp' and C++ object destruction is non-portable
-#endif
-
 #define PAL_TRY_FOR_DLLMAIN(ParamType, paramDef, paramRef, _reason) PAL_TRY(ParamType, paramDef, paramRef)
 
 #endif // __cplusplus

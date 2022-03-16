@@ -80,9 +80,19 @@ namespace System.Net.Http.Headers
         }
 
         public MediaTypeHeaderValue(string mediaType)
+            : this(mediaType, charSet: null)
+        {
+        }
+
+        public MediaTypeHeaderValue(string mediaType, string? charSet)
         {
             CheckMediaTypeFormat(mediaType, nameof(mediaType));
             _mediaType = mediaType;
+
+            if (!string.IsNullOrEmpty(charSet))
+            {
+                CharSet = charSet;
+            }
         }
 
         public override string ToString()

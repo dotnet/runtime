@@ -132,4 +132,9 @@ namespace System.Runtime.CompilerServices
     public sealed class IsByRefLikeAttribute : Attribute
     {
     }
+
+    public static class RuntimeFeature
+    {
+        public const string VirtualStaticsInInterfaces = nameof(VirtualStaticsInInterfaces);
+    }
 }

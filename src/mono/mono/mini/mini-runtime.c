@@ -1205,7 +1205,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_DECLSEC:
 		return hash | ji->data.token->token;
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-		return hash | ji->data.token->token | (ji->data.token->has_context ? (gsize)ji->data.token->context.class_inst : 0);
+		return (guint)(hash | ji->data.token->token | (ji->data.token->has_context ? (gsize)ji->data.token->context.class_inst : 0));
 	case MONO_PATCH_INFO_OBJC_SELECTOR_REF: // Hash on the selector name
 	case MONO_PATCH_INFO_LDSTR_LIT:
 		return g_str_hash (ji->data.name);
@@ -1255,7 +1255,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES_GOT_SLOTS_BASE:
 		return hash;
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
-		return hash | ji->data.uindex;
+		return (guint)(hash | ji->data.uindex);
 	case MONO_PATCH_INFO_JIT_ICALL_ID:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
@@ -1266,7 +1266,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 		return hash | (gssize)ji->data.gsharedvt_method->method;
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
-		return hash | (gsize)ji->data.del_tramp->klass | (gsize)ji->data.del_tramp->method | (gsize)ji->data.del_tramp->is_virtual;
+		return (guint)(hash | (gsize)ji->data.del_tramp->klass | (gsize)ji->data.del_tramp->method | (gsize)ji->data.del_tramp->is_virtual);
 	case MONO_PATCH_INFO_VIRT_METHOD: {
 		MonoJumpInfoVirtMethod *info = ji->data.virt_method;
 
@@ -1667,11 +1667,10 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		break;
 	}
 	case MONO_PATCH_INFO_LDSTR_LIT: {
-		int len;
 		char *s;
+		size_t len = strlen ((const char *)patch_info->data.target);
 
-		len = strlen ((const char *)patch_info->data.target);
-		s = (char *)mono_mem_manager_alloc0 (mem_manager, len + 1);
+		s = (char *)mono_mem_manager_alloc0 (mem_manager, (guint)len + 1);
 		memcpy (s, patch_info->data.target, len);
 		target = s;
 
@@ -4187,7 +4186,7 @@ class_method_pair_hash (gconstpointer data)
 {
 	const MonoClassMethodPair *pair = (const MonoClassMethodPair *)data;
 
-	return (gsize)pair->klass ^ (gsize)pair->method;
+	return (guint)((gsize)pair->klass ^ (gsize)pair->method);
 }
 
 static void
@@ -4461,7 +4460,9 @@ mini_init (const char *filename, const char *runtime_version)
 	callbacks.get_ftnptr = get_ftnptr_for_method;
 #endif
 	callbacks.is_interpreter_enabled = mini_is_interpreter_enabled;
+#if ENABLE_WEAK_ATTR
 	callbacks.get_weak_field_indexes = mono_aot_get_weak_field_indexes;
+#endif
 
 	callbacks.metadata_update_published = mini_invalidate_transformed_interp_methods;
 	callbacks.interp_jit_info_foreach = mini_interp_jit_info_foreach;
@@ -4691,13 +4692,15 @@ register_icalls (void)
 	g_assert (mono_get_lmf_addr == mono_tls_get_lmf_addr);
 	register_icall (mono_domain_get, mono_icall_sig_ptr, TRUE);
 
-	register_icall (mono_llvm_throw_exception, mono_icall_sig_void_object, TRUE);
-	register_icall (mono_llvm_rethrow_exception, mono_icall_sig_void_object, TRUE);
-	register_icall (mono_llvm_resume_exception, mono_icall_sig_void, TRUE);
-	register_icall (mono_llvm_match_exception, mono_icall_sig_int_ptr_int_int_ptr_object, TRUE);
-	register_icall (mono_llvm_clear_exception, NULL, TRUE);
-	register_icall (mono_llvm_load_exception, mono_icall_sig_object, TRUE);
-	register_icall (mono_llvm_throw_corlib_exception, mono_icall_sig_void_int, TRUE);
+	register_icall (mini_llvmonly_throw_exception, mono_icall_sig_void_object, TRUE);
+	register_icall (mini_llvmonly_rethrow_exception, mono_icall_sig_void_object, TRUE);
+	register_icall (mini_llvmonly_throw_corlib_exception, mono_icall_sig_void_int, TRUE);
+	register_icall (mini_llvmonly_resume_exception, mono_icall_sig_void, TRUE);
+	register_icall (mini_llvmonly_resume_exception_il_state, mono_icall_sig_void_ptr_ptr, TRUE);
+	register_icall (mini_llvmonly_load_exception, mono_icall_sig_object, TRUE);
+	register_icall (mini_llvmonly_clear_exception, NULL, TRUE);
+	register_icall (mini_llvmonly_match_exception, mono_icall_sig_int_ptr_int_int_ptr_object, TRUE);
+
 #if defined(ENABLE_LLVM) && defined(HAVE_UNWIND_H)
 	register_icall (mono_llvm_set_unhandled_exception_handler, NULL, TRUE);
 
@@ -4808,10 +4811,6 @@ register_icalls (void)
 		register_opcode_emulation (OP_FCONV_TO_I4, __emul_fconv_to_i4, mono_icall_sig_int32_double, mono_fconv_i4, FALSE);
 		register_opcode_emulation (OP_FCONV_TO_U1, __emul_fconv_to_u1, mono_icall_sig_uint8_double, mono_fconv_u1, FALSE);
 		register_opcode_emulation (OP_FCONV_TO_U2, __emul_fconv_to_u2, mono_icall_sig_uint16_double, mono_fconv_u2, FALSE);
-
-#if TARGET_SIZEOF_VOID_P == 4
-		register_opcode_emulation (OP_FCONV_TO_I, __emul_fconv_to_i, mono_icall_sig_int32_double, mono_fconv_i4, FALSE);
-#endif
 
 		register_opcode_emulation (OP_FBEQ, __emul_fcmp_eq, mono_icall_sig_uint32_double_double, mono_fcmp_eq, FALSE);
 		register_opcode_emulation (OP_FBLT, __emul_fcmp_lt, mono_icall_sig_uint32_double_double, mono_fcmp_lt, FALSE);

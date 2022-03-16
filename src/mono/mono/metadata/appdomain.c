@@ -634,7 +634,7 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, const M
 	gchar **path;
 	gchar *filename;
 	const gchar *local_culture;
-	gint len;
+	size_t len;
 
 	if (!culture || *culture == '\0') {
 		local_culture = "";
@@ -773,6 +773,12 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 
 	MonoAssembly *requesting_assembly = mono_runtime_get_caller_from_stack_mark (stack_mark);
 	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)load_Context;
+
+#if HOST_WASI
+	// On WASI, mono_assembly_get_alc isn't yet supported. However it should be possible to make it work.
+	if (!alc)
+		alc = mono_alc_get_default ();
+#endif
 
 	if (!alc)
 		alc = mono_assembly_get_alc (requesting_assembly);

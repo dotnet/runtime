@@ -530,7 +530,7 @@ if (stackerror)                                 \
           Debug (15, "OP_abs\n");
           tmp1 = pop ();
           if (tmp1 & ((unw_word_t) 1 << (8 * dwarf_addr_size (as) - 1)))
-            tmp1 = -tmp1;
+            tmp1 = (unw_word_t)(-(unw_sword_t)tmp1);
           push (tmp1);
           break;
 
@@ -578,7 +578,7 @@ if (stackerror)                                 \
 
         case DW_OP_neg:
           Debug (15, "OP_neg\n");
-          push (-pop ());
+          push (-(unw_sword_t)pop ());
           break;
 
         case DW_OP_not:

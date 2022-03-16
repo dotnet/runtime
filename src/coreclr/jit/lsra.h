@@ -1000,7 +1000,10 @@ private:
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     void buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet);
-    void buildUpperVectorRestoreRefPosition(Interval* lclVarInterval, LsraLocation currentLoc, GenTree* node);
+    void buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
+                                            LsraLocation currentLoc,
+                                            GenTree*     node,
+                                            bool         isUse);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
 #if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
@@ -2275,6 +2278,11 @@ public:
     // register currently assigned to the Interval.  This happens when we use the assigned
     // register from a predecessor that is not the most recently allocated BasicBlock.
     unsigned char outOfOrder : 1;
+
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+    // If upper vector save/restore can be avoided.
+    unsigned char skipSaveRestore : 1;
+#endif
 
 #ifdef DEBUG
     // Minimum number registers that needs to be ensured while
