@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Collections;
 using System.Diagnostics;
 using System.Runtime.InteropServices.ComTypes;
+using System.Runtime.CompilerServices;
 
 #if !DISABLE_UNMANAGED_PDB_SYMBOLS
 using Microsoft.DiaSymReader;
@@ -679,6 +680,7 @@ namespace Internal.TypeSystem.Ecma
 
                 public int GetLocalCount(out int count) => SingleByRefIntWrapper(8, out count);
 
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 private int SingleByRefIntWrapper(int methodSlot, out int value)
                 {
                     var func = (delegate* unmanaged<IntPtr, int*, int>)(*(*(void***)Inst + methodSlot));
@@ -705,7 +707,6 @@ namespace Internal.TypeSystem.Ecma
                             fixed (IntPtr* intermediatePtr = intermediate)
                             {
                                 hr = func(Inst, bufferLength, countPtr, intermediatePtr);
-
                             }
 
                             if (hr == 0)
@@ -815,6 +816,7 @@ namespace Internal.TypeSystem.Ecma
                     return hr;
                 }
 
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 private int SingleByRefGuidMethodWrapper(int methodSolt, ref Guid guid)
                 {
                     var func = (delegate* unmanaged<IntPtr, Guid*, int>)(*(*(void***)Inst + methodSolt));
@@ -987,31 +989,46 @@ namespace Internal.TypeSystem.Ecma
 
                 public int GetOffset(ISymUnmanagedDocument document, int line, int column, out int offset)
                 {
-                    var func = (delegate* unmanaged<IntPtr, ISymUnmanagedDocument, int, int, int*, int>)(*(*(void***)Inst + 7));
-                    fixed (int* offsetPtr = &offset)
+                    var func = (delegate* unmanaged<IntPtr, IntPtr, int, int, int*, int>)(*(*(void***)Inst + 7));
+                    var handle = GCHandle.Alloc(document, GCHandleType.Pinned);
+                    try
                     {
-                        return func(Inst, document, line, column, offsetPtr);
+                        fixed (int* offsetPtr = &offset)
+                        {
+                            return func(Inst, handle.AddrOfPinnedObject(), line, column, offsetPtr);
+                        }
+                    }
+                    finally
+                    {
+                        handle.Free();
                     }
                 }
 
                 public int GetRanges(ISymUnmanagedDocument document, int line, int column, int bufferLength, out int count, int[] ranges)
                 {
-                    var func = (delegate* unmanaged<IntPtr, ISymUnmanagedDocument, int, int, int, int*, int*, int>)(*(*(void***)Inst + 8));
+                    var func = (delegate* unmanaged<IntPtr, IntPtr, int, int, int, int*, int*, int>)(*(*(void***)Inst + 8));
+                    var handle = GCHandle.Alloc(document, GCHandleType.Pinned);
                     int hr;
-
-                    fixed (int* countPtr = &count)
+                    try
                     {
-                        if (ranges == null)
+                        fixed (int* countPtr = &count)
                         {
-                            hr = func(Inst, document, line, column, bufferLength, countPtr, null);
-                        }
-                        else
-                        {
-                            fixed (int* rangesPtr = ranges)
+                            if (ranges == null)
                             {
-                                hr = func(Inst, document, line, column, bufferLength, countPtr, rangesPtr);
+                                hr = func(Inst, handle.AddrOfPinnedObject(), line, column, bufferLength, countPtr, null);
+                            }
+                            else
+                            {
+                                fixed (int* rangesPtr = ranges)
+                                {
+                                    hr = func(Inst, handle.AddrOfPinnedObject(), line, column, bufferLength, countPtr, rangesPtr);
+                                }
                             }
                         }
+                    }
+                    finally
+                    {
+                        handle.Free();
                     }
 
                     return hr;
