@@ -85,8 +85,9 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         public virtual TOptions Get(string? name)
         {
-            name = name ?? Options.DefaultName;
-            return _cache.GetOrAdd(name, () => _factory.Create(name));
+            return _cache is OptionsCache<TOptions> optionsCache
+                ? optionsCache.GetOrAdd(name, (name, factory) => factory.Create(name), _factory)
+                : _cache.GetOrAdd(name ??= Options.DefaultName, () => _factory.Create(name));
         }
 
         /// <summary>

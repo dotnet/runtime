@@ -31,14 +31,37 @@ namespace Microsoft.Extensions.Options
         public virtual TOptions GetOrAdd(string? name, Func<TOptions> createOptions!!)
         {
             name ??= Options.DefaultName;
-            Lazy<TOptions>? value;
+            Lazy<TOptions> value;
 
-#if NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
             value = _cache.GetOrAdd(name, static (name, createOptions) => new Lazy<TOptions>(createOptions), createOptions);
 #else
             if (!_cache.TryGetValue(name, out value))
             {
                 value = _cache.GetOrAdd(name, new Lazy<TOptions>(createOptions));
+            }
+#endif
+
+            return value.Value;
+        }
+
+        internal TOptions GetOrAdd<TArg>(string? name, Func<string, TArg, TOptions> createOptions, TArg factoryArgument)
+        {
+            // For compatibility, fall back to public GetOrAdd() if we're in a derived class.
+            if (GetType() != typeof(OptionsCache<TOptions>))
+            {
+                return GetOrAdd(name, () => createOptions(name ?? Options.DefaultName, factoryArgument));
+            }
+
+            name ??= Options.DefaultName;
+            Lazy<TOptions> value;
+
+#if NET || NETSTANDARD2_1
+            value = _cache.GetOrAdd(name, static (name, arg) => new Lazy<TOptions>(arg.createOptions(name, arg.factoryArgument)), (createOptions, factoryArgument));
+#else
+            if (!_cache.TryGetValue(name, out value))
+            {
+                value = _cache.GetOrAdd(name, new Lazy<TOptions>(() => createOptions(name, factoryArgument)));
             }
 #endif
 
@@ -72,7 +95,7 @@ namespace Microsoft.Extensions.Options
         public virtual bool TryAdd(string? name, TOptions options!!)
         {
             return _cache.TryAdd(name ?? Options.DefaultName, new Lazy<TOptions>(
-#if !NETSTANDARD2_1
+#if NETSTANDARD2_0 || NETFRAMEWORK
                 () =>
 #endif
                 options));

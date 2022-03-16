@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -417,6 +418,52 @@ namespace Microsoft.Extensions.Options.Tests
             public string Name => null;
 
             public IChangeToken GetChangeToken() => _changeToken;
+        }
+
+        [Fact]
+        public void CallsPublicGetOrAddForCustomOptionsCache()
+        {
+            DerivedOptionsCache derivedOptionsCache = new();
+            CreateMonitor(derivedOptionsCache).Get(null);
+            Assert.Equal(1, derivedOptionsCache.GetOrAddCalls);
+
+            ImplementedOptionsCache implementedOptionsCache = new();
+            CreateMonitor(implementedOptionsCache).Get(null);
+            Assert.Equal(1, implementedOptionsCache.GetOrAddCalls);
+
+            static OptionsMonitor<FakeOptions> CreateMonitor(IOptionsMonitorCache<FakeOptions> cache) =>
+                new OptionsMonitor<FakeOptions>(
+                    new OptionsFactory<FakeOptions>(Enumerable.Empty<IConfigureOptions<FakeOptions>>(), Enumerable.Empty<IPostConfigureOptions<FakeOptions>>()),
+                    Enumerable.Empty<IOptionsChangeTokenSource<FakeOptions>>(),
+                    cache);
+        }
+
+        private class DerivedOptionsCache : OptionsCache<FakeOptions>
+        {
+            public int GetOrAddCalls { get; private set; }
+
+            public override FakeOptions GetOrAdd(string? name, Func<FakeOptions> createOptions)
+            {
+                GetOrAddCalls++;
+                return base.GetOrAdd(name, createOptions);
+            }
+        }
+
+        private class ImplementedOptionsCache : IOptionsMonitorCache<FakeOptions>
+        {
+            public int GetOrAddCalls { get; private set; }
+
+            public void Clear() => throw new NotImplementedException();
+
+            public FakeOptions GetOrAdd(string? name, Func<FakeOptions> createOptions)
+            {
+                GetOrAddCalls++;
+                return createOptions();
+            }
+
+            public bool TryAdd(string? name, FakeOptions options) => throw new NotImplementedException();
+
+            public bool TryRemove(string? name) => throw new NotImplementedException();
         }
     }
 }
