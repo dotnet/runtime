@@ -1011,3 +1011,5 @@ Section "I.10.3.2 Binary operators" of ECMA-335 adds *op_CheckedAddition*, *op_C
 
 Section "I.10.3.3 Conversion operators" of ECMA-335 adds *op_CheckedExplicit* as the name for a method
 implementing checked explicit conversion operator.
+    
+A checked user-defined operator is expected to throw an exception when the result of an operation is too large to represent in the destination type. What does it mean to be too large actually depends on the nature of the destination type. Typically the exception thrown is a System.OverflowException.
