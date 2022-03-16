@@ -31,34 +31,35 @@ namespace System.Net.Http
     /// <summary>Provides a set of connection pools, each for its own endpoint.</summary>
     internal sealed class HttpConnectionPoolManager : IDisposable
     {
-        /// <summary>How frequently an operation should be initiated to clean out old pools and connections in those pools.</summary>
-        private readonly TimeSpan _cleanPoolTimeout;
+        public static readonly ConcurrentDictionary<WeakReference<HttpConnectionPoolManager>, byte> AllManagers = new();
+
+        private static readonly Timer s_globalHeartBeatTimer = new(static _ => HeartBeatAndCleanAllPools(), null, TimeSpan.FromSeconds(1), Timeout.InfiniteTimeSpan);
+
+        private static int s_listeningToNetworkChanges;
+
         /// <summary>The pools, indexed by endpoint.</summary>
-        private readonly ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool> _pools;
-        /// <summary>Timer used to initiate cleaning of the pools.</summary>
-        private readonly Timer? _cleaningTimer;
-        /// <summary>Heart beat timer currently used for Http2 ping only.</summary>
-        private readonly Timer? _heartBeatTimer;
+        private readonly ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>? _pools;
+
+        /// <summary>How frequently an operation should be initiated to clean out old pools and connections in those pools.</summary>
+        private readonly TimeSpan _cleanPoolInterval;
+        private long _lastCleanPoolTimestamp;
+
+        /// <summary>Heart beats are currently used for Http2 pings only.</summary>
+        private readonly TimeSpan _heartBeatInterval;
+        private long _lastHeartBeatTimestamp;
 
         private readonly HttpConnectionSettings _settings;
         private readonly IWebProxy? _proxy;
         private readonly ICredentials? _proxyCredentials;
 
-        private NetworkChangeCleanup? _networkChangeCleanup;
-
-        /// <summary>
-        /// Keeps track of whether or not the cleanup timer is running. It helps us avoid the expensive
-        /// <see cref="ConcurrentDictionary{TKey,TValue}.IsEmpty"/> call.
-        /// </summary>
-        private bool _timerIsRunning;
-        /// <summary>Object used to synchronize access to state in the pool.</summary>
-        private object SyncObj => _pools;
+        private bool _interestedInNetworkChanges;
 
         /// <summary>Initializes the pools.</summary>
         public HttpConnectionPoolManager(HttpConnectionSettings settings)
         {
             _settings = settings;
-            _pools = new ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>();
+
+            _cleanPoolInterval = _heartBeatInterval = TimeSpan.MaxValue;
 
             // As an optimization, we can sometimes avoid the overheads associated with
             // storing connections.  This is possible when we would immediately terminate
@@ -72,70 +73,30 @@ namespace System.Net.Http
                 (settings._pooledConnectionIdleTimeout == TimeSpan.Zero ||
                  settings._pooledConnectionLifetime == TimeSpan.Zero);
 
-            // Start out with the timer not running, since we have no pools.
-            // When it does run, run it with a frequency based on the idle timeout.
             if (!avoidStoringConnections)
             {
+                _pools = new ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>();
+
+                _lastCleanPoolTimestamp = _lastHeartBeatTimestamp = Stopwatch.GetTimestamp();
+
                 if (settings._pooledConnectionIdleTimeout == Timeout.InfiniteTimeSpan)
                 {
                     const int DefaultScavengeSeconds = 30;
-                    _cleanPoolTimeout = TimeSpan.FromSeconds(DefaultScavengeSeconds);
+                    _cleanPoolInterval = TimeSpan.FromSeconds(DefaultScavengeSeconds);
                 }
                 else
                 {
                     const int ScavengesPerIdle = 4;
                     const int MinScavengeSeconds = 1;
                     TimeSpan timerPeriod = settings._pooledConnectionIdleTimeout / ScavengesPerIdle;
-                    _cleanPoolTimeout = timerPeriod.TotalSeconds >= MinScavengeSeconds ? timerPeriod : TimeSpan.FromSeconds(MinScavengeSeconds);
+                    _cleanPoolInterval = timerPeriod.TotalSeconds >= MinScavengeSeconds ? timerPeriod : TimeSpan.FromSeconds(MinScavengeSeconds);
                 }
 
-                bool restoreFlow = false;
-                try
+                // For now heart beat is used only for ping functionality.
+                if (settings._keepAlivePingDelay != Timeout.InfiniteTimeSpan)
                 {
-                    // Don't capture the current ExecutionContext and its AsyncLocals onto the timer causing them to live forever
-                    if (!ExecutionContext.IsFlowSuppressed())
-                    {
-                        ExecutionContext.SuppressFlow();
-                        restoreFlow = true;
-                    }
-
-                    // Create the timer.  Ensure the Timer has a weak reference to this manager; otherwise, it
-                    // can introduce a cycle that keeps the HttpConnectionPoolManager rooted by the Timer
-                    // implementation until the handler is Disposed (or indefinitely if it's not).
-                    var thisRef = new WeakReference<HttpConnectionPoolManager>(this);
-
-                    _cleaningTimer = new Timer(static s =>
-                    {
-                        var wr = (WeakReference<HttpConnectionPoolManager>)s!;
-                        if (wr.TryGetTarget(out HttpConnectionPoolManager? thisRef))
-                        {
-                            thisRef.RemoveStalePools();
-                        }
-                    }, thisRef, Timeout.Infinite, Timeout.Infinite);
-
-
-                    // For now heart beat is used only for ping functionality.
-                    if (_settings._keepAlivePingDelay != Timeout.InfiniteTimeSpan)
-                    {
-                        long heartBeatInterval = (long)Math.Max(1000, Math.Min(_settings._keepAlivePingDelay.TotalMilliseconds, _settings._keepAlivePingTimeout.TotalMilliseconds) / 4);
-
-                        _heartBeatTimer = new Timer(static state =>
-                        {
-                            var wr = (WeakReference<HttpConnectionPoolManager>)state!;
-                            if (wr.TryGetTarget(out HttpConnectionPoolManager? thisRef))
-                            {
-                                thisRef.HeartBeat();
-                            }
-                        }, thisRef, heartBeatInterval, heartBeatInterval);
-                    }
-                }
-                finally
-                {
-                    // Restore the current ExecutionContext
-                    if (restoreFlow)
-                    {
-                        ExecutionContext.RestoreFlow();
-                    }
+                    long heartBeatIntervalMs = (long)Math.Max(1000, Math.Min(settings._keepAlivePingDelay.TotalMilliseconds, settings._keepAlivePingTimeout.TotalMilliseconds) / 4);
+                    _heartBeatInterval = TimeSpan.FromMilliseconds(heartBeatIntervalMs);
                 }
             }
 
@@ -148,6 +109,29 @@ namespace System.Net.Http
                     _proxyCredentials = _proxy.Credentials ?? settings._defaultProxyCredentials;
                 }
             }
+
+            bool success = AllManagers.TryAdd(new WeakReference<HttpConnectionPoolManager>(this), 0);
+            Debug.Assert(success);
+        }
+
+        private static void HeartBeatAndCleanAllPools()
+        {
+            long startTimestamp = Stopwatch.GetTimestamp();
+
+            foreach ((WeakReference<HttpConnectionPoolManager> managerReference, _) in AllManagers)
+            {
+                if (managerReference.TryGetTarget(out HttpConnectionPoolManager? manager))
+                {
+                    manager.HeartBeatAndCleanPools();
+                }
+                else
+                {
+                    AllManagers.TryRemove(managerReference, out _);
+                }
+            }
+
+            ulong elapsedMs = Math.Min(999, (ulong)Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds);
+            s_globalHeartBeatTimer.Change(TimeSpan.FromMilliseconds(1000 - elapsedMs), Timeout.InfiniteTimeSpan);
         }
 
         /// <summary>
@@ -156,67 +140,50 @@ namespace System.Net.Http
         /// </summary>
         public void StartMonitoringNetworkChanges()
         {
-            if (_networkChangeCleanup != null)
+            if (_pools is null)
             {
+                return;
+            }
+
+            _interestedInNetworkChanges = true;
+
+            if (s_listeningToNetworkChanges != 0 || Interlocked.Exchange(ref s_listeningToNetworkChanges, 1) != 0)
+            {
+                // We are already subscribed to NetworkAddressChanged
                 return;
             }
 
             // Monitor network changes to invalidate Alt-Svc headers.
-            // A weak reference is used to avoid NetworkChange.NetworkAddressChanged keeping a non-disposed connection pool alive.
-            NetworkAddressChangedEventHandler networkChangedDelegate;
-            { // scope to avoid closure if _networkChangeCleanup != null
-                var poolsRef = new WeakReference<ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>>(_pools);
-                networkChangedDelegate = delegate
+            bool restoreFlow = false;
+            try
+            {
+                if (!ExecutionContext.IsFlowSuppressed())
                 {
-                    if (poolsRef.TryGetTarget(out ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>? pools))
+                    ExecutionContext.SuppressFlow();
+                    restoreFlow = true;
+                }
+
+                NetworkChange.NetworkAddressChanged += static delegate
+                {
+                    foreach ((WeakReference<HttpConnectionPoolManager> managerReference, _) in AllManagers)
                     {
-                        foreach (HttpConnectionPool pool in pools.Values)
+                        if (managerReference.TryGetTarget(out HttpConnectionPoolManager? manager) && manager._interestedInNetworkChanges)
                         {
-                            pool.OnNetworkChanged();
+                            Debug.Assert(manager._pools is not null, $"{nameof(_interestedInNetworkChanges)} shouldn't be set if we are not tracking pools");
+                            foreach ((_, HttpConnectionPool pool) in manager._pools)
+                            {
+                                pool.OnNetworkChanged();
+                            }
                         }
                     }
                 };
             }
-
-            var cleanup = new NetworkChangeCleanup(networkChangedDelegate);
-
-            if (Interlocked.CompareExchange(ref _networkChangeCleanup, cleanup, null) != null)
+            finally
             {
-                // We lost a race, another thread already started monitoring.
-                GC.SuppressFinalize(cleanup);
-                return;
-            }
-
-            if (!ExecutionContext.IsFlowSuppressed())
-            {
-                using (ExecutionContext.SuppressFlow())
+                if (restoreFlow)
                 {
-                    NetworkChange.NetworkAddressChanged += networkChangedDelegate;
+                    ExecutionContext.RestoreFlow();
                 }
-            }
-            else
-            {
-                NetworkChange.NetworkAddressChanged += networkChangedDelegate;
-            }
-        }
-
-        private sealed class NetworkChangeCleanup : IDisposable
-        {
-            private readonly NetworkAddressChangedEventHandler _handler;
-
-            public NetworkChangeCleanup(NetworkAddressChangedEventHandler handler)
-            {
-                _handler = handler;
-            }
-
-            // If user never disposes the HttpClient, use finalizer to remove from NetworkChange.NetworkAddressChanged.
-            // _handler will be rooted in NetworkChange, so should be safe to use here.
-            ~NetworkChangeCleanup() => NetworkChange.NetworkAddressChanged -= _handler;
-
-            public void Dispose()
-            {
-                NetworkChange.NetworkAddressChanged -= _handler;
-                GC.SuppressFinalize(this);
             }
         }
 
@@ -331,29 +298,18 @@ namespace System.Net.Http
             HttpConnectionKey key = GetConnectionKey(request, proxyUri, isProxyConnect);
 
             HttpConnectionPool? pool;
-            while (!_pools.TryGetValue(key, out pool))
+            while (_pools is null || !_pools.TryGetValue(key, out pool))
             {
                 pool = new HttpConnectionPool(this, key.Kind, key.Host, key.Port, key.SslHostName, key.ProxyUri);
 
-                if (_cleaningTimer == null)
+                if (_pools is null)
                 {
-                    // There's no cleaning timer, which means we're not adding connections into pools, but we still need
-                    // the pool object for this request.  We don't need or want to add the pool to the pools, though,
-                    // since we don't want it to sit there forever, which it would without the cleaning timer.
+                    // We are not storing connections into pools, but we still need the pool object for this request.
                     break;
                 }
 
                 if (_pools.TryAdd(key, pool))
                 {
-                    // We need to ensure the cleanup timer is running if it isn't
-                    // already now that we added a new connection pool.
-                    lock (SyncObj)
-                    {
-                        if (!_timerIsRunning)
-                        {
-                            SetCleaningTimer(_cleanPoolTimeout);
-                        }
-                    }
                     break;
                 }
 
@@ -447,73 +403,58 @@ namespace System.Net.Http
         /// <summary>Disposes of the pools, disposing of each individual pool.</summary>
         public void Dispose()
         {
-            _cleaningTimer?.Dispose();
-            _heartBeatTimer?.Dispose();
-            foreach (KeyValuePair<HttpConnectionKey, HttpConnectionPool> pool in _pools)
+            if (_pools is not null)
             {
-                pool.Value.Dispose();
-            }
-
-            _networkChangeCleanup?.Dispose();
-        }
-
-        /// <summary>Sets <see cref="_cleaningTimer"/> and <see cref="_timerIsRunning"/> based on the specified timeout.</summary>
-        private void SetCleaningTimer(TimeSpan timeout)
-        {
-            try
-            {
-                _cleaningTimer!.Change(timeout, Timeout.InfiniteTimeSpan);
-                _timerIsRunning = timeout != Timeout.InfiniteTimeSpan;
-            }
-            catch (ObjectDisposedException)
-            {
-                // In a rare race condition where the timer callback was queued
-                // or executed and then the pool manager was disposed, the timer
-                // would be disposed and then calling Change on it could result
-                // in an ObjectDisposedException.  We simply eat that.
-            }
-        }
-
-        /// <summary>Removes unusable connections from each pool, and removes stale pools entirely.</summary>
-        private void RemoveStalePools()
-        {
-            Debug.Assert(_cleaningTimer != null);
-
-            // Iterate through each pool in the set of pools.  For each, ask it to clear out
-            // any unusable connections (e.g. those which have expired, those which have been closed, etc.)
-            // The pool may detect that it's empty and long unused, in which case it'll dispose of itself,
-            // such that any connections returned to the pool to be cached will be disposed of.  In such
-            // a case, we also remove the pool from the set of pools to avoid a leak.
-            foreach (KeyValuePair<HttpConnectionKey, HttpConnectionPool> entry in _pools)
-            {
-                if (entry.Value.CleanCacheAndDisposeIfUnused())
+                foreach ((_, HttpConnectionPool pool) in _pools)
                 {
-                    _pools.TryRemove(entry.Key, out HttpConnectionPool _);
+                    pool.Dispose();
                 }
             }
-
-            // Restart the timer if we have any pools to clean up.
-            lock (SyncObj)
-            {
-                SetCleaningTimer(!_pools.IsEmpty ? _cleanPoolTimeout : Timeout.InfiniteTimeSpan);
-            }
-
-            // NOTE: There is a possible race condition with regards to a pool getting cleaned up at the same
-            // time it's about to be used for another request.  The timer cleanup could start running, see that
-            // a pool is empty, and initiate its disposal.  Concurrently, the pools could hand out the pool
-            // to a request looking to get a connection, because the pool may not have been removed yet
-            // from the pools.  Worst case here is that connection will end up getting returned to an
-            // already disposed pool, in which case the connection will also end up getting disposed rather
-            // than reused.  This should be a rare occurrence, so for now we don't worry about it.  In the
-            // future, there are a variety of possible ways to address it, such as allowing connections to
-            // be returned to pools they weren't associated with.
         }
 
-        private void HeartBeat()
+        private void HeartBeatAndCleanPools()
         {
-            foreach (KeyValuePair<HttpConnectionKey, HttpConnectionPool> pool in _pools)
+            if (_pools is null)
             {
-                pool.Value.HeartBeat();
+                return;
+            }
+
+            long currentTimestamp = Stopwatch.GetTimestamp();
+
+            bool cleanPools = false;
+            if (Stopwatch.GetElapsedTime(_lastCleanPoolTimestamp, currentTimestamp) > _cleanPoolInterval)
+            {
+                cleanPools = true;
+                _lastCleanPoolTimestamp = currentTimestamp;
+            }
+
+            bool doHeartBeat = false;
+            if (Stopwatch.GetElapsedTime(_lastHeartBeatTimestamp, currentTimestamp) > _heartBeatInterval)
+            {
+                doHeartBeat = true;
+                _lastHeartBeatTimestamp = currentTimestamp;
+            }
+
+            if (cleanPools || doHeartBeat)
+            {
+                // Iterate through each pool in the set of pools.  For each, ask it to clear out
+                // any unusable connections (e.g. those which have expired, those which have been closed, etc.)
+                // The pool may detect that it's empty and long unused, in which case it'll dispose of itself,
+                // such that any connections returned to the pool to be cached will be disposed of.  In such
+                // a case, we also remove the pool from the set of pools to avoid a leak.
+                foreach (KeyValuePair<HttpConnectionKey, HttpConnectionPool> entry in _pools)
+                {
+                    if (cleanPools && entry.Value.CleanCacheAndDisposeIfUnused())
+                    {
+                        _pools.TryRemove(entry.Key, out HttpConnectionPool _);
+                        continue;
+                    }
+
+                    if (doHeartBeat)
+                    {
+                        entry.Value.HeartBeat();
+                    }
+                }
             }
         }
 
