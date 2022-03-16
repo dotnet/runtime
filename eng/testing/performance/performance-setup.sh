@@ -289,7 +289,7 @@ if [[ -n "$wasm_runtime_loc" ]]; then
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --aotcompilermode wasm --buildTimeout 3600"
     fi
 
-    setup_arguments="$setup_arguments --dotnet-path \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/dotnet-workload/dotnet"
+    #setup_arguments="$setup_arguments --dotnet-path \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/dotnet-workload/dotnet"
 fi
 
 if [[ -n "$mono_dotnet" && "$monoaot" == "false" ]]; then
