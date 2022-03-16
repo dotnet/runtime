@@ -8,7 +8,7 @@ namespace System.Text.Json.Serialization.Tests
 {
     public sealed partial class PropertyNameTestsDynamic : PropertyNameTests
     {
-        public PropertyNameTestsDynamic() : base(JsonSerializerWrapperForString.StringSerializer) { }
+        public PropertyNameTestsDynamic() : base(JsonSerializerWrapper.StringSerializer) { }
 
         [Fact]
         public async Task JsonNullNameAttribute()

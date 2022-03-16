@@ -5,7 +5,7 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class CollectionTests : SerializerTests
     {
-        public CollectionTests(JsonSerializerWrapperForString stringSerializerWrapper, JsonSerializerWrapperForStream streamSerializerWrapper)
-            : base(stringSerializerWrapper, streamSerializerWrapper) { }
+        public CollectionTests(JsonSerializerWrapper stringSerializerWrapper)
+            : base(stringSerializerWrapper) { }
     }
 }

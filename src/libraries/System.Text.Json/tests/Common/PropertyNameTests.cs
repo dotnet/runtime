@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class PropertyNameTests : SerializerTests
     {
-        public PropertyNameTests(JsonSerializerWrapperForString serializerWrapper) : base(serializerWrapper) { }
+        public PropertyNameTests(JsonSerializerWrapper serializerWrapper) : base(serializerWrapper) { }
 
         [Fact]
         public async Task CamelCaseDeserializeNoMatch()

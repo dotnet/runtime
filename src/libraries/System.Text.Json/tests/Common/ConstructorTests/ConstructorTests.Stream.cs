@@ -14,6 +14,11 @@ namespace System.Text.Json.Serialization.Tests
         [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
         public async Task ReadSimpleObjectAsync()
         {
+            if (JsonSerializerWrapperForStream is null)
+            {
+                return;
+            }
+
             async Task RunTestAsync<T>(byte[] testData)
             {
                 using (MemoryStream stream = new MemoryStream(testData))
@@ -28,6 +33,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
 
+            // TODO: should be refactored to a theory
             // Array size is the count of the following tests.
             Task[] tasks = new Task[16];
 
@@ -61,6 +67,11 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadSimpleObjectWithTrailingTriviaAsync()
         {
+            if (JsonSerializerWrapperForStream is null)
+            {
+                return;
+            }
+
             async Task RunTestAsync<T>(string testData)
             {
                 byte[] data = Encoding.UTF8.GetBytes(testData + " /* Multi\r\nLine Comment */\t");
@@ -77,6 +88,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
 
+            // TODO: should be refactored to a theory
             // Array size is the count of the following tests.
             Task[] tasks = new Task[14];
 
@@ -108,6 +120,11 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task Cannot_DeserializeAsync_ObjectWith_Ctor_With_65_Params()
         {
+            if (JsonSerializerWrapperForStream is null)
+            {
+                return;
+            }
+
             async Task RunTestAsync<T>()
             {
                 StringBuilder sb = new StringBuilder();
@@ -153,6 +170,11 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ExerciseStreamCodePaths()
         {
+            if (JsonSerializerWrapperForStream is null)
+            {
+                return;
+            }
+
             static string GetPropertyName(int index) =>
                 new string(new char[] { Convert.ToChar(index + 65), 'V', 'a', 'l', 'u', 'e' });
 

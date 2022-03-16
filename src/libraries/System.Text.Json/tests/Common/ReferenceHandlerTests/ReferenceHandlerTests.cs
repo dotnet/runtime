@@ -4,7 +4,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -14,8 +13,7 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class ReferenceHandlerTests : SerializerTests
     {
-        public ReferenceHandlerTests(JsonSerializerWrapperForString stringSerializer, JsonSerializerWrapperForStream streamSerializer)
-            : base(stringSerializer, streamSerializer)
+        public ReferenceHandlerTests(JsonSerializerWrapper stringSerializer) : base(stringSerializer)
         {
         }
 
@@ -743,17 +741,20 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task PreserveReferenceOfTypeObjectAsync()
         {
+            if (JsonSerializerWrapperForStream is null)
+            {
+                return;
+            }
+
             var root = new ClassWithObjectProperty();
             root.Child = new ClassWithObjectProperty();
             root.Sibling = root.Child;
 
             Assert.Same(root.Child, root.Sibling);
 
-            var stream = new MemoryStream();
-            await JsonSerializerWrapperForStream.SerializeWrapper(stream, root, s_serializerOptionsPreserve);
-            stream.Position = 0;
+            string json = await JsonSerializerWrapperForStream.SerializeWrapper(root, s_serializerOptionsPreserve);
 
-            ClassWithObjectProperty rootCopy = await JsonSerializer.DeserializeAsync<ClassWithObjectProperty>(stream, s_serializerOptionsPreserve);
+            ClassWithObjectProperty rootCopy = await JsonSerializerWrapperForStream.DeserializeWrapper<ClassWithObjectProperty>(json, s_serializerOptionsPreserve);
             Assert.Same(rootCopy.Child, rootCopy.Sibling);
         }
 

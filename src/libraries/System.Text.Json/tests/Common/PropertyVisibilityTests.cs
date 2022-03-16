@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class PropertyVisibilityTests : SerializerTests
     {
-        public PropertyVisibilityTests(JsonSerializerWrapperForString serializerWrapper) : base(serializerWrapper) { }
+        public PropertyVisibilityTests(JsonSerializerWrapper serializerWrapper) : base(serializerWrapper) { }
 
         [Fact]
         public async Task Serialize_NewSlotPublicField()

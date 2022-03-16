@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract class NodeInteropTests : SerializerTests
     {
-        public NodeInteropTests(JsonSerializerWrapperForString serializerWrapper) : base(serializerWrapper) { }
+        public NodeInteropTests(JsonSerializerWrapper serializerWrapper) : base(serializerWrapper) { }
 
         [Fact]
         public async Task CompareResultsAgainstSerializer()

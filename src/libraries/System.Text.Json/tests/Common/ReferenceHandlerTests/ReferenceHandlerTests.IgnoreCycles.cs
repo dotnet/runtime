@@ -13,8 +13,8 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class ReferenceHandlerTests_IgnoreCycles : SerializerTests
     {
-        public ReferenceHandlerTests_IgnoreCycles(JsonSerializerWrapperForString stringSerializer, JsonSerializerWrapperForStream streamSerializer)
-            : base(stringSerializer, streamSerializer)
+        public ReferenceHandlerTests_IgnoreCycles(JsonSerializerWrapper stringSerializer)
+            : base(stringSerializer)
         {
         }
 
@@ -458,19 +458,9 @@ namespace System.Text.Json.Serialization.Tests
             {
                 json = await JsonSerializerWrapperForString.SerializeWrapper(obj, options);
                 Assert.Equal(expected, json);
-
-                using var ms1 = new MemoryStream();
-                await JsonSerializerWrapperForStream.SerializeWrapper(ms1, obj, options).ConfigureAwait(false);
-                json = Encoding.UTF8.GetString(ms1.ToArray());
-                Assert.Equal(expected, json);
             }
 
             json = await JsonSerializerWrapperForString.SerializeWrapper(obj, objType, options);
-            Assert.Equal(expected, json);
-
-            using var ms2 = new MemoryStream();
-            await JsonSerializerWrapperForStream.SerializeWrapper(ms2, obj, objType, options).ConfigureAwait(false);
-            json = Encoding.UTF8.GetString(ms2.ToArray());
             Assert.Equal(expected, json);
         }
 
@@ -483,21 +473,10 @@ namespace System.Text.Json.Serialization.Tests
             {
                 json = await JsonSerializerWrapperForString.SerializeWrapper(obj, options);
                 VerifySubstringExistsNTimes(json, expectedSubstring, expectedTimes);
-
-                using var ms1 = new MemoryStream();
-                await JsonSerializerWrapperForStream.SerializeWrapper(ms1, obj, options).ConfigureAwait(false);
-                json = Encoding.UTF8.GetString(ms1.ToArray());
-                VerifySubstringExistsNTimes(json, expectedSubstring, expectedTimes);
             }
 
             json = await JsonSerializerWrapperForString.SerializeWrapper(obj, objType, options);
             VerifySubstringExistsNTimes(json, expectedSubstring, expectedTimes);
-
-            using var ms2 = new MemoryStream();
-            await JsonSerializerWrapperForStream.SerializeWrapper(ms2, obj, objType, options).ConfigureAwait(false);
-            json = Encoding.UTF8.GetString(ms2.ToArray());
-            VerifySubstringExistsNTimes(json, expectedSubstring, expectedTimes);
-
 
             static void VerifySubstringExistsNTimes(string actualString, string expectedSubstring, int expectedTimes)
             {

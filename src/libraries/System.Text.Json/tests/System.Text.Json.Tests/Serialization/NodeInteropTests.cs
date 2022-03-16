@@ -5,6 +5,6 @@ namespace System.Text.Json.Serialization.Tests
 {
     public sealed partial class NodeInteropTestsDynamic : NodeInteropTests
     {
-        public NodeInteropTestsDynamic() : base(JsonSerializerWrapperForString.StringSerializer) { }
+        public NodeInteropTestsDynamic() : base(JsonSerializerWrapper.StringSerializer) { }
     }
 }

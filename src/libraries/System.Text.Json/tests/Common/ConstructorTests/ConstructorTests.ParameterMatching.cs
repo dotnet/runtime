@@ -12,8 +12,8 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class ConstructorTests : SerializerTests
     {
-        public ConstructorTests(JsonSerializerWrapperForString stringSerializer, JsonSerializerWrapperForStream streamSerializer)
-            : base(stringSerializer, streamSerializer)
+        public ConstructorTests(JsonSerializerWrapper stringSerializer)
+            : base(stringSerializer)
         {
         }
 

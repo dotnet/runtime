@@ -3,13 +3,25 @@
 
 namespace System.Text.Json.Serialization.Tests
 {
+    /// <summary>
+    /// Base class abstracting the serialization System Under Test.
+    /// </summary>
     public abstract class SerializerTests
     {
-        protected JsonSerializerWrapperForString JsonSerializerWrapperForString { get; }
+        /// <summary>
+        /// The serialization System Under Test to be targeted by deriving test suites.
+        /// </summary>
+        protected JsonSerializerWrapper JsonSerializerWrapperForString { get; }
 
-        protected JsonSerializerWrapperForStream JsonSerializerWrapperForStream { get; }
+        /// <summary>
+        /// For Systems Under Test that support streaming, exposes the relevant API surface.
+        /// </summary>
+        protected StreamingJsonSerializerWrapper? JsonSerializerWrapperForStream { get; }
 
-        protected SerializerTests(JsonSerializerWrapperForString stringSerializerWrapper, JsonSerializerWrapperForStream? streamSerializerWrapper = null)
-            => (JsonSerializerWrapperForString, JsonSerializerWrapperForStream) = (stringSerializerWrapper, streamSerializerWrapper);
+        protected SerializerTests(JsonSerializerWrapper serializerUnderTest)
+        {
+            JsonSerializerWrapperForString = serializerUnderTest;
+            JsonSerializerWrapperForStream = serializerUnderTest as StreamingJsonSerializerWrapper;
+        }
     }
 }

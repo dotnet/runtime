@@ -14,15 +14,26 @@ using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
 {
-    public partial class CollectionTests_Metadata : CollectionTests
+    public abstract partial class CollectionTests_Metadata_String : CollectionTests_Metadata
     {
-        public CollectionTests_Metadata()
-            : this(new StringSerializerWrapper(CollectionTestsContext_Metadata.Default, (options) => new CollectionTestsContext_Metadata(options)))
+        public CollectionTests_Metadata_String()
+            : base(new StringSerializerWrapper(CollectionTestsContext_Metadata.Default, (options) => new CollectionTestsContext_Metadata(options)))
         {
         }
+    }
 
-        protected CollectionTests_Metadata(JsonSerializerWrapperForString serializerWrapper)
-            : base(serializerWrapper, null)
+    public abstract partial class CollectionTests_Metadata_AsyncStream : CollectionTests_Metadata
+    {
+        public CollectionTests_Metadata_AsyncStream()
+            : base(new AsyncStreamSerializerWrapper(CollectionTestsContext_Metadata.Default, (options) => new CollectionTestsContext_Metadata(options)))
+        {
+        }
+    }
+
+    public abstract partial class CollectionTests_Metadata : CollectionTests
+    {
+        protected CollectionTests_Metadata(JsonSerializerWrapper serializerWrapper)
+            : base(serializerWrapper)
         {
         }
 
