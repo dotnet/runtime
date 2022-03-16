@@ -241,6 +241,12 @@ namespace System.IO
         internal static bool EndsInDirectorySeparator(ReadOnlySpan<char> path) =>
             path.Length > 0 && IsDirectorySeparator(path[path.Length - 1]);
 
+        /// <summary>
+        /// Same as <see cref="EndsInDirectorySeparator(string?)"/> but without length check.
+        /// </summary>
+        internal static bool EndsInDirectorySeparatorUnchecked(ReadOnlySpan<char> path) =>
+            IsDirectorySeparator(path[^1]);
+
         internal static string GetLinkTargetFullPath(string path, string pathToTarget)
             => IsPartiallyQualified(pathToTarget.AsSpan()) ?
                 Path.Join(Path.GetDirectoryName(path.AsSpan()), pathToTarget.AsSpan()) : pathToTarget;
