@@ -16787,6 +16787,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 {
                     assert(sig.retType == CORINFO_TYPE_CLASS);
                     objClass = sig.retTypeClass;
+                    if ((objClass != NO_CLASS_HANDLE) && impIsClassExact(objClass))
+                    {
+                        *pIsExact = true;
+                    }
                 }
             }
             else if (call->gtCallType == CT_HELPER)

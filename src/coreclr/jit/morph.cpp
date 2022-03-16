@@ -12451,11 +12451,40 @@ DONE_MORPHING_CHILDREN:
             {
                 break;
             }
+            GenTreeIndir* indir = tree->AsIndir();
 
             // Can not remove a GT_IND if it is currently a CSE candidate.
             if (gtIsActiveCSE_Candidate(tree))
             {
                 break;
+            }
+
+            // Fold *(size_t*)&obj to a raw class handle if we know the exact obj's type
+            if (indir->TypeIs(TYP_I_IMPL) && indir->Addr()->TypeIs(TYP_REF) && !gtIsActiveCSE_Candidate(indir->Addr()))
+            {
+                bool                 isExact   = false;
+                bool                 isNonNull = false;
+                CORINFO_CLASS_HANDLE objCls    = gtGetClassHandle(indir->Addr(), &isExact, &isNonNull);
+                if ((objCls != NO_CLASS_HANDLE) && isExact)
+                {
+                    GenTree* clsNode = gtNewIconEmbClsHndNode(objCls);
+                    if (!isNonNull)
+                    {
+                        GenTree* sideEffList = nullptr;
+                        gtExtractSideEffList(indir, &sideEffList);
+                        if (sideEffList != nullptr)
+                        {
+                            clsNode = gtNewOperNode(GT_COMMA, indir->TypeGet(), sideEffList, clsNode);
+                            gtUpdateNodeSideEffects(clsNode);
+                        }
+                    }
+                    JITDUMP("Folding IND(obj):\n");
+                    DISPTREE(indir);
+                    JITDUMP("\nto:\n")
+                    DISPTREE(clsNode);
+                    INDEBUG(clsNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                    return clsNode;
+                }
             }
 
             bool foldAndReturnTemp = false;
