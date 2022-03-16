@@ -1371,12 +1371,14 @@ mono_class_get_first_field_idx (MonoClass *klass);
 void
 mono_class_set_first_field_idx (MonoClass *klass, guint32 idx);
 
+MONO_COMPONENT_API
 guint32
 mono_class_get_method_count (MonoClass *klass);
 
 void
 mono_class_set_method_count (MonoClass *klass, guint32 count);
 
+MONO_COMPONENT_API
 guint32
 mono_class_get_field_count (MonoClass *klass);
 
