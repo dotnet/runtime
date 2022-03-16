@@ -12460,12 +12460,13 @@ DONE_MORPHING_CHILDREN:
             }
 
             // Fold *(size_t*)&obj to a raw class handle if we know the exact obj's type
-            if (indir->TypeIs(TYP_I_IMPL) && indir->Addr()->TypeIs(TYP_REF) && !gtIsActiveCSE_Candidate(indir->Addr()))
+            if (indir->TypeIs(TYP_I_IMPL) && !gtIsActiveCSE_Candidate(indir->Addr()))
             {
                 bool                 isExact   = false;
                 bool                 isNonNull = false;
                 CORINFO_CLASS_HANDLE objCls    = gtGetClassHandle(indir->Addr(), &isExact, &isNonNull);
-                if ((objCls != NO_CLASS_HANDLE) && isExact)
+                if ((objCls != NO_CLASS_HANDLE) && isExact &&
+                    (info.compCompHnd->compareTypesForEquality(objCls, objCls) == TypeCompareState::Must))
                 {
                     GenTree* clsNode = gtNewIconEmbClsHndNode(objCls);
                     if (!isNonNull)
