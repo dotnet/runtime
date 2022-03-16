@@ -2270,8 +2270,20 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 		g_assert (m_class_get_vtable (info->klass));
 		method = m_class_get_vtable (info->klass) [ioffset + slot];
 
-		method = mono_class_inflate_generic_method_checked (method, context, error);
-		return_val_if_nok (error, NULL);
+
+		if (info->method->is_inflated) {
+			MonoGenericContext *method_ctx = mono_method_get_context (info->method);
+			if (method_ctx->method_inst != NULL) {
+				MonoGenericContext tmp_context;
+				tmp_context.class_inst = NULL;
+				tmp_context.method_inst = method_ctx->method_inst;
+
+				// The resolved virtual method can be generic, in which case we need to inflate
+				// it with the type parameters that we are calling with.
+				method = mono_class_inflate_generic_method_checked (method, &tmp_context, error);
+				return_val_if_nok (error, NULL);
+			}
+		}
 
 		if (mono_llvm_only) {
  			gpointer arg = NULL;
