@@ -2864,6 +2864,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -2994,6 +2995,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -3183,6 +3185,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssueCommentResponder",
@@ -3310,6 +3313,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -3379,6 +3383,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
@@ -3504,6 +3509,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
@@ -3593,6 +3599,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -3767,6 +3774,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -4004,6 +4012,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssueCommentResponder",
@@ -4155,6 +4164,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -4224,6 +4234,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
@@ -4393,6 +4404,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
@@ -4506,6 +4518,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -4647,6 +4660,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -4848,6 +4862,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssueCommentResponder",
@@ -4981,6 +4996,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -5050,6 +5066,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
@@ -5186,6 +5203,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
@@ -5281,6 +5299,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -5389,6 +5408,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -5554,6 +5574,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssueCommentResponder",
@@ -5669,6 +5690,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -5738,6 +5760,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
@@ -5841,6 +5864,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
@@ -5918,6 +5942,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -6015,6 +6040,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -6168,6 +6194,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssueCommentResponder",
@@ -6277,6 +6304,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -6346,6 +6374,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
@@ -6438,6 +6467,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
@@ -6509,6 +6539,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -6573,6 +6604,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -6690,6 +6722,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssueCommentResponder",
@@ -6781,6 +6814,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -6850,6 +6884,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
@@ -6909,6 +6944,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
@@ -6962,6 +6998,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -7158,6 +7195,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -7419,6 +7457,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssueCommentResponder",
@@ -7582,6 +7621,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -7651,6 +7691,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
@@ -7842,6 +7883,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
@@ -7967,6 +8009,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -8075,6 +8118,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -8240,6 +8284,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssueCommentResponder",
@@ -8355,6 +8400,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -8424,6 +8470,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
@@ -8527,6 +8574,7 @@
     }
   },
   {
+    "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
