@@ -173,7 +173,7 @@ while (($# > 0)); do
   esac
 done
 
-repository="radical/performance"
+#repository="radical/performance"
 #if [[ "$repository" == "dotnet/performance" || "$repository" == "dotnet-performance" ]]; then
     #run_from_perf_repo=true
 #fi
@@ -274,7 +274,7 @@ else
     git clone --branch debug-ci --depth 1 --quiet https://github.com/radical/performance.git $performance_directory
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
-    git clone https://github.com/radical/BenchmarkDotNet.git $benchmark_directory
+    git clone --branch debug-ci --depth 1 --quiet https://github.com/radical/BenchmarkDotNet.git $benchmark_directory
 
     docs_directory=$performance_directory/docs
     mv $docs_directory $workitem_directory
