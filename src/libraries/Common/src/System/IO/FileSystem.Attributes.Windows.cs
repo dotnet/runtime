@@ -40,6 +40,15 @@ namespace System.IO
                 ((data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == 0);
         }
 
+        public static (int fileAttributes, int lastError) GetFileAttributes(string fullPath)
+        {
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
+            int lastError = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
+            int fileAttributes = data.dwFileAttributes;
+
+            return (fileAttributes, lastError);
+        }
+
         /// <summary>
         /// Returns 0 on success, otherwise a Win32 error code.  Note that
         /// classes should use -1 as the uninitialized state for dataInitialized.
