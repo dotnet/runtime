@@ -12466,19 +12466,21 @@ DONE_MORPHING_CHILDREN:
                 bool                 isNonNull = false;
                 CORINFO_CLASS_HANDLE objCls    = gtGetClassHandle(indir->Addr(), &isExact, &isNonNull);
                 if ((objCls != NO_CLASS_HANDLE) && isExact &&
+                    // Use compareTypesForEquality(cls,cls) to filter out various cases where we won't be
+                    // able to fold like shared types, etc
                     (info.compCompHnd->compareTypesForEquality(objCls, objCls) == TypeCompareState::Must))
                 {
                     GenTree* clsNode = gtNewIconEmbClsHndNode(objCls);
-                    if (!isNonNull)
+
+                    // Most likely we need to preserve a nullcheck
+                    GenTree* sideEffList = nullptr;
+                    gtExtractSideEffList(indir, &sideEffList);
+                    if (sideEffList != nullptr)
                     {
-                        GenTree* sideEffList = nullptr;
-                        gtExtractSideEffList(indir, &sideEffList);
-                        if (sideEffList != nullptr)
-                        {
-                            clsNode = gtNewOperNode(GT_COMMA, indir->TypeGet(), sideEffList, clsNode);
-                            gtUpdateNodeSideEffects(clsNode);
-                        }
+                        clsNode = gtNewOperNode(GT_COMMA, indir->TypeGet(), sideEffList, clsNode);
+                        gtUpdateNodeSideEffects(clsNode);
                     }
+
                     JITDUMP("Folding IND(obj):\n");
                     DISPTREE(indir);
                     JITDUMP("\nto:\n")
