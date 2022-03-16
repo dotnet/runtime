@@ -6266,8 +6266,6 @@ mono_metadata_get_constant_index (MonoImage *meta, guint32 token, guint32 hint)
 	loc.col_idx = MONO_CONSTANT_PARENT;
 	loc.t = tdef;
 
-	/* FIXME: metadata-update */
-
 	/* FIXME: Index translation */
 
 	if ((hint > 0) && (hint < table_info_get_rows (tdef)) && (mono_metadata_decode_row_col (tdef, hint - 1, MONO_CONSTANT_PARENT) == index))
@@ -6275,6 +6273,11 @@ mono_metadata_get_constant_index (MonoImage *meta, guint32 token, guint32 hint)
 
 	if (tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator)) {
 		return loc.result + 1;
+	}
+
+	if (G_UNLIKELY (meta->has_updates)) {
+		if (mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
+			return loc.result + 1;
 	}
 	return 0;
 }

@@ -558,7 +558,6 @@ namespace System.Reflection.Metadata
 		CheckReflectedType(assm, allTypes, ns, "NewToplevelStruct");
 		CheckReflectedType(assm, allTypes, ns, "INewInterface");
 		CheckReflectedType(assm, allTypes, ns, "NewEnum", static (ty) => {
-#if false
 		    var names = Enum.GetNames (ty);
 		    Assert.Equal(3, names.Length);
 		    var vals = Enum.GetValues (ty);
@@ -566,7 +565,6 @@ namespace System.Reflection.Metadata
 
 		    Assert.NotNull(Enum.Parse (ty, "Red"));
 		    Assert.NotNull(Enum.Parse (ty, "Yellow"));
-#endif
 		});
 
 		// make some instances using reflection and use them through known interfaces

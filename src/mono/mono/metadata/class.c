@@ -2541,10 +2541,9 @@ mono_class_get_field_token (MonoClassField *field)
 static int
 mono_field_get_index (MonoClassField *field)
 {
+	g_assert (!m_field_is_from_update (field));
 	int index = field - m_class_get_fields (m_field_get_parent (field));
 	g_assert (index >= 0 && index < mono_class_get_field_count (m_field_get_parent (field)));
-	/* TODO: metadata-update: check if the field was added */
-	g_assert (!m_class_get_image (m_field_get_parent (field))->has_updates);
 
 	return index;
 }
