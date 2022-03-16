@@ -193,6 +193,9 @@ struct _MonoProperty {
 	MonoMethod *get;
 	MonoMethod *set;
 	guint32 attrs;
+	/* added by metadata-update after class was created;
+	 * not in MonoClassPropertyInfo array - don't do ptr arithmetic */
+	guint32 from_update : 1;
 };
 
 struct _MonoEvent {
@@ -205,6 +208,9 @@ struct _MonoEvent {
 	MonoMethod **other;
 #endif
 	guint32 attrs;
+	/* added by metadata-update after class was created;
+	 * not in MonoClassEventInfo array - don't do ptr arithmetic */
+	guint32 from_update : 1;
 };
 
 /* type of exception being "on hold" for later processing (see exception_type) */
@@ -1602,6 +1608,18 @@ static inline gboolean
 m_field_is_from_update (MonoClassField *field)
 {
 	return (m_field_get_meta_flags (field) & MONO_CLASS_FIELD_META_FLAG_FROM_UPDATE) != 0;
+}
+
+static inline gboolean
+m_property_is_from_update (MonoProperty *prop)
+{
+	return prop->from_update != 0;
+}
+
+static inline gboolean
+m_event_is_from_update (MonoEvent *evt)
+{
+	return evt->from_update != 0;
 }
 
 /*
