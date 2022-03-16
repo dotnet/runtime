@@ -93,3 +93,9 @@ jobs:
       platforms:
         - Browser_wasm
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+  
+  - template: /eng/pipelines/common/templates/wasm-debugger-tests-firefox.yml
+  parameters:
+    platforms:
+      - Browser_wasm
+    alwaysRun: ${{ parameters.isWasmOnlyBuild }}

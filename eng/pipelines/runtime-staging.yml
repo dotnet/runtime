@@ -98,6 +98,12 @@ jobs:
       - Browser_wasm_win
     alwaysRun: ${{ variables.isRollingBuild }}
 
+- template: /eng/pipelines/common/templates/wasm-debugger-tests-firefox.yml
+  parameters:
+    platforms:
+      - Browser_wasm
+    alwaysRun: ${{ variables.isRollingBuild }}
+
 #
 # Build the whole product using Mono and run libraries tests
 #
