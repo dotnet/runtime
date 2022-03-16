@@ -28195,7 +28195,13 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #ifdef BACKGROUND_GC
                     if (current_c_gc_state == c_gc_state_marking)
                     {
+#ifdef USE_REGIONS
                         bgc_clear_batch_mark_array_bits (heap_segment_mem (seg), heap_segment_allocated (seg));
+#else //USE_REGIONS
+                        // This cannot happen with segments as we'd only be on the ephemeral segment if BGC is in
+                        // progress and it's guaranteed shigh/slow would be in range of the ephemeral segment.
+                        assert (!"cannot happen with segments");
+#endif //USE_REGIONS
                     }
 #endif //BACKGROUND_GC
                     heap_segment_saved_allocated (seg) = heap_segment_allocated (seg);
