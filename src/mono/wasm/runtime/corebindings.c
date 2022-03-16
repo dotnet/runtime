@@ -99,6 +99,9 @@ mono_wasm_typed_array_new_ref (char *arr, int length, int size, int type, MonoAr
 	case MARSHAL_ARRAY_DOUBLE:
 		typeClass = mono_get_double_class();
 		break;
+	default:
+		printf ("Invalid marshal type %d in mono_wasm_typed_array_new", type);
+		abort();
 	}
 
 	MonoArray * volatile buffer;
