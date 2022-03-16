@@ -98,12 +98,6 @@ namespace Microsoft.Extensions.Caching.Memory
         System.TimeSpan? SlidingExpiration { get; set; }
         object? Value { get; set; }
     }
-    public partial interface IMemoryCache : System.IDisposable
-    {
-        Microsoft.Extensions.Caching.Memory.ICacheEntry CreateEntry(object key);
-        void Remove(object key);
-        bool TryGetValue(object key, out object? value);
-    }
     public static partial class MemoryCacheEntryExtensions
     {
         public static Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions AddExpirationToken(this Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions options, Microsoft.Extensions.Primitives.IChangeToken expirationToken) { throw null; }

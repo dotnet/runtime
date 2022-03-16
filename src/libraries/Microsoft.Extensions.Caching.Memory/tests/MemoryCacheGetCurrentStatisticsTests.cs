@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             Assert.Equal(200, stats.TotalMisses);
             Assert.Equal(100, stats.TotalHits);
-            // Assert.Equal(1, stats.CurrentEntryCount);
+            Assert.Equal(1, stats.CurrentEntryCount);
             VerifyCurrentEstimatedSize(2, sizeLimitIsSet, stats);
         }
 
