@@ -40,7 +40,7 @@ typedef void* mono_liveness_world_state_callback;
 #define MONO_PRE_ASSERTE         /* if you need to change modes before doing asserts override */
 #define MONO_POST_ASSERTE        /* put it back */
 
-#if !defined(MONO_ASSERTE_MSG)                                              
+#if !defined(MONO_ASSERTE_MSG)
 #define MONO_ASSERTE_MSG(expr, msg)                                           \
         do {                                                                \
              if (!(expr)) {                                                 \
@@ -64,7 +64,9 @@ typedef void* mono_liveness_world_state_callback;
 
 
 #include "MonoTypesClr.h"
+
 #include "MonoFunctionsClr.h"
+
 #include "../../../../unity/unity-sources/Runtime/Mono/tabledefs.h"
 
 #endif //MONOCORECLR_H

@@ -1,15 +1,15 @@
-#include <stdio.h>
+#include <algorithm>
+#include <assert.h>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
-#include <string>
-#include <string.h>
-#include <assert.h>
 #include <list>
-#include <algorithm>
+#include <stdio.h>
+#include <string.h>
+#include <string>
 #ifndef WIN32
-#include <unistd.h>
 #include <dlfcn.h>
+#include <unistd.h>
 #endif
 //#include "unittest-cpp/UnitTest++/UnitTest++.h"
 #define CATCH_CONFIG_RUNNER
@@ -539,7 +539,7 @@ TEST(mono_class_is_generic_works)
 TEST(mono_class_is_blittable_works)
 {
     CHECK(mono_class_is_blittable(mono_get_int32_class()));
-    // Mono has a different definition of "blittable". This should be fine for now, 
+    // Mono has a different definition of "blittable". This should be fine for now,
     // as we special-case these in the editor.
     CHECK_EQUAL(g_Mode == CoreCLR, mono_class_is_blittable(GetClassHelper(kTestDLLNameSpace, "TestStructWithFields")));
     CHECK(!mono_class_is_blittable(GetClassHelper(kTestDLLNameSpace, "TestClass")));
@@ -927,7 +927,7 @@ TEST(explicit_layout_is_correctly_calculated_for_derived_class)
     CHECK_EQUAL(SCRIPTING_OBJECT_HEADERSIZE + parentSize + 24, offset);
 
     field = mono_class_get_fields(klass, &ptr);
-    CHECK(field == NULL);    
+    CHECK(field == NULL);
 }
 
 TEST(mono_gc_wbarrier_set_field_can_set_reference_field)
@@ -1444,13 +1444,13 @@ TEST(mono_type_get_type_returns_expected_values2)
     CHECK_EQUAL(MONO_TYPE_I8, get_field_type (classWithFields, "_long"));
     CHECK_EQUAL(MONO_TYPE_U8, get_field_type (classWithFields, "_ulong"));
 
-    
+
     CHECK_EQUAL(MONO_TYPE_R4, get_field_type (classWithFields, "_float"));
     CHECK_EQUAL(MONO_TYPE_R8, get_field_type (classWithFields, "_double"));
-    
+
     CHECK_EQUAL(MONO_TYPE_BOOLEAN, get_field_type (classWithFields, "_bool"));
     CHECK_EQUAL(MONO_TYPE_CHAR, get_field_type (classWithFields, "_char"));
-    
+
     CHECK_EQUAL(MONO_TYPE_STRING, get_field_type (classWithFields, "_string"));
     CHECK_EQUAL(MONO_TYPE_OBJECT, get_field_type (classWithFields, "_object"));
     CHECK_EQUAL(MONO_TYPE_CLASS, get_field_type (classWithFields, "_class"));
@@ -1590,7 +1590,7 @@ TEST(mono_custom_attrs_construct_can_get_attribute_instances)
 
     GET_AND_CHECK(customAttrInfo, mono_custom_attrs_from_class(klassClassWithAttribute));
     GET_AND_CHECK(attributeArray, mono_custom_attrs_construct(customAttrInfo));
-    
+
     GET_AND_CHECK(attribute1Instance, *(MonoObject**)scripting_array_element_ptr(attributeArray, 0, sizeof(MonoObject*)));
     CHECK_EQUAL(klassTestAttribute, mono_object_get_class(attribute1Instance));
 
@@ -1617,7 +1617,7 @@ TEST(mono_custom_attrs_get_attr_attribute_instance_has_correct_parameters)
 
     GET_AND_CHECK(customAttrInfo, mono_custom_attrs_from_class(klassClassWithAttribute));
     GET_AND_CHECK(attributeInstance, mono_custom_attrs_get_attr(customAttrInfo, klassTestWithParamsAttribute));
-    
+
     int i;
     GetFieldHelper(klassTestWithParamsAttribute, attributeInstance, "i", &i);
     CHECK_EQUAL(42, i);
@@ -1686,9 +1686,9 @@ void CheckString(MonoString* str, const char* expected, size_t len)
     CHECK_EQUAL(mono_get_string_class(), stringclass);
     char *utf8 = mono_string_to_utf8(str);
     CHECK_EQUAL(0, strcmp(expected, utf8));
-    
-    // mono_string_to_utf8 returns a C string, so it cannot contain \0 characters. 
-    // Also check if the length of the string matches, to see if we got the characters 
+
+    // mono_string_to_utf8 returns a C string, so it cannot contain \0 characters.
+    // Also check if the length of the string matches, to see if we got the characters
     // after the \0 in the kHelloWorldStringWithEmbeddedNull test.
     GET_AND_CHECK(property, mono_class_get_property_from_name (mono_get_string_class(), "Length"));
     GET_AND_CHECK(method, mono_property_get_get_method(property));
@@ -1696,7 +1696,7 @@ void CheckString(MonoString* str, const char* expected, size_t len)
     int int_result = *(int*)mono_object_unbox(returnValue);
     CHECK_EQUAL(len, int_result);
 
-    mono_unity_g_free(utf8);  
+    mono_unity_g_free(utf8);
 }
 
 TEST(mono_string_new_wrapper_creates_string)
@@ -1707,7 +1707,7 @@ TEST(mono_string_new_wrapper_creates_string)
 TEST(mono_string_new_len_creates_string)
 {
     CheckString(mono_string_new_len(mono_domain_get(), kHelloWorldString, 13), kHelloWorldString, 13);
-    CheckString(mono_string_new_len(mono_domain_get(), kHelloWorldString, 5), kHelloString, 5);  
+    CheckString(mono_string_new_len(mono_domain_get(), kHelloWorldString, 5), kHelloString, 5);
     CheckString(mono_string_new_len(mono_domain_get(), kHelloWorldStringWithEmbeddedNull, 11), kHelloWorldStringWithEmbeddedNull, 11);
 }
 
@@ -1810,7 +1810,7 @@ TEST(can_get_full_stack_trace_in_internal_method)
 static const char* find_plugin_callback(const char* name)
 {
     printf("Load plugin %s\n", name);
-    
+
     if (strcmp(name, "foo.lib") == 0)
         return abs_path_from_file("nativelib/nativelib.dylib").c_str();
 
@@ -1829,7 +1829,7 @@ TEST(can_call_dllimport_method_with_custom_dlopen_callback)
     MonoObject* returnValue = mono_runtime_invoke(method, nullptr, params, nullptr);
     int int_result = *(int*)mono_object_unbox(returnValue);
 
-    CHECK_EQUAL(25, int_result);    
+    CHECK_EQUAL(25, int_result);
 }
 
 TEST(mono_runtime_unhandled_exception_policy_set_exception_on_thread_will_not_kill_app)
@@ -1898,7 +1898,7 @@ MonoDomain* LoadTestDllIntoDomain(MonoImage **image)
 
     GET_AND_CHECK(domain, mono_domain_create_appdomain("domain", NULL));
 
-    // Like in the Unity Editor, we use mono_image_open_from_data_with_name to load the reloadable assembly from memory, 
+    // Like in the Unity Editor, we use mono_image_open_from_data_with_name to load the reloadable assembly from memory,
     // instead of mono_domain_assembly_open. This allows the editor to change the assembly on disk without causing issues.
     long lSize;
     GET_AND_CHECK(pFile, fopen (testDllPath.c_str() , "rb"));
@@ -1916,7 +1916,7 @@ MonoDomain* LoadTestDllIntoDomain(MonoImage **image)
     *image = mono_image_open_from_data_with_name((char*)buffer, lSize, true, &status, false, testDllPath.c_str());
     CHECK(*image != NULL);
     CHECK_EQUAL(0, status);
-    GET_AND_CHECK(assembly, mono_assembly_load_from_full(*image, testDllPath.c_str(), &status, false)); 
+    GET_AND_CHECK(assembly, mono_assembly_load_from_full(*image, testDllPath.c_str(), &status, false));
     CHECK_EQUAL(0, status);
     mono_domain_set(g_domain, true);
 
@@ -1951,13 +1951,13 @@ TEST(can_load_assembly_into_domain_and_get_assembly_location)
     char *utf8 = mono_string_to_utf8(returnValue);
     CHECK(strstr(utf8, "unloadable-test-dll.dll"));
     mono_unity_g_free(utf8);
-    
+
     g_UnloadException = nullptr;
     mono_unity_domain_unload(domain, UnityDomainUnloadCallback);
     CHECK(g_UnloadException == nullptr);
 }
 
-// Unmodified CoreCLR would assert when a new MethodDesc points to the same internal call 
+// Unmodified CoreCLR would assert when a new MethodDesc points to the same internal call
 // implementation as an existing entry in the table. But when we reload the ALC containing the
 // internal call definition, we get a new MethodDesc, so we need to modify CoreCLR to allow this.
 // This test verifies that.
@@ -1995,7 +1995,7 @@ guint32 SetupDomainTestObjectHandle(MonoDomain* domain, MonoClass* klass, bool w
 NOINLINE
 guint32 SetupDomainTestTypeObjectHandle(MonoDomain* domain, MonoClass* klass, bool weak, bool pinned = false)
 {
-    GET_AND_CHECK(obj, mono_type_get_object(domain, mono_class_get_type(klass))); 
+    GET_AND_CHECK(obj, mono_type_get_object(domain, mono_class_get_type(klass)));
     guint32 handle = weak ? mono_gchandle_new_weakref_v2(obj, false) : mono_gchandle_new_v2(obj, pinned);
     CHECK_EQUAL(obj, mono_gchandle_get_target_v2(handle));
     return handle;
@@ -2099,7 +2099,7 @@ TEST(unloading_domain_unloads_its_objects_even_if_protected_by_stack_slot)
     GET_AND_CHECK(obj, mono_object_new(domain, klass));
     guint32 handle = mono_gchandle_new_weakref_v2(obj, false);
     CHECK_EQUAL(obj, mono_gchandle_get_target_v2(handle));
-    
+
     g_UnloadException = nullptr;
     mono_unity_domain_unload(domain, UnityDomainUnloadCallback);
     CHECK(g_UnloadException == nullptr);
@@ -2317,7 +2317,7 @@ void SetupMono(Mode mode)
     {
 #if defined(__APPLE__)
 #if defined(_DEBUG)
-#ifdef __aarch64__ 
+#ifdef __aarch64__
         monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Debug/runtimes/osx-arm64/lib/net7.0");
         g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Debug/runtimes/osx-arm64/native/libcoreclr.dylib");
 #else
@@ -2325,7 +2325,7 @@ void SetupMono(Mode mode)
         g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.osx-x64/Debug/runtimes/osx-x64/native/libcoreclr.dylib");
 #endif // __aarch64__
 #else
-#ifdef __aarch64__ 
+#ifdef __aarch64__
         monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Release/runtimes/osx-arm64/lib/net7.0");
         g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Release/runtimes/osx-arm64/native/libcoreclr.dylib");
 #else
@@ -2414,7 +2414,7 @@ void ShutdownMono()
 int RunTests(Mode mode)
 {
     SetupMono(mode);
-    
+
     Catch::Session session;
     int result = session.run();
 

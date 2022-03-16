@@ -63,7 +63,7 @@ struct MonoString
 
 struct MonoInternalCallFrameOpaque
 {
-    // in release builds, this is only 248 bytes - but it does not matter if we make it 
+    // in release builds, this is only 248 bytes - but it does not matter if we make it
     // larger, that just means some extra unused bytes on the stack.
     char data[256]; // Debug
 };
