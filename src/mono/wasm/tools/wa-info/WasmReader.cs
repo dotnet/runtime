@@ -61,7 +61,8 @@ namespace WebAssemblyInfo
             Element,
             Code,
             Data,
-            DataCount
+            DataCount,
+            Tag,
         }
 
         protected struct SectionInfo
