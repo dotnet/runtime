@@ -44,7 +44,7 @@ namespace System.IO.Pipes
                 access |= Interop.Kernel32.GenericOperations.GENERIC_WRITE;
             }
 
-            SafePipeHandle handle = CreateFileW(_normalizedPipePath, ref secAttrs, _pipeFlags, access);
+            SafePipeHandle handle = CreateNamedPipeClient(_normalizedPipePath, ref secAttrs, _pipeFlags, access);
 
             if (handle.IsInvalid)
             {
@@ -79,7 +79,7 @@ namespace System.IO.Pipes
                 }
 
                 // Pipe server should be free. Let's try to connect to it.
-                handle = CreateFileW(_normalizedPipePath, ref secAttrs, _pipeFlags, access);
+                handle = CreateNamedPipeClient(_normalizedPipePath, ref secAttrs, _pipeFlags, access);
 
                 if (handle.IsInvalid)
                 {
@@ -103,7 +103,7 @@ namespace System.IO.Pipes
             ValidateRemotePipeUser();
             return true;
 
-            static SafePipeHandle CreateFileW(string? path, ref Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs, int pipeFlags, int access)
+            static SafePipeHandle CreateNamedPipeClient(string? path, ref Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs, int pipeFlags, int access)
                 => Interop.Kernel32.CreateNamedPipeClient(path, access, FileShare.None, ref secAttrs, FileMode.Open, pipeFlags, hTemplateFile: IntPtr.Zero);
         }
 
