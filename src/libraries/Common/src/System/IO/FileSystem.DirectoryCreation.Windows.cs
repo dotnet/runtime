@@ -34,15 +34,17 @@ namespace System.IO
             // isn't threadsafe.
 
             bool somepathexists = false;
-            int length = fullPath.Length;
+
+            ReadOnlySpan<char> fullPathSpan = fullPath;
+            int length = fullPathSpan.Length;
 
             // We need to trim the trailing slash or the code will try to create 2 directories of the same name.
-            if (length >= 2 && PathInternal.EndsInDirectorySeparatorUnchecked(fullPath.AsSpan()))
+            if (length >= 2 && PathInternal.EndsInDirectorySeparatorUnchecked(fullPathSpan))
             {
                 length--;
             }
 
-            int lengthRoot = PathInternal.GetRootLength(fullPath.AsSpan());
+            int lengthRoot = PathInternal.GetRootLength(fullPathSpan);
 
             using (DisableMediaInsertionPrompt.Create())
             {
@@ -52,13 +54,16 @@ namespace System.IO
                     int i = length - 1;
                     while (i >= lengthRoot && !somepathexists)
                     {
-                        string dir = fullPath[..(i + 1)];
+                        ReadOnlySpan<char> dir = fullPathSpan[..(i + 1)];
+
                         // Neither GetFileAttributes or FindFirstFile like trailing separators
                         dir = PathInternal.TrimEndingDirectorySeparator(dir);
 
-                        if (!DirectoryExistsSlim(dir, out _)) // Create only the ones missing
+                        string dirString = new(dir);
+
+                        if (!DirectoryExistsSlim(dirString, out _)) // Create only the ones missing
                         {
-                            stackDir.Add(dir);
+                            stackDir.Add(dirString);
                         }
                         else
                         {
@@ -133,11 +138,12 @@ namespace System.IO
             // Handle CreateDirectory("X:\\") when X: doesn't exist. Similarly for n/w paths.
             if ((count == 0) && !somepathexists)
             {
-                string? root = Path.GetPathRoot(fullPath);
+                ReadOnlySpan<char> root = Path.GetPathRoot(fullPathSpan);
+                string rootString = new(root);
 
-                if (!DirectoryExists(root))
+                if (!DirectoryExists(rootString))
                 {
-                    throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_PATH_NOT_FOUND, root);
+                    throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_PATH_NOT_FOUND, rootString);
                 }
 
                 return;
