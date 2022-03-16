@@ -29,8 +29,7 @@ gboolean
 mono_gc_parse_environment_string_extract_number (const char *str, size_t *out)
 {
 	char *endptr;
-	size_t len = strlen (str);
-	int shift = 0;
+	int len = strlen (str), shift = 0;
 	size_t val;
 	gboolean is_suffix = FALSE;
 	char suffix;

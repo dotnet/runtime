@@ -187,7 +187,7 @@ mono_bitset_invert (MonoBitSet *set) {
  */
 guint32
 mono_bitset_size (const MonoBitSet *set) {
-	return (guint32)set->size;
+	return set->size;
 }
 
 /*
@@ -444,7 +444,7 @@ mono_bitset_find_last (const MonoBitSet *set, gint pos) {
 	int j, bit, result, i;
 
 	if (pos < 0)
-		pos = (gint)(set->size - 1);
+		pos = set->size - 1;
 
 	j = pos / BITS_PER_CHUNK;
 	bit = pos % BITS_PER_CHUNK;
@@ -512,8 +512,8 @@ mono_bitset_clone (const MonoBitSet *set, guint32 new_size) {
 	MonoBitSet *result;
 
 	if (!new_size)
-		new_size = (guint32)set->size;
-	result = mono_bitset_new (new_size, (guint32)set->flags);
+		new_size = set->size;
+	result = mono_bitset_new (new_size, set->flags);
 	result->flags &= ~MONO_BITSET_DONT_FREE;
 	memcpy (result->data, set->data, set->size / 8);
 	return result;
@@ -542,8 +542,7 @@ mono_bitset_copyto (const MonoBitSet *src, MonoBitSet *dest) {
  */
 void
 mono_bitset_union (MonoBitSet *dest, const MonoBitSet *src) {
-	int i;
-	size_t size;
+	int i, size;
 
 	g_assert (src->size <= dest->size);
 
@@ -561,8 +560,7 @@ mono_bitset_union (MonoBitSet *dest, const MonoBitSet *src) {
  */
 void
 mono_bitset_intersection (MonoBitSet *dest, const MonoBitSet *src) {
-	int i;
-	size_t size;
+	int i, size;
 
 	g_assert (src->size <= dest->size);
 
@@ -581,8 +579,7 @@ mono_bitset_intersection (MonoBitSet *dest, const MonoBitSet *src) {
  */
 void
 mono_bitset_intersection_2 (MonoBitSet *dest, const MonoBitSet *src1, const MonoBitSet *src2) {
-	int i;
-	size_t size;
+	int i, size;
 
 	g_assert (src1->size <= dest->size);
 	g_assert (src2->size <= dest->size);
@@ -601,8 +598,7 @@ mono_bitset_intersection_2 (MonoBitSet *dest, const MonoBitSet *src1, const Mono
  */
 void
 mono_bitset_sub (MonoBitSet *dest, const MonoBitSet *src) {
-	int i;
-	size_t size;
+	int i, size;
 
 	g_assert (src->size <= dest->size);
 

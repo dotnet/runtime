@@ -455,7 +455,8 @@ dl_build_path (const char *directory, const char *name, void **iter, dl_library_
 	const char *prefix;
 	const char *suffix;
 	gboolean need_prefix = TRUE, need_suffix = TRUE;
-	size_t prlen, suffixlen;
+	int prlen;
+	int suffixlen;
 	char *res;
 	int iteration;
 

@@ -32,7 +32,7 @@ mono_mkstemp (char *templ)
 	int ret;
 	int count = 27; /* Windows doc. */
 	char *t;
-	size_t len;
+	int len;
 
 	len = strlen (templ);
 	do {

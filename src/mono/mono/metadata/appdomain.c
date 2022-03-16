@@ -634,7 +634,7 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, const M
 	gchar **path;
 	gchar *filename;
 	const gchar *local_culture;
-	size_t len;
+	gint len;
 
 	if (!culture || *culture == '\0') {
 		local_culture = "";

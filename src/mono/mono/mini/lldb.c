@@ -206,14 +206,14 @@ buffer_add_data (Buffer *buf, guint8 *data, int len)
 static void
 buffer_add_string (Buffer *buf, const char *str)
 {
-	size_t len;
+	int len;
 
 	if (str == NULL) {
 		buffer_add_int (buf, 0);
 	} else {
 		len = strlen (str);
-		buffer_add_int (buf, (int)len);
-		buffer_add_data (buf, (guint8*)str, (int)len);
+		buffer_add_int (buf, len);
+		buffer_add_data (buf, (guint8*)str, len);
 	}
 }
 

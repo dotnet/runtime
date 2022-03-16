@@ -202,8 +202,10 @@ emit_byte (MonoDwarfWriter *w, guint8 val)
 static void
 emit_escaped_string (MonoDwarfWriter *w, char *value)
 {
-	size_t len = (int)strlen (value);
-	for (int i = 0; i < len; ++i) {
+	int i, len;
+
+	len = strlen (value);
+	for (i = 0; i < len; ++i) {
 		char c = value [i];
 		if (!(isalnum (c))) {
 			switch (c) {
@@ -617,8 +619,7 @@ mono_dwarf_escape_path (const char *name)
 {
 	if (strchr (name, '\\')) {
 		char *s;
-		size_t len;
-		int i, j;
+		int len, i, j;
 
 		len = strlen (name);
 		s = (char *)g_malloc0 ((len + 1) * 2);

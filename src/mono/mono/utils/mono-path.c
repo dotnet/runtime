@@ -95,7 +95,7 @@ mono_path_canonicalize (const char *path)
 	 * since we'll return an empty string, so re-append a dir separator if there is none in the
 	 * result */
 	if (strchr (abspath, G_DIR_SEPARATOR) == NULL) {
-		size_t len = strlen (abspath);
+		int len = strlen (abspath);
 		abspath = (gchar *) g_realloc (abspath, len + 2);
 		abspath [len] = G_DIR_SEPARATOR;
 		abspath [len+1] = 0;
