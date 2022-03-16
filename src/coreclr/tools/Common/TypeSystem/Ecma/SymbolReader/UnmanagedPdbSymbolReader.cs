@@ -571,6 +571,7 @@ namespace Internal.TypeSystem.Ecma
 
                 public int GetEndOffset(out int offset) => SingleByRefIntWrapper(11, out offset);
 
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 private int SingleByRefIntWrapper(int methodSlot, out int value)
                 {
                     var func = (delegate* unmanaged<IntPtr, int*, int>)(*(*(void***)Inst + methodSlot));
@@ -817,7 +818,7 @@ namespace Internal.TypeSystem.Ecma
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                private int SingleByRefGuidMethodWrapper(int methodSolt, ref Guid guid)
+                private int SingleByRefGuidWrapper(int methodSolt, ref Guid guid)
                 {
                     var func = (delegate* unmanaged<IntPtr, Guid*, int>)(*(*(void***)Inst + methodSolt));
                     int hr;
@@ -830,10 +831,10 @@ namespace Internal.TypeSystem.Ecma
                     return hr;
                 }
 
-                public int GetDocumentType(ref Guid documentType) => SingleByRefGuidMethodWrapper(4, ref documentType);
-                public int GetLanguage(ref Guid language) => SingleByRefGuidMethodWrapper(5, ref language);
-                public int GetLanguageVendor(ref Guid vendor) => SingleByRefGuidMethodWrapper(6, ref vendor);
-                public int GetChecksumAlgorithmId(ref Guid algorithm) => SingleByRefGuidMethodWrapper(7, ref algorithm);
+                public int GetDocumentType(ref Guid documentType) => SingleByRefGuidWrapper(4, ref documentType);
+                public int GetLanguage(ref Guid language) => SingleByRefGuidWrapper(5, ref language);
+                public int GetLanguageVendor(ref Guid vendor) => SingleByRefGuidWrapper(6, ref vendor);
+                public int GetChecksumAlgorithmId(ref Guid algorithm) => SingleByRefGuidWrapper(7, ref algorithm);
 
                 public int GetChecksum(int bufferLength, out int count, byte[] checksum)
                 {
