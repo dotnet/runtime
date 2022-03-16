@@ -24,7 +24,7 @@ class GetLibraryExportTests : IDisposable
         EXPECT(TryGetLibraryExport(handle, "_NativeSum@8"));
     }
 
-    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsX86))]
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotX86))]
     public void GetValidExport()
     {
         EXPECT(GetLibraryExport(handle, "NativeSum"));
