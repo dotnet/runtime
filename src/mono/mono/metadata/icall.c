@@ -167,9 +167,7 @@ is_generic_parameter (MonoType *type)
 static void
 mono_icall_make_platform_path (gchar *path)
 {
-	for (size_t i = strlen (path); i > 0; i--)
-		if (path [i-1] == '\\')
-			path [i-1] = '/';
+	g_strdelimit (path, '\\', '/');
 }
 
 static const gchar *
