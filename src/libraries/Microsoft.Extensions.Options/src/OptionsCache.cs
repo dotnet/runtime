@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Options
             // For compatibility, fall back to public GetOrAdd() if we're in a derived class.
             if (GetType() != typeof(OptionsCache<TOptions>))
             {
-                return GetOrAdd(name, () => createOptions(name ?? Options.DefaultName, factoryArgument));
+                return GetOrAddHelper(name, createOptions, factoryArgument);
             }
 
             name ??= Options.DefaultName;
@@ -67,6 +67,10 @@ namespace Microsoft.Extensions.Options
 
             return value.Value;
         }
+
+        // provides indirection to avoid the caller needing to allocate a closure
+        private TOptions GetOrAddHelper<TArg>(string? name, Func<string, TArg, TOptions> createOptions, TArg factoryArgument) =>
+            GetOrAdd(name, () => createOptions(name ?? Options.DefaultName, factoryArgument));
 
         /// <summary>
         /// Gets a named options instance, if available.
