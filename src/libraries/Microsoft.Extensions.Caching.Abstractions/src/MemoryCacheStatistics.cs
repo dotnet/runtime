@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.ComponentModel;
 
 namespace Microsoft.Extensions.Caching.Memory
 {
@@ -17,22 +16,23 @@ namespace Microsoft.Extensions.Caching.Memory
         public MemoryCacheStatistics() { }
 
         /// <summary>
-        /// A snapshot of entry count at the current state
+        /// Gets the number of <see cref="ICacheEntry" /> instances currently in the memory cache.
         /// </summary>
         public long CurrentEntryCount { get; init; }
 
         /// <summary>
-        /// A snapshot of size at the current state
+        /// Gets an estimated sum of all the <see cref="ICacheEntry.Size" /> values currently in the memory cache.
         /// </summary>
+        /// <returns>Returns <see langword="null"/> if no size limit is set for the cache.</returns>
         public long? CurrentEstimatedSize { get; init; }
 
         /// <summary>
-        /// Total number of cache misses
+        /// Gets the total number of cache hits.
         /// </summary>
         public long TotalMisses { get; init; }
 
         /// <summary>
-        /// Total number of cache hits
+        /// Gets the total number of cache hits.
         /// </summary>
         public long TotalHits { get; init; }
     }

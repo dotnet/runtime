@@ -274,6 +274,9 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
+        /// <summary>
+        /// Gets a snapshot of the current statistics for the memory cache.
+        /// </summary>
         public MemoryCacheStatistics GetCurrentStatistics()
         {
             return new MemoryCacheStatistics()

@@ -93,87 +93,13 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void GetCurrentStatistics_EntrySizesAreOne_MultithreadedCacheUpdates_CountAndSizeRemainInSync(bool sizeLimitIsSet)
-        {
-            bool statsGetInaccurateDuringHeavyLoad = false;
-            const int numEntries = 100;
-            Random random = new Random();
-
-            var cache = new MemoryCache(sizeLimitIsSet ?
-                new MemoryCacheOptions { Clock = new SystemClock(), SizeLimit = 2000 } :
-                new MemoryCacheOptions { Clock = new SystemClock() }
-            );
-
-            void FillCache()
-            {
-                for (int i = 0; i < numEntries; i++)
-                {
-                    var expirationToken = new TestExpirationToken() { ActiveChangeCallbacks = true };
-                    cache.Set($"key{i}", $"value{i}",
-                        new MemoryCacheEntryOptions { Size = 1 }
-                            .AddExpirationToken(expirationToken));
-
-                    if (random.Next(numEntries) < numEntries * 0.25)
-                    {
-                        // Set to expired 25% of the time
-                        expirationToken.HasChanged = true;
-                    }
-                }
-            }
-
-            // start a few tasks to access entries in the background
-            Task[] backgroundAccessTasks = new Task[Environment.ProcessorCount];
-            bool done = false;
-
-            for (int i = 0; i < backgroundAccessTasks.Length; i++)
-            {
-                backgroundAccessTasks[i] = Task.Run(async () =>
-                {
-                    while (!done)
-                    {
-                        cache.TryGetValue($"key{random.Next(numEntries)}", out _);
-                        var stats = cache.GetCurrentStatistics();
-
-                        // set flag when stats go out of sync
-                        if ((stats.CurrentEntryCount != cache.Count)
-                            || (sizeLimitIsSet && stats.CurrentEstimatedSize != stats.CurrentEntryCount))
-                        {
-                            statsGetInaccurateDuringHeavyLoad = true;
-                        }
-
-                        await Task.Yield();
-                    }
-                });
-            }
-
-            for (int i = 0; i < 1000; i++)
-            {
-                cache.Compact(1);
-                FillCache();
-            }
-
-            done = true;
-
-            Task.WaitAll(backgroundAccessTasks);
-
-            // even if the values are not exact during heavy multithreaded operations, 
-            // once done, the count and size eventually become fixed to expected value
-            var finalStats = cache.GetCurrentStatistics();
-            Assert.True(statsGetInaccurateDuringHeavyLoad);
-            Assert.Equal(cache.Count, finalStats.CurrentEntryCount);
-            VerifyCurrentEstimatedSize(finalStats.CurrentEntryCount, sizeLimitIsSet, finalStats);
-        }
-
+#if NET7_0_OR_GREATER
         [Fact]
         public void GetCurrentStatistics_DIMReturnsNull()
         {
-#if NET7_0_OR_GREATER
             Assert.Null((new FakeMemoryCache() as IMemoryCache).GetCurrentStatistics());
-#endif
         }
+#endif
 
         private class FakeMemoryCache : IMemoryCache
         {
