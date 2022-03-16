@@ -128,8 +128,11 @@
     <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true'">
       <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" />
       <HelixCorrelationPayload Include="chromedriver" Uri="$(ChromeDriverUrl)" />
-      <FirefoxStampFile>.install-firefox-$(FirefoxRevision).stamp</FirefoxStampFile>
     </ItemGroup>
+
+    <PropertyGroup Condition="'$(NeedsToRunOnBrowser)' == 'true'">
+      <FirefoxStampFile>.install-firefox-$(FirefoxRevision).stamp</FirefoxStampFile>
+    </PropertyGroup>
 
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
       <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)"              Destination="build/emsdk" />
