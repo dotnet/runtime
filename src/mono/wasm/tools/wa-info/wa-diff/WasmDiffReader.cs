@@ -14,7 +14,7 @@ namespace WebAssemblyInfo
         {
             if (section1.size != section2.size)
             {
-                Console.WriteLine($"section id: {section1.id} sizes differ");
+                Console.WriteLine($"section id: {section1.id} sizes differ by {(long)section2.size - (long)section1.size} bytes");
                 Console.WriteLine($" - size: {section1.size}");
                 Console.WriteLine($" + size: {section2.size}");
             }
@@ -23,7 +23,7 @@ namespace WebAssemblyInfo
         public int CompareSummary(WasmDiffReader other)
         {
             if (Reader.BaseStream.Length != other.Reader.BaseStream.Length)
-                Console.WriteLine($"Files length difference: {other.Reader.BaseStream.Length - Reader.BaseStream.Length}");
+                Console.WriteLine($"Files length difference: {other.Reader.BaseStream.Length - Reader.BaseStream.Length} bytes");
 
             var processedSections = new HashSet<SectionId>();
 
