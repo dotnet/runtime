@@ -140,13 +140,13 @@ namespace DebuggerTests
 
             string FindBrowserPath()
             {
-                string chrome_path_env_var = Environment.GetEnvironmentVariable("CHROME_PATH_FOR_DEBUGGER_TESTS");
-                if (!string.IsNullOrEmpty(chrome_path_env_var))
+                string browser_path_env_var = Environment.GetEnvironmentVariable("BROWSER_PATH_FOR_DEBUGGER_TESTS");
+                if (!string.IsNullOrEmpty(browser_path_env_var))
                 {
-                    if (File.Exists(chrome_path_env_var))
-                        return chrome_path_env_var;
+                    if (File.Exists(browser_path_env_var))
+                        return browser_path_env_var;
 
-                    Console.WriteLine ($"warning: Could not find CHROME_PATH_FOR_DEBUGGER_TESTS={chrome_path_env_var}");
+                    Console.WriteLine ($"warning: Could not find BROWSER_PATH_FOR_DEBUGGER_TESTS={browser_path_env_var}");
                 }
 
                 // Look for a browser installed in artifacts, for local runs

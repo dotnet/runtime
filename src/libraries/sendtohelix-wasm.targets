@@ -49,6 +49,7 @@
 
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromeDriverDirName):$PATH" />
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromiumDirName):$PATH" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(FirefoxDirName):$PATH" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' == 'true'">
@@ -62,6 +63,7 @@
 
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDriverDirName)%3B%PATH%" />
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromiumDirName)%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(FirefoxDirName)%3B%PATH%" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(NeedsEMSDKNode)' == 'true' and '$(WindowsShell)' != 'true'">

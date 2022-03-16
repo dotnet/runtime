@@ -24,12 +24,12 @@
   <PropertyGroup Condition="'$(BrowserHost)' == 'windows'">
     <ChromiumRevision>929513</ChromiumRevision>
     <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chrome-win.zip</ChromiumUrl>
-    <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(FirefoxRevision)/chromedriver_win32.zip</ChromeDriverUrl>
+    <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chromedriver_win32.zip</ChromeDriverUrl>
     <ChromiumDirName>chrome-win</ChromiumDirName>
     <ChromeDriverDirName>chromedriver_win32</ChromeDriverDirName>
     <ChromiumBinaryName>chrome.exe</ChromiumBinaryName>
     <FirefoxRevision>97.0.1</FirefoxRevision>
-    <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(FirefoxRevision)/win64/en-US/Firefox\ Setup\ $(ChromiumRevision).msi	</FirefoxUrl>
+    <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(FirefoxRevision)/win64/en-US/Firefox%20Setup%20$(FirefoxRevision).msi</FirefoxUrl>
     <FirefoxDirName>firefox-win</FirefoxDirName>
     <FirefoxBinaryName>firefox</FirefoxBinaryName>
   </PropertyGroup>
