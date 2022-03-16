@@ -3629,7 +3629,7 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
             if (pMT->IsByRefLike())
                 ret |= CORINFO_FLG_BYREF_LIKE;
 
-            if ((pClass->IsNotTightlyPacked() && pClass->HasExplicitFieldOffsetLayout()) ||
+            if ((pClass->IsNotTightlyPacked() && (pClass->HasExplicitSize() || pClass->HasExplicitFieldOffsetLayout())) ||
                 (pMT == g_TypedReferenceMT) || VMClsHnd.IsNativeValueType())
             {
                 ret |= CORINFO_FLG_OPAQUE_BLOB;
