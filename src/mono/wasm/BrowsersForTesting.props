@@ -28,9 +28,5 @@
     <ChromiumDirName>chrome-win</ChromiumDirName>
     <ChromeDriverDirName>chromedriver_win32</ChromeDriverDirName>
     <ChromiumBinaryName>chrome.exe</ChromiumBinaryName>
-    <FirefoxRevision>97.0.1</FirefoxRevision>
-    <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(FirefoxRevision)/win64/en-US/Firefox%20Setup%20$(FirefoxRevision).msi</FirefoxUrl>
-    <FirefoxDirName>firefox-win</FirefoxDirName>
-    <FirefoxBinaryName>firefox</FirefoxBinaryName>
   </PropertyGroup>
 </Project>

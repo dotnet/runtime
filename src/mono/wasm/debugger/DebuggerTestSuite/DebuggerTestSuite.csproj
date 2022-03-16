@@ -80,7 +80,7 @@
 
   <Target Name="DownloadAndInstallFirefox"
           AfterTargets="Build"
-          Condition="!Exists($(FirefoxStampFile)) and '$(InstallFirefoxForDebuggerTests)' == 'true'">
+          Condition="!Exists($(FirefoxStampFile)) and '$(InstallFirefoxForDebuggerTests)' == 'true' and !$([MSBuild]::IsOSPlatform('windows'))">
     <ItemGroup>
       <_StampFile Include="$(BrowserStampDir).install-firefox*.stamp" />
     </ItemGroup>
@@ -102,7 +102,7 @@
     <Error Text="Cannot find firefox at $(_FirefoxBinaryPath) in the downloaded copy"
            Condition="!Exists($(_FirefoxBinaryPath))" />
 
-    <Exec Command="chmod +x $(_FirefoxBinaryPath)" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
+    <Exec Command="chmod +x $(_FirefoxBinaryPath)"/>
 
     <Touch Files="$(FirefoxStampFile)" AlwaysCreate="true" />
   </Target>
