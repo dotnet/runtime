@@ -127,6 +127,7 @@
     <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true'">
       <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" />
       <HelixCorrelationPayload Include="chromedriver" Uri="$(ChromeDriverUrl)" />
+      <HelixCorrelationPayload Include="firefox" Uri="$(FirefoxUrl)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
