@@ -3789,6 +3789,13 @@ GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
         return nullptr;
     }
 
+    // prevent decomposed 64 integer node parts in x86 from being recognised
+    if (((addOp1->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS) || ((addOp2->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS) ||
+        ((op2->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS) || ((andNode->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS))
+    {
+        return nullptr;
+    }
+
     NamedIntrinsic intrinsic;
     if (op1->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64))
     {
@@ -3868,6 +3875,12 @@ GenTree* Lowering::TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode)
         return nullptr;
     }
 
+    // prevent decomposed 64 integer node parts in x86 from being recognised
+    if (((opNode->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS) || ((negNode->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS))
+    {
+        return nullptr;
+    }
+
     NamedIntrinsic intrinsic;
     if (andNode->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64))
     {
@@ -3943,6 +3956,12 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
     // We want to avoid using "andn" when one of the operands is both a source and the destination and is also coming
     // from memory. In this scenario, we will get smaller and likely faster code by using the RMW encoding of `and`
     if (IsBinOpInRMWStoreInd(andNode))
+    {
+        return nullptr;
+    }
+
+    // prevent decomposed 64 integer node parts in x86 from being recognised
+    if (((andNode->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS) || ((notNode->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS))
     {
         return nullptr;
     }
