@@ -1679,19 +1679,12 @@ private:
         CONSISTENCY_CHECK(index <= bucketMask()+CALL_STUB_FIRST_INDEX);
         return VolatileLoad(&buckets[index]);
     }
-
-#ifdef _MSC_VER
-#pragma warning(disable: 4267) //work-around for the compiler
-#endif
     inline void Write(size_t index, size_t value)
     {
         LIMITED_METHOD_CONTRACT;
         CONSISTENCY_CHECK(index <= bucketMask()+CALL_STUB_FIRST_INDEX);
         VolatileStore(&buckets[index], value);
     }
-#ifdef _MSC_VER
-#pragma warning(default: 4267)
-#endif
 
     // We store (#buckets-1) in    bucket[CALL_STUB_MASK_INDEX  ==0]
     // We have two unused cells at bucket[CALL_STUB_COUNT_INDEX ==1]

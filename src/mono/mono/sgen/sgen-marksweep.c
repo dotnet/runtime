@@ -1807,7 +1807,7 @@ static void
 sweep_job_func (void *thread_data_untyped, SgenThreadPoolJob *job)
 {
 	guint32 block_index;
-	guint32 num_blocks = num_major_sections_before_sweep;
+	guint32 num_blocks = (guint32)num_major_sections_before_sweep;
 
 	SGEN_ASSERT (0, sweep_in_progress (), "Sweep thread called with wrong state");
 	SGEN_ASSERT (0, num_blocks <= allocated_blocks.next_slot, "How did we lose blocks?");
@@ -2186,7 +2186,7 @@ major_free_swept_blocks (size_t section_reserve)
 #endif
 
 	{
-		int i, num_empty_blocks_orig, num_blocks, arr_length;
+		size_t i, num_empty_blocks_orig, num_blocks, arr_length;
 		void *block;
 		void **empty_block_arr;
 		void **rebuild_next;

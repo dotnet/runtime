@@ -27,25 +27,25 @@ internal static partial class Interop
             private int _padding;
         }
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CreateSocketEventPort")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_CreateSocketEventPort")]
         internal static unsafe partial Error CreateSocketEventPort(IntPtr* port);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CloseSocketEventPort")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_CloseSocketEventPort")]
         internal static partial Error CloseSocketEventPort(IntPtr port);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CreateSocketEventBuffer")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_CreateSocketEventBuffer")]
         internal static unsafe partial Error CreateSocketEventBuffer(int count, SocketEvent** buffer);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FreeSocketEventBuffer")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FreeSocketEventBuffer")]
         internal static unsafe partial Error FreeSocketEventBuffer(SocketEvent* buffer);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_TryChangeSocketEventRegistration")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_TryChangeSocketEventRegistration")]
         internal static partial Error TryChangeSocketEventRegistration(IntPtr port, SafeHandle socket, SocketEvents currentEvents, SocketEvents newEvents, IntPtr data);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_TryChangeSocketEventRegistration")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_TryChangeSocketEventRegistration")]
         internal static partial Error TryChangeSocketEventRegistration(IntPtr port, IntPtr socket, SocketEvents currentEvents, SocketEvents newEvents, IntPtr data);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_WaitForSocketEvents")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_WaitForSocketEvents")]
         internal static unsafe partial Error WaitForSocketEvents(IntPtr port, SocketEvent* buffer, int* count);
     }
 }

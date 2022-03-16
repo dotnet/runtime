@@ -205,7 +205,7 @@ namespace System.Security.Cryptography
         public virtual System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
         public virtual string? SignatureAlgorithm { get { throw null; } }
         public void Clear() { }
-        [System.ObsoleteAttribute("The default implementation of this cryptography algorithm is not supported", DiagnosticId = "SYSLIB0007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The default implementation of this cryptography algorithm is not supported.", DiagnosticId = "SYSLIB0007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.AsymmetricAlgorithm Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static System.Security.Cryptography.AsymmetricAlgorithm? Create(string algName) { throw null; }
@@ -1262,7 +1262,7 @@ namespace System.Security.Cryptography
         public byte[] ComputeHash(byte[] buffer, int offset, int count) { throw null; }
         public byte[] ComputeHash(System.IO.Stream inputStream) { throw null; }
         public System.Threading.Tasks.Task<byte[]> ComputeHashAsync(System.IO.Stream inputStream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        [System.ObsoleteAttribute("The default implementation of this cryptography algorithm is not supported", DiagnosticId = "SYSLIB0007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The default implementation of this cryptography algorithm is not supported.", DiagnosticId = "SYSLIB0007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.HashAlgorithm Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static System.Security.Cryptography.HashAlgorithm? Create(string hashName) { throw null; }
@@ -1313,7 +1313,7 @@ namespace System.Security.Cryptography
         protected int BlockSizeValue { get { throw null; } set { } }
         public string HashName { get { throw null; } set { } }
         public override byte[] Key { get { throw null; } set { } }
-        [System.ObsoleteAttribute("The default implementation of this cryptography algorithm is not supported", DiagnosticId = "SYSLIB0007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The default implementation of this cryptography algorithm is not supported.", DiagnosticId = "SYSLIB0007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static new System.Security.Cryptography.HMAC Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.HMAC? Create(string algorithmName) { throw null; }
@@ -1497,7 +1497,7 @@ namespace System.Security.Cryptography
         protected byte[] KeyValue;
         protected KeyedHashAlgorithm() { }
         public virtual byte[] Key { get { throw null; } set { } }
-        [System.ObsoleteAttribute("The default implementation of this cryptography algorithm is not supported", DiagnosticId = "SYSLIB0007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The default implementation of this cryptography algorithm is not supported.", DiagnosticId = "SYSLIB0007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static new System.Security.Cryptography.KeyedHashAlgorithm Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.KeyedHashAlgorithm? Create(string algName) { throw null; }
@@ -1626,6 +1626,7 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public byte[] CryptDeriveKey(string? algname, string? alghashname, int keySize, byte[] rgbIV) { throw null; }
         protected override void Dispose(bool disposing) { }
+        [System.Obsolete("Rfc2898DeriveBytes replaces PasswordDeriveBytes for deriving key material from a password and is preferred in new applications.")]
         public override byte[] GetBytes(int cb) { throw null; }
         public override void Reset() { }
     }
@@ -2292,7 +2293,7 @@ namespace System.Security.Cryptography
         public virtual System.Security.Cryptography.CipherMode Mode { get { throw null; } set { } }
         public virtual System.Security.Cryptography.PaddingMode Padding { get { throw null; } set { } }
         public void Clear() { }
-        [System.ObsoleteAttribute("The default implementation of this cryptography algorithm is not supported", DiagnosticId = "SYSLIB0007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The default implementation of this cryptography algorithm is not supported.", DiagnosticId = "SYSLIB0007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.SymmetricAlgorithm Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static System.Security.Cryptography.SymmetricAlgorithm? Create(string algName) { throw null; }
@@ -2523,6 +2524,21 @@ namespace System.Security.Cryptography.X509Certificates
         public string Name { get { throw null; } }
         public string Decode(System.Security.Cryptography.X509Certificates.X500DistinguishedNameFlags flag) { throw null; }
         public override string Format(bool multiLine) { throw null; }
+    }
+    public sealed partial class X500DistinguishedNameBuilder
+    {
+        public X500DistinguishedNameBuilder() { }
+        public void Add(System.Security.Cryptography.Oid oid, string value, System.Formats.Asn1.UniversalTagNumber? stringEncodingType = default(System.Formats.Asn1.UniversalTagNumber?)) { }
+        public void Add(string oidValue, string value, System.Formats.Asn1.UniversalTagNumber? stringEncodingType = default(System.Formats.Asn1.UniversalTagNumber?)) { }
+        public void AddCommonName(string commonName) { }
+        public void AddCountryOrRegion(string twoLetterCode) { }
+        public void AddDomainComponent(string domainComponent) { }
+        public void AddEmailAddress(string emailAddress) { }
+        public void AddLocalityName(string localityName) { }
+        public void AddOrganizationalUnitName(string organizationalUnitName) { }
+        public void AddOrganizationName(string organizationName) { }
+        public void AddStateOrProvinceName(string stateOrProvinceName) { }
+        public System.Security.Cryptography.X509Certificates.X500DistinguishedName Build() { throw null; }
     }
     [System.FlagsAttribute]
     public enum X500DistinguishedNameFlags

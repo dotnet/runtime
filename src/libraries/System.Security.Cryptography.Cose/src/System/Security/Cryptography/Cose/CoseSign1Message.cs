@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        public static byte[] Sign(byte[] content!!, CoseHeaderMap protectedHeaders!!, CoseHeaderMap unprotectedHeaders!!, AsymmetricAlgorithm key!!, HashAlgorithmName hashAlgorithm, bool isDetached = false)
+        public static byte[] Sign(byte[] content!!, AsymmetricAlgorithm key!!, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
         {
             KeyType keyType = key switch
             {
@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.Cose
 
             int? algHeaderValueToSlip = ValidateOrSlipAlgorithmHeader(protectedHeaders, unprotectedHeaders, keyType, hashAlgorithm);
 
-            byte[] encodedProtetedHeaders = protectedHeaders.Encode(mustReturnEmptyBstrIfEmpty: true, algHeaderValueToSlip);
+            byte[] encodedProtetedHeaders = CoseHeaderMap.Encode(protectedHeaders, mustReturnEmptyBstrIfEmpty: true, algHeaderValueToSlip);
             byte[] toBeSigned = CreateToBeSigned(SigStructureCoxtextSign1, encodedProtetedHeaders, content);
 
             byte[] signature;
@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.Cose
                 signature = SignWithRSA((RSA)key, toBeSigned, hashAlgorithm);
             }
 
-            return SignCore(encodedProtetedHeaders, unprotectedHeaders.Encode(), signature, content, isDetached);
+            return SignCore(encodedProtetedHeaders, CoseHeaderMap.Encode(unprotectedHeaders), signature, content, isDetached);
         }
 
         private static byte[] SignCore(
@@ -177,20 +177,20 @@ namespace System.Security.Cryptography.Cose
         // If we Validate: The caller did specify a COSE Algorithm, we will make sure it matches the specified key and hash algorithm.
         // If we Slip: The caller did not specify a COSE Algorithm, we will write the header for them, rather than throw.
         private static int? ValidateOrSlipAlgorithmHeader(
-            CoseHeaderMap protectedHeaders,
-            CoseHeaderMap unprotectedHeaders,
+            CoseHeaderMap? protectedHeaders,
+            CoseHeaderMap? unprotectedHeaders,
             KeyType keyType,
             HashAlgorithmName hashAlgorithm)
         {
             int algHeaderValue = GetCoseAlgorithmHeaderFromKeyTypeAndHashAlgorithm(keyType, hashAlgorithm);
 
-            if (protectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out ReadOnlyMemory<byte> encodedAlg))
+            if (protectedHeaders != null && protectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out ReadOnlyMemory<byte> encodedAlg))
             {
                 ValidateAlgorithmHeader(encodedAlg, algHeaderValue, keyType, hashAlgorithm);
                 return null;
             }
 
-            if (unprotectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out _))
+            if (unprotectedHeaders != null && unprotectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out _))
             {
                 throw new CryptographicException(SR.Sign1SignAlgMustBeProtected);
             }
@@ -214,9 +214,20 @@ namespace System.Security.Cryptography.Cose
             var reader = new CborReader(encodedAlg);
             CborReaderState state = reader.PeekState();
 
-            if (state == CborReaderState.NegativeInteger || state == CborReaderState.UnsignedInteger)
+            if (state == CborReaderState.UnsignedInteger)
             {
-                int alg = reader.ReadInt32();
+                KnownCoseAlgorithms.ThrowUnsignedIntegerNotSupported(reader.ReadUInt64());
+            }
+            else if (state == CborReaderState.NegativeInteger)
+            {
+                ulong cborNegativeIntRepresentation = reader.ReadCborNegativeIntegerRepresentation();
+
+                if (cborNegativeIntRepresentation > long.MaxValue)
+                {
+                    KnownCoseAlgorithms.ThrowCborNegativeIntegerNotSupported(cborNegativeIntRepresentation);
+                }
+
+                long alg = checked(-1L - (long)cborNegativeIntRepresentation);
                 KnownCoseAlgorithms.ThrowIfNotSupported(alg);
 
                 if (reader.BytesRemaining != 0)
@@ -224,7 +235,7 @@ namespace System.Security.Cryptography.Cose
                     throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
                 }
 
-                return alg;
+                return (int)alg;
             }
 
             if (state == CborReaderState.TextString)

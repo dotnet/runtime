@@ -1,5 +1,5 @@
 project (IjwNativeVarargs)
-include("../IJW.cmake")
+include(${CLR_ENG_NATIVE_DIR}/ijw/IJW.cmake)
 
 include_directories( ${INC_PLATFORM_DIR} )
 set(SOURCES IjwNativeVarargs.cpp)

@@ -1085,20 +1085,6 @@ pe_image_load_cli_data (MonoImage *image)
 	return TRUE;
 }
 
-static void
-mono_image_load_time_date_stamp (MonoImage *image)
-{
-	image->time_date_stamp = 0;
-#ifndef HOST_WIN32
-	if (!image->filename)
-		return;
-
-	gunichar2 *uni_name = g_utf8_to_utf16 (image->filename, -1, NULL, NULL, NULL);
-	mono_pe_file_time_date_stamp (uni_name, &image->time_date_stamp);
-	g_free (uni_name);
-#endif
-}
-
 void
 mono_image_load_names (MonoImage *image)
 {
@@ -1235,8 +1221,6 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	dump_encmap (image);
 
 	mono_image_load_names (image);
-
-	mono_image_load_time_date_stamp (image);
 
 done:
 	MONO_PROFILER_RAISE (image_loaded, (image));
@@ -2219,7 +2203,9 @@ mono_image_close_except_pools (MonoImage *image)
 	free_hash (image->wrapper_param_names);
 	free_hash (image->native_func_wrapper_cache);
 	mono_conc_hashtable_destroy (image->typespec_cache);
+#ifdef ENABLE_WEAK_ATTR
 	free_hash (image->weak_field_indexes);
+#endif
 
 	mono_wrapper_caches_free (&image->wrapper_caches);
 

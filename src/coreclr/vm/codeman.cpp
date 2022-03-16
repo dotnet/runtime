@@ -286,7 +286,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
             // Add to the function table
             pRtlGrowFunctionTable(unwindInfo->hHandle, unwindInfo->cTableCurCount);
 
-            STRESS_LOG5(LF_JIT, LL_INFO1000, "AddToUnwindTable Handle: %p [%p, %p] ADDING 0x%xp TO END, now 0x%x entries\n",
+            STRESS_LOG5(LF_JIT, LL_INFO1000, "AddToUnwindTable Handle: %p [%p, %p] ADDING 0x%p TO END, now 0x%x entries\n",
                 unwindInfo->hHandle, unwindInfo->iRangeStart, unwindInfo->iRangeEnd,
                 data->BeginAddress, unwindInfo->cTableCurCount);
             return;
@@ -5468,21 +5468,11 @@ static void EnumRuntimeFunctionEntriesToFindEntry(PTR_RUNTIME_FUNCTION pRtf, PTR
         return;
     }
 
-    // Review conversion of size_t to ULONG.
-#if defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable:4267)
-#endif // defined(_MSC_VER)
+    UINT_PTR indexToLocate = pRtf - firstFunctionEntry;
 
-    ULONG indexToLocate = pRtf - firstFunctionEntry;
-
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif // defined(_MSC_VER)
-
-    ULONG low = 0; // index in the function entry table of low end of search range
-    ULONG high = (pProgramExceptionsDirectory->Size) / sizeof(T_RUNTIME_FUNCTION) - 1; // index of high end of search range
-    ULONG mid = (low + high) / 2; // index of entry to be compared
+    UINT_PTR low = 0; // index in the function entry table of low end of search range
+    UINT_PTR high = (pProgramExceptionsDirectory->Size) / sizeof(T_RUNTIME_FUNCTION) - 1; // index of high end of search range
+    UINT_PTR mid = (low + high) / 2; // index of entry to be compared
 
     if (indexToLocate > high)
     {

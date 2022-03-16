@@ -81,6 +81,12 @@
   <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
     <value>Only single dimensional arrays are supported for the requested action.</value>
   </data>
+  <data name="Argument_Asn1_InvalidCharacterString" xml:space="preserve">
+    <value>The specified UniversalTagNumber must be a string type.</value>
+  </data>
+  <data name="Argument_Asn1_InvalidStringContents" xml:space="preserve">
+    <value>The contents of the string are not valid for the '{0}' ASN.1 encoding.</value>
+  </data>
   <data name="Argument_DestinationTooShort" xml:space="preserve">
     <value>Destination is too short.</value>
   </data>
@@ -131,6 +137,12 @@
   </data>
   <data name="Argument_PemImport_EncryptedPem" xml:space="preserve">
     <value>An encrypted key was found, but no password was provided. Use ImportFromEncryptedPem to import this key.</value>
+  </data>
+  <data name="Argument_X500_EmailTooLong" xml:space="preserve">
+    <value>The email address cannot exceed 255 characters.</value>
+  </data>
+  <data name="Argument_X500_InvalidCountryOrRegion" xml:space="preserve">
+    <value>The country or region code must be exactly two characters and contain characters between A through Z, inclusive.</value>
   </data>
   <data name="ArgumentOutOfRange_Index" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>

@@ -335,7 +335,7 @@ handle_enum:
 		return OP_LMOVE;
 #endif
 	case MONO_TYPE_R4:
-		return OP_RMOVE;
+		return cfg->r4fp ? OP_RMOVE : OP_FMOVE;
 	case MONO_TYPE_R8:
 		return OP_FMOVE;
 	case MONO_TYPE_VALUETYPE:
@@ -481,7 +481,8 @@ add_widen_op (MonoCompile *cfg, MonoInst *ins, MonoInst **arg1_ref, MonoInst **a
 	MonoInst *arg1 = *arg1_ref;
 	MonoInst *arg2 = *arg2_ref;
 
-	if (((arg1->type == STACK_R4 && arg2->type == STACK_R8) ||
+	if (cfg->r4fp &&
+		((arg1->type == STACK_R4 && arg2->type == STACK_R8) ||
 		 (arg1->type == STACK_R8 && arg2->type == STACK_R4))) {
 		MonoInst *conv;
 
@@ -1181,6 +1182,17 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 	case MONO_CEE_CONV_OVF_U:
 		ins->type = STACK_PTR;
 		ins->opcode += ovfops_op_map [src1->type];
+
+		switch (ins->opcode) {
+		case OP_FCONV_TO_I:
+			ins->opcode = TARGET_SIZEOF_VOID_P == 4 ? OP_FCONV_TO_I4 : OP_FCONV_TO_I8;
+			break;
+		case OP_RCONV_TO_I:
+			ins->opcode = TARGET_SIZEOF_VOID_P == 4 ? OP_RCONV_TO_I4 : OP_RCONV_TO_I8;
+			break;
+		default:
+			break;
+		}
 		break;
 	case MONO_CEE_ADD_OVF:
 	case MONO_CEE_ADD_OVF_UN:
@@ -1970,6 +1982,8 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 static MonoInst*
 convert_value (MonoCompile *cfg, MonoType *type, MonoInst *ins)
 {
+	if (!cfg->r4fp)
+		return ins;
 	type = mini_get_underlying_type (type);
 	switch (type->type) {
 	case MONO_TYPE_R4:
@@ -4359,7 +4373,7 @@ mini_emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboole
 		} else if (sp [1]->opcode == OP_ICONST) {
 			int array_reg = sp [0]->dreg;
 			int index_reg = sp [1]->dreg;
-			int offset = (mono_class_array_element_size (klass) * sp [1]->inst_c0) + MONO_STRUCT_OFFSET (MonoArray, vector);
+			size_t offset = (mono_class_array_element_size (klass) * sp [1]->inst_c0) + MONO_STRUCT_OFFSET (MonoArray, vector);
 
 			if (SIZEOF_REGISTER == 8 && COMPILE_LLVM (cfg) && sp [1]->inst_c0 < 0)
 				MONO_EMIT_NEW_UNALU (cfg, OP_ZEXT_I4, index_reg, index_reg);
@@ -4525,13 +4539,13 @@ mini_emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 		MONO_EMIT_NEW_ICONST (cfg, dreg, 0);
 	} else if (t == MONO_TYPE_I8 || t == MONO_TYPE_U8) {
 		MONO_EMIT_NEW_I8CONST (cfg, dreg, 0);
-	} else if (t == MONO_TYPE_R4) {
+	} else if (cfg->r4fp && t == MONO_TYPE_R4) {
 		MONO_INST_NEW (cfg, ins, OP_R4CONST);
 		ins->type = STACK_R4;
 		ins->inst_p0 = (void*)&r4_0;
 		ins->dreg = dreg;
 		MONO_ADD_INS (cfg->cbb, ins);
-	} else if (t == MONO_TYPE_R8) {
+	} else if (t == MONO_TYPE_R4 || t == MONO_TYPE_R8) {
 		MONO_INST_NEW (cfg, ins, OP_R8CONST);
 		ins->type = STACK_R8;
 		ins->inst_p0 = (void*)&r8_0;
@@ -4561,9 +4575,9 @@ emit_dummy_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_ICONST);
 	} else if (t == MONO_TYPE_I8 || t == MONO_TYPE_U8) {
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_I8CONST);
-	} else if (t == MONO_TYPE_R4) {
+	} else if (cfg->r4fp && t == MONO_TYPE_R4) {
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_R4CONST);
-	} else if (t == MONO_TYPE_R8) {
+	} else if (t == MONO_TYPE_R4 || t == MONO_TYPE_R8) {
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_R8CONST);
 	} else if ((t == MONO_TYPE_VALUETYPE) || (t == MONO_TYPE_TYPEDBYREF) ||
 		   ((t == MONO_TYPE_GENERICINST) && mono_type_generic_inst_is_valuetype (rtype))) {
@@ -6275,12 +6289,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		method_definition = imethod->declaring;
 	}
 
-	/* SkipVerification is not allowed if core-clr is enabled */
-	if (!dont_verify && mini_assembly_can_skip_verification (method)) {
-		dont_verify = TRUE;
-		dont_verify_stloc = TRUE;
-	}
-
 	if (sig->is_inflated)
 		generic_context = mono_method_get_context (method);
 	else if (generic_container)
@@ -6493,6 +6501,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			for (int i = 0; i < header->num_clauses; ++i) {
 				MonoExceptionClause *clause = &header->clauses [i];
 				/* Finally clauses are checked after the remove_finally pass */
+
 				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
 					cfg->interp_entry_only = TRUE;
 			}
@@ -6674,6 +6683,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	ins_flag = 0;
 	start_new_bblock = 0;
 	MonoOpcodeEnum il_op; il_op = MonoOpcodeEnum_Invalid;
+
+	emit_set_deopt_il_offset (cfg, ip - cfg->cil_start);
 
 	for (guchar *next_ip = ip; ip < end; ip = next_ip) {
 		MonoOpcodeEnum previous_il_op = il_op;
@@ -8723,8 +8734,8 @@ calli_end:
 			break;
 		case MONO_CEE_CONV_U2:
 		case MONO_CEE_CONV_U1:
-		case MONO_CEE_CONV_I:
 		case MONO_CEE_CONV_U:
+		case MONO_CEE_CONV_I:
 			ADD_UNOP (il_op);
 			CHECK_CFG_EXCEPTION;
 			break;
@@ -9635,6 +9646,9 @@ calli_end:
 
 			if (is_instance)
 				g_assert (field->offset);
+			/* metadata-update: no hot reload in the JIT.  But if it was supported,
+			 * field->offset here could be wrong for added (m_field_is_from_update)
+			 * fields */
 			foffset = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject): field->offset;
 			if (il_op == MONO_CEE_STFLD) {
 				sp [1] = convert_value (cfg, field->type, sp [1]);
@@ -10259,7 +10273,7 @@ field_access_end:
 			} else if (sp [1]->opcode == OP_ICONST) {
 				int array_reg = sp [0]->dreg;
 				int index_reg = sp [1]->dreg;
-				int offset = (mono_class_array_element_size (klass) * sp [1]->inst_c0) + MONO_STRUCT_OFFSET (MonoArray, vector);
+				size_t offset = (mono_class_array_element_size (klass) * sp [1]->inst_c0) + MONO_STRUCT_OFFSET (MonoArray, vector);
 
 				if (SIZEOF_REGISTER == 8 && COMPILE_LLVM (cfg))
 					MONO_EMIT_NEW_UNALU (cfg, OP_ZEXT_I4, index_reg, index_reg);
@@ -12243,6 +12257,7 @@ mono_op_no_side_effects (int opcode)
 	case OP_RMOVE:
 	case OP_VZERO:
 	case OP_XZERO:
+	case OP_XONES:
 	case OP_ICONST:
 	case OP_I8CONST:
 	case OP_ADD_IMM:

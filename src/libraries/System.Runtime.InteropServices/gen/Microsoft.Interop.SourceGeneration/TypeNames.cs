@@ -6,7 +6,7 @@ namespace Microsoft.Interop
     public static class TypeNames
     {
         public const string DllImportAttribute = "System.Runtime.InteropServices.DllImportAttribute";
-        public const string GeneratedDllImportAttribute = "System.Runtime.InteropServices.GeneratedDllImportAttribute";
+        public const string LibraryImportAttribute = "System.Runtime.InteropServices.LibraryImportAttribute";
         public const string StringMarshalling = "System.Runtime.InteropServices.StringMarshalling";
 
         public const string GeneratedMarshallingAttribute = "System.Runtime.InteropServices.GeneratedMarshallingAttribute";
@@ -67,5 +67,7 @@ namespace Microsoft.Interop
         public const string DefaultDllImportSearchPathsAttribute = "System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute";
 
         public const string DllImportSearchPath = "System.Runtime.InteropServices.DllImportSearchPath";
+
+        public const string System_CodeDom_Compiler_GeneratedCodeAttribute = "System.CodeDom.Compiler.GeneratedCodeAttribute";
     }
 }

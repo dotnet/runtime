@@ -2215,7 +2215,7 @@ namespace System.Runtime.Serialization
                 string internalsVisibleAttributeAssemblyName = internalsVisibleAttribute.AssemblyName;
 
                 if (internalsVisibleAttributeAssemblyName.Trim().Equals("System.Runtime.Serialization") ||
-                    Regex.IsMatch(internalsVisibleAttributeAssemblyName, Globals.FullSRSInternalsVisiblePattern))
+                    Globals.FullSRSInternalsVisibleRegex().IsMatch(internalsVisibleAttributeAssemblyName))
                 {
                     return true;
                 }
@@ -2238,7 +2238,8 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         string GetNamespaces();
         string GetGenericTypeName();
-        bool ParametersFromBuiltInNamespaces {
+        bool ParametersFromBuiltInNamespaces
+        {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get;
         }

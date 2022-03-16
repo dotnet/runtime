@@ -35,6 +35,7 @@
 #define ALLOW_CLASS_ADD
 #define ALLOW_METHOD_ADD
 #define ALLOW_FIELD_ADD
+#undef ALLOW_INSTANCE_FIELD_ADD
 
 typedef struct _BaselineInfo BaselineInfo;
 typedef struct _DeltaInfo DeltaInfo;
@@ -121,7 +122,7 @@ static MonoMethod *
 hot_reload_find_method_by_name (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
 
 static MonoClassMetadataUpdateField *
-metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, MonoError *error);
+metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error);
 
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_available },
@@ -562,7 +563,7 @@ table_info_find_in_base (const MonoTableInfo *table, MonoImage **base_out, int *
 
 	if (tbl_index) {
 		size_t s = ALIGN_TO (sizeof (MonoTableInfo), sizeof (gpointer));
-		*tbl_index = ((intptr_t) table - (intptr_t) base->tables) / s;
+		*tbl_index = (int)(((intptr_t) table - (intptr_t) base->tables) / s);
 	}
 	return TRUE;
 }
@@ -1176,8 +1177,7 @@ delta_info_compute_table_records (MonoImage *image_dmeta, MonoImage *image_base,
 		g_assert (table != MONO_TABLE_ENCLOG);
 		g_assert (table != MONO_TABLE_ENCMAP);
 		g_assert (table >= prev_table);
-		/* FIXME: check bounds - is it < or <=. */
-		if (rid < delta_info->count[table].prev_gen_rows) {
+		if (rid <= delta_info->count[table].prev_gen_rows) {
 			base_info->any_modified_rows[table] = TRUE;
 			delta_info->count[table].modified_rows++;
 		} else
@@ -1483,7 +1483,13 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				 * still resolves to the same MonoMethod* (but we can't check it in
 				 * pass1 because we haven't added the new AssemblyRefs yet.
 				 */
-				if (ca_base_cols [MONO_CUSTOM_ATTR_PARENT] != ca_upd_cols [MONO_CUSTOM_ATTR_PARENT]) {
+				/* NOTE: Apparently Roslyn sometimes sends NullableContextAttribute
+				 * deletions even if the ChangeCustomAttribute capability is unset.
+				 * So tacitly accept updates where a custom attribute is deleted
+				 * (its parent is set to 0).  Once we support custom attribute
+				 * changes, we will support this kind of deletion for real.
+				 */
+				if (ca_base_cols [MONO_CUSTOM_ATTR_PARENT] != ca_upd_cols [MONO_CUSTOM_ATTR_PARENT] && ca_upd_cols [MONO_CUSTOM_ATTR_PARENT] != 0) {
 					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing CA table cols with a different Parent. token=0x%08x", log_token);
 					unsupported_edits = TRUE;
 					continue;
@@ -1837,12 +1843,14 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			uint32_t mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, log_token);
 			uint32_t field_flags = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_FIELD], mapped_token - 1, MONO_FIELD_FLAGS);
 
+#ifndef ALLOW_INSTANCE_FIELD_ADD
 			if ((field_flags & FIELD_ATTRIBUTE_STATIC) == 0) {
 				/* TODO: implement instance (and literal?) fields */
 				mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_METADATA_UPDATE, "Adding non-static fields isn't implemented yet (token 0x%08x, class %s.%s)", log_token, m_class_get_name_space (add_member_klass), m_class_get_name (add_member_klass));
 				mono_error_set_not_implemented (error, "Adding non-static fields isn't implemented yet (token 0x%08x, class %s.%s)", log_token, m_class_get_name_space (add_member_klass), m_class_get_name (add_member_klass));
 				return FALSE;
 			}
+#endif
 
 			add_field_to_baseline (base_info, delta_info, add_member_klass, log_token);
 
@@ -1850,7 +1858,7 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			 * resolves MonoClassField:type and sets MonoClassField:offset to -1 to make
 			 * it easier to spot that the field is special.
 			 */
-			metadata_update_field_setup_basic_info_and_resolve (image_base, base_info, generation, delta_info, add_member_klass, log_token, error);
+			metadata_update_field_setup_basic_info_and_resolve (image_base, base_info, generation, delta_info, add_member_klass, log_token, field_flags, error);
 			if (!is_ok (error)) {
 				mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_METADATA_UPDATE, "Could not setup field (token 0x%08x) due to: %s", log_token, mono_error_get_message (error));
 				return FALSE;
@@ -2374,7 +2382,7 @@ hot_reload_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_ta
 	int tbl_index;
 	{
 		size_t s = ALIGN_TO (sizeof (MonoTableInfo), sizeof (gpointer));
-		tbl_index = ((intptr_t) base_table - (intptr_t) base_image->tables) / s;
+		tbl_index = (int)(((intptr_t) base_table - (intptr_t) base_image->tables) / s);
 	}
 
 	DeltaInfo *delta_info = NULL;
@@ -2421,10 +2429,13 @@ hot_reload_get_field (MonoClass *klass, uint32_t fielddef_token) {
 
 
 static MonoClassMetadataUpdateField *
-metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, MonoError *error)
+metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error)
 {
 	// TODO: hang a "pending field" struct off the parent_klass if !parent_klass->fields
 	//   In that case we can do things simpler, maybe by just creating the MonoClassField array as usual, and just relying on the normal layout algorithm to make space for the instance.
+
+	if (!m_class_is_inited (parent_klass))
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding fielddef 0x%08x to uninited class 0x%08x", fielddef_token, m_class_get_type_token (parent_klass));
 
 	MonoClassMetadataUpdateInfo *parent_info = mono_class_get_or_add_metadata_update_info (parent_klass);
 

@@ -39,7 +39,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Primit
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Primitives", "..\Microsoft.Extensions.Primitives\src\Microsoft.Extensions.Primitives.csproj", "{616C55BF-AE90-47F2-A005-980CADDBD990}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DllImportGenerator", "..\System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj", "{08E60BE4-771F-4873-B7EF-7D8F7BA31F26}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{69B3A343-3883-4F35-8B8A-2A126A9B0762}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{9621BAB7-9AFF-4CAD-BFFF-B6BC1341155C}"
 EndProject
@@ -137,10 +137,10 @@ Global
 		{616C55BF-AE90-47F2-A005-980CADDBD990}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{616C55BF-AE90-47F2-A005-980CADDBD990}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{616C55BF-AE90-47F2-A005-980CADDBD990}.Release|Any CPU.Build.0 = Release|Any CPU
-		{08E60BE4-771F-4873-B7EF-7D8F7BA31F26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{08E60BE4-771F-4873-B7EF-7D8F7BA31F26}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{08E60BE4-771F-4873-B7EF-7D8F7BA31F26}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{08E60BE4-771F-4873-B7EF-7D8F7BA31F26}.Release|Any CPU.Build.0 = Release|Any CPU
+		{69B3A343-3883-4F35-8B8A-2A126A9B0762}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69B3A343-3883-4F35-8B8A-2A126A9B0762}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69B3A343-3883-4F35-8B8A-2A126A9B0762}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69B3A343-3883-4F35-8B8A-2A126A9B0762}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9621BAB7-9AFF-4CAD-BFFF-B6BC1341155C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9621BAB7-9AFF-4CAD-BFFF-B6BC1341155C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9621BAB7-9AFF-4CAD-BFFF-B6BC1341155C}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -170,7 +170,7 @@ Global
 		{4E761C7D-24C5-430B-AD84-1634164C6AF4} = {E6347567-2D24-4E99-8F15-3657FF95AB6D}
 		{AAB799C3-8D63-4334-A9AE-D645EC848174} = {E6347567-2D24-4E99-8F15-3657FF95AB6D}
 		{616C55BF-AE90-47F2-A005-980CADDBD990} = {E6347567-2D24-4E99-8F15-3657FF95AB6D}
-		{08E60BE4-771F-4873-B7EF-7D8F7BA31F26} = {F4006304-5C88-478E-A93C-621D71A5097F}
+		{69B3A343-3883-4F35-8B8A-2A126A9B0762} = {F4006304-5C88-478E-A93C-621D71A5097F}
 		{9621BAB7-9AFF-4CAD-BFFF-B6BC1341155C} = {F4006304-5C88-478E-A93C-621D71A5097F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
