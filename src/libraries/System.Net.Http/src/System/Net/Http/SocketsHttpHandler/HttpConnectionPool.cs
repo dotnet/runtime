@@ -875,7 +875,7 @@ namespace System.Net.Http
                 }
                 catch (Exception e)
                 {
-                    if (NetEventSource.Log.IsEnabled()) Trace($"QUIC connection failed: {e}"));
+                    if (NetEventSource.Log.IsEnabled()) Trace($"QUIC connection failed: {e}");
 
                     // Disables HTTP/3 until server announces it can handle it via Alt-Svc.
                     BlocklistAuthority(authority);
@@ -1621,7 +1621,7 @@ namespace System.Net.Http
 
         private void HandleHttp11ConnectionFailure(HttpRequestMessage request, Exception e)
         {
-            if (NetEventSource.Log.IsEnabled()) Trace($"HTTP/1.1 connection failed: {e}"));
+            if (NetEventSource.Log.IsEnabled()) Trace($"HTTP/1.1 connection failed: {e}");
 
             bool failRequest;
             TaskCompletionSourceWithCancellation<HttpConnection>? waiter;
