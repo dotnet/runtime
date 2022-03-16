@@ -12100,34 +12100,42 @@ GenTree* Compiler::gtFoldTypeCompare(GenTreeOp* tree)
         bool                 isNonNull = false;
         CORINFO_CLASS_HANDLE objCls    = gtGetClassHandle(ind->Addr(), &isExact, &isNonNull);
 
-        if ((objCls != NO_CLASS_HANDLE) && isExact &&
-            (info.compCompHnd->compareTypesForEquality(objCls, cnsCls) != TypeCompareState::May))
+        if ((objCls != NO_CLASS_HANDLE) && isExact)
         {
-            GenTree* clsNode     = gtNewIconEmbClsHndNode(cnsCls);
-            GenTree* sideEffList = nullptr;
-            gtExtractSideEffList(ind, &sideEffList);
+            TypeCompareState equality = info.compCompHnd->compareTypesForEquality(objCls, cnsCls);
+            if (equality != TypeCompareState::May)
+            {
+                GenTree* clsNode     = gtNewIconEmbClsHndNode(cnsCls);
+                GenTree* sideEffList = nullptr;
+                gtExtractSideEffList(ind, &sideEffList);
 
-            // Most likely we'll have to keep the IND as a nullcheck
-            if (sideEffList != nullptr)
-            {
-                clsNode = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffList, clsNode);
-                gtUpdateNodeSideEffects(clsNode);
-            }
+                // Most likely we'll have to keep the IND as a nullcheck
+                if (sideEffList != nullptr)
+                {
+                    clsNode = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffList, clsNode);
+                    gtUpdateNodeSideEffects(clsNode);
+                }
 
-            JITDUMP("Morphing IND(obj) relop cls2:\n");
-            DISPTREE(tree);
-            if (ind == op1)
-            {
-                tree->gtOp1 = clsNode;
+                JITDUMP("Morphing IND(obj) relop cls2:\n");
+                DISPTREE(tree);
+                if (ind == op1)
+                {
+                    tree->gtOp1 = clsNode;
+                }
+                else
+                {
+                    tree->gtOp2 = clsNode;
+                }
+                if (equality == TypeCompareState::MustNot)
+                {
+                    tree->SetOper(GenTree::ReverseRelop(tree->OperGet()));
+                }
+                JITDUMP("\nto cls1 relop cls2:\n");
+                DISPTREE(tree);
+
+                op1 = tree->gtGetOp1();
+                op2 = tree->gtGetOp2();
             }
-            else
-            {
-                tree->gtOp2 = clsNode;
-            }
-            JITDUMP("\nto cls1 relop cls2:\n");
-            DISPTREE(tree);
-            op1 = tree->gtGetOp1();
-            op2 = tree->gtGetOp2();
         }
     }
 
