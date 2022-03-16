@@ -127,7 +127,8 @@ static const gint16 opt_names [] = {
 	MONO_OPT_GSHARED |	\
 	MONO_OPT_SIMD |	\
 	MONO_OPT_ALIAS_ANALYSIS	| \
-	MONO_OPT_AOT)
+	MONO_OPT_AOT | \
+	MONO_OPT_FLOAT32)
 
 #define EXCLUDED_FROM_ALL (MONO_OPT_PRECOMP | MONO_OPT_UNSAFE | MONO_OPT_GSHAREDVT)
 
@@ -252,7 +253,7 @@ static MonoGraphOptions
 mono_parse_graph_options (const char* p)
 {
 	const char *n;
-	int i, len;
+	size_t i, len;
 
 	for (i = 0; i < G_N_ELEMENTS (graph_names); ++i) {
 		n = graph_names [i].name;
@@ -674,8 +675,8 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 		}
 	} else {
 		for (opt = 0; opt < G_N_ELEMENTS (opt_sets); ++opt) {
-			/* builtin-types.cs & aot-tests.cs need OPT_INTRINS enabled */
-			if (!strcmp ("builtin-types", image->assembly_name) || !strcmp ("aot-tests", image->assembly_name))
+			/* aot-tests.cs need OPT_INTRINS enabled */
+			if (!strcmp ("aot-tests", image->assembly_name))
 				if (!(opt_sets [opt] & MONO_OPT_INTRINS))
 					continue;
 
@@ -1699,24 +1700,12 @@ mono_get_version_info (void)
 	g_string_append_printf (output, "\tSIGSEGV:       normal\n");
 #endif
 
-#ifdef HAVE_EPOLL
-	g_string_append_printf (output, "\tNotifications: epoll\n");
-#elif defined(HAVE_KQUEUE)
-	g_string_append_printf (output, "\tNotification:  kqueue\n");
-#else
-	g_string_append_printf (output, "\tNotification:  Thread + polling\n");
-#endif
-
 	g_string_append_printf (output, "\tArchitecture:  %s\n", MONO_ARCHITECTURE);
 	g_string_append_printf (output, "\tDisabled:      %s\n", DISABLED_FEATURES);
 
 	g_string_append_printf (output, "\tMisc:          ");
 #ifdef MONO_SMALL_CONFIG
 	g_string_append_printf (output, "smallconfig ");
-#endif
-
-#ifdef MONO_BIG_ARRAYS
-	g_string_append_printf (output, "bigarrays ");
 #endif
 
 #if !defined(DISABLE_SDB)
@@ -1885,11 +1874,7 @@ mono_set_use_smp (int use_smp)
 #if HAVE_SCHED_SETAFFINITY
 	if (!use_smp) {
 		unsigned long proc_mask = 1;
-#ifdef GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY
-		sched_setaffinity (getpid(), (gpointer)&proc_mask);
-#else
 		sched_setaffinity (getpid(), sizeof (unsigned long), (const cpu_set_t *)&proc_mask);
-#endif
 	}
 #endif
 }
@@ -2103,20 +2088,6 @@ mono_main (int argc, char* argv[])
 
 	if (g_hasenv ("MONO_NO_SMP"))
 		mono_set_use_smp (FALSE);
-
-#ifdef MONO_JEMALLOC_ENABLED
-
-	gboolean use_jemalloc = FALSE;
-#ifdef MONO_JEMALLOC_DEFAULT
-	use_jemalloc = TRUE;
-#endif
-	if (!use_jemalloc)
-		use_jemalloc = g_hasenv ("MONO_USE_JEMALLOC");
-
-	if (use_jemalloc)
-		mono_init_jemalloc ();
-
-#endif
 
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
@@ -2492,8 +2463,20 @@ mono_main (int argc, char* argv[])
 				exit (1);
 			}
 
+			int orig_argc = argc;
+
 			mono_parse_response_options (response_options, &argc, &argv, FALSE);
 			g_free (response_content);
+
+			/* Parse newly added options */
+			int n = argc;
+			mono_options_parse_options ((const char**)(argv + orig_argc), argc - orig_argc, &n, error);
+			if (!is_ok (error)) {
+				g_printerr ("%s", mono_error_get_message (error));
+				mono_error_cleanup (error);
+				return 1;
+			}
+			argc -= (argc - orig_argc) - n;
 		} else if (argv [i][0] == '-' && argv [i][1] == '-' && mini_parse_debug_option (argv [i] + 2)) {
 		} else if (strcmp (argv [i], "--use-map-jit") == 0){
 			mono_setmmapjit (TRUE);
@@ -2503,7 +2486,7 @@ mono_main (int argc, char* argv[])
 		}
 	}
 
-#if defined(DISABLE_HW_TRAPS) || defined(MONO_ARCH_DISABLE_HW_TRAPS)
+#if defined(MONO_ARCH_DISABLE_HW_TRAPS)
 	// Signal handlers not available
 	{
 		MonoDebugOptions *opt = mini_get_debug_options ();

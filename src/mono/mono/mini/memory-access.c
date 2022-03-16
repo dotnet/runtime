@@ -250,7 +250,7 @@ create_write_barrier_bitmap (MonoCompile *cfg, MonoClass *klass, unsigned *wb_bi
 
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
-		foffset = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject): field->offset;
+		foffset = m_class_is_valuetype (klass) ? m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject): m_field_get_offset (field);
 		if (mini_type_is_reference (mono_field_get_type_internal (field))) {
 			g_assert ((foffset % TARGET_SIZEOF_VOID_P) == 0);
 			*wb_bitmap |= 1 << ((offset + foffset) / TARGET_SIZEOF_VOID_P);

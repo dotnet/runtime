@@ -2043,7 +2043,7 @@ alloc_type_with_cmods (MonoImage *m, gboolean transient, int count)
 	g_assert (count > 0);
 	MonoType *type;
 	size_t size = mono_sizeof_type_with_mods (count, FALSE);
-	type = transient ? (MonoType *)g_malloc0 (size) : (MonoType *)mono_image_alloc0 (m, size);
+	type = transient ? (MonoType *)g_malloc0 (size) : (MonoType *)mono_image_alloc0 (m, (guint)size);
 	type->has_cmods = TRUE;
 
 	MonoCustomModContainer *cmods = mono_type_get_cmods (type);
@@ -2276,6 +2276,9 @@ mono_metadata_method_has_param_attrs (MonoImage *m, int def)
 	MonoTableInfo *methodt = &m->tables [MONO_TABLE_METHOD];
 	guint lastp, i, param_index = mono_metadata_decode_row_col (methodt, def - 1, MONO_METHOD_PARAMLIST);
 
+	if (param_index == 0)
+		return FALSE;
+
 	/* FIXME: metadata-update */
 	if (def < table_info_get_rows (methodt))
 		lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
@@ -2423,18 +2426,18 @@ static MonoMethodSignature*
 mono_metadata_signature_dup_internal (MonoImage *image, MonoMemPool *mp, MonoMemoryManager *mem_manager,
 									  MonoMethodSignature *sig, size_t padding)
 {
-	int sigsize, sig_header_size;
+	size_t sigsize, sig_header_size;
 	MonoMethodSignature *ret;
 	sigsize = sig_header_size = MONO_SIZEOF_METHOD_SIGNATURE + sig->param_count * sizeof (MonoType *) + padding;
 	if (sig->ret)
 		sigsize += mono_sizeof_type (sig->ret);
 
 	if (image) {
-		ret = (MonoMethodSignature *)mono_image_alloc (image, sigsize);
+		ret = (MonoMethodSignature *)mono_image_alloc (image, (guint)sigsize);
 	} else if (mp) {
-		ret = (MonoMethodSignature *)mono_mempool_alloc (mp, sigsize);
+		ret = (MonoMethodSignature *)mono_mempool_alloc (mp, (unsigned int)sigsize);
 	} else if (mem_manager) {
-		ret = (MonoMethodSignature *)mono_mem_manager_alloc (mem_manager, sigsize);
+		ret = (MonoMethodSignature *)mono_mem_manager_alloc (mem_manager, (guint)sigsize);
 	} else {
 		ret = (MonoMethodSignature *)g_malloc (sigsize);
 	}
@@ -3456,7 +3459,7 @@ mono_metadata_get_canonical_aggregate_modifiers (MonoAggregateModContainer *cand
 	MonoAggregateModContainer *amods = (MonoAggregateModContainer *)g_hash_table_lookup (mm->aggregate_modifiers_cache, candidate);
 	if (!amods) {
 		size_t size = mono_sizeof_aggregate_modifiers (candidate->count);
-		amods = (MonoAggregateModContainer *)mono_mem_manager_alloc0 (mm, size);
+		amods = (MonoAggregateModContainer *)mono_mem_manager_alloc0 (mm, (guint)size);
 		amods->count = candidate->count;
 		for (int i = 0; i < candidate->count; ++i) {
 			amods->modifiers [i].required = candidate->modifiers [i].required;
@@ -5971,7 +5974,7 @@ do_metadata_type_dup_append_cmods (MonoImage *image, const MonoType *o, const Mo
 		uint8_t total_cmods = o_cmods->count + extra_cmods->count;
 		gboolean aggregate = FALSE;
 		size_t sizeof_dup = mono_sizeof_type_with_mods (total_cmods, aggregate);
-		MonoType *r = image ? (MonoType *)mono_image_alloc0 (image, sizeof_dup) : (MonoType *)g_malloc0 (sizeof_dup);
+		MonoType *r = image ? (MonoType *)mono_image_alloc0 (image, (guint)sizeof_dup) : (MonoType *)g_malloc0 (sizeof_dup);
 
 		mono_type_with_mods_init (r, total_cmods, aggregate);
 
@@ -6015,7 +6018,7 @@ do_metadata_type_dup_append_cmods (MonoImage *image, const MonoType *o, const Mo
 		/* FIXME: if image, and the images of the custom modifiers from
 		 * o and cmods_source are all different, we need an image
 		 * set... */
-		MonoType *r = image ? (MonoType *)mono_image_alloc0 (image, sizeof_dup) : (MonoType*)g_malloc0 (sizeof_dup);
+		MonoType *r = image ? (MonoType *)mono_image_alloc0 (image, (guint)sizeof_dup) : (MonoType*)g_malloc0 (sizeof_dup);
 
 		mono_type_with_mods_init (r, total_cmods, aggregate);
 
@@ -6064,7 +6067,7 @@ mono_metadata_type_dup_with_cmods (MonoImage *image, const MonoType *o, const Mo
 	gboolean aggregate = mono_type_is_aggregate_mods (o) || mono_type_is_aggregate_mods (cmods_source);
 	size_t sizeof_r = mono_sizeof_type_with_mods (num_mods, aggregate);
 
-	r = image ? (MonoType *)mono_image_alloc0 (image, sizeof_r) : (MonoType *)g_malloc0 (sizeof_r);
+	r = image ? (MonoType *)mono_image_alloc0 (image, (guint)sizeof_r) : (MonoType *)g_malloc0 (sizeof_r);
 
 	if (cmods_source->has_cmods) {
 		/* FIXME: if it's aggregate what do we assert here? */
@@ -7202,10 +7205,21 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 		else
 			container->owner.klass = (MonoClass*)real_owner;
 	}
+	/* first pass over the gparam table - just count how many params we own */
+	uint32_t type_argc = 0;
+	uint32_t i2 = i;
+	do {
+		type_argc++;
+		if (++i2 > mono_metadata_table_num_rows (image, MONO_TABLE_GENERICPARAM))
+			break;
+		mono_metadata_decode_row (tdef, i2 - 1, cols, MONO_GENERICPARAM_SIZE);
+	} while (cols [MONO_GENERICPARAM_OWNER] == owner);
+	params = (MonoGenericParamFull *)mono_image_alloc0 (image, sizeof (MonoGenericParamFull) * type_argc);
+
+	/* second pass, fill in the gparam data */
+	mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
 	do {
 		n++;
-		params = (MonoGenericParamFull *)g_realloc (params, sizeof (MonoGenericParamFull) * n);
-		memset (&params [n - 1], 0, sizeof (MonoGenericParamFull));
 		params [n - 1].owner = container;
 		params [n - 1].num = cols [MONO_GENERICPARAM_NUMBER];
 		params [n - 1].info.token = i | MONO_TOKEN_GENERIC_PARAM;
@@ -7213,16 +7227,13 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 		params [n - 1].info.name = mono_metadata_string_heap (image, cols [MONO_GENERICPARAM_NAME]);
 		if (params [n - 1].num != n - 1)
 			g_warning ("GenericParam table unsorted or hole in generic param sequence: token %d", i);
-		/* FIXME: metadata-update */
-		if (++i > table_info_get_rows (tdef))
+		if (++i > mono_metadata_table_num_rows (image, MONO_TABLE_GENERICPARAM))
 			break;
 		mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
 	} while (cols [MONO_GENERICPARAM_OWNER] == owner);
 
-	container->type_argc = n;
-	container->type_params = (MonoGenericParamFull *)mono_image_alloc0 (image, sizeof (MonoGenericParamFull) * n);
-	memcpy (container->type_params, params, sizeof (MonoGenericParamFull) * n);
-	g_free (params);
+	container->type_argc = type_argc;
+	container->type_params = params;
 	container->parent = parent_container;
 
 	if (is_method)
@@ -7585,6 +7596,10 @@ mono_metadata_get_corresponding_field_from_generic_type_definition (MonoClassFie
 	if (!mono_class_is_ginst (m_field_get_parent (field)))
 		return field;
 
+	/*
+	 * metadata-update: nothing to do. can't add fields to existing generic
+	 * classes; for new gtds added in updates, this is correct.
+	 */
 	gtd = mono_class_get_generic_class (m_field_get_parent (field))->container_class;
 	offset = field - m_class_get_fields (m_field_get_parent (field));
 	return m_class_get_fields (gtd) + offset;

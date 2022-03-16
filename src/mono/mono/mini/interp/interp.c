@@ -22,7 +22,6 @@
 #include <math.h>
 #include <locale.h>
 
-#include <mono/utils/gc_wrapper.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -753,7 +752,6 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 static int
 stackval_size (MonoType *type, gboolean pinvoke)
 {
-	type = mini_native_type_replace_type (type);
 	if (m_type_is_byref (type))
 		return MINT_STACK_SLOT_SIZE;
 	switch (type->type) {
@@ -817,7 +815,6 @@ stackval_size (MonoType *type, gboolean pinvoke)
 static int
 stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean pinvoke)
 {
-	type = mini_native_type_replace_type (type);
 	if (m_type_is_byref (type)) {
 		result->data.p = *(gpointer*)data;
 		return MINT_STACK_SLOT_SIZE;
@@ -904,7 +901,6 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 static int
 stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 {
-	type = mini_native_type_replace_type (type);
 	if (m_type_is_byref (type)) {
 		gpointer *p = (gpointer*)data;
 		*p = val->data.p;

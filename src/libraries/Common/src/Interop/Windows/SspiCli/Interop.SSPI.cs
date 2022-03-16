@@ -331,38 +331,38 @@ internal static partial class Interop
             public char* pwszSslCtlIdentifier;
         }
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int EncryptMessage(
             ref CredHandle contextHandle,
             uint qualityOfProtection,
             ref SecBufferDesc inputOutput,
             uint sequenceNumber);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static unsafe partial int DecryptMessage(
             ref CredHandle contextHandle,
             ref SecBufferDesc inputOutput,
             uint sequenceNumber,
             uint* qualityOfProtection);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int QuerySecurityContextToken(
             ref CredHandle phContext,
             out SecurityContextTokenHandle handle);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int FreeContextBuffer(
             IntPtr contextBuffer);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int FreeCredentialsHandle(
             ref CredHandle handlePtr);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int DeleteSecurityContext(
             ref CredHandle handlePtr);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static unsafe partial int AcceptSecurityContext(
             ref CredHandle credentialHandle,
             void* inContextPtr,
@@ -374,25 +374,25 @@ internal static partial class Interop
             ref ContextFlags attributes,
             out long timeStamp);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static unsafe partial int QueryContextAttributesW(
             ref CredHandle contextHandle,
             ContextAttribute attribute,
             void* buffer);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int SetContextAttributesW(
             ref CredHandle contextHandle,
             ContextAttribute attribute,
             byte[] buffer,
             int bufferSize);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int EnumerateSecurityPackagesW(
             out int pkgnum,
             out SafeFreeContextBuffer_SECURITY handle);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int AcquireCredentialsHandleW(
             string? principal,
             string moduleName,
@@ -404,7 +404,7 @@ internal static partial class Interop
             ref CredHandle handlePtr,
             out long timeStamp);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int AcquireCredentialsHandleW(
             string? principal,
             string moduleName,
@@ -416,7 +416,7 @@ internal static partial class Interop
             ref CredHandle handlePtr,
             out long timeStamp);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int AcquireCredentialsHandleW(
             string? principal,
             string moduleName,
@@ -428,7 +428,7 @@ internal static partial class Interop
             ref CredHandle handlePtr,
             out long timeStamp);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int AcquireCredentialsHandleW(
             string? principal,
             string moduleName,
@@ -440,7 +440,7 @@ internal static partial class Interop
             ref CredHandle handlePtr,
             out long timeStamp);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static unsafe partial int InitializeSecurityContextW(
             ref CredHandle credentialHandle,
             void* inContextPtr,
@@ -455,28 +455,28 @@ internal static partial class Interop
             ref ContextFlags attributes,
             out long timeStamp);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static unsafe partial int CompleteAuthToken(
             void* inContextPtr,
             ref SecBufferDesc inputBuffers);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static unsafe partial int ApplyControlToken(
             void* inContextPtr,
             ref SecBufferDesc inputBuffers);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial SECURITY_STATUS SspiFreeAuthIdentity(
             IntPtr authData);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial SECURITY_STATUS SspiEncodeStringsAsAuthIdentity(
             string userName,
             string domainName,
             string password,
             out SafeSspiAuthDataHandle authData);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial SECURITY_STATUS SetCredentialsAttributesW(
             in CredHandle handlePtr,
             long ulAttribute,

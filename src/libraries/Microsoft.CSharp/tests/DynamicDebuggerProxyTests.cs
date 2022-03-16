@@ -13,6 +13,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
     {
         private static readonly Type _debugViewType = GetType("DynamicMetaObjectProviderDebugView");
 
+        // DynamicDebugViewEmptyException.Empty is used by the debugger EE
+        // as the message displayed when a dynamic object has no members.
         [Fact]
         public void Items_Empty()
         {

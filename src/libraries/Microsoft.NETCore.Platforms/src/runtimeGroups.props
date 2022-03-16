@@ -23,7 +23,7 @@
     <RuntimeGroup Include="android">
       <Parent>linux</Parent>
       <Architectures>x64;x86;arm;arm64</Architectures>
-      <Versions>21;22;23;24;25;26;27;28;29;30;31</Versions>
+      <Versions>21;22;23;24;25;26;27;28;29;30;31;32</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="arch">
@@ -135,6 +135,14 @@
       <Parent>ubuntu.18.04</Parent>
       <Architectures>x64</Architectures>
       <Versions>1;2</Versions>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="miraclelinux">
+      <Parent>rhel</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>8;9</Versions>
+      <ApplyVersionsToParent>true</ApplyVersionsToParent>
+      <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
     <RuntimeGroup Include="ol">

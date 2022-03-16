@@ -16,11 +16,12 @@ internal static partial class Interop
             private int _padding;       // Pad out to 8-byte alignment
         }
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetControlMessageBufferSize")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetControlMessageBufferSize")]
         [SuppressGCTransition]
         internal static partial int GetControlMessageBufferSize(int isIPv4, int isIPv6);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_TryGetIPPacketInformation")]
-        internal static unsafe partial bool TryGetIPPacketInformation(MessageHeader* messageHeader, bool isIPv4, IPPacketInformation* packetInfo);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_TryGetIPPacketInformation")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool TryGetIPPacketInformation(MessageHeader* messageHeader, [MarshalAs(UnmanagedType.Bool)] bool isIPv4, IPPacketInformation* packetInfo);
     }
 }
