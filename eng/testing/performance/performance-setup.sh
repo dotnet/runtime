@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set +x
+set -x
 
 source_directory=$BUILD_SOURCESDIRECTORY
 core_root_directory=
@@ -271,6 +271,7 @@ if [[ "$run_from_perf_repo" == true ]]; then
     performance_directory=$workitem_directory
     setup_arguments="--perf-hash $commit_sha $common_setup_arguments"
 else
+    print "using debug-ci branch"
     git clone --branch debug-ci --depth 1 --quiet https://github.com/radical/performance.git $performance_directory
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
@@ -326,6 +327,7 @@ Write-PipelineSetVariable -name "Architecture" -value "$architecture" -is_multi_
 Write-PipelineSetVariable -name "PayloadDirectory" -value "$payload_directory" -is_multi_job_variable false
 Write-PipelineSetVariable -name "PerformanceDirectory" -value "$performance_directory" -is_multi_job_variable false
 Write-PipelineSetVariable -name "WorkItemDirectory" -value "$workitem_directory" -is_multi_job_variable false
+Write-PipelineSetVariable -name "BenchmarkDotNetSources" -value "$benchmark_directory" -is_multi_job_variable false
 Write-PipelineSetVariable -name "Queue" -value "$queue" -is_multi_job_variable false
 Write-PipelineSetVariable -name "SetupArguments" -value "$setup_arguments" -is_multi_job_variable false
 Write-PipelineSetVariable -name "Python" -value "python3" -is_multi_job_variable false
