@@ -388,24 +388,11 @@ namespace Internal.TypeSystem.Ecma
                 public int GetName(int bufferLength, out int count, char[] name)
                 {
                     var func = (delegate* unmanaged<IntPtr, int, int*, char*, int>)(*(*(void***)Inst + 3));
-                    int hr;
-
                     fixed (int* countPtr = &count)
+                    fixed (char* namePtr = name)
                     {
-                        if (name == null)
-                        {
-                            hr = func(Inst, bufferLength, countPtr, null);
-                        }
-                        else
-                        {
-                            fixed (char* namePtr = name)
-                            {
-                                hr = func(Inst, bufferLength, countPtr, namePtr);
-                            }
-                        }
+                        return func(Inst, bufferLength, countPtr, namePtr);
                     }
-
-                    return hr;
                 }
 
                 public int GetNamespaces(int bufferLength, out int count, ISymUnmanagedNamespace[] namespaces)
@@ -514,24 +501,11 @@ namespace Internal.TypeSystem.Ecma
                 public int GetName(int bufferLength, out int count, char[] name)
                 {
                     var func = (delegate* unmanaged<IntPtr, int, int*, char*, int>)(*(*(void***)Inst + 3));
-                    int hr;
-
                     fixed (int* countPtr = &count)
+                    fixed (char* namePtr = name)
                     {
-                        if (name == null)
-                        {
-                            hr = func(Inst, bufferLength, countPtr, null);
-                        }
-                        else
-                        {
-                            fixed (char* namePtr = name)
-                            {
-                                hr = func(Inst, bufferLength, countPtr, namePtr);
-                            }
-                        }
+                        return func(Inst, bufferLength, countPtr, namePtr);
                     }
-
-                    return hr;
                 }
 
                 public int GetAttributes(out int attributes) => SingleByRefIntWrapper(4, out attributes);
@@ -539,24 +513,11 @@ namespace Internal.TypeSystem.Ecma
                 public int GetSignature(int bufferLength, out int count, byte[] signature)
                 {
                     var func = (delegate* unmanaged<IntPtr, int, int*, byte*, int>)(*(*(void***)Inst + 5));
-                    int hr;
-
                     fixed (int* countPtr = &count)
+                    fixed (byte* signaturePtr = signature)
                     {
-                        if (signature == null)
-                        {
-                            hr = func(Inst, bufferLength, countPtr, null);
-                        }
-                        else
-                        {
-                            fixed (byte* signaturePtr = signature)
-                            {
-                                hr = func(Inst, bufferLength, countPtr, signaturePtr);
-                            }
-                        }
+                        return func(Inst, bufferLength, countPtr, signaturePtr);
                     }
-
-                    return hr;
                 }
 
                 public int GetAddressKind(out int kind) => SingleByRefIntWrapper(6, out kind);
@@ -797,38 +758,21 @@ namespace Internal.TypeSystem.Ecma
                 public int GetUrl(int bufferLength, out int count, char[] url)
                 {
                     var func = (delegate* unmanaged<IntPtr, int, int*, char*, int>)(*(*(void***)Inst + 3));
-                    int hr;
-
                     fixed (int* countPtr = &count)
+                    fixed (char* urlPtr = url)
                     {
-                        if (url == null)
-                        {
-                            hr = func(Inst, bufferLength, countPtr, null);
-                        }
-                        else
-                        {
-                            fixed (char* urlPtr = url)
-                            {
-                                hr = func(Inst, bufferLength, countPtr, urlPtr);
-                            }
-                        }
+                        return func(Inst, bufferLength, countPtr, urlPtr);
                     }
-
-                    return hr;
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 private int SingleByRefGuidWrapper(int methodSolt, ref Guid guid)
                 {
                     var func = (delegate* unmanaged<IntPtr, Guid*, int>)(*(*(void***)Inst + methodSolt));
-                    int hr;
-
                     fixed (Guid* guidPtr = &guid)
                     {
-                        hr = func(Inst, guidPtr);
+                        return func(Inst, guidPtr);
                     }
-
-                    return hr;
                 }
 
                 public int GetDocumentType(ref Guid documentType) => SingleByRefGuidWrapper(4, ref documentType);
@@ -839,24 +783,11 @@ namespace Internal.TypeSystem.Ecma
                 public int GetChecksum(int bufferLength, out int count, byte[] checksum)
                 {
                     var func = (delegate* unmanaged<IntPtr, int, int*, byte*, int>)(*(*(void***)Inst + 8));
-                    int hr;
-
                     fixed (int* countPtr = &count)
+                    fixed (byte* checksumPtr = checksum)
                     {
-                        if (checksum == null)
-                        {
-                            hr = func(Inst, bufferLength, countPtr, null);
-                        }
-                        else
-                        {
-                            fixed (byte* checksumPtr = checksum)
-                            {
-                                hr = func(Inst, bufferLength, countPtr, checksumPtr);
-                            }
-                        }
+                        return func(Inst, bufferLength, countPtr, checksumPtr);
                     }
-
-                    return hr;
                 }
 
                 public int FindClosestLine(int line, out int closestLine)
@@ -889,24 +820,11 @@ namespace Internal.TypeSystem.Ecma
                 public int GetSourceRange(int startLine, int startColumn, int endLine, int endColumn, int bufferLength, out int count, byte[] source)
                 {
                     var func = (delegate* unmanaged<IntPtr, int, int, int, int, int, int*, byte*, int>)(*(*(void***)Inst + 12));
-                    int hr;
-
                     fixed (int* countPtr = &count)
+                    fixed (byte* sourcePtr = source)
                     {
-                        if (source == null)
-                        {
-                            hr = func(Inst, startLine, startColumn, endLine, endColumn, bufferLength, countPtr, null);
-                        }
-                        else
-                        {
-                            fixed (byte* sourcePtr = source)
-                            {
-                                hr = func(Inst, startLine, startColumn, endLine, endColumn, bufferLength, countPtr, sourcePtr);
-                            }
-                        }
+                        return func(Inst, startLine, startColumn, endLine, endColumn, bufferLength, countPtr, sourcePtr);
                     }
-
-                    return hr;
                 }
 
                 public void Dispose()
@@ -1009,30 +927,18 @@ namespace Internal.TypeSystem.Ecma
                 {
                     var func = (delegate* unmanaged<IntPtr, IntPtr, int, int, int, int*, int*, int>)(*(*(void***)Inst + 8));
                     var handle = GCHandle.Alloc(document, GCHandleType.Pinned);
-                    int hr;
                     try
                     {
                         fixed (int* countPtr = &count)
+                        fixed (int* rangesPtr = ranges)
                         {
-                            if (ranges == null)
-                            {
-                                hr = func(Inst, handle.AddrOfPinnedObject(), line, column, bufferLength, countPtr, null);
-                            }
-                            else
-                            {
-                                fixed (int* rangesPtr = ranges)
-                                {
-                                    hr = func(Inst, handle.AddrOfPinnedObject(), line, column, bufferLength, countPtr, rangesPtr);
-                                }
-                            }
+                            return func(Inst, handle.AddrOfPinnedObject(), line, column, bufferLength, countPtr, rangesPtr);
                         }
                     }
                     finally
                     {
                         handle.Free();
                     }
-
-                    return hr;
                 }
 
                 public int GetParameters(int bufferLength, out int count, ISymUnmanagedVariable[] parameters)
@@ -1082,21 +988,19 @@ namespace Internal.TypeSystem.Ecma
                 {
                     var func = (delegate* unmanaged<IntPtr, IntPtr*, int*, int*, bool*, int>)(*(*(void***)Inst + 11));
                     var handle = GCHandle.Alloc(documents, GCHandleType.Pinned);
-                    int hr;
                     try
                     {
                         fixed (int* linesPtr = lines)
                         fixed (int* columnsPtr = columns)
                         fixed (bool* definedPtr = &defined)
                         {
-                            hr = func(Inst, (IntPtr*)handle.AddrOfPinnedObject(), linesPtr, columnsPtr, definedPtr);
+                            return func(Inst, (IntPtr*)handle.AddrOfPinnedObject(), linesPtr, columnsPtr, definedPtr);
                         }
                     }
                     finally
                     {
                         handle.Free();
                     }
-                    return hr;
                 }
 
                 public int GetSequencePoints(int bufferLength, out int count, int[] offsets, ISymUnmanagedDocument[] documents, int[] startLines, int[] startColumns, int[] endLines, int[] endColumns)
