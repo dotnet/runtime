@@ -121,7 +121,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.RefReturn("int"), 2, 2 };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(CodeSnippetsToCompile))]
         public async Task ValidateSnippets(string source, int expectedGeneratorErrors, int expectedCompilerErrors)
         {
@@ -153,7 +153,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.IncorrectAttributeFieldType, 1, 1 };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(CodeSnippetsToCompile_InvalidCode))]
         public async Task ValidateSnippets_InvalidCodeGracefulFailure(string source, int expectedGeneratorErrors, int expectedCompilerErrors)
         {
