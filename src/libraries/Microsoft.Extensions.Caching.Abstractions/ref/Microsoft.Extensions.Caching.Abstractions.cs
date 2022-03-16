@@ -129,10 +129,10 @@ namespace Microsoft.Extensions.Caching.Memory
     public partial class MemoryCacheStatistics
     {
         public MemoryCacheStatistics() { }
-        public long CurrentEntryCount { get { throw null; } init { throw null; } }
-        public long? CurrentEstimatedSize { get { throw null; } init { throw null; } }
-        public long TotalHits { get { throw null; } init { throw null; } }
-        public long TotalMisses { get { throw null; } init { throw null; } }
+        public long CurrentEntryCount { get { throw null; } init { } }
+        public long? CurrentEstimatedSize { get { throw null; } init { } }
+        public long TotalHits { get { throw null; } init { } }
+        public long TotalMisses { get { throw null; } init { } }
     }
     public partial class PostEvictionCallbackRegistration
     {
