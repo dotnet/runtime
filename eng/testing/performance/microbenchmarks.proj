@@ -60,7 +60,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WorkItemCommand)' != ''">
-    <WorkItemCommand>$(Python) $(WorkItemCommand) --incremental no --architecture $(Architecture) -f $(_Framework) $(PerfLabArguments)</WorkItemCommand>
+    <WorkItemCommand>export BenchmarkDotNetSources=%24HELIX_CORRELATION_PAYLOAD/BenchmarkDotNet/; $(Python) $(WorkItemCommand) --incremental no --architecture $(Architecture) -f $(_Framework) $(PerfLabArguments)</WorkItemCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(_Framework)' != 'net461'">
