@@ -167,7 +167,23 @@ namespace Microsoft.Extensions.Caching.Memory
             VerifyCurrentEstimatedSize(finalStats.CurrentEntryCount, sizeLimitIsSet, finalStats);
         }
 
-        private void VerifyCurrentEstimatedSize (long expected, bool sizeLimitIsSet, MemoryCacheStatistics stats)
+        [Fact]
+        public void GetCurrentStatistics_DIMReturnsNull()
+        {
+#if NET7_0_OR_GREATER
+            Assert.Null((new FakeMemoryCache() as IMemoryCache).GetCurrentStatistics());
+#endif
+        }
+
+        private class FakeMemoryCache : IMemoryCache
+        {
+            public ICacheEntry CreateEntry(object key) => throw new NotImplementedException();
+            public void Dispose() => throw new NotImplementedException();
+            public void Remove(object key) => throw new NotImplementedException();
+            public bool TryGetValue(object key, out object? value) => throw new NotImplementedException();
+        }
+
+        private void VerifyCurrentEstimatedSize(long expected, bool sizeLimitIsSet, MemoryCacheStatistics stats)
         {
             if (sizeLimitIsSet)
             {

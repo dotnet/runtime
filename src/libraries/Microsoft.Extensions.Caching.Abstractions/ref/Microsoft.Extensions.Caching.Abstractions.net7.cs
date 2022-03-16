@@ -8,10 +8,6 @@ namespace Microsoft.Extensions.Caching.Memory
 {
     public partial interface IMemoryCache : System.IDisposable
     {
-        Microsoft.Extensions.Caching.Memory.ICacheEntry CreateEntry(object key);
-        void Remove(object key);
-        bool TryGetValue(object key, out object? value);
         MemoryCacheStatistics? GetCurrentStatistics() => null;
-
     }
 }
