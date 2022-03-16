@@ -53,7 +53,7 @@ namespace System.Text.Json.Serialization.Tests
             angela.ExtensionData = extensionData;
 
             string expected = JsonConvert.SerializeObject(angela, s_newtonsoftSerializerSettingsPreserve);
-            string actual = await JsonSerializerWrapperForString.SerializeWrapper(angela, s_serializerOptionsPreserve);
+            string actual = await Serializer.SerializeWrapper(angela, s_serializerOptionsPreserve);
 
             Assert.Equal(expected, actual);
         }
@@ -107,8 +107,8 @@ namespace System.Text.Json.Serialization.Tests
                 ImmutableArray.Create(employee);
 
             // Regardless of using preserve, do not emit $id to value types; that is why we compare against default.
-            string actual = await JsonSerializerWrapperForString.SerializeWrapper(array, s_serializerOptionsPreserve);
-            string expected = await JsonSerializerWrapperForString.SerializeWrapper(array);
+            string actual = await Serializer.SerializeWrapper(array, s_serializerOptionsPreserve);
+            string expected = await Serializer.SerializeWrapper(array);
 
             Assert.Equal(expected, actual);
         }
@@ -132,7 +132,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 ["$string"] = "Hello world"
             };
-            string json = await JsonSerializerWrapperForString.SerializeWrapper(dictionary, s_serializerOptionsPreserve);
+            string json = await Serializer.SerializeWrapper(dictionary, s_serializerOptionsPreserve);
             Assert.Equal(@"{""$id"":""1"",""\u0024string"":""Hello world""}", json);
 
             //$ Key in dictionary holding complex type.
@@ -140,7 +140,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 ["$object"] = new ClassWithExtensionData { Hello = "World" }
             };
-            json = await JsonSerializerWrapperForString.SerializeWrapper(dictionary, s_serializerOptionsPreserve);
+            json = await Serializer.SerializeWrapper(dictionary, s_serializerOptionsPreserve);
             Assert.Equal(@"{""$id"":""1"",""\u0024object"":{""$id"":""2"",""Hello"":""World""}}", json);
 
             //$ Key in ExtensionData dictionary
@@ -155,7 +155,7 @@ namespace System.Text.Json.Serialization.Tests
                     }
                 }
             };
-            json = await JsonSerializerWrapperForString.SerializeWrapper(poco, s_serializerOptionsPreserve);
+            json = await Serializer.SerializeWrapper(poco, s_serializerOptionsPreserve);
             Assert.Equal(@"{""$id"":""1"",""\u0024string"":""Hello world"",""\u0024object"":{""$id"":""2"",""Hello"":""World""}}", json);
 
             //TODO:
@@ -182,16 +182,16 @@ namespace System.Text.Json.Serialization.Tests
                 // Do not write any curly braces for ImmutableArray since is a value type.
                 NonProservableArray = immutableArr
             };
-            await JsonSerializerWrapperForString.SerializeWrapper(root, s_serializerOptionsPreserve);
+            await Serializer.SerializeWrapper(root, s_serializerOptionsPreserve);
 
             ImmutableArray<List<int>> immutablArraytOfLists = new List<List<int>> { list }.ToImmutableArray();
-            await JsonSerializerWrapperForString.SerializeWrapper(immutablArraytOfLists, s_serializerOptionsPreserve);
+            await Serializer.SerializeWrapper(immutablArraytOfLists, s_serializerOptionsPreserve);
 
             List<ImmutableArray<int>> listOfImmutableArrays = new List<ImmutableArray<int>> { immutableArr };
-            await JsonSerializerWrapperForString.SerializeWrapper(listOfImmutableArrays, s_serializerOptionsPreserve);
+            await Serializer.SerializeWrapper(listOfImmutableArrays, s_serializerOptionsPreserve);
 
             List<object> mixedListOfLists = new List<object> { list, immutableArr, list, immutableArr };
-            await JsonSerializerWrapperForString.SerializeWrapper(mixedListOfLists, s_serializerOptionsPreserve);
+            await Serializer.SerializeWrapper(mixedListOfLists, s_serializerOptionsPreserve);
         }
 
         public class ClassIncorrectHashCode
@@ -216,10 +216,10 @@ namespace System.Text.Json.Serialization.Tests
                 elem,
             };
 
-            string json = await JsonSerializerWrapperForString.SerializeWrapper(list, s_serializerOptionsPreserve);
+            string json = await Serializer.SerializeWrapper(list, s_serializerOptionsPreserve);
             Assert.Equal(@"{""$id"":""1"",""$values"":[{""$id"":""2""},{""$ref"":""2""}]}", json);
 
-            List<ClassIncorrectHashCode> listCopy = await JsonSerializerWrapperForString.DeserializeWrapper<List<ClassIncorrectHashCode>>(json, s_serializerOptionsPreserve);
+            List<ClassIncorrectHashCode> listCopy = await Serializer.DeserializeWrapper<List<ClassIncorrectHashCode>>(json, s_serializerOptionsPreserve);
             // Make sure that our DefaultReferenceResolver calls the ReferenceEqualityComparer that implements RuntimeHelpers.GetHashCode, and never object.GetHashCode,
             // otherwise objects would not be correctly identified when searching for them in the dictionary.
             Assert.Same(listCopy[0], listCopy[1]);

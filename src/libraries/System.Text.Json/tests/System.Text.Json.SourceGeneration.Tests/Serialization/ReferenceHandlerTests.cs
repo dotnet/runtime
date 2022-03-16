@@ -147,7 +147,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Employee a = new Employee();
             a.Manager = a;
 
-            await Assert.ThrowsAsync<InvalidOperationException>(() => JsonSerializerWrapperForString.SerializeWrapper(a));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(a));
         }
     }
 

@@ -11,17 +11,17 @@ namespace System.Text.Json.Serialization.Tests
         /// <summary>
         /// The serialization System Under Test to be targeted by deriving test suites.
         /// </summary>
-        protected JsonSerializerWrapper JsonSerializerWrapperForString { get; }
+        protected JsonSerializerWrapper Serializer { get; }
 
         /// <summary>
         /// For Systems Under Test that support streaming, exposes the relevant API surface.
         /// </summary>
-        protected StreamingJsonSerializerWrapper? JsonSerializerWrapperForStream { get; }
+        protected StreamingJsonSerializerWrapper? StreamingSerializer { get; }
 
         protected SerializerTests(JsonSerializerWrapper serializerUnderTest)
         {
-            JsonSerializerWrapperForString = serializerUnderTest;
-            JsonSerializerWrapperForStream = serializerUnderTest as StreamingJsonSerializerWrapper;
+            Serializer = serializerUnderTest;
+            StreamingSerializer = serializerUnderTest as StreamingJsonSerializerWrapper;
         }
     }
 }

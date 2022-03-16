@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Tests
         [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
         public async Task ReadSimpleObjectAsync()
         {
-            if (JsonSerializerWrapperForStream is null)
+            if (StreamingSerializer is null)
             {
                 return;
             }
@@ -28,7 +28,7 @@ namespace System.Text.Json.Serialization.Tests
                         DefaultBufferSize = 1
                     };
 
-                    var obj = await JsonSerializerWrapperForStream.DeserializeWrapper<T>(stream, options);
+                    var obj = await StreamingSerializer.DeserializeWrapper<T>(stream, options);
                     ((ITestClass)obj).Verify();
                 }
             }
@@ -67,7 +67,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadSimpleObjectWithTrailingTriviaAsync()
         {
-            if (JsonSerializerWrapperForStream is null)
+            if (StreamingSerializer is null)
             {
                 return;
             }
@@ -83,7 +83,7 @@ namespace System.Text.Json.Serialization.Tests
                         ReadCommentHandling = JsonCommentHandling.Skip,
                     };
 
-                    var obj = await JsonSerializerWrapperForStream.DeserializeWrapper<T>(stream, options);
+                    var obj = await StreamingSerializer.DeserializeWrapper<T>(stream, options);
                     ((ITestClass)obj).Verify();
                 }
             }
@@ -120,7 +120,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task Cannot_DeserializeAsync_ObjectWith_Ctor_With_65_Params()
         {
-            if (JsonSerializerWrapperForStream is null)
+            if (StreamingSerializer is null)
             {
                 return;
             }
@@ -145,7 +145,7 @@ namespace System.Text.Json.Serialization.Tests
                         DefaultBufferSize = 1
                     };
 
-                    await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForStream.DeserializeWrapper<T>(stream, options));
+                    await Assert.ThrowsAsync<NotSupportedException>(async () => await StreamingSerializer.DeserializeWrapper<T>(stream, options));
                 }
 
                 using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes("{}")))
@@ -155,7 +155,7 @@ namespace System.Text.Json.Serialization.Tests
                         DefaultBufferSize = 1
                     };
 
-                    await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForStream.DeserializeWrapper<T>(stream, options));
+                    await Assert.ThrowsAsync<NotSupportedException>(async () => await StreamingSerializer.DeserializeWrapper<T>(stream, options));
                 }
             }
 
@@ -170,7 +170,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ExerciseStreamCodePaths()
         {
-            if (JsonSerializerWrapperForStream is null)
+            if (StreamingSerializer is null)
             {
                 return;
             }
@@ -229,7 +229,7 @@ namespace System.Text.Json.Serialization.Tests
                         DefaultBufferSize = 1
                     };
 
-                    ClassWithStrings obj = await JsonSerializerWrapperForStream.DeserializeWrapper<ClassWithStrings>(stream, options);
+                    ClassWithStrings obj = await StreamingSerializer.DeserializeWrapper<ClassWithStrings>(stream, options);
                     obj.Verify(value);
                 }
             }
