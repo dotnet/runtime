@@ -4848,7 +4848,6 @@ struct GenTreeCall final : public GenTree
     {
         if (gtRetBufArg == nullptr)
         {
-            assert(!HasRetBufArg());
             return nullptr;
         }
 

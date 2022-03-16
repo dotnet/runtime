@@ -807,6 +807,11 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
     }
     else if (defNode->OperIs(GT_CALL))
     {
+        // If the current def is a call we either know the call is pure or else has arbitrary memory definitions,
+        // the memory effect of the call is captured by the live out state from the block and doesn't need special
+        // handling here. If we ever change liveness to more carefully model call effects (from interprecedural
+        // information) we might need to revisit this.
+
         return;
     }
 
