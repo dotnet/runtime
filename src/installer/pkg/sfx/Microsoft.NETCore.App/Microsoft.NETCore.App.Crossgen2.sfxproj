@@ -56,10 +56,20 @@
     </ItemGroup>
     <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
       <!-- Treat all native aot assets as native runtime assets -->
-      <FilesToPackage Include="@(_CrossgenPublishFiles)"
+      <FilesToPackage Include="@(_CrossgenPublishFiles->Distinct())"
                           Condition="'%(Extension)' != '.pdb'"
                           TargetPath="tools/" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="RunPublishedCrossgen" AfterTargets="PublishCrossgen" Condition="'$(CrossBuild)' != 'true'">
+    <!-- Run the published crossgen if we're not cross-compiling -->
+    <Exec Command="@(FilesToPackage) $(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll --out $(IntermediateOutputPath)S.P.C.tmp" Condition="'%(FileName)' == 'crossgen2$(ExeSuffix)'"
+          ConsoleToMsBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="CrossgenOutput" />
+      <Output TaskParameter="ExitCode" PropertyName="CrossgenExitCode" />
+    </Exec>
+    <Error Text="Crossgen failed with code $(CrossgenExitCode), output: $(CrossgenOutput)" Condition="$(CrossgenExitCode) != 0" />
   </Target>
 
   <PropertyGroup>
