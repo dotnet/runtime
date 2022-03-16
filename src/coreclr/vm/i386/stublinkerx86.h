@@ -21,7 +21,7 @@ extern PCODE GetPreStubEntryPoint();
 #define X86_INSTR_JMP_EAX       0xE0FF      // jmp eax
 #define X86_INSTR_MOV_EAX_IMM32 0xB8        // mov eax, imm32
 #define X86_INSTR_MOV_EAX_ECX_IND 0x018b    // mov eax, [ecx]
-#define X86_INSTR_CMP_IND_ECX_EAX 0x0139    // cmp [ecx], eax
+#define X86_INSTR_CMP_IND_ECX_IMM32 0x3981  // cmp [ecx], imm32
 
 #define X86_INSTR_MOV_AL        0xB0        // mov al, imm8
 #define X86_INSTR_JMP_REL8      0xEB        // jmp short rel8

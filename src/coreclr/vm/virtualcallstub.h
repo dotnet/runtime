@@ -33,9 +33,9 @@ class Entry;
 class Prober;
 class VirtualCallStubManager;
 class VirtualCallStubManagerManager;
-struct LookupStub;
-struct DispatchStub;
-struct ResolveStub;
+struct LookupHolder;
+struct DispatchHolder;
+struct ResolveHolder;
 struct VTableCallHolder;
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -159,6 +159,7 @@ extern "C" void BackPatchWorkerStaticStub(PCODE returnAddr, TADDR siteAddrForReg
 #endif // TARGET_UNIX
 #endif // TARGET_X86
 
+
 typedef VPTR(class VirtualCallStubManager) PTR_VirtualCallStubManager;
 
 // VirtualCallStubManager is the heart of the stub dispatch logic. See the book of the runtime entry
@@ -279,10 +280,17 @@ public:
           lookup_heap(NULL),
           dispatch_heap(NULL),
           resolve_heap(NULL),
+#ifdef TARGET_AMD64
+          m_fShouldAllocateLongJumpDispatchStubs(FALSE),
+#endif
           lookups(NULL),
           cache_entries(NULL),
           dispatchers(NULL),
           resolvers(NULL),
+          m_counters(NULL),
+          m_cur_counter_block(NULL),
+          m_cur_counter_block_for_reclaim(NULL),
+          m_cur_counter_block_for_reclaim_index(NULL),
           m_pNext(NULL)
     {
         LIMITED_METHOD_CONTRACT;
@@ -303,7 +311,7 @@ public:
     };
 
     // peek at the assembly code and predict which kind of a stub we have
-    static StubKind predictStubKind(PCODE stubStartAddress);
+    StubKind predictStubKind(PCODE stubStartAddress);
 
     /* know thine own stubs.  It is possible that when multiple
     virtualcallstub managers are built that these may need to become
@@ -475,7 +483,7 @@ public:
 private:
 
     //allocate and initialize a stub of the desired kind
-    DispatchStub *GenerateDispatchStub(PCODE addrOfCode,
+    DispatchHolder *GenerateDispatchStub(PCODE addrOfCode,
                                          PCODE addrOfFail,
                                          void *pMTExpected,
                                          size_t dispatchToken,
@@ -484,33 +492,33 @@ private:
 #ifdef TARGET_AMD64
     // Used to allocate a long jump dispatch stub. See comment around
     // m_fShouldAllocateLongJumpDispatchStubs for explaination.
-    DispatchStub *GenerateDispatchStubLong(PCODE addrOfCode,
+    DispatchHolder *GenerateDispatchStubLong(PCODE addrOfCode,
                                              PCODE addrOfFail,
                                              void *pMTExpected,
                                              size_t dispatchToken,
                                              bool *pMayHaveReenteredCooperativeGCMode);
 #endif
 
-    ResolveStub *GenerateResolveStub(PCODE addrOfResolver,
-                                     PCODE addrOfPatcher,
-                                     size_t dispatchToken
+    ResolveHolder *GenerateResolveStub(PCODE addrOfResolver,
+                                       PCODE addrOfPatcher,
+                                       size_t dispatchToken
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
-                                     , size_t stackArgumentsSize
+                                       , size_t stackArgumentsSize
 #endif
-                                     );
+                                       );
 
-    LookupStub *GenerateLookupStub(PCODE addrOfResolver,
+    LookupHolder *GenerateLookupStub(PCODE addrOfResolver,
                                      size_t dispatchToken);
 
     VTableCallHolder* GenerateVTableCallStub(DWORD slot);
 
-    template <typename STUB>
-    void AddToCollectibleVSDRangeList(STUB *pStub)
+    template <typename STUB_HOLDER>
+    void AddToCollectibleVSDRangeList(STUB_HOLDER *holder)
     {
         if (m_loaderAllocator->IsCollectible())
         {
-            parentDomain->GetCollectibleVSDRanges()->AddRange(reinterpret_cast<BYTE *>(pStub),
-                reinterpret_cast<BYTE *>(pStub) + pStub->size(),
+            parentDomain->GetCollectibleVSDRanges()->AddRange(reinterpret_cast<BYTE *>(holder->stub()),
+                reinterpret_cast<BYTE *>(holder->stub()) + holder->stub()->size(),
                 this);
         }
     }
@@ -721,11 +729,44 @@ private:
     PTR_LoaderHeap  resolve_heap;       // resolve stubs go here
     PTR_LoaderHeap  vtable_heap;        // vtable-based jump stubs go here
 
+#ifdef TARGET_AMD64
+    // When we layout the stub heaps, we put them close together in a sequential order
+    // so that we maximize performance with respect to branch predictions. On AMD64,
+    // dispatch stubs use a rel32 jump on failure to the resolve stub. This works for
+    // a while because of the ordering, but as soon as we have to start allocating more
+    // memory for either the dispatch or resolve heaps we have a chance that we'll be
+    // further away than a rel32 jump can reach, because we're in a 64-bit address
+    // space. As such, this flag will indicate when we allocate the first dispatch stub
+    // that cannot reach a resolve stub, and when this happens we'll switch over to
+    // allocating the larger version of the dispatch stub which contains an abs64 jump.
+    //@TODO: This is a bit of a workaround, but the limitations of LoaderHeap require that we
+    //@TODO: take this approach. Hopefully in Orcas we'll have a chance to rewrite LoaderHeap.
+    BOOL            m_fShouldAllocateLongJumpDispatchStubs; // Defaults to FALSE.
+#endif
+
     BucketTable *   lookups;            // hash table of lookups keyed by tokens
     BucketTable *   cache_entries;      // hash table of dispatch token/target structs for dispatch cache
     BucketTable *   dispatchers;        // hash table of dispatching stubs keyed by tokens/actualtype
     BucketTable *   resolvers;          // hash table of resolvers keyed by tokens/resolverstub
     BucketTable *   vtableCallers;      // hash table of vtable call stubs keyed by slot values
+
+    // This structure is used to keep track of the fail counters.
+    // We only need one fail counter per ResolveStub,
+    //  and most programs use less than 250 ResolveStubs
+    // We allocate these on the main heap using "new counter block"
+    struct counter_block
+    {
+        static const UINT32 MAX_COUNTER_ENTRIES = 256-2;  // 254 counters should be enough for most cases.
+
+        counter_block *  next;                            // the next block
+        UINT32           used;                            // the index of the next free entry
+        INT32            block[MAX_COUNTER_ENTRIES];      // the counters
+    };
+
+    counter_block *m_counters;                            // linked list of counter blocks of failure counters
+    counter_block *m_cur_counter_block;                   // current block for updating counts
+    counter_block *m_cur_counter_block_for_reclaim;       // current block for updating
+    UINT32         m_cur_counter_block_for_reclaim_index; // index into the current block for updating
 
     // Used to keep track of all the VCSManager objects in the system.
     PTR_VirtualCallStubManager m_pNext;            // Linked list pointer
@@ -1018,358 +1059,6 @@ public:
 
 #include <virtualcallstubcpu.hpp>
 
-//#ifdef TARGET_AMD64
-#pragma pack(push, 1)
-// since we are placing code, we want byte packing of the structs
-
-// Codes of the instruction in the stub where the instruction access violation
-// is converted to NullReferenceException at the caller site.
-#ifdef UNIX_AMD64_ABI
-#define X64_INSTR_CMP_IND_THIS_REG_RAX 0x073948
-#define X64_INSTR_MOV_RAX_IND_THIS_REG 0x078b48
-#else // UNIX_AMD64_ABI
-#define X64_INSTR_CMP_IND_THIS_REG_RAX 0x013948
-#define X64_INSTR_MOV_RAX_IND_THIS_REG 0x018b48
-#endif // UNIX_AMD64_ABI
-
-#define USES_LOOKUP_STUBS       1
-
-/*********************************************************************************************
-Stubs that contain code are all part of larger structs called Holders.  There is a
-Holder for each kind of stub, i.e XXXStub is contained with XXXHolder.  Holders are
-essentially an implementation trick that allowed rearranging the code sequences more
-easily while trying out different alternatives, and for dealing with any alignment
-issues in a way that was mostly immune to the actually code sequences.  These Holders
-should be revisited when the stub code sequences are fixed, since in many cases they
-add extra space to a stub that is not really needed.
-
-Stubs are placed in cache and hash tables.  Since unaligned access of data in memory
-is very slow, the keys used in those tables should be aligned.  The things used as keys
-typically also occur in the generated code, e.g. a token as an immediate part of an instruction.
-For now, to avoid alignment computations as different code strategies are tried out, the key
-fields are all in the Holders.  Eventually, many of these fields should be dropped, and the instruction
-streams aligned so that the immediate fields fall on aligned boundaries.
-*/
-
-#if USES_LOOKUP_STUBS
-
-/*LookupStub**************************************************************************************
-Virtual and interface call sites are initially setup to point at LookupStubs.
-This is because the runtime type of the <this> pointer is not yet known,
-so the target cannot be resolved.  Note: if the jit is able to determine the runtime type
-of the <this> pointer, it should be generating a direct call not a virtual or interface call.
-This stub pushes a lookup token onto the stack to identify the sought after method, and then
-jumps into the EE (VirtualCallStubManager::ResolveWorkerStub) to effectuate the lookup and
-transfer of control to the appropriate target method implementation, perhaps patching of the call site
-along the way to point to a more appropriate stub.  Hence callsites that point to LookupStubs
-get quickly changed to point to another kind of stub.
-*/
-struct LookupStubData
-{
-    size_t DispatchToken;
-    PCODE  ResolveWorkerTarget;
-};
-
-typedef DPTR(LookupStubData) PTR_LookupStubData;
-
-struct LookupStub
-{
-#if defined(HOST_AMD64)
-    static const int CodeSize = 16;
-#elif defined(HOST_X86)
-    static const int CodeSize = 16;
-#elif defined(HOST_ARM64)
-    static const int CodeSize = 16;
-#elif defined(HOST_ARM)
-    static const int CodeSize = 12;
-#endif // HOST_AMD64
-
-    void  Initialize(PCODE resolveWorkerTarget, size_t dispatchToken);
-
-    static void InitStatic();
-
-    inline PCODE entryPoint() { LIMITED_METHOD_CONTRACT; return PINSTRToPCODE((TADDR)this); }
-    inline size_t token()           { LIMITED_METHOD_CONTRACT; return GetData()->DispatchToken; }
-    inline size_t  size() { LIMITED_METHOD_CONTRACT; return sizeof(LookupStub); }
-
-    static LookupStub* FromLookupEntry(PCODE lookupEntry);
-
-    static void GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX);
-
-private:
-    PTR_LookupStubData GetData() const
-    {
-        return dac_cast<PTR_LookupStubData>(dac_cast<TADDR>(this) + GetOsPageSize());
-    }
-    // The lookup entry point starts with a nop in order to allow us to quickly see
-    // if the stub is lookup stub or a dispatch stub.  We can read thye first byte
-    // of a stub to find out what kind of a stub we have.
-
-    BYTE _code[CodeSize];
-
-#if defined(TARGET_ARM64) && defined(TARGET_UNIX)
-    static void (*LookupStubCode)();
-#endif // TARGET_ARM64 && TARGET_UNIX)
-};
-
-#endif // USES_LOOKUP_STUBS
-
-/*DispatchStub**************************************************************************************
-The structure of a full dispatch stub in memory is a DispatchStub followed contiguously in memory
-by either a DispatchStubShort of a DispatchStubLong. DispatchStubShort is used when the resolve
-stub (failTarget()) is reachable by a rel32 (DISPL) jump. We make a pretty good effort to make sure
-that the stub heaps are set up so that this is the case. If we allocate enough stubs that the heap
-end up allocating in a new block that is further away than a DISPL jump can go, then we end up using
-a DispatchStubLong which is bigger but is a full 64-bit jump. */
-
-/*DispatchStub**************************************************************************************
-Monomorphic and mostly monomorphic call sites eventually point to DispatchStubs.
-A dispatch stub has an expected type (expectedMT), target address (target) and fail address (failure).
-If the calling frame does in fact have the <this> type be of the expected type, then
-control is transfered to the target address, the method implementation.  If not,
-then control is transfered to the fail address, a fail stub (see below) where a polymorphic
-lookup is done to find the correct address to go to.
-
-implementation note: Order, choice of instructions, and branch directions
-should be carefully tuned since it can have an inordinate effect on performance.  Particular
-attention needs to be paid to the effects on the BTB and branch prediction, both in the small
-and in the large, i.e. it needs to run well in the face of BTB overflow--using static predictions.
-Note that since this stub is only used for mostly monomorphic callsites (ones that are not, get patched
-to something else), therefore the conditional jump "jne failure" is mostly not taken, and hence it is important
-that the branch prediction staticly predict this, which means it must be a forward jump.  The alternative
-is to reverse the order of the jumps and make sure that the resulting conditional jump "je implTarget"
-is statically predicted as taken, i.e a backward jump. The current choice was taken since it was easier
-to control the placement of the stubs than control the placement of the jitted code and the stubs. */
-struct DispatchStubData
-{
-    size_t ExpectedMT;
-    PCODE ImplTarget;
-    PCODE FailTarget;
-};
-
-typedef DPTR(DispatchStubData) PTR_DispatchStubData;
-
-/* DispatchHolders are the containers for DispatchStubs, they provide for any alignment of
-stubs as necessary.  DispatchStubs are placed in a hashtable and in a cache.  The keys for both
-are the pair expectedMT and token.  Efficiency of the of the hash table is not a big issue,
-since lookups in it are fairly rare.  Efficiency of the cache is paramount since it is accessed frequently
-(see ResolveStub below).  Currently we are storing both of these fields in the DispatchHolder to simplify
-alignment issues.  If inlineMT in the stub itself was aligned, then it could be the expectedMT field.
-While the token field can be logically gotten by following the failure target to the failEntryPoint
-of the ResolveStub and then to the token over there, for perf reasons of cache access, it is duplicated here.
-This allows us to use DispatchStubs in the cache.  The alternative is to provide some other immutable struct
-for the cache composed of the triplet (expectedMT, token, target) and some sort of reclaimation scheme when
-they are thrown out of the cache via overwrites (since concurrency will make the obvious approaches invalid).
-*/
-
-/* @workaround for ee resolution - Since the EE does not currently have a resolver function that
-does what we want, see notes in implementation of VirtualCallStubManager::Resolver, we are
-using dispatch stubs to siumulate what we want.  That means that inlineTarget, which should be immutable
-is in fact written.  Hence we have moved target out into the holder and aligned it so we can
-atomically update it.  When we get a resolver function that does what we want, we can drop this field,
-and live with just the inlineTarget field in the stub itself, since immutability will hold.*/
-
-#if !(defined(TARGET_ARM64) && defined(TARGET_UNIX))
-extern "C" void DispatchStubCode();
-extern "C" void DispatchStubCode_ThisDeref();
-#endif // !(TARGET_ARM64 && TARGET_UNIX)
-
-
-struct DispatchStub
-{
-#if defined(HOST_AMD64)
-    static const int CodeSize = 24;
-#elif defined(HOST_X86)
-    static const int CodeSize = 24;
-#elif defined(HOST_ARM64)
-    static const int CodeSize = 32;
-#elif defined(HOST_ARM)
-    static const int CodeSize = 24;
-#endif // HOST_AMD64
-
-    void  Initialize(PCODE implTarget, PCODE failTarget, size_t expectedMT);
-
-    static void InitStatic();
-
-    static DispatchStub* FromDispatchEntry(PCODE dispatchEntry);
-    static void GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX);
-
-    inline PCODE         entryPoint() const { LIMITED_METHOD_CONTRACT;  return PINSTRToPCODE((TADDR)this); }
-    inline size_t        expectedMT() const { LIMITED_METHOD_CONTRACT;  return GetData()->ExpectedMT; }
-    inline static size_t size()             { WRAPPER_NO_CONTRACT; return sizeof(DispatchStub); }
-
-    inline static size_t offsetOfThisDeref()
-    {
-        LIMITED_METHOD_CONTRACT; 
-        return (BYTE*)DispatchStubCode_ThisDeref - (BYTE*)DispatchStubCode;
-    }
-
-    inline PCODE implTarget() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return GetData()->ImplTarget;
-    }
-
-    inline TADDR implTargetSlot(EntryPointSlots::SlotType *slotTypeRef) const
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(slotTypeRef != nullptr);
-
-        *slotTypeRef = EntryPointSlots::SlotType_Normal;
-        return (TADDR)&GetData()->ImplTarget;
-    }
-
-    inline PCODE failTarget() const
-    {
-        return GetData()->FailTarget;
-    }
-
-private:
-    BYTE code[CodeSize];
-
-    PTR_DispatchStubData GetData() const
-    {
-        return dac_cast<PTR_DispatchStubData>(dac_cast<TADDR>(this) + GetOsPageSize());
-    }
-
-#if defined(TARGET_ARM64) && defined(TARGET_UNIX)
-    static void (*DispatchStubCode)();
-    static void (*DispatchStubCode_ThisDeref)();
-#endif
-};
-
-/*ResolveStub**************************************************************************************
-Polymorphic call sites and monomorphic calls that fail end up in a ResolverStub.  There is only
-one resolver stub built for any given token, even though there may be many call sites that
-use that token and many distinct <this> types that are used in the calling call frames.  A resolver stub
-actually has two entry points, one for polymorphic call sites and one for dispatch stubs that fail on their
-expectedMT test.  There is a third part of the resolver stub that enters the ee when a decision should
-be made about changing the callsite.  Therefore, we have defined the resolver stub as three distinct pieces,
-even though they are actually allocated as a single contiguous block of memory.  These pieces are:
-
-A ResolveStub has two entry points:
-
-FailEntry - where the dispatch stub goes if the expected MT test fails.  This piece of the stub does
-a check to see how often we are actually failing. If failures are frequent, control transfers to the
-patch piece to cause the call site to be changed from a mostly monomorphic callsite
-(calls dispatch stub) to a polymorphic callsize (calls resolve stub).  If failures are rare, control
-transfers to the resolve piece (see ResolveStub).  The failEntryPoint decrements a counter
-every time it is entered.  The ee at various times will add a large chunk to the counter.
-
-ResolveEntry - does a lookup via in a cache by hashing the actual type of the calling frame s
-<this> and the token identifying the (contract,method) pair desired.  If found, control is transfered
-to the method implementation.  If not found in the cache, the token is pushed and the ee is entered via
-the ResolveWorkerStub to do a full lookup and eventual transfer to the correct method implementation.  Since
-there is a different resolve stub for every token, the token can be inlined and the token can be pre-hashed.
-The effectiveness of this approach is highly sensitive to the effectiveness of the hashing algorithm used,
-as well as its speed.  It turns out it is very important to make the hash function sensitive to all
-of the bits of the method table, as method tables are laid out in memory in a very non-random way.  Before
-making any changes to the code sequences here, it is very important to measure and tune them as perf
-can vary greatly, in unexpected ways, with seeming minor changes.
-
-Implementation note - Order, choice of instructions, and branch directions
-should be carefully tuned since it can have an inordinate effect on performance.  Particular
-attention needs to be paid to the effects on the BTB and branch prediction, both in the small
-and in the large, i.e. it needs to run well in the face of BTB overflow--using static predictions.
-Note that this stub is called in highly polymorphic cases, but the cache should have been sized
-and the hash function chosen to maximize the cache hit case.  Hence the cmp/jcc instructions should
-mostly be going down the cache hit route, and it is important that this be statically predicted as so.
-Hence the 3 jcc instrs need to be forward jumps.  As structured, there is only one jmp/jcc that typically
-gets put in the BTB since all the others typically fall straight thru.  Minimizing potential BTB entries
-is important. */
-
-struct ResolveStubData
-{
-    size_t CacheAddress;
-    UINT32 HashedToken;
-    INT32  Counter;
-    size_t Token;
-    PCODE  ResolveWorkerTarget;
-#ifdef TARGET_X86
-    PCODE  PatcherTarget;
-#ifndef UNIX_X86_ABI
-    size_t StackArgumentsSize;
-#endif // UNIX_X86_ABI
-#endif // TARGET_X86
-};
-
-typedef DPTR(ResolveStubData) PTR_ResolveStubData;
-
-#if !(defined(TARGET_ARM64) && defined(TARGET_UNIX))
-extern "C" void ResolveStubCode();
-extern "C" void ResolveStubCode_FailEntry();
-extern "C" void ResolveStubCode_SlowEntry();
-extern "C" void ResolveStubCode_ResolveEntry();
-extern "C" void ResolveStubCode_ThisDeref();
-#endif // !(TARGET_ARM64 && TARGET_UNIX)
-
-struct ResolveStub
-{
-#if defined(HOST_AMD64)
-    static const int CodeSize = 88;
-#elif defined(HOST_X86)
-    static const int CodeSize = 88;
-#elif defined(HOST_ARM64)
-    static const int CodeSize = 128;
-#elif defined(HOST_ARM)
-    static const int CodeSize = 108;
-#endif // HOST_AMD64
-
-    void  Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
-                     size_t dispatchToken, UINT32 hashedToken,
-                     void * cacheAddr, INT32 counterValue
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
-                     , size_t stackArgumentsSize
-#endif
-                     );
-
-    static void InitStatic();
-
-    static ResolveStub* FromFailEntry(PCODE resolveEntry);
-    static ResolveStub* FromResolveEntry(PCODE resolveEntry);
-
-    static void GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX);
-
-    inline PCODE failEntryPoint()       { LIMITED_METHOD_CONTRACT; return PINSTRToPCODE((TADDR)this + ((BYTE*)ResolveStubCode_FailEntry - (BYTE*)ResolveStubCode)); }
-    inline PCODE resolveEntryPoint()    { LIMITED_METHOD_CONTRACT; return PINSTRToPCODE((TADDR)this + ((BYTE*)ResolveStubCode_ResolveEntry - (BYTE*)ResolveStubCode)); }
-    inline PCODE slowEntryPoint()       { LIMITED_METHOD_CONTRACT; return PINSTRToPCODE((TADDR)this + ((BYTE*)ResolveStubCode_SlowEntry - (BYTE*)ResolveStubCode)); }
-
-    inline INT32* pCounter()            { LIMITED_METHOD_CONTRACT; return &GetData()->Counter; }
-    inline UINT32 hashedToken()         { LIMITED_METHOD_CONTRACT; return GetData()->HashedToken >> LOG2_PTRSIZE; }
-    inline size_t cacheAddress()        { LIMITED_METHOD_CONTRACT; return GetData()->CacheAddress; }
-    inline size_t token()               { LIMITED_METHOD_CONTRACT; return GetData()->Token; }
-    inline size_t size()                { LIMITED_METHOD_CONTRACT; return sizeof(ResolveStub); }
-
-    inline static size_t offsetOfThisDeref()
-    {
-        LIMITED_METHOD_CONTRACT; 
-        return (BYTE*)ResolveStubCode_ThisDeref - (BYTE*)ResolveStubCode_ResolveEntry;
-    }
-
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
-    inline size_t stackArgumentsSize() { LIMITED_METHOD_CONTRACT; return GetData()->StackArgumentsSize; }
-#endif
-
-private:
-    PTR_ResolveStubData GetData() const
-    {
-        return dac_cast<PTR_ResolveStubData>(dac_cast<TADDR>(this) + GetOsPageSize());
-    }
-
-    BYTE code[CodeSize];
-
-#if defined(TARGET_ARM64) && defined(TARGET_UNIX)
-    static void (*ResolveStubCode)();
-    static void (*ResolveStubCode_FailEntry)();
-    static void (*ResolveStubCode_SlowEntry)();
-    static void (*ResolveStubCode_ResolveEntry)();
-    static void (*ResolveStubCode_ThisDeref)();
-#endif // TARGET_ARM64 && TARGET_UNIX
-};
-
-//#endif // TARGET_AMD64
-#pragma pack(pop)
-
 #if USES_LOOKUP_STUBS
 /**********************************************************************************************
 LookupEntry wraps LookupStubs and provide the concrete implementation of the abstract class Entry.
@@ -1403,7 +1092,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(VirtualCallStubManager::isLookupStubStatic((PCODE)contents));
-        stub = LookupStub::FromLookupEntry((PCODE)contents);
+        stub = LookupHolder::FromLookupEntry((PCODE)contents)->stub();
     }
 
     //extract the token of the underlying lookup stub
@@ -1525,7 +1214,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(VirtualCallStubManager::isResolvingStubStatic((PCODE)contents));
-        stub = ResolveStub::FromResolveEntry((PCODE)contents);
+        stub = ResolveHolder::FromResolveEntry((PCODE)contents)->stub();
     }
     //extract the token of the underlying resolve stub
     inline size_t Token()  { WRAPPER_NO_CONTRACT; return stub ? (size_t)(stub->token()) : 0; }
@@ -1563,7 +1252,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(VirtualCallStubManager::isDispatchingStubStatic((PCODE)contents));
-        stub = DispatchStub::FromDispatchEntry((PCODE)contents);
+        stub = DispatchHolder::FromDispatchEntry((PCODE)contents)->stub();
     }
 
     //extract the fields of the underlying dispatch stub
@@ -1575,8 +1264,8 @@ public:
         WRAPPER_NO_CONTRACT;
         if (stub)
         {
-            ResolveStub * pResolveStub = ResolveStub::FromFailEntry(stub->failTarget());
-            size_t token = pResolveStub->token();
+            ResolveHolder * resolveHolder = ResolveHolder::FromFailEntry(stub->failTarget());
+            size_t token = resolveHolder->stub()->token();
             _ASSERTE(token == VirtualCallStubManager::GetTokenFromStub((PCODE)stub));
             return token;
         }

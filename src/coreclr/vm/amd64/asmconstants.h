@@ -590,39 +590,6 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForMethod == offsetof(CallCoun
 #define CallCountingStubData__TargetForThresholdReached 0x10
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offsetof(CallCountingStubData, TargetForThresholdReached))
 
-#define               LookupStubData__DispatchToken 0x00
-ASMCONSTANTS_C_ASSERT(LookupStubData__DispatchToken == offsetof(LookupStubData, DispatchToken))
-
-#define               LookupStubData__ResolveWorkerTarget 0x08
-ASMCONSTANTS_C_ASSERT(LookupStubData__ResolveWorkerTarget == offsetof(LookupStubData, ResolveWorkerTarget))
-
-#define               DispatchStubData__ExpectedMT 0x00
-ASMCONSTANTS_C_ASSERT(DispatchStubData__ExpectedMT == offsetof(DispatchStubData, ExpectedMT))
-
-#define               DispatchStubData__ImplTarget 0x08
-ASMCONSTANTS_C_ASSERT(DispatchStubData__ImplTarget == offsetof(DispatchStubData, ImplTarget))
-
-#define               DispatchStubData__FailTarget 0x10
-ASMCONSTANTS_C_ASSERT(DispatchStubData__FailTarget == offsetof(DispatchStubData, FailTarget))
-
-#define               ResolveStubData__HashedToken 0x08
-ASMCONSTANTS_C_ASSERT(ResolveStubData__HashedToken == offsetof(ResolveStubData, HashedToken))
-
-#define               ResolveStubData__CacheAddress 0x00
-ASMCONSTANTS_C_ASSERT(ResolveStubData__CacheAddress == offsetof(ResolveStubData, CacheAddress))
-
-#define               ResolveStubData__Token 0x10
-ASMCONSTANTS_C_ASSERT(ResolveStubData__Token == offsetof(ResolveStubData, Token))
-
-#define               ResolveStubData__Counter 0x0c
-ASMCONSTANTS_C_ASSERT(ResolveStubData__Counter == offsetof(ResolveStubData, Counter))
-
-#define               ResolveStubData__ResolveWorkerTarget 0x18
-ASMCONSTANTS_C_ASSERT(ResolveStubData__ResolveWorkerTarget == offsetof(ResolveStubData, ResolveWorkerTarget))
-
-#define CALL_STUB_CACHE_MASK_ASM 0xfff
-ASMCONSTANTS_C_ASSERT(CALL_STUB_CACHE_MASK_ASM == CALL_STUB_CACHE_MASK)
-
 #undef ASMCONSTANTS_RUNTIME_ASSERT
 #undef ASMCONSTANTS_C_ASSERT
 #ifndef UNIX_AMD64_ABI

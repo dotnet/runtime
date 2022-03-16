@@ -752,26 +752,368 @@ Rough pseudo-code of interface dispatching:
   // jitted code calls *indirectionCell
   switch (*indirectionCell)
   {
-      case LookupStub:
+      case LookupHolder._stub:
           // ResolveWorkerAsmStub:
-          *indirectionCell = DispatchStub;
+          *indirectionCell = DispatchHolder._stub;
           call ResolveWorkerStatic, jump to target method;
-      case DispatchStub:
+      case DispatchHolder._stub:
           if (r0.methodTable == expectedMethodTable) jump to target method;
-          // ResolveStub._failEntryPoint:
-          jump to case ResolveStub._resolveEntryPoint;
-      case ResolveStub._resolveEntryPoint:
+          // ResolveHolder._stub._failEntryPoint:
+          jump to case ResolveHolder._stub._resolveEntryPoint;
+      case ResolveHolder._stub._resolveEntryPoint:
           if (r0.methodTable in hashTable) jump to target method;
-          // ResolveStub._slowEntryPoint:
+          // ResolveHolder._stub._slowEntryPoint:
           // ResolveWorkerChainLookupAsmStub:
           // ResolveWorkerAsmStub:
-          if (_failEntryPoint called too many times) *indirectionCell = ResolveStub._resolveEntryPoint;
+          if (_failEntryPoint called too many times) *indirectionCell = ResolveHolder._stub._resolveEntryPoint;
           call ResolveWorkerStatic, jump to target method;
   }
 
 Note that ResolveWorkerChainLookupAsmStub currently points directly
 to ResolveWorkerAsmStub; in the future, this could be separate.
 */
+
+void  LookupHolder::Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorkerTarget, size_t dispatchToken)
+{
+    // Called directly by JITTED code
+    // See ResolveWorkerAsmStub
+
+    // ldr r12, [pc + 8]    ; #_token
+    _stub._entryPoint[0] = 0xf8df;
+    _stub._entryPoint[1] = 0xc008;
+    // ldr pc, [pc]         ; #_resolveWorkerTarget
+    _stub._entryPoint[2] = 0xf8df;
+    _stub._entryPoint[3] = 0xf000;
+
+    _stub._resolveWorkerTarget = resolveWorkerTarget;
+    _stub._token               = dispatchToken;
+    _ASSERTE(4 == LookupStub::entryPointLen);
+}
+
+void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT)
+{
+    // Called directly by JITTED code
+    // DispatchHolder._stub._entryPoint(r0:object, r1, r2, r3, r4:IndirectionCell)
+    // {
+    //     if (r0.methodTable == this._expectedMT) (this._implTarget)(r0, r1, r2, r3);
+    //     else (this._failTarget)(r0, r1, r2, r3, r4);
+    // }
+
+    int n = 0;
+    WORD offset;
+
+    // We rely on the stub entry-point being DWORD aligned (so we can tell whether any subsequent WORD is
+    // DWORD-aligned or not, which matters in the calculation of PC-relative offsets).
+    _ASSERTE(((UINT_PTR)_stub._entryPoint & 0x3) == 0);
+
+// Compute a PC-relative offset for use in an instruction encoding. Must call this prior to emitting the
+// instruction halfword to which it applies. For thumb-2 encodings the offset must be computed before emitting
+// the first of the halfwords.
+#undef PC_REL_OFFSET
+#define PC_REL_OFFSET(_field) (WORD)(offsetof(DispatchStub, _field) - ((offsetof(DispatchStub, _entryPoint) + sizeof(*DispatchStub::_entryPoint) * (n + 2)) & 0xfffffffc))
+
+    // r0 : object. It can be null as well.
+    // when it is null the code causes an AV. This AV is seen by the VM's personality routine
+    // and it converts it into nullRef. We want the AV to happen before modifying the stack so that we can get the
+    // call stack in windbg at the point of AV. So therefore "ldr r12, [r0]" should be the first instruction.
+
+    // ldr r12, [r0 + #Object.m_pMethTab]
+    _stub._entryPoint[n++] = DISPATCH_STUB_FIRST_WORD;
+    _stub._entryPoint[n++] = 0xc000;
+
+    // push {r5}
+    _stub._entryPoint[n++] = 0xb420;
+
+    // ldr r5, [pc + #_expectedMT]
+    offset = PC_REL_OFFSET(_expectedMT);
+    _ASSERTE((offset & 0x3) == 0);
+    _stub._entryPoint[n++] = 0x4d00 | (offset >> 2);
+
+    // cmp r5, r12
+    _stub._entryPoint[n++] = 0x4565;
+
+    // pop {r5}
+    _stub._entryPoint[n++] = 0xbc20;
+
+    // bne failTarget
+    _stub._entryPoint[n++] = 0xd101;
+
+    // ldr pc, [pc + #_implTarget]
+    offset = PC_REL_OFFSET(_implTarget);
+    _stub._entryPoint[n++] = 0xf8df;
+    _stub._entryPoint[n++] = 0xf000 | offset;
+
+    // failTarget:
+    // ldr pc, [pc + #_failTarget]
+    offset = PC_REL_OFFSET(_failTarget);
+    _stub._entryPoint[n++] = 0xf8df;
+    _stub._entryPoint[n++] = 0xf000 | offset;
+
+    // nop - insert padding
+    _stub._entryPoint[n++] = 0xbf00;
+
+    _ASSERTE(n == DispatchStub::entryPointLen);
+
+    // Make sure that the data members below are aligned
+    _ASSERTE((n & 1) == 0);
+
+    _stub._expectedMT = DWORD(expectedMT);
+    _stub._failTarget = failTarget;
+    _stub._implTarget = implTarget;
+}
+
+void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
+                               PCODE resolveWorkerTarget, PCODE patcherTarget,
+                                size_t dispatchToken, UINT32 hashedToken,
+                                void * cacheAddr, INT32 * counterAddr)
+{
+    // Called directly by JITTED code
+    // ResolveStub._resolveEntryPoint(r0:Object*, r1, r2, r3, r4:IndirectionCellAndFlags)
+    // {
+    //    MethodTable mt = r0.m_pMethTab;
+    //    int i = ((mt + mt >> 12) ^ this._hashedToken) & this._cacheMask
+    //    ResolveCacheElem e = this._cacheAddress + i
+    //    do
+    //    {
+    //        if (mt == e.pMT && this._token == e.token) (e.target)(r0, r1, r2, r3);
+    //        e = e.pNext;
+    //    } while (e != null)
+    //    (this._slowEntryPoint)(r0, r1, r2, r3, r4);
+    // }
+    //
+
+    int n = 0;
+    WORD offset;
+
+    // We rely on the stub entry-point being DWORD aligned (so we can tell whether any subsequent WORD is
+    // DWORD-aligned or not, which matters in the calculation of PC-relative offsets).
+    _ASSERTE(((UINT_PTR)_stub._resolveEntryPoint & 0x3) == 0);
+
+// Compute a PC-relative offset for use in an instruction encoding. Must call this prior to emitting the
+// instruction halfword to which it applies. For thumb-2 encodings the offset must be computed before emitting
+// the first of the halfwords.
+#undef PC_REL_OFFSET
+#define PC_REL_OFFSET(_field) (WORD)(offsetof(ResolveStub, _field) - ((offsetof(ResolveStub, _resolveEntryPoint) + sizeof(*ResolveStub::_resolveEntryPoint) * (n + 2)) & 0xfffffffc))
+
+    // ldr r12, [r0 + #Object.m_pMethTab]
+    _stub._resolveEntryPoint[n++] = RESOLVE_STUB_FIRST_WORD;
+    _stub._resolveEntryPoint[n++] = 0xc000;
+
+    // ;; We need two scratch registers, r5 and r6
+    // push {r5,r6}
+    _stub._resolveEntryPoint[n++] = 0xb460;
+
+    // ;; Compute i = ((mt + mt >> 12) ^ this._hashedToken) & this._cacheMask
+
+    // add r6, r12, r12 lsr #12
+    _stub._resolveEntryPoint[n++] = 0xeb0c;
+    _stub._resolveEntryPoint[n++] = 0x361c;
+
+    // ldr r5, [pc + #_hashedToken]
+    offset = PC_REL_OFFSET(_hashedToken);
+    _ASSERTE((offset & 0x3) == 0);
+    _stub._resolveEntryPoint[n++] = 0x4d00 | (offset >> 2);
+
+    // eor r6, r6, r5
+    _stub._resolveEntryPoint[n++] = 0xea86;
+    _stub._resolveEntryPoint[n++] = 0x0605;
+
+    // ldr r5, [pc + #_cacheMask]
+    offset = PC_REL_OFFSET(_cacheMask);
+    _ASSERTE((offset & 0x3) == 0);
+    _stub._resolveEntryPoint[n++] = 0x4d00 | (offset >> 2);
+
+    // and r6, r6, r5
+    _stub._resolveEntryPoint[n++] = 0xea06;
+    _stub._resolveEntryPoint[n++] = 0x0605;
+
+    // ;; ResolveCacheElem e = this._cacheAddress + i
+    // ldr r5, [pc + #_cacheAddress]
+    offset = PC_REL_OFFSET(_cacheAddress);
+    _ASSERTE((offset & 0x3) == 0);
+    _stub._resolveEntryPoint[n++] = 0x4d00 | (offset >> 2);
+
+    // ldr r6, [r5 + r6] ;; r6 = e = this._cacheAddress + i
+    _stub._resolveEntryPoint[n++] = 0x59ae;
+
+    // ;; do {
+    int loop = n;
+
+    // ;; Check mt == e.pMT
+    // ldr r5, [r6 + #ResolveCacheElem.pMT]
+    offset = offsetof(ResolveCacheElem, pMT);
+    _ASSERTE(offset <= 124 && (offset & 0x3) == 0);
+    _stub._resolveEntryPoint[n++] = 0x6835 | (offset<< 4);
+
+    // cmp r12, r5
+    _stub._resolveEntryPoint[n++] = 0x45ac;
+
+    // bne nextEntry
+    _stub._resolveEntryPoint[n++] = 0xd108;
+
+    // ;; Check this._token == e.token
+    // ldr r5, [pc + #_token]
+    offset = PC_REL_OFFSET(_token);
+    _ASSERTE((offset & 0x3) == 0);
+    _stub._resolveEntryPoint[n++] = 0x4d00 | (offset>>2);
+
+    // ldr r12, [r6 + #ResolveCacheElem.token]
+    offset = offsetof(ResolveCacheElem, token);
+    _stub._resolveEntryPoint[n++] = 0xf8d6;
+    _stub._resolveEntryPoint[n++] = 0xc000 | offset;
+
+    // cmp r12, r5
+    _stub._resolveEntryPoint[n++] = 0x45ac;
+
+    // bne nextEntry
+    _stub._resolveEntryPoint[n++] = 0xd103;
+
+    // ldr r12, [r6 + #ResolveCacheElem.target] ;; r12 : e.target
+    offset = offsetof(ResolveCacheElem, target);
+    _stub._resolveEntryPoint[n++] = 0xf8d6;
+    _stub._resolveEntryPoint[n++] = 0xc000 | offset;
+
+    // ;; Restore r5 and r6
+    // pop {r5,r6}
+    _stub._resolveEntryPoint[n++] = 0xbc60;
+
+    // ;; Branch to e.target
+    // bx       r12 ;; (e.target)(r0,r1,r2,r3)
+    _stub._resolveEntryPoint[n++] = 0x4760;
+
+    // nextEntry:
+    // ;; e = e.pNext;
+    // ldr r6, [r6 + #ResolveCacheElem.pNext]
+    offset = offsetof(ResolveCacheElem, pNext);
+    _ASSERTE(offset <=124 && (offset & 0x3) == 0);
+    _stub._resolveEntryPoint[n++] = 0x6836 | (offset << 4);
+
+    // ;; } while(e != null);
+    // cbz r6, slowEntryPoint
+    _stub._resolveEntryPoint[n++] = 0xb116;
+
+    // ldr r12, [r0 + #Object.m_pMethTab]
+    _stub._resolveEntryPoint[n++] = 0xf8d0;
+    _stub._resolveEntryPoint[n++] = 0xc000;
+
+    // b loop
+    offset = (WORD)((loop - (n + 2)) * sizeof(WORD));
+    offset = (offset >> 1) & 0x07ff;
+    _stub._resolveEntryPoint[n++] = 0xe000 | offset;
+
+    // slowEntryPoint:
+    // pop {r5,r6}
+    _stub._resolveEntryPoint[n++] = 0xbc60;
+
+    // nop for alignment
+    _stub._resolveEntryPoint[n++] = 0xbf00;
+
+    // the slow entry point be DWORD-aligned (see _ASSERTE below) insert nops if necessary .
+
+    // ARMSTUB TODO: promotion
+
+    // fall through to slow case
+    _ASSERTE(_stub._resolveEntryPoint + n == _stub._slowEntryPoint);
+    _ASSERTE(n == ResolveStub::resolveEntryPointLen);
+
+    // ResolveStub._slowEntryPoint(r0:MethodToken, r1, r2, r3, r4:IndirectionCellAndFlags)
+    // {
+    //     r12 = this._tokenSlow;
+    //     this._resolveWorkerTarget(r0, r1, r2, r3, r4, r12);
+    // }
+
+    // The following macro relies on this entry point being DWORD-aligned. We've already asserted that the
+    // overall stub is aligned above, just need to check that the preceding stubs occupy an even number of
+    // WORD slots.
+    _ASSERTE((n & 1) == 0);
+
+#undef PC_REL_OFFSET
+#define PC_REL_OFFSET(_field) (WORD)(offsetof(ResolveStub, _field) - ((offsetof(ResolveStub, _slowEntryPoint) + sizeof(*ResolveStub::_slowEntryPoint) * (n + 2)) & 0xfffffffc))
+
+    n = 0;
+
+    // ldr r12, [pc + #_tokenSlow]
+    offset = PC_REL_OFFSET(_tokenSlow);
+    _stub._slowEntryPoint[n++] = 0xf8df;
+    _stub._slowEntryPoint[n++] = 0xc000 | offset;
+
+    // ldr pc, [pc + #_resolveWorkerTarget]
+    offset = PC_REL_OFFSET(_resolveWorkerTarget);
+    _stub._slowEntryPoint[n++] = 0xf8df;
+    _stub._slowEntryPoint[n++] = 0xf000 | offset;
+
+    _ASSERTE(n == ResolveStub::slowEntryPointLen);
+
+    // ResolveStub._failEntryPoint(r0:MethodToken, r1, r2, r3, r4:IndirectionCellAndFlags)
+    // {
+    //     if(--*(this._pCounter) < 0) r4 = r4 | SDF_ResolveBackPatch;
+    //     this._resolveEntryPoint(r0, r1, r2, r3, r4);
+    // }
+
+    // The following macro relies on this entry point being DWORD-aligned. We've already asserted that the
+    // overall stub is aligned above, just need to check that the preceding stubs occupy an even number of
+    // WORD slots.
+    _ASSERTE((n & 1) == 0);
+
+#undef PC_REL_OFFSET
+#define PC_REL_OFFSET(_field) (WORD)(offsetof(ResolveStub, _field) - ((offsetof(ResolveStub, _failEntryPoint) + sizeof(*ResolveStub::_failEntryPoint) * (n + 2)) & 0xfffffffc))
+
+    n = 0;
+
+    // push {r5}
+    _stub._failEntryPoint[n++] = 0xb420;
+
+    // ldr r5, [pc + #_pCounter]
+    offset = PC_REL_OFFSET(_pCounter);
+    _ASSERTE((offset & 0x3) == 0);
+    _stub._failEntryPoint[n++] = 0x4d00 | (offset >>2);
+
+    // ldr r12, [r5]
+    _stub._failEntryPoint[n++] = 0xf8d5;
+    _stub._failEntryPoint[n++] = 0xc000;
+
+    // subs r12, r12, #1
+    _stub._failEntryPoint[n++] = 0xf1bc;
+    _stub._failEntryPoint[n++] = 0x0c01;
+
+    // str r12, [r5]
+    _stub._failEntryPoint[n++] = 0xf8c5;
+    _stub._failEntryPoint[n++] = 0xc000;
+
+    // pop {r5}
+    _stub._failEntryPoint[n++] = 0xbc20;
+
+    // bge resolveEntryPoint
+    _stub._failEntryPoint[n++] = 0xda01;
+
+    // or r4, r4, SDF_ResolveBackPatch
+    _ASSERTE(SDF_ResolveBackPatch < 256);
+    _stub._failEntryPoint[n++] = 0xf044;
+    _stub._failEntryPoint[n++] = 0x0400 | SDF_ResolveBackPatch;
+
+    // resolveEntryPoint:
+    // b _resolveEntryPoint
+    offset = (WORD)(offsetof(ResolveStub, _resolveEntryPoint) - (offsetof(ResolveStub, _failEntryPoint) + sizeof(*ResolveStub::_failEntryPoint) * (n + 2)));
+    _ASSERTE((offset & 1) == 0);
+    offset = (offset >> 1) & 0x07ff;
+    _stub._failEntryPoint[n++] = 0xe000 | offset;
+
+    // nop for alignment
+    _stub._failEntryPoint[n++] = 0xbf00;
+
+    _ASSERTE(n == ResolveStub::failEntryPointLen);
+
+    _stub._pCounter            = counterAddr;
+    _stub._hashedToken         = hashedToken << LOG2_PTRSIZE;
+    _stub._cacheAddress        = (size_t) cacheAddr;
+    _stub._token               = dispatchToken;
+    _stub._tokenSlow           = dispatchToken;
+    _stub._resolveWorkerTarget = resolveWorkerTarget;
+    _stub._cacheMask           = CALL_STUB_CACHE_MASK * sizeof(void*);
+
+    _ASSERTE(resolveWorkerTarget == (PCODE)ResolveWorkerChainLookupAsmStub);
+    _ASSERTE(patcherTarget == NULL);
+}
 
 Stub *GenerateInitPInvokeFrameHelper()
 {
