@@ -44,29 +44,34 @@ namespace System.IO
 
             int lengthRoot = PathInternal.GetRootLength(fullPath.AsSpan());
 
-            if (length > lengthRoot)
+            using (DisableMediaInsertionPrompt.Create())
             {
-                // Special case root (fullpath = X:\\)
-                int i = length - 1;
-                while (i >= lengthRoot && !somepathexists)
+                if (length > lengthRoot)
                 {
-                    string dir = fullPath.Substring(0, i + 1);
+                    // Special case root (fullpath = X:\\)
+                    int i = length - 1;
+                    while (i >= lengthRoot && !somepathexists)
+                    {
+                        string dir = fullPath[..(i + 1)];
+                        // Neither GetFileAttributes or FindFirstFile like trailing separators
+                        dir = PathInternal.TrimEndingDirectorySeparator(dir);
 
-                    if (!DirectoryExists(dir)) // Create only the ones missing
-                    {
-                        stackDir.Add(dir);
-                    }
-                    else
-                    {
-                        somepathexists = true;
-                    }
+                        if (!DirectoryExistsSlim(dir, out _)) // Create only the ones missing
+                        {
+                            stackDir.Add(dir);
+                        }
+                        else
+                        {
+                            somepathexists = true;
+                        }
 
-                    while (i > lengthRoot && !PathInternal.IsDirectorySeparator(fullPath[i]))
-                    {
+                        while (i > lengthRoot && !PathInternal.IsDirectorySeparator(fullPath[i]))
+                        {
+                            i--;
+                        }
+
                         i--;
                     }
-
-                    i--;
                 }
             }
 
