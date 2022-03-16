@@ -88,11 +88,9 @@ namespace System.IO
                     lpSecurityDescriptor = (IntPtr)pSecurityDescriptor
                 };
 
-                while (stackDir.Count > 0)
+                for (int i = count - 1; 0 <= i; i--)
                 {
-                    int index = stackDir.Count - 1;
-                    string name = stackDir[index];
-                    stackDir.RemoveAt(index);
+                    string name = stackDir[i];
 
                     r = Interop.Kernel32.CreateDirectory(name, ref secAttrs);
                     if (!r && (firstError == 0))
