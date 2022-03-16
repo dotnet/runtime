@@ -9,6 +9,7 @@
     <IsRunningLibraryTests Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'WasmTestOnNodeJs'">true</IsRunningLibraryTests>
 
     <BuildHelixWorkItemsDependsOn>$(BuildHelixWorkItemsDependsOn);StageEmSdkForHelix;PrepareForBuildHelixWorkItems_Wasm</BuildHelixWorkItemsDependsOn>
+    <BuildHelixWorkItemsDependsOn Condition="'$(RunInFirefox)'=='1' and '$(WindowsShell)' != 'true'">$(BuildHelixWorkItemsDependsOn);DownloadAndInstallFirefox</BuildHelixWorkItemsDependsOn>
     <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
     <EnableDefaultBuildHelixWorkItems Condition="'$(IsRunningLibraryTests)' != 'true'">false</EnableDefaultBuildHelixWorkItems>
 
@@ -127,7 +128,7 @@
     <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true'">
       <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" />
       <HelixCorrelationPayload Include="chromedriver" Uri="$(ChromeDriverUrl)" />
-      <HelixCorrelationPayload Condition="'$(BrowserHost)' != 'windows'" Include="firefox" Uri="$(FirefoxUrl)" />
+      <FirefoxStampFile>.install-firefox-$(FirefoxRevision).stamp</FirefoxStampFile>
     </ItemGroup>
 
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
@@ -237,5 +238,33 @@
     </ItemGroup>
 
     <Copy SourceFiles="@(_EmSdkFiles)" DestinationFolder="$(EmSdkDirForHelixPayload)\%(RecursiveDir)" />
+  </Target>
+  
+  <Target Name="DownloadAndInstallFirefox"
+          Condition="!Exists($(FirefoxStampFile))">
+    <ItemGroup>
+      <_StampFile Include=".install-firefox*.stamp" />
+    </ItemGroup>
+
+    <Delete Files="@(_StampFile)" />
+    <RemoveDir Directories="$(FirefoxDir)" />
+
+    <DownloadFile SourceUrl="$(FirefoxUrl)" DestinationFolder="$(FirefoxDir)" SkipUnchangedFiles="true">
+      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
+    </DownloadFile>
+    <Exec Command="tar -xf $(_DownloadedFile) -C $(FirefoxDir)"/>
+    <Exec Command='echo "user_pref(\"devtools.chrome.enabled\", true);\nuser_pref(\"devtools.debugger.remote-enabled\", true);\nuser_pref(\"devtools.debugger.prompt-connection\", false);" > $(FirefoxDir)/prefs.js'/>
+    
+
+    <PropertyGroup>
+      <_FirefoxBinaryPath>$([MSBuild]::NormalizePath($(FirefoxDir), $(FirefoxBinaryName)))</_FirefoxBinaryPath>
+    </PropertyGroup>
+
+    <Error Text="Cannot find firefox at $(_FirefoxBinaryPath) in the downloaded copy"
+           Condition="!Exists($(_FirefoxBinaryPath))" />
+
+    <Exec Command="chmod +x $(_FirefoxBinaryPath)"/>
+
+    <Touch Files="$(FirefoxStampFile)" AlwaysCreate="true" />
   </Target>
 </Project>
