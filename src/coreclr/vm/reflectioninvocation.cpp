@@ -823,7 +823,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
 
     LPBYTE pTransitionBlock = pAlloc + TransitionBlock::GetNegSpaceSize();
 
-    CallDescrData callDescrData;
+    CallDescrData callDescrData = {};
 
     callDescrData.pSrc = pTransitionBlock + sizeof(TransitionBlock);
     _ASSERTE((nStackBytes % TARGET_POINTER_SIZE) == 0);
@@ -1076,26 +1076,12 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         ThrowInvokeMethodException(pMeth, gc.retVal);
     }
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4701)   // potentially uninitialized local variable 'var' used
-#endif // _MSC_VER
-
-    // This is a member that is expensive to initialize in a way MSVC can track.
-    // Its initialization is done in assembly code and has been manually audited.
-    // It is the one exception in the coreclr codebase that we permit.
-    PVOID returnValueLocal = &callDescrData.returnValue;
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif // _MSC_VER
-
     // It is still illegal to do a GC here.  The return type might have/contain GC pointers.
     if (fConstructor)
     {
         // We have a special case for Strings...The object is returned...
         if (fCtorOfVariableSizedObject) {
-            PVOID pReturnValue = returnValueLocal;
+            PVOID pReturnValue = &callDescrData.returnValue;
             gc.retVal = *(OBJECTREF *)pReturnValue;
         }
 
@@ -1111,7 +1097,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         if (hasRefReturnAndNeedsBoxing)
         {
             // Method has BYREF return and the target type is one that needs boxing. We need to copy into the boxed object we have allocated for this purpose.
-            LPVOID pReturnedReference = *(LPVOID*)returnValueLocal;
+            LPVOID pReturnedReference = *(LPVOID*)&callDescrData.returnValue;
             if (pReturnedReference == NULL)
             {
                 COMPlusThrow(kNullReferenceException, W("NullReference_InvokeNullRefReturned"));
@@ -1122,7 +1108,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         // we have allocated for this purpose.
         else if (!fHasRetBuffArg)
         {
-            CopyValueClass(gc.retVal->GetData(), returnValueLocal, gc.retVal->GetMethodTable());
+            CopyValueClass(gc.retVal->GetData(), &callDescrData.returnValue, gc.retVal->GetMethodTable());
         }
         // From here on out, it is OK to have GCs since the return object (which may have had
         // GC pointers has been put into a GC object and thus protected.
@@ -1134,7 +1120,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     else if (retType == ELEMENT_TYPE_BYREF)
     {
         // WARNING: pReturnedReference is an unprotected inner reference so we must not trigger a GC until the referenced value has been safely captured.
-        LPVOID pReturnedReference = *(LPVOID*)returnValueLocal;
+        LPVOID pReturnedReference = *(LPVOID*)&callDescrData.returnValue;
         if (pReturnedReference == NULL)
         {
             COMPlusThrow(kNullReferenceException, W("NullReference_InvokeNullRefReturned"));
@@ -1144,7 +1130,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     }
     else
     {
-        gc.retVal = InvokeUtil::CreateObjectAfterInvoke(retTH, returnValueLocal);
+        gc.retVal = InvokeUtil::CreateObjectAfterInvoke(retTH, &callDescrData.returnValue);
     }
 
     while (byRefToNullables != NULL) {
