@@ -15,6 +15,8 @@ namespace System.DirectoryServices.Protocols.Tests
         internal static bool IsLdapConfigurationExist => LdapConfiguration.Configuration != null;
         internal static bool IsActiveDirectoryServer => IsLdapConfigurationExist && LdapConfiguration.Configuration.IsActiveDirectoryServer;
 
+        internal static bool IsServerSideSortSupported => IsLdapConfigurationExist && LdapConfiguration.Configuration.SupportsServerSideSort;
+
         [ConditionalFact(nameof(IsLdapConfigurationExist))]
         public void TestInvalidFilter()
         {
@@ -533,7 +535,7 @@ namespace System.DirectoryServices.Protocols.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsLdapConfigurationExist))]
+        [ConditionalFact(nameof(IsServerSideSortSupported))]
         public void TestSortedSearch()
         {
             using (LdapConnection connection = GetConnection())
