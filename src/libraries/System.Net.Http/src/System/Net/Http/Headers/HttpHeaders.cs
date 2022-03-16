@@ -1365,7 +1365,7 @@ namespace System.Net.Http.Headers
                     }
                 }
 
-                Debug.Assert(count <= 1, "only allow single parsed value");
+                Debug.Assert(count == 1, "Only a single parsed value should be stored for this parser");
             }
 
             internal bool IsEmpty => RawValue == null && ParsedAndInvalidValues == null;
