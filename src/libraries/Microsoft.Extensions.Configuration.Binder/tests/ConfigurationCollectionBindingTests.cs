@@ -931,6 +931,25 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void ReadOnlyArrayIsIgnored()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ReadOnlyArray:0", "10"},
+                {"ReadOnlyArray:1", "20"},
+                {"ReadOnlyArray:2", "30"},
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+            var options = new OptionsWithArrays();
+            config.Bind(options);
+
+            Assert.Equal(new OptionsWithArrays().ReadOnlyArray, options.ReadOnlyArray);
+        }
+
+        [Fact]
         public void CanBindUninitializedIEnumerable()
         {
             var input = new Dictionary<string, string>
@@ -1149,12 +1168,14 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             public string[] StringArray { get; set; }
 
-            // this should throw becase we do not support multidimensional arrays
+            // this should throw because we do not support multidimensional arrays
             public string[,] DimensionalArray { get; set; }
 
             public string[][] JaggedArray { get; set; }
 
             public NestedOptions[] ObjectArray { get; set; }
+
+            public int[] ReadOnlyArray { get; } = new[] { 1, 2 };
         }
 
         private class OptionsWithLists

@@ -936,6 +936,20 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 exception.Message);
         }
 
+        [Fact]
+        public void DoesNotReadPropertiesUnnecessarily()
+        {
+            ConfigurationBuilder configurationBuilder = new();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                { nameof(ClassWithReadOnlyPropertyThatThrows.Safe), "value" }
+            });
+            IConfiguration config = configurationBuilder.Build();
+
+            ClassWithReadOnlyPropertyThatThrows bound = config.Get<ClassWithReadOnlyPropertyThatThrows>();
+            Assert.Equal("value", bound.Safe);
+        }
+
         private interface ISomeInterface
         {
         }
@@ -976,6 +990,15 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public ThrowsWhenActivated ThrowsWhenActivatedProperty { get; set; }
 
             public NestedOptions1 NestedOptionsProperty { get; set; }
+        }
+
+        private class ClassWithReadOnlyPropertyThatThrows
+        {
+            public string StringThrows => throw new InvalidOperationException(nameof(StringThrows));
+
+            public IEnumerable<int> EnumerableThrows => throw new InvalidOperationException(nameof(EnumerableThrows));
+
+            public string Safe { get; set; }
         }
     }
 }

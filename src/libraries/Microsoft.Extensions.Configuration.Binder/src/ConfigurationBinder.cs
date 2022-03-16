@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
@@ -82,7 +83,9 @@ namespace Microsoft.Extensions.Configuration
         {
             var options = new BinderOptions();
             configureOptions?.Invoke(options);
-            return BindInstance(type, instance: null, config: configuration, options: options);
+            var bindingPoint = new BindingPoint();
+            BindInstance(type, bindingPoint, config: configuration, options: options);
+            return bindingPoint.Value;
         }
 
         /// <summary>
@@ -117,7 +120,8 @@ namespace Microsoft.Extensions.Configuration
             {
                 var options = new BinderOptions();
                 configureOptions?.Invoke(options);
-                BindInstance(instance.GetType(), instance, configuration, options);
+                var bindingPoint = new BindingPoint(instance, isReadOnly: true);
+                BindInstance(instance.GetType(), bindingPoint, configuration, options);
             }
         }
 
@@ -190,35 +194,32 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
-        private static void BindNonScalar(this IConfiguration configuration, object? instance, BinderOptions options)
+        private static void BindNonScalar(this IConfiguration configuration, object instance, BinderOptions options)
         {
-            if (instance != null)
+            List<PropertyInfo> modelProperties = GetAllProperties(instance.GetType());
+
+            if (options.ErrorOnUnknownConfiguration)
             {
-                List<PropertyInfo> modelProperties = GetAllProperties(instance.GetType());
+                HashSet<string> propertyNames = new(modelProperties.Select(mp => mp.Name),
+                    StringComparer.OrdinalIgnoreCase);
 
-                if (options.ErrorOnUnknownConfiguration)
+                IEnumerable<IConfigurationSection> configurationSections = configuration.GetChildren();
+                List<string> missingPropertyNames = configurationSections
+                    .Where(cs => !propertyNames.Contains(cs.Key))
+                    .Select(mp => $"'{mp.Key}'")
+                    .ToList();
+
+                if (missingPropertyNames.Count > 0)
                 {
-                    HashSet<string> propertyNames = new(modelProperties.Select(mp => mp.Name),
-                        StringComparer.OrdinalIgnoreCase);
-
-                    IEnumerable<IConfigurationSection> configurationSections = configuration.GetChildren();
-                    List<string> missingPropertyNames = configurationSections
-                        .Where(cs => !propertyNames.Contains(cs.Key))
-                        .Select(mp => $"'{mp.Key}'")
-                        .ToList();
-
-                    if (missingPropertyNames.Count > 0)
-                    {
-                        throw new InvalidOperationException(SR.Format(SR.Error_MissingConfig,
-                            nameof(options.ErrorOnUnknownConfiguration), nameof(BinderOptions), instance.GetType(),
-                            string.Join(", ", missingPropertyNames)));
-                    }
+                    throw new InvalidOperationException(SR.Format(SR.Error_MissingConfig,
+                        nameof(options.ErrorOnUnknownConfiguration), nameof(BinderOptions), instance.GetType(),
+                        string.Join(", ", missingPropertyNames)));
                 }
+            }
 
-                foreach (PropertyInfo property in modelProperties)
-                {
-                    BindProperty(property, instance, configuration, options);
-                }
+            foreach (PropertyInfo property in modelProperties)
+            {
+                BindProperty(property, instance, configuration, options);
             }
         }
 
@@ -233,29 +234,27 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            object? propertyValue = property.GetValue(instance);
-            bool hasSetter = property.SetMethod != null && (property.SetMethod.IsPublic || options.BindNonPublicProperties);
+            var propertyBindingPoint = new BindingPoint(
+                initialValueProvider: () => property.GetValue(instance),
+                isReadOnly: property.SetMethod is null || (!property.SetMethod.IsPublic && !options.BindNonPublicProperties));
 
-            if (propertyValue == null && !hasSetter)
+            BindInstance(
+                property.PropertyType,
+                propertyBindingPoint,
+                config.GetSection(GetPropertyName(property)),
+                options);
+
+            if (propertyBindingPoint.HasNewValue)
             {
-                // Property doesn't have a value and we cannot set it so there is no
-                // point in going further down the graph
-                return;
-            }
-
-            propertyValue = GetPropertyValue(property, instance, config, options);
-
-            if (propertyValue != null && hasSetter)
-            {
-                property.SetValue(instance, propertyValue);
+                property.SetValue(instance, propertyBindingPoint.Value);
             }
         }
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the object collection in type so its members may be trimmed.")]
-        private static object? BindToCollection(Type type, IConfiguration config, BinderOptions options)
+        private static object BindToCollection(Type type, IConfiguration config, BinderOptions options)
         {
             Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments[0]);
-            object? instance = Activator.CreateInstance(genericType);
+            object instance = Activator.CreateInstance(genericType)!;
             BindCollection(instance, genericType, config, options);
             return instance;
         }
@@ -283,7 +282,7 @@ namespace Microsoft.Extensions.Configuration
             if (collectionInterface != null)
             {
                 Type dictionaryType = typeof(Dictionary<,>).MakeGenericType(type.GenericTypeArguments[0], type.GenericTypeArguments[1]);
-                object? instance = Activator.CreateInstance(dictionaryType);
+                object instance = Activator.CreateInstance(dictionaryType)!;
                 BindDictionary(instance, dictionaryType, config, options);
                 return instance;
             }
@@ -291,7 +290,7 @@ namespace Microsoft.Extensions.Configuration
             collectionInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
             if (collectionInterface != null)
             {
-                object? instance = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(type.GenericTypeArguments[0], type.GenericTypeArguments[1]));
+                object instance = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(type.GenericTypeArguments[0], type.GenericTypeArguments[1]))!;
                 BindDictionary(instance, collectionInterface, config, options);
                 return instance;
             }
@@ -321,15 +320,16 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        private static object? BindInstance(
+        private static void BindInstance(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
-            object? instance, IConfiguration config, BinderOptions options)
+            BindingPoint bindingPoint, IConfiguration config, BinderOptions options)
         {
             // if binding IConfigurationSection, break early
             if (type == typeof(IConfigurationSection))
             {
-                return config;
+                bindingPoint.TrySetValue(config);
+                return;
             }
 
             var section = config as IConfigurationSection;
@@ -342,33 +342,45 @@ namespace Microsoft.Extensions.Configuration
                 }
 
                 // Leaf nodes are always reinitialized
-                return convertedValue;
+                bindingPoint.TrySetValue(convertedValue);
+                return;
             }
 
             if (config != null && config.GetChildren().Any())
             {
-                // If we don't have an instance, try to create one
-                if (instance == null)
+                if (type.IsArray)
                 {
-                    // We are already done if binding to a new collection instance worked
-                    instance = AttemptBindToCollectionInterfaces(type, config, options);
-                    if (instance != null)
+                    if (!bindingPoint.IsReadOnly)
                     {
-                        return instance;
+                        bindingPoint.SetValue(BindArray(type, (Array?)bindingPoint.Value, config, options));
                     }
-
-                    instance = CreateInstance(type);
+                    return;
                 }
 
-                // See if its a Dictionary
+                // If we don't have an instance, try to create one
+                if (bindingPoint.Value is null)
+                {
+                    // if the binding point doesn't let us set a new instance, there's nothing more we can do
+                    if (bindingPoint.IsReadOnly)
+                    {
+                        return;
+                    }
+
+                    object? boundFromInterface = AttemptBindToCollectionInterfaces(type, config, options);
+                    if (boundFromInterface != null)
+                    {
+                        bindingPoint.SetValue(boundFromInterface);
+                        return; // We are already done if binding to a new collection instance worked
+                    }
+
+                    bindingPoint.SetValue(CreateInstance(type));
+                }
+
+                // See if it's a Dictionary
                 Type? collectionInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
                 if (collectionInterface != null)
                 {
-                    BindDictionary(instance, collectionInterface, config, options);
-                }
-                else if (type.IsArray)
-                {
-                    instance = BindArray((Array)instance!, config, options);
+                    BindDictionary(bindingPoint.Value!, collectionInterface, config, options);
                 }
                 else
                 {
@@ -376,34 +388,24 @@ namespace Microsoft.Extensions.Configuration
                     collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
                     if (collectionInterface != null)
                     {
-                        BindCollection(instance, collectionInterface, config, options);
+                        BindCollection(bindingPoint.Value!, collectionInterface, config, options);
                     }
                     // Something else
                     else
                     {
-                        BindNonScalar(config, instance, options);
+                        BindNonScalar(config, bindingPoint.Value!, options);
                     }
                 }
             }
-
-            return instance;
         }
 
-        private static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type)
+        private static object CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type)
         {
+            Debug.Assert(!type.IsArray);
+
             if (type.IsInterface || type.IsAbstract)
             {
                 throw new InvalidOperationException(SR.Format(SR.Error_CannotActivateAbstractOrInterface, type));
-            }
-
-            if (type.IsArray)
-            {
-                if (type.GetArrayRank() > 1)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.Error_UnsupportedMultidimensionalArray, type));
-                }
-
-                return Array.CreateInstance(type.GetElementType()!, 0);
             }
 
             if (!type.IsValueType)
@@ -415,19 +417,22 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
 
+            object? instance;
             try
             {
-                return Activator.CreateInstance(type);
+                instance = Activator.CreateInstance(type);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type), ex);
             }
+
+            return instance ?? throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type));
         }
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
         private static void BindDictionary(
-            object? dictionary,
+            object dictionary,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
             Type dictionaryType,
             IConfiguration config, BinderOptions options)
@@ -449,16 +454,21 @@ namespace Microsoft.Extensions.Configuration
                 try
                 {
                     object key = keyTypeIsEnum ? Enum.Parse(keyType, child.Key) : child.Key;
-                    var args = new object?[] { key, null };
-                    _ = tryGetValue.Invoke(dictionary, args);
-                    object? item = BindInstance(
+                    var valueBindingPoint = new BindingPoint(
+                        initialValueProvider: () =>
+                        {
+                            var tryGetValueArgs = new object?[] { key, null };
+                            return (bool)tryGetValue.Invoke(dictionary, tryGetValueArgs)! ? tryGetValueArgs[1] : null;
+                        },
+                        isReadOnly: false);
+                    BindInstance(
                         type: valueType,
-                        instance: args[1],
+                        bindingPoint: valueBindingPoint,
                         config: child,
                         options: options);
-                    if (item != null)
+                    if (valueBindingPoint.HasNewValue)
                     {
-                        setter.SetValue(dictionary, item, new object[] { key });
+                        setter.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
                     }
                 }
                 catch
@@ -469,7 +479,7 @@ namespace Microsoft.Extensions.Configuration
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the object collection so its members may be trimmed.")]
         private static void BindCollection(
-            object? collection,
+            object collection,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
             Type collectionType,
             IConfiguration config, BinderOptions options)
@@ -482,14 +492,15 @@ namespace Microsoft.Extensions.Configuration
             {
                 try
                 {
-                    object? item = BindInstance(
+                    BindingPoint itemBindingPoint = new();
+                    BindInstance(
                         type: itemType,
-                        instance: null,
+                        bindingPoint: itemBindingPoint,
                         config: section,
                         options: options);
-                    if (item != null)
+                    if (itemBindingPoint.HasNewValue)
                     {
-                        addMethod?.Invoke(collection, new[] { item });
+                        addMethod?.Invoke(collection, new[] { itemBindingPoint.Value });
                     }
                 }
                 catch
@@ -499,31 +510,37 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the Array so its members may be trimmed.")]
-        private static Array BindArray(Array source, IConfiguration config, BinderOptions options)
+        private static Array BindArray(Type type, Array? source, IConfiguration config, BinderOptions options)
         {
+            if (type.GetArrayRank() > 1)
+            {
+                throw new InvalidOperationException(SR.Format(SR.Error_UnsupportedMultidimensionalArray, type));
+            }
+
             IConfigurationSection[] children = config.GetChildren().ToArray();
-            int arrayLength = source.Length;
-            Type? elementType = source.GetType().GetElementType()!;
-            var newArray = Array.CreateInstance(elementType, arrayLength + children.Length);
+            int sourceLength = source?.Length ?? 0;
+            Type elementType = type.GetElementType()!;
+            var newArray = Array.CreateInstance(elementType, sourceLength + children.Length);
 
             // binding to array has to preserve already initialized arrays with values
-            if (arrayLength > 0)
+            if (sourceLength > 0)
             {
-                Array.Copy(source, newArray, arrayLength);
+                Array.Copy(source!, newArray, sourceLength);
             }
 
             for (int i = 0; i < children.Length; i++)
             {
+                var itemBindingPoint = new BindingPoint();
                 try
                 {
-                    object? item = BindInstance(
+                    BindInstance(
                         type: elementType,
-                        instance: null,
+                        bindingPoint: itemBindingPoint,
                         config: children[i],
                         options: options);
-                    if (item != null)
+                    if (itemBindingPoint.HasNewValue)
                     {
-                        newArray.SetValue(item, arrayLength + i);
+                        newArray.SetValue(itemBindingPoint.Value, sourceLength + i);
                     }
                 }
                 catch
@@ -639,17 +656,6 @@ namespace Microsoft.Extensions.Configuration
             while (baseType != typeof(object));
 
             return allProperties;
-        }
-
-        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
-        private static object? GetPropertyValue(PropertyInfo property, object instance, IConfiguration config, BinderOptions options)
-        {
-            string propertyName = GetPropertyName(property);
-            return BindInstance(
-                property.PropertyType,
-                property.GetValue(instance),
-                config.GetSection(propertyName),
-                options);
         }
 
         private static string GetPropertyName(MemberInfo property!!)
