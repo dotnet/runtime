@@ -1458,12 +1458,13 @@ namespace System.Net.Http.Tests
         [Fact]
         public void CacheControl_ValidAndInvalidValues_ReturnValidValue()
         {
-            headers.TryAddWithoutValidation("Cache-Control", "invalid");
+            headers.TryAddWithoutValidation("Cache-Control", "<invalid>");
             headers.TryAddWithoutValidation("Cache-Control", "no-cache=\"token1\", must-revalidate, max-age=3");
             headers.TryAddWithoutValidation("Cache-Control", "public, s-maxage=15");
             Assert.True(headers.CacheControl.NoCache);
-            Assert.True(headers.NonValidated["Cache-Control"].Count == 1);
-            Assert.Equal("public, must-revalidate, no-cache=\"token1\", max-age=3, s-maxage=15, invalid", headers.NonValidated["Cache-Control"].ElementAt(0));
+            Assert.True(headers.NonValidated["Cache-Control"].Count == 2);
+            Assert.Equal("<invalid>", headers.NonValidated["Cache-Control"].ElementAt(0));
+            Assert.Equal("public, must-revalidate, no-cache=\"token1\", max-age=3, s-maxage=15", headers.NonValidated["Cache-Control"].ElementAt(1));
         }
 
         [Fact]
