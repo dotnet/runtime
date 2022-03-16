@@ -123,6 +123,13 @@ namespace System.Net.Security.Tests
                     Assert.Contains("SSL_ERROR_SSL", e.InnerException.Message);
                     Assert.NotNull(e.InnerException.InnerException);
                     Assert.Contains("protocol", e.InnerException.InnerException.Message);
+
+                    e = await Assert.ThrowsAsync<AuthenticationException>(() => clientAuthenticationTask);
+
+                    Assert.NotNull(e.InnerException);
+                    Assert.Contains("SSL_ERROR_SSL", e.InnerException.Message);
+                    Assert.NotNull(e.InnerException.InnerException);
+                    Assert.Contains("protocol", e.InnerException.InnerException.Message);
                 }
             }
 

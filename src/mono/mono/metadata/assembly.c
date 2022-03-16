@@ -2139,10 +2139,8 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 		gchar *tmp_fn;
 
 		tmp_fn = g_strdup (fname);
-		for (size_t i = strlen (tmp_fn) - 1; i >= 0; i--) {
-			if (tmp_fn [i] == '/')
-				tmp_fn [i] = '\\';
-		}
+
+		g_strdelimit (tmp_fn, '/', '\\');
 
 		base_dir = absolute_dir (tmp_fn);
 		g_free (tmp_fn);

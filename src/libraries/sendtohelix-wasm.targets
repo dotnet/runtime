@@ -26,7 +26,7 @@
     <NeedsToRunOnBrowser Condition="'$(NeedsToRunOnBrowser)' == '' and '$(IsWasmDebuggerTests)' == 'true'">true</NeedsToRunOnBrowser>
 
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
-    <EnableXHarnessTelemetry>true</EnableXHarnessTelemetry>
+    <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
     <IncludeNodePayload Condition="'$(NeedsEMSDKNode)' == 'true' and '$(NeedsEMSDK)' != 'true'">true</IncludeNodePayload>
   </PropertyGroup>
 
@@ -99,13 +99,13 @@
         <NeedsDotNetSdk>true</NeedsDotNetSdk>
         <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
         <IncludeXHarnessCli>true</IncludeXHarnessCli>
-        <EnableXHarnessTelemetry>true</EnableXHarnessTelemetry>
+        <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
       </PropertyGroup>
     </When>
     <When Condition="'$(NeedsEMSDKNode)' == 'true'">
       <PropertyGroup>
         <IncludeXHarnessCli>true</IncludeXHarnessCli>
-        <EnableXHarnessTelemetry>true</EnableXHarnessTelemetry>
+        <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
       </PropertyGroup>
     </When>
   </Choose>
