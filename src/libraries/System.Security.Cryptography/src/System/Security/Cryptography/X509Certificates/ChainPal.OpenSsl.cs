@@ -39,7 +39,10 @@ namespace System.Security.Cryptography.X509Certificates
             TimeSpan timeout,
             bool disableAia)
         {
-            OpenSslX509ChainEventSource.Log.ChainStart();
+            if (OpenSslX509ChainEventSource.Log.IsEnabled())
+            {
+                OpenSslX509ChainEventSource.Log.ChainStart();
+            }
 
             try
             {
@@ -59,7 +62,10 @@ namespace System.Security.Cryptography.X509Certificates
             }
             finally
             {
-                OpenSslX509ChainEventSource.Log.ChainStop();
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.ChainStop();
+                }
             }
         }
 
@@ -114,19 +120,30 @@ namespace System.Security.Cryptography.X509Certificates
                 downloadTimeout);
 
             Interop.Crypto.X509VerifyStatusCode status = chainPal.FindFirstChain(extraStore);
-            OpenSslX509ChainEventSource.Log.FindFirstChainFinished(status);
+
+            if (OpenSslX509ChainEventSource.Log.IsEnabled())
+            {
+                OpenSslX509ChainEventSource.Log.FindFirstChainFinished(status);
+            }
 
             if (!OpenSslX509ChainProcessor.IsCompleteChain(status))
             {
                 if (disableAia)
                 {
-                    OpenSslX509ChainEventSource.Log.AiaDisabled();
+                    if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                    {
+                        OpenSslX509ChainEventSource.Log.AiaDisabled();
+                    }
                 }
                 else
                 {
                     List<X509Certificate2>? tmp = null;
                     status = chainPal.FindChainViaAia(ref tmp);
-                    OpenSslX509ChainEventSource.Log.FindChainViaAiaFinished(status, tmp?.Count ?? 0);
+
+                    if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                    {
+                        OpenSslX509ChainEventSource.Log.FindChainViaAiaFinished(status, tmp?.Count ?? 0);
+                    }
 
                     if (tmp != null)
                     {
@@ -149,7 +166,11 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     if (status != Interop.Crypto.X509VerifyStatusCode.X509_V_OK)
                     {
-                        OpenSslX509ChainEventSource.Log.UntrustedChainWithRevocation();
+                        if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                        {
+                            OpenSslX509ChainEventSource.Log.UntrustedChainWithRevocation();
+                        }
+
                         revocationMode = X509RevocationMode.NoCheck;
                     }
 
@@ -182,7 +203,12 @@ namespace System.Security.Cryptography.X509Certificates
                 catch (CryptographicException)
                 {
                     // Saving is opportunistic, just ignore failures
-                    OpenSslX509ChainEventSource.Log.CouldNotOpenCAStore();
+
+                    if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                    {
+                        OpenSslX509ChainEventSource.Log.CouldNotOpenCAStore();
+                    }
+
                     return;
                 }
 
@@ -190,13 +216,21 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     try
                     {
-                        OpenSslX509ChainEventSource.Log.CachingIntermediate(cert);
+                        if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                        {
+                            OpenSslX509ChainEventSource.Log.CachingIntermediate(cert);
+                        }
+
                         userIntermediate.Add(cert);
                     }
                     catch
                     {
                         // Saving is opportunistic, just ignore failures
-                        OpenSslX509ChainEventSource.Log.CachingIntermediateFailed(cert);
+
+                        if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                        {
+                            OpenSslX509ChainEventSource.Log.CachingIntermediateFailed(cert);
+                        }
                     }
                 }
             }

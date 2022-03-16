@@ -242,7 +242,11 @@ namespace System.Security.Cryptography.X509Certificates
 
                     if (authorityInformationAccess.Count == 0)
                     {
-                        OpenSslX509ChainEventSource.Log.NoAiaFound(currentCert);
+                        if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                        {
+                            OpenSslX509ChainEventSource.Log.NoAiaFound(currentCert);
+                        }
+
                         break;
                     }
 
@@ -340,7 +344,10 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal static void FlushStores()
         {
-            OpenSslX509ChainEventSource.Log.FlushStores();
+            if (OpenSslX509ChainEventSource.Log.IsEnabled())
+            {
+                OpenSslX509ChainEventSource.Log.FlushStores();
+            }
 
             s_userRootStore.DoRefresh();
             s_userPersonalStore.DoRefresh();
@@ -357,7 +364,11 @@ namespace System.Security.Cryptography.X509Certificates
             using (SafeX509StackHandle chainStack = Interop.Crypto.X509StoreCtxGetChain(_storeCtx))
             {
                 chainSize = Interop.Crypto.GetX509StackFieldCount(chainStack);
-                OpenSslX509ChainEventSource.Log.RevocationCheckStart(revocationMode, revocationFlag, chainSize);
+
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.RevocationCheckStart(revocationMode, revocationFlag, chainSize);
+                }
 
                 switch (revocationFlag)
                 {
@@ -395,7 +406,11 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             Interop.Crypto.X509VerifyStatusCode errorCode = Interop.Crypto.X509StoreCtxGetError(_storeCtx);
-            OpenSslX509ChainEventSource.Log.CrlChainFinished(errorCode);
+
+            if (OpenSslX509ChainEventSource.Log.IsEnabled())
+            {
+                OpenSslX509ChainEventSource.Log.CrlChainFinished(errorCode);
+            }
 
             // If anything is wrong, move see if we need to try OCSP,
             // or clearing an unwanted root revocation flag.
@@ -404,7 +419,10 @@ namespace System.Security.Cryptography.X509Certificates
                 FinishRevocation(revocationMode, revocationFlag, chainSize);
             }
 
-            OpenSslX509ChainEventSource.Log.RevocationCheckStop();
+            if (OpenSslX509ChainEventSource.Log.IsEnabled())
+            {
+                OpenSslX509ChainEventSource.Log.RevocationCheckStop();
+            }
         }
 
         private void FinishRevocation(
@@ -418,15 +436,22 @@ namespace System.Security.Cryptography.X509Certificates
             // then there's nothing to do.
             if (workingChain.LastError < 0)
             {
-                OpenSslX509ChainEventSource.Log.AllRevocationErrorsIgnored();
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.AllRevocationErrorsIgnored();
+                }
+
                 return;
             }
 
-            if (OpenSslX509ChainEventSource.Log.ShouldLogElementStatuses())
+            if (OpenSslX509ChainEventSource.Log.IsEnabled() && OpenSslX509ChainEventSource.Log.ShouldLogElementStatuses())
             {
                 for (int logDepth = 0; logDepth <= workingChain.LastError; logDepth++)
                 {
-                    OpenSslX509ChainEventSource.Log.RawElementStatus(logDepth, workingChain[logDepth], ErrorCollection.BuildDiagnosticString);
+                    OpenSslX509ChainEventSource.Log.RawElementStatus(
+                        logDepth,
+                        workingChain[logDepth],
+                        ErrorCollection.BuildDiagnosticString);
                 }
             }
 
@@ -590,11 +615,14 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            if (OpenSslX509ChainEventSource.Log.ShouldLogElementStatuses())
+            if (OpenSslX509ChainEventSource.Log.IsEnabled() && OpenSslX509ChainEventSource.Log.ShouldLogElementStatuses())
             {
                 for (int logDepth = 0; logDepth <= workingChain.LastError; logDepth++)
                 {
-                    OpenSslX509ChainEventSource.Log.FinalElementStatus(logDepth, workingChain[logDepth], ErrorCollection.BuildDiagnosticString);
+                    OpenSslX509ChainEventSource.Log.FinalElementStatus(
+                        logDepth,
+                        workingChain[logDepth],
+                        ErrorCollection.BuildDiagnosticString);
                 }
             }
         }
@@ -697,7 +725,10 @@ namespace System.Security.Cryptography.X509Certificates
             Interop.Crypto.X509VerifyStatusCode status =
                 Interop.Crypto.X509ChainGetCachedOcspStatus(_storeCtx, ocspCache, chainDepth);
 
-            OpenSslX509ChainEventSource.Log.OcspResponseFromCache(chainDepth, status);
+            if (OpenSslX509ChainEventSource.Log.IsEnabled())
+            {
+                OpenSslX509ChainEventSource.Log.OcspResponseFromCache(chainDepth, status);
+            }
 
             if (status != X509VerifyStatusCodeUniversal.X509_V_ERR_UNABLE_TO_GET_CRL)
             {
@@ -758,7 +789,12 @@ namespace System.Security.Cryptography.X509Certificates
                     }
 
                     status = Interop.Crypto.X509ChainVerifyOcsp(_storeCtx, req, resp, ocspCache, chainDepth);
-                    OpenSslX509ChainEventSource.Log.OcspResponseFromDownload(chainDepth, status);
+
+                    if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                    {
+                        OpenSslX509ChainEventSource.Log.OcspResponseFromDownload(chainDepth, status);
+                    }
+
                     return status;
                 }
             }
@@ -1220,7 +1256,7 @@ namespace System.Security.Cryptography.X509Certificates
                             {
                                 return name.Uri;
                             }
-                            else
+                            else if (OpenSslX509ChainEventSource.Log.IsEnabled())
                             {
                                 OpenSslX509ChainEventSource.Log.NonHttpAiaEntry(name.Uri);
                             }
@@ -1228,17 +1264,28 @@ namespace System.Security.Cryptography.X509Certificates
                     }
                 }
 
-                OpenSslX509ChainEventSource.Log.NoMatchingAiaEntry(recordTypeOid);
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.NoMatchingAiaEntry(recordTypeOid);
+                }
             }
             catch (CryptographicException)
             {
                 // Treat any ASN errors as if the extension was missing.
-                OpenSslX509ChainEventSource.Log.InvalidAia();
+
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.InvalidAia();
+                }
             }
             catch (AsnContentException)
             {
                 // Treat any ASN errors as if the extension was missing.
-                OpenSslX509ChainEventSource.Log.InvalidAia();
+
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.InvalidAia();
+                }
             }
 
             return null;

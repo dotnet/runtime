@@ -31,7 +31,11 @@ namespace System.Security.Cryptography.X509Certificates
             }
             catch (CryptographicException)
             {
-                OpenSslX509ChainEventSource.Log.InvalidDownloadedCertificate();
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.InvalidDownloadedCertificate();
+                }
+
                 return null;
             }
         }
@@ -71,7 +75,11 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            OpenSslX509ChainEventSource.Log.InvalidDownloadedCrl();
+            if (OpenSslX509ChainEventSource.Log.IsEnabled())
+            {
+                OpenSslX509ChainEventSource.Log.InvalidDownloadedCrl();
+            }
+
             return null;
         }
 
@@ -93,7 +101,11 @@ namespace System.Security.Cryptography.X509Certificates
                 // We're not going to report this error to a user, so clear it
                 // (to avoid tainting future exceptions)
                 Interop.Crypto.ErrClearError();
-                OpenSslX509ChainEventSource.Log.InvalidDownloadedOcsp();
+
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.InvalidDownloadedOcsp();
+                }
             }
 
             return resp;
@@ -103,18 +115,30 @@ namespace System.Security.Cryptography.X509Certificates
         {
             if (s_downloadBytes is null)
             {
-                OpenSslX509ChainEventSource.Log.HttpClientNotAvailable();
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.HttpClientNotAvailable();
+                }
+
                 return null;
             }
 
             if (downloadTimeout <= TimeSpan.Zero)
             {
-                OpenSslX509ChainEventSource.Log.DownloadTimeExceeded();
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.DownloadTimeExceeded();
+                }
+
                 return null;
             }
 
             long totalMillis = (long)downloadTimeout.TotalMilliseconds;
-            OpenSslX509ChainEventSource.Log.AssetDownloadStart(totalMillis, uri);
+
+            if (OpenSslX509ChainEventSource.Log.IsEnabled())
+            {
+                OpenSslX509ChainEventSource.Log.AssetDownloadStart(totalMillis, uri);
+            }
 
             CancellationTokenSource? cts = totalMillis > int.MaxValue ? null : new CancellationTokenSource((int)totalMillis);
             byte[]? ret = null;
@@ -128,7 +152,11 @@ namespace System.Security.Cryptography.X509Certificates
             finally
             {
                 cts?.Dispose();
-                OpenSslX509ChainEventSource.Log.AssetDownloadStop(ret?.Length ?? 0);
+
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.AssetDownloadStop(ret?.Length ?? 0);
+                }
             }
 
             return null;
@@ -231,11 +259,18 @@ namespace System.Security.Cryptography.X509Certificates
                         redirections++;
                         if (redirections > MaxRedirections)
                         {
-                            OpenSslX509ChainEventSource.Log.DownloadRedirectsExceeded();
+                            if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                            {
+                                OpenSslX509ChainEventSource.Log.DownloadRedirectsExceeded();
+                            }
+
                             return null;
                         }
 
-                        OpenSslX509ChainEventSource.Log.DownloadRedirected(redirectUri);
+                        if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                        {
+                            OpenSslX509ChainEventSource.Log.DownloadRedirected(redirectUri);
+                        }
 
                         // Equivalent of:
                         // requestMessage = new HttpRequestMessage() { RequestUri = redirectUri };
@@ -304,7 +339,11 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (!IsAllowedScheme(location.Scheme))
             {
-                OpenSslX509ChainEventSource.Log.DownloadRedirectNotFollowed(location);
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.DownloadRedirectNotFollowed(location);
+                }
+
                 return null;
             }
 
