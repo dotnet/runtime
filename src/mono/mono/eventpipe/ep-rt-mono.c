@@ -2765,15 +2765,15 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 	// Since we can't keep thread info around after runtime as been suspended, use an empty
 	// adapter instance and only set recorded tid as parameter inside adapter.
 	THREAD_INFO_TYPE adapter = { { 0 } };
-	for (uint32_t i = 0; i < sampled_thread_count; ++i) {
-		EventPipeSampleProfileStackWalkData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileStackWalkData, i);
+	for (uint32_t thread_count = 0; thread_count < sampled_thread_count; ++thread_count) {
+		EventPipeSampleProfileStackWalkData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileStackWalkData, thread_count);
 		if ((data->stack_walk_data.top_frame && data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL) || (data->payload_data != EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR && ep_stack_contents_get_length (&data->stack_contents) > 0)) {
 			// Check if we have an async frame, if so we will need to make sure all frames are registered in regular jit info table.
 			// TODO: An async frame can contain wrapper methods (no way to check during stackwalk), we could skip writing profile event
 			// for this specific stackwalk or we could cleanup stack_frames before writing profile event.
 			if (data->stack_walk_data.async_frame) {
-				for (int i = 0; i < data->stack_contents.next_available_frame; ++i)
-					mono_jit_info_table_find_internal ((gpointer)data->stack_contents.stack_frames [i], TRUE, FALSE);
+				for (int frame_count = 0; frame_count < data->stack_contents.next_available_frame; ++frame_count)
+					mono_jit_info_table_find_internal ((gpointer)data->stack_contents.stack_frames [frame_count], TRUE, FALSE);
 			}
 			mono_thread_info_set_tid (&adapter, ep_rt_uint64_t_to_thread_id_t (data->thread_id));
 			ep_write_sample_profile_event (sampling_thread, sampling_event, &adapter, &data->stack_contents, (uint8_t *)&data->payload_data, sizeof (data->payload_data));
@@ -3403,9 +3403,11 @@ get_type_start_id (MonoType *type)
 
 	start_id = (((start_id * 215497) >> 16) ^ ((start_id * 1823231) + start_id));
 
+	MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	// Mix in highest bits on 64-bit systems only
 	if (sizeof (type) > 4)
 		start_id = start_id ^ (((uint64_t)type >> 31) >> 1);
+	MONO_RESTORE_WARNING
 
 	return start_id;
 }
