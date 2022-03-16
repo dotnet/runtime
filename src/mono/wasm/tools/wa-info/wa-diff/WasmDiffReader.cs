@@ -10,7 +10,7 @@ namespace WebAssemblyInfo
     {
         public WasmDiffReader(string path) : base(path) { }
 
-        void CompareSections (SectionInfo section1, SectionInfo section2)
+        void CompareSections(SectionInfo section1, SectionInfo section2)
         {
             if (section1.size != section2.size)
             {
@@ -27,19 +27,38 @@ namespace WebAssemblyInfo
 
             var processedSections = new HashSet<SectionId>();
 
-            foreach (var id in sections.Keys)
+            foreach (var id in sectionsById.Keys)
             {
-                if (!other.sections.ContainsKey(id))
-                    Console.WriteLine($"section id: {id} size: {sections[id].size} *1");
+                var otherContainsId = other.sectionsById.ContainsKey(id);
+                if (!otherContainsId || sectionsById[id].Count != other.sectionsById[id].Count)
+                {
+                    var otherCount = otherContainsId ? other.sectionsById[id].Count : 0;
+                    Console.WriteLine($"{id} sections count differ");
+                    Console.WriteLine($" - count: {sectionsById[id].Count}");
+                    Console.WriteLine($" + count: {otherCount}");
 
-                CompareSections(sections[id], other.sections[id]);
+                    continue;
+                }
+
+                foreach (var section in sectionsById[id])
+                {
+                    if (!other.sectionsById.ContainsKey(id))
+                        Console.WriteLine($"section id: {id} size: {section.size} *1");
+
+                    for (int i = 0; i < sectionsById[id].Count; i++)
+                        CompareSections(sectionsById[id][i], other.sectionsById[id][i]);
+                }
+
                 processedSections.Add(id);
             }
 
-            foreach (var id in other.sections.Keys)
+            foreach (var id in other.sectionsById.Keys)
             {
-                if (!processedSections.Contains(id))
-                    Console.WriteLine($"section id: {id} size: {sections[id].size} *2");
+                if (processedSections.Contains(id))
+                    continue;
+
+                foreach (var section in sectionsById[id])
+                    Console.WriteLine($"section id: {id} size: {section.size} *2");
             }
 
             return 0;

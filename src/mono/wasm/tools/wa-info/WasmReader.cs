@@ -69,14 +69,18 @@ namespace WebAssemblyInfo
             public SectionId id;
             public UInt32 size;
         }
-        protected Dictionary<SectionId, SectionInfo> sections = new();
-        protected List<SectionId> sectionIds = new();
+        protected List<SectionInfo> sections = new();
+        protected Dictionary<SectionId, List<SectionInfo>> sectionsById = new();
 
         void ReadSection()
         {
             var section = new SectionInfo() { id = (SectionId)Reader.ReadByte(), size = ReadU32() };
-            sections[section.id] = section;
-            sectionIds.Add(section.id);
+            sections.Add(section);
+            if (!sectionsById.ContainsKey(section.id))
+                sectionsById[section.id] = new List<SectionInfo>();
+
+            sectionsById[section.id].Add(section);
+
 
             if (Program.Verbose)
                 Console.Write($"Reading section: {section.id,9} size: {section.size,12}");
@@ -1240,11 +1244,11 @@ namespace WebAssemblyInfo
             Console.WriteLine($"  sections: {sections.Count}");
 
             int customSectionOffset = 0;
-            for (int i = 0; i < sectionIds.Count; i++)
+            for (int i = 0; i < sections.Count; i++)
             {
-                var id = sectionIds[i];
+                var id = sections[i].id;
                 var sectionName = (id == SectionId.Custom && customSectionOffset < customSectionNames.Count) ? $" name: {customSectionNames[customSectionOffset++]}" : "";
-                Console.WriteLine($"    id: {id}{sectionName} size: {sections[id].size:N0}");
+                Console.WriteLine($"    id: {id}{sectionName} size: {sections[i].size:N0}");
             }
         }
     }
