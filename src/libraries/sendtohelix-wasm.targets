@@ -9,7 +9,7 @@
     <IsRunningLibraryTests Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'WasmTestOnNodeJs'">true</IsRunningLibraryTests>
 
     <BuildHelixWorkItemsDependsOn>$(BuildHelixWorkItemsDependsOn);StageEmSdkForHelix;PrepareForBuildHelixWorkItems_Wasm</BuildHelixWorkItemsDependsOn>
-    <BuildHelixWorkItemsDependsOn Condition="'$(RunInFirefox)'=='1' and '$(WindowsShell)' != 'true'">$(BuildHelixWorkItemsDependsOn);DownloadAndInstallFirefox</BuildHelixWorkItemsDependsOn>
+    <BuildHelixWorkItemsDependsOn Condition="'$(WindowsShell)' != 'true'">$(BuildHelixWorkItemsDependsOn);DownloadAndInstallFirefox</BuildHelixWorkItemsDependsOn>
     <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
     <EnableDefaultBuildHelixWorkItems Condition="'$(IsRunningLibraryTests)' != 'true'">false</EnableDefaultBuildHelixWorkItems>
 
@@ -132,6 +132,7 @@
 
     <PropertyGroup Condition="'$(NeedsToRunOnBrowser)' == 'true'">
       <FirefoxStampFile>.install-firefox-$(FirefoxRevision).stamp</FirefoxStampFile>
+      <FirefoxDir>firefox\</FirefoxDir>    
     </PropertyGroup>
 
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
@@ -250,9 +251,9 @@
     </ItemGroup>
 
     <Delete Files="@(_StampFile)" />
-    <RemoveDir Directories="$(FirefoxDir)" />
+    <RemoveDir Directories="firefox" />
 
-    <DownloadFile SourceUrl="$(FirefoxUrl)" DestinationFolder="$(FirefoxDir)" SkipUnchangedFiles="true">
+    <DownloadFile SourceUrl="$(FirefoxUrl)" DestinationFolder="firefox" SkipUnchangedFiles="true">
       <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
     </DownloadFile>
     <Exec Command="tar -xf $(_DownloadedFile) -C $(FirefoxDir)"/>
