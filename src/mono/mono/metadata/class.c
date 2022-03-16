@@ -2653,6 +2653,8 @@ mono_class_get_event_token (MonoEvent *event)
 		MonoClassEventInfo *info = mono_class_get_event_info (klass);
 		if (info) {
 			for (i = 0; i < info->count; ++i) {
+				/* TODO: metadata-update: get tokens for added props, too */
+				g_assert (!m_event_is_from_update (&info->events[i]));
 				if (&info->events [i] == event)
 					return mono_metadata_make_token (MONO_TABLE_EVENT, info->first + i + 1);
 			}
@@ -2696,6 +2698,8 @@ mono_class_get_property_token (MonoProperty *prop)
 		gpointer iter = NULL;
 		MonoClassPropertyInfo *info = mono_class_get_property_info (klass);
 		while ((p = mono_class_get_properties (klass, &iter))) {
+			/* TODO: metadata-update: get tokens for added props, too */
+			g_assert (!m_property_is_from_update (p));
 			if (&info->properties [i] == prop)
 				return mono_metadata_make_token (MONO_TABLE_PROPERTY, info->first + i + 1);
 

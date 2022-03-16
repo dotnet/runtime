@@ -365,9 +365,7 @@ static void
 klass_info_destroy (gpointer value, gpointer user_data G_GNUC_UNUSED)
 {
 	MonoClassMetadataUpdateInfo *info = (MonoClassMetadataUpdateInfo *)value;
-	/* added_members is allocated from the class mempool, don't free it here */
-	/* The MonoClassMetadataUpdateField is allocated from the class mempool, don't free it here */
-	g_ptr_array_free (info->added_fields, TRUE);
+	/* added_members, added_fields, added_props, added_events list nodes are allocated from the class mempool, don't free them here */
 
 	if (info->runtime.static_fields) {
 		mono_g_hash_table_destroy (info->runtime.static_fields);
@@ -2771,11 +2769,10 @@ static MonoClassField *
 hot_reload_get_field (MonoClass *klass, uint32_t fielddef_token) {
 	MonoClassMetadataUpdateInfo *info = mono_class_get_or_add_metadata_update_info (klass);
 	g_assert (mono_metadata_token_table (fielddef_token) == MONO_TABLE_FIELD);
-	/* FIXME: this needs locking in the multi-threaded case.  There could be an update happening that resizes the array. */
-	GPtrArray *added_fields = info->added_fields;
-	uint32_t count = added_fields->len;
-	for (uint32_t i = 0; i < count; ++i) {
-		MonoClassMetadataUpdateField *field = (MonoClassMetadataUpdateField *)g_ptr_array_index (added_fields, i);
+	GSList *added_fields = info->added_fields;
+
+	for (GSList *p = added_fields; p; p = p->next) {
+		MonoClassMetadataUpdateField *field = (MonoClassMetadataUpdateField *)p->data;
 		if (field->token == fielddef_token)
 			return &field->field;
 	}
@@ -2786,11 +2783,7 @@ hot_reload_get_field (MonoClass *klass, uint32_t fielddef_token) {
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error)
 {
-	// TODO: hang a "pending field" struct off the parent_klass if !parent_klass->fields
-	//   In that case we can do things simpler, maybe by just creating the MonoClassField array as usual, and just relying on the normal layout algorithm to make space for the instance.
-
-	if (!m_class_is_inited (parent_klass))
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding fielddef 0x%08x to uninited class 0x%08x", fielddef_token, m_class_get_type_token (parent_klass));
+	g_assert (m_class_is_inited (parent_klass));
 
 	MonoClassMetadataUpdateInfo *parent_info = mono_class_get_or_add_metadata_update_info (parent_klass);
 
@@ -2810,11 +2803,7 @@ metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, Basel
 	if (!is_ok (error))
 		return NULL;
 
-	if (!parent_info->added_fields) {
-		parent_info->added_fields = g_ptr_array_new ();
-	}
-
-	g_ptr_array_add (parent_info->added_fields, field);
+	parent_info->added_fields = g_slist_prepend_mem_manager (m_class_get_mem_manager (parent_klass), parent_info->added_fields, field);
 
 	return field;
 }
@@ -3007,9 +2996,7 @@ hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy G_GNUC_UNUSED, gpo
 	if (!info)
 		return NULL;
 
-	/* FIXME: this needs locking in the multi-threaded case.  There could be an update happening that resizes the array. */
-	GPtrArray *added_fields = info->added_fields;
-	uint32_t count = added_fields->len;
+	GSList *added_fields = info->added_fields;
 
 	// invariant: idx is one past the field we previously returned.
 	uint32_t idx = GPOINTER_TO_UINT(*iter);
@@ -3020,12 +3007,11 @@ hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy G_GNUC_UNUSED, gpo
 	
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Iterating added fields of 0x%08x idx = %u", m_class_get_type_token (klass), field_idx);
 
-	// if the field index is one past the last added field, we're done
-	if (field_idx == count)
+	GSList *field_node = g_slist_nth (added_fields, field_idx);
+	/* we reached the end, we're done */
+	if (!field_node)
 		return NULL;
-	g_assert (field_idx < count);
-	MonoClassMetadataUpdateField *field = g_ptr_array_index (added_fields, field_idx);
-
+	MonoClassMetadataUpdateField *field = (MonoClassMetadataUpdateField *)field_node->data;
 	idx++;
 	*iter = GUINT_TO_POINTER (idx);
 	return &field->field;
