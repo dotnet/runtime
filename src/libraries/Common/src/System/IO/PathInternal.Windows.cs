@@ -72,13 +72,13 @@ namespace System.IO
             return (value >= 'A' && value <= 'Z') || (value >= 'a' && value <= 'z');
         }
 
-        internal static bool EndsWithPeriodOrSpace(string? path)
-        {
-            if (string.IsNullOrEmpty(path))
-                return false;
+        internal static bool EndsWithPeriodOrSpace(string? path) =>
+            !string.IsNullOrEmpty(path) && EndsWithPeriodOrSpaceSlim(path);
 
-            char c = path[path.Length - 1];
-            return c == ' ' || c == '.';
+        internal static bool EndsWithPeriodOrSpaceSlim(string path)
+        {
+            char c = path[^1];
+            return c is ' ' or '.';
         }
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace System.IO
         [return: NotNullIfNotNull("path")]
         internal static string? EnsureExtendedPrefixIfNeeded(string? path)
         {
-            if (path != null && (path.Length >= MaxShortPath || EndsWithPeriodOrSpace(path)))
+            if (path != null && (path.Length >= MaxShortPath || EndsWithPeriodOrSpaceSlim(path)))
             {
                 return EnsureExtendedPrefix(path);
             }

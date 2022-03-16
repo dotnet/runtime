@@ -87,8 +87,9 @@ namespace System.IO
         internal static int FillAttributeInfoSlim(string? path, ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data, bool returnErrorOnNotFound)
         {
             int errorCode = Interop.Errors.ERROR_SUCCESS;
+            string? prefixedString = PathInternal.EnsureExtendedPrefixIfNeeded(path);
 
-            if (!Interop.Kernel32.GetFileAttributesEx(path, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
+            if (!Interop.Kernel32.GetFileAttributesExPrefixed(prefixedString, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
             {
                 errorCode = Marshal.GetLastWin32Error();
 
@@ -112,7 +113,7 @@ namespace System.IO
                     // pagefile.sys case. As such we're probably stuck filtering out specific
                     // cases that we know we don't want to retry on.
 
-                    using SafeFindHandle handle = Interop.Kernel32.FindFirstFile(path!, ref findData);
+                    using SafeFindHandle handle = Interop.Kernel32.FindFirstFilePrefixed(prefixedString!, ref findData);
                     if (handle.IsInvalid)
                     {
                         errorCode = Marshal.GetLastWin32Error();
