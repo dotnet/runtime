@@ -175,7 +175,7 @@ namespace AssemblyDependencyResolverTests
         public void TestFullPathLookupWithDifferentFileName()
         {
             ValidateFullPathNativeLibraryResolutions("lib{0}", "{0}", 0);
-            ValidateFullPathNativeLibraryResolutions("{0}.dll", "{0}", 0);
+            ValidateFullPathNativeLibraryResolutions("{0}.dll", "{0}", OS.Windows);
             ValidateFullPathNativeLibraryResolutions("{0}.dylib", "{0}", 0);
             ValidateFullPathNativeLibraryResolutions("{0}.so", "{0}", 0);
             ValidateFullPathNativeLibraryResolutions("lib{0}.dll", "{0}", 0);
