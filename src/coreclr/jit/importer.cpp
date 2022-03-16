@@ -2114,7 +2114,7 @@ GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
 //
 bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 {
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) || (JitConfig.JitCastProfiling() != 1))
+    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) || (JitConfig.JitProfileCasts() != 1))
     {
         return false;
     }
@@ -2143,6 +2143,11 @@ bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 //
 bool Compiler::impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper)
 {
+    if (JitConfig.JitConsumeProfileForCasts() == 0)
+    {
+        return false;
+    }
+
     if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
         return false;
@@ -11604,7 +11609,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         // not worth creating an untracked local variable
         shouldExpandInline = false;
     }
-    else if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && (JitConfig.JitCastProfiling() == 1))
+    else if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && (JitConfig.JitProfileCasts() == 1))
     {
         // Optimizations are enabled but we're still instrumenting (including casts)
         if (isCastClass && !impIsClassExact(pResolvedToken->hClass))
@@ -11645,14 +11650,41 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         // Check if this cast helper have some profile data
         if (impIsCastHelperMayHaveProfileData(helper))
         {
-            LikelyClassRecord likelyClass[1]; // multiple guesses aren't yet supported
-            if (getLikelyClasses(likelyClass, 1, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset) > 0)
+            bool              doRandomDevirt   = false;
+            const int         maxLikelyClasses = 32;
+            int               likelyClassCount = 0;
+            LikelyClassRecord likelyClasses[maxLikelyClasses];
+#ifdef DEBUG
+            // Optional stress mode to pick a random known class, rather than
+            // the most likely known class.
+            doRandomDevirt = JitConfig.JitRandomGuardedDevirtualization() != 0;
+
+            if (doRandomDevirt)
             {
-                assert(likelyClass != nullptr);
-                CORINFO_CLASS_HANDLE likelyCls = likelyClass->clsHandle;
+                // Reuse the random inliner's random state.
+                CLRRandom* const random =
+                    impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
+                likelyClasses[0].clsHandle = getRandomClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random);
+                likelyClasses[0].likelihood = 100;
+                if (likelyClasses[0].clsHandle != NO_CLASS_HANDLE)
+                {
+                    likelyClassCount = 1;
+                }
+            }
+            else
+#endif
+            {
+                likelyClassCount = getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount,
+                                                    fgPgoData, ilOffset);
+            }
+
+            if (likelyClassCount > 0)
+            {
+                LikelyClassRecord    likelyClass = likelyClasses[0];
+                CORINFO_CLASS_HANDLE likelyCls   = likelyClass.clsHandle;
 
                 if ((likelyCls != NO_CLASS_HANDLE) &&
-                    (likelyClass->likelihood > (UINT32)JitConfig.JitGuardedDevirtualizationChainLikelihood()))
+                    (likelyClass.likelihood > (UINT32)JitConfig.JitGuardedDevirtualizationChainLikelihood()))
                 {
                     if ((info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass) ==
                          TypeCompareState::Must))
