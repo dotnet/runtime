@@ -10,5 +10,8 @@ if (CLR_CMAKE_TARGET_UNIX)
 endif()
 
 # add the shared library
+add_library (GlobalLoadHelper SHARED GlobalLoadHelper.cpp)
+target_link_libraries(GlobalLoadHelper ${LINK_LIBRARIES_ADDITIONAL})
+
 add_library (GloballyLoadedNativeLibrary SHARED GloballyLoadedNativeLibrary.cpp)
 target_link_libraries(GloballyLoadedNativeLibrary ${LINK_LIBRARIES_ADDITIONAL})

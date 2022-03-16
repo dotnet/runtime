@@ -82,6 +82,8 @@ class GetLibraryExportTests : IDisposable
         });
     }
 
-    [DllImport(NativeLibraryToLoad.Name)]
-    static extern int RunExportedFunction(IntPtr address, int arg1, int arg2);
+    private static unsafe int RunExportedFunction(IntPtr address, int arg1, int arg2)
+    {
+        return ((delegate* unmanaged<int, int, int>)address)(arg1, arg2);
+    }
 }

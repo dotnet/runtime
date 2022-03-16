@@ -121,7 +121,7 @@ class GetMainProgramHandleTests
 
         return handle;
 
-        [DllImport(NativeLibraryToLoad.Name, EntryPoint = "LoadLibraryGlobally", SetLastError = true)]
+        [DllImport("GlobalLoadHelper", EntryPoint = "LoadLibraryGlobally", SetLastError = true)]
         static extern IntPtr LoadLibraryGloballyNative(string name);
     }
 }
