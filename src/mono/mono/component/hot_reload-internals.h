@@ -54,7 +54,10 @@ typedef struct _MonoAddedDefSkeleton {
 	uint32_t first_method_idx, first_field_idx;
 	uint32_t method_count;
 	uint32_t field_count;
-	/* TODO: metadata-update: property and event adds. */
+	uint32_t first_prop_idx;
+	uint32_t prop_count;
+	uint32_t first_event_idx;
+	uint32_t event_count;
 } MonoAddedDefSkeleton;
 
 
