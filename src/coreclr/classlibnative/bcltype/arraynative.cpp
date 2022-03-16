@@ -956,7 +956,7 @@ FCIMPL2(Object*, ArrayNative::GetValue, ArrayBase* refThisUNSAFE, INT_PTR flatte
 
     _ASSERTE((SIZE_T)flattenedIndex < refThis->GetNumComponents());
     void* pData = refThis->GetDataPtr() + flattenedIndex * refThis->GetComponentSize();
-    OBJECTREF Obj = {};
+    OBJECTREF Obj = NULL;
 
     MethodTable* pElementTypeMT = arrayElementType.GetMethodTable();
     if (pElementTypeMT->IsValueType())
