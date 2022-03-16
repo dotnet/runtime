@@ -3405,7 +3405,7 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 	guint cli_addr;
 	const MonoOpcode *opcode;
 
-	td->offset_to_bb = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * (end - start + 1));
+	td->offset_to_bb = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, (unsigned int)(sizeof (InterpBasicBlock*) * (end - start + 1)));
 	get_bb (td, start, make_list);
 
 	for (i = 0; i < header->num_clauses; i++) {

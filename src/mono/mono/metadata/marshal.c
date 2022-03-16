@@ -597,9 +597,9 @@ mono_string_from_byvalwstr_impl (const gunichar2 *data, int max_len, MonoError *
 		return NULL_HANDLE_STRING;
 
 	// FIXME Check max_len while scanning data? mono_string_from_byvalstr does.
-	const int len = g_utf16_len (data);
+	const size_t len = g_utf16_len (data);
 
-	return mono_string_new_utf16_handle (data, MIN (len, max_len), error);
+	return mono_string_new_utf16_handle (data, (gint32)MIN (len, max_len), error);
 }
 
 gpointer
@@ -789,7 +789,7 @@ mono_string_utf16_to_builder_copy (MonoStringBuilderHandle sb, const gunichar2 *
 		g_assert (chunkOffset >= 0);
 		if (maxLength > 0 && chunkOffset < string_len) {
 			// Check that we will not overrun our boundaries.
-			int charsToCopy = MIN (string_len - chunkOffset, maxLength);
+			int charsToCopy = (int)MIN (string_len - chunkOffset, maxLength);
 			memcpy (MONO_HANDLE_RAW (chunkChars)->vector, text + chunkOffset, charsToCopy * sizeof (gunichar2));
 			MONO_HANDLE_SETVAL (chunk, chunkLength, int, charsToCopy);
 		} else {
@@ -809,7 +809,7 @@ mono_string_utf16_to_builder2_impl (const gunichar2 *text, MonoError *error)
 
 	const gsize len = g_utf16_len (text);
 
-	MonoStringBuilderHandle sb = mono_string_builder_new (len, error);
+	MonoStringBuilderHandle sb = mono_string_builder_new ((int)len, error);
 	return_val_if_nok (error, NULL_HANDLE_STRING_BUILDER);
 
 	mono_string_utf16len_to_builder (sb, text, len, error);
@@ -826,7 +826,7 @@ mono_string_utf8len_to_builder (MonoStringBuilderHandle sb, const char *text, gs
 
 	GError *gerror = NULL;
 	glong copied;
-	gunichar2* ut = g_utf8_to_utf16 (text, len, NULL, &copied, &gerror);
+	gunichar2* ut = g_utf8_to_utf16 (text, (glong)len, NULL, &copied, &gerror);
 	int capacity = mono_string_builder_capacity (sb);
 
 	if (copied > capacity)
@@ -857,7 +857,7 @@ mono_string_utf8_to_builder2_impl (const char *text, MonoError *error)
 
 	const gsize len = strlen (text);
 
-	MonoStringBuilderHandle sb = mono_string_builder_new (len, error);
+	MonoStringBuilderHandle sb = mono_string_builder_new ((int)len, error);
 	return_val_if_nok (error, NULL_HANDLE_STRING_BUILDER);
 
 	mono_string_utf8len_to_builder (sb, text, len, error);
@@ -1110,7 +1110,7 @@ mono_string_to_byvalstr_impl (char *dst, MonoStringHandle src, int size, MonoErr
 
 	char *s = mono_string_handle_to_utf8 (src, error);
 	return_if_nok (error);
-	int len = MIN (size, strlen (s));
+	size_t len = MIN (size, strlen (s));
 	len -= (len >= size);
 	memcpy (dst, s, len);
 	dst [len] = 0;

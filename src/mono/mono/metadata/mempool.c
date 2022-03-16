@@ -357,14 +357,13 @@ char*
 mono_mempool_strdup (MonoMemPool *pool,
 					 const char *s)
 {
-	int l;
 	char *res;
 
 	if (s == NULL)
 		return NULL;
 
-	l = strlen (s);
-	res = (char *)mono_mempool_alloc (pool, l + 1);
+	size_t l = strlen (s);
+	res = (char *)mono_mempool_alloc (pool, (guint)l + 1);
 	memcpy (res, s, l + 1);
 
 	return res;
@@ -380,7 +379,7 @@ mono_mempool_strdup_vprintf (MonoMemPool *pool, const char *format, va_list args
 	int len = vsnprintf (NULL, 0, format, args2);
 	va_end (args2);
 
-	if (len >= 0 && (buf = (char*)mono_mempool_alloc (pool, (buflen = (size_t) (len + 1)))) != NULL) {
+	if (len >= 0 && (buf = (char*)mono_mempool_alloc (pool, (guint)(buflen = (size_t) (len + 1)))) != NULL) {
 		vsnprintf (buf, buflen, format, args);
 	} else {
 		buf = NULL;

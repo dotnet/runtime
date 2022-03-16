@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices
     /// <summary>
     /// Specifies how strings should be marshalled for generated p/invokes
     /// </summary>
-#if LIBRARYIMPORT_GENERATOR_TEST
+#if SYSTEM_PRIVATE_CORELIB
     public
 #else
     internal
