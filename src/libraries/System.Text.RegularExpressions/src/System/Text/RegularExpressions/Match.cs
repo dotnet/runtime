@@ -45,8 +45,8 @@ namespace System.Text.RegularExpressions
         internal int _textstart;
 
         // output from the match
-        internal int[][] _matches;
-        internal int[] _matchcount;
+        internal readonly int[][] _matches;
+        internal readonly int[] _matchcount;
         internal bool _balancing;        // whether we've done any balancing with this match.  If we
                                          // have done balancing, we'll need to do extra work in Tidy().
 
@@ -89,7 +89,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <remarks>
         /// The main difference between the public <see cref="Group.Success"/> property and this one, is that <see cref="Group.Success"/> requires
-        /// for a <see cref="Match"/> to call <see cref="Match.Tidy(int)"/> first, in order to report the correct value, while this API will return
+        /// for a <see cref="Match"/> to call <see cref="Tidy"/> first, in order to report the correct value, while this API will return
         /// the correct value right after a Match gets calculated, meaning that it will return <see langword="true"/> right after <see cref="RegexRunner.Capture(int, int, int)"/>
         /// </remarks>
         internal bool FoundMatch => _matchcount[0] > 0;
@@ -272,16 +272,42 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Tidy the match so that it can be used as an immutable result</summary>
-        internal void Tidy(int textpos)
+        internal void Tidy(int textpos, int beginningOfSpanSlice)
         {
+            int[] matchcount = _matchcount;
+            int[][] matches = _matches;
+
             _textpos = textpos;
-            _capcount = _matchcount[0];
-            int[] interval = _matches[0];
+            _capcount = matchcount[0];
+            int[] interval = matches[0];
             Index = interval[0];
             Length = interval[1];
             if (_balancing)
             {
                 TidyBalancing();
+            }
+
+            // At this point the Match is consistent for handing back to a caller, with regards to the span that was processed.
+            // However, the caller may have actually provided a string, and may have done so with a non-zero beginning.
+            // In such a case, all offsets need to be shifted by beginning, e.g. if beginning is 5 and a capture occurred at
+            // offset 17, that 17 offset needs to be increased to 22 to account for the fact that it was actually 17 from the
+            // beginning, which the implementation saw as 0 but which from the caller's perspective was 5.
+            Debug.Assert(!_balancing);
+            if (beginningOfSpanSlice != 0)
+            {
+                Index += beginningOfSpanSlice;
+                for (int groupNumber = 0; groupNumber < matches.Length; groupNumber++)
+                {
+                    int[] captures = matches[groupNumber];
+                    if (captures is not null)
+                    {
+                        int capturesLength = matchcount[groupNumber] * 2; // each capture has an offset and a length
+                        for (int c = 0; c < capturesLength; c += 2)
+                        {
+                            captures[c] += beginningOfSpanSlice;
+                        }
+                    }
+                }
             }
         }
 
