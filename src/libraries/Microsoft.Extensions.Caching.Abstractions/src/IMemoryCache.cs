@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// Gets a snapshot of the cache statistics if available.
         /// </summary>
-        /// <returns>An instance of the <see cref="MemoryCacheStatistics"/> instance.</returns>
+        /// <returns>An instance of <see cref="MemoryCacheStatistics"/> containing a snapshot of the cache statistics.</returns>
         MemoryCacheStatistics? GetCurrentStatistics() => null;
 #endif
     }
