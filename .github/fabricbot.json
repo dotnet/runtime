@@ -2863,137 +2863,137 @@
       ]
     }
   },
-  {
-    "taskSource": "fabricbot-config",
-    "taskType": "trigger",
-    "capabilityId": "IssueResponder",
-    "subCapability": "IssuesOnlyResponder",
-    "version": "1.0",
-    "config": {
-      "conditions": {
-        "operator": "and",
-        "operands": [
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Adam / David - Issue Triage",
-                  "columnName": "Triaged",
-                  "isOrgProject": true
+    {
+        "taskSource": "fabricbot-config",
+        "taskType": "trigger",
+        "capabilityId": "IssueResponder",
+        "subCapability": "IssuesOnlyResponder",
+        "version": "1.0",
+        "config": {
+            "conditions": {
+                "operator": "and",
+                "operands": [
+                    {
+                        "operator": "not",
+                        "operands": [
+                            {
+                                "name": "isInProjectColumn",
+                                "parameters": {
+                                    "projectName": "Area Pod: Adam / David - Issue Triage",
+                                    "columnName": "Triaged",
+                                    "isOrgProject": true
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "operator": "and",
+                        "operands": [
+                            {
+                                "operator": "not",
+                                "operands": [
+                                    {
+                                        "name": "hasLabel",
+                                        "parameters": {
+                                            "label": "area-Extensions-FileSystem"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "operator": "not",
+                                "operands": [
+                                    {
+                                        "name": "hasLabel",
+                                        "parameters": {
+                                            "label": "area-System.Console"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "operator": "not",
+                                "operands": [
+                                    {
+                                        "name": "hasLabel",
+                                        "parameters": {
+                                            "label": "area-System.Diagnostics.Process"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "operator": "not",
+                                "operands": [
+                                    {
+                                        "name": "hasLabel",
+                                        "parameters": {
+                                            "label": "area-System.IO"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "operator": "not",
+                                "operands": [
+                                    {
+                                        "name": "hasLabel",
+                                        "parameters": {
+                                            "label": "area-System.IO.Compression"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "operator": "not",
+                                "operands": [
+                                    {
+                                        "name": "hasLabel",
+                                        "parameters": {
+                                            "label": "area-System.Linq.Parallel"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "operator": "not",
+                                "operands": [
+                                    {
+                                        "name": "hasLabel",
+                                        "parameters": {
+                                            "label": "area-System.Memory"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "isAction",
+                        "parameters": {
+                            "action": "unlabeled"
+                        }
+                    }
+                ]
+            },
+            "eventType": "issue",
+            "eventNames": [
+                "issues",
+                "project_card"
+            ],
+            "taskName": "[Area Pod: Adam / David - Issue Triage] Moved to Another Area",
+            "actions": [
+                {
+                    "name": "addToProject",
+                    "parameters": {
+                        "projectName": "Area Pod: Adam / David - Issue Triage",
+                        "columnName": "Triaged",
+                        "isOrgProject": true
+                    }
                 }
-              }
             ]
-          },
-          {
-            "operator": "and",
-            "operands": [
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "hasLabel",
-                    "parameters": {
-                      "label": "area-Extensions-FileSystem"
-                    }
-                  }
-                ]
-              },
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "hasLabel",
-                    "parameters": {
-                      "label": "area-System.Console"
-                    }
-                  }
-                ]
-              },
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "hasLabel",
-                    "parameters": {
-                      "label": "area-System.Diagnostics.Process"
-                    }
-                  }
-                ]
-              },
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "hasLabel",
-                    "parameters": {
-                      "label": "area-System.IO"
-                    }
-                  }
-                ]
-              },
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "hasLabel",
-                    "parameters": {
-                      "label": "area-System.IO.Compression"
-                    }
-                  }
-                ]
-              },
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "hasLabel",
-                    "parameters": {
-                      "label": "area-System.Linq.Parallel"
-                    }
-                  }
-                ]
-              },
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "hasLabel",
-                    "parameters": {
-                      "label": "area-System.Memory"
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "name": "isAction",
-            "parameters": {
-              "action": "unlabeled"
-            }
-          }
-        ]
-      },
-      "eventType": "issue",
-      "eventNames": [
-        "issues",
-        "project_card"
-      ],
-      "taskName": "[Area Pod: Adam / David - Issue Triage] Moved to Another Area",
-      "actions": [
-        {
-          "name": "addToProject",
-          "parameters": {
-            "projectName": "Area Pod: Adam / David - Issue Triage",
-            "columnName": "Triaged",
-            "isOrgProject": true
-          }
         }
-      ]
-    }
-  },
+    },
   {
     "taskSource": "fabricbot-config",
     "taskType": "trigger",
@@ -3486,6 +3486,13 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Adam / David - PRs",
+              "isOrgProject": true
+            }
           }
         ]
       },
@@ -4381,6 +4388,13 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Buyaa / Jose / Steve - PRs",
+              "isOrgProject": true
+            }
           }
         ]
       },
@@ -5180,6 +5194,13 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Carlos / Jeremy - PRs",
+              "isOrgProject": true
+            }
           }
         ]
       },
@@ -5841,6 +5862,13 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+              "isOrgProject": true
+            }
           }
         ]
       },
@@ -6444,6 +6472,13 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Eirik / Krzysztof / Layomi - PRs",
+              "isOrgProject": true
+            }
           }
         ]
       },
@@ -6921,6 +6956,13 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Eric / Jeff - PRs",
+              "isOrgProject": true
+            }
           }
         ]
       },
@@ -7860,6 +7902,13 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Eric / Maryam / Tarek - PRs",
+              "isOrgProject": true
+            }
           }
         ]
       },
@@ -8551,6 +8600,13 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Jeremy / Levi - PRs",
+              "isOrgProject": true
+            }
           }
         ]
       },
