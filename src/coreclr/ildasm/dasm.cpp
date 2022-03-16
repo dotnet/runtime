@@ -3875,7 +3875,7 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
             szString[0] = 0;
             if (dwTargetRVA != 0)
             {
-                void* newTarget;
+                void* newTarget = NULL;
                 if(g_pPELoader->getVAforRVA(dwTargetRVA,&newTarget))
                 {
                     DisassembleWrapper(g_pImport, (unsigned char*)newTarget, GUICookie, FuncToken,pszArgname, ulArgs);
@@ -6056,7 +6056,7 @@ void DumpStatistics(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
         {
             ++methodBodies;
 
-            COR_ILMETHOD_FAT *pMethod;
+            COR_ILMETHOD_FAT *pMethod = NULL;
             g_pPELoader->getVAforRVA(rva, (void **) &pMethod);
             if (pMethod->IsFat())
             {
@@ -6646,8 +6646,8 @@ void DumpEATEntries(void* GUICookie,
 #endif
                     if(pExpTable->dwNumATEntries && pExpTable->dwAddrTableRVA)
                     {
-                        DWORD* pExpAddr;
-                        BYTE *pCont;
+                        DWORD* pExpAddr = NULL;
+                        BYTE *pCont = NULL;
                         DWORD dwTokRVA;
                         mdToken* pTok;
                         g_pPELoader->getVAforRVA(VAL32(pExpTable->dwAddrTableRVA), (void **) &pExpAddr);
@@ -6695,9 +6695,9 @@ void DumpEATEntries(void* GUICookie,
                     }
                     if(pExpTable->dwNumNamePtrs && pExpTable->dwNamePtrRVA && pExpTable->dwOrdTableRVA)
                     {
-                        DWORD *pNamePtr;
-                        WORD    *pOrd;
-                        char*   szName;
+                        DWORD*  pNamePtr = NULL;
+                        WORD*   pOrd     = NULL;
+                        char*   szName   = NULL;
                         g_pPELoader->getVAforRVA(VAL32(pExpTable->dwNamePtrRVA), (void **) &pNamePtr);
                         g_pPELoader->getVAforRVA(VAL32(pExpTable->dwOrdTableRVA), (void **) &pOrd);
 #ifdef _DEBUG
