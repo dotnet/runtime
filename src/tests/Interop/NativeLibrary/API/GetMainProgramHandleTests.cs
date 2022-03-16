@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -19,6 +20,7 @@ class GetMainProgramHandleTests
     }
 
     [Fact]
+    [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Apple platforms load library symbols globally by default.")]
     public static void NativeLibraryLoadDoesNotLoadSymbolsGlobally()
     {
         IntPtr handle = NativeLibrary.Load(NativeLibraryToLoad.GetFullPath());
@@ -37,13 +39,13 @@ class GetMainProgramHandleTests
     }
 
     [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotX86))]
-    [PlatformSpecific(~TestPlatforms.Windows)]
+    [SkipOnPlatform(TestPlatforms.Windows, "Windows does not have a concept of globally loaded symbols")]
     public static void GloballyLoadedLibrarySymbolsVisibleFromMainProgramHandle()
     {
         // On non-Windows platforms, symbols from globally loaded shared libraries will also be discoverable.
         // Globally loading symbols is not the .NET default, so we use a call to dlopen in native code
         // with the right flags to test the scenario.
-        IntPtr handle = LoadLibraryGlobally(Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "libGloballyLoadedNativeLibrary.so"));
+        IntPtr handle = LoadLibraryGlobally(Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), NativeLibraryToLoad.GetLibraryFileName("GloballyLoadedNativeLibrary")));
 
         try
         {
@@ -56,13 +58,13 @@ class GetMainProgramHandleTests
     }
 
     [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotX86))]
-    [PlatformSpecific(~TestPlatforms.Windows)]
+    [SkipOnPlatform(TestPlatforms.Windows, "Windows does not have a concept of globally loaded symbols")]
     public static void InvalidSymbolName_Fails()
     {
         // On non-Windows platforms, symbols from globally loaded shared libraries will also be discoverable.
         // Globally loading symbols is not the .NET default, so we use a call to dlopen in native code
         // with the right flags to test the scenario.
-        IntPtr handle = LoadLibraryGlobally(Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "libGloballyLoadedNativeLibrary.so"));
+        IntPtr handle = LoadLibraryGlobally(Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), NativeLibraryToLoad.GetLibraryFileName("GloballyLoadedNativeLibrary")));
 
         try
         {
@@ -75,13 +77,13 @@ class GetMainProgramHandleTests
     }
 
     [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsX86))]
-    [PlatformSpecific(~TestPlatforms.Windows)]
+    [SkipOnPlatform(TestPlatforms.Windows, "Windows does not have a concept of globally loaded symbols")]
     public static void GloballyLoadedLibrarySymbolsVisibleFromMainProgramHandle_Mangling()
     {
         // On non-Windows platforms, symbols from globally loaded shared libraries will also be discoverable.
         // Globally loading symbols is not the .NET default, so we use a call to dlopen in native code
         // with the right flags to test the scenario.
-        IntPtr handle = LoadLibraryGlobally(Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "libGloballyLoadedNativeLibrary.so"));
+        IntPtr handle = LoadLibraryGlobally(Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), NativeLibraryToLoad.GetLibraryFileName("GloballyLoadedNativeLibrary")));
 
         try
         {
@@ -108,7 +110,18 @@ class GetMainProgramHandleTests
         });
     }
 
+    static IntPtr LoadLibraryGlobally(string name)
+    {
+        IntPtr handle = LoadLibraryGloballyNative(name);
 
-    [DllImport(NativeLibraryToLoad.Name)]
-    static extern IntPtr LoadLibraryGlobally(string name);
+        if (handle == IntPtr.Zero)
+        {
+            throw new Win32Exception(Marshal.GetLastPInvokeError());
+        }
+
+        return handle;
+
+        [DllImport(NativeLibraryToLoad.Name, EntryPoint = "LoadLibraryGlobally", SetLastError = true)]
+        static extern IntPtr LoadLibraryGloballyNative(string name);
+    }
 }
