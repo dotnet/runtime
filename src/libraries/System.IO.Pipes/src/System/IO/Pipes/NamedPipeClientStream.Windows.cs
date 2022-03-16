@@ -87,8 +87,8 @@ namespace System.IO.Pipes
 
                     // WaitNamedPipe: "A subsequent CreateFile call to the pipe can fail,
                     // because the instance was closed by the server or opened by another client."
-                    if (errorCode == Interop.Errors.ERROR_PIPE_BUSY // opened by another client
-                        || errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND) // server has been closed
+                    if (errorCode == Interop.Errors.ERROR_PIPE_BUSY || // opened by another client
+                        errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND) // server has been closed
                     {
                         return false;
                     }
