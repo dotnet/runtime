@@ -31,6 +31,7 @@
     <Compile Include="System\Net\Security\SslCertificateTrust.cs" />
     <Compile Include="System\Net\Security\SslClientAuthenticationOptions.cs" />
     <Compile Include="System\Net\Security\SslClientHelloInfo.cs" />
+    <Compile Include="System\Net\Security\SslConnectionInfo.Unix.cs" />
     <Compile Include="System\Net\Security\SslServerAuthenticationOptions.cs" />
     <Compile Include="System\Net\Security\SecureChannel.cs" />
     <Compile Include="System\Net\Security\SslSessionsCache.cs" />
@@ -41,6 +42,7 @@
     <Compile Include="System\Net\Security\StreamSizes.cs" />
     <Compile Include="System\Net\Security\TlsAlertType.cs" />
     <Compile Include="System\Net\Security\TlsAlertMessage.cs" />
+    <Compile Include="System\Net\Security\TlsCipherSuiteData.cs" />
     <Compile Include="System\Net\Security\TlsFrameHelper.cs" />
     <!-- NegotiateStream -->
     <Compile Include="System\Net\NTAuthentication.cs" />
@@ -106,19 +108,12 @@
     </Compile>
     <None Include="System\Net\Security\TlsCipherSuiteNameParser.ttinclude" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Net\Security\TlsCipherSuiteData.Lookup.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>TlsCipherSuiteData.Lookup.tt</DependentUpon>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <None Include="System\Net\Security\TlsCipherSuiteData.Lookup.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>TlsCipherSuiteData.Lookup.tt</DependentUpon>
-    </None>
   </ItemGroup>
   <ItemGroup Condition="'$(AllowTlsCipherSuiteGeneration)' == 'true'">
     <None Include="System\Net\Security\TlsCipherSuite.tt">
@@ -257,8 +252,6 @@
              Link="Common\System\Net\Security\Unix\SecChannelBindings.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\EndpointChannelBindingToken.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\SafeChannelBindingHandle.cs" />
-    <Compile Include="System\Net\Security\SslConnectionInfo.Unix.cs" />
-    <Compile Include="System\Net\Security\TlsCipherSuiteData.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'tvOS'">
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs"
