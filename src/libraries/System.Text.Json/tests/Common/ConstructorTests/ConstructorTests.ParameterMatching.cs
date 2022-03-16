@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -376,8 +376,8 @@ namespace System.Text.Json.Serialization.Tests
             point.SecondInt = 348943;
             point.FirstString = "934sdkjfskdfssf";
             point.SecondString = "sdad9434243242";
-            point.FirstDateTime = DateTime.Now;
-            point.SecondDateTime = DateTime.Now.AddHours(1).AddYears(1);
+            point.FirstDateTime = DateTimeTestHelpers.FixedDateTimeValue;
+            point.SecondDateTime = DateTimeTestHelpers.FixedDateTimeValue.AddHours(1).AddYears(1);
 
             point.X = 234235;
             point.Y = 912874;
@@ -387,8 +387,8 @@ namespace System.Text.Json.Serialization.Tests
             point.FourthInt = 348943;
             point.ThirdString = "934sdkjfskdfssf";
             point.FourthString = "sdad9434243242";
-            point.ThirdDateTime = DateTime.Now;
-            point.FourthDateTime = DateTime.Now.AddHours(1).AddYears(1);
+            point.ThirdDateTime = DateTimeTestHelpers.FixedDateTimeValue;
+            point.FourthDateTime = DateTimeTestHelpers.FixedDateTimeValue.AddHours(1).AddYears(1);
 
             string json = await JsonSerializerWrapperForString.SerializeWrapper(point);
 
@@ -421,15 +421,15 @@ namespace System.Text.Json.Serialization.Tests
             point.SecondInt = 348943;
             point.FirstString = "934sdkjfskdfssf";
             point.SecondString = "sdad9434243242";
-            point.FirstDateTime = DateTime.Now;
-            point.SecondDateTime = DateTime.Now.AddHours(1).AddYears(1);
+            point.FirstDateTime = DateTimeTestHelpers.FixedDateTimeValue;
+            point.SecondDateTime = DateTimeTestHelpers.FixedDateTimeValue.AddHours(1).AddYears(1);
 
             point.ThirdInt = 348943;
             point.FourthInt = 348943;
             point.ThirdString = "934sdkjfskdfssf";
             point.FourthString = "sdad9434243242";
-            point.ThirdDateTime = DateTime.Now;
-            point.FourthDateTime = DateTime.Now.AddHours(1).AddYears(1);
+            point.ThirdDateTime = DateTimeTestHelpers.FixedDateTimeValue;
+            point.FourthDateTime = DateTimeTestHelpers.FixedDateTimeValue.AddHours(1).AddYears(1);
 
             string json = await JsonSerializerWrapperForString.SerializeWrapper(point);
 
@@ -462,15 +462,15 @@ namespace System.Text.Json.Serialization.Tests
             point.SecondInt = 348943;
             point.FirstString = "934sdkjfskdfssf";
             point.SecondString = "sdad9434243242";
-            point.FirstDateTime = DateTime.Now;
-            point.SecondDateTime = DateTime.Now.AddHours(1).AddYears(1);
+            point.FirstDateTime = DateTimeTestHelpers.FixedDateTimeValue;
+            point.SecondDateTime = DateTimeTestHelpers.FixedDateTimeValue.AddHours(1).AddYears(1);
 
             point.ThirdInt = 348943;
             point.FourthInt = 348943;
             point.ThirdString = "934sdkjfskdfssf";
             point.FourthString = "sdad9434243242";
-            point.ThirdDateTime = DateTime.Now;
-            point.FourthDateTime = DateTime.Now.AddHours(1).AddYears(1);
+            point.ThirdDateTime = DateTimeTestHelpers.FixedDateTimeValue;
+            point.FourthDateTime = DateTimeTestHelpers.FixedDateTimeValue.AddHours(1).AddYears(1);
 
             string json = await JsonSerializerWrapperForString.SerializeWrapper(point);
 
@@ -833,7 +833,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ArgumentDeserialization_Honors_JsonInclude()
         {
-            Point_MembersHave_JsonInclude point = new Point_MembersHave_JsonInclude(1, 2,3);
+            Point_MembersHave_JsonInclude point = new Point_MembersHave_JsonInclude(1, 2, 3);
 
             string json = await JsonSerializerWrapperForString.SerializeWrapper(point);
             Assert.Contains(@"""X"":1", json);

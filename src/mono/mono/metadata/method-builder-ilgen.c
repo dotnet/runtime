@@ -131,8 +131,8 @@ create_method_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int 
 		MonoType *type = (MonoType*)l->data;
 		if (mb->mem_manager) {
 			/* Allocated in mono_mb_add_local () */
-			int size = mono_sizeof_type (type);
-			header->locals [i] = mono_mem_manager_alloc0 (mb->mem_manager, size);
+			size_t size = mono_sizeof_type (type);
+			header->locals [i] = mono_mem_manager_alloc0 (mb->mem_manager, (guint)size);
 			memcpy (header->locals [i], type, size);
 			g_free (type);
 		} else {

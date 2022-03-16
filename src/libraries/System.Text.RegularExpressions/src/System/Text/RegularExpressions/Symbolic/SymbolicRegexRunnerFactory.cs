@@ -15,51 +15,17 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Initializes the factory.</summary>
         public SymbolicRegexRunnerFactory(RegexTree regexTree, RegexOptions options, TimeSpan matchTimeout, CultureInfo culture)
         {
-            // RightToLeft and ECMAScript are currently not supported in conjunction with NonBacktracking.
-            if ((options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) != 0)
-            {
-                throw new NotSupportedException(
-                    SR.Format(SR.NotSupported_NonBacktrackingConflictingOption,
-                        (options & RegexOptions.RightToLeft) != 0 ? nameof(RegexOptions.RightToLeft) : nameof(RegexOptions.ECMAScript)));
-            }
+            Debug.Assert((options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) == 0);
 
-            var converter = new RegexNodeConverter(culture, regexTree.CaptureNumberSparseMapping);
-            CharSetSolver solver = CharSetSolver.Instance;
-            SymbolicRegexNode<BDD> root = converter.ConvertToSymbolicRegexNode(regexTree.Root, tryCreateFixedLengthMarker: true);
+            var bddBuilder = new SymbolicRegexBuilder<BDD>(CharSetSolver.Instance);
+            var converter = new RegexNodeConverter(bddBuilder, culture, regexTree.CaptureNumberSparseMapping);
 
-            BDD[] minterms = root.ComputeMinterms();
-            if (minterms.Length > 64)
-            {
-                // Use BitVector to represent a predicate
-                var algebra = new BitVectorAlgebra(solver, minterms);
-                var builder = new SymbolicRegexBuilder<BitVector>(algebra)
-                {
-                    // The default constructor sets the following predicates to False; this update happens after the fact.
-                    // It depends on whether anchors where used in the regex whether the predicates are actually different from False.
-                    _wordLetterPredicateForAnchors = algebra.ConvertFromCharSet(solver, converter._builder._wordLetterPredicateForAnchors),
-                    _newLinePredicate = algebra.ConvertFromCharSet(solver, converter._builder._newLinePredicate)
-                };
+            SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(regexTree.Root, tryCreateFixedLengthMarker: true);
+            BDD[] minterms = rootNode.ComputeMinterms();
 
-                // Convert the BDD-based AST to BitVector-based AST
-                SymbolicRegexNode<BitVector> rootNode = converter._builder.Transform(root, builder, bdd => builder._solver.ConvertFromCharSet(solver, bdd));
-                _matcher = new SymbolicRegexMatcher<BitVector>(rootNode, regexTree, minterms, matchTimeout);
-            }
-            else
-            {
-                // Use ulong to represent a predicate
-                var algebra = new BitVector64Algebra(solver, minterms);
-                var builder = new SymbolicRegexBuilder<ulong>(algebra)
-                {
-                    // The default constructor sets the following predicates to False, this update happens after the fact
-                    // It depends on whether anchors where used in the regex whether the predicates are actually different from False
-                    _wordLetterPredicateForAnchors = algebra.ConvertFromCharSet(solver, converter._builder._wordLetterPredicateForAnchors),
-                    _newLinePredicate = algebra.ConvertFromCharSet(solver, converter._builder._newLinePredicate)
-                };
-
-                // Convert the BDD-based AST to ulong-based AST
-                SymbolicRegexNode<ulong> rootNode = converter._builder.Transform(root, builder, bdd => builder._solver.ConvertFromCharSet(solver, bdd));
-                _matcher = new SymbolicRegexMatcher<ulong>(rootNode, regexTree, minterms, matchTimeout);
-            }
+            _matcher = minterms.Length > 64 ?
+                SymbolicRegexMatcher<BitVector>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new BitVectorAlgebra(minterms), matchTimeout) :
+                SymbolicRegexMatcher<ulong>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new UInt64Algebra(minterms), matchTimeout);
         }
 
         /// <summary>Creates a <see cref="RegexRunner"/> object.</summary>

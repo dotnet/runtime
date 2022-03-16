@@ -1504,7 +1504,9 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
             DWORD dwSrcIndex = pEntry->srcofs & ShuffleEntry::OFSMASK;
             if (dwSrcIndex != (dwLastSrcIndex + 1))
             {
-                _ASSERTE(dwSrcIndex > dwLastSrcIndex);
+                // If the gap is at the very beginning, then dwLastSrcIndex is still -1, so we need to allow
+                // for that. Note that the calculation below handles this properly, due to DWORD wrapping.
+                _ASSERTE((dwLastSrcIndex == (DWORD)-1) || (dwSrcIndex > dwLastSrcIndex));
 
                 // add r4, #gap_size
                 ThumbEmitIncrement(ThumbReg(4), (dwSrcIndex - dwLastSrcIndex - 1) * 4);
@@ -1528,7 +1530,9 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
                 DWORD dwDstIndex = pEntry->dstofs & ShuffleEntry::OFSMASK;
                 if (dwDstIndex != (dwLastDstIndex + 1))
                 {
-                    _ASSERTE(dwDstIndex > dwLastDstIndex);
+                    // If the gap is at the very beginning, then dwLastDstIndex is still -1, so we need to allow
+                    // for that. Note that the calculation below handles this properly, due to DWORD wrapping.
+                    _ASSERTE((dwLastDstIndex == (DWORD)-1) || (dwDstIndex > dwLastDstIndex));
 
                     // add r5, #gap_size
                     ThumbEmitIncrement(ThumbReg(5), (dwDstIndex - dwLastDstIndex - 1) * 4);

@@ -484,6 +484,16 @@ namespace System.Runtime.InteropServices
         public LCIDConversionAttribute(int lcid) { }
         public int Value { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple = false, Inherited=false)]
+    public sealed partial class LibraryImportAttribute : System.Attribute
+    {
+        public LibraryImportAttribute(string libraryName) { }
+        public string LibraryName { get { throw null; } }
+        public string? EntryPoint { get { throw null; } set { } }
+        public bool SetLastError { get { throw null; } set { }}
+        public System.Runtime.InteropServices.StringMarshalling StringMarshalling { get { throw null; } set { } }
+        public System.Type? StringMarshallingCustomType { get { throw null; } set { } }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]
     public sealed partial class ManagedToNativeComInteropStubAttribute : System.Attribute
     {
@@ -993,6 +1003,12 @@ namespace System.Runtime.InteropServices
     public partial class StandardOleMarshalObject : System.MarshalByRefObject
     {
         protected StandardOleMarshalObject() { }
+    }
+    public enum StringMarshalling
+    {
+        Custom = 0,
+        Utf8 = 1,
+        Utf16 = 2,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
     public sealed partial class TypeIdentifierAttribute : System.Attribute

@@ -27,7 +27,7 @@
 
   <ItemGroup>
     <!-- Code included from System.Runtime.InteropServices -->
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\StringMarshalling.cs" Link="Production\StringMarshalling.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs" Link="Production\StringMarshalling.cs" />
   </ItemGroup>
 
   <ItemGroup>
