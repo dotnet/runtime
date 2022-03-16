@@ -29,14 +29,11 @@ namespace System.Net.Http.Headers
             {
                 foreach (object item in list)
                 {
-                    if (item is CacheControlHeaderValue cacheControl)
+                    if (item is not HttpHeaders.InvalidValue)
                     {
-                        if (item is not HttpHeaders.InvalidValue)
-                        {
-                            isInvalidValue = false;
-                            temp = item as CacheControlHeaderValue;
-                            break;
-                        }
+                        isInvalidValue = false;
+                        temp = item as CacheControlHeaderValue;
+                        break;
                     }
                 }
             }
