@@ -150,7 +150,7 @@ namespace Wasm.Build.Tests
             (string testCommand, string extraXHarnessArgs) = host switch
             {
                 RunHost.V8     => ("wasm test", "--js-file=test-main.js --engine=V8 -v trace"),
-                //RunHost.NodeJS => ("wasm test", "--js-file=test-main.js --engine=NodeJS -v trace"),
+                RunHost.NodeJS => ("wasm test", "--js-file=test-main.js --engine=NodeJS -v trace"),
                 _              => ("wasm test-browser", $"-v trace -b {host}")
             };
 
