@@ -10180,15 +10180,9 @@ void CodeGen::genCodeForCond(GenTreeOp* tree)
             unreached();
     }
 
-    GenTree* op1 = tree->gtGetOp1();
-    GenTree* op2 = tree->gtGetOp2();
-
-    assert(!op1->isContained());
-    assert(!op2->isContained());
-
     regNumber dstReg = tree->GetRegNum();
-    regNumber op1Reg = op1->GetRegNum();
-    regNumber op2Reg = op2->GetRegNum();
+    regNumber op1Reg = tree->gtGetOp1()->GetRegNum();
+    regNumber op2Reg = tree->gtGetOp2()->GetRegNum();
 
     GetEmitter()->emitIns_R_R_R_COND(ins, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, cond);
     genProduceReg(tree);
