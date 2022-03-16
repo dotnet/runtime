@@ -1171,6 +1171,13 @@ get_call_info (MonoMethodSignature *sig)
 					cinfo->args [n].vtsize = nregs - n_in_regs;
 					cinfo->args [n].reg = fr;
 					fr += n_in_regs;
+					if (mbr_size == 4) {
+						// floats
+						FP_ALSO_IN_REG (gr += (n_in_regs+1)/2);
+					} else {
+						// doubles
+						FP_ALSO_IN_REG (gr += (n_in_regs));
+					}
 				} else
 #endif
 				{
