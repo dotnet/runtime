@@ -10,7 +10,7 @@
   <PropertyGroup>
     <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">
       ILLinkTrimAssembly;
-      $(TargetsTriggeredByCompilation)      
+      $(TargetsTriggeredByCompilation)
     </TargetsTriggeredByCompilation>
   </PropertyGroup>
 
