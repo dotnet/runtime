@@ -122,6 +122,9 @@ hot_reload_find_method_by_name (MonoClass *klass, const char *name, int param_co
 static gboolean
 hot_reload_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_method_idx, uint32_t *method_count,  uint32_t *first_field_idx, uint32_t *field_count);
 
+static gboolean
+hot_reload_get_typedef_skeleton_properties (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_prop_idx, uint32_t *prop_count);
+
 static MonoMethod *
 hot_reload_added_methods_iter (MonoClass *klass, gpointer *iter);
 
@@ -157,6 +160,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_get_static_field_addr,
 	&hot_reload_find_method_by_name,
 	&hot_reload_get_typedef_skeleton,
+	&hot_reload_get_typedef_skeleton_properties,
 	&hot_reload_added_methods_iter,
 	&hot_reload_added_fields_iter,
 };
@@ -1684,6 +1688,24 @@ skeleton_add_member (MonoAddedDefSkeleton *sk, uint32_t member_token)
 			sk->field_count++;
 		}
 		break;
+	case MONO_TABLE_PROPERTY:
+		if (!sk->first_prop_idx) {
+			sk->first_prop_idx = idx;
+			sk->prop_count = 1;
+		} else {
+			g_assert (sk->first_prop_idx + sk->prop_count == idx);
+			sk->prop_count++;
+		}
+		break;
+	case MONO_TABLE_EVENT:
+		if (!sk->first_event_idx) {
+			sk->first_event_idx = idx;
+			sk->event_count = 1;
+		} else {
+			g_assert (sk->first_event_idx + sk->event_count == idx);
+			sk->event_count++;
+		}
+		break;
 	default:
 		g_error ("Expected method or field def token, got 0x%08x", member_token);
 		g_assert_not_reached();
@@ -1781,6 +1803,29 @@ hot_reload_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_token, 
 			*first_field_idx = sk->first_field_idx;
 			g_assert (field_count);
 			*field_count = sk->field_count;
+			break;
+		}
+	}
+	mono_image_unlock (base_image);
+	return found;
+}
+
+static gboolean
+hot_reload_get_typedef_skeleton_properties (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_prop_idx, uint32_t *prop_count)
+{
+	BaselineInfo *info = baseline_info_lookup (base_image);
+	if (!info || !info->skeletons)
+		return FALSE;
+	gboolean found = FALSE;
+	mono_image_lock (base_image);
+	for (int i = 0; i < info->skeletons->len; ++i) {
+		MonoAddedDefSkeleton *sk = &((MonoAddedDefSkeleton*)info->skeletons->data)[i];
+		if (sk->typedef_token == typedef_token) {
+			found = TRUE;
+			g_assert (first_prop_idx);
+			*first_prop_idx = sk->first_prop_idx;
+			g_assert (prop_count);
+			*prop_count = sk->prop_count;
 			break;
 		}
 	}
@@ -2169,7 +2214,8 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 
 				if (pass2_context_is_skeleton (ctx, parent_type_token)) {
 					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new property 0x%08x to new class 0x%08x", log_token, parent_type_token);
-					/* nothing to do, actually.  the metadata lookup machinery will find it by doing a linear scan of the table. */
+					pass2_context_add_skeleton_member (ctx, parent_type_token, log_token);
+					add_member_parent (base_info, parent_type_token, log_token);
 					break;
 				} else {
 					MonoClass *add_property_klass = mono_class_get_checked (image_base, parent_type_token, error);
@@ -2179,7 +2225,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 					}
 					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new property 0x%08x to class %s.%s", log_token, m_class_get_name_space (add_property_klass), m_class_get_name (add_property_klass));
 
-					/* TODO: metadata-update: add a new MonoPropertyInfo to the bag on the class? */
+					/* TODO: metadata-update: add a new MonoClassMetadataUpdatePropertyInfo to added_props */
 					break;
 				}
 

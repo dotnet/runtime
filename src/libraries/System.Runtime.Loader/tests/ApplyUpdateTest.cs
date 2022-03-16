@@ -553,6 +553,24 @@ namespace System.Reflection.Metadata
 		    }
 		    Assert.True(hasICloneable);
 		    Assert.True(hasINewInterface);
+
+		    var allProperties = ty.GetProperties();
+
+		    PropertyInfo newProp = null;
+		    foreach (var prop in allProperties)
+		    {
+			if (prop.Name == "NewProp")
+			    newProp = prop;
+		    }
+		    Assert.NotNull(newProp);
+
+		    Assert.Equal(newProp, ty.GetProperty("NewProp"));
+		    MethodInfo newPropGet = newProp.GetGetMethod();
+		    Assert.NotNull(newPropGet);
+		    MethodInfo newPropSet = newProp.GetSetMethod();
+		    Assert.NotNull(newPropSet);
+
+		    Assert.Equal("get_NewProp", newPropGet.Name);
 		});
 		CheckReflectedType(assm, allTypes, ns, "NewGenericClass`1");
 		CheckReflectedType(assm, allTypes, ns, "NewToplevelStruct");

@@ -34,6 +34,11 @@ public class NewToplevelClass : IExistingInterface, ICloneable {
     }
 
     public class AlsoNested { }
+
+    public float NewProp {get; set;}
+
+    public byte[] OtherNewProp {get; set;}
+
 }
 
 public class NewGenericClass<T> : NewToplevelClass {
