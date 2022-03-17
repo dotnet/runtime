@@ -3789,9 +3789,9 @@ GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
         return nullptr;
     }
 
-    // prevent decomposed 64 integer node parts in x86 from being recognised
-    if (((addOp1->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS) || ((addOp2->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS) ||
-        ((op2->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS) || ((andNode->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS))
+    // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
+    if (((addOp2->gtFlags & GTF_SET_FLAGS) != 0) || ((op2->gtFlags & GTF_SET_FLAGS) != 0) ||
+        ((andNode->gtFlags & GTF_SET_FLAGS) != 0))
     {
         return nullptr;
     }
@@ -3875,8 +3875,8 @@ GenTree* Lowering::TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode)
         return nullptr;
     }
 
-    // prevent decomposed 64 integer node parts in x86 from being recognised
-    if (((opNode->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS) || ((negNode->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS))
+    // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
+    if (((opNode->gtFlags & GTF_SET_FLAGS) != 0) || ((negNode->gtFlags & GTF_SET_FLAGS) != 0))
     {
         return nullptr;
     }
@@ -3960,8 +3960,8 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
         return nullptr;
     }
 
-    // prevent decomposed 64 integer node parts in x86 from being recognised
-    if (((andNode->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS) || ((notNode->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS))
+    // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
+    if (((andNode->gtFlags & GTF_SET_FLAGS) != 0) || ((notNode->gtFlags & GTF_SET_FLAGS) != 0))
     {
         return nullptr;
     }
