@@ -54,13 +54,13 @@ namespace Microsoft.Extensions.Logging
 
         public IExternalScopeProvider? ExternalScopeProvider { get; }
 
-        public IDisposable? CreateScope<TState>(TState state)
+        public IDisposable CreateScope<TState>(TState state)
         {
             if (ExternalScopeProvider != null)
             {
                 return ExternalScopeProvider.Push(state);
             }
-            return Logger?.BeginScope<TState>(state);
+            return Logger!.BeginScope<TState>(state);
         }
     }
 

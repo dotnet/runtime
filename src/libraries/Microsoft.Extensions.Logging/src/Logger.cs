@@ -122,7 +122,7 @@ namespace Microsoft.Extensions.Logging
 
             if (loggers.Length == 1)
             {
-                return loggers[0].CreateScope(state) ?? NullScope.Instance;
+                return loggers[0].CreateScope(state);
             }
 
             var scope = new Scope(loggers.Length);
