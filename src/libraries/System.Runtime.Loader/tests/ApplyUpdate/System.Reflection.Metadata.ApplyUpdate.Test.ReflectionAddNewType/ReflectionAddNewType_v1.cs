@@ -57,7 +57,7 @@ public class NewToplevelClass : IExistingInterface, ICloneable {
 
 public class NewGenericClass<T> : NewToplevelClass {
     public override object Clone() {
-	return new NewGenericClass<T>();
+        return new NewGenericClass<T>();
     }
 }
 

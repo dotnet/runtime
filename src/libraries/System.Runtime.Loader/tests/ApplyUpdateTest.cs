@@ -428,219 +428,219 @@ namespace System.Reflection.Metadata
             });
         }
 
-	private static bool ContainsTypeWithName(Type[] types, string fullName)
-	{
-	    foreach (var ty in types) {
-		if (ty.FullName == fullName)
-		    return true;
-	    }
-	    return false;
-	}
+        private static bool ContainsTypeWithName(Type[] types, string fullName)
+        {
+            foreach (var ty in types) {
+                if (ty.FullName == fullName)
+                    return true;
+            }
+            return false;
+        }
 
-	internal static Type CheckReflectedType(Assembly assm, Type[] allTypes, string nameSpace, string typeName, Action<Type> moreChecks = null, [CallerMemberName] string callerMemberName = "", [CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = 0)
-	{
-	    var fullName = $"{nameSpace}.{typeName}";
-	    var ty = assm.GetType(fullName);
-	    Assert.True(ty != null, $"{callerFilePath}:{callerLineNumber}: expected Assembly.GetType for '{typeName}' to return non-null in {callerMemberName}");
-	    int nestedIdx = typeName.LastIndexOf('+');
-	    string comparisonName = typeName;
-	    if (nestedIdx != -1)
-		comparisonName = typeName.Substring(nestedIdx+1);
-	    Assert.True(comparisonName == ty.Name, $"{callerFilePath}:{callerLineNumber}: returned type has unexpected name '{ty.Name}' (expected: '{comparisonName}') in {callerMemberName}");
-	    Assert.True(ContainsTypeWithName (allTypes, fullName), $"{callerFilePath}:{callerLineNumber}: expected Assembly.GetTypes to contain '{fullName}', but it didn't in {callerMemberName}");
-	    if (moreChecks != null)
-		moreChecks(ty);
-	    return ty;
-	}
+        internal static Type CheckReflectedType(Assembly assm, Type[] allTypes, string nameSpace, string typeName, Action<Type> moreChecks = null, [CallerMemberName] string callerMemberName = "", [CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = 0)
+        {
+            var fullName = $"{nameSpace}.{typeName}";
+            var ty = assm.GetType(fullName);
+            Assert.True(ty != null, $"{callerFilePath}:{callerLineNumber}: expected Assembly.GetType for '{typeName}' to return non-null in {callerMemberName}");
+            int nestedIdx = typeName.LastIndexOf('+');
+            string comparisonName = typeName;
+            if (nestedIdx != -1)
+                comparisonName = typeName.Substring(nestedIdx+1);
+            Assert.True(comparisonName == ty.Name, $"{callerFilePath}:{callerLineNumber}: returned type has unexpected name '{ty.Name}' (expected: '{comparisonName}') in {callerMemberName}");
+            Assert.True(ContainsTypeWithName (allTypes, fullName), $"{callerFilePath}:{callerLineNumber}: expected Assembly.GetTypes to contain '{fullName}', but it didn't in {callerMemberName}");
+            if (moreChecks != null)
+                moreChecks(ty);
+            return ty;
+        }
 
 
-	internal static void CheckCustomNoteAttribute(MemberInfo subject, string expectedAttributeValue, [CallerMemberName] string callerMemberName = "", [CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = 0)
-	{
-	    var attrData = subject.GetCustomAttributesData();
-	    CustomAttributeData noteData = null;
-	    foreach (var cad in attrData)
-	    {
-		if (cad.AttributeType.FullName.Contains("CustomNoteAttribute"))
-		    noteData = cad;
-	    }
-	    Assert.True(noteData != null, $"{callerFilePath}:{callerLineNumber}: expected a CustomNoteAttribute attributes on '{subject.Name}', but got null, in {callerMemberName}");
-	    Assert.True(1 == noteData.ConstructorArguments.Count, $"{callerFilePath}:{callerLineNumber}: expected exactly 1 constructor argument on CustomNoteAttribute, got {noteData.ConstructorArguments.Count}, in {callerMemberName}");
-	    object argVal = noteData.ConstructorArguments[0].Value;
-	    Assert.True(expectedAttributeValue.Equals(argVal), $"{callerFilePath}:{callerLineNumber}: expected '{expectedAttributeValue}' as CustomNoteAttribute argument, got '{argVal}', in {callerMemberName}");
+        internal static void CheckCustomNoteAttribute(MemberInfo subject, string expectedAttributeValue, [CallerMemberName] string callerMemberName = "", [CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = 0)
+        {
+            var attrData = subject.GetCustomAttributesData();
+            CustomAttributeData noteData = null;
+            foreach (var cad in attrData)
+            {
+                if (cad.AttributeType.FullName.Contains("CustomNoteAttribute"))
+                    noteData = cad;
+            }
+            Assert.True(noteData != null, $"{callerFilePath}:{callerLineNumber}: expected a CustomNoteAttribute attributes on '{subject.Name}', but got null, in {callerMemberName}");
+            Assert.True(1 == noteData.ConstructorArguments.Count, $"{callerFilePath}:{callerLineNumber}: expected exactly 1 constructor argument on CustomNoteAttribute, got {noteData.ConstructorArguments.Count}, in {callerMemberName}");
+            object argVal = noteData.ConstructorArguments[0].Value;
+            Assert.True(expectedAttributeValue.Equals(argVal), $"{callerFilePath}:{callerLineNumber}: expected '{expectedAttributeValue}' as CustomNoteAttribute argument, got '{argVal}', in {callerMemberName}");
 
-	    var attrs = subject.GetCustomAttributes(false);
-	    object note = null;
-	    foreach (var attr in attrs)
-	    {
-		if (attr.GetType().FullName.Contains("CustomNoteAttribute"))
-		    note = attr;
-	    }
-	    Assert.True(note != null, $"{callerFilePath}:{callerLineNumber}: expected a CustomNoteAttribute object on '{subject.Name}', but got null, in {callerMemberName}");
-	    object v = note.GetType().GetField("Note").GetValue(note);
-	    Assert.True(expectedAttributeValue.Equals(v), $"{callerFilePath}:{callerLineNumber}: expected '{expectedAttributeValue}' in CustomNoteAttribute Note field, but got '{v}', in {callerMemberName}");
-	}
+            var attrs = subject.GetCustomAttributes(false);
+            object note = null;
+            foreach (var attr in attrs)
+            {
+                if (attr.GetType().FullName.Contains("CustomNoteAttribute"))
+                    note = attr;
+            }
+            Assert.True(note != null, $"{callerFilePath}:{callerLineNumber}: expected a CustomNoteAttribute object on '{subject.Name}', but got null, in {callerMemberName}");
+            object v = note.GetType().GetField("Note").GetValue(note);
+            Assert.True(expectedAttributeValue.Equals(v), $"{callerFilePath}:{callerLineNumber}: expected '{expectedAttributeValue}' in CustomNoteAttribute Note field, but got '{v}', in {callerMemberName}");
+        }
 
-	[ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
-	public static void TestReflectionAddNewType()
-	{
-	    ApplyUpdateUtil.TestCase(static () =>
-	    {
-		const string ns = "System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType";
-		var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.ZExistingClass).Assembly;
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestReflectionAddNewType()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                const string ns = "System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType";
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.ZExistingClass).Assembly;
 
-		var allTypes = assm.GetTypes();
+                var allTypes = assm.GetTypes();
 
-		CheckReflectedType(assm, allTypes, ns, "ZExistingClass");
-		CheckReflectedType(assm, allTypes, ns, "ZExistingClass+PreviousNestedClass");
+                CheckReflectedType(assm, allTypes, ns, "ZExistingClass");
+                CheckReflectedType(assm, allTypes, ns, "ZExistingClass+PreviousNestedClass");
 
-		ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ApplyUpdate(assm);
 
-		allTypes = assm.GetTypes();
+                allTypes = assm.GetTypes();
 
-		CheckReflectedType(assm, allTypes, ns, "ZExistingClass", static (ty) =>
-		{
-		    var allMethods = ty.GetMethods();
+                CheckReflectedType(assm, allTypes, ns, "ZExistingClass", static (ty) =>
+                {
+                    var allMethods = ty.GetMethods();
 
-		    MethodInfo newMethod = null;
-		    foreach (var meth in allMethods)
-		    {
-			if (meth.Name == "NewMethod")
-			    newMethod = meth;
-		    }
-		    Assert.NotNull (newMethod);
+                    MethodInfo newMethod = null;
+                    foreach (var meth in allMethods)
+                    {
+                        if (meth.Name == "NewMethod")
+                            newMethod = meth;
+                    }
+                    Assert.NotNull (newMethod);
 
-		    Assert.Equal (newMethod, ty.GetMethod ("NewMethod"));
+                    Assert.Equal (newMethod, ty.GetMethod ("NewMethod"));
 
-		    var allFields = ty.GetFields(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public);
+                    var allFields = ty.GetFields(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public);
 
-		    FieldInfo newField = null;
-		    FieldInfo newStaticField = null;
-		    foreach (var fld in allFields)
-		    {
-			if (fld.Name == "NewField")
-			    newField = fld;
-			if (fld.Name == "NewStaticField")
-			    newStaticField = fld;
-		    }
-		    Assert.NotNull(newField);
-		    Assert.NotNull(newStaticField);
+                    FieldInfo newField = null;
+                    FieldInfo newStaticField = null;
+                    foreach (var fld in allFields)
+                    {
+                        if (fld.Name == "NewField")
+                            newField = fld;
+                        if (fld.Name == "NewStaticField")
+                            newStaticField = fld;
+                    }
+                    Assert.NotNull(newField);
+                    Assert.NotNull(newStaticField);
 
-		    Assert.Equal(newField, ty.GetField("NewField"));
-		    Assert.Equal(newStaticField, ty.GetField("NewStaticField", BindingFlags.Static | BindingFlags.Public));
+                    Assert.Equal(newField, ty.GetField("NewField"));
+                    Assert.Equal(newStaticField, ty.GetField("NewStaticField", BindingFlags.Static | BindingFlags.Public));
 
-		    // FIXME: finish this
+                    // FIXME: finish this
 #if false
-		    var allProperties = ty.GetProperties();
+                    var allProperties = ty.GetProperties();
 
-		    PropertyInfo newProp = null;
-		    foreach (var prop in allProperties)
-		    {
-			if (prop.Name == "NewProp")
-			    newProp = prop;
-		    }
-		    Assert.NotNull(newProp);
+                    PropertyInfo newProp = null;
+                    foreach (var prop in allProperties)
+                    {
+                        if (prop.Name == "NewProp")
+                            newProp = prop;
+                    }
+                    Assert.NotNull(newProp);
 
-		    Assert.Equal(newProp, ty.GetProperty("NewProp"));
+                    Assert.Equal(newProp, ty.GetProperty("NewProp"));
 
-		    MethodInfo newPropGet = newProp.GetGetMethod();
-		    Assert.NotNull(newPropGet);
-		    MethodInfo newPropSet = newProp.GetSetMethod();
-		    Assert.NotNull(newPropSet);
+                    MethodInfo newPropGet = newProp.GetGetMethod();
+                    Assert.NotNull(newPropGet);
+                    MethodInfo newPropSet = newProp.GetSetMethod();
+                    Assert.NotNull(newPropSet);
 
-		    Assert.Equal("get_NewProp", newPropGet.Name);
+                    Assert.Equal("get_NewProp", newPropGet.Name);
 #endif
 
-		});
-		CheckReflectedType(assm, allTypes, ns, "ZExistingClass+PreviousNestedClass");
-		CheckReflectedType(assm, allTypes, ns, "IExistingInterface");
+                });
+                CheckReflectedType(assm, allTypes, ns, "ZExistingClass+PreviousNestedClass");
+                CheckReflectedType(assm, allTypes, ns, "IExistingInterface");
 
-		CheckReflectedType(assm, allTypes, ns, "ZExistingClass+NewNestedClass");
+                CheckReflectedType(assm, allTypes, ns, "ZExistingClass+NewNestedClass");
 
-		var newTy = CheckReflectedType(assm, allTypes, ns, "NewToplevelClass", static (ty) =>
-		{
-		    CheckCustomNoteAttribute(ty, "123");
+                var newTy = CheckReflectedType(assm, allTypes, ns, "NewToplevelClass", static (ty) =>
+                {
+                    CheckCustomNoteAttribute(ty, "123");
 
-		    var nested = ty.GetNestedType("AlsoNested");
-		    var allNested = ty.GetNestedTypes();
+                    var nested = ty.GetNestedType("AlsoNested");
+                    var allNested = ty.GetNestedTypes();
 
-		    Assert.Equal("AlsoNested", nested.Name);
-		    Assert.Same(ty, nested.DeclaringType);
+                    Assert.Equal("AlsoNested", nested.Name);
+                    Assert.Same(ty, nested.DeclaringType);
 
-		    Assert.Equal(1, allNested.Length);
-		    Assert.Same(nested, allNested[0]);
+                    Assert.Equal(1, allNested.Length);
+                    Assert.Same(nested, allNested[0]);
 
-		    var allInterfaces = ty.GetInterfaces();
+                    var allInterfaces = ty.GetInterfaces();
 
-		    Assert.Equal (2, allInterfaces.Length);
-		    bool hasICloneable = false, hasINewInterface = false;
-		    for (int i = 0; i < allInterfaces.Length; ++i) {
-			var itf = allInterfaces[i];
-			if (itf.Name == "ICloneable")
-			    hasICloneable = true;
-			if (itf.Name == "IExistingInterface")
-			    hasINewInterface = true;
-		    }
-		    Assert.True(hasICloneable);
-		    Assert.True(hasINewInterface);
+                    Assert.Equal (2, allInterfaces.Length);
+                    bool hasICloneable = false, hasINewInterface = false;
+                    for (int i = 0; i < allInterfaces.Length; ++i) {
+                        var itf = allInterfaces[i];
+                        if (itf.Name == "ICloneable")
+                            hasICloneable = true;
+                        if (itf.Name == "IExistingInterface")
+                            hasINewInterface = true;
+                    }
+                    Assert.True(hasICloneable);
+                    Assert.True(hasINewInterface);
 
-		    var allProperties = ty.GetProperties();
+                    var allProperties = ty.GetProperties();
 
-		    PropertyInfo newProp = null;
-		    foreach (var prop in allProperties)
-		    {
-			if (prop.Name == "NewProp")
-			    newProp = prop;
-		    }
-		    Assert.NotNull(newProp);
+                    PropertyInfo newProp = null;
+                    foreach (var prop in allProperties)
+                    {
+                        if (prop.Name == "NewProp")
+                            newProp = prop;
+                    }
+                    Assert.NotNull(newProp);
 
-		    Assert.Equal(newProp, ty.GetProperty("NewProp"));
-		    MethodInfo newPropGet = newProp.GetGetMethod();
-		    Assert.NotNull(newPropGet);
-		    MethodInfo newPropSet = newProp.GetSetMethod();
-		    Assert.NotNull(newPropSet);
+                    Assert.Equal(newProp, ty.GetProperty("NewProp"));
+                    MethodInfo newPropGet = newProp.GetGetMethod();
+                    Assert.NotNull(newPropGet);
+                    MethodInfo newPropSet = newProp.GetSetMethod();
+                    Assert.NotNull(newPropSet);
 
-		    Assert.Equal("get_NewProp", newPropGet.Name);
+                    Assert.Equal("get_NewProp", newPropGet.Name);
 
-		    CheckCustomNoteAttribute (newProp, "hijkl");
+                    CheckCustomNoteAttribute (newProp, "hijkl");
 
-		    var allEvents = ty.GetEvents();
+                    var allEvents = ty.GetEvents();
 
-		    EventInfo newEvt = null;
-		    foreach (var evt in allEvents)
-		    {
-			if (evt.Name == "NewEvent")
-			    newEvt = evt;
-		    }
-		    Assert.NotNull(newEvt);
+                    EventInfo newEvt = null;
+                    foreach (var evt in allEvents)
+                    {
+                        if (evt.Name == "NewEvent")
+                            newEvt = evt;
+                    }
+                    Assert.NotNull(newEvt);
 
-		    Assert.Equal(newEvt, ty.GetEvent("NewEvent"));
-		    MethodInfo newEvtAdd = newEvt.GetAddMethod();
-		    Assert.NotNull(newEvtAdd);
-		    MethodInfo newEvtRemove = newEvt.GetRemoveMethod();
-		    Assert.NotNull(newEvtRemove);
+                    Assert.Equal(newEvt, ty.GetEvent("NewEvent"));
+                    MethodInfo newEvtAdd = newEvt.GetAddMethod();
+                    Assert.NotNull(newEvtAdd);
+                    MethodInfo newEvtRemove = newEvt.GetRemoveMethod();
+                    Assert.NotNull(newEvtRemove);
 
-		    Assert.Equal("add_NewEvent", newEvtAdd.Name);
-		});
-		CheckReflectedType(assm, allTypes, ns, "NewGenericClass`1");
-		CheckReflectedType(assm, allTypes, ns, "NewToplevelStruct");
-		CheckReflectedType(assm, allTypes, ns, "INewInterface");
-		CheckReflectedType(assm, allTypes, ns, "NewEnum", static (ty) => {
-		    var names = Enum.GetNames (ty);
-		    Assert.Equal(3, names.Length);
-		    var vals = Enum.GetValues (ty);
-		    Assert.Equal(3, vals.Length);
+                    Assert.Equal("add_NewEvent", newEvtAdd.Name);
+                });
+                CheckReflectedType(assm, allTypes, ns, "NewGenericClass`1");
+                CheckReflectedType(assm, allTypes, ns, "NewToplevelStruct");
+                CheckReflectedType(assm, allTypes, ns, "INewInterface");
+                CheckReflectedType(assm, allTypes, ns, "NewEnum", static (ty) => {
+                    var names = Enum.GetNames (ty);
+                    Assert.Equal(3, names.Length);
+                    var vals = Enum.GetValues (ty);
+                    Assert.Equal(3, vals.Length);
 
-		    Assert.NotNull(Enum.Parse (ty, "Red"));
-		    Assert.NotNull(Enum.Parse (ty, "Yellow"));
-		});
+                    Assert.NotNull(Enum.Parse (ty, "Red"));
+                    Assert.NotNull(Enum.Parse (ty, "Yellow"));
+                });
 
-		// make some instances using reflection and use them through known interfaces
-		var o = Activator.CreateInstance(newTy);
+                // make some instances using reflection and use them through known interfaces
+                var o = Activator.CreateInstance(newTy);
 
-		var i = (System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.IExistingInterface)o;
+                var i = (System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.IExistingInterface)o;
 
-		Assert.Equal("123", i.ItfMethod(123));
-	    });
-	}
+                Assert.Equal("123", i.ItfMethod(123));
+            });
+        }
     }
 }
