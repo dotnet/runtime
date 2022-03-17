@@ -3903,7 +3903,7 @@ mono_runtime_get_main_args_argc_raw ()
 char**
 mono_runtime_get_main_args_argv_raw ()
 {
-	return main_args;
+	return num_main_args != 0 ? main_args : NULL;
 }
 
 static void
@@ -3937,7 +3937,6 @@ mono_runtime_set_main_args (int argc, char* argv[])
 
 	free_main_args ();
 	main_args = g_new0 (char*, argc);
-	num_main_args = argc;
 
 	for (i = 0; i < argc; ++i) {
 		gchar *utf8_arg;
@@ -3950,6 +3949,8 @@ mono_runtime_set_main_args (int argc, char* argv[])
 
 		main_args [i] = utf8_arg;
 	}
+
+	num_main_args = argc;
 
 	MONO_EXTERNAL_ONLY (int, 0);
 }
@@ -3976,7 +3977,6 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 	mono_thread_set_main (mono_thread_current ());
 
 	main_args = g_new0 (char*, argc);
-	num_main_args = argc;
 
 	if (!g_path_is_absolute (argv [0])) {
 		gchar *basename = g_path_get_basename (argv [0]);
@@ -4019,6 +4019,9 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 
 		main_args [i] = utf8_arg;
 	}
+
+	num_main_args = argc;
+
 	argc--;
 	argv++;
 

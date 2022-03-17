@@ -135,16 +135,16 @@ load_buffer (
 	for (; i < event_count; ++i) {
 		EventPipeEventPayload payload;
 		gchar *event_data = NULL;
-		uint32_t event_data_len = 0;
+		size_t event_data_len = 0;
 		if (!perf_test) {
 			event_data = g_strdup_printf (event_instance_data, i);
-			event_data_len = (uint32_t)strlen (event_data) + 1;
+			event_data_len = strlen (event_data) + 1;
 		}else {
 			event_data = (gchar *)TEST_EVENT_DATA;
 			event_data_len = ARRAY_SIZE (TEST_EVENT_DATA);
 		}
 		if (event_data) {
-			ep_event_payload_init (&payload, (uint8_t *)event_data, event_data_len);
+			ep_event_payload_init (&payload, (uint8_t *)event_data, (uint32_t)event_data_len);
 			result = ep_buffer_write_event (buffer, ep_rt_thread_get_handle (), session, ep_event, &payload, NULL, NULL, NULL);
 			ep_event_payload_fini (&payload);
 

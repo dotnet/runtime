@@ -2100,14 +2100,14 @@ quote_escape_and_append_string (
 	char escape_chars [] = "\'\\";
 #endif
 
-	gboolean need_quote = FALSE;
-	gboolean need_escape = FALSE;
+	bool need_quote = false;
+	bool need_escape = false;
 
 	for (char *pos = src_str; *pos; ++pos) {
 		if (isspace (*pos))
-			need_quote = TRUE;
+			need_quote = true;
 		if (strchr (escape_chars, *pos))
-			need_escape = TRUE;
+			need_escape = true;
 	}
 
 	if (need_quote)
@@ -2181,7 +2181,7 @@ ep_rt_mono_get_managed_cmd_line ()
 		}
 	}
 
-	g_free (host_path);
+	free (host_path);
 
 	return cmd_line ? g_string_free (cmd_line, FALSE) : NULL;
 }
@@ -2194,7 +2194,14 @@ ep_rt_mono_get_os_cmd_line ()
 	// we only return the native host here since getting the full commandline is complicated and
 	// it's not super important to have the correct value since it'll only be used during startup
 	// until we have the managed commandline
-	return minipal_getexepath ();
+	char *host_path = minipal_getexepath ();
+
+	// minipal_getexepath doesn't use Mono APIs to allocate strings so
+	// we can't use g_free (which the callers of this method expect to do)
+	// so create another copy and return that one
+	char *res = g_strdup (host_path);
+	free (host_path);
+	return res;
 }
 
 #ifdef HOST_WIN32
@@ -2242,6 +2249,8 @@ ep_rt_mono_file_write (
 	uint32_t numbytes,
 	uint32_t *byteswritten)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	bool res;
 	MonoThreadInfo *info = mono_thread_info_current ();
 	gboolean alerted = FALSE;
