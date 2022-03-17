@@ -7164,8 +7164,6 @@ mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *o
 	loc.col_idx = MONO_GENERICPARAM_OWNER;
 	loc.t = tdef;
 
-	/* FIXME: metadata-update */
-
 	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
 	if (!found && !image->has_updates)
 		return 0;
