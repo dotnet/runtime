@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -925,6 +926,19 @@ namespace System.Threading.ThreadPools.Tests
                 SetBlockingConfigValue("ThreadsToAddWithoutDelay_ProcCountFactor", 1);
                 SetBlockingConfigValue("MaxDelayMs", 1);
 
+                // Since this is a time-sensitive test that needs to create many threads before it completes, if it is run in
+                // parallel with other tests busily using the CPU, it may end up timing out due to lack of resources. Subscribe
+                // to thread adjustment events to extend the timeout if progress is being made.
+                bool gotCooperativeBlockingEvent = false;
+                using var threadAdjustmentListener = new ThreadPoolAdjustmentEventListener();
+                threadAdjustmentListener.ThreadAdjustment += (_, reason) =>
+                {
+                    if (reason == ThreadAdjustmentReason.CooperativeBlocking)
+                    {
+                        gotCooperativeBlockingEvent = true;
+                    }
+                };
+
                 var allWorkItemsUnblocked = new AutoResetEvent(false);
 
                 // Run a second iteration for some extra coverage. Iterations after the first one would be much faster because
@@ -951,7 +965,17 @@ namespace System.Threading.ThreadPools.Tests
 
                     Action<int> unblockingWorkItem = _ => tcs.SetResult(0);
                     ThreadPool.UnsafeQueueUserWorkItem(unblockingWorkItem, 0, preferLocal: false);
-                    Assert.True(allWorkItemsUnblocked.WaitOne(30_000));
+
+                    while (true)
+                    {
+                        gotCooperativeBlockingEvent = false;
+                        if (allWorkItemsUnblocked.WaitOne(30_000))
+                        {
+                            break;
+                        }
+
+                        Assert.True(gotCooperativeBlockingEvent);
+                    }
                 }
 
                 void SetBlockingConfigValue(string name, int value) =>
@@ -1022,5 +1046,51 @@ namespace System.Threading.ThreadPools.Tests
 
         public static bool IsThreadingAndRemoteExecutorSupported =>
             PlatformDetection.IsThreadingSupported && RemoteExecutor.IsSupported;
+
+        private sealed class ThreadPoolAdjustmentEventListener : EventListener
+        {
+            private const string ClrProviderName = "Microsoft-Windows-DotNETRuntime";
+            private const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
+            private const int ThreadPoolWorkerThreadAdjustmentAdjustmentEventId = 55;
+            private const int ReasonPayloadIndex = 2;
+
+            public event EventHandler<ThreadAdjustmentReason> ThreadAdjustment;
+
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name == ClrProviderName)
+                {
+                    EnableEvents(eventSource, EventLevel.Informational, ThreadingKeyword);
+                }
+
+                base.OnEventSourceCreated(eventSource);
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                if (eventData.EventId == ThreadPoolWorkerThreadAdjustmentAdjustmentEventId &&
+                    eventData.Payload != null &&
+                    ReasonPayloadIndex < eventData.Payload.Count &&
+                    eventData.Payload[ReasonPayloadIndex] is uint reasonValue)
+                {
+                    ThreadAdjustment?.Invoke(this, (ThreadAdjustmentReason)reasonValue);
+                }
+
+                base.OnEventWritten(eventData);
+            }
+        }
+
+        public enum ThreadAdjustmentReason : uint
+        {
+            Warmup,
+            Initializing,
+            RandomMove,
+            ClimbingMove,
+            ChangePoint,
+            Stabilizing,
+            Starvation,
+            ThreadTimedOut,
+            CooperativeBlocking,
+        }
     }
 }
