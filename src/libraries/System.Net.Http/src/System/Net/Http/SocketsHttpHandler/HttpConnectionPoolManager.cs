@@ -53,6 +53,7 @@ namespace System.Net.Http
         private readonly TimeSpan _heartBeatInterval;
         private long _lastHeartBeatTimestamp;
 
+        private readonly WeakReference<HttpConnectionPoolManager> _weakThisRef;
         private readonly HttpConnectionSettings _settings;
         private readonly IWebProxy? _proxy;
         private readonly ICredentials? _proxyCredentials;
@@ -117,7 +118,8 @@ namespace System.Net.Http
                 }
             }
 
-            bool success = AllManagers.TryAdd(new WeakReference<HttpConnectionPoolManager>(this), 0);
+            _weakThisRef = new WeakReference<HttpConnectionPoolManager>(this);
+            bool success = AllManagers.TryAdd(_weakThisRef, 0);
             Debug.Assert(success);
         }
 
@@ -135,6 +137,7 @@ namespace System.Net.Http
                 }
                 else
                 {
+                    // These are only non-disposed instances that the GC collected
                     AllManagers.TryRemove(managerReference, out _);
                     managersRemoved++;
                 }
@@ -143,10 +146,10 @@ namespace System.Net.Http
             TimeSpan elapsed = Stopwatch.GetElapsedTime(startTimestamp);
             int dueTimeMs = (int)(GlobalHeartBeatTimerMs - Math.Min(GlobalHeartBeatTimerMs - 1, (ulong)elapsed.TotalMilliseconds));
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Verbose(null,
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null,
                 $"ConnectionPoolManager heartbeat took {(int)elapsed.TotalMilliseconds} ms, " +
                 $"restarting timer in {dueTimeMs} ms. " +
-                $"Managers removed: {managersRemoved}, managers left: {AllManagers.Count}.");
+                $"Non-disposed managers removed: {managersRemoved}, managers left: {AllManagers.Count}.");
 
             s_globalHeartBeatTimer.Change(dueTimeMs, Timeout.Infinite);
         }
@@ -420,6 +423,8 @@ namespace System.Net.Http
         /// <summary>Disposes of the pools, disposing of each individual pool.</summary>
         public void Dispose()
         {
+            AllManagers.TryRemove(_weakThisRef, out _);
+
             if (_pools is not null)
             {
                 foreach ((_, HttpConnectionPool pool) in _pools)
