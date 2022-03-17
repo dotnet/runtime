@@ -117,7 +117,19 @@ namespace Internal.Runtime.InteropServices
             if (!IsSupported)
             {
 #if CORECLR
-                OnDisabledGetFunctionPointerCall(typeNameNative, methodNameNative);
+                try
+                {
+                    OnDisabledGetFunctionPointerCall(typeNameNative, methodNameNative);
+                }
+                catch (Exception e)
+                {
+                    // The callback can intentionally throw NotSupportedException to provide errors to consumers,
+                    // so we let that one through. Any other exceptions must not be leaked out.
+                    if (e is NotSupportedException)
+                        throw;
+
+                    return e.HResult;
+                }
 #endif
                 return HostFeatureDisabled;
             }
