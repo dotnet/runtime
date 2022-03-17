@@ -435,6 +435,7 @@
     <ItemGroup>
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.js" />
+      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.worker.js" Condition="Exists('$(_WasmIntermediateOutputPath)dotnet.worker.js')" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true' and Exists('$(_WasmIntermediateOutputPath)dotnet.js.symbols')" />
     </ItemGroup>
   </Target>

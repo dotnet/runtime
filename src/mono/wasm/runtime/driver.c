@@ -501,6 +501,10 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_wasm_link_icu_shim ();
 #endif
 
+	// We should enable this as part of the wasm build later
+	monoeg_g_setenv ("MONO_THREADS_SUSPEND", "coop", 0);
+	monoeg_g_setenv ("MONO_SLEEP_ABORT_LIMIT", "250", 0);
+
 	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
 	monoeg_g_setenv ("MONO_LOG_MASK", "all", 0);
     // Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this

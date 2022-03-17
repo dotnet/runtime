@@ -7,7 +7,7 @@ import {
     MonoType, MonoObjectRef, MonoStringRef
 } from "./types";
 import { Module } from "./imports";
-import { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr } from "./types/emscripten";
+import { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
 
 const fn_signatures: [ident: string, returnType: string | null, argTypes?: string[], opts?: any][] = [
     // MONO
