@@ -51,7 +51,7 @@ REGDEF(S8,     31, 0x80000000, "s8"  )
 
 //NOTE for LoongArch64:
 //  The `REG_R21` which alias `REG_X0` is specially reserved !!!
-//  It can be used only by manully and should be very careful!!!
+//  It should be only used with hand written assembly code and should be very careful!!!
 //  e.g. right now LoongArch64's backend-codegen/emit, there is usually
 //  a need for an extra register for cases like
 //  constructing a large imm or offset, saving some intermediate result

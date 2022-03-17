@@ -344,11 +344,8 @@ struct insGroup
             ptr -= sizeof(VARSET_TP);
         }
 
-#if defined(TARGET_LOONGARCH64)
-        ptr -= sizeof(VARSET_TP);
-#else
         ptr -= sizeof(unsigned);
-#endif
+
         return *(unsigned*)ptr;
     }
 
@@ -677,7 +674,7 @@ protected:
                                   // At this point we have fully consumed first DWORD so that next field
                                   // doesn't cross a byte boundary.
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-/* _idOpSize defined bellow. */
+/* _idOpSize defined below. */
 #else
         opSize    _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
 #endif // ARM || TARGET_LOONGARCH64
@@ -1793,11 +1790,13 @@ public:
 
 #endif // FEATURE_EH_FUNCLETS
 
-    /************************************************************************/
-    /*    Methods to record a code position and later convert to offset     */
-    /************************************************************************/
+/************************************************************************/
+/*    Methods to record a code position and later convert to offset     */
+/************************************************************************/
 
+#ifndef TARGET_LOONGARCH64
     unsigned emitFindInsNum(insGroup* ig, instrDesc* id);
+#endif
     UNATIVE_OFFSET emitFindOffset(insGroup* ig, unsigned insNum);
 
 /************************************************************************/
@@ -1957,7 +1956,7 @@ private:
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 // ARM32 and ARM64 both can require a bigger prolog instruction group. One scenario is where
 // a function uses all the incoming integer and single-precision floating-point arguments,
 // and must store them all to the frame on entry. If the frame is very large, we generate
@@ -1972,13 +1971,9 @@ private:
 // which eats up our insGroup buffer.
 #define SC_IG_BUFFER_SIZE (200 * sizeof(emitter::instrDesc))
 
-#elif defined(TARGET_LOONGARCH64)
-
-#define SC_IG_BUFFER_SIZE (50 * sizeof(emitter::instrDesc) + 20 * SMALL_IDSC_SIZE)
-
-#else // !TARGET_LOONGARCH64
+#else
 #define SC_IG_BUFFER_SIZE (50 * sizeof(emitter::instrDesc) + 14 * SMALL_IDSC_SIZE)
-#endif // !TARGET_LOONGARCH64
+#endif // !(TARGET_ARMARCH || TARGET_LOONGARCH64)
 
     size_t emitIGbuffSize;
 
@@ -2160,7 +2155,7 @@ private:
     const char* emitLabelString(insGroup* ig);
 #endif
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 
     void emitGetInstrDescs(insGroup* ig, instrDesc** id, int* insCnt);
 
@@ -2174,19 +2169,7 @@ private:
 
     static void emitGenerateUnwindNop(instrDesc* id, void* context);
 
-#elif defined(TARGET_LOONGARCH64)
-    void emitGetInstrDescs(insGroup* ig, instrDesc** id, int* insCnt);
-    bool emitGetLocationInfo(emitLocation* emitLoc, insGroup** pig, instrDesc** pid, int* pinsRemaining = NULL);
-
-    bool emitNextID(insGroup*& ig, instrDesc*& id, int& insRemaining);
-
-    typedef void (*emitProcessInstrFunc_t)(instrDesc* id, void* context);
-
-    void emitWalkIDs(emitLocation* locFrom, emitProcessInstrFunc_t processFunc, void* context);
-
-    static void emitGenerateUnwindNop(instrDesc* id, void* context);
-
-#endif // TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
 #ifdef TARGET_X86
     void emitMarkStackLvl(unsigned stackLevel);
@@ -2356,7 +2339,9 @@ public:
     static emitJumpKind emitReverseJumpKind(emitJumpKind jumpKind);
 
 #ifdef DEBUG
+#ifndef TARGET_LOONGARCH64
     void emitInsSanityCheck(instrDesc* id);
+#endif
 #endif
 
 #ifdef TARGET_ARMARCH

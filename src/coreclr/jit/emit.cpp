@@ -743,12 +743,8 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
         ig->igFlags |= IGF_BYREF_REGS;
 
-// We'll allocate extra space (DWORD aligned) to record the GC regs
-#if defined(TARGET_LOONGARCH64)
-        gs += sizeof(regMaskTP);
-#else
+        // We'll allocate extra space (DWORD aligned) to record the GC regs
         gs += sizeof(int);
-#endif
     }
 
     // Allocate space for the instructions and optional liveset
@@ -759,13 +755,8 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
     if (ig->igFlags & IGF_BYREF_REGS)
     {
-// Record the byref regs in front the of the instructions
-
-#if defined(TARGET_LOONGARCH64)
-        *castto(id, regMaskTP*)++ = emitInitByrefRegs;
-#else
+        // Record the byref regs in front the of the instructions
         *castto(id, unsigned*)++ = (unsigned)emitInitByrefRegs;
-#endif
     }
 
     // Do we need to store the liveset?
@@ -1310,7 +1301,8 @@ weight_t emitter::getCurrentBlockWeight()
 #if defined(TARGET_LOONGARCH64)
 void emitter::dispIns(instrDesc* id)
 {
-    assert(!"Not used on LOONGARCH64.");
+    // For LoongArch64 using the emitDisInsName().
+    NYI_LOONGARCH64("Not used on LOONGARCH64.");
 }
 #else
 void emitter::dispIns(instrDesc* id)
@@ -3022,11 +3014,9 @@ void emitter::emitGenerateUnwindNop(instrDesc* id, void* context)
     Compiler* comp = (Compiler*)context;
 #if defined(TARGET_ARM)
     comp->unwindNop(id->idCodeSize());
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     comp->unwindNop();
-#elif defined(TARGET_LOONGARCH64)
-    comp->unwindNop();
-#endif // defined(TARGET_LOONGARCH64)
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 }
 
 /*****************************************************************************
@@ -4111,8 +4101,10 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
  *  ARM64 has a small and large encoding for both conditional branch and loading label addresses.
  *      The large encodings are pseudo-ops that represent a multiple instruction sequence, similar to ARM. (Currently
  *      NYI).
+ *  LoongArch64 has an individual implementation for emitJumpDistBind().
  */
 
+#ifndef TARGET_LOONGARCH64
 void emitter::emitJumpDistBind()
 {
 #ifdef DEBUG
@@ -4145,22 +4137,6 @@ void emitter::emitJumpDistBind()
 #endif // DEBUG
 
     int jmp_iteration = 1;
-
-#ifdef TARGET_LOONGARCH64
-    // NOTE:
-    //  bit0 of isLinkingEnd_LA: indicating whether updating the instrDescJmp's size with the type INS_OPTS_J;
-    //  bit1 of isLinkingEnd_LA: indicating not needed updating ths size while emitTotalCodeSize <= (0x7fff << 2) or had
-    //  updated;
-    unsigned int isLinkingEnd_LA = emitTotalCodeSize <= (0x7fff << 2) ? 2 : 0;
-
-    UNATIVE_OFFSET ssz = 0; // relative small jump's delay-slot.
-    // small  jump max. neg distance
-    NATIVE_OFFSET nsd = B_DIST_SMALL_MAX_NEG;
-    // small  jump max. pos distance
-    NATIVE_OFFSET psd =
-        B_DIST_SMALL_MAX_POS -
-        emitCounts_INS_OPTS_J * (3 << 2); // the max placeholder sizeof(INS_OPTS_JIRL) - sizeof(INS_OPTS_J).
-#endif
 
 /*****************************************************************************/
 /* If we iterate to look for more jumps to shorten, we start again here.     */
@@ -4198,11 +4174,9 @@ AGAIN:
 
         UNATIVE_OFFSET jsz; // size of the jump instruction in bytes
 
-#ifndef TARGET_LOONGARCH64
         UNATIVE_OFFSET ssz = 0; // small  jump size
         NATIVE_OFFSET  nsd = 0; // small  jump max. neg distance
         NATIVE_OFFSET  psd = 0; // small  jump max. pos distance
-#endif
 
 #if defined(TARGET_ARM)
         UNATIVE_OFFSET msz = 0; // medium jump size
@@ -4217,10 +4191,8 @@ AGAIN:
                                         // offset of the jump
         UNATIVE_OFFSET dstOffs;
         NATIVE_OFFSET  jmpDist; // the relative jump distance, as it will be encoded
-#ifndef TARGET_LOONGARCH64
         UNATIVE_OFFSET oldSize;
         UNATIVE_OFFSET sizeDif;
-#endif
 
 #ifdef TARGET_XARCH
         assert(jmp->idInsFmt() == IF_LABEL || jmp->idInsFmt() == IF_RWR_LABEL || jmp->idInsFmt() == IF_SWR_LABEL);
@@ -4323,14 +4295,7 @@ AGAIN:
 /* Make sure the jumps are properly ordered */
 
 #ifdef DEBUG
-#if defined(TARGET_LOONGARCH64)
-#if defined(UNALIGNED_CHECK_DISABLE)
-        UNALIGNED_CHECK_DISABLE;
-#endif
-        assert(lastLJ == nullptr || lastIG != jmp->idjIG || lastLJ->idjOffs < (jmp->idjOffs + adjLJ));
-#else
         assert(lastLJ == nullptr || lastIG != jmp->idjIG || lastLJ->idjOffs < jmp->idjOffs);
-#endif
         lastLJ = (lastIG == jmp->idjIG) ? jmp : nullptr;
 
         assert(lastIG == nullptr || lastIG->igNum <= jmp->idjIG->igNum || jmp->idjIG == prologIG ||
@@ -4364,19 +4329,11 @@ AGAIN:
                     if (EMITVERBOSE)
                     {
                         printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
-#if defined(TARGET_LOONGARCH64)
-                               lstIG->igOffs + adjIG
-#else
-                               lstIG->igOffs - adjIG
-#endif
-                               );
+                               lstIG->igOffs - adjIG);
                     }
 #endif // DEBUG
-#if defined(TARGET_LOONGARCH64)
-                    lstIG->igOffs += adjIG;
-#else
+
                     lstIG->igOffs -= adjIG;
-#endif
                     assert(IsCodeAligned(lstIG->igOffs));
                 } while (lstIG != jmpIG);
             }
@@ -4387,13 +4344,9 @@ AGAIN:
             lstIG = jmpIG;
         }
 
-/* Apply any local size adjustment to the jump's relative offset */
+        /* Apply any local size adjustment to the jump's relative offset */
 
-#if defined(TARGET_LOONGARCH64)
-        jmp->idjOffs += adjLJ;
-#else
         jmp->idjOffs -= adjLJ;
-#endif
 
         // If this is a jump via register, the instruction size does not change, so we are done.
         CLANG_FORMAT_COMMENT_ANCHOR;
@@ -4441,9 +4394,8 @@ AGAIN:
 
             if (jmp->idjShort)
             {
-#ifndef TARGET_LOONGARCH64
                 assert(jmp->idCodeSize() == ssz);
-#endif
+
                 // We should not be jumping/branching across funclets/functions
                 emitCheckFuncletBranch(jmp, jmpIG);
 
@@ -4547,17 +4499,13 @@ AGAIN:
 
         if (jmpIG->igNum < tgtIG->igNum)
         {
-/* Forward jump */
+            /* Forward jump */
 
-/* Adjust the target offset by the current delta. This is a worst-case estimate, as jumps between
-   here and the target could be shortened, causing the actual distance to shrink.
- */
+            /* Adjust the target offset by the current delta. This is a worst-case estimate, as jumps between
+               here and the target could be shortened, causing the actual distance to shrink.
+             */
 
-#if defined(TARGET_LOONGARCH64)
-            dstOffs += adjIG;
-#else
             dstOffs -= adjIG;
-#endif
 
             /* Compute the distance estimate */
 
@@ -4592,67 +4540,11 @@ AGAIN:
             }
 #endif // DEBUG_EMIT
 
-#if defined(TARGET_LOONGARCH64)
-            assert(jmpDist >= 0); // Forward jump
-            assert(!(jmpDist & 0x3));
-
-            if (isLinkingEnd_LA & 0x2)
-            {
-                jmp->idAddr()->iiaSetJmpOffset(jmpDist);
-            }
-            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J))
-            {
-                instruction ins = jmp->idIns();
-                assert((INS_bceqz <= ins) && (ins <= INS_bl));
-
-                if (ins <
-                    INS_beqz) //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu < beqz < bnez  // See instrsloongarch64.h.
-                {
-                    if ((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000)
-                    {
-                        extra = 4;
-                    }
-                    else
-                    {
-                        assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000); // TODO:later will be deleted!!!
-                        extra = 8;
-                    }
-                }
-                else if (ins < INS_b) //   beqz/bnez < b < bl    // See instrsloongarch64.h.
-                {
-                    if (jmpDist + emitCounts_INS_OPTS_J * 4 < 0x200000)
-                        continue;
-
-                    extra = 4;
-                    // assert((emitTotalCodeSize + emitCounts_INS_OPTS_J*4) < 0x8000000);
-                    assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
-                }
-                else // if (ins == INS_b || ins == INS_bl)
-                {
-                    assert(ins == INS_b || ins == INS_bl);
-                    // assert((emitTotalCodeSize + emitCounts_INS_OPTS_J*4) < 0x8000000);
-                    assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
-                    continue;
-                }
-
-                jmp->idInsOpt(INS_OPTS_JIRL);
-                jmp->idCodeSize(jmp->idCodeSize() + extra);
-                jmpIG->igSize += (unsigned short)extra; // the placeholder sizeof(INS_OPTS_JIRL) - sizeof(INS_OPTS_J).
-                adjLJ += (UNATIVE_OFFSET)extra;
-                adjIG += (UNATIVE_OFFSET)extra;
-                emitTotalCodeSize += (UNATIVE_OFFSET)extra;
-                jmpIG->igFlags |= IGF_UPD_ISZ;
-                isLinkingEnd_LA |= 0x1;
-            }
-            continue;
-
-#else // not defined(TARGET_LOONGARCH64)
             if (extra <= 0)
             {
                 /* This jump will be a short one */
                 goto SHORT_JMP;
             }
-#endif
         }
         else
         {
@@ -4691,70 +4583,13 @@ AGAIN:
             }
 #endif // DEBUG_EMIT
 
-#if defined(TARGET_LOONGARCH64)
-            assert(jmpDist >= 0); // Backward jump
-            assert(!(jmpDist & 0x3));
-
-            if (isLinkingEnd_LA & 0x2)
-            {
-                jmp->idAddr()->iiaSetJmpOffset(-jmpDist); // Backward jump is negative!
-            }
-            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J))
-            {
-                instruction ins = jmp->idIns();
-                assert((INS_bceqz <= ins) && (ins <= INS_bl));
-
-                if (ins <
-                    INS_beqz) //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu < beqz < bnez  // See instrsloongarch64.h.
-                {
-                    if ((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000)
-                    {
-                        extra = 4;
-                    }
-                    else
-                    {
-                        assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
-                        extra = 8;
-                    }
-                }
-                else if (ins < INS_b) //   beqz/bnez < b < bl    // See instrsloongarch64.h.
-                {
-                    if (jmpDist + emitCounts_INS_OPTS_J * 4 < 0x200000)
-                        continue;
-
-                    extra = 4;
-                    // assert((emitTotalCodeSize + emitCounts_INS_OPTS_J*4) < 0x8000000);
-                    assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
-                }
-                else
-                {
-                    assert(ins == INS_b || ins == INS_bl);
-                    // assert((emitTotalCodeSize + emitCounts_INS_OPTS_J*4) < 0x8000000);
-                    assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
-                    continue;
-                }
-
-                jmp->idInsOpt(INS_OPTS_JIRL);
-                jmp->idCodeSize(jmp->idCodeSize() + extra);
-                jmpIG->igSize += (unsigned short)extra; // the placeholder sizeof(INS_OPTS_JIRL) - sizeof(INS_OPTS_J).
-                adjLJ += (UNATIVE_OFFSET)extra;
-                adjIG += (UNATIVE_OFFSET)extra;
-                emitTotalCodeSize += (UNATIVE_OFFSET)extra;
-                jmpIG->igFlags |= IGF_UPD_ISZ;
-                isLinkingEnd_LA |= 0x1;
-            }
-            continue;
-
-#else // not defined(TARGET_LOONGARCH64)
             if (extra <= 0)
             {
                 /* This jump will be a short one */
                 goto SHORT_JMP;
             }
-#endif
         }
 
-#ifndef TARGET_LOONGARCH64
         /* We arrive here if the jump couldn't be made short, at least for now */
 
         /* We had better not have eagerly marked the jump as short
@@ -4946,40 +4781,8 @@ AGAIN:
 
         jmpIG->igFlags |= IGF_UPD_ISZ;
 
-#endif // not defined(TARGET_LOONGARCH64)
-    }  // end for each jump
+    } // end for each jump
 
-#if defined(TARGET_LOONGARCH64)
-    if ((isLinkingEnd_LA & 0x3) < 0x2)
-    {
-        // indicating had updated the instrDescJmp's size with the type INS_OPTS_J.
-        isLinkingEnd_LA = 0x2;
-        // emitRecomputeIGoffsets();
-        /* Adjust offsets of any remaining blocks */
-
-        for (; lstIG;)
-        {
-            lstIG = lstIG->igNext;
-            if (!lstIG)
-            {
-                break;
-            }
-#ifdef DEBUG
-            if (EMITVERBOSE)
-            {
-                printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
-                       lstIG->igOffs + adjIG);
-            }
-#endif // DEBUG
-
-            lstIG->igOffs += adjIG;
-
-            assert(IsCodeAligned(lstIG->igOffs));
-        }
-        goto AGAIN;
-    }
-
-#else
     /* Did we shorten any jumps? */
 
     if (adjIG)
@@ -5043,7 +4846,6 @@ AGAIN:
             goto AGAIN;
         }
     }
-#endif
 
 #ifdef DEBUG
     if (EMIT_INSTLIST_VERBOSE)
@@ -5055,6 +4857,7 @@ AGAIN:
     emitCheckIGoffsets();
 #endif // DEBUG
 }
+#endif
 
 #if FEATURE_LOOP_ALIGN
 
@@ -5866,7 +5669,7 @@ emitter::instrDescAlign* emitter::emitAlignInNextIG(instrDescAlign* alignInstr)
 void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
 {
 #ifdef TARGET_LOONGARCH64
-    /* TODO: for LOONGARCH64: not support idDebugOnlyInfo.*/
+    // TODO-LoongArch64: support idDebugOnlyInfo.
     return;
 #else
 
@@ -7045,13 +6848,7 @@ void emitter::emitGenGCInfoIfFuncletRetTarget(insGroup* ig, BYTE* cp)
  *  instruction number for this instruction
  */
 
-#if defined(TARGET_LOONGARCH64)
-unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch)
-{
-    assert(!"unimplemented yet on LOONGARCH");
-    return -1;
-}
-#else
+#ifndef TARGET_LOONGARCH64
 unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch)
 {
     instrDesc* id = (instrDesc*)ig->igData;
@@ -9532,7 +9329,7 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             result = RBM_CALLEE_TRASH_NOGC & ~(RBM_RDI | RBM_RSI);
             break;
 #elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
-            result      = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
+            result = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
             break;
 #else
             assert(!"unknown arch");

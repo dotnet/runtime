@@ -21,24 +21,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "gcinfo.h"
 #include "gcinfoencoder.h"
 
-// Returns true if 'value' is a legal signed immediate 12 bit encoding.
-static bool isValidSimm12(ssize_t value)
-{
-    return -(((int)1) << 11) <= value && value < (((int)1) << 11);
-}
-
-// Returns true if 'value' is a legal unsigned immediate 11 bit encoding.
-static bool isValidUimm11(ssize_t value)
-{
-    return (0 == (value >> 11));
-}
-
-// Returns true if 'value' is a legal unsigned immediate 12 bit encoding.
-static bool isValidUimm12(ssize_t value)
-{
-    return (0 == (value >> 12));
-}
-
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -114,7 +96,7 @@ bool CodeGen::genInstrWithConstant(instruction ins,
             break;
     }
 #endif
-    bool immFitsInIns = isValidSimm12(imm);
+    bool immFitsInIns = emitter::isValidSimm12(imm);
 
     if (immFitsInIns)
     {
@@ -1653,7 +1635,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     assert((genRegMask(rAddr) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
     assert(untrLclLo % 4 == 0);
 
-    if (isValidSimm12(untrLclLo))
+    if (emitter::isValidSimm12(untrLclLo))
     {
         GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, rAddr, genFramePointerReg(), untrLclLo);
     }
@@ -2432,7 +2414,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
             lastTouchDelta = amount;
             imm            = -(ssize_t)amount;
-            if (isValidSimm12(imm))
+            if (emitter::isValidSimm12(imm))
             {
                 emit->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, imm);
             }
@@ -4297,11 +4279,11 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
 
             if (tree->OperIs(GT_LT))
             {
-                if (!IsUnsigned && isValidSimm12(imm))
+                if (!IsUnsigned && emitter::isValidSimm12(imm))
                 {
                     emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm);
                 }
-                else if (IsUnsigned && isValidUimm11(imm))
+                else if (IsUnsigned && emitter::isValidUimm11(imm))
                 {
                     emit->emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, regOp1, imm);
                 }
@@ -4313,11 +4295,11 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
             }
             else if (tree->OperIs(GT_LE))
             {
-                if (!IsUnsigned && isValidSimm12(imm + 1))
+                if (!IsUnsigned && emitter::isValidSimm12(imm + 1))
                 {
                     emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm + 1);
                 }
-                else if (IsUnsigned && isValidUimm11(imm + 1))
+                else if (IsUnsigned && emitter::isValidUimm11(imm + 1))
                 {
                     emit->emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, regOp1, imm + 1);
                 }
@@ -4329,12 +4311,12 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
             }
             else if (tree->OperIs(GT_GT))
             {
-                if (!IsUnsigned && isValidSimm12(imm + 1))
+                if (!IsUnsigned && emitter::isValidSimm12(imm + 1))
                 {
                     emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, REG_RA, regOp1, imm + 1);
                     emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, REG_RA, 1);
                 }
-                else if (IsUnsigned && isValidUimm11(imm + 1))
+                else if (IsUnsigned && emitter::isValidUimm11(imm + 1))
                 {
                     emit->emitIns_R_R_I(INS_sltui, EA_PTRSIZE, REG_RA, regOp1, imm + 1);
                     emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, REG_RA, 1);
@@ -4347,11 +4329,11 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
             }
             else if (tree->OperIs(GT_GE))
             {
-                if (!IsUnsigned && isValidSimm12(imm))
+                if (!IsUnsigned && emitter::isValidSimm12(imm))
                 {
                     emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm);
                 }
-                else if (IsUnsigned && isValidUimm11(imm))
+                else if (IsUnsigned && emitter::isValidUimm11(imm))
                 {
                     emit->emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, regOp1, imm);
                 }
@@ -4368,7 +4350,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
                 {
                     emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, regOp1);
                 }
-                else if (isValidUimm12(imm))
+                else if (emitter::isValidUimm12(imm))
                 {
                     emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, regOp1, imm);
                     emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, targetReg);
@@ -4386,7 +4368,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
                 {
                     emit->emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, regOp1, 1);
                 }
-                else if (isValidUimm12(imm))
+                else if (emitter::isValidUimm12(imm))
                 {
                     emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, regOp1, imm);
                     emit->emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, targetReg, 1);
@@ -5414,7 +5396,7 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
     // function that does a probe, which will in turn call this function.
     assert((target_size_t)(-spDelta) <= compiler->eeGetPageSize());
 
-    if (isValidSimm12(spDelta))
+    if (emitter::isValidSimm12(spDelta))
     {
         GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spDelta);
     }
@@ -8106,7 +8088,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
             if (castMinValue != 0)
             {
-                if (isValidSimm12(castMinValue))
+                if (emitter::isValidSimm12(castMinValue))
                 {
                     GetEmitter()->emitIns_R_R_I(INS_slti, EA_ATTR(desc.CheckSrcSize()), REG_R21, reg, castMinValue);
                 }
@@ -8427,7 +8409,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 
         if (offset != 0)
         {
-            if (isValidSimm12(offset))
+            if (emitter::isValidSimm12(offset))
             {
                 emit->emitIns_R_R_I(INS_addi_d, size, tmpReg, tmpReg, offset);
             }
@@ -8451,7 +8433,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     {
         GenTree* memBase = lea->Base();
 
-        if (isValidSimm12(offset))
+        if (emitter::isValidSimm12(offset))
         {
             if (offset != 0)
             {
@@ -8508,7 +8490,7 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
     }
     else
     {
-        assert(isValidSimm12(delta));
+        assert(emitter::isValidSimm12(delta));
         GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, delta);
     }
 
@@ -9589,7 +9571,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
 
             base += baseOffset;
 
-            if (isValidSimm12(base))
+            if (emitter::isValidSimm12(base))
             {
                 GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, baseOffset);
             }
@@ -9641,7 +9623,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                 {
                     base += baseOffset;
 
-                    if (isValidSimm12(base))
+                    if (emitter::isValidSimm12(base))
                     {
                         GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, baseOffset);
                     }
@@ -9672,7 +9654,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     base += 8;
 
                     GetEmitter()->emitIns_R_R_Imm(INS_ld_d, size, REG_SCRATCH, REG_SPBASE, genTotalFrameSize());
-                    if (isValidSimm12(base))
+                    if (emitter::isValidSimm12(base))
                     {
                         GetEmitter()->emitIns_S_R(INS_st_d, size, REG_SCRATCH, varNum, baseOffset);
                     }
