@@ -163,11 +163,8 @@ export interface t_Cwraps {
     mono_wasm_set_main_args(argc: number, argv: VoidPtr): void;
     mono_profiler_init_aot(desc: string): void;
     mono_wasm_exec_regression(verbose_level: number, image: string): number;
-<<<<<<< HEAD
-=======
     mono_wasm_write_managed_pointer_unsafe(destination: VoidPtr | MonoObjectRef, pointer: ManagedPointer): void;
     mono_wasm_copy_managed_pointer(destination: VoidPtr | MonoObjectRef, source: VoidPtr | MonoObjectRef): void;
->>>>>>> 4499a7cb781 (Checkpoint (strings are broken for some reason))
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};
