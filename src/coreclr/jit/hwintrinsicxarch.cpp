@@ -537,7 +537,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
     GenTree* op3     = nullptr;
     GenTree* op4     = nullptr;
 
-    if (!featureSIMD || !IsBaselineSimdIsaSupported())
+    if (!IsBaselineSimdIsaSupported())
     {
         return nullptr;
     }

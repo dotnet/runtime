@@ -64,13 +64,11 @@ HRESULT GetMachineAndResourceSectionRVA(ICorDebugDataTarget* pDataTarget,
 
     // after the signature is a 20 byte image file header
     // we need to parse this to figure out the target architecture
-    IMAGE_FILE_HEADER imageFileHeader;
+    IMAGE_FILE_HEADER imageFileHeader = {};
     if (SUCCEEDED(hr))
     {
         hr = ReadFromDataTarget(pDataTarget, moduleBaseAddress + peSigFilePointer + 4, (BYTE*)&imageFileHeader, IMAGE_SIZEOF_FILE_HEADER);
     }
-
-
 
     WORD optHeaderMagic = 0;
     DWORD peOptImageHeaderFilePointer = 0;

@@ -313,7 +313,7 @@ g_ensure_directory_exists (const gchar *filename)
 	if (!dir_utf8 || !dir_utf8 [0])
 		return FALSE;
 
-	dir_utf16 = g_utf8_to_utf16 (dir_utf8, strlen (dir_utf8), NULL, NULL, NULL);
+	dir_utf16 = g_utf8_to_utf16 (dir_utf8, (glong)strlen (dir_utf8), NULL, NULL, NULL);
 	g_free (dir_utf8);
 
 	if (!dir_utf16)

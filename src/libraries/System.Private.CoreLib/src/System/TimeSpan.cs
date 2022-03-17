@@ -26,10 +26,12 @@ namespace System
     // an appropriate custom ILMarshaler to keep WInRT interop scenarios enabled.
     //
     [Serializable]
-    public readonly struct TimeSpan : IComparable, IComparable<TimeSpan>, IEquatable<TimeSpan>, ISpanFormattable
-#if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
-        , IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>,
+    public readonly struct TimeSpan
+        : IComparable,
+          IComparable<TimeSpan>,
+          IEquatable<TimeSpan>,
+          ISpanFormattable,
+          IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>,
           IAdditiveIdentity<TimeSpan, TimeSpan>,
           IComparisonOperators<TimeSpan, TimeSpan>,
           IDivisionOperators<TimeSpan, double, TimeSpan>,
@@ -41,8 +43,6 @@ namespace System
           ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>,
           IUnaryNegationOperators<TimeSpan, TimeSpan>,
           IUnaryPlusOperators<TimeSpan, TimeSpan>
-#pragma warning restore SA1001, CA2252
-#endif // FEATURE_GENERIC_MATH
     {
         public const long TicksPerMillisecond = 10000;
 
@@ -504,16 +504,13 @@ namespace System
 
         public static bool operator >=(TimeSpan t1, TimeSpan t2) => t1._ticks >= t2._ticks;
 
-#if FEATURE_GENERIC_MATH
         //
         // IAdditionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static TimeSpan IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>.operator +(TimeSpan left, TimeSpan right)
             => left + right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked TimeSpan IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>.operator +(TimeSpan left, TimeSpan right)
         //     => checked(left + right);
 
@@ -521,26 +518,21 @@ namespace System
         // IAdditiveIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static TimeSpan IAdditiveIdentity<TimeSpan, TimeSpan>.AdditiveIdentity => default;
 
         //
         // IComparisonOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<TimeSpan, TimeSpan>.operator <(TimeSpan left, TimeSpan right)
             => left<right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<TimeSpan, TimeSpan>.operator <=(TimeSpan left, TimeSpan right)
             => left <= right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<TimeSpan, TimeSpan>.operator >(TimeSpan left, TimeSpan right)
             => left > right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<TimeSpan, TimeSpan>.operator >=(TimeSpan left, TimeSpan right)
             => left >= right;
 
@@ -548,19 +540,15 @@ namespace System
         // IDivisionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static TimeSpan IDivisionOperators<TimeSpan, double, TimeSpan>.operator /(TimeSpan left, double right)
             => left / right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked TimeSpan IDivisionOperators<TimeSpan, double, TimeSpan>.operator /(TimeSpan left, double right)
         //     => checked(left / right);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static double IDivisionOperators<TimeSpan, TimeSpan, double>.operator /(TimeSpan left, TimeSpan right)
             => left / right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked double IDivisionOperators<TimeSpan, TimeSpan, double>.operator /(TimeSpan left, TimeSpan right)
         //     => checked(left / right);
 
@@ -568,11 +556,9 @@ namespace System
         // IEqualityOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<TimeSpan, TimeSpan>.operator ==(TimeSpan left, TimeSpan right)
             => left == right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<TimeSpan, TimeSpan>.operator !=(TimeSpan left, TimeSpan right)
             => left != right;
 
@@ -580,28 +566,23 @@ namespace System
         // IMinMaxValue
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static TimeSpan IMinMaxValue<TimeSpan>.MinValue => MinValue;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static TimeSpan IMinMaxValue<TimeSpan>.MaxValue => MaxValue;
 
         //
         // IMultiplicativeIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static double IMultiplicativeIdentity<TimeSpan, double>.MultiplicativeIdentity => 1.0;
 
         //
         // IMultiplyOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static TimeSpan IMultiplyOperators<TimeSpan, double, TimeSpan>.operator *(TimeSpan left, double right)
             => left * right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked TimeSpan IMultiplyOperators<TimeSpan, double, TimeSpan>.operator *(TimeSpan left, double right)
         //     => checked(left * right);
 
@@ -609,11 +590,9 @@ namespace System
         // IParseable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static TimeSpan IParseable<TimeSpan>.Parse(string s, IFormatProvider? provider)
             => Parse(s, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IParseable<TimeSpan>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out TimeSpan result)
             => TryParse(s, provider, out result);
 
@@ -621,11 +600,9 @@ namespace System
         // ISpanParseable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static TimeSpan ISpanParseable<TimeSpan>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
             => Parse(s, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool ISpanParseable<TimeSpan>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out TimeSpan result)
             => TryParse(s, provider, out result);
 
@@ -633,11 +610,9 @@ namespace System
         // ISubtractionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static TimeSpan ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>.operator -(TimeSpan left, TimeSpan right)
             => left - right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked TimeSpan ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>.operator -(TimeSpan left, TimeSpan right)
         //     => checked(left - right);
 
@@ -645,11 +620,9 @@ namespace System
         // IUnaryNegationOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static TimeSpan IUnaryNegationOperators<TimeSpan, TimeSpan>.operator -(TimeSpan value)
             => -value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked TimeSpan IUnaryNegationOperators<TimeSpan, TimeSpan>.operator -(TimeSpan value)
         //     => checked(-value);
 
@@ -657,13 +630,10 @@ namespace System
         // IUnaryNegationOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static TimeSpan IUnaryPlusOperators<TimeSpan, TimeSpan>.operator +(TimeSpan value)
             => +value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked TimeSpan IUnaryPlusOperators<TimeSpan, TimeSpan>.operator +(TimeSpan value)
         //     => checked(+value);
-#endif // FEATURE_GENERIC_MATH
     }
 }

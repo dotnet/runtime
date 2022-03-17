@@ -235,34 +235,44 @@ namespace System.Text.RegularExpressions.Tests
 
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                // \u0130 (Turkish I with dot) and \u0131 (Turkish i without dot) are unrelated characters in general
-
-                // Expected answers in the default en-US culture
-                yield return new object[] { "(?i:I)", engine, enUS, "xy\u0131ab", "" };
-                yield return new object[] { "(?i:iI+)", engine, enUS, "abcIIIxyz", "III" };
-                yield return new object[] { "(?i:iI+)", engine, enUS, "abcIi\u0130xyz", "Ii\u0130" };
-                yield return new object[] { "(?i:iI+)", engine, enUS, "abcI\u0130ixyz", "I\u0130i" };
-                yield return new object[] { "(?i:iI+)", engine, enUS, "abc\u0130IIxyz", "\u0130II" };
-                yield return new object[] { "(?i:iI+)", engine, enUS, "abc\u0130\u0131Ixyz", "" };
-                yield return new object[] { "(?i:iI+)", engine, enUS, "abc\u0130Iixyz", "\u0130Ii" };
-                yield return new object[] { "(?i:[^IJKLM]I)", engine, enUS, "ii\u0130i\u0131ab", "" };
-
-                // Expected answers in the invariant culture
-                yield return new object[] { "(?i:I)", engine, invariant, "xy\u0131ab", "" };
-                yield return new object[] { "(?i:iI+)", engine, invariant, "abcIIIxyz", "III" };
-                yield return new object[] { "(?i:iI+)", engine, invariant, "abc\u0130\u0131Ixyz", "" };
-
-                // Expected answers in the Turkish culture
-                //
-                // Android produces unexpected results for tr-TR
-                // https://github.com/dotnet/runtime/issues/60568
-                if (!PlatformDetection.IsAndroid)
+                foreach (RegexOptions option in new[] { RegexOptions.None, RegexOptions.RightToLeft })
                 {
-                    yield return new object[] { "(?i:I)", engine, turkish, "xy\u0131ab", "\u0131" };
-                    yield return new object[] { "(?i:iI+)", engine, turkish, "abcIIIxyz", "" };
-                    yield return new object[] { "(?i:iI+)", engine, turkish, "abcIi\u0130xyz", "" };
-                    yield return new object[] { "(?i:iI+)", engine, turkish, "abcI\u0130ixyz", "" };
-                    yield return new object[] { "(?i:[^IJKLM]I)", engine, turkish, "ii\u0130i\u0131ab", "i\u0131" };
+                    if (RegexHelpers.IsNonBacktracking(engine) && (option & RegexOptions.RightToLeft) != 0)
+                    {
+                        continue;
+                    }
+
+                    // \u0130 (Turkish I with dot) and \u0131 (Turkish i without dot) are unrelated characters in general
+
+                    // Expected answers in the default en-US culture
+                    yield return new object[] { "(?i:I)", option, engine, enUS, "xy\u0131ab", "" };
+                    yield return new object[] { "(?i:iI+)", option, engine, enUS, "abcIIIxyz", "III" };
+                    yield return new object[] { "(?i:iI+)", option, engine, enUS, "abcIi\u0130xyz", "Ii\u0130" };
+                    yield return new object[] { "(?i:iI+)", option, engine, enUS, "abcI\u0130ixyz", "I\u0130i" };
+                    yield return new object[] { "(?i:iI+)", option, engine, enUS, "abc\u0130IIxyz", "\u0130II" };
+                    yield return new object[] { "(?i:iI+)", option, engine, enUS, "abc\u0130\u0131Ixyz", "" };
+                    yield return new object[] { "(?i:iI+)", option, engine, enUS, "abc\u0130Iixyz", "\u0130Ii" };
+                    yield return new object[] { "(?i:[^IJKLM]I)", option, engine, enUS, "ii\u0130i\u0131ab", "" };
+
+                    // Expected answers in the invariant culture
+                    yield return new object[] { "(?i:I)", option, engine, invariant, "xy\u0131ab", "" };
+                    yield return new object[] { "(?i:iI+)", option, engine, invariant, "abcIIIxyz", "III" };
+                    yield return new object[] { "(?i:iI+)", option, engine, invariant, "abc\u0130\u0131Ixyz", "" };
+
+                    // Expected answers in the Turkish culture
+                    //
+                    // Android produces unexpected results for tr-TR
+                    // https://github.com/dotnet/runtime/issues/60568
+                    if (!PlatformDetection.IsAndroid)
+                    {
+                        yield return new object[] { "(?i:I)", option, engine, turkish, "xy\u0131ab", "\u0131" };
+                        yield return new object[] { "(?i:iI+)", option, engine, turkish, "abcIIIxyz", "" };
+                        yield return new object[] { "(?i:iI+)", option, engine, turkish, "abcIi\u0130xyz", "" };
+                        yield return new object[] { "(?i:iI+)", option, engine, turkish, "abcI\u0130ixyz", "" };
+                        yield return new object[] { "(?i:[^IJKLM]I)", option, engine, turkish, "ii\u0130i\u0131ab", "i\u0131" };
+                        yield return new object[] { "(?i)\u0049", option, engine, turkish, "\u0131", "\u0131" };
+                        yield return new object[] { "(?i)[a\u0049]", option, engine, turkish, "c\u0131c", "\u0131" };
+                    }
                 }
 
                 // None and Compiled are separated into the Match_In_Different_Cultures_CriticalCases test
@@ -280,22 +290,23 @@ namespace System.Text.RegularExpressions.Tests
         {
             CultureInfo invariant = CultureInfo.InvariantCulture;
             CultureInfo turkish = new CultureInfo("tr-TR");
+            RegexOptions options = RegexOptions.None;
 
             // Expected answers in the invariant culture
-            yield return new object[] { "(?i:iI+)", engine, invariant, "abcIi\u0130xyz", "Ii" };               // <-- failing for None, Compiled
-            yield return new object[] { "(?i:iI+)", engine, invariant, "abcI\u0130ixyz", "" };                 // <-- failing for Compiled
-            yield return new object[] { "(?i:iI+)", engine, invariant, "abc\u0130IIxyz", "II" };               // <-- failing for Compiled
-            yield return new object[] { "(?i:iI+)", engine, invariant, "abc\u0130Iixyz", "Ii" };               // <-- failing for Compiled
-            yield return new object[] { "(?i:[^IJKLM]I)", engine, invariant, "ii\u0130i\u0131ab", "\u0130i" }; // <-- failing for None, Compiled
+            yield return new object[] { "(?i:iI+)", options, engine, invariant, "abcIi\u0130xyz", "Ii" };               // <-- failing for None, Compiled
+            yield return new object[] { "(?i:iI+)", options, engine, invariant, "abcI\u0130ixyz", "" };                 // <-- failing for Compiled
+            yield return new object[] { "(?i:iI+)", options, engine, invariant, "abc\u0130IIxyz", "II" };               // <-- failing for Compiled
+            yield return new object[] { "(?i:iI+)", options, engine, invariant, "abc\u0130Iixyz", "Ii" };               // <-- failing for Compiled
+            yield return new object[] { "(?i:[^IJKLM]I)", options, engine, invariant, "ii\u0130i\u0131ab", "\u0130i" }; // <-- failing for None, Compiled
 
             // Expected answers in the Turkish culture
             // Android produces unexpected results for tr-TR
             // https://github.com/dotnet/runtime/issues/60568
             if (!PlatformDetection.IsAndroid)
             {
-                yield return new object[] { "(?i:iI+)", engine, turkish, "abc\u0130IIxyz", "\u0130II" };           // <-- failing for None, Compiled
-                yield return new object[] { "(?i:iI+)", engine, turkish, "abc\u0130\u0131Ixyz", "\u0130\u0131I" }; // <-- failing for None, Compiled
-                yield return new object[] { "(?i:iI+)", engine, turkish, "abc\u0130Iixyz", "\u0130I" };            // <-- failing for None, Compiled
+                yield return new object[] { "(?i:iI+)", options, engine, turkish, "abc\u0130IIxyz", "\u0130II" };           // <-- failing for None, Compiled
+                yield return new object[] { "(?i:iI+)", options, engine, turkish, "abc\u0130\u0131Ixyz", "\u0130\u0131I" }; // <-- failing for None, Compiled
+                yield return new object[] { "(?i:iI+)", options, engine, turkish, "abc\u0130Iixyz", "\u0130I" };            // <-- failing for None, Compiled
             }
         }
 
@@ -306,9 +317,9 @@ namespace System.Text.RegularExpressions.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60697", TestPlatforms.iOS | TestPlatforms.tvOS)]
         [Theory]
         [MemberData(nameof(Match_In_Different_Cultures_TestData))]
-        public async Task Match_In_Different_Cultures(string pattern, RegexEngine engine, CultureInfo culture, string input, string match_expected)
+        public async Task Match_In_Different_Cultures(string pattern, RegexOptions options, RegexEngine engine, CultureInfo culture, string input, string match_expected)
         {
-            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, RegexOptions.None, culture);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options, culture);
             Match match = r.Match(input);
             Assert.Equal(match_expected, match.Value);
         }
@@ -316,9 +327,9 @@ namespace System.Text.RegularExpressions.Tests
         [ActiveIssue("Incorrect treatment of IgnoreCase in Turkish and Invariant cultures, https://github.com/dotnet/runtime/issues/58956, https://github.com/dotnet/runtime/issues/58958 ")]
         [Theory]
         [MemberData(nameof(Match_In_Different_Cultures_CriticalCases_TestData))]
-        public async Task Match_In_Different_Cultures_CriticalCases(string pattern, RegexEngine engine, CultureInfo culture, string input, string match_expected)
+        public async Task Match_In_Different_Cultures_CriticalCases(string pattern, RegexOptions options, RegexEngine engine, CultureInfo culture, string input, string match_expected)
         {
-            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, RegexOptions.None, culture);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options, culture);
             Match match = r.Match(input);
             Assert.Equal(match_expected, match.Value);
         }

@@ -9211,32 +9211,29 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         }
 
 #if FEATURE_SIMD
-        if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
+        // Check for the simd class...
+        _ASSERTE(exactClass != NULL);
+        GCX_PREEMP();
+        bool isIntrinsicType = m_interpCeeInfo.isIntrinsicType(exactClass);
+
+        if (isIntrinsicType)
         {
-            // Check for the simd class...
-            _ASSERTE(exactClass != NULL);
-            GCX_PREEMP();
-            bool isIntrinsicType = m_interpCeeInfo.isIntrinsicType(exactClass);
-
-            if (isIntrinsicType)
+            // SIMD intrinsics are recognized by name.
+            const char* namespaceName = NULL;
+            const char* className = NULL;
+            const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
+            if ((strcmp(methodName, "get_IsHardwareAccelerated") == 0) && (strcmp(className, "Vector") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
             {
-                // SIMD intrinsics are recognized by name.
-                const char* namespaceName = NULL;
-                const char* className = NULL;
-                const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
-                if ((strcmp(methodName, "get_IsHardwareAccelerated") == 0) && (strcmp(className, "Vector") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
-                {
-                    GCX_COOP();
-                    DoSIMDHwAccelerated();
-                    didIntrinsic = true;
-                }
+                GCX_COOP();
+                DoSIMDHwAccelerated();
+                didIntrinsic = true;
             }
+        }
 
-            if (didIntrinsic)
-            {
-                // Must block caching or we lose easy access to the class
-                doNotCache = true;
-            }
+        if (didIntrinsic)
+        {
+            // Must block caching or we lose easy access to the class
+            doNotCache = true;
         }
 #endif // FEATURE_SIMD
 

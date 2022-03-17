@@ -16,7 +16,7 @@ namespace LibraryImportGenerator.UnitTests
 {
     public class Diagnostics
     {
-        [ConditionalTheory]
+        [Theory]
         [InlineData(TestTargetFramework.Framework)]
         [InlineData(TestTargetFramework.Core)]
         [InlineData(TestTargetFramework.Standard)]
@@ -42,7 +42,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(TestTargetFramework.Framework)]
         [InlineData(TestTargetFramework.Core)]
         [InlineData(TestTargetFramework.Standard)]
@@ -67,7 +67,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ParameterTypeNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -105,7 +105,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ReturnTypeNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -143,7 +143,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ParameterTypeNotSupportedWithDetails_ReportsDiagnostic()
         {
             string source = @"
@@ -171,7 +171,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ReturnTypeNotSupportedWithDetails_ReportsDiagnostic()
         {
             string source = @"
@@ -202,7 +202,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ParameterConfigurationNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -235,7 +235,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ReturnConfigurationNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -270,7 +270,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task MarshalAsUnmanagedTypeNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -310,7 +310,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task MarshalAsFieldNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -343,7 +343,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task StringMarshallingForwardingNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -388,7 +388,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task InvalidStringMarshallingConfiguration_ReportsDiagnostic()
         {
             string source = @$"
@@ -426,7 +426,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NonPartialMethod_ReportsDiagnostic()
         {
             string source = @"
@@ -458,7 +458,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NonStaticMethod_ReportsDiagnostic()
         {
             string source = @"
@@ -485,7 +485,7 @@ partial class Test
             TestUtils.AssertPreSourceGeneratorCompilation(newComp);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task GenericMethod_ReportsDiagnostic()
         {
             string source = @"
@@ -518,7 +518,7 @@ partial class Test
             TestUtils.AssertPreSourceGeneratorCompilation(newComp);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData("class")]
         [InlineData("struct")]
         [InlineData("record")]
@@ -551,7 +551,7 @@ using System.Runtime.InteropServices;
             TestUtils.AssertPreSourceGeneratorCompilation(newComp, additionalDiag);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData("class")]
         [InlineData("struct")]
         [InlineData("record")]

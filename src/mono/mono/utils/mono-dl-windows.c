@@ -50,7 +50,7 @@ mono_dl_open_file (const char *file, int flags)
 {
 	gpointer hModule = NULL;
 	if (file) {
-		gunichar2* file_utf16 = g_utf8_to_utf16 (file, strlen (file), NULL, NULL, NULL);
+		gunichar2* file_utf16 = g_utf8_to_utf16 (file, (glong)strlen (file), NULL, NULL, NULL);
 
 #if HAVE_API_SUPPORT_WIN32_SET_ERROR_MODE
 		guint last_sem = SetErrorMode (SEM_FAILCRITICALERRORS);

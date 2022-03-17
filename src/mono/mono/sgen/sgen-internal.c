@@ -281,7 +281,7 @@ sgen_init_internal_allocator (void)
 		fixed_type_allocator_indexes [i] = -1;
 
 	for (i = 0; i < NUM_ALLOCATORS; ++i) {
-		allocator_block_sizes [i] = block_size (allocator_sizes [i]);
+		allocator_block_sizes [i] = (int)block_size (allocator_sizes [i]);
 		mono_lock_free_allocator_init_size_class (&size_classes [i], allocator_sizes [i], allocator_block_sizes [i]);
 		mono_lock_free_allocator_init_allocator (&allocators [i], &size_classes [i], MONO_MEM_ACCOUNT_SGEN_INTERNAL);
 	}

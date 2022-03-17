@@ -137,7 +137,8 @@ namespace System.Text.RegularExpressions
         {
             const int MaxOptionShift = 11;
             if (((((uint)options) >> MaxOptionShift) != 0) ||
-                ((options & RegexOptions.ECMAScript) != 0 && (options & ~(RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.NonBacktracking | RegexOptions.CultureInvariant)) != 0))
+                ((options & RegexOptions.ECMAScript) != 0 && (options & ~(RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.CultureInvariant)) != 0) ||
+                ((options & RegexOptions.NonBacktracking) != 0 && (options & (RegexOptions.ECMAScript | RegexOptions.RightToLeft)) != 0))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.options);
             }
@@ -569,13 +570,7 @@ namespace System.Text.RegularExpressions
                     return null;
                 }
 
-                match.Tidy(runner.runtextpos);
-
-                // If the passed in beginning was not 0 then we need to adjust the offsets on the match object.
-                if (beginning != 0)
-                {
-                    match.AddBeginningToIndex(beginning);
-                }
+                match.Tidy(runner.runtextpos, beginning);
 
                 return match;
             }
