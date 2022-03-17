@@ -1607,6 +1607,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
 
     // Tail call the real target.
     EmitCallManagedMethod(pSharedMD, TRUE /* tail call */);
+    SetTargetMethod(pSharedMD);
 }
 
 void StubLinkerCPU::EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndirect)

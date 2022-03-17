@@ -319,7 +319,7 @@ namespace ILCompiler
                         continue;
 
                     if (!attribute.FixedArguments[0].Type.IsString
-                        || ((string)(attribute.FixedArguments[0].Value)).Equals("IsTrimmable", StringComparison.Ordinal))
+                        || !((string)(attribute.FixedArguments[0].Value)).Equals("IsTrimmable", StringComparison.Ordinal))
                         continue;
 
                     if (!attribute.FixedArguments[1].Type.IsString)

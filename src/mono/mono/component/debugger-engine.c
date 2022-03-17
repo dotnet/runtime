@@ -1690,7 +1690,7 @@ get_async_method_builder (DbgEngineStackFrame *frame)
 		builder = mono_vtype_get_field_addr (*(guint8**)this_addr, builder_field);
 	} else {
 		this_obj = *(MonoObject**)this_addr;
-		builder = (char*)this_obj + builder_field->offset;
+		builder = (char*)this_obj + m_field_get_offset (builder_field);
 	}
 
 	return builder;

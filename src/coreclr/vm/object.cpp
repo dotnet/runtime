@@ -579,7 +579,7 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
 #ifdef FEATURE_64BIT_ALIGNMENT
         if (pMT->RequiresAlign8())
         {
-            CHECK_AND_TEAR_DOWN((((size_t)this) & 0x7) == (pMT->IsValueType()? 4:0));
+            CHECK_AND_TEAR_DOWN((((size_t)this) & 0x7) == (size_t)(pMT->IsValueType()?4:0));
         }
         lastTest = 9;
 #endif // FEATURE_64BIT_ALIGNMENT
@@ -1488,10 +1488,6 @@ void StackTraceArray::EnsureThreadAffinity()
     }
 }
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4267)
-#endif
-
 // Deep copies the stack trace array
 void StackTraceArray::CopyFrom(StackTraceArray const & src)
 {
@@ -1515,11 +1511,6 @@ void StackTraceArray::CopyFrom(StackTraceArray const & src)
                     // another thread might have changed it at the time of copying
     SetObjectThread();  // affinitize the newly created array with the current thread
 }
-
-#ifdef _MSC_VER
-#pragma warning(default: 4267)
-#endif
-
 
 #ifdef _DEBUG
 //===============================================================================

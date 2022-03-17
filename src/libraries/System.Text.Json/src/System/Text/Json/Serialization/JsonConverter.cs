@@ -33,7 +33,16 @@ namespace System.Text.Json.Serialization
         /// </summary>
         internal virtual bool CanHaveIdMetadata => false;
 
+        /// <summary>
+        /// The converter supports polymorphic writes; only reserved for System.Object types.
+        /// </summary>
         internal bool CanBePolymorphic { get; set; }
+
+        /// <summary>
+        /// The serializer must read ahead all contents of the next JSON value
+        /// before calling into the converter for deserialization.
+        /// </summary>
+        internal bool RequiresReadAhead { get; set; }
 
         /// <summary>
         /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.

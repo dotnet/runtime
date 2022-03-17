@@ -45,10 +45,9 @@ static Chunk*
 alloc_chunk (MonoLockFreeArray *arr)
 {
 	int size = mono_pagesize ();
-	int num_entries = (size - (sizeof (Chunk) - arr->entry_size * MONO_ZERO_LEN_ARRAY)) / arr->entry_size;
 	Chunk *chunk = (Chunk *) mono_valloc (NULL, size, MONO_MMAP_READ | MONO_MMAP_WRITE, arr->account_type);
 	g_assert (chunk);
-	chunk->num_entries = num_entries;
+	chunk->num_entries = (gint32)((size - (sizeof (Chunk) - arr->entry_size * MONO_ZERO_LEN_ARRAY)) / arr->entry_size);
 	return chunk;
 }
 

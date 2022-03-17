@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using Xunit;
 
@@ -47,6 +48,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             {
                 get { return null; }
             }
+
+            public IEnumerable<string> NonInstantiatedIEnumerable { get; set; } = null!;
+            public IEnumerable<string> InstantiatedIEnumerable { get; set; } = new List<string>();
+            public ICollection<string> InstantiatedICollection { get; set; } = new List<string>();
+            public IReadOnlyCollection<string> InstantiatedIReadOnlyCollection { get; set; } = new List<string>();
         }
 
         public class NestedOptions
@@ -218,6 +224,107 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<ComplexOptions>();
             
             Assert.Equal("Yo", options.NamedProperty);
+        }
+
+        [Fact]
+        public void CanBindNonInstantiatedIEnumerableWithItems()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"NonInstantiatedIEnumerable:0", "Yo1"},
+                {"NonInstantiatedIEnumerable:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.NonInstantiatedIEnumerable.Count());
+            Assert.Equal("Yo1", options.NonInstantiatedIEnumerable.ElementAt(0));
+            Assert.Equal("Yo2", options.NonInstantiatedIEnumerable.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedIEnumerableWithItems()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedIEnumerable:0", "Yo1"},
+                {"InstantiatedIEnumerable:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedIEnumerable.Count());
+            Assert.Equal("Yo1", options.InstantiatedIEnumerable.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedIEnumerable.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedICollectionWithItems()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedICollection:0", "Yo1"},
+                {"InstantiatedICollection:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedICollection.Count());
+            Assert.Equal("Yo1", options.InstantiatedICollection.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedICollection.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedIReadOnlyCollectionWithItems()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedIReadOnlyCollection:0", "Yo1"},
+                {"InstantiatedIReadOnlyCollection:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedIReadOnlyCollection.Count);
+            Assert.Equal("Yo1", options.InstantiatedIReadOnlyCollection.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedIReadOnlyCollection.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedIEnumerableWithNullItems()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedIEnumerable:0", null},
+                {"InstantiatedIEnumerable:1", "Yo1"},
+                {"InstantiatedIEnumerable:2", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedIEnumerable.Count());
+            Assert.Equal("Yo1", options.InstantiatedIEnumerable.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedIEnumerable.ElementAt(1));
         }
 
         [Fact]

@@ -791,7 +791,7 @@ namespace Microsoft.Interop
                 if (_defaultInfo.CharEncoding == CharEncoding.Custom && _defaultInfo.StringMarshallingCustomType is not null)
                 {
                     AttributeData attrData = _contextSymbol is IMethodSymbol
-                        ? _contextSymbol.GetAttributes().First(a => a.AttributeClass.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
+                        ? _contextSymbol.GetAttributes().First(a => a.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
                         : default;
                     marshallingInfo = CreateNativeMarshallingInfo(type, _defaultInfo.StringMarshallingCustomType, attrData, true, indirectionLevel, parsedCountInfo, useSiteAttributes, inspectedElements, ref maxIndirectionLevelUsed);
                     return true;
@@ -802,6 +802,17 @@ namespace Microsoft.Interop
                     marshallingInfo = new MarshallingInfoStringSupport(_defaultInfo.CharEncoding);
                     return true;
                 }
+            }
+
+            if (type.SpecialType == SpecialType.System_Boolean)
+            {
+                // We explicitly don't support marshalling bool without any marshalling info
+                // as treating bool as a non-normalized 1-byte value is generally not a good default.
+                // Additionally, that default is different than the runtime marshalling, so by explicitly
+                // blocking bool marshalling without additional info, we make it a little easier
+                // to transition by explicitly notifying people of changing behavior.
+                marshallingInfo = NoMarshallingInfo.Instance;
+                return false;
             }
 
             if (type is INamedTypeSymbol { IsUnmanagedType: true } unmanagedType
@@ -818,14 +829,12 @@ namespace Microsoft.Interop
         private MarshallingInfo GetBlittableMarshallingInfo(ITypeSymbol type)
         {
             if (type.TypeKind is TypeKind.Enum or TypeKind.Pointer or TypeKind.FunctionPointer
-                || type.SpecialType.IsAlwaysBlittable()
-                || type.SpecialType == SpecialType.System_Boolean)
+                || type.SpecialType.IsAlwaysBlittable())
             {
                 // Treat primitive types and enums as having no marshalling info.
                 // They are supported in configurations where runtime marshalling is enabled.
                 return NoMarshallingInfo.Instance;
             }
-
             else if (_compilation.GetTypeByMetadataName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute) is null)
             {
                 // If runtime marshalling cannot be disabled, then treat this as a "missing support" scenario so we can gracefully fall back to using the fowarder downlevel.

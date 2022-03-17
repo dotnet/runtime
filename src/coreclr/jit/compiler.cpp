@@ -1885,7 +1885,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compQmarkRationalized = false;
     compQmarkUsed         = false;
     compFloatingPointUsed = false;
-    compUnsafeCastUsed    = false;
 
     compSuppressedZeroInit = false;
 
@@ -2235,7 +2234,7 @@ void Compiler::compSetProcessor()
     opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 #ifdef DEBUG
     if (opts.compUseCMOV)
-        opts.compUseCMOV                = !compStressCompile(STRESS_USE_CMOV, 50);
+        opts.compUseCMOV                   = !compStressCompile(STRESS_USE_CMOV, 50);
 #endif // DEBUG
 
 #endif // TARGET_X86
@@ -2410,15 +2409,17 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitAlignLoopBoundary       = (unsigned short)JitConfig.JitAlignLoopBoundary();
     opts.compJitAlignLoopMinBlockWeight = (unsigned short)JitConfig.JitAlignLoopMinBlockWeight();
 
-    opts.compJitAlignLoopForJcc      = JitConfig.JitAlignLoopForJcc() == 1;
-    opts.compJitAlignLoopMaxCodeSize = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
-    opts.compJitHideAlignBehindJmp   = JitConfig.JitHideAlignBehindJmp() == 1;
+    opts.compJitAlignLoopForJcc            = JitConfig.JitAlignLoopForJcc() == 1;
+    opts.compJitAlignLoopMaxCodeSize       = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
+    opts.compJitHideAlignBehindJmp         = JitConfig.JitHideAlignBehindJmp() == 1;
+    opts.compJitOptimizeStructHiddenBuffer = JitConfig.JitOptimizeStructHiddenBuffer() == 1;
 #else
-    opts.compJitAlignLoopAdaptive       = true;
-    opts.compJitAlignLoopBoundary       = DEFAULT_ALIGN_LOOP_BOUNDARY;
-    opts.compJitAlignLoopMinBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
-    opts.compJitAlignLoopMaxCodeSize    = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
-    opts.compJitHideAlignBehindJmp      = true;
+    opts.compJitAlignLoopAdaptive          = true;
+    opts.compJitAlignLoopBoundary          = DEFAULT_ALIGN_LOOP_BOUNDARY;
+    opts.compJitAlignLoopMinBlockWeight    = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
+    opts.compJitAlignLoopMaxCodeSize       = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
+    opts.compJitHideAlignBehindJmp         = true;
+    opts.compJitOptimizeStructHiddenBuffer = true;
 #endif
 
 #ifdef TARGET_XARCH
@@ -2667,8 +2668,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif // DEBUG
 
 #ifdef FEATURE_SIMD
-    // Minimum bar for availing SIMD benefits is SSE2 on AMD64/x86.
-    featureSIMD = jitFlags->IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD);
     setUsesSIMDTypes(false);
 #endif // FEATURE_SIMD
 
@@ -4077,6 +4076,15 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
 {
     const bool tier0 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
     const bool tier1 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+
+    if (!opts.compMinOptsIsSet)
+    {
+        // If 'compMinOptsIsSet' is not set, just return here. Otherwise, if this method is called
+        // by the assertAbort(), we would recursively call assert while trying to get MinOpts()
+        // and eventually stackoverflow.
+        return "Optimization-Level-Not-Yet-Set";
+    }
+
     assert(!tier0 || !tier1); // We don't expect multiple TIER flags to be set at one time.
 
     if (tier0)
@@ -9756,7 +9764,7 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 //
 var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 {
-    if (varTypeIsIntegral(tree))
+    if (varTypeIsArithmetic(tree))
     {
 #if defined(TARGET_XARCH)
         // Just an optimization for XARCH - smaller mov
@@ -9873,6 +9881,9 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
         {
             case DoNotEnregisterReason::AddrExposed:
                 m_addrExposed++;
+                break;
+            case DoNotEnregisterReason::HiddenBufferStructArg:
+                m_hiddenStructArg++;
                 break;
             case DoNotEnregisterReason::DontEnregStructs:
                 m_dontEnregStructs++;
@@ -10044,6 +10055,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     }
 
     PRINT_STATS(m_addrExposed, notEnreg);
+    PRINT_STATS(m_hiddenStructArg, notEnreg);
     PRINT_STATS(m_dontEnregStructs, notEnreg);
     PRINT_STATS(m_notRegSizeStruct, notEnreg);
     PRINT_STATS(m_localField, notEnreg);
