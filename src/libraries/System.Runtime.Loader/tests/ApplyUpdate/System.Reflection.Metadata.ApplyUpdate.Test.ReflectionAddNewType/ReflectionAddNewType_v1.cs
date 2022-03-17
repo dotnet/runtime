@@ -17,11 +17,14 @@ public class ZExistingClass
 
     public string NewMethod (string s, int i) => s + i.ToString();
 
+    // Mono doesn't support instance fields yet
+#if false
     public int NewField;
+#endif
 
     public static DateTime NewStaticField;
 
-    public double NewProp { get; set; }
+    public static double NewProp { get; set; }
 }
 
 [AttributeUsage(AttributeTargets.All, AllowMultiple=true, Inherited=false)]
