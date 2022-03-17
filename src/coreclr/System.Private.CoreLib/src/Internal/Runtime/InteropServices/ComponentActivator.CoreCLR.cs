@@ -15,7 +15,7 @@ namespace Internal.Runtime.InteropServices
             if (!OperatingSystem.IsWindows())
                 return;
 
-            // Check for the exact type and method name used by ijwhost - see src/native/corehoste/ijwhost/ijwhost.cpp
+            // Check for the exact type and method name used by ijwhost - see src/native/corehost/ijwhost/ijwhost.cpp
             if (Marshal.PtrToStringUni(methodNameNative) == "LoadInMemoryAssemblyInContext"
                 && Marshal.PtrToStringUni(typeNameNative) == $"Internal.Runtime.InteropServices.{nameof(InMemoryAssemblyLoader)}, {CoreLib.Name}")
             {

@@ -13,7 +13,7 @@
 
     <!-- Enables the .NET IJW host (before .NET 7.0) to load an in-memory module as a .NET assembly.
         These are always rooted to ensure native calls get trimmer related errors
-        but will be trimmed away by the related feature switch -->
+        but their bodies will be mostly trimmed away by the related feature switch -->
     <type fullname="Internal.Runtime.InteropServices.InMemoryAssemblyLoader">
       <method name="LoadInMemoryAssembly" />
     </type>
