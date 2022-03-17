@@ -9,7 +9,7 @@
     <IsRunningLibraryTests Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'WasmTestOnNodeJs'">true</IsRunningLibraryTests>
 
     <BuildHelixWorkItemsDependsOn>$(BuildHelixWorkItemsDependsOn);StageEmSdkForHelix;PrepareForBuildHelixWorkItems_Wasm</BuildHelixWorkItemsDependsOn>
-    <BuildHelixWorkItemsDependsOn Condition="'$(WindowsShell)' != 'true'">$(BuildHelixWorkItemsDependsOn);DownloadAndInstallFirefox</BuildHelixWorkItemsDependsOn>
+    <BuildHelixWorkItemsDependsOn Condition="'$(WindowsShell)' != 'true'">$(BuildHelixWorkItemsDependsOn);DownloadFirefoxToSendToHelix</BuildHelixWorkItemsDependsOn>
     <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
     <EnableDefaultBuildHelixWorkItems Condition="'$(IsRunningLibraryTests)' != 'true'">false</EnableDefaultBuildHelixWorkItems>
 
@@ -19,6 +19,7 @@
     <!-- on unix CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. -->
     <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\wasm\emsdk\</EMSDK_PATH>
     <EmSdkDirForHelixPayload>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDirForHelixPayload>
+    <FirefoxForHelixPayload>$(TestArchiveRoot)firefox</FirefoxForHelixPayload>
 
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
     <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsEMSDK>
@@ -50,7 +51,6 @@
 
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromeDriverDirName):$PATH" />
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromiumDirName):$PATH" />
-    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(FirefoxDirName):$PATH" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' == 'true'">
@@ -64,7 +64,6 @@
 
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDriverDirName)%3B%PATH%" />
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromiumDirName)%3B%PATH%" />
-    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(FirefoxDirName)%3B%PATH%" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(NeedsEMSDKNode)' == 'true' and '$(WindowsShell)' != 'true'">
@@ -128,12 +127,8 @@
     <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true'">
       <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" />
       <HelixCorrelationPayload Include="chromedriver" Uri="$(ChromeDriverUrl)" />
+      <HelixCorrelationPayload Include="$(TestArchiveRoot)firefox.zip" Destination="firefox" AsArchive='true' />
     </ItemGroup>
-
-    <PropertyGroup Condition="'$(NeedsToRunOnBrowser)' == 'true'">
-      <FirefoxStampFile>.install-firefox-$(FirefoxRevision).stamp</FirefoxStampFile>
-      <FirefoxDir>firefox\</FirefoxDir>    
-    </PropertyGroup>
 
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
       <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)"              Destination="build/emsdk" />
@@ -244,31 +239,15 @@
     <Copy SourceFiles="@(_EmSdkFiles)" DestinationFolder="$(EmSdkDirForHelixPayload)\%(RecursiveDir)" />
   </Target>
   
-  <Target Name="DownloadAndInstallFirefox"
-          Condition="!Exists($(FirefoxStampFile))">
-    <ItemGroup>
-      <_StampFile Include=".install-firefox*.stamp" />
-    </ItemGroup>
-
-    <Delete Files="@(_StampFile)" />
-    <RemoveDir Directories="firefox" />
-
-    <DownloadFile SourceUrl="$(FirefoxUrl)" DestinationFolder="firefox" SkipUnchangedFiles="true">
+  <Target Name="DownloadFirefoxToSendToHelix"
+          Condition="!Exists($(FirefoxForHelixPayload))">
+    <DownloadFile SourceUrl="$(FirefoxUrl)" DestinationFolder="$(FirefoxForHelixPayload)" SkipUnchangedFiles="true">
       <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
     </DownloadFile>
-    <Exec Command="tar -xf $(_DownloadedFile) -C $(FirefoxDir)"/>
-    <Exec Command='echo "user_pref(\"devtools.chrome.enabled\", true);\nuser_pref(\"devtools.debugger.remote-enabled\", true);\nuser_pref(\"devtools.debugger.prompt-connection\", false);" > $(FirefoxDir)/prefs.js'/>
-    
-
-    <PropertyGroup>
-      <_FirefoxBinaryPath>$([MSBuild]::NormalizePath($(FirefoxDir), $(FirefoxBinaryName)))</_FirefoxBinaryPath>
-    </PropertyGroup>
-
-    <Error Text="Cannot find firefox at $(_FirefoxBinaryPath) in the downloaded copy"
-           Condition="!Exists($(_FirefoxBinaryPath))" />
-
-    <Exec Command="chmod +x $(_FirefoxBinaryPath)"/>
-
-    <Touch Files="$(FirefoxStampFile)" AlwaysCreate="true" />
+    <Exec Command="tar -xf $(_DownloadedFile) -C $(FirefoxForHelixPayload)"/>
+    <Exec Command='echo "user_pref(\"devtools.chrome.enabled\", true);\nuser_pref(\"devtools.debugger.remote-enabled\", true);\nuser_pref(\"devtools.debugger.prompt-connection\", false);" > $(FirefoxForHelixPayload)/prefs.js'/>
+    <Exec Command="rm $(_DownloadedFile)"/>
+    <Exec Command="cd $(TestArchiveRoot); zip -r firefox.zip firefox"/>
+    <Exec Command="rm -rf $(FirefoxForHelixPayload)"/>
   </Target>
 </Project>
