@@ -24,7 +24,7 @@ namespace System
 {
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct Char
         : IComparable,
           IComparable<char>,
@@ -125,7 +125,7 @@ namespace System
             return m_value == ((char)obj).m_value;
         }
 
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         public bool Equals(char obj)
         {
             return m_value == obj;
@@ -1065,169 +1065,174 @@ namespace System
         // IAdditionOperators
         //
 
-        static char IAdditionOperators<char, char, char>.operator +(char left, char right)
-            => (char)(left + right);
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        static char IAdditionOperators<char, char, char>.operator +(char left, char right) => (char) (left + right);
 
-        // static checked char IAdditionOperators<char, char, char>.operator +(char left, char right)
-        //     => checked((char)(left + right));
+        // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        // static char IAdditionOperators<char, char, char>.operator checked +(char left, char right) => checked((char)(left + right));
 
         //
         // IAdditiveIdentity
         //
 
+        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
         static char IAdditiveIdentity<char, char>.AdditiveIdentity => (char)0;
 
         //
         // IBinaryInteger
         //
 
-        static char IBinaryInteger<char>.LeadingZeroCount(char value)
-            => (char)(BitOperations.LeadingZeroCount(value) - 16);
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
+        public static char LeadingZeroCount(char value) => (char)(BitOperations.LeadingZeroCount(value) - 16);
 
-        static char IBinaryInteger<char>.PopCount(char value)
-            => (char)BitOperations.PopCount(value);
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
+        public static char PopCount(char value) => (char)BitOperations.PopCount(value);
 
-        static char IBinaryInteger<char>.RotateLeft(char value, int rotateAmount)
-            => (char)((value << (rotateAmount & 15)) | (value >> ((16 - rotateAmount) & 15)));
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
+        public static char RotateLeft(char value, int rotateAmount) => (char)((value << (rotateAmount & 15)) | (value >> ((16 - rotateAmount) & 15)));
 
-        static char IBinaryInteger<char>.RotateRight(char value, int rotateAmount)
-            => (char)((value >> (rotateAmount & 15)) | (value << ((16 - rotateAmount) & 15)));
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
+        public static char RotateRight(char value, int rotateAmount) => (char)((value >> (rotateAmount & 15)) | (value << ((16 - rotateAmount) & 15)));
 
-        static char IBinaryInteger<char>.TrailingZeroCount(char value)
-            => (char)(BitOperations.TrailingZeroCount(value << 16) - 16);
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
+        public static char TrailingZeroCount(char value) => (char)(BitOperations.TrailingZeroCount(value << 16) - 16);
 
         //
         // IBinaryNumber
         //
 
-        static bool IBinaryNumber<char>.IsPow2(char value)
-            => BitOperations.IsPow2((uint)value);
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
+        public static bool IsPow2(char value) => BitOperations.IsPow2((uint)value);
 
-        static char IBinaryNumber<char>.Log2(char value)
-            => (char)BitOperations.Log2(value);
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
+        public static char Log2(char value) => (char)BitOperations.Log2(value);
 
         //
         // IBitwiseOperators
         //
 
-        static char IBitwiseOperators<char, char, char>.operator &(char left, char right)
-            => (char)(left & right);
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_BitwiseAnd(TSelf, TOther)" />
+        static char IBitwiseOperators<char, char, char>.operator &(char left, char right) => (char)(left & right);
 
-        static char IBitwiseOperators<char, char, char>.operator |(char left, char right)
-            => (char)(left | right);
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_BitwiseOr(TSelf, TOther)" />
+        static char IBitwiseOperators<char, char, char>.operator |(char left, char right) => (char)(left | right);
 
-        static char IBitwiseOperators<char, char, char>.operator ^(char left, char right)
-            => (char)(left ^ right);
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_ExclusiveOr(TSelf, TOther)" />
+        static char IBitwiseOperators<char, char, char>.operator ^(char left, char right) => (char)(left ^ right);
 
-        static char IBitwiseOperators<char, char, char>.operator ~(char value)
-            => (char)(~value);
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_OnesComplement(TSelf)" />
+        static char IBitwiseOperators<char, char, char>.operator ~(char value) => (char)(~value);
 
         //
         // IComparisonOperators
         //
 
-        static bool IComparisonOperators<char, char>.operator <(char left, char right)
-            => left < right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        static bool IComparisonOperators<char, char>.operator <(char left, char right) => left < right;
 
-        static bool IComparisonOperators<char, char>.operator <=(char left, char right)
-            => left <= right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        static bool IComparisonOperators<char, char>.operator <=(char left, char right) => left <= right;
 
-        static bool IComparisonOperators<char, char>.operator >(char left, char right)
-            => left > right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        static bool IComparisonOperators<char, char>.operator >(char left, char right) => left > right;
 
-        static bool IComparisonOperators<char, char>.operator >=(char left, char right)
-            => left >= right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        static bool IComparisonOperators<char, char>.operator >=(char left, char right) => left >= right;
 
         //
         // IDecrementOperators
         //
 
-        static char IDecrementOperators<char>.operator --(char value)
-            => --value;
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        static char IDecrementOperators<char>.operator --(char value) => --value;
 
-        // static checked char IDecrementOperators<char>.operator --(char value)
-        //     => checked(--value);
+        // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_CheckedDecrement(TSelf)" />
+        // static char IDecrementOperators<char>.operator checked --(char value) => checked(--value);
 
         //
         // IDivisionOperators
         //
 
-        static char IDivisionOperators<char, char, char>.operator /(char left, char right)
-            => (char)(left / right);
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
+        static char IDivisionOperators<char, char, char>.operator /(char left, char right) => (char)(left / right);
 
-        // static checked char IDivisionOperators<char, char, char>.operator /(char left, char right)
-        //     => checked((char)(left / right));
+        // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        // static char IDivisionOperators<char, char, char>.operator /(char left, char right) => checked((char)(left / right));
 
         //
         // IEqualityOperators
         //
 
-        static bool IEqualityOperators<char, char>.operator ==(char left, char right)
-            => left == right;
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
+        static bool IEqualityOperators<char, char>.operator ==(char left, char right) => left == right;
 
-        static bool IEqualityOperators<char, char>.operator !=(char left, char right)
-            => left != right;
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
+        static bool IEqualityOperators<char, char>.operator !=(char left, char right) => left != right;
 
         //
         // IIncrementOperators
         //
 
-        static char IIncrementOperators<char>.operator ++(char value)
-            => ++value;
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
+        static char IIncrementOperators<char>.operator ++(char value) => ++value;
 
-        // static checked char IIncrementOperators<char>.operator ++(char value)
-        //     => checked(++value);
+        // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
+        // static char IIncrementOperators<char>.operator checked ++(char value) => checked(++value);
 
         //
         // IMinMaxValue
         //
 
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
         static char IMinMaxValue<char>.MinValue => MinValue;
 
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         static char IMinMaxValue<char>.MaxValue => MaxValue;
 
         //
         // IModulusOperators
         //
 
-        static char IModulusOperators<char, char, char>.operator %(char left, char right)
-            => (char)(left % right);
-
-        // static checked char IModulusOperators<char, char, char>.operator %(char left, char right)
-        //     => checked((char)(left % right));
+        /// <inheritdoc cref="IModulusOperators{TSelf, TOther, TResult}.op_Modulus(TSelf, TOther)" />
+        static char IModulusOperators<char, char, char>.operator %(char left, char right) => (char)(left % right);
 
         //
         // IMultiplicativeIdentity
         //
 
+        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
         static char IMultiplicativeIdentity<char, char>.MultiplicativeIdentity => (char)1;
 
         //
         // IMultiplyOperators
         //
 
-        static char IMultiplyOperators<char, char, char>.operator *(char left, char right)
-            => (char)(left * right);
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
+        static char IMultiplyOperators<char, char, char>.operator *(char left, char right) => (char)(left * right);
 
-        // static checked char IMultiplyOperators<char, char, char>.operator *(char left, char right)
-        //     => checked((char)(left * right));
+        // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        // static char IMultiplyOperators<char, char, char>.operator checked *(char left, char right) => checked((char)(left * right));
 
         //
         // INumber
         //
 
+        /// <inheritdoc cref="INumber{TSelf}.One" />
         static char INumber<char>.One => (char)1;
 
+        /// <inheritdoc cref="INumber{TSelf}.Zero" />
         static char INumber<char>.Zero => (char)0;
 
-        static char INumber<char>.Abs(char value)
-            => value;
+        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
+        public static char Abs(char value) => value;
 
-        static char INumber<char>.Clamp(char value, char min, char max)
-            => (char)Math.Clamp(value, min, max);
+        /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
+        public static char Clamp(char value, char min, char max) => (char)Math.Clamp(value, min, max);
 
+        /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static char INumber<char>.Create<TOther>(TOther value)
+        public static char Create<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1292,8 +1297,10 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static char INumber<char>.CreateSaturating<TOther>(TOther value)
+        public static char CreateSaturating<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1375,8 +1382,10 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static char INumber<char>.CreateTruncating<TOther>(TOther value)
+        public static char CreateTruncating<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1441,32 +1450,22 @@ namespace System
             }
         }
 
-        static (char Quotient, char Remainder) INumber<char>.DivRem(char left, char right)
-            => ((char, char))Math.DivRem(left, right);
+        /// <inheritdoc cref="INumber{TSelf}.DivRem(TSelf, TSelf)" />
+        public static (char Quotient, char Remainder) DivRem(char left, char right) => ((char, char))Math.DivRem(left, right);
 
-        static char INumber<char>.Max(char x, char y)
-            => (char)Math.Max(x, y);
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        public static char Max(char x, char y) => (char)Math.Max(x, y);
 
-        static char INumber<char>.Min(char x, char y)
-            => (char)Math.Min(x, y);
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        public static char Min(char x, char y) => (char)Math.Min(x, y);
 
-        static char INumber<char>.Parse(string s, NumberStyles style, IFormatProvider? provider)
-            => Parse(s);
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        public static char Sign(char value) => (char)((value == 0) ? 0 : 1);
 
-        static char INumber<char>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
-        {
-            if (s.Length != 1)
-            {
-                throw new FormatException(SR.Format_NeedSingleChar);
-            }
-            return s[0];
-        }
-
-        static char INumber<char>.Sign(char value)
-            => (char)((value == 0) ? 0 : 1);
-
+        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<char>.TryCreate<TOther>(TOther value, out char result)
+        public static bool TryCreate<TOther>(TOther value, out char result)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1642,8 +1641,18 @@ namespace System
             }
         }
 
-        static bool INumber<char>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result)
-            => TryParse(s, out result);
+        static char INumber<char>.Parse(string s, NumberStyles style, IFormatProvider? provider) => Parse(s);
+
+        static char INumber<char>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+        {
+            if (s.Length != 1)
+            {
+                throw new FormatException(SR.Format_NeedSingleChar);
+            }
+            return s[0];
+        }
+
+        static bool INumber<char>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
         static bool INumber<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result)
         {
@@ -1660,24 +1669,22 @@ namespace System
         // IParseable
         //
 
-        static char IParseable<char>.Parse(string s, IFormatProvider? provider)
-            => Parse(s);
+        static char IParseable<char>.Parse(string s, IFormatProvider? provider) => Parse(s);
 
-        static bool IParseable<char>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out char result)
-            => TryParse(s, out result);
+        static bool IParseable<char>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
         //
         // IShiftOperators
         //
 
-        static char IShiftOperators<char, char>.operator <<(char value, int shiftAmount)
-            => (char)(value << shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
+        static char IShiftOperators<char, char>.operator <<(char value, int shiftAmount) => (char)(value << shiftAmount);
 
-        static char IShiftOperators<char, char>.operator >>(char value, int shiftAmount)
-            => (char)(value >> shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
+        static char IShiftOperators<char, char>.operator >>(char value, int shiftAmount) => (char)(value >> shiftAmount);
 
-        // static char IShiftOperators<char, char, char>.operator >>>(char value, int shiftAmount)
-        //     => (char)(value >> shiftAmount);
+        // /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        // static char IShiftOperators<char, char>.operator >>>(char value, int shiftAmount) => (char)(value >> shiftAmount);
 
         //
         // ISpanParseable
@@ -1707,30 +1714,30 @@ namespace System
         // ISubtractionOperators
         //
 
-        static char ISubtractionOperators<char, char, char>.operator -(char left, char right)
-            => (char)(left - right);
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
+        static char ISubtractionOperators<char, char, char>.operator -(char left, char right) => (char)(left - right);
 
-        // static checked char ISubtractionOperators<char, char, char>.operator -(char left, char right)
-        //     => checked((char)(left - right));
+        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        // static char ISubtractionOperators<char, char, char>.operator checked -(char left, char right) => checked((char)(left - right));
 
         //
         // IUnaryNegationOperators
         //
 
-        static char IUnaryNegationOperators<char, char>.operator -(char value)
-            => (char)(-value);
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
+        static char IUnaryNegationOperators<char, char>.operator -(char value) => (char)(-value);
 
-        // static checked char IUnaryNegationOperators<char, char>.operator -(char value)
-        //     => checked((char)(-value));
+        // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        // static char IUnaryNegationOperators<char, char>.operator checked -(char value) => checked((char)(-value));
 
         //
         // IUnaryPlusOperators
         //
 
-        static char IUnaryPlusOperators<char, char>.operator +(char value)
-            => (char)(+value);
+        /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
+        static char IUnaryPlusOperators<char, char>.operator +(char value) => (char)(+value);
 
-        // static checked char IUnaryPlusOperators<char, char>.operator +(char value)
-        //     => checked((char)(+value));
+        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
+        // static byte IUnaryPlusOperators<char, char>.operator checked +(byte value) => checked((char)(+value));
     }
 }
