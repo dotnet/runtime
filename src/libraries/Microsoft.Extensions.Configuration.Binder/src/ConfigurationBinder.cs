@@ -399,7 +399,7 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
-        private static object CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type)
+        private static object CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             Debug.Assert(!type.IsArray);
 
