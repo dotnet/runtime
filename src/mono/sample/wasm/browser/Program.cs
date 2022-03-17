@@ -37,11 +37,15 @@ namespace Sample
         {
             Console.WriteLine("Hello from another thread");
 
+            GC.Collect();
+
             for (int i = 0; i < 10; i++)
             {
                 Console.WriteLine("Sleeping from another thread: " + i.ToString());
                 Thread.Sleep(0);
             }
+
+            GC.Collect();
         }
     }
 }

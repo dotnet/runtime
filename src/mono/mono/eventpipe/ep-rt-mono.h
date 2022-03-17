@@ -871,7 +871,6 @@ inline
 bool
 ep_rt_config_value_get_enable (void)
 {
-	/*
 	bool enable = false;
 	gchar *value = g_getenv ("DOTNET_EnableEventPipe");
 	if (!value)
@@ -885,8 +884,8 @@ ep_rt_config_value_get_enable (void)
 	}
 	g_free (value);
 	return enable;
-	*/
-	return true;
+
+	//return true;
 }
 
 static

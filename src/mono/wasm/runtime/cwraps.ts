@@ -73,6 +73,8 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_enable_on_demand_gc", "void", ["number"]],
     ["mono_profiler_init_aot", "void", ["number"]],
     ["mono_wasm_exec_regression", "number", ["number", "string"]],
+    ["mono_wasm_write_managed_pointer_unsafe", "void", ["number", "number"]],
+    ["mono_wasm_copy_managed_pointer", "void", ["number", "number"]],
 ];
 
 export interface t_Cwraps {

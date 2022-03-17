@@ -1745,6 +1745,7 @@ mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filena
 	 * purpose assembly loading mechanism.
 	 */
 	MonoImage *image = NULL;
+	MONO_ENTER_GC_UNSAFE;
 	gboolean is_satellite = culture && culture [0] != 0;
 
 	if (is_satellite)
@@ -1756,6 +1757,7 @@ mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filena
 		mono_image_addref (image);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly Loader loaded assembly from bundle: '%s'.", filename);
 	}
+	MONO_EXIT_GC_UNSAFE;
 	return image;
 }
 
