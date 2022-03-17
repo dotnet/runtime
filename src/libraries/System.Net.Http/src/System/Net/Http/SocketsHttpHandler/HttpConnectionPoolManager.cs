@@ -424,9 +424,7 @@ namespace System.Net.Http
         /// <summary>Disposes of the pools, disposing of each individual pool.</summary>
         public void Dispose()
         {
-            AllManagers.TryRemove(_weakThisRef, out _);
-
-            if (_pools is not null)
+            if (AllManagers.TryRemove(_weakThisRef, out _) && _pools is not null)
             {
                 foreach ((_, HttpConnectionPool pool) in _pools)
                 {
