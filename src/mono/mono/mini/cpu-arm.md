@@ -211,7 +211,6 @@ float_conv_to_u4: dest:i src1:f len:88
 float_conv_to_u8: dest:l src1:f len:88
 float_conv_to_u2: dest:i src1:f len:88
 float_conv_to_u1: dest:i src1:f len:88
-float_conv_to_i: dest:i src1:f len:40
 float_ceq: dest:i src1:f src2:f len:16
 float_cgt: dest:i src1:f src2:f len:16
 float_cgt_un: dest:i src1:f src2:f len:20
@@ -226,7 +225,6 @@ rmove: dest:f src1:f len:4
 r4_conv_to_i1: dest:i src1:f len:88
 r4_conv_to_i2: dest:i src1:f len:88
 r4_conv_to_i4: dest:i src1:f len:88
-r4_conv_to_i: dest:i src1:f len:88
 r4_conv_to_u1: dest:i src1:f len:88
 r4_conv_to_u2: dest:i src1:f len:88
 r4_conv_to_u4: dest:i src1:f len:88

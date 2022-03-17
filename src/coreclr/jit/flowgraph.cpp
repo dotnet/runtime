@@ -521,6 +521,7 @@ void Compiler::fgSwitchToOptimized(const char* reason)
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER0);
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBINSTR);
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_OSR);
+    opts.jitFlags->Set(JitFlags::JIT_FLAG_BBOPT);
 
     // Leave a note for jit diagnostics
     compSwitchedToOptimized = true;

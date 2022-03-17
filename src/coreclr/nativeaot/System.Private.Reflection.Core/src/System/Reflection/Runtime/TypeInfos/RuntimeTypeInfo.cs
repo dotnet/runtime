@@ -424,7 +424,7 @@ namespace System.Reflection.Runtime.TypeInfos
             throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
         }
 
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public sealed override Type MakeArrayType()
         {
 #if ENABLE_REFLECTION_TRACE
@@ -438,7 +438,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return this.GetArrayTypeWithTypeHandle();
         }
 
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public sealed override Type MakeArrayType(int rank)
         {
 #if ENABLE_REFLECTION_TRACE

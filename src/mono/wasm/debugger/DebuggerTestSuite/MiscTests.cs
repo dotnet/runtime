@@ -34,7 +34,7 @@ namespace DebuggerTests
             });
 
             var eval_res = await cli.SendCommand("Runtime.evaluate", eval_req, token);
-            Assert.True(eval_res.IsErr);
+            Assert.False(eval_res.IsOk);
             Assert.Equal("Uncaught", eval_res.Error["exceptionDetails"]?["text"]?.Value<string>());
         }
 
@@ -84,8 +84,8 @@ namespace DebuggerTests
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:PrimitiveTypesTest'); }, 1);",
                 test_fn: async (locals) =>
                 {
-                    await CheckSymbol(locals, "c0", "8364 '€'");
-                    await CheckSymbol(locals, "c1", "65 'A'");
+                    await CheckSymbol(locals, "c0", '€');
+                    await CheckSymbol(locals, "c1", 'A');
                     await Task.CompletedTask;
                 }
             );
@@ -245,7 +245,7 @@ namespace DebuggerTests
                    });
 
                    var frame_props = await cli.SendCommand("Runtime.getProperties", get_prop_req, token);
-                   Assert.True(frame_props.IsErr);
+                   Assert.False(frame_props.IsOk);
                }
             );
         }

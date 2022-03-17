@@ -322,16 +322,6 @@ typedef struct {
 	guint32 Reserved;
 } IMAGE_RESOURCE_DATA_ENTRY;
 
-
-
-gboolean
-mono_pe_file_time_date_stamp (const gunichar2 *filename, guint32 *out);
-
-gpointer
-mono_pe_file_map (const gunichar2 *filename, guint32 *map_size, void **handle);
-
-void
-mono_pe_file_unmap (gpointer file_map, void *handle);
 #endif /* HOST_WIN32 */
 
 #endif /* __MONO_PROC_LIB_H__ */

@@ -97,7 +97,7 @@ namespace System.Runtime.Caching
                 }
                 if (fcn == null)
                 {
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
                     if (OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
                     {
                         throw new PlatformNotSupportedException();

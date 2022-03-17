@@ -2129,7 +2129,20 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
 #ifdef DEBUG
             comp->lvaTable[tmpLclNum].SetDoNotEnregReason(callerArgDsc->GetDoNotEnregReason());
 #endif // DEBUG
-            GenTree* value = comp->gtNewLclvNode(lclNum, tmpTyp);
+
+            GenTree* value;
+#ifdef TARGET_ARM
+            if (tmpTyp == TYP_LONG)
+            {
+                GenTree* loResult = comp->gtNewLclFldNode(lclNum, TYP_INT, 0);
+                GenTree* hiResult = comp->gtNewLclFldNode(lclNum, TYP_INT, 4);
+                value             = new (comp, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, loResult, hiResult);
+            }
+            else
+#endif // TARGET_ARM
+            {
+                value = comp->gtNewLclvNode(lclNum, tmpTyp);
+            }
 
             if (tmpTyp == TYP_STRUCT)
             {
@@ -2757,7 +2770,7 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
             // to have a constant as the first operand.
             //
 
-            if (hiSrc1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+            if (hiSrc1->OperIs(GT_LCL_VAR, GT_LCL_FLD) && IsInvariantInRange(hiSrc1, hiCmp))
             {
                 BlockRange().Remove(hiSrc1);
                 BlockRange().InsertBefore(hiCmp, hiSrc1);
@@ -5367,7 +5380,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 #ifdef TARGET_ARM64
     // Check if we can "contain" LEA(BFIZ) in order to extend 32bit index to 64bit as part of load/store.
     if ((index != nullptr) && index->OperIs(GT_BFIZ) && index->gtGetOp1()->OperIs(GT_CAST) &&
-        index->gtGetOp2()->IsCnsIntOrI() && varTypeIsIntegral(targetType))
+        index->gtGetOp2()->IsCnsIntOrI() && (varTypeIsIntegral(targetType) || varTypeIsFloating(targetType)))
     {
         // BFIZ node is a binary op where op1 is GT_CAST and op2 is GT_CNS_INT
         GenTreeCast* cast = index->gtGetOp1()->AsCast();

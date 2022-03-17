@@ -461,13 +461,15 @@ pal::string_t get_download_url(const pal::char_t* framework_name, const pal::cha
 
 pal::string_t to_lower(const pal::char_t* in) {
     pal::string_t ret = in;
-    std::transform(ret.begin(), ret.end(), ret.begin(), ::tolower);
+    std::transform(ret.begin(), ret.end(), ret.begin(),
+        [](pal::char_t c) { return static_cast<pal::char_t>(::tolower(c)); });
     return ret;
 }
 
 pal::string_t to_upper(const pal::char_t* in) {
     pal::string_t ret = in;
-    std::transform(ret.begin(), ret.end(), ret.begin(), ::toupper);
+    std::transform(ret.begin(), ret.end(), ret.begin(),
+        [](pal::char_t c) { return static_cast<pal::char_t>(::toupper(c)); });
     return ret;
 }
 

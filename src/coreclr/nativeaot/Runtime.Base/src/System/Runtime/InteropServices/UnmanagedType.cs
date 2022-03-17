@@ -3,5 +3,8 @@
 
 namespace System.Runtime.InteropServices
 {
-    public class UnmanagedType { }
+    public enum UnmanagedType
+    {
+        Bool = 0x2,         // 4 byte boolean value (true != 0, false == 0)
+    }
 }

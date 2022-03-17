@@ -67,7 +67,6 @@ MONO_HWCAP_VAR(sparc_is_v9)
 
 #elif defined (TARGET_X86) || defined (TARGET_AMD64)
 
-MONO_HWCAP_VAR(x86_is_xen)
 MONO_HWCAP_VAR(x86_has_cmov)
 MONO_HWCAP_VAR(x86_has_fcmov)
 MONO_HWCAP_VAR(x86_has_sse1)

@@ -388,18 +388,14 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
                 DynamicMethodDesc* stubMethodDesc = this->AsDynamicMethodDesc();
                 if (stubMethodDesc->IsILStub() && stubMethodDesc->IsPInvokeStub())
                 {
-                    ILStubResolver* pStubResolver = stubMethodDesc->GetILStubResolver();
-                    if (pStubResolver->GetStubType() == ILStubResolver::CLRToNativeInteropStub)
+                    MethodDesc* pTargetMD = stubMethodDesc->GetILStubResolver()->GetStubTargetMethodDesc();
+                    if (pTargetMD != NULL)
                     {
-                        MethodDesc* pTargetMD = stubMethodDesc->GetILStubResolver()->GetStubTargetMethodDesc();
-                        if (pTargetMD != NULL)
+                        pCode = pTargetMD->GetPrecompiledR2RCode(pConfig);
+                        if (pCode != NULL)
                         {
-                            pCode = pTargetMD->GetPrecompiledR2RCode(pConfig);
-                            if (pCode != NULL)
-                            {
-                                LOG_USING_R2R_CODE(this);
-                                pConfig->SetNativeCode(pCode, &pCode);
-                            }
+                            LOG_USING_R2R_CODE(this);
+                            pConfig->SetNativeCode(pCode, &pCode);
                         }
                     }
                 }
@@ -1682,7 +1678,7 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 
         sl.EmitComputedInstantiatingMethodStub(pUnboxedMD, &portableShuffle[0], NULL);
 
-        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
+        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD);
     }
     else
 #endif
@@ -1755,7 +1751,7 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
         _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
         sl.EmitComputedInstantiatingMethodStub(pSharedMD, &portableShuffle[0], extraArg);
 
-        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
+        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD);
     }
     else
 #endif
@@ -2326,44 +2322,8 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_CO
     }
 #endif //HAS_FIXUP_PRECODE
 
-    if (pImportSection->Flags & CORCOMPILE_IMPORT_FLAGS_CODE)
-    {
-        CORCOMPILE_EXTERNAL_METHOD_THUNK * pThunk = (CORCOMPILE_EXTERNAL_METHOD_THUNK *)pIndirection;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-        INT64 oldValue = *(INT64*)pThunk;
-        BYTE* pOldValue = (BYTE*)&oldValue;
-
-        if (pOldValue[0] == X86_INSTR_CALL_REL32)
-        {
-            INT64 newValue = oldValue;
-            BYTE* pNewValue = (BYTE*)&newValue;
-            pNewValue[0] = X86_INSTR_JMP_REL32;
-
-            *(INT32 *)(pNewValue+1) = rel32UsingJumpStub((INT32*)(&pThunk->callJmp[1]), pCode, pMD, NULL);
-
-            _ASSERTE(IS_ALIGNED((size_t)pThunk, sizeof(INT64)));
-            ExecutableWriterHolder<INT64> thunkWriterHolder((INT64*)pThunk, sizeof(INT64));
-            FastInterlockCompareExchangeLong(thunkWriterHolder.GetRW(), newValue, oldValue);
-
-            FlushInstructionCache(GetCurrentProcess(), pThunk, 8);
-        }
-#elif  defined(TARGET_ARM) || defined(TARGET_ARM64)
-        // Patchup the thunk to point to the actual implementation of the cross module external method
-        pThunk->m_pTarget = pCode;
-
-        #if defined(TARGET_ARM)
-        // ThumbBit must be set on the target address
-        _ASSERTE(pCode & THUMB_CODE);
-        #endif
-#else
-        PORTABILITY_ASSERT("ExternalMethodFixupWorker");
-#endif
-    }
-    else
-    {
-        *(TADDR *)pIndirection = pCode;
-    }
+    _ASSERTE((pImportSection->Flags & CORCOMPILE_IMPORT_FLAGS_CODE) == 0);
+    *(TADDR *)pIndirection = pCode;
 
     return pCode;
 }
@@ -2468,17 +2428,9 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
         }
         _ASSERTE(pImportSection != NULL);
 
-        COUNT_T index;
-        if (pImportSection->Flags & CORCOMPILE_IMPORT_FLAGS_CODE)
-        {
-            _ASSERTE(pImportSection->EntrySize == sizeof(CORCOMPILE_EXTERNAL_METHOD_THUNK));
-            index = (rva - pImportSection->Section.VirtualAddress) / sizeof(CORCOMPILE_EXTERNAL_METHOD_THUNK);
-        }
-        else
-        {
-            _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
-            index = (rva - pImportSection->Section.VirtualAddress) / sizeof(TADDR);
-        }
+        _ASSERTE((pImportSection->Flags & CORCOMPILE_IMPORT_FLAGS_CODE) == 0);
+        _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
+        COUNT_T index = (rva - pImportSection->Section.VirtualAddress) / sizeof(TADDR);
 
         PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
 

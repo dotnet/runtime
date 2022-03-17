@@ -390,9 +390,9 @@ run_cfi_program (struct dwarf_cursor *c, dwarf_state_record_t *sr,
           if (((ret = read_regnum (as, a, addr, &regnum, arg)) < 0)
               || ((ret = dwarf_read_uleb128 (as, a, addr, &val, arg)) < 0))
             break;
-          set_reg (sr, regnum, DWARF_WHERE_CFAREL, -(val * dci->data_align));
+          set_reg (sr, regnum, DWARF_WHERE_CFAREL, (unw_word_t)(-(unw_sword_t)val));
           Debug (15, "CFA_GNU_negative_offset_extended cfa+0x%lx\n",
-                 (long) -(val * dci->data_align));
+                 (long)(unw_word_t)(-(unw_sword_t)val));
           break;
 
         case DW_CFA_GNU_window_save:
@@ -907,7 +907,7 @@ apply_reg_state (struct dwarf_cursor *c, struct dwarf_reg_state *rs)
 static int
 find_reg_state (struct dwarf_cursor *c, dwarf_state_record_t *sr)
 {
-  dwarf_reg_state_t *rs;
+  dwarf_reg_state_t *rs = NULL;
   struct dwarf_rs_cache *cache;
   int ret = 0;
   intrmask_t saved_mask;
@@ -985,6 +985,7 @@ dwarf_make_proc_info (struct dwarf_cursor *c)
      args_size, and set cursor appropriately.  Only
      needed for unw_resume */
   dwarf_state_record_t sr;
+  sr.args_size = 0;
   int ret;
 
   /* Lookup it up the slow way... */

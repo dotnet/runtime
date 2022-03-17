@@ -73,7 +73,7 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(TargetOS)' == 'OSX'">
       <TargetTriple Condition="'$(TargetArchitecture)' == 'arm64'">arm64-apple-macos11</TargetTriple>
-      <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-macos10.13</TargetTriple>
+      <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-macos10.14</TargetTriple>
       <XCodeSdkName>macosx</XCodeSdkName>
     </PropertyGroup>
 

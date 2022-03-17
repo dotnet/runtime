@@ -24,7 +24,7 @@ extern "C"
 PEImageLayout* PEImageLayout::CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size)
 {
     STANDARD_VM_CONTRACT;
-    return new FlatImageLayout(pOwner, array, size); 
+    return new FlatImageLayout(pOwner, array, size);
 }
 
 #ifndef TARGET_UNIX
@@ -954,6 +954,7 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
     SIZE_T offset = (SIZE_T)m_pOwner->GetOffset();
     int imagePartIndex = 0;
     PVOID pReserved = NULL;
+    PVOID reservedEnd = NULL;
     IMAGE_NT_HEADERS* ntHeader = FindNTHeaders();
 
     if  ((ntHeader->OptionalHeader.FileAlignment < GetOsPageSize()) &&
@@ -983,7 +984,7 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
     if (pReserved == NULL)
         goto FAILED;
 
-    PVOID reservedEnd = (char*)pReserved + reserveSize;
+    reservedEnd = (char*)pReserved + reserveSize;
     IMAGE_DOS_HEADER* loadedHeader = (IMAGE_DOS_HEADER*)((SIZE_T)pReserved + OffsetWithinPage(offset));
     _ASSERTE(OffsetWithinPage(offset) == OffsetWithinPage((SIZE_T)loadedHeader));
 

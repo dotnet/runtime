@@ -1,10 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Net;
-using System.Collections.Generic;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
@@ -18,31 +18,30 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         internal SymbolicRegexNode<T> Node { get; }
+
         internal uint PrevCharKind { get; }
 
         internal int Id { get; set; }
-        internal bool IsInitialState { get; set; }
 
-        /// <summary>State is lazy</summary>
-        internal bool IsLazy => Node._info.IsLazy;
+        internal bool IsInitialState { get; set; }
 
         /// <summary>This is a deadend state</summary>
         internal bool IsDeadend => Node.IsNothing;
 
         /// <summary>The node must be nullable here</summary>
-        internal int WatchDog
+        internal int FixedLength
         {
             get
             {
-                if (Node._kind == SymbolicRegexKind.WatchDog)
+                if (Node._kind == SymbolicRegexNodeKind.FixedLengthMarker)
                 {
                     return Node._lower;
                 }
 
-                if (Node._kind == SymbolicRegexKind.Or)
+                if (Node._kind == SymbolicRegexNodeKind.Or)
                 {
                     Debug.Assert(Node._alts is not null);
-                    return Node._alts._watchdog;
+                    return Node._alts._maximumLength;
                 }
 
                 return -1;
@@ -82,7 +81,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // If the previous state was the start state, mark this as the very FIRST \n.
                 // Essentially, this looks the same as the very last \n and is used to nullify
                 // rev(\Z) in the conext of a reversed automaton.
-                nextCharKind = PrevCharKind == CharKind.StartStop ?
+                nextCharKind = PrevCharKind == CharKind.BeginningEnd ?
                     CharKind.NewLineS :
                     CharKind.Newline;
             }
@@ -106,12 +105,12 @@ namespace System.Text.RegularExpressions.Symbolic
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the derivative of the node for the given context
-            SymbolicRegexNode<T> derivative = Node.MkDerivativeWithEffects(eager: true).TransitionOrdered(minterm, context);
+            SymbolicRegexNode<T> derivative = Node.CreateDerivative(minterm, context);
 
             // nextCharKind will be the PrevCharKind of the target state
             // use an existing state instead if one exists already
             // otherwise create a new new id for it
-            return Node._builder.MkState(derivative, nextCharKind);
+            return Node._builder.CreateState(derivative, nextCharKind, capturing: false);
         }
 
         /// <summary>
@@ -119,7 +118,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
         /// <returns>an enumeration of the transitions as pairs of the target state and a list of effects to be applied</returns>
-        internal IEnumerable<(DfaMatchingState<T>, List<DerivativeEffect>)> AntimirovEagerNextWithEffects(T minterm)
+        internal List<(DfaMatchingState<T> State, DerivativeEffect[] Effects)> NfaNextWithEffects(T minterm)
         {
             uint nextCharKind = GetNextCharKind(ref minterm);
 
@@ -127,22 +126,23 @@ namespace System.Text.RegularExpressions.Symbolic
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the transitions for the given context
-            IEnumerable<(SymbolicRegexNode<T>, List<DerivativeEffect>)> derivativesAndEffects =
-                Node.MkDerivativeWithEffects(eager: true).TransitionsWithEffects(minterm, context);
+            List<(SymbolicRegexNode<T>, DerivativeEffect[])> nodesAndEffects = Node.CreateNfaDerivativeWithEffects(minterm, context);
 
-            foreach (var (derivative, effects) in derivativesAndEffects)
+            var list = new List<(DfaMatchingState<T> State, DerivativeEffect[] Effects)>();
+            foreach ((SymbolicRegexNode<T> node, DerivativeEffect[]? effects) in nodesAndEffects)
             {
                 // nextCharKind will be the PrevCharKind of the target state
                 // use an existing state instead if one exists already
                 // otherwise create a new new id for it
-                yield return (Node._builder.MkState(derivative, nextCharKind), effects);
+                list.Add((Node._builder.CreateState(node, nextCharKind, capturing: true), effects));
             }
+            return list;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsNullable(uint nextCharKind)
         {
-            Debug.Assert(nextCharKind is 0 or CharKind.StartStop or CharKind.Newline or CharKind.WordLetter or CharKind.NewLineS);
+            Debug.Assert(nextCharKind is 0 or CharKind.BeginningEnd or CharKind.Newline or CharKind.WordLetter or CharKind.NewLineS);
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
             return Node.IsNullableFor(context);
         }
@@ -156,6 +156,7 @@ namespace System.Text.RegularExpressions.Symbolic
             PrevCharKind == 0 ? Node.ToString() :
              $"({CharKind.DescribePrev(PrevCharKind)},{Node})";
 
+#if DEBUG
         internal string DgmlView
         {
             get
@@ -175,5 +176,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 return $"{info}{deriv}";
             }
         }
+#endif
     }
 }

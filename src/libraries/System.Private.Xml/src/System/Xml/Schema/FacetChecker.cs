@@ -1348,22 +1348,11 @@ namespace System.Xml.Schema
         }
     }
 
-    internal sealed class StringFacetsChecker : FacetsChecker
+    internal sealed partial class StringFacetsChecker : FacetsChecker
     { //All types derived from string & anyURI
-        private static Regex? s_languagePattern;
 
-        private static Regex LanguagePattern
-        {
-            get
-            {
-                if (s_languagePattern == null)
-                {
-                    Regex langRegex = new Regex("^([a-zA-Z]{1,8})(-[a-zA-Z0-9]{1,8})*$");
-                    Interlocked.CompareExchange(ref s_languagePattern, langRegex, null);
-                }
-                return s_languagePattern;
-            }
-        }
+        [RegexGenerator("^([a-zA-Z]{1,8})(-[a-zA-Z0-9]{1,8})*$", RegexOptions.ExplicitCapture)]
+        private static partial Regex LanguageRegex();
 
         internal override Exception? CheckValueFacets(object value, XmlSchemaDatatype datatype)
         {
@@ -1477,7 +1466,7 @@ namespace System.Xml.Schema
                     {
                         return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
                     }
-                    if (!LanguagePattern.IsMatch(s))
+                    if (!LanguageRegex().IsMatch(s))
                     {
                         return new XmlSchemaException(SR.Sch_InvalidLanguageId, string.Empty);
                     }

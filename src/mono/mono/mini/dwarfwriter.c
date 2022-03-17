@@ -202,10 +202,8 @@ emit_byte (MonoDwarfWriter *w, guint8 val)
 static void
 emit_escaped_string (MonoDwarfWriter *w, char *value)
 {
-	int i, len;
-
-	len = strlen (value);
-	for (i = 0; i < len; ++i) {
+	size_t len = (int)strlen (value);
+	for (int i = 0; i < len; ++i) {
 		char c = value [i];
 		if (!(isalnum (c))) {
 			switch (c) {
@@ -619,7 +617,8 @@ mono_dwarf_escape_path (const char *name)
 {
 	if (strchr (name, '\\')) {
 		char *s;
-		int len, i, j;
+		size_t len;
+		int i, j;
 
 		len = strlen (name);
 		s = (char *)g_malloc0 ((len + 1) * 2);
@@ -1094,9 +1093,9 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 				p = buf;
 				*p ++= DW_OP_plus_uconst;
 				if (m_class_is_valuetype (klass) && vtype)
-					encode_uleb128 (field->offset - MONO_ABI_SIZEOF (MonoObject), p, &p);
+					encode_uleb128 (m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject), p, &p);
 				else
-					encode_uleb128 (field->offset, p, &p);
+					encode_uleb128 (m_field_get_offset (field), p, &p);
 
 				emit_byte (w, p - buf);
 				emit_bytes (w, buf, p - buf);

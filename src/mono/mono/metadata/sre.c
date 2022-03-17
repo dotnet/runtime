@@ -1381,7 +1381,7 @@ add_custom_modifiers_to_type (MonoType *without_mods, MonoArrayHandle req_array,
 		return without_mods;
 
 	MonoTypeWithModifiers *result;
-	result = mono_image_g_malloc0 (image, mono_sizeof_type_with_mods (total_mods, FALSE));
+	result = mono_image_g_malloc0 (image, (guint)mono_sizeof_type_with_mods (total_mods, FALSE));
 	memcpy (result, without_mods, MONO_SIZEOF_TYPE);
 	result->unmodified.has_cmods = 1;
 	MonoCustomModContainer *cmods = mono_type_get_cmods ((MonoType *)result);
@@ -2043,7 +2043,7 @@ handle_enum:
 		break;
 	case MONO_TYPE_STRING: {
 		char *str;
-		guint32 slen;
+		size_t slen;
 		if (!arg) {
 MONO_DISABLE_WARNING(4309) // truncation of constant
 			*p++ = 0xFF;
@@ -2056,12 +2056,12 @@ MONO_RESTORE_WARNING
 		if ((p-buffer) + 10 + slen >= *buflen) {
 			char *newbuf;
 			*buflen *= 2;
-			*buflen += slen;
+			*buflen += (guint32)slen;
 			newbuf = (char *)g_realloc (buffer, *buflen);
 			p = newbuf + (p-buffer);
 			buffer = newbuf;
 		}
-		mono_metadata_encode_value (slen, p, &p);
+		mono_metadata_encode_value ((uint32_t)slen, p, &p);
 		memcpy (p, str, slen);
 		p += slen;
 		g_free (str);
@@ -2082,7 +2082,7 @@ handle_type:
 		return_if_nok (error);
 
 		str = type_get_qualified_name (arg_type, NULL);
-		slen = strlen (str);
+		slen = (guint32)strlen (str);
 		if ((p-buffer) + 10 + slen >= *buflen) {
 			char *newbuf;
 			*buflen *= 2;
@@ -2198,7 +2198,7 @@ MONO_RESTORE_WARNING
 			break;
 		}
 		str = type_get_qualified_name (m_class_get_byval_arg (klass), NULL);
-		slen = strlen (str);
+		slen = (guint32)strlen (str);
 		if ((p-buffer) + 10 + slen >= *buflen) {
 			char *newbuf;
 			*buflen *= 2;
@@ -2226,14 +2226,14 @@ encode_field_or_prop_type (MonoType *type, char *p, char **retp)
 {
 	if (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype) {
 		char *str = type_get_qualified_name (type, NULL);
-		int slen = strlen (str);
+		size_t slen = strlen (str);
 
 		*p++ = 0x55;
 		/*
 		 * This seems to be optional...
 		 * *p++ = 0x80;
 		 */
-		mono_metadata_encode_value (slen, p, &p);
+		mono_metadata_encode_value ((uint32_t)slen, p, &p);
 		memcpy (p, str, slen);
 		p += slen;
 		g_free (str);
@@ -2256,7 +2256,7 @@ encode_field_or_prop_type (MonoType *type, char *p, char **retp)
 static void
 encode_named_val (MonoReflectionAssembly *assembly, char *buffer, char *p, char **retbuffer, char **retp, guint32 *buflen, MonoType *type, char *name, MonoObject *value, MonoError *error)
 {
-	int len;
+	size_t len;
 
 	error_init (error);
 
@@ -2277,7 +2277,7 @@ encode_named_val (MonoReflectionAssembly *assembly, char *buffer, char *p, char 
 	if ((p-buffer) + 20 + len >= *buflen) {
 		char *newbuf;
 		*buflen *= 2;
-		*buflen += len;
+		*buflen += (guint32)len;
 		newbuf = (char *)g_realloc (buffer, *buflen);
 		p = newbuf + (p-buffer);
 		buffer = newbuf;
@@ -2286,7 +2286,7 @@ encode_named_val (MonoReflectionAssembly *assembly, char *buffer, char *p, char 
 	encode_field_or_prop_type (type, p, &p);
 
 	len = strlen (name);
-	mono_metadata_encode_value (len, p, &p);
+	mono_metadata_encode_value ((uint32_t)len, p, &p);
 	memcpy (p, name, len);
 	p += len;
 	encode_cattr_value (assembly->assembly, buffer, p, &buffer, &p, buflen, type, value, NULL, error);
@@ -3564,7 +3564,7 @@ typebuilder_setup_one_field (MonoDynamicImage *dynamic_image, MonoClass *klass, 
 		if ((fb->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) && (rva_data = fb->rva_data)) {
 			char *base = mono_array_addr_internal (rva_data, char, 0);
 			size_t size = mono_array_length_internal (rva_data);
-			char *data = (char *)mono_image_alloc (klass->image, size);
+			char *data = (char *)mono_image_alloc (klass->image, (guint)size);
 			memcpy (data, base, size);
 			def_value_out->data = data;
 		}
