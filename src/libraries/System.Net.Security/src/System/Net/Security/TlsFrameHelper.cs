@@ -33,7 +33,7 @@ namespace System.Net.Security
         CertificateVerify = 15,
         ClientKeyExchange = 16,
         Finished = 20,
-        KeyEpdate = 24,
+        KeyUpdate = 24,
         MessageHash = 254
     }
 
