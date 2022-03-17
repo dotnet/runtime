@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 
 namespace Microsoft.Extensions.Logging
 {
@@ -60,7 +61,9 @@ namespace Microsoft.Extensions.Logging
             {
                 return ExternalScopeProvider.Push(state);
             }
-            return Logger!.BeginScope<TState>(state);
+
+            Debug.Assert(Logger != null, "Logger can't be null when there isn't an ExternalScopeProvider");
+            return Logger.BeginScope<TState>(state);
         }
     }
 
