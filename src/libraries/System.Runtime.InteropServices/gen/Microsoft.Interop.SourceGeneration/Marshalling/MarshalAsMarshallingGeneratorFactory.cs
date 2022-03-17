@@ -13,7 +13,7 @@ namespace Microsoft.Interop
         private static readonly VariantBoolMarshaller s_variantBool = new();
 
         private static readonly Utf16CharMarshaller s_utf16Char = new();
-        private static readonly Utf16StringMarshaller s_utf16String = new();
+        private static readonly IMarshallingGenerator s_utf16String = new PinnableManagedValueMarshaller(new Utf16StringMarshaller());
         private static readonly Utf8StringMarshaller s_utf8String = new();
         private static readonly AnsiStringMarshaller s_ansiString = new AnsiStringMarshaller(s_utf8String);
 
