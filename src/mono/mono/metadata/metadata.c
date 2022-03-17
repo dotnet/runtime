@@ -6405,7 +6405,6 @@ mono_metadata_properties_from_typedef (MonoImage *meta, guint32 index, guint *en
 	if (!found && !meta->has_updates)
 		return 0;
 
-	gboolean found_update = FALSE;
 	if (G_UNLIKELY (meta->has_updates)) {
 		if (!found) {
 			uint32_t count;
