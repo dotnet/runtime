@@ -223,7 +223,7 @@ namespace System.Data.Odbc
                     {
                         try
                         {   // mdac 89269: driver may return malformatted string
-                            ProviderInfo.IsV3Driver = (int.Parse(ProviderInfo.DriverVersion.AsSpan(0, 2), CultureInfo.InvariantCulture) >= 3);
+                            ProviderInfo.IsV3Driver = (int.Parse(ProviderInfo.DriverVersion.Substring(0, 2), CultureInfo.InvariantCulture) >= 3);
                         }
                         catch (System.FormatException e)
                         {
