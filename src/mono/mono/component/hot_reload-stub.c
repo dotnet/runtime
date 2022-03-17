@@ -92,6 +92,9 @@ hot_reload_stub_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_to
 static gboolean
 hot_reload_stub_get_typedef_skeleton_properties (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_prop_idx, uint32_t *prop_count);
 
+static gboolean
+hot_reload_stub_get_typedef_skeleton_events (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_event_idx, uint32_t *event_count);
+
 static MonoMethod *
 hot_reload_stub_added_methods_iter (MonoClass *klass, gpointer *iter);
 
@@ -125,6 +128,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_stub_find_method_by_name,
 	&hot_reload_stub_get_typedef_skeleton,
 	&hot_reload_stub_get_typedef_skeleton_properties,
+	&hot_reload_stub_get_typedef_skeleton_events,
 	&hot_reload_stub_added_methods_iter,
 	&hot_reload_stub_added_fields_iter,
 };
@@ -287,6 +291,12 @@ hot_reload_stub_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_to
 
 static gboolean
 hot_reload_stub_get_typedef_skeleton_properties (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_prop_idx, uint32_t *prop_count)
+{
+	return FALSE;
+}
+
+static gboolean
+hot_reload_stub_get_typedef_skeleton_events (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_event_idx, uint32_t *event_count)
 {
 	return FALSE;
 }
