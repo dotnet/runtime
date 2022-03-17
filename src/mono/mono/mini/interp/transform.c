@@ -1043,7 +1043,7 @@ store_local (TransformData *td, int local)
 		interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R4, MINT_CONV_R4_R8);
 
 	if (!can_store(td->sp [-1].type, stack_type [mt])) {
-		g_warning("%s.%s: Store local stack type mismatch %d %d",
+		g_error ("%s.%s: Store local stack type mismatch %d %d",
 			m_class_get_name (td->method->klass), td->method->name,
 			stack_type [mt], td->sp [-1].type);
 	}
