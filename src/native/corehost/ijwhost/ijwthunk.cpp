@@ -128,7 +128,7 @@ extern "C" std::uintptr_t __stdcall start_runtime_and_get_target_address(std::ui
         // As we were taken here via an entry point with arbitrary signature,
         // there's no way of returning the error code so we just throw it.
 
-        trace::error(_X("Failed to start the .NET runtime. Error code %d"), status);
+        trace::error(_X("Failed to start the .NET runtime. Error code: %#x"), status);
 
 #pragma warning (push)
 #pragma warning (disable: 4297)

@@ -27,7 +27,7 @@ namespace Internal.Runtime.InteropServices
         public static unsafe void LoadInMemoryAssembly(IntPtr moduleHandle, IntPtr assemblyPath)
         {
             if (!IsSupported)
-                throw new NotSupportedException("This API is not enabled in trimmed scenarios. see https://aka.ms/dotnet-illink/nativehost for more details");
+                throw new NotSupportedException(SR.NotSupported_CppCli);
 
 #pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
             LoadInMemoryAssemblyInContextImpl(moduleHandle, assemblyPath);
@@ -44,10 +44,10 @@ namespace Internal.Runtime.InteropServices
         [UnmanagedCallersOnly]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The same C++/CLI feature switch applies to LoadInMemoryAssembly and this function. We rely on the warning from LoadInMemoryAssembly.")]
-        internal static unsafe void LoadInMemoryAssemblyInContext(IntPtr moduleHandle, IntPtr assemblyPath, IntPtr loadContext)
+        public static unsafe void LoadInMemoryAssemblyInContext(IntPtr moduleHandle, IntPtr assemblyPath, IntPtr loadContext)
         {
             if (!IsSupported)
-                throw new NotSupportedException("This API is not enabled in trimmed scenarios. see https://aka.ms/dotnet-illink/nativehost for more details");
+                throw new NotSupportedException(SR.NotSupported_CppCli);
 
             if (loadContext != IntPtr.Zero)
                 throw new ArgumentOutOfRangeException(nameof(loadContext));
