@@ -23,7 +23,6 @@ struct fx_ver_t
 
     void set_major(int m) { m_major = m; }
     void set_minor(int m) { m_minor = m; }
-    void set_patch(int p) { m_patch = p; }
 
     bool is_prerelease() const { return !m_pre.empty(); }
 

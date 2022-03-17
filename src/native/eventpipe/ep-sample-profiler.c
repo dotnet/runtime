@@ -78,14 +78,6 @@ sample_profiler_store_profiling_enabled (bool enabled)
 
 static
 inline
-bool
-sample_profiler_load_can_start_sampling (void)
-{
-	return (ep_rt_volatile_load_uint32_t (&_can_start_sampling) != 0) ? true : false;
-}
-
-static
-inline
 void
 sample_profiler_store_can_start_sampling (bool start_sampling)
 {

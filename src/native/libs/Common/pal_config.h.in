@@ -33,8 +33,6 @@
 #cmakedefine01 HAVE_NON_LEGACY_STATFS
 #cmakedefine01 HAVE_STRCPY_S
 #cmakedefine01 HAVE_STRLCPY
-#cmakedefine01 HAVE_STRCAT_S
-#cmakedefine01 HAVE_STRLCAT
 #cmakedefine01 HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP
 #cmakedefine01 HAVE_POSIX_ADVISE
 #cmakedefine01 HAVE_FALLOCATE
