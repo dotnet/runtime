@@ -124,6 +124,6 @@
     <value>Only one wildcard character is allowed in category name.</value>
   </data>
   <data name="Error_LoggerRequiredWithoutExternalScopeProvider" xml:space="preserve">
-    <value>logger parameter must be non-null when externalScopeProvider parameter is null.</value>
+    <value>The logger parameter must be non-null when externalScopeProvider is null.</value>
   </data>
 </root>
