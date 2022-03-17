@@ -47,6 +47,11 @@ namespace Microsoft.Extensions.Logging
     {
         public ScopeLogger(ILogger? logger, IExternalScopeProvider? externalScopeProvider)
         {
+            if (logger == null && externalScopeProvider == null)
+            {
+                throw new ArgumentNullException(nameof(logger), SR.Error_LoggerRequiredWithoutExternalScopeProvider);
+            }
+
             Logger = logger;
             ExternalScopeProvider = externalScopeProvider;
         }
