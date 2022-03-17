@@ -33,7 +33,7 @@
 
 #include <mono/utils/mono-compiler.h>
 
-#define ALLOW_INSTANCE_FIELD_ADD
+#undef ALLOW_INSTANCE_FIELD_ADD
 
 typedef struct _BaselineInfo BaselineInfo;
 typedef struct _DeltaInfo DeltaInfo;
