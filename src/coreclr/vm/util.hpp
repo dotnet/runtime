@@ -1006,4 +1006,13 @@ public:
 HRESULT GetFileVersion(LPCWSTR wszFilePath, ULARGE_INTEGER* pFileVersion);
 #endif // !TARGET_UNIX
 
+#define ENUM_PAGE_SIZES \
+    ENUM_PAGE_SIZE(4096)  \
+    ENUM_PAGE_SIZE(8192)  \
+    ENUM_PAGE_SIZE(16384) \
+    ENUM_PAGE_SIZE(32768) \
+    ENUM_PAGE_SIZE(65536)
+
+void FillStubCodePage(BYTE* pageBase, const void* code, int codeSize, int pageSize);
+
 #endif /* _H_UTIL */
