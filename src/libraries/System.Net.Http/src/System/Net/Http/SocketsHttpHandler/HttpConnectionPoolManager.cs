@@ -31,9 +31,14 @@ namespace System.Net.Http
     /// <summary>Provides a set of connection pools, each for its own endpoint.</summary>
     internal sealed class HttpConnectionPoolManager : IDisposable
     {
+        /// <summary>
+        /// WeakReferences to all managers in the process. The value is a dummy with no functional significance.
+        /// This collection is iterated every second in HeartBeatAndCleanAllPools and collected instances are pruned.
+        /// </summary>
         public static readonly ConcurrentDictionary<WeakReference<HttpConnectionPoolManager>, byte> AllManagers = new();
 
-        private static readonly Timer s_globalHeartBeatTimer = new(static _ => HeartBeatAndCleanAllPools(), null, TimeSpan.FromSeconds(1), Timeout.InfiniteTimeSpan);
+        private const int GlobalHeartBeatTimerMs = 1000;
+        private static readonly Timer s_globalHeartBeatTimer = new(static _ => HeartBeatAndCleanAllPools(), null, GlobalHeartBeatTimerMs, Timeout.Infinite);
 
         private static int s_listeningToNetworkChanges;
 
@@ -59,8 +64,6 @@ namespace System.Net.Http
         {
             _settings = settings;
 
-            _cleanPoolInterval = _heartBeatInterval = TimeSpan.MaxValue;
-
             // As an optimization, we can sometimes avoid the overheads associated with
             // storing connections.  This is possible when we would immediately terminate
             // connections anyway due to either the idle timeout or the lifetime being
@@ -77,6 +80,7 @@ namespace System.Net.Http
             {
                 _pools = new ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>();
 
+                _cleanPoolInterval = _heartBeatInterval = TimeSpan.MaxValue;
                 _lastCleanPoolTimestamp = _lastHeartBeatTimestamp = Stopwatch.GetTimestamp();
 
                 if (settings._pooledConnectionIdleTimeout == Timeout.InfiniteTimeSpan)
@@ -88,6 +92,7 @@ namespace System.Net.Http
                 {
                     const int ScavengesPerIdle = 4;
                     const int MinScavengeSeconds = 1;
+                    Debug.Assert(GlobalHeartBeatTimerMs <= MinScavengeSeconds * 1000);
                     TimeSpan timerPeriod = settings._pooledConnectionIdleTimeout / ScavengesPerIdle;
                     _cleanPoolInterval = timerPeriod.TotalSeconds >= MinScavengeSeconds ? timerPeriod : TimeSpan.FromSeconds(MinScavengeSeconds);
                 }
@@ -95,7 +100,9 @@ namespace System.Net.Http
                 // For now heart beat is used only for ping functionality.
                 if (settings._keepAlivePingDelay != Timeout.InfiniteTimeSpan)
                 {
-                    long heartBeatIntervalMs = (long)Math.Max(1000, Math.Min(settings._keepAlivePingDelay.TotalMilliseconds, settings._keepAlivePingTimeout.TotalMilliseconds) / 4);
+                    const int MinHeartBeatMs = 1000;
+                    Debug.Assert(GlobalHeartBeatTimerMs <= MinHeartBeatMs);
+                    long heartBeatIntervalMs = (long)Math.Max(MinHeartBeatMs, Math.Min(settings._keepAlivePingDelay.TotalMilliseconds, settings._keepAlivePingTimeout.TotalMilliseconds) / 4);
                     _heartBeatInterval = TimeSpan.FromMilliseconds(heartBeatIntervalMs);
                 }
             }
@@ -118,6 +125,8 @@ namespace System.Net.Http
         {
             long startTimestamp = Stopwatch.GetTimestamp();
 
+            int managersRemoved = 0;
+
             foreach ((WeakReference<HttpConnectionPoolManager> managerReference, _) in AllManagers)
             {
                 if (managerReference.TryGetTarget(out HttpConnectionPoolManager? manager))
@@ -127,11 +136,19 @@ namespace System.Net.Http
                 else
                 {
                     AllManagers.TryRemove(managerReference, out _);
+                    managersRemoved++;
                 }
             }
 
-            ulong elapsedMs = Math.Min(999, (ulong)Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds);
-            s_globalHeartBeatTimer.Change(TimeSpan.FromMilliseconds(1000 - elapsedMs), Timeout.InfiniteTimeSpan);
+            TimeSpan elapsed = Stopwatch.GetElapsedTime(startTimestamp);
+            int dueTimeMs = (int)(GlobalHeartBeatTimerMs - Math.Min(GlobalHeartBeatTimerMs - 1, (ulong)elapsed.TotalMilliseconds));
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Verbose(null,
+                $"ConnectionPoolManager heartbeat took {(int)elapsed.TotalMilliseconds} ms, " +
+                $"restarting timer in {dueTimeMs} ms. " +
+                $"Managers removed: {managersRemoved}, managers left: {AllManagers.Count}.");
+
+            s_globalHeartBeatTimer.Change(dueTimeMs, Timeout.Infinite);
         }
 
         /// <summary>
@@ -147,7 +164,7 @@ namespace System.Net.Http
 
             _interestedInNetworkChanges = true;
 
-            if (s_listeningToNetworkChanges != 0 || Interlocked.Exchange(ref s_listeningToNetworkChanges, 1) != 0)
+            if (Interlocked.Exchange(ref s_listeningToNetworkChanges, 1) != 0)
             {
                 // We are already subscribed to NetworkAddressChanged
                 return;
