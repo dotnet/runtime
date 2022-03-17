@@ -3,6 +3,7 @@
     <NativeVersionFile Condition="$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.h</NativeVersionFile>
     <NativeVersionFile Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.c</NativeVersionFile>
     <RuntimeVersionFile>$(ArtifactsObjDir)runtime_version.h</RuntimeVersionFile>
+    <NativeSourceLinkFile>$(ArtifactsObjDir)native.sourcelink.json</NativeSourceLinkFile>
     <AssemblyName>.NET Runtime</AssemblyName>
   </PropertyGroup>
 
@@ -13,5 +14,5 @@
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
 
-  <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile;OutputPgoPathForCI" />
+  <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile;GenerateNativeSourcelinkFile;OutputPgoPathForCI" />
 </Project>

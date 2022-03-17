@@ -1396,13 +1396,6 @@ void EEJitManager::SetCpuInfo()
                 }
             }
 
-            static ConfigDWORD fFeatureSIMD;
-
-            if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
-            {
-                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
-            }
-
             if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SIMD16ByteOnly) != 0)
             {
                 CPUCompileFlags.Clear(InstructionSet_AVX2);
@@ -1449,11 +1442,6 @@ void EEJitManager::SetCpuInfo()
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
 #if defined(TARGET_ARM64)
-    static ConfigDWORD fFeatureSIMD;
-    if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
-    {
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
-    }
 #if defined(TARGET_UNIX)
     PAL_GetJitCpuCapabilityFlags(&CPUCompileFlags);
 

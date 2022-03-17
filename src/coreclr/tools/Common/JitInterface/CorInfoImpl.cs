@@ -3744,17 +3744,11 @@ namespace Internal.JitInterface
                 case TargetArchitecture.X64:
                 case TargetArchitecture.X86:
                     Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
-                    if (_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2))
-                    {
-                        flags.Set(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
-                    }
+                    Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2));
                     break;
 
                 case TargetArchitecture.ARM64:
-                    if (_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.ARM64_AdvSimd))
-                    {
-                        flags.Set(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
-                    }
+                    Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.ARM64_AdvSimd));
                     break;
             }
 

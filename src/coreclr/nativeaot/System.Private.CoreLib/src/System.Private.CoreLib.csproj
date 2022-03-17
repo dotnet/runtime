@@ -37,10 +37,6 @@
     <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
     <FeatureSharedLowLevelLock>true</FeatureSharedLowLevelLock>
   </PropertyGroup>
-  <PropertyGroup>
-    <FeatureGenericMath>true</FeatureGenericMath>
-    <DefineConstants Condition="'$(FeatureGenericMath)' == 'true'">$(DefineConstants);FEATURE_GENERIC_MATH</DefineConstants>
-  </PropertyGroup>
 
   <!-- Sources -->
   <ItemGroup>

@@ -17,7 +17,7 @@ namespace LibraryImportGenerator.UnitTests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class CustomTypeMarshallerFixerTests
     {
-        [ConditionalFact]
+        [Fact]
         public async Task NullNativeType_ReportsDiagnostic()
         {
             string source = @"
@@ -34,7 +34,7 @@ struct S
                 source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NonNamedNativeType_ReportsDiagnostic()
         {
             string source = @"
@@ -51,7 +51,7 @@ struct S
                 source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NonBlittableNativeType_ReportsDiagnostic()
         {
             string source = @"
@@ -80,7 +80,7 @@ struct {|#0:Native|}
                 source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ClassNativeType_ReportsDiagnostic()
         {
             string source = @"
@@ -109,7 +109,7 @@ class {|#0:Native|}
                 source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task BlittableNativeType_DoesNotReportDiagnostic()
         {
             string source = @"
@@ -138,7 +138,7 @@ struct Native
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task BlittableNativeWithNonBlittableToNativeValue_ReportsDiagnostic()
         {
             string source = @"
@@ -172,7 +172,7 @@ struct Native
                 source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NonBlittableNativeTypeWithBlittableToNativeValue_DoesNotReportDiagnostic()
         {
             string source = @"
@@ -204,7 +204,7 @@ struct Native
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NonBlittableGetPinnableReferenceReturnType_ReportsDiagnostic()
         {
             string source = @"
@@ -240,7 +240,7 @@ unsafe struct Native
                 source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task BlittableGetPinnableReferenceReturnType_DoesNotReportDiagnostic()
         {
             string source = @"
@@ -274,7 +274,7 @@ unsafe struct Native
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NonBlittableMarshallerGetPinnableReferenceReturnType_DoesNotReportDiagnostic()
         {
             string source = @"
@@ -308,7 +308,7 @@ unsafe struct Native
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task BlittableMarshallerGetPinnableReferenceReturnType_DoesNotReportDiagnostic()
         {
             string source = @"
@@ -342,7 +342,7 @@ unsafe struct Native
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task TypeWithGetPinnableReferenceNonPointerReturnType_ReportsDiagnostic()
         {
             string source = @"
@@ -378,7 +378,7 @@ unsafe struct Native
                 source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task TypeWithGetPinnableReferencePointerReturnType_DoesNotReportDiagnostic()
         {
             string source = @"
@@ -412,7 +412,7 @@ unsafe struct Native
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task TypeWithGetPinnableReferenceByRefValuePropertyType_ReportsDiagnostic()
         {
             string source = @"
@@ -444,7 +444,7 @@ unsafe struct Native
                 source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NativeTypeWithGetPinnableReferenceByRefValuePropertyType_ReportsDiagnostic()
         {
             string source = @"
@@ -477,7 +477,7 @@ unsafe struct Native
                 source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NativeTypeWithGetPinnableReferenceNoValueProperty_ReportsDiagnostic()
         {
             string source = @"
@@ -508,7 +508,7 @@ unsafe struct Native
                 source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NativeTypeWithGetPinnableReferenceWithNonPointerValueProperty_DoesNotReportDiagnostic()
         {
             string source = @"
@@ -539,7 +539,7 @@ unsafe struct Native
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NativeTypeWithNoMarshallingMethods_ReportsDiagnostic()
         {
             string source = @"
@@ -562,7 +562,7 @@ struct {|#0:Native|}
                 source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task CollectionNativeTypeWithNoMarshallingMethods_ReportsDiagnostic()
         {
             string source = @"
@@ -585,7 +585,7 @@ struct {|#0:Native|}
                 source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task CollectionNativeTypeWithWrongConstructor_ReportsDiagnostic()
         {
             string source = @"
@@ -637,7 +637,7 @@ ref struct Native
                 fixedSource);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task CollectionNativeTypeWithCorrectConstructor_DoesNotReportDiagnostic()
         {
             string source = @"
@@ -663,7 +663,7 @@ ref struct Native
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task CollectionNativeTypeWithIncorrectStackallocConstructor_ReportsDiagnostic()
         {
             string source = @"
@@ -721,7 +721,7 @@ ref struct Native
                     VerifyCS.Diagnostic(LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorRule).WithLocation(0).WithArguments("Native", "S"));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task CollectionNativeTypeWithOnlyStackallocConstructor_ReportsDiagnostic()
         {
             string source = @"
@@ -774,7 +774,7 @@ ref struct Native
                 VerifyCS.Diagnostic(LinearCollectionInRequiresTwoParameterConstructorRule).WithLocation(0).WithArguments("Native", "S"));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task CollectionNativeTypeWithMissingManagedValuesSource_ReportsDiagnostic()
         {
             string source = @"
@@ -824,7 +824,7 @@ ref struct Native
                 fixedSource);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task CollectionNativeTypeWithMissingNativeValuesDestination_ReportsDiagnostic()
         {
             string source = @"
@@ -874,7 +874,7 @@ ref struct Native
                 fixedSource);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task CollectionNativeTypeWithCorrectRefShape_DoesNotReportDiagnostic()
         {
             string source = @"
@@ -905,7 +905,7 @@ ref struct Native
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task CollectionNativeTypeWithMismatched_Element_Type_ReportsDiagnostic()
         {
             string source = @"
@@ -939,7 +939,7 @@ ref struct Native
                     .WithLocation(0));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NativeTypeWithOnlyConstructor_DoesNotReportDiagnostic()
         {
             string source = @"
@@ -961,7 +961,7 @@ struct Native
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NativeTypeWithOnlyToManagedMethod_DoesNotReportDiagnostic()
         {
             string source = @"
@@ -983,7 +983,7 @@ struct Native
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NativeTypeWithOnlyStackallocConstructor_ReportsDiagnostic()
         {
             string source = @"
@@ -1028,7 +1028,7 @@ struct Native
                 VerifyCS.Diagnostic(ValueInRequiresOneParameterConstructorRule).WithLocation(0).WithArguments("Native", "S"));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task TypeWithOnlyGetPinnableReference_AndInSupport_ReportsDiagnostics()
         {
             string source = @"
@@ -1053,7 +1053,7 @@ struct {|#1:Native|}
                 source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NativeTypeWithConstructorAndFromNativeValueMethod_ReportsDiagnostic()
         {
             string source = @"
@@ -1106,7 +1106,7 @@ struct Native
                 fixedSource);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NativeTypeWithToManagedAndToNativeValueMethod_ReportsDiagnostic()
         {
             string source = @"
@@ -1158,7 +1158,7 @@ struct Native
                 fixedSource);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task BlittableNativeTypeOnMarshalUsingParameter_DoesNotReportDiagnostic()
         {
             string source = @"
@@ -1193,7 +1193,7 @@ static class Test
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NonBlittableNativeTypeOnMarshalUsingParameter_ReportsDiagnostic()
         {
             string source = @"
@@ -1229,7 +1229,7 @@ static class Test
                 source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NonBlittableNativeTypeOnMarshalUsingReturn_ReportsDiagnostic()
         {
             string source = @"
@@ -1265,7 +1265,7 @@ static class Test
                 source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task GenericNativeTypeWithGenericMemberInstantiatedWithBlittable_DoesNotReportDiagnostic()
         {
 
@@ -1294,7 +1294,7 @@ struct Native<T>
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task UninstantiatedGenericNativeTypeOnNonGeneric_ReportsDiagnostic()
         {
 
@@ -1325,7 +1325,7 @@ struct Native<T>
                 source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task MarshalUsingUninstantiatedGenericNativeType_ReportsDiagnostic()
         {
 
@@ -1361,7 +1361,7 @@ static class Test
                 source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task UninstantiatedGenericNativeTypeOnGenericWithArityMismatch_ReportsDiagnostic()
         {
             string source = @"
@@ -1392,7 +1392,7 @@ struct {|#1:Native|}<T, U>
                 VerifyCS.Diagnostic(NativeGenericTypeMustBeClosedOrMatchArityRule).WithLocation(1).WithArguments("Native<T, U>", "S<>"));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task UninstantiatedGenericNativeTypeOnGenericWithArityMatch_DoesNotReportDiagnostic()
         {
             string source = @"
@@ -1420,7 +1420,7 @@ struct Native<T>
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NativeTypeWithStackallocConstructorWithoutBufferSize_ReportsDiagnostic()
         {
             string source = @"
@@ -1445,7 +1445,7 @@ struct Native
                 source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task CustomTypeMarshallerForTypeWithPlaceholder_DoesNotReportDiagnostic()
         {
             string source = @"
@@ -1461,7 +1461,7 @@ struct Native<T>
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task CustomTypeMarshallerForArrayTypeWithPlaceholder_DoesNotReportDiagnostic()
         {
             string source = @"
@@ -1477,7 +1477,7 @@ struct Native<T>
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task CustomTypeMarshallerForPointerTypeWithPlaceholder_DoesNotReportDiagnostic()
         {
             string source = @"
@@ -1493,7 +1493,7 @@ unsafe struct Native<T> where T : unmanaged
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task CustomTypeMarshallerForArrayOfPointerTypeWithPlaceholder_DoesNotReportDiagnostic()
         {
             string source = @"
@@ -1509,7 +1509,7 @@ unsafe struct Native<T> where T : unmanaged
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task CustomTypeMarshallerWithFreeNativeMethod_NoUnmanagedResourcesFeatures_ReportsDiagnostic()
         {
             string source = @"
@@ -1544,7 +1544,7 @@ unsafe struct Native
                     .WithArguments("Native")
                     .WithLocation(0));
         }
-        [ConditionalFact]
+        [Fact]
         public async Task CustomTypeMarshallerWithCallerAllocatedBufferConstructor_NoFeature_ReportsDiagnostic()
         {
             string source = @"
@@ -1580,7 +1580,7 @@ unsafe struct Native
                     .WithLocation(0));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task Add_Feature_Declaration_Preserves_Attribute_Argument_Location()
         {
             string source = @"
@@ -1616,7 +1616,7 @@ unsafe struct Native
                     .WithLocation(0));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task CustomTypeMarshallerWithTwoStageMarshallingMethod_NoFeature_ReportsDiagnostic()
         {
             string source = @"
@@ -1699,7 +1699,7 @@ unsafe struct Native2
                 numFixAllIterations: 2);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task Mismatched_NativeValue_Type_ReportsDiagnostic()
         {
             string source = @"
@@ -1729,7 +1729,7 @@ unsafe struct Native
                     .WithLocation(0));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task Same_NativeValue_Type_DifferentName_DoesNotReportDiagnostic()
         {
             string source = @"
