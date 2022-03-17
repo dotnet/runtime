@@ -266,7 +266,7 @@ function set_exit_code(exit_code, reason) {
         else
             console.error(JSON.stringify(reason));
     }
-    console.log(`set_exit_code: {exit_code}`);
+    console.log(`set_exit_code: ${exit_code}`);
 
     if (is_browser) {
         if (App.Module) {
