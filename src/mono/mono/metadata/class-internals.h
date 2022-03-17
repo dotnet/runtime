@@ -192,11 +192,17 @@ struct _MonoProperty {
 	const char *name;
 	MonoMethod *get;
 	MonoMethod *set;
-	guint32 attrs;
+	guint32 attrs; /* upper bits store non-ECMA flags */
+};
+
+/* non-ECMA flags for the MonoProperty attrs field */
+enum {
 	/* added by metadata-update after class was created;
 	 * not in MonoClassPropertyInfo array - don't do ptr arithmetic */
-	guint32 from_update : 1;
+	MONO_PROPERTY_META_FLAG_FROM_UPDATE = 0x00010000,
+	MONO_PROPERTY_META_FLAG_MASK = 0x00010000,
 };
+
 
 struct _MonoEvent {
 	MonoClass *parent;
@@ -207,11 +213,18 @@ struct _MonoEvent {
 #ifndef MONO_SMALL_CONFIG
 	MonoMethod **other;
 #endif
-	guint32 attrs;
+	guint32 attrs;  /* upper bits store non-ECMA flags */
+};
+
+/* non-ECMA flags for the MonoEvent attrs field */
+enum {
 	/* added by metadata-update after class was created;
 	 * not in MonoClassEventInfo array - don't do ptr arithmetic */
-	guint32 from_update : 1;
+	MONO_EVENT_META_FLAG_FROM_UPDATE = 0x00010000,
+	
+	MONO_EVENT_META_FLAG_MASK = 0x00010000,
 };
+
 
 /* type of exception being "on hold" for later processing (see exception_type) */
 typedef enum {
@@ -1613,13 +1626,13 @@ m_field_is_from_update (MonoClassField *field)
 static inline gboolean
 m_property_is_from_update (MonoProperty *prop)
 {
-	return prop->from_update != 0;
+	return (prop->attrs & MONO_PROPERTY_META_FLAG_FROM_UPDATE) != 0;
 }
 
 static inline gboolean
 m_event_is_from_update (MonoEvent *evt)
 {
-	return evt->from_update != 0;
+	return (evt->attrs & MONO_EVENT_META_FLAG_FROM_UPDATE) != 0;
 }
 
 /*

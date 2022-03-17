@@ -5624,7 +5624,7 @@ mono_property_get_parent (MonoProperty *prop)
 guint32
 mono_property_get_flags (MonoProperty *prop)
 {
-	return prop->attrs;
+	return prop->attrs & ~MONO_PROPERTY_META_FLAG_MASK;
 }
 
 /**
@@ -5694,7 +5694,7 @@ mono_event_get_parent (MonoEvent *event)
 guint32
 mono_event_get_flags (MonoEvent *event)
 {
-	return event->attrs;
+	return event->attrs & ~MONO_EVENT_META_FLAG_MASK;
 }
 
 /**
