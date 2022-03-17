@@ -122,7 +122,7 @@ namespace DebuggerTests
 
         string browser_path;
 
-        string GetBrowserPath()
+        internal string GetBrowserPath()
         {
             if (string.IsNullOrEmpty(browser_path))
             {
@@ -133,7 +133,7 @@ namespace DebuggerTests
                     Console.WriteLine ($"** Using browser from {browser_path}");
                 }
                 else
-                    throw new Exception("Could not find an installed Chrome to use");
+                    throw new Exception("Could not find an installed Browser to use");
             }
 
             return browser_path;
@@ -245,6 +245,7 @@ namespace DebuggerTests
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
             Func<string, ILogger<TestHarnessProxy>, Task<string>> extractConnUrl = ExtractConnUrl;
+            Console.WriteLine(InitParms());
             startTask = TestHarnessProxy.Start(GetBrowserPath(), DebuggerTestAppPath, driver, InitParms(), UrlToRemoteDebugging(), extractConnUrl);
         }
 
