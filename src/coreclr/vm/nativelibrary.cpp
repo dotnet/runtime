@@ -576,16 +576,17 @@ namespace
 
         int varCount = 0;
 
-        // The runtime will always append the '.dll' extension unless the name ends with a "."
+        // The runtime will always append the '.dll' extension unless the path is relative, name ends with a "."
         // or with an existing known extension. This is done due to issues with case-sensitive file systems
-        // on Windows that only search for ".DLL" as opposed to the more common ".dll".
-        auto it = libName.Begin();
-        if (libName.EndsWith(W("."))
+        // on Windows. The Windows loader always appends ".DLL" as opposed to the more common ".dll".
+        if (!libNameIsRelativePath
+            || libName.EndsWith(W("."))
             || libName.EndsWithCaseInsensitive(W(".dll"))
             || libName.EndsWithCaseInsensitive(W(".exe")))
         {
             // Follow LoadLibrary rules in MSDN doc: https://docs.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya
-            // To prevent the function from appending ".DLL" to the module name, include a trailing point character (.) in the module name string.
+            // To prevent the function from appending ".DLL" to the module name, include a trailing point character (.) in the module name string
+            // or provide an absolute path.
             libNameVariations[varCount++] = NameFmt;
         }
         else
