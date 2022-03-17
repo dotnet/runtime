@@ -47,6 +47,7 @@ namespace pal
 }
 
 #ifdef TARGET_WINDOWS
+#define CDECL __cdecl
 #include <Windows.h>
 
 #define DLL_EXPORT __declspec(dllexport)
