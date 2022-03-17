@@ -6299,17 +6299,28 @@ mono_metadata_events_from_typedef (MonoImage *meta, guint32 index, guint *end_id
 
 	*end_idx = 0;
 
-	if (!tdef->base)
+	if (!tdef->base && !meta->has_updates)
 		return 0;
 
 	loc.t = tdef;
 	loc.col_idx = MONO_EVENT_MAP_PARENT;
 	loc.idx = index + 1;
 
-	/* FIXME: metadata-update */
-
-	if (!mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator))
+	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
+	if (!found && !meta->has_updates)
 		return 0;
+
+	if (G_UNLIKELY (meta->has_updates)) {
+		if (!found) {
+			uint32_t count;
+			if (metadata_update_get_typedef_skeleton_events (meta, mono_metadata_make_token (MONO_TABLE_TYPEDEF, index + 1), &start, &count)) {
+				*end_idx = start + count - 1;
+				return start - 1;
+			} else {
+				return 0;
+			}
+		}
+	}
 
 	start = mono_metadata_decode_row_col (tdef, loc.result, MONO_EVENT_MAP_EVENTLIST);
 	if (loc.result + 1 < table_info_get_rows (tdef)) {
@@ -6339,7 +6350,7 @@ mono_metadata_methods_from_event   (MonoImage *meta, guint32 index, guint *end_i
 	MonoTableInfo *msemt = &meta->tables [MONO_TABLE_METHODSEMANTICS];
 
 	*end_idx = 0;
-	if (!msemt->base)
+	if (!msemt->base && !meta->has_updates)
 		return 0;
 
 	if (meta->uncompressed_metadata)
@@ -6349,10 +6360,15 @@ mono_metadata_methods_from_event   (MonoImage *meta, guint32 index, guint *end_i
 	loc.col_idx = MONO_METHOD_SEMA_ASSOCIATION;
 	loc.idx = ((index + 1) << MONO_HAS_SEMANTICS_BITS) | MONO_HAS_SEMANTICS_EVENT; /* Method association coded index */
 
-	/* FIXME: metadata-update */
+	gboolean found = msemt->base && mono_binary_search (&loc, msemt->base, table_info_get_rows (msemt), msemt->row_size, table_locator) != NULL;
 
-	if (!mono_binary_search (&loc, msemt->base, table_info_get_rows (msemt), msemt->row_size, table_locator))
+	if (!found && !meta->has_updates)
 		return 0;
+
+	if (G_UNLIKELY (meta->has_updates)) {
+		if (!found && !mono_metadata_update_metadata_linear_search (meta, msemt, &loc, table_locator))
+			return 0;
+	}
 
 	start = loc.result;
 	/*
@@ -6365,7 +6381,7 @@ mono_metadata_methods_from_event   (MonoImage *meta, guint32 index, guint *end_i
 			break;
 	}
 	end = start + 1;
-	int rows = table_info_get_rows (msemt);
+	int rows = mono_metadata_table_num_rows (meta, MONO_TABLE_METHODSEMANTICS);
 	while (end < rows) {
 		mono_metadata_decode_row (msemt, end, cols, MONO_METHOD_SEMA_SIZE);
 		if (cols [MONO_METHOD_SEMA_ASSOCIATION] != loc.idx)

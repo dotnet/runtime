@@ -195,6 +195,12 @@ metadata_update_get_typedef_skeleton_properties (MonoImage *base_image, uint32_t
 	return mono_component_hot_reload()->get_typedef_skeleton_properties (base_image, typedef_token, first_prop_idx, prop_count);
 }
 
+gboolean
+metadata_update_get_typedef_skeleton_events (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_event_idx, uint32_t *event_count)
+{
+	return mono_component_hot_reload()->get_typedef_skeleton_events (base_image, typedef_token, first_event_idx, event_count);
+}
+
 MonoMethod *
 mono_metadata_update_added_methods_iter (MonoClass *klass, gpointer *iter)
 {

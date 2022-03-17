@@ -39,6 +39,8 @@ public class NewToplevelClass : IExistingInterface, ICloneable {
 
     public byte[] OtherNewProp {get; set;}
 
+    public event EventHandler<string> NewEvent;
+    public event EventHandler<byte> OtherNewEvent;
 }
 
 public class NewGenericClass<T> : NewToplevelClass {

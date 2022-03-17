@@ -603,6 +603,24 @@ namespace System.Reflection.Metadata
 		    Assert.NotNull(newPropSet);
 
 		    Assert.Equal("get_NewProp", newPropGet.Name);
+
+		    var allEvents = ty.GetEvents();
+
+		    EventInfo newEvt = null;
+		    foreach (var evt in allEvents)
+		    {
+			if (evt.Name == "NewEvent")
+			    newEvt = evt;
+		    }
+		    Assert.NotNull(newEvt);
+
+		    Assert.Equal(newEvt, ty.GetEvent("NewEvent"));
+		    MethodInfo newEvtAdd = newEvt.GetAddMethod();
+		    Assert.NotNull(newEvtAdd);
+		    MethodInfo newEvtRemove = newEvt.GetRemoveMethod();
+		    Assert.NotNull(newEvtRemove);
+
+		    Assert.Equal("add_NewEvent", newEvtAdd.Name);
 		});
 		CheckReflectedType(assm, allTypes, ns, "NewGenericClass`1");
 		CheckReflectedType(assm, allTypes, ns, "NewToplevelStruct");
