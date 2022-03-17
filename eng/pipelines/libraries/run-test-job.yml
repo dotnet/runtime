@@ -16,6 +16,7 @@ parameters:
   helixQueues: []
   dependsOnTestBuildConfiguration: Debug
   dependsOnTestArchitecture: x64
+  dependOnEvaluatePaths: false
   condition: true
   variables: {}
   # coreclrTestGroup: if empty, then a normal, default test run is created. If set, it indicates a set of
@@ -51,6 +52,7 @@ jobs:
       ${{ if eq(parameters.interpreter, 'true') }}:
         testDisplayName: ${{ parameters.runtimeFlavor }}_interpreter_${{ parameters.liveRuntimeBuildConfig }}
 
+      dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
       dependsOn:
       - ${{ if ne(parameters.dependsOn[0], '') }}:
         - ${{ parameters.dependsOn }}

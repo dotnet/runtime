@@ -17,6 +17,7 @@ parameters:
   condition: true
   continueOnError: false
   dependsOn: ''
+  dependOnEvaluatePaths: false
   displayName: ''
   timeoutInMinutes: ''
   enableMicrobuild: ''
@@ -43,6 +44,7 @@ jobs:
     condition: and(succeeded(), ${{ parameters.condition }})
     continueOnError: ${{ parameters.continueOnError }}
     dependsOn: ${{ parameters.dependsOn }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     displayName: ${{ parameters.displayName }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enableMicrobuild: ${{ parameters.enableMicrobuild }}

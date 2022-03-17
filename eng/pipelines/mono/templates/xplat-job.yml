@@ -30,7 +30,8 @@ jobs:
     container: ${{ parameters.container }}
     condition: ${{ parameters.condition }}
     dependsOn:
-      - checkout
+      - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
+        - evaluate_paths
       - ${{ if ne(parameters.dependsOn, '') }}:
         - ${{ parameters.dependsOn }}
 
@@ -96,7 +97,9 @@ jobs:
       - ${{insert}}: ${{ variable }}
 
     steps:
-    - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+    - checkout: self
+      clean: true
+      fetchDepth: $(checkoutFetchDepth)
 
     - ${{ if ne(variables['System.TeamProject'], 'public') }}:
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
