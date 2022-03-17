@@ -113,7 +113,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         // base ctor might call OnEventCommand and set filter spec
         // having assignment in ctor would overwrite the value
         private LoggerFilterRule[] _filterSpec = Array.Empty<LoggerFilterRule>();
-        private CancellationTokenSource _cancellationTokenSource;
+        private CancellationTokenSource? _cancellationTokenSource;
         private const string UseAppFilters = "UseAppFilters";
         private const string WriteEventCoreSuppressionJustification = "WriteEventCore is safe when eventData object is a primitive type which is in this case.";
         private const string WriteEventDynamicDependencySuppressionJustification = "DynamicDependency attribute will ensure that the required properties are not trimmed.";
@@ -129,7 +129,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [Event(1, Keywords = Keywords.FormattedMessage, Level = EventLevel.LogAlways)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventCoreSuppressionJustification)]
-        internal unsafe void FormattedMessage(LogLevel Level, int FactoryID, string LoggerName, int EventId, string EventName, string FormattedMessage)
+        internal unsafe void FormattedMessage(LogLevel Level, int FactoryID, string? LoggerName, int EventId, string? EventName, string? FormattedMessage)
         {
             if (IsEnabled())
             {
@@ -164,7 +164,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<string, string>))]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventDynamicDependencySuppressionJustification)]
-        internal void Message(LogLevel Level, int FactoryID, string LoggerName, int EventId, string EventName, ExceptionInfo Exception, IEnumerable<KeyValuePair<string, string>> Arguments)
+        internal void Message(LogLevel Level, int FactoryID, string? LoggerName, int EventId, string? EventName, ExceptionInfo Exception, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
             if (IsEnabled())
             {
@@ -179,7 +179,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<string, string>))]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventDynamicDependencySuppressionJustification)]
-        internal void ActivityStart(int ID, int FactoryID, string LoggerName, IEnumerable<KeyValuePair<string, string>> Arguments)
+        internal void ActivityStart(int ID, int FactoryID, string? LoggerName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
             if (IsEnabled())
             {
@@ -190,7 +190,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [Event(4, Keywords = Keywords.Message | Keywords.FormattedMessage, Level = EventLevel.LogAlways)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventCoreSuppressionJustification)]
-        internal unsafe void ActivityStop(int ID, int FactoryID, string LoggerName)
+        internal unsafe void ActivityStop(int ID, int FactoryID, string? LoggerName)
         {
             if (IsEnabled())
             {
@@ -213,7 +213,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [Event(5, Keywords = Keywords.JsonMessage, Level = EventLevel.LogAlways)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventCoreSuppressionJustification)]
-        internal unsafe void MessageJson(LogLevel Level, int FactoryID, string LoggerName, int EventId, string EventName, string ExceptionJson, string ArgumentsJson, string FormattedMessage)
+        internal unsafe void MessageJson(LogLevel Level, int FactoryID, string? LoggerName, int EventId, string? EventName, string? ExceptionJson, string? ArgumentsJson, string? FormattedMessage)
         {
             if (IsEnabled())
             {
@@ -249,7 +249,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [Event(6, Keywords = Keywords.JsonMessage | Keywords.FormattedMessage, Level = EventLevel.LogAlways, ActivityOptions = EventActivityOptions.Recursive)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventCoreSuppressionJustification)]
-        internal unsafe void ActivityJsonStart(int ID, int FactoryID, string LoggerName, string ArgumentsJson)
+        internal unsafe void ActivityJsonStart(int ID, int FactoryID, string? LoggerName, string? ArgumentsJson)
         {
             if (IsEnabled())
             {
@@ -275,7 +275,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [Event(7, Keywords = Keywords.JsonMessage | Keywords.FormattedMessage, Level = EventLevel.LogAlways)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventCoreSuppressionJustification)]
-        internal unsafe void ActivityJsonStop(int ID, int FactoryID, string LoggerName)
+        internal unsafe void ActivityJsonStop(int ID, int FactoryID, string? LoggerName)
         {
             if (IsEnabled())
             {
@@ -298,9 +298,9 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// <inheritdoc />
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
-            if (command.Command == EventCommand.Update || command.Command == EventCommand.Enable)
+            if (command.Command is EventCommand.Update or EventCommand.Enable)
             {
-                if (!command.Arguments.TryGetValue("FilterSpecs", out string filterSpec))
+                if (!command.Arguments!.TryGetValue("FilterSpecs", out string? filterSpec))
                 {
                     filterSpec = string.Empty; // This means turn on everything.
                 }
@@ -318,7 +318,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// </summary>
         /// <param name="filterSpec">The filter specification to set.</param>
         [NonEvent]
-        private void SetFilterSpec(string filterSpec)
+        private void SetFilterSpec(string? filterSpec)
         {
             _filterSpec = ParseFilterSpec(filterSpec, GetDefaultLevel());
 
@@ -335,7 +335,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [NonEvent]
         private void FireChangeToken()
         {
-            CancellationTokenSource tcs = Interlocked.Exchange(ref _cancellationTokenSource, null);
+            CancellationTokenSource? tcs = Interlocked.Exchange(ref _cancellationTokenSource, null);
             tcs?.Cancel();
         }
 
@@ -351,7 +351,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// The first specification that 'loggers' Name matches is used.
         /// </summary>
         [NonEvent]
-        private static LoggerFilterRule[] ParseFilterSpec(string filterSpec, LogLevel defaultLevel)
+        private static LoggerFilterRule[] ParseFilterSpec(string? filterSpec, LogLevel defaultLevel)
         {
             if (filterSpec == string.Empty)
             {
@@ -451,7 +451,7 @@ namespace Microsoft.Extensions.Logging.EventSource
                     {
                         return false;
                     }
-                    if (!(LogLevel.Trace <= (LogLevel)level && (LogLevel)level <= LogLevel.None))
+                    if ((LogLevel)level is not (>= LogLevel.Trace and <= LogLevel.None))
                     {
                         return false;
                     }
@@ -501,7 +501,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         {
             if (typeof(T) == typeof(string))
             {
-                string str = value as string;
+                string str = (value as string)!;
 #if DEBUG
                 fixed (char* rePinnedString = str)
                 {

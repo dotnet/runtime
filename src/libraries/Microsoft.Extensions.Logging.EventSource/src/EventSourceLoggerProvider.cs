@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace Microsoft.Extensions.Logging.EventSource
@@ -17,7 +18,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         // A small integer that uniquely identifies the LoggerFactory associated with this LoggingProvider.
         private readonly int _factoryID;
 
-        private EventSourceLogger _loggers; // Linked list of loggers that I have created
+        private EventSourceLogger? _loggers; // Linked list of loggers that I have created
         private readonly LoggingEventSource _eventSource;
 
         public EventSourceLoggerProvider(LoggingEventSource eventSource!!)
@@ -27,7 +28,8 @@ namespace Microsoft.Extensions.Logging.EventSource
         }
 
         /// <inheritdoc />
-        public ILogger CreateLogger(string categoryName)
+        [MemberNotNull(nameof(_loggers))]
+        public ILogger CreateLogger(string? categoryName)
         {
             return _loggers = new EventSourceLogger(categoryName, _factoryID, _eventSource, _loggers);
         }
@@ -36,7 +38,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         public void Dispose()
         {
             // Turn off any logging
-            for (EventSourceLogger logger = _loggers; logger != null; logger = logger.Next)
+            for (EventSourceLogger? logger = _loggers; logger != null; logger = logger.Next)
             {
                 logger.Level = LogLevel.None;
             }
