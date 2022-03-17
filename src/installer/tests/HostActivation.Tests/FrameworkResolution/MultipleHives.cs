@@ -82,7 +82,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [InlineData("6.1.4", "net6.0", true, "6.1.4", true)]
         [InlineData("6.1.4", "net6.0", null, "6.1.4", true)]
         [InlineData("6.1.4", "net6.0", false, ResolvedFramework.NotFound, false)]
-        [InlineData("6.1.4", "net7.0", true, "6.1.4", true)]
+        [InlineData("6.1.4", "net7.0", true, ResolvedFramework.NotFound, false)]  // MLL disabled for net7.0
         [InlineData("7.1.2", "net6.0", true, "7.1.2", false)]  // 7.1.2 is in both main and global hives - the main should always win with exact match
         [InlineData("7.1.2", "net6.0", null, "7.1.2", false)]
         [InlineData("7.1.2", "net6.0", false, "7.1.2", false)]
@@ -154,7 +154,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
             string expectedOutput = string.Join(
                 string.Empty,
-                GetExpectedFrameworks(multiLevelLookup)
+                GetExpectedFrameworks(false) // MLL Is always disabled for dotnet --list-runtimes
                     .Select(t => $"{MicrosoftNETCoreApp} {t.Version} [{Path.Combine(t.Path, "shared", MicrosoftNETCoreApp)}]{Environment.NewLine}"));
 
             // !!IMPORTANT!!: This test verifies the exact match of the entire output of the command (not a substring!)
@@ -179,7 +179,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             string expectedOutput =
                 $".NET runtimes installed:{Environment.NewLine}" +
                 string.Join(string.Empty,
-                    GetExpectedFrameworks(multiLevelLookup)
+                    GetExpectedFrameworks(false) // MLL is always disabled for dotnet --info
                         .Select(t => $"  {MicrosoftNETCoreApp} {t.Version} [{Path.Combine(t.Path, "shared", MicrosoftNETCoreApp)}]{Environment.NewLine}"));
 
             RunTest(
@@ -190,13 +190,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         }
 
         [Theory]
-        [InlineData("net5.0", true)]
-        [InlineData("net5.0", null)]
-        [InlineData("net5.0", false)]
-        [InlineData("net7.0", true)]
-        [InlineData("net7.0", null)]
-        [InlineData("net7.0", false)]
-        public void FrameworkResolutionError(string tfm, bool? multiLevelLookup)
+        [InlineData("net5.0", true, true)]
+        [InlineData("net5.0", null, true)]
+        [InlineData("net5.0", false, false)]
+        [InlineData("net7.0", true, false)]
+        [InlineData("net7.0", null, false)]
+        [InlineData("net7.0", false, false)]
+        public void FrameworkResolutionError(string tfm, bool? multiLevelLookup, bool effectiveMultiLevelLookup)
         {
             // Multi-level lookup is only supported on Windows.
             if (!OperatingSystem.IsWindows() && multiLevelLookup != false)
@@ -205,7 +205,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             string expectedOutput =
                 $"The following frameworks were found:{Environment.NewLine}" +
                 string.Join(string.Empty,
-                    GetExpectedFrameworks(multiLevelLookup)
+                    GetExpectedFrameworks(effectiveMultiLevelLookup)
                         .Select(t => $"      {t.Version} at [{Path.Combine(t.Path, "shared", MicrosoftNETCoreApp)}]{Environment.NewLine}"));
 
             RunTest(
@@ -214,7 +214,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     .WithFramework(MicrosoftNETCoreApp, "9999.9.9"),
                 multiLevelLookup)
                 .Should().Fail()
-                .And.HaveStdErrContaining(expectedOutput);
+                .And.HaveStdErrContaining(expectedOutput)
+                .And.HaveStdErrContaining("https://aka.ms/dotnet/app-launch-failed");
         }
 
         private CommandResult RunTest(Func<RuntimeConfig, RuntimeConfig> runtimeConfig, bool? multiLevelLookup = true)

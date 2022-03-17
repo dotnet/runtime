@@ -139,7 +139,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Expected: 9999.3.5-dummy from reg dir
             RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.3.5-dummy", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.4", _dotnetSdkDllMessageTerminator));
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.600");
@@ -151,7 +151,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Expected: 9999.3.5-dummy from reg dir
             RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.3.5-dummy", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.4", _dotnetSdkDllMessageTerminator));
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.4-global-dummy");
@@ -171,10 +171,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining("9999.3.4-dummy")
                 .And.HaveStdOutContaining("9999.3.4-global-dummy")
                 .And.HaveStdOutContaining("9999.4.1")
-                .And.HaveStdOutContaining("9999.3.3")
                 .And.HaveStdOutContaining("9999.3.4")
-                .And.HaveStdOutContaining("9999.3.600")
-                .And.HaveStdOutContaining("9999.3.5-dummy");
+                .And.HaveStdOutContaining("9999.3.600");
         }
 
         [Fact]
@@ -224,10 +222,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Cwd: empty
             // Exe: 9999.3.300, 9999.7.304-global-dummy
             // Reg: 9999.3.57, 9999.3.4-dummy, 9999.3.304
-            // Expected: 9999.3.304 from reg dir
+            // Expected: no compatible version and specific error message
             RunTest()
-                .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.3.304", _dotnetSdkDllMessageTerminator));
+                .Should().Fail()
+                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version");
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.399", "9999.3.399-dummy", "9999.3.400");
@@ -264,22 +262,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Expected: 9999.3.304-global-dummy from reg dir
             RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.3.304-global-dummy", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.399", _dotnetSdkDllMessageTerminator));
 
             // Verify we have the expected SDK versions
             RunTest("--list-sdks")
                 .Should().Pass()
-                .And.HaveStdOutContaining("9999.3.57")
-                .And.HaveStdOutContaining("9999.3.4-dummy")
                 .And.HaveStdOutContaining("9999.3.300")
                 .And.HaveStdOutContaining("9999.7.304-global-dummy")
                 .And.HaveStdOutContaining("9999.3.399")
                 .And.HaveStdOutContaining("9999.3.399-dummy")
                 .And.HaveStdOutContaining("9999.3.400")
                 .And.HaveStdOutContaining("9999.3.2400")
-                .And.HaveStdOutContaining("9999.3.3004")
-                .And.HaveStdOutContaining("9999.3.304")
-                .And.HaveStdOutContaining("9999.3.304-global-dummy");
+                .And.HaveStdOutContaining("9999.3.3004");
         }
 
         [Fact]
@@ -295,10 +289,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Cwd: empty
             // Exe: empty
             // Reg: 9999.0.4
-            // Expected: 9999.0.4 from reg dir
+            // Expected: no compatible version and a specific error message
             RunTest()
-                .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.4", _dotnetSdkDllMessageTerminator));
+                .Should().Fail()
+                .And.HaveStdErrContaining("compatible .NET SDK is not installed");
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.4");
@@ -348,8 +342,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
                     .EnableTracingAndCaptureOutputs()
                     .Execute()
-                    .Should().Pass()
-                    .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.4", _dotnetSdkDllMessageTerminator));
+                    .Should().Fail()
+                    .And.HaveStdErrContaining("compatible .NET SDK is not installed");
             }
         }
 
@@ -366,10 +360,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Cwd: empty
             // Exe: empty
             // Reg: 9999.0.0, 9999.0.3-dummy
-            // Expected: 9999.0.3-dummy from reg dir
+            // Expected: no compatible version and a specific error message
             RunTest()
-                .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.3-dummy", _dotnetSdkDllMessageTerminator));
+                .Should().Fail()
+                .And.HaveStdErrContaining("compatible .NET SDK is not installed");
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.3");
@@ -394,7 +388,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Expected: 9999.0.100 from reg dir
             RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.100", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.3", _dotnetSdkDllMessageTerminator));
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.80");
@@ -406,7 +400,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Expected: 9999.0.100 from reg dir
             RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.100", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.80", _dotnetSdkDllMessageTerminator));
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.5500000");
@@ -430,21 +424,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Expected: 9999.0.52000000 from reg dir
             RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.52000000", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.5500000", _dotnetSdkDllMessageTerminator));
 
             // Verify we have the expected SDK versions
             RunTest("--list-sdks")
                 .Should().Pass()
-                .And.HaveStdOutContaining("9999.0.0")
-                .And.HaveStdOutContaining("9999.0.3-dummy")
                 .And.HaveStdOutContaining("9999.0.3")
-                .And.HaveStdOutContaining("9999.0.100")
                 .And.HaveStdOutContaining("9999.0.80")
-                .And.HaveStdOutContaining("9999.0.5500000")
-                .And.HaveStdOutContaining("9999.0.52000000");
+                .And.HaveStdOutContaining("9999.0.5500000");
         }
 
-        private List<(string version, string rootPath)> AddSdkVersionsAndGetExpectedList(bool? multiLevelLookup)
+        private List<(string version, string rootPath)> AddSdkVersionsAndGetExpectedList()
         {
             AddAvailableSdkVersions(_exeSdkBaseDir, "5.0.2");
             AddAvailableSdkVersions(_exeSdkBaseDir, "6.1.1");
@@ -457,11 +447,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             expectedList.Add(("5.0.2", _exeSdkBaseDir));
             expectedList.Add(("6.1.1", _exeSdkBaseDir));
             expectedList.Add(("7.1.2", _exeSdkBaseDir));
-            if (multiLevelLookup is null || multiLevelLookup == true)
-            {
-                expectedList.Add(("6.2.0", _regSdkBaseDir));
-                expectedList.Add(("7.0.1", _regSdkBaseDir));
-            }
+            // MLL is always disabled for SDK resolution, so only the "exe" SDKs are listed
             expectedList.Sort((a, b) =>
             {
                 if (!Version.TryParse(a.version, out var aVersion))
@@ -485,7 +471,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             if (!OperatingSystem.IsWindows() && multiLevelLookup != false)
                 return;
 
-            var expectedList = AddSdkVersionsAndGetExpectedList(multiLevelLookup);
+            var expectedList = AddSdkVersionsAndGetExpectedList();
             string expectedOutput = string.Join(string.Empty, expectedList.Select(t => $"{t.version} [{t.rootPath}]{Environment.NewLine}"));
 
             // !!IMPORTANT!!: This test verifies the exact match of the entire output of the command (not a substring!)
@@ -509,7 +495,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             SetGlobalJsonVersion("SingleDigit-global.json");
 
             // When we fail to resolve SDK version, we print out all available SDKs
-            var expectedList = AddSdkVersionsAndGetExpectedList(multiLevelLookup);
+            var expectedList = AddSdkVersionsAndGetExpectedList();
             string expectedOutput = string.Join(string.Empty, expectedList.Select(t => $"        {t.version} [{t.rootPath}]{Environment.NewLine}"));
 
             RunTest("help", multiLevelLookup)
@@ -527,7 +513,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             if (!OperatingSystem.IsWindows() && multiLevelLookup != false)
                 return;
 
-            var expectedList = AddSdkVersionsAndGetExpectedList(multiLevelLookup);
+            var expectedList = AddSdkVersionsAndGetExpectedList();
             string expectedOutput =
                 $".NET SDKs installed:{Environment.NewLine}" +
                 string.Join(string.Empty, expectedList.Select(t => $"  {t.version} [{t.rootPath}]{Environment.NewLine}"));

@@ -135,9 +135,10 @@ void fx_resolver_t::display_missing_framework_error(
 
     pal::string_t url = get_download_url(fx_name.c_str(), fx_version.c_str());
     trace::error(_X(""));
-    trace::error(_X("You can resolve the problem by installing the specified framework and/or SDK."));
+    trace::error(_X("Learn about framework resolution:"));
+    trace::error(_X("https://aka.ms/dotnet/app-launch-failed"));
     trace::error(_X(""));
-    trace::error(_X("The specified framework can be found at:"));
+    trace::error(_X("Download framework:"));
     trace::error(_X("  - %s"), url.c_str());
 }
 
