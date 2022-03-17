@@ -234,8 +234,8 @@ namespace System.Text.RegularExpressions.Generator
         /// <summary>A regex method.</summary>
         internal sealed record RegexMethod(RegexType DeclaringType, MethodDeclarationSyntax MethodSyntax, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int MatchTimeout, RegexTree Tree)
         {
-            public int GeneratedId { get; set; }
-            public string GeneratedName => $"{MethodName}_{GeneratedId}";
+            public string GeneratedName { get; set; }
+            public bool IsDuplicate { get; set; }
         }
 
         /// <summary>A type holding a regex method.</summary>
