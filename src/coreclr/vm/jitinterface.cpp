@@ -2089,7 +2089,7 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    unsigned result;
+    unsigned result = 0;
 
     JIT_TO_EE_TRANSITION();
 
@@ -11963,7 +11963,7 @@ bool CEEJitInfo::doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLA
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    bool result;
+    bool result = false;
 
     JIT_TO_EE_TRANSITION();
 
