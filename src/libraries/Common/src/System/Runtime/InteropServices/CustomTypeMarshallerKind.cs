@@ -7,7 +7,6 @@ namespace System.Runtime.InteropServices
     /// The shape of a custom type marshaller for usage in source-generated interop scenarios.
     /// </summary>
     /// <remarks>
-    /// <seealso cref="CustomTypeMarshallerAttribute"/>
     /// <seealso cref="LibraryImportAttribute"/>
     /// </remarks>
 #if LIBRARYIMPORT_GENERATOR_TEST

@@ -6,9 +6,6 @@ namespace System.Runtime.InteropServices
     /// <summary>
     /// Optional features supported by custom type marshallers.
     /// </summary>
-    /// <remarks>
-    /// <seealso cref="CustomTypeMarshallerAttribute.Features"/>
-    /// </remarks>
     [Flags]
 #if LIBRARYIMPORT_GENERATOR_TEST
     public
