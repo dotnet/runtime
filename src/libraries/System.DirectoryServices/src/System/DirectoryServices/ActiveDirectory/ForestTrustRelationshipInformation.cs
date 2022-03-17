@@ -213,7 +213,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         record.Flags = 0;
                         record.Time = (LARGE_INTEGER)_binaryDataTime[i]!;
                         record.Data.Length = ((byte[])_binaryData[i]!).Length;
-                        record.ForestTrustType = (LSA_FOREST_TRUST_RECORD_TYPE)_binaryRecordType[i];
+                        record.ForestTrustType = (LSA_FOREST_TRUST_RECORD_TYPE)_binaryRecordType[i]!;
                         record.Data = new LSA_FOREST_TRUST_BINARY_DATA();
                         if (record.Data.Length == 0)
                         {
@@ -397,7 +397,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                 else if (record.ForestTrustType == LSA_FOREST_TRUST_RECORD_TYPE.ForestTrustDomainInfo)
                                 {
                                     IntPtr myPtr = IntPtr.Add(addr, 16);
-                                    Marshal.PtrToStructure(myPtr, record.DomainInfo);
+                                    Marshal.PtrToStructure(myPtr, record.DomainInfo!);
                                     ForestTrustDomainInformation dom = new ForestTrustDomainInformation(record.Flags, record.DomainInfo!, record.Time);
                                     tmpDomainInformation.Add(dom);
                                 }
