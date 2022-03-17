@@ -24,10 +24,21 @@ public class ZExistingClass
     public double NewProp { get; set; }
 }
 
+[AttributeUsage(AttributeTargets.All, AllowMultiple=true, Inherited=false)]
+public class CustomNoteAttribute : Attribute {
+    public CustomNoteAttribute(string note) {Note = note;}
+
+    public string Note;
+}
+
+[CustomNote("123")]
 public class NewToplevelClass : IExistingInterface, ICloneable {
     public string ItfMethod(int i) {
         return i.ToString();
     }
+
+    [CustomNote("abcd")]
+    public void SomeMethod(int x) {}
 
     public virtual object Clone() {
         return new NewToplevelClass();
@@ -35,6 +46,7 @@ public class NewToplevelClass : IExistingInterface, ICloneable {
 
     public class AlsoNested { }
 
+    [CustomNote("hijkl")]
     public float NewProp {get; set;}
 
     public byte[] OtherNewProp {get; set;}

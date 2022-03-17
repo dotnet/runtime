@@ -453,6 +453,33 @@ namespace System.Reflection.Metadata
 	    return ty;
 	}
 
+
+	internal static void CheckCustomNoteAttribute(MemberInfo subject, string expectedAttributeValue, [CallerMemberName] string callerMemberName = "", [CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = 0)
+	{
+	    var attrData = subject.GetCustomAttributesData();
+	    CustomAttributeData noteData = null;
+	    foreach (var cad in attrData)
+	    {
+		if (cad.AttributeType.FullName.Contains("CustomNoteAttribute"))
+		    noteData = cad;
+	    }
+	    Assert.True(noteData != null, $"{callerFilePath}:{callerLineNumber}: expected a CustomNoteAttribute attributes on '{subject.Name}', but got null, in {callerMemberName}");
+	    Assert.True(1 == noteData.ConstructorArguments.Count, $"{callerFilePath}:{callerLineNumber}: expected exactly 1 constructor argument on CustomNoteAttribute, got {noteData.ConstructorArguments.Count}, in {callerMemberName}");
+	    object argVal = noteData.ConstructorArguments[0].Value;
+	    Assert.True(expectedAttributeValue.Equals(argVal), $"{callerFilePath}:{callerLineNumber}: expected '{expectedAttributeValue}' as CustomNoteAttribute argument, got '{argVal}', in {callerMemberName}");
+
+	    var attrs = subject.GetCustomAttributes(false);
+	    object note = null;
+	    foreach (var attr in attrs)
+	    {
+		if (attr.GetType().FullName.Contains("CustomNoteAttribute"))
+		    note = attr;
+	    }
+	    Assert.True(note != null, $"{callerFilePath}:{callerLineNumber}: expected a CustomNoteAttribute object on '{subject.Name}', but got null, in {callerMemberName}");
+	    object v = note.GetType().GetField("Note").GetValue(note);
+	    Assert.True(expectedAttributeValue.Equals(v), $"{callerFilePath}:{callerLineNumber}: expected '{expectedAttributeValue}' in CustomNoteAttribute Note field, but got '{v}', in {callerMemberName}");
+	}
+
 	[ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
 	public static void TestReflectionAddNewType()
 	{
@@ -531,6 +558,8 @@ namespace System.Reflection.Metadata
 
 		var newTy = CheckReflectedType(assm, allTypes, ns, "NewToplevelClass", static (ty) =>
 		{
+		    CheckCustomNoteAttribute(ty, "123");
+
 		    var nested = ty.GetNestedType("AlsoNested");
 		    var allNested = ty.GetNestedTypes();
 
@@ -571,6 +600,8 @@ namespace System.Reflection.Metadata
 		    Assert.NotNull(newPropSet);
 
 		    Assert.Equal("get_NewProp", newPropGet.Name);
+
+		    CheckCustomNoteAttribute (newProp, "hijkl");
 
 		    var allEvents = ty.GetEvents();
 

@@ -13,3 +13,10 @@ public class ZExistingClass
 {
     public class PreviousNestedClass { }
 }
+
+[AttributeUsage(AttributeTargets.All, AllowMultiple=true, Inherited=false)]
+public class CustomNoteAttribute : Attribute {
+    public CustomNoteAttribute(string note) {Note = note;}
+
+    public string Note;
+}
