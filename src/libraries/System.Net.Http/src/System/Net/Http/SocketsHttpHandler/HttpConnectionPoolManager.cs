@@ -32,7 +32,7 @@ namespace System.Net.Http
     internal sealed class HttpConnectionPoolManager : IDisposable
     {
         /// <summary>
-        /// WeakReferences to all managers in the process. The value is a dummy with no functional significance.
+        /// WeakReferences to all non-disposed managers in the process. The value is a dummy with no functional significance.
         /// This collection is iterated every second in HeartBeatAndCleanAllPools and collected instances are pruned.
         /// </summary>
         public static readonly ConcurrentDictionary<WeakReference<HttpConnectionPoolManager>, byte> AllManagers = new();
@@ -138,7 +138,8 @@ namespace System.Net.Http
                 else
                 {
                     // These are only non-disposed instances that the GC collected
-                    AllManagers.TryRemove(managerReference, out _);
+                    bool removed = AllManagers.TryRemove(managerReference, out _);
+                    Debug.Assert(removed);
                     managersRemoved++;
                 }
             }
