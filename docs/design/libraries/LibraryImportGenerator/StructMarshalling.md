@@ -51,7 +51,6 @@ public sealed class CustomTypeMarshallerAttribute : Attribute
      public Type ManagedType { get; }
      public CustomTypeMarshallerKind MarshallerKind { get; }
      public int BufferSize { get; set; }
-     public bool RequiresStackBuffer { get; set; }
 }
 
 public enum CustomTypeMarshallerKind
@@ -85,16 +84,16 @@ If a `Value` property is provided, the developer may also provide a ref-returnin
 A `ref` or `ref readonly` typed `Value` property is unsupported. If a ref-return is required, the type author can supply a `GetPinnableReference` method on the native type to pin the desired `ref` to return and then use `System.Runtime.CompilerServices.Unsafe.AsPointer` to get a pointer from the `ref` that will have already been pinned by the time the `Value` getter is called.
 
 ```csharp
-[NativeMarshalling(typeof(TMarshaler))]
+[NativeMarshalling(typeof(TMarshaller))]
 public struct TManaged
 {
      // ...
 }
 
 [CustomTypeMarshaller(typeof(TManaged))]
-public struct TMarshaler
+public struct TMarshaller
 {
-     public TMarshaler(TManaged managed) {}
+     public TMarshaller(TManaged managed) {}
      public TManaged ToManaged() {}
 
      public void FreeNative() {}
@@ -117,14 +116,14 @@ Since C# 7.3 added a feature to enable custom pinning logic for user types, we s
 Custom marshalers of collection-like types or custom string encodings (such as UTF-32) may want to use stack space for extra storage for additional performance when possible. If the `TNative` type provides additional constructor with the following signature and sets the `BufferSize` field on the `CustomTypeMarshallerAttribute`, then it will opt in to using a caller-allocated buffer:
 
 ```csharp
-[CustomTypeMarshaller(typeof(TManaged), BufferSize = /* */, RequiresStackBuffer = /* */)]
+[CustomTypeMarshaller(typeof(TManaged), BufferSize = /* */)]
 partial struct TNative
 {
      public TNative(TManaged managed, Span<byte> buffer) {}
 }
 ```
 
-When these members are present, the source generator will call the two-parameter constructor with a possibly stack-allocated buffer of `BufferSize` bytes when a stack-allocated buffer is usable. If a stack-allocated buffer is a requirement, the `RequiresStackBuffer` field should be set to `true` and the `buffer` will be guaranteed to be allocated on the stack. Setting the `RequiresStackBuffer` field to `false` is the same as not specifying the value in the attribute. Since a dynamically allocated buffer is not usable in all scenarios, for example Reverse P/Invoke and struct marshalling, a one-parameter constructor must also be provided for usage in those scenarios. This may also be provided by providing a two-parameter constructor with a default value for the second parameter.
+When these members are present, the source generator will call the two-parameter constructor with a possibly stack-allocated buffer of `BufferSize` bytes when a stack-allocated buffer is usable. Since a dynamically allocated buffer is not usable in all scenarios, for example Reverse P/Invoke and struct marshalling, a one-parameter constructor must also be provided for usage in those scenarios.
 
 Type authors can pass down the `buffer` pointer to native code by defining a `Value` property that returns a pointer to the first element, generally through code using `MemoryMarshal.GetReference()` and `Unsafe.AsPointer`. If `RequiresStackBuffer` is not provided or set to `false`, the `buffer` span must be pinned to be used safely. The `buffer` span can be pinned by defining a `GetPinnableReference()` method on the native type that returns a reference to the first element of the span.
 

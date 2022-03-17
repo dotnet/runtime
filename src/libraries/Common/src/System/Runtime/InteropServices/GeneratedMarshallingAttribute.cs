@@ -64,6 +64,14 @@ namespace System.Runtime.InteropServices
         public const string ReturnsCountValue = "return-value";
     }
 
+    /// <summary>
+    /// Attribute used to indicate that the type can be used to convert a value of the provided <see cref="ManagedType"/> to a native representation.
+    /// </summary>
+    /// <remarks>
+    /// This attribute is recognized by the runtime-provided source generators for source-generated interop scenarios.
+    /// It is not used by the interop marshalling system at runtime.
+    /// <seealso cref="LibraryImportAttribute"/>
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Struct)]
 #if LIBRARYIMPORT_GENERATOR_TEST
     public
@@ -78,10 +86,30 @@ namespace System.Runtime.InteropServices
             MarshallerKind = marshallerKind;
         }
 
+        /// <summary>
+        /// The managed type for which the attributed type is a marshaller
+        /// </summary>
         public Type ManagedType { get; }
+
+        /// <summary>
+        /// The required shape of the attributed type
+        /// </summary>
         public CustomTypeMarshallerKind MarshallerKind { get; }
+
+        /// <summary>
+        /// When the <see cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/> flag is set on <see cref="Features"/> the size of the caller-allocated buffer in number of elements.
+        /// </summary>
         public int BufferSize { get; set; }
+
+        /// <summary>
+        /// The marshalling directions this custom type marshaller supports.
+        /// </summary>
+        /// <remarks>Default is <see cref="CustomTypeMarshallerDirection.Ref"/></remarks>
         public CustomTypeMarshallerDirection Direction { get; set; } = CustomTypeMarshallerDirection.Ref;
+
+        /// <summary>
+        /// The optional features for the <see cref="MarshallerKind"/> that the marshaller supports.
+        /// </summary>
         public CustomTypeMarshallerFeatures Features { get; set; }
 
         /// <summary>

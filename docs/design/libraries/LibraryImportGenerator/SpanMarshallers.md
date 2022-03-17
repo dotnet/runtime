@@ -24,11 +24,11 @@ We have decided to match the managed semantics of `(ReadOnly)Span<T>` to provide
 
 As part of this design, we would also want to include some in-box marshallers that follow the design laid out in the [Struct Marshalling design doc](./StructMarshalling.md) to support some additional scenarios:
 
-- A marshaler that marshals an empty span as a non-null pointer.
+- A marshaller that marshals an empty span as a non-null pointer.
   - This marshaller would only support empty spans as it cannot correctly represent non-empty spans of non-blittable types.
-- A marshaler that marshals out a pointer to the native memory as a Span instead of copying the data into a managed array.
+- A marshaller that marshals out a pointer to the native memory as a Span instead of copying the data into a managed array.
   - This marshaller would only support blittable spans by design.
-  - This marshaler will require the user to manually release the memory. Since this will be an opt-in marshaler, this scenario is already advanced and that additional requirement should be understandable to users who use this marshaler.
+  - This marshaller will require the user to manually release the memory. Since this will be an opt-in marshaller, this scenario is already advanced and that additional requirement should be understandable to users who use this marshaller.
   - Since there is no mechansim to provide a collection length, the question of how to provide the span's length in this case is still unresolved. One option would be to always provide a length 1 span and require the user to create a new span with the correct size, but that feels like a bad design.
 
 ### Pros/Cons of Design 1
@@ -40,7 +40,7 @@ Pros:
 
 Cons:
 
-- Defining custom marshalers for non-empty spans of non-blittable types generically is impossible since the marshalling rules of the element's type cannot be known.
+- Defining custom marshallers for non-empty spans of non-blittable types generically is impossible since the marshalling rules of the element's type cannot be known.
 - Custom non-default marshalling of the span element types is impossible for non-built-in types.
 - Inlining the span marshalling fully into the stub increases on-disk IL size.
 - This design does not enable developers to easily define custom marshalling support for their own collection types, which may be desireable.
@@ -83,30 +83,55 @@ namespace System.Runtime.InteropServices
 The attribute would be used with a collection type like `Span<T>` as follows:
 
 ```csharp
-[NativeTypeMarshalling(typeof(DefaultSpanMarshaler<>))]
+[NativeTypeMarshalling(typeof(DefaultSpanMarshaller<>))]
 public ref struct Span<T>
 {
   ...
 }
 
 [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.LinearCollection)]
-public ref struct DefaultSpanMarshaler<T>
+public ref struct DefaultSpanMarshaller<T>
 {
   ...
 }
 ```
 
-The `CustomTypeMarshallerKind.LinearCollection` kind is applied to a generic marshaler type with the "LinearCollection marshaller shape" described below.
+The `CustomTypeMarshallerKind.LinearCollection` kind is applied to a generic marshaller type with the "LinearCollection marshaller shape" described below.
 
 #### Supporting generics
 
-Since generic parameters cannot be used in attributes, open generic types will be permitted in the `NativeTypeMarshallingAttribute` and the `CustomTypeMarshallerAttribute` as long as they have the same arity as the type the attribute is applied to and generic parameters provided to the applied-to type can also be used to construct the type passed as a parameter.
+Since generic parameters cannot be used in attributes, open generic types will be permitted in the `NativeTypeMarshallingAttribute` and the `CustomTypeMarshallerAttribute` as long as they have the same arity as the type with the attribute and generic parameters provided to the type with the attribute can also be used to construct the type passed as a parameter.
 
 If a `CustomTypeMarshaller`-attributed type is a marshaller for a type for a pointer, an array, or a combination of pointers and arrays, the `CustomTypeMarshallerAttribute.GenericPlaceholder` type can be used in the place of the first generic parameter of the marshaller type.
 
+For example:
+
+```csharp
+[CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder), Direction = CustomTypeMarshallerDirection.In)]
+struct Marshaller<T>
+{
+    public Marshaller(T managed);
+}
+[CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder[]), Direction = CustomTypeMarshallerDirection.In)]
+struct Marshaller<T>
+{
+    public Marshaller(T[] managed);
+}
+[CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder*), Direction = CustomTypeMarshallerDirection.In)]
+struct Marshaller<T> where T : unmanaged
+{
+    public Marshaller(T* managed);
+}
+[CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder*[]), Direction = CustomTypeMarshallerDirection.In)]
+struct Marshaller<T> where T : unmanaged
+{
+    public Marshaller(T*[] managed);
+}
+```
+
 #### LinearCollection marshaller shape
 
-A generic collection marshaller would be required to have the following shape, in addition to the requirements for marshaler types used with the `CustomTypeMarshallerKind.Value` shape, excluding the constructors.
+A generic collection marshaller would be required to have the following shape, in addition to the requirements for marshaller types used with the `CustomTypeMarshallerKind.Value` shape, excluding the constructors.
 
 ```csharp
 [CustomTypeMarshaller(typeof(GenericCollection<, , ,...>), CustomTypeMarshallerKind.LinearCollection)]
@@ -117,8 +142,6 @@ public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
     // these constructors are required if marshalling from managed to native is supported.
     public GenericContiguousCollectionMarshallerImpl(GenericCollection<T, U, V, ...> collection, int nativeSizeOfElement);
     public GenericContiguousCollectionMarshallerImpl(GenericCollection<T, U, V, ...> collection, Span<byte> stackSpace, int nativeSizeOfElement); // optional
-
-    public const int StackBufferSize = /* */; // required if the span-based constructor is supplied.
 
     /// <summary>
     /// A span that points to the memory where the managed values of the collection are stored (in the marshalling case) or should be stored (in the unmarshalling case).
@@ -180,7 +203,7 @@ To support supplying information about collection element counts, a parameterles
 The `ElementIndirectionLevel` property is added to support supplying marshalling info for element types in a collection. For example, if the user is passing a `List<List<Foo>>` from managed to native code, they could provide the following attributes to specify marshalling rules for the outer and inner lists and `Foo` separately:
 
 ```csharp
-private static partial void Bar([MarshalUsing(typeof(ListAsArrayMarshaller<List<Foo>>), CountElementName = nameof(count)), MarshalUsing(ConstantElementCount = 10, ElementIndirectionLevel = 1), MarshalUsing(typeof(FooMarshaler), ElementIndirectionLevel = 2)] List<List<Foo>> foos, int count);
+private static partial void Bar([MarshalUsing(typeof(ListAsArrayMarshaller<List<Foo>>), CountElementName = nameof(count)), MarshalUsing(ConstantElementCount = 10, ElementIndirectionLevel = 1), MarshalUsing(typeof(FooMarshaller), ElementIndirectionLevel = 2)] List<List<Foo>> foos, int count);
 ```
 
 Multiple `MarshalUsing` attributes can only be supplied on the same parameter or return value if the `ElementIndirectionLevel` property is set to distinct values. One `MarshalUsing` attribute per parameter or return value can leave the `ElementIndirectionLevel` property unset. This attribute controls the marshalling of the collection object passed in as the parameter. The sequence of managed types for `ElementIndirectionLevel` is based on the elements of the `ManagedValues` span on the collection marshaller of the previous indirection level. For example, for the marshalling info for `ElementIndirectionLevel = 1` above, the managed type is the type of the following C# expression: `ListAsArrayMarshaller<List<Foo>>.ManagedValues[0]`.
@@ -193,13 +216,13 @@ This design could be used to provide a default marshaller for spans and arrays. 
 
 ```csharp
 [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.LinearCollection)]
-public ref struct SpanMarshaler<T>
+public ref struct SpanMarshaller<T>
 {
     private Span<T> managedCollection;
 
     private int nativeElementSize;
 
-    public SpanMarshaler(Span<T> collection, int nativeSizeOfElement)
+    public SpanMarshaller(Span<T> collection, int nativeSizeOfElement)
     {
        managedCollection = collection;
        Value = Marshal.AllocCoTaskMem(collection.Length * nativeSizeOfElement);
@@ -289,8 +312,6 @@ public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
     // these constructors are required if marshalling from managed to native is supported.
     public GenericContiguousCollectionMarshallerImpl(GenericCollection<T, U, V, ...> collection, int nativeSizeOfElements);
     public GenericContiguousCollectionMarshallerImpl(GenericCollection<T, U, V, ...> collection, Span<byte> stackSpace, int nativeSizeOfElements); // optional
-
-    public const int StackBufferSize = /* */; // required if the span-based constructor is supplied.
 
 -    public Span<TCollectionElement> ManagedValues { get; }
 

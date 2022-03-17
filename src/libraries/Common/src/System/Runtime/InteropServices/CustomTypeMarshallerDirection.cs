@@ -1,17 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 #if !TEST_CORELIB
 using System.ComponentModel;
 #endif
 
-//
-// Types in this file are used for generated p/invokes (docs/design/features/source-generator-pinvokes.md).
-//
 namespace System.Runtime.InteropServices
 {
+    /// <summary>
+    /// A direction of marshalling data into or out of the managed environment
+    /// </summary>
+    /// <remarks>
+    /// <seealso cref="CustomTypeMarshallerAttribute.Direction"/>
+    /// </remarks>
     [Flags]
 #if LIBRARYIMPORT_GENERATOR_TEST
     public
@@ -20,12 +21,24 @@ namespace System.Runtime.InteropServices
 #endif
     enum CustomTypeMarshallerDirection
     {
+        /// <summary>
+        /// No marshalling direction
+        /// </summary>
 #if !TEST_CORELIB
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
         None = 0,
+        /// <summary>
+        /// Marshalling from a managed environment to an unmanaged environment
+        /// </summary>
         In = 0x1,
+        /// <summary>
+        /// Marshalling from an unmanaged environment to a managed environment
+        /// </summary>
         Out = 0x2,
+        /// <summary>
+        /// Marshalling to and from managed and unmanaged environments
+        /// </summary>
         Ref = In | Out,
     }
 }

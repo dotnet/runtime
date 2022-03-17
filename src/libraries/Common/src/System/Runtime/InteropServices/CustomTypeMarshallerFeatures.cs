@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
-//
-// Types in this file are used for generated p/invokes (docs/design/features/source-generator-pinvokes.md).
-//
 namespace System.Runtime.InteropServices
 {
+    /// <summary>
+    /// Optional features supported by custom type marshallers.
+    /// </summary>
+    /// <remarks>
+    /// <seealso cref="CustomTypeMarshallerAttribute.Features"/>
+    /// </remarks>
     [Flags]
 #if LIBRARYIMPORT_GENERATOR_TEST
     public
@@ -16,9 +17,21 @@ namespace System.Runtime.InteropServices
 #endif
     enum CustomTypeMarshallerFeatures
     {
+        /// <summary>
+        /// No optional features supported
+        /// </summary>
         None = 0,
+        /// <summary>
+        /// The marshaller owns unmanaged resources that must be freed
+        /// </summary>
         UnmanagedResources = 0x1,
+        /// <summary>
+        /// The marshaller can use a caller-allocated buffer instead of allocating in some scenarios
+        /// </summary>
         CallerAllocatedBuffer = 0x2,
+        /// <summary>
+        /// The marshaller uses the two-stage marshalling design for its <see cref="CustomTypeMarshallerKind"/> instead of the one-stage design.
+        /// </summary>
         TwoStageMarshalling = 0x4
     }
 }
