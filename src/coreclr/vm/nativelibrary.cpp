@@ -581,7 +581,7 @@ namespace
         // or provide an absolute path.
         libNameVariations[varCount++] = NameFmt;
 
-        // The runtime will append the '.dll' extension if the path is relative and the name doesn't ends with a "."
+        // The runtime will append the '.dll' extension if the path is relative and the name doesn't end with a "."
         // or an existing known extension. This is done due to issues with case-sensitive file systems
         // on Windows. The Windows loader always appends ".DLL" as opposed to the more common ".dll".
         if (libNameIsRelativePath
