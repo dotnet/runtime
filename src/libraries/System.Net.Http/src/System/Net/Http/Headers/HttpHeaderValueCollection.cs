@@ -99,8 +99,6 @@ namespace System.Net.Http.Headers
             {
                 if (storeValue is not HttpHeaders.InvalidValue)
                 {
-                    // We only have 1 value: If it is the "special value" just return, otherwise add the value to the
-                    // array and return.
                     Debug.Assert(storeValue is T);
                     if (arrayIndex == array.Length)
                     {

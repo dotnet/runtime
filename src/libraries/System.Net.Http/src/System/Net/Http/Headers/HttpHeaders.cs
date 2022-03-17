@@ -1253,9 +1253,14 @@ namespace System.Net.Http.Headers
             return value.Equals(storeValue);
         }
 
-        internal record InvalidValue(string value)
+        internal class InvalidValue
         {
-            public override string ToString() => value;
+            public InvalidValue(string value)
+            {
+                Value = value;
+            }
+            public string Value { get; private set; }
+            public override string ToString() => Value;
         }
 
         internal sealed class HeaderStoreItemInfo
@@ -1278,7 +1283,7 @@ namespace System.Net.Http.Headers
                 // supporting 1 value. When the first value gets parsed, CanAddValue returns true and we add the
                 // parsed value to ParsedValue. When the second value is parsed, CanAddValue returns false, because
                 // we have already a parsed value.
-                return parser.SupportsMultipleValues || !ContainsParsedValue();
+                return parser.SupportsMultipleValues || ParsedAndInvalidValues is null;
             }
 
             private bool ContainsParsedValue()
