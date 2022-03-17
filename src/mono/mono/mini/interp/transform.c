@@ -908,9 +908,9 @@ shift_op(TransformData *td, int mint_op)
 static int
 can_store (int st_value, int vt_value)
 {
-	if (st_value == STACK_TYPE_O || st_value == STACK_TYPE_MP)
+	if (st_value == STACK_TYPE_O || st_value == STACK_TYPE_MP || st_value == STACK_TYPE_F)
 		st_value = STACK_TYPE_I;
-	if (vt_value == STACK_TYPE_O || vt_value == STACK_TYPE_MP)
+	if (vt_value == STACK_TYPE_O || vt_value == STACK_TYPE_MP || vt_value == STACK_TYPE_F)
 		vt_value = STACK_TYPE_I;
 	return st_value == vt_value;
 }
