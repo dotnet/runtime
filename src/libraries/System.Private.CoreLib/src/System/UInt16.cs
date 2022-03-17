@@ -29,16 +29,16 @@ namespace System
         public const ushort MaxValue = (ushort)0xFFFF;
         public const ushort MinValue = 0;
 
-        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        /// <summary>Represents the additive identity (0).</summary>
         public const ushort AdditiveIdentity = 0;
 
-        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
+        /// <summary>Represents the multiplicative identity (1).</summary>
         public const ushort MultiplicativeIdentity = 1;
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
+        /// <summary>Represents the number one (1).</summary>
         public const ushort One = 1;
 
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
+        /// <summary>Represents the number zero (0).</summary>
         public const ushort Zero = 0;
 
         // Compares this object to another object, returning an integer that

@@ -102,13 +102,13 @@ namespace System
         // this constant is -79,228,162,514,264,337,593,543,950,335.
         public const decimal MinValue = -79228162514264337593543950335m;
 
-        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        /// <summary>Represents the additive identity (0).</summary>
         public const decimal AdditiveIdentity = 0m;
 
-        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
+        /// <summary>Represents the multiplicative identity (1).</summary>
         public const decimal MultiplicativeIdentity = 1m;
 
-        /// <inheritdoc cref="ISignedNumber{TSelf}.NegativeOne" />
+        /// <summary>Represents the number negative one (-1).</summary>
         public const decimal NegativeOne = -1m;
 
         // The lo, mid, hi, and flags fields contain the representation of the

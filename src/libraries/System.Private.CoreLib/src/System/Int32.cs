@@ -28,19 +28,19 @@ namespace System
         public const int MaxValue = 0x7fffffff;
         public const int MinValue = unchecked((int)0x80000000);
 
-        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        /// <summary>Represents the additive identity (0).</summary>
         public const int AdditiveIdentity = 0;
 
-        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
+        /// <summary>Represents the multiplicative identity (1).</summary>
         public const int MultiplicativeIdentity = 1;
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
+        /// <summary>Represents the number one (1).</summary>
         public const int One = 1;
 
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
+        /// <summary>Represents the number zero (0).</summary>
         public const int Zero = 0;
 
-        /// <inheritdoc cref="ISignedNumber{TSelf}.NegativeOne" />
+        /// <summary>Represents the number negative one (-1).</summary>
         public const int NegativeOne = -1;
 
         // Compares this object to another object, returning an integer that

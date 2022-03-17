@@ -29,16 +29,16 @@ namespace System
         public const ulong MaxValue = (ulong)0xffffffffffffffffL;
         public const ulong MinValue = 0x0;
 
-        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        /// <summary>Represents the additive identity (0).</summary>
         public const ulong AdditiveIdentity = 0;
 
-        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
+        /// <summary>Represents the multiplicative identity (1).</summary>
         public const ulong MultiplicativeIdentity = 1;
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
+        /// <summary>Represents the number one (1).</summary>
         public const ulong One = 1;
 
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
+        /// <summary>Represents the number zero (0).</summary>
         public const ulong Zero = 0;
 
         // Compares this object to another object, returning an integer that

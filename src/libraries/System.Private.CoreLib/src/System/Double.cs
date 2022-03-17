@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*============================================================
@@ -46,31 +46,34 @@ namespace System
         public const double PositiveInfinity = (double)1.0 / (double)(0.0);
         public const double NaN = (double)0.0 / (double)0.0;
 
-        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        /// <summary>Represents the additive identity (0).</summary>
         public const double AdditiveIdentity = 0.0;
 
-        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
+        /// <summary>Represents the multiplicative identity (1).</summary>
         public const double MultiplicativeIdentity = 1.0;
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
+        /// <summary>Represents the number one (1).</summary>
         public const double One = 1.0;
 
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
+        /// <summary>Represents the number zero (0).</summary>
         public const double Zero = 0.0;
 
-        /// <inheritdoc cref="ISignedNumber{TSelf}.NegativeOne" />
+        /// <summary>Represents the number negative one (-1).</summary>
         public const double NegativeOne = -1.0;
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.NegativeZero" />
+        /// <summary>Represents the number negative zero (-0).</summary>
         public const double NegativeZero = -0.0;
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.E" />
+        /// <summary>Represents the natural logarithmic base, specified by the constant, e.</summary>
+        /// <remarks>Euler's number is approximately 2.7182818284590452354.</remarks>
         public const double E = Math.E;
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Pi" />
+        /// <summary>Represents the ratio of the circumference of a circle to its diameter, specified by the constant, π.</summary>
+        /// <remarks>Pi is approximately 3.1415926535897932385.</remarks>
         public const double Pi = Math.PI;
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Tau" />
+        /// <summary>Represents the number of radians in one turn, specified by the constant, τ.</summary>
+        /// <remarks>Tau is approximately 6.2831853071795864769.</remarks>
         public const double Tau = Math.Tau;
 
         //
