@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
@@ -378,10 +380,19 @@ namespace Microsoft.Extensions.Configuration
                     {
                         BindCollection(instance, collectionInterface, config, options);
                     }
-                    // Something else
                     else
                     {
-                        BindNonScalar(config, instance, options);
+                        // See if its an IEnumerable
+                        collectionInterface = FindOpenGenericInterface(typeof(IEnumerable<>), type);
+                        if (collectionInterface != null)
+                        {
+                            instance = BindExistingCollection((IEnumerable)instance!, config, options);
+                        }
+                        // Something else
+                        else
+                        {
+                            BindNonScalar(config, instance, options);
+                        }
                     }
                 }
             }
@@ -496,6 +507,41 @@ namespace Microsoft.Extensions.Configuration
                 {
                 }
             }
+        }
+
+        [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the object collection so its members may be trimmed.")]
+        private static IEnumerable BindExistingCollection(IEnumerable source, IConfiguration config, BinderOptions options)
+        {
+            // find the interface that is IEnumerable<T>
+            Type type = source.GetType().GetInterface("IEnumerable`1", false)!;
+            Type elementType = type.GenericTypeArguments[0];
+            Type genericType = typeof(List<>).MakeGenericType(elementType);
+
+            IList newList = (IList)Activator.CreateInstance(genericType, source)!;
+
+            IConfigurationSection[] children = config.GetChildren().ToArray();
+
+            for (int i = 0; i < children.Length; i++)
+            {
+                try
+                {
+                    object? item = BindInstance(
+                        type: elementType,
+                        instance: null,
+                        config: children[i],
+                        options: options);
+
+                    if (item != null)
+                    {
+                        newList.Add(item);
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return newList;
         }
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the Array so its members may be trimmed.")]
