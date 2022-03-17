@@ -67,7 +67,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
         string baseDir = Path.GetDirectoryName(GetBrowserPath());
         Console.WriteLine("searching for - "  + Path.Combine(baseDir, "..", "prefs.js"));
         if (File.Exists(Path.Combine(baseDir, "..", "prefs.js")))
-            return $"-profile \"{baseDir}\" -headless -private -start-debugger-server ";
+            return $"-profile \"{Path.Combine(baseDir, "..")}\" -headless -private -start-debugger-server ";
         return $"-headless -private -start-debugger-server ";
     }
 
