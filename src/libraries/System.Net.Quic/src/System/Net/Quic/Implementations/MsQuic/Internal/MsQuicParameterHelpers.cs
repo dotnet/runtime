@@ -9,16 +9,36 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal static class MsQuicParameterHelpers
     {
-        internal static unsafe SOCKADDR_INET GetINetParam(MsQuicApi api, SafeHandle nativeObject, QUIC_PARAM_LEVEL level, uint param)
+        internal static unsafe Internals.SocketAddress GetSocketAddressParam(MsQuicApi api, SafeHandle nativeObject, QUIC_PARAM_LEVEL level, uint param)
         {
-            SOCKADDR_INET value;
-            uint valueLen = (uint)sizeof(SOCKADDR_INET);
+            // MsQuic always uses storage size as if IPv6
+            uint valueLen = (uint)Internals.SocketAddress.IPv6AddressSize;
+            Span<byte> address = stackalloc byte[Internals.SocketAddress.IPv6AddressSize];
 
-            uint status = api.GetParamDelegate(nativeObject, level, param, ref valueLen, (byte*)&value);
-            QuicExceptionHelpers.ThrowIfFailed(status, "GetINETParam failed.");
-            Debug.Assert(valueLen == sizeof(SOCKADDR_INET));
+            fixed (byte* paddress = &MemoryMarshal.GetReference(address))
+            {
+                uint status = api.GetParamDelegate(nativeObject, level, param, ref valueLen, paddress);
+                QuicExceptionHelpers.ThrowIfFailed(status, "GetINETParam failed.");
+            }
 
-            return value;
+            address = address.Slice(0, (int)valueLen);
+
+            return new Internals.SocketAddress(SocketAddressPal.GetAddressFamily(address), address);
+        }
+
+        internal static unsafe void SetSocketAddressParam(MsQuicApi api, SafeHandle nativeObject, QUIC_PARAM_LEVEL level, uint param, Internals.SocketAddress value)
+        {
+            // MsQuic always uses storage size as if IPv6
+            Span<byte> address = stackalloc byte[Internals.SocketAddress.IPv6AddressSize];
+            value.Buffer.AsSpan(0, value.Size).CopyTo(address);
+            address.Slice(value.Size).Clear();
+
+            fixed (byte* paddress = &MemoryMarshal.GetReference(address))
+            {
+                QuicExceptionHelpers.ThrowIfFailed(
+                    api.SetParamDelegate(nativeObject, level, param, (uint)address.Length, paddress),
+                    "Could not set SocketAddress");
+            }
         }
 
         internal static unsafe ushort GetUShortParam(MsQuicApi api, SafeHandle nativeObject, QUIC_PARAM_LEVEL level, uint param)

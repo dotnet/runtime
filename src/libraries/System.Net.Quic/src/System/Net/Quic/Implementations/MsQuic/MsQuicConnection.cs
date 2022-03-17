@@ -252,10 +252,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 // Connected will already be true for connections accepted from a listener.
                 Debug.Assert(!Monitor.IsEntered(state));
-                SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(MsQuicApi.Api, state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_ADDRESS);
+
 
                 Debug.Assert(state.Connection != null);
-                state.Connection._localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref inetAddress);
+                state.Connection._localEndPoint = MsQuicParameterHelpers.GetSocketAddressParam(MsQuicApi.Api, state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_ADDRESS).GetIPEndPoint();
                 state.Connection.SetNegotiatedAlpn(connectionEvent.Data.Connected.NegotiatedAlpn, connectionEvent.Data.Connected.NegotiatedAlpnLength);
                 state.Connection = null;
 
@@ -389,7 +389,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventPeerCertificateReceived(State state, ref ConnectionEvent connectionEvent)
         {
-            SslPolicyErrors sslPolicyErrors  = SslPolicyErrors.None;
+            SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
             X509Chain? chain = null;
             X509Certificate2? certificate = null;
             X509Certificate2Collection? additionalCertificates = null;
@@ -640,24 +640,19 @@ namespace System.Net.Quic.Implementations.MsQuic
             string targetHost;
             int port;
 
-            if (_remoteEndPoint is IPEndPoint)
+            if (_remoteEndPoint is IPEndPoint ipEndPoint)
             {
-                SOCKADDR_INET address = MsQuicAddressHelpers.IPEndPointToINet((IPEndPoint)_remoteEndPoint);
-                unsafe
-                {
-                    Debug.Assert(!Monitor.IsEntered(_state));
-                    status = MsQuicApi.Api.SetParamDelegate(_state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, (uint)sizeof(SOCKADDR_INET), (byte*)&address);
-                    QuicExceptionHelpers.ThrowIfFailed(status, "Failed to connect to peer.");
-                }
-
+                Internals.SocketAddress address = IPEndPointExtensions.Serialize(ipEndPoint);
+                Debug.Assert(!Monitor.IsEntered(_state));
+                MsQuicParameterHelpers.SetSocketAddressParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, address);
                 targetHost = _state.TargetHost ?? ((IPEndPoint)_remoteEndPoint).Address.ToString();
                 port = ((IPEndPoint)_remoteEndPoint).Port;
 
             }
-            else if (_remoteEndPoint is DnsEndPoint)
+            else if (_remoteEndPoint is DnsEndPoint dnsEndPoint)
             {
-                port = ((DnsEndPoint)_remoteEndPoint).Port;
-                string dnsHost = ((DnsEndPoint)_remoteEndPoint).Host!;
+                port = dnsEndPoint.Port;
+                string dnsHost = dnsEndPoint.Host!;
 
                 // We don't have way how to set separate SNI and name for connection at this moment.
                 // If the name is actually IP address we can use it to make at least some cases work for people
@@ -665,13 +660,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (!string.IsNullOrEmpty(_state.TargetHost) && !dnsHost.Equals(_state.TargetHost, StringComparison.InvariantCultureIgnoreCase) && IPAddress.TryParse(dnsHost, out IPAddress? address))
                 {
                     // This is form of IPAddress and _state.TargetHost is set to different string
-                    SOCKADDR_INET quicAddress = MsQuicAddressHelpers.IPEndPointToINet(new IPEndPoint(address, port));
-                    unsafe
-                    {
-                        Debug.Assert(!Monitor.IsEntered(_state));
-                        status = MsQuicApi.Api.SetParamDelegate(_state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, (uint)sizeof(SOCKADDR_INET), (byte*)&quicAddress);
-                        QuicExceptionHelpers.ThrowIfFailed(status, "Failed to connect to peer.");
-                    }
+                    Internals.SocketAddress quicAddress = IPEndPointExtensions.Serialize(new IPEndPoint(address, port));
+                    Debug.Assert(!Monitor.IsEntered(_state));
+                    MsQuicParameterHelpers.SetSocketAddressParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, quicAddress);
                     targetHost = _state.TargetHost!;
                 }
                 else
