@@ -161,8 +161,10 @@ Note: Editing this file doesn't update the mapping used by `@msftbot` for area-s
 
 ## Community Triagers
 
-The repo has a number of community members carrying the triager role. While not necessarily associated with a specific area, they may assist with labeling issues and pull requests. Currently, the following community members are triagers:
+While not necessarily associated with a specific area, these community members have the power to assist with routing and labeling issues and pull requests, and are generally knowledgeable about how the repo works:
 
+* @am11
+* @filipnavara
 * @huoyaoyuan
 * @SingleAccretion
 * @teo-tsirpanis
