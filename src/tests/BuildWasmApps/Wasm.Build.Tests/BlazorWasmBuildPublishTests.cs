@@ -89,7 +89,7 @@ namespace Wasm.Build.Tests
             AddItemsPropertiesToProject(projectFile, extraProperties: nativeRelink ? string.Empty : "<RunAOTCompilation>true</RunAOTCompilation>");
 
             // build with -p:DeployOnBuild=true, and that will trigger a publish
-            (CommandResult res, _) = BuildInternal(id, config, publish: false, "-p:DeployOnBuild=true");
+            (CommandResult res, _) = BuildInternal(id, config, publish: false, setWasmDevel: false, "-p:DeployOnBuild=true");
 
             var expectedFileType = nativeRelink ? NativeFilesType.Relinked : NativeFilesType.AOT;
 
