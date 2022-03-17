@@ -41,10 +41,8 @@
                          Include="export BROWSER_PATH_FOR_DEBUGGER_TESTS=$HELIX_CORRELATION_PAYLOAD/chrome-linux/chrome" />
       <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT' and '$(RunInFirefox)'!='1'"
                          Include="set BROWSER_PATH_FOR_DEBUGGER_TESTS=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe" />
-      <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT' and '$(RunInFirefox)'=='1'"
-                         Include="set BROWSER_PATH_FOR_DEBUGGER_TESTS=%HELIX_CORRELATION_PAYLOAD%\firefox\firefox.exe" />
       <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT' and '$(RunInFirefox)'=='1'"
-                         Include="export BROWSER_PATH_FOR_DEBUGGER_TESTS=$HELIX_CORRELATION_PAYLOAD/firefox/firefox/firefox" />                         
+                         Include="export BROWSER_PATH_FOR_DEBUGGER_TESTS=$HELIX_CORRELATION_PAYLOAD/firefox/firefox/firefox/firefox" />                         
     </ItemGroup>
 
     <PropertyGroup>
