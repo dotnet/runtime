@@ -863,6 +863,31 @@ unsigned GenTree::GetMultiRegCount(Compiler* comp) const
 }
 
 //---------------------------------------------------------------
+// gtGetContainedRegMask: Get the reg mask of the node including
+//    contained nodes (recursive).
+//
+// Arguments:
+//    None
+//
+// Return Value:
+//    Reg Mask of GenTree node.
+//
+regMaskTP GenTree::gtGetContainedRegMask()
+{
+    if (!isContained())
+    {
+        return gtGetRegMask();
+    }
+
+    regMaskTP mask = 0;
+    for (GenTree* operand : Operands())
+    {
+        mask |= operand->gtGetContainedRegMask();
+    }
+    return mask;
+}
+
+//---------------------------------------------------------------
 // gtGetRegMask: Get the reg mask of the node.
 //
 // Arguments:
@@ -1239,6 +1264,16 @@ bool GenTreeCall::AreArgsComplete() const
 #endif
 
     return false;
+}
+
+//-------------------------------------------------------------------------
+// SetRetBufArg: Sets the "return buffer" argument use.
+//
+void GenTreeCall::SetLclRetBufArg(Use* retBufArg)
+{
+    assert(retBufArg->GetNode()->TypeIs(TYP_I_IMPL, TYP_BYREF) && retBufArg->GetNode()->OperIs(GT_ADDR, GT_ASG));
+    assert(HasRetBufArg());
+    gtRetBufArg = retBufArg;
 }
 
 //--------------------------------------------------------------------------
@@ -4276,28 +4311,24 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 case GT_IND:
                 case GT_BLK:
                 case GT_OBJ:
-
-                    // In an indirection, the destination address is evaluated prior to the source.
-                    // If we have any side effects on the target indirection,
-                    // we have to evaluate op1 first.
-                    // However, if the LHS is a lclVar address, SSA relies on using evaluation order for its
-                    // renaming, and therefore the RHS must be evaluated first.
-                    // If we have an assignment involving a lclVar address, the LHS may be marked as having
-                    // side-effects.
-                    // However the side-effects won't require that we evaluate the LHS address first:
-                    // - The GTF_GLOB_REF might have been conservatively set on a FIELD of a local.
-                    // - The local might be address-exposed, but that side-effect happens at the actual assignment (not
-                    //   when its address is "evaluated") so it doesn't change the side effect to "evaluate" the address
-                    //   after the RHS (note that in this case it won't be renamed by SSA anyway, but the reordering is
-                    //   safe).
+                {
+                    // In an ASG(IND(addr), ...), the "IND" is a pure syntactical element,
+                    // the actual indirection will only be realized at the point of the ASG
+                    // itself. As such, we can disard any side effects "induced" by it in
+                    // this logic.
                     //
-                    if (op1Val->AsIndir()->Addr()->IsLocalAddrExpr())
+                    // Note that for local "addr"s, liveness depends on seeing the defs and
+                    // uses in correct order, and so we MUST reverse the ASG in that case.
+                    //
+                    GenTree* op1Addr = op1->AsIndir()->Addr();
+
+                    if (op1Addr->IsLocalAddrExpr() || op1Addr->IsInvariant())
                     {
                         bReverseInAssignment = true;
                         tree->gtFlags |= GTF_REVERSE_OPS;
                         break;
                     }
-                    if (op1Val->AsIndir()->Addr()->gtFlags & GTF_ALL_EFFECT)
+                    if (op1Addr->gtFlags & GTF_ALL_EFFECT)
                     {
                         break;
                     }
@@ -4314,7 +4345,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     {
                         break;
                     }
-
+                }
                     // fall through and set GTF_REVERSE_OPS
                     FALLTHROUGH;
 
@@ -5355,6 +5386,12 @@ bool GenTree::OperRequiresAsgFlag()
         }
     }
 #endif // FEATURE_HW_INTRINSICS
+    if (gtOper == GT_CALL)
+    {
+        // If the call has return buffer argument, it produced a definition and hence
+        // should be marked with assignment.
+        return AsCall()->GetLclRetBufArgNode() != nullptr;
+    }
     return false;
 }
 
@@ -7921,20 +7958,45 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     copy->gtCallMoreFlags = tree->gtCallMoreFlags;
     copy->gtCallArgs      = nullptr;
     copy->gtCallLateArgs  = nullptr;
+    copy->gtRetBufArg     = nullptr;
 
     GenTreeCall::Use** argsTail = &copy->gtCallArgs;
     for (GenTreeCall::Use& use : tree->Args())
     {
-        *argsTail = gtNewCallArgs(gtCloneExpr(use.GetNode(), addFlags, deepVarNum, deepVarVal));
-        argsTail  = &((*argsTail)->NextRef());
+        GenTree* argNode     = use.GetNode();
+        GenTree* copyArgNode = gtCloneExpr(argNode, addFlags, deepVarNum, deepVarVal);
+        *argsTail            = gtNewCallArgs(copyArgNode);
+
+        if (tree->gtRetBufArg == &use)
+        {
+            // Set the return buffer arg, if any.
+            assert(copy->gtRetBufArg == nullptr);
+            copy->gtRetBufArg = *argsTail;
+        }
+
+        argsTail = &((*argsTail)->NextRef());
     }
 
     argsTail = &copy->gtCallLateArgs;
     for (GenTreeCall::Use& use : tree->LateArgs())
     {
-        *argsTail = gtNewCallArgs(gtCloneExpr(use.GetNode(), addFlags, deepVarNum, deepVarVal));
-        argsTail  = &((*argsTail)->NextRef());
+        GenTree* argNode     = use.GetNode();
+        GenTree* copyArgNode = gtCloneExpr(argNode, addFlags, deepVarNum, deepVarVal);
+        *argsTail            = gtNewCallArgs(copyArgNode);
+
+        if (tree->gtRetBufArg == &use)
+        {
+            // Set the return buffer arg, if any.
+            assert(copy->gtRetBufArg == nullptr);
+            copy->gtRetBufArg = *argsTail;
+        }
+
+        argsTail = &((*argsTail)->NextRef());
     }
+
+    // Either there was not return buffer for the "tree" or else we successfully set the
+    // return buffer in the copy.
+    assert((tree->gtRetBufArg == nullptr) || (copy->gtRetBufArg != nullptr));
 
     // The call sig comes from the EE and doesn't change throughout the compilation process, meaning
     // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
@@ -9760,7 +9822,10 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 {
                     printf("(AX)"); // Variable has address exposed.
                 }
-
+                if (varDsc->IsHiddenBufferStructArg())
+                {
+                    printf("(RB)"); // Variable is hidden return buffer
+                }
                 if (varDsc->lvUnusedStruct)
                 {
                     assert(varDsc->lvPromoted);
@@ -15440,6 +15505,17 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
             blkNode = AsOp()->gtOp1->AsBlk();
         }
     }
+    else if (OperIs(GT_CALL))
+    {
+        GenTree* retBufArg = AsCall()->GetLclRetBufArgNode();
+        if (retBufArg == nullptr)
+        {
+            return false;
+        }
+
+        unsigned size = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
+        return retBufArg->DefinesLocalAddr(comp, size, pLclVarTree, pIsEntire);
+    }
     else if (OperIsBlk())
     {
         blkNode = this->AsBlk();
@@ -20814,7 +20890,8 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
     else if (varTypeIsFloating(simdBaseType))
     {
         // var tmp1 = op1.ToVector128Unsafe();
-        // return AdvSimd.Arm64.ConvertToSingleLower(tmp1);
+        // var tmp2 = AdvSimd.InsertScalar(tmp1, op2);
+        // return AdvSimd.Arm64.ConvertToSingleLower(tmp2);
 
         CorInfoType tmp2BaseJitType = CORINFO_TYPE_DOUBLE;
 
@@ -20829,8 +20906,9 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
     else
     {
         // var tmp1 = op1.ToVector128Unsafe();
-        // var tmp2 = AdvSimd.InsertScalar(tmp1.AsUInt64(), 1, op2.AsUInt64());
-        // return AdvSimd.ExtractNarrowingUpper(tmp2).As<T>();
+        // var tmp2 = AdvSimd.InsertScalar(tmp1.AsUInt64(), 1, op2.AsUInt64()).As<T>(); - signed integer use int64,
+        // unsigned integer use uint64
+        // return AdvSimd.ExtractNarrowingLower(tmp2);
 
         CorInfoType tmp2BaseJitType = varTypeIsSigned(simdBaseType) ? CORINFO_TYPE_LONG : CORINFO_TYPE_ULONG;
 

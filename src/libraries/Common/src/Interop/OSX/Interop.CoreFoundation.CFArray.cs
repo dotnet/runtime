@@ -13,12 +13,12 @@ internal static partial class Interop
 {
     internal static partial class CoreFoundation
     {
-        [GeneratedDllImport(Libraries.CoreFoundationLibrary, EntryPoint = "CFArrayGetCount")]
+        [LibraryImport(Libraries.CoreFoundationLibrary, EntryPoint = "CFArrayGetCount")]
         private static partial CFIndex _CFArrayGetCount(SafeCFArrayHandle cfArray);
 
         // Follows the "Get" version of the "Create" rule, so needs to return an IntPtr to
         // prevent CFRelease from being called on the SafeHandle close.
-        [GeneratedDllImport(Libraries.CoreFoundationLibrary, EntryPoint = "CFArrayGetValueAtIndex")]
+        [LibraryImport(Libraries.CoreFoundationLibrary, EntryPoint = "CFArrayGetValueAtIndex")]
         private static partial IntPtr CFArrayGetValueAtIndex(SafeCFArrayHandle cfArray, CFIndex index);
 
         internal static long CFArrayGetCount(SafeCFArrayHandle cfArray)

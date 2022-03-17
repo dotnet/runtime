@@ -66,7 +66,9 @@ namespace System.Net.Security.Tests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls11))]
     public sealed class SslStreamTls11NetworkConformanceTests : SslStreamDefaultNetworkConformanceTests
     {
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
         protected override SslProtocols GetSslProtocols() => SslProtocols.Tls11;
+#pragma warning restore SYSLIB0039
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls12))]

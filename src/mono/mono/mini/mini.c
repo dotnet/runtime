@@ -941,17 +941,6 @@ mono_create_jump_table (MonoCompile *cfg, MonoInst *label, MonoBasicBlock **bbs,
 	cfg->patch_info = ji;
 }
 
-gboolean
-mini_assembly_can_skip_verification (MonoMethod *method)
-{
-	MonoAssembly *assembly = m_class_get_image (method->klass)->assembly;
-	if (method->wrapper_type != MONO_WRAPPER_NONE && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
-		return FALSE;
-	if (assembly->image == mono_defaults.corlib)
-		return FALSE;
-	return mono_assembly_has_skip_verification (assembly);
-}
-
 typedef struct {
 	MonoClass *vtype;
 	GList *active, *inactive;
@@ -1878,7 +1867,7 @@ mono_add_var_location (MonoCompile *cfg, MonoInst *var, gboolean is_reg, int reg
 static void
 mono_apply_volatile (MonoInst *inst, MonoBitSet *set, gsize index)
 {
-	inst->flags |= mono_bitset_test_safe (set, index) ? MONO_INST_VOLATILE : 0;
+	inst->flags |= mono_bitset_test_safe (set, (guint32)index) ? MONO_INST_VOLATILE : 0;
 }
 
 static void
@@ -2644,7 +2633,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		jinfo->unwind_info = unwind_desc;
 		g_free (unwind_info);
 	} else {
-		jinfo->unwind_info = cfg->used_int_regs;
+		jinfo->unwind_info = (guint32)cfg->used_int_regs;
 	}
 
 	return jinfo;
@@ -3305,7 +3294,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		return cfg;
 	}
 
-	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && header->num_clauses) {
+	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && !cfg->gsharedvt && header->num_clauses) {
 		cfg->deopt = TRUE;
 		/* Can't reconstruct inlined state */
 		cfg->disable_inline = TRUE;

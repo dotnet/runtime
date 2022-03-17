@@ -16,15 +16,9 @@ namespace System
         internal sealed class RawData
         {
             public IntPtr Bounds;
-            // The following is to prevent a mismatch between the managed and runtime
-            // layouts where MONO_BIG_ARRAYS is false on 64-bit big endian systems
-#if MONO_BIG_ARRAYS
-            public ulong Count;
-#else
             public uint Count;
 #if !TARGET_32BIT
             private uint _Pad;
-#endif
 #endif
             public byte Data;
         }
@@ -282,123 +276,16 @@ namespace System
             return false;
         }
 
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-        public static unsafe Array CreateInstance(Type elementType, int length)
+        private static unsafe Array InternalCreate(RuntimeType elementType, int rank, int* lengths, int* lowerBounds)
         {
-            if (elementType is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (length < 0)
-                ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
-
-            RuntimeType? runtimeType = elementType.UnderlyingSystemType as RuntimeType;
-            if (runtimeType == null)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
-
             Array? array = null;
-            InternalCreate(ref array, runtimeType._impl.Value, 1, &length, null);
-            GC.KeepAlive(runtimeType);
-            return array;
-        }
-
-        public static unsafe Array CreateInstance(Type elementType, int length1, int length2)
-        {
-            if (elementType is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (length1 < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length1, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-            if (length2 < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length2, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-
-            RuntimeType? runtimeType = elementType.UnderlyingSystemType as RuntimeType;
-            if (runtimeType == null)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
-
-            int* lengths = stackalloc int[] { length1, length2 };
-            Array? array = null;
-            InternalCreate(ref array, runtimeType._impl.Value, 2, lengths, null);
-            GC.KeepAlive(runtimeType);
-            return array;
-        }
-
-        public static unsafe Array CreateInstance(Type elementType, int length1, int length2, int length3)
-        {
-            if (elementType is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (length1 < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length1, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-            if (length2 < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length2, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-            if (length3 < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length3, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-
-            RuntimeType? runtimeType = elementType.UnderlyingSystemType as RuntimeType;
-            if (runtimeType == null)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
-
-            int* lengths = stackalloc int[] { length1, length2, length3 };
-            Array? array = null;
-            InternalCreate(ref array, runtimeType._impl.Value, 3, lengths, null);
-            GC.KeepAlive(runtimeType);
-            return array;
-        }
-
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-        public static unsafe Array CreateInstance(Type elementType, params int[] lengths)
-        {
-            if (elementType is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (lengths == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
-            if (lengths.Length == 0)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
-
-            RuntimeType? runtimeType = elementType.UnderlyingSystemType as RuntimeType;
-            if (runtimeType == null)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
-
-            for (int i = 0; i < lengths.Length; i++)
-                if (lengths[i] < 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-
-            Array? array = null;
-            fixed (int* pLengths = &lengths[0])
-                InternalCreate(ref array, runtimeType._impl.Value, lengths.Length, pLengths, null);
-            GC.KeepAlive(runtimeType);
-            return array;
-        }
-
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-        public static unsafe Array CreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
-        {
-            if (elementType == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (lengths == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
-            if (lowerBounds == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lowerBounds);
-            if (lengths.Length != lowerBounds!.Length)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RanksAndBounds);
-            if (lengths.Length == 0)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
-
-            for (int i = 0; i < lengths.Length; i++)
-                if (lengths[i] < 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-
-            RuntimeType? runtimeType = elementType.UnderlyingSystemType as RuntimeType;
-            if (runtimeType == null)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
-
-            Array? array = null;
-            fixed (int* pLengths = &lengths[0])
-            fixed (int* pLowerBounds = &lowerBounds[0])
-                InternalCreate(ref array, runtimeType._impl.Value, lengths.Length, pLengths, pLowerBounds);
-            GC.KeepAlive(runtimeType);
-            return array;
+            InternalCreate(ref array, elementType._impl.Value,  rank, lengths, lowerBounds);
+            GC.KeepAlive(elementType);
+            return array!;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void InternalCreate([NotNull] ref Array? result, IntPtr elementType, int rank, int* lengths, int* lowerBounds);
+        private static extern unsafe void InternalCreate(ref Array? result, IntPtr elementType, int rank, int* lengths, int* lowerBounds);
 
         private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
         {

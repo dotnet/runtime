@@ -259,7 +259,7 @@ extern "C" HANDLE QCALLTYPE EventPipeInternal_GetWaitHandle(UINT64 sessionID)
 {
     QCALL_CONTRACT;
 
-    HANDLE waitHandle;
+    HANDLE waitHandle = NULL;
     BEGIN_QCALL;
 
     waitHandle = EventPipeAdapter::GetWaitHandle(sessionID);

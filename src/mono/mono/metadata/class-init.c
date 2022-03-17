@@ -1019,7 +1019,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	MonoClass *klass, *cached, *k;
 	MonoClass *parent = NULL;
 	GSList *list, *rootlist = NULL;
-	int nsize;
+	size_t nsize;
 	char *name;
 	MonoMemoryManager *mm;
 
@@ -1739,12 +1739,12 @@ mono_class_interface_match (const uint8_t *bitmap, int id)
 static char*
 concat_two_strings_with_zero (MonoImage *image, const char *s1, const char *s2)
 {
-	int null_length = strlen ("(null)");
-	int len = (s1 ? strlen (s1) : null_length) + (s2 ? strlen (s2) : null_length) + 2;
-	char *s = (char *)mono_image_alloc (image, len);
+	size_t null_length = strlen ("(null)");
+	size_t len = (s1 ? strlen (s1) : null_length) + (s2 ? strlen (s2) : null_length) + 2;
+	char *s = (char *)mono_image_alloc (image, (int)len);
 	int result;
 
-	result = g_snprintf (s, len, "%s%c%s", s1 ? s1 : "(null)", '\0', s2 ? s2 : "(null)");
+	result = g_snprintf (s, (glong)len, "%s%c%s", s1 ? s1 : "(null)", '\0', s2 ? s2 : "(null)");
 	g_assert (result == len - 1);
 
 	return s;
@@ -1951,6 +1951,11 @@ validate_struct_fields_overlaps (guint8 *layout_check, int layout_size, MonoClas
 		// try to call mono_class_setup_fields which is what we're doing already
 		field = &m_class_get_fields (klass) [i];
 		field_offset = field_offsets [i];
+		/*
+		 * metadata-update: adding fields to existing structs isn't supported; when a brand
+		 * new struct is added in an update, the fields will be in m_class_get_fields.  so
+		 * nothing new to do here.
+		 */
 
 		if (!field)
 			continue;
@@ -2475,6 +2480,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	// - Disallow on structs/static fields/nonref fields
 	gboolean has_weak_fields = FALSE;
 
+#ifdef ENABLE_WEAK_ATTR
 	if (mono_class_has_static_metadata (klass)) {
 		for (MonoClass *p = klass; p != NULL; p = p->parent) {
 			gpointer iter = NULL;
@@ -2489,6 +2495,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			}
 		}
 	}
+#endif
 
 	/*
 	 * Check that any fields of IsByRefLike type are instance
@@ -2701,7 +2708,7 @@ generic_array_methods (MonoClass *klass)
 
 		generic_array_method_info [i].array_method = m;
 
-		name = (gchar *)mono_image_alloc (mono_defaults.corlib, strlen (iname) + strlen (mname) + 1);
+		name = (gchar *)mono_image_alloc (mono_defaults.corlib, (guint)(strlen (iname) + strlen (mname) + 1));
 		strcpy (name, iname);
 		strcpy (name + strlen (iname), mname);
 		generic_array_method_info [i].name = name;

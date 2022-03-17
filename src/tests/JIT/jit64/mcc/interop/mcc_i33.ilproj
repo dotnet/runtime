@@ -13,6 +13,6 @@
     <Compile Include="mcc_i33.il ..\common\common.il" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

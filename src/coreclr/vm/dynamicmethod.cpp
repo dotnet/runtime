@@ -180,8 +180,9 @@ void DynamicMethodTable::AddMethodsToList()
         pNewMD->SetMemberDef(0);
         pNewMD->SetSlot(MethodTable::NO_SLOT);       // we can't ever use the slot for dynamic methods
         pNewMD->SetStatic();
-
-        pNewMD->m_dwExtendedFlags = mdPublic | mdStatic | DynamicMethodDesc::nomdLCGMethod;
+        pNewMD->InitializeFlags(DynamicMethodDesc::FlagPublic
+                        | DynamicMethodDesc::FlagStatic
+                        | DynamicMethodDesc::FlagIsLCGMethod);
 
         LCGMethodResolver* pResolver = new (pResolvers) LCGMethodResolver();
         pResolver->m_pDynamicMethod = pNewMD;
@@ -272,8 +273,9 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
     pNewMD->SetStoredMethodSig((PCCOR_SIGNATURE)psig, sigSize);
     // the dynamic part of the method desc
     pNewMD->m_pszMethodName = name;
-
-    pNewMD->m_dwExtendedFlags = mdPublic | mdStatic | DynamicMethodDesc::nomdLCGMethod;
+    pNewMD->InitializeFlags(DynamicMethodDesc::FlagPublic
+                    | DynamicMethodDesc::FlagStatic
+                    | DynamicMethodDesc::FlagIsLCGMethod);
 
 #ifdef _DEBUG
     pNewMD->m_pszDebugMethodName = name;
@@ -503,10 +505,10 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
                 // found a block
                 LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Block found, size 0x%X\n", this, pCurrent->size));
 
-                ExecutableWriterHolder<TrackAllocation> previousWriterHolder;
+                ExecutableWriterHolderNoLog<TrackAllocation> previousWriterHolder;
                 if (pPrevious)
                 {
-                    previousWriterHolder = ExecutableWriterHolder<TrackAllocation>(pPrevious, sizeof(TrackAllocation));
+                    previousWriterHolder.AssignExecutableWriterHolder(pPrevious, sizeof(TrackAllocation));
                 }
 
                 ExecutableWriterHolder<TrackAllocation> currentWriterHolder(pCurrent, sizeof(TrackAllocation));
@@ -530,7 +532,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
                 {
                     // create a new TrackAllocation after the memory we just allocated and insert it into the free list
                     TrackAllocation *pNewCurrent = (TrackAllocation*)((BYTE*)pCurrent + realSize);
-                    
+
                     ExecutableWriterHolder<TrackAllocation> newCurrentWriterHolder(pNewCurrent, sizeof(TrackAllocation));
                     newCurrentWriterHolder.GetRW()->pNext = pCurrent->pNext;
                     newCurrentWriterHolder.GetRW()->size = pCurrent->size - realSize;
@@ -585,11 +587,11 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocatio
             {
                 // found the point of insertion
                 pBlockToInsertRW->pNext = pCurrent;
-                ExecutableWriterHolder<TrackAllocation> previousWriterHolder;
+                ExecutableWriterHolderNoLog<TrackAllocation> previousWriterHolder;
 
                 if (pPrevious)
                 {
-                    previousWriterHolder = ExecutableWriterHolder<TrackAllocation>(pPrevious, sizeof(TrackAllocation));
+                    previousWriterHolder.AssignExecutableWriterHolder(pPrevious, sizeof(TrackAllocation));
                     previousWriterHolder.GetRW()->pNext = pBlockToInsert;
                     LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%X] -> [%p, 0x%X] -> [%p, 0x%X]\n", this,
                                                                         pPrevious, pPrevious->size,

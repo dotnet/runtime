@@ -1,17 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Versioning;
-
-#if !FEATURE_GENERIC_MATH
-#error FEATURE_GENERIC_MATH is not defined
-#endif
-
 namespace System
 {
     /// <summary>Defines a floating-point type.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
-    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface IFloatingPoint<TSelf>
         : ISignedNumber<TSelf>
         where TSelf : IFloatingPoint<TSelf>
@@ -332,7 +325,6 @@ namespace System
 
     /// <summary>Defines a floating-point type that is represented in a base-2 format.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
-    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface IBinaryFloatingPoint<TSelf>
         : IBinaryNumber<TSelf>,
           IFloatingPoint<TSelf>

@@ -23,11 +23,6 @@
       <_Parameter1>PreferInbox</_Parameter1>
       <_Parameter2>True</_Parameter2>
     </AssemblyAttribute>
-    <AssemblyAttribute Include="System.Reflection.AssemblyMetadata"
-                       Condition="'$(SetIsTrimmable)' != 'false'">
-      <_Parameter1>IsTrimmable</_Parameter1>
-      <_Parameter2>True</_Parameter2>
-    </AssemblyAttribute>
   </ItemGroup>
 
   <ItemGroup>
@@ -182,4 +177,11 @@
       WriteOnlyWhenDifferent="true" />
   </Target>
 
+  <Target Name="GenerateNativeSourcelinkFile"
+          DependsOnTargets="GenerateSourceLinkFile"
+          Condition="'$(DisableSourceLink)' != 'true'"
+          Inputs="$(SourceLink)" Outputs="$(NativeSourceLinkFile)">
+    <Error Condition="'$(NativeSourceLinkFile)' == ''" Text="Please set NativeSourceLinkFile to forward appropriate information for sourcelink."/>
+    <Copy SourceFiles="$(SourceLink)" DestinationFiles="$(NativeSourceLinkFile)" />
+  </Target>
 </Project>

@@ -32,7 +32,7 @@ namespace System.Text.RegularExpressions
         /// <summary>The top-level driver. Initializes everything then calls the Generate* methods.</summary>
         public RegexRunnerFactory? FactoryInstanceFromCode(string pattern, RegexTree regexTree, RegexOptions options, bool hasTimeout)
         {
-            if (!regexTree.Root.SupportsCompilation())
+            if (!regexTree.Root.SupportsCompilation(out _))
             {
                 return null;
             }
@@ -59,7 +59,7 @@ namespace System.Text.RegularExpressions
             EmitTryMatchAtCurrentPosition();
 
             DynamicMethod scanMethod = DefineDynamicMethod($"Regex{regexNum}_Scan{description}", null, typeof(CompiledRegexRunner), new[] { typeof(RegexRunner), typeof(ReadOnlySpan<char>) });
-            EmitScan(tryfindNextPossibleStartPositionMethod, tryMatchAtCurrentPositionMethod);
+            EmitScan(options, tryfindNextPossibleStartPositionMethod, tryMatchAtCurrentPositionMethod);
 
             return new CompiledRegexRunnerFactory(scanMethod);
         }

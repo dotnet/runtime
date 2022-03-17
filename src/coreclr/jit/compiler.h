@@ -218,6 +218,10 @@ public:
     {
     }
 
+    LclSsaVarDsc(BasicBlock* block) : m_block(block), m_asg(nullptr)
+    {
+    }
+
     LclSsaVarDsc(BasicBlock* block, GenTreeOp* asg) : m_block(block), m_asg(asg)
     {
         assert((asg == nullptr) || asg->OperIs(GT_ASG));
@@ -392,12 +396,13 @@ enum class DoNotEnregisterReason
 #endif
     LclAddrNode, // the local is accessed with LCL_ADDR_VAR/FLD.
     CastTakesAddr,
-    StoreBlkSrc,      // the local is used as STORE_BLK source.
-    OneAsgRetyping,   // fgMorphOneAsgBlockOp prevents this local from being enregister.
-    SwizzleArg,       // the local is passed using LCL_FLD as another type.
-    BlockOpRet,       // the struct is returned and it promoted or there is a cast.
-    ReturnSpCheck,    // the local is used to do SP check
-    SimdUserForcesDep // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
+    StoreBlkSrc,          // the local is used as STORE_BLK source.
+    OneAsgRetyping,       // fgMorphOneAsgBlockOp prevents this local from being enregister.
+    SwizzleArg,           // the local is passed using LCL_FLD as another type.
+    BlockOpRet,           // the struct is returned and it promoted or there is a cast.
+    ReturnSpCheck,        // the local is used to do SP check
+    SimdUserForcesDep,    // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
+    HiddenBufferStructArg // the argument is a hidden return buffer passed to a method.
 };
 
 enum class AddressExposedReason
@@ -526,6 +531,11 @@ public:
 
     unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
+
+#ifdef DEBUG
+    unsigned char lvHiddenBufferStructArg : 1; // True when this struct (or its field) are passed as hidden buffer
+                                               // pointer.
+#endif
 
 #ifdef FEATURE_HFA_FIELDS_PRESENT
     CorInfoHFAElemType _lvHfaElemKind : 3; // What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).
@@ -751,6 +761,18 @@ public:
     {
         return m_addrExposed;
     }
+
+#ifdef DEBUG
+    void SetHiddenBufferStructArg(char value)
+    {
+        lvHiddenBufferStructArg = value;
+    }
+
+    bool IsHiddenBufferStructArg() const
+    {
+        return lvHiddenBufferStructArg;
+    }
+#endif
 
 private:
     regNumberSmall _lvRegNum; // Used to store the register this variable is in (or, the low register of a
@@ -3784,6 +3806,7 @@ public:
     // Getters and setters for address-exposed and do-not-enregister local var properties.
     bool lvaVarAddrExposed(unsigned varNum) const;
     void lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReason reason));
+    void lvaSetHiddenBufferStructArg(unsigned varNum);
     void lvaSetVarLiveInOutOfHandler(unsigned varNum);
     bool lvaVarDoNotEnregister(unsigned varNum);
 
@@ -4149,6 +4172,8 @@ public:
         void PromoteStructVar(unsigned lclNum);
         void SortStructFields();
 
+        bool CanConstructAndPromoteField(lvaStructPromotionInfo* structPromotionInfo);
+
         lvaStructFieldInfo GetFieldInfo(CORINFO_FIELD_HANDLE fieldHnd, BYTE ordinal);
         bool TryPromoteStructField(lvaStructFieldInfo& outerFieldInfo);
 
@@ -4411,17 +4436,37 @@ protected:
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
     GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
 
+    // Mirrors StringComparison.cs
+    enum StringComparison
+    {
+        Ordinal           = 4,
+        OrdinalIgnoreCase = 5
+    };
+    enum StringComparisonJoint
+    {
+        Eq,  // (d1 == cns1) && (s2 == cns2)
+        Xor, // (d1 ^ cns1) | (s2 ^ cns2)
+    };
     GenTree* impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags);
     GenTree* impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags);
-    GenTree* impExpandHalfConstEquals(GenTreeLclVar* data,
-                                      GenTree*       lengthFld,
-                                      bool           checkForNull,
-                                      bool           startsWith,
-                                      WCHAR*         cnsData,
-                                      int            len,
-                                      int            dataOffset);
-    GenTree* impExpandHalfConstEqualsSWAR(GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset);
-    GenTree* impExpandHalfConstEqualsSIMD(GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset);
+    GenTree* impExpandHalfConstEquals(GenTreeLclVar*   data,
+                                      GenTree*         lengthFld,
+                                      bool             checkForNull,
+                                      bool             startsWith,
+                                      WCHAR*           cnsData,
+                                      int              len,
+                                      int              dataOffset,
+                                      StringComparison cmpMode);
+    GenTree* impCreateCompareInd(GenTreeLclVar*        obj,
+                                 var_types             type,
+                                 ssize_t               offset,
+                                 ssize_t               value,
+                                 StringComparison      ignoreCase,
+                                 StringComparisonJoint joint = Eq);
+    GenTree* impExpandHalfConstEqualsSWAR(
+        GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode);
+    GenTree* impExpandHalfConstEqualsSIMD(
+        GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode);
     GenTreeStrCon* impGetStrConFromSpan(GenTree* span);
 
     GenTree* impIntrinsic(GenTree*                newobjThis,
@@ -6467,6 +6512,7 @@ private:
     GenTree* fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow, GenTreeFlags precedingSideEffects);
     GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
+    GenTree* fgMorphUModToAndSub(GenTreeOp* tree);
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
     GenTree* fgMorphMultiOp(GenTreeMultiOp* multiOp);
     GenTree* fgMorphConst(GenTree* tree);
@@ -7471,7 +7517,7 @@ public:
     void optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToLiveDefsMap* curSsaName);
     void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
     void optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
-    void optCopyPropPushDef(GenTreeOp*           asg,
+    void optCopyPropPushDef(GenTree*             defNode,
                             GenTreeLclVarCommon* lclNode,
                             unsigned             lclNum,
                             LclNumToLiveDefsMap* curSsaName);
@@ -8213,7 +8259,7 @@ public:
     CORINFO_CLASS_HANDLE eeGetArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE list);
     CORINFO_CLASS_HANDLE eeGetClassFromContext(CORINFO_CONTEXT_HANDLE context);
     unsigned eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig);
-    static unsigned eeGetArgAlignment(var_types type, bool isFloatHfa);
+    static unsigned eeGetArgSizeAlignment(var_types type, bool isFloatHfa);
 
     // VOM info, method sigs
 
@@ -8855,21 +8901,6 @@ private:
     }
 
 #ifdef FEATURE_SIMD
-
-    // Should we support SIMD intrinsics?
-    bool featureSIMD;
-
-    // Should we recognize SIMD types?
-    // We always do this on ARM64 to support HVA types.
-    bool supportSIMDTypes()
-    {
-#ifdef TARGET_ARM64
-        return true;
-#else
-        return featureSIMD;
-#endif
-    }
-
     // Have we identified any SIMD types?
     // This is currently used by struct promotion to avoid getting type information for a struct
     // field to see if it is a SIMD type, if we haven't seen any SIMD types or operations in
@@ -9572,7 +9603,6 @@ public:
     bool compLocallocOptimized;        // Does the method have an optimized localloc
     bool compQmarkUsed;                // Does the method use GT_QMARK/GT_COLON
     bool compQmarkRationalized;        // Is it allowed to use a GT_QMARK/GT_COLON node.
-    bool compUnsafeCastUsed;           // Does the method use LDIND/STIND to cast between scalar/refernce types
     bool compHasBackwardJump;          // Does the method (or some inlinee) have a lexically backwards jump?
     bool compHasBackwardJumpInHandler; // Does the method have a lexically backwards jump in a handler?
     bool compSwitchedToOptimized;      // Codegen initially was Tier0 but jit switched to FullOpts
@@ -9913,6 +9943,9 @@ public:
 
         // If set, tries to hide alignment instructions behind unconditional jumps.
         bool compJitHideAlignBehindJmp;
+
+        // If set, tracks the hidden return buffer for struct arg.
+        bool compJitOptimizeStructHiddenBuffer;
 
 #ifdef LATE_DISASM
         bool doLateDisasm; // Run the late disassembler
@@ -10513,6 +10546,10 @@ public:
 
     unsigned compArgSize; // total size of arguments in bytes (including register args (lvIsRegArg))
 
+#ifdef TARGET_ARM
+    bool compHasSplitParam;
+#endif
+
     unsigned compMapILargNum(unsigned ILargNum);      // map accounting for hidden args
     unsigned compMapILvarNum(unsigned ILvarNum);      // map accounting for hidden args
     unsigned compMap2ILvarNum(unsigned varNum) const; // map accounting for hidden args
@@ -10558,9 +10595,6 @@ public:
     // class handle as an out parameter if the type is a value class.  Returns the
     // size of the type these describe.
     unsigned compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd);
-
-    // Returns true if the method being compiled has a return buffer.
-    bool compHasRetBuffArg();
 
 #ifdef DEBUG
     // Components used by the compiler may write unit test suites, and
@@ -10617,6 +10651,7 @@ public:
         unsigned m_totalNumberOfStructEnregVars;
 
         unsigned m_addrExposed;
+        unsigned m_hiddenStructArg;
         unsigned m_VMNeedsStackAddr;
         unsigned m_localField;
         unsigned m_blockOp;

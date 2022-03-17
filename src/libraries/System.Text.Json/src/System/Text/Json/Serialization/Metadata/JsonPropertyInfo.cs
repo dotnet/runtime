@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Metadata
     /// <summary>
     /// Provides JSON serialization-related metadata about a property or field.
     /// </summary>
-    [DebuggerDisplay("MemberInfo={MemberInfo}")]
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public abstract class JsonPropertyInfo
     {
@@ -519,5 +519,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// Default value used for parameterized ctor invocation.
         /// </summary>
         internal abstract object? DefaultValue { get; }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private string DebuggerDisplay => $"MemberInfo={MemberInfo}";
     }
 }

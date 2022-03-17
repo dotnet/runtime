@@ -16,6 +16,7 @@ import re
 import sys
 import stat
 import os
+import time
 
 from shutil import copyfile
 from coreclr_arguments import *
@@ -149,17 +150,31 @@ def build_and_run(coreclr_args, output_mch_name):
 
     make_executable(dotnet_exe)
 
+    # Start with a "dotnet --info" to see what we've got.
+    run_command([dotnet_exe, "--info"])
+
     env_copy = os.environ.copy()
     if is_windows:
         # Try to work around problem with random NuGet failures in "dotnet restore":
         #   error NU3037: Package 'System.Runtime 4.1.0' from source 'https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json':
         #     The repository primary signature validity period has expired. [C:\h\w\A3B008C0\w\B581097F\u\performance\src\benchmarks\micro\MicroBenchmarks.csproj]
         # Using environment variable specified in https://github.com/NuGet/NuGet.Client/pull/4259.
-        env_copy["NUGET_EXPERIMENTAL_CHAIN_BUILD_RETRY_POLICY"] = "3,1000"
+        env_copy["NUGET_EXPERIMENTAL_CHAIN_BUILD_RETRY_POLICY"] = "9,2000"
 
-    run_command(
-        [dotnet_exe, "restore", project_file, "--packages",
-         artifacts_packages_directory], _exit_on_fail=True, _env=env_copy)
+    # If `dotnet restore` fails, retry.
+    num_tries = 3
+    for try_num in range(num_tries):
+        # On the last try, exit on fail
+        exit_on_fail = try_num + 1 == num_tries
+        (_, _, return_code) = run_command(
+            [dotnet_exe, "restore", project_file, "--packages", artifacts_packages_directory],
+            _exit_on_fail=exit_on_fail, _env=env_copy)
+        if return_code == 0:
+            # It succeeded!
+            break
+        print("Try {} of {} failed with error code {}: trying again".format(try_num + 1, num_tries, return_code))
+        # Sleep 5 seconds before trying again
+        time.sleep(5)
 
     run_command(
         [dotnet_exe, "build", project_file, "--configuration", "Release",

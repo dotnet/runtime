@@ -8,11 +8,11 @@ internal static partial class Interop
 {
     internal unsafe partial class Sys
     {
-        [GeneratedDllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetErrNo")]
+        [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetErrNo")]
         [SuppressGCTransition]
         internal static partial int GetErrNo();
 
-        [GeneratedDllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_SetErrNo")]
+        [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_SetErrNo")]
         [SuppressGCTransition]
         internal static partial void SetErrNo(int errorCode);
     }

@@ -26,11 +26,11 @@ namespace System.Text.RegularExpressions.Symbolic
         private Dictionary<(bool IgnoreCase, string Set), BDD>? _setBddCache;
 
         /// <summary>Constructs a regex to symbolic finite automata converter</summary>
-        public RegexNodeConverter(CultureInfo culture, Hashtable? captureSparseMapping)
+        public RegexNodeConverter(SymbolicRegexBuilder<BDD> builder, CultureInfo culture, Hashtable? captureSparseMapping)
         {
+            _builder = builder;
             _culture = culture;
             _captureSparseMapping = captureSparseMapping;
-            _builder = new SymbolicRegexBuilder<BDD>(CharSetSolver.Instance);
         }
 
         /// <summary>Converts a <see cref="RegexNode"/> into its corresponding <see cref="SymbolicRegexNode{S}"/>.</summary>
@@ -408,7 +408,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // which translates into a set string that accepts everything.
                 BDD result = conditions.Count == 0 ?
                     (negate ? CharSetSolver.Instance.False : CharSetSolver.Instance.True) :
-                    (negate ? CharSetSolver.Instance.And(conditions) : CharSetSolver.Instance.Or(conditions));
+                    (negate ? CharSetSolver.Instance.And(CollectionsMarshal.AsSpan(conditions)) : CharSetSolver.Instance.Or(CollectionsMarshal.AsSpan(conditions)));
 
                 // Now apply the subtracted condition if there is one.  As a subtly of Regex semantics,
                 // the subtractor is not within the scope of the negation (if there is any negation).

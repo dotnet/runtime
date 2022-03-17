@@ -167,9 +167,7 @@ is_generic_parameter (MonoType *type)
 static void
 mono_icall_make_platform_path (gchar *path)
 {
-	for (size_t i = strlen (path); i > 0; i--)
-		if (path [i-1] == '\\')
-			path [i-1] = '/';
+	g_strdelimit (path, '\\', '/');
 }
 
 static const gchar *
@@ -1216,7 +1214,10 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObjectHandle this_obj, MonoA
 			continue;
 		if (mono_field_is_deleted (field))
 			continue;
-		gpointer addr = (guint8*)MONO_HANDLE_RAW (this_obj)  + field->offset;
+		/* metadata-update: structs don't get added fields */
+		g_assert (!m_field_is_from_update (field));
+
+		gpointer addr = (guint8*)MONO_HANDLE_RAW (this_obj)  + m_field_get_offset (field);
 		/* FIXME: Add more types */
 		switch (field->type->type) {
 		case MONO_TYPE_I4:
@@ -1289,8 +1290,11 @@ ves_icall_System_ValueType_Equals (MonoObjectHandle this_obj, MonoObjectHandle t
 			continue;
 		if (mono_field_is_deleted (field))
 			continue;
-		guint8 *this_field = (guint8 *)MONO_HANDLE_RAW (this_obj) + field->offset;
-		guint8 *that_field = (guint8 *)MONO_HANDLE_RAW (that) + field->offset;
+		/* metadata-update: no added fields in valuetypes */
+		g_assert (!m_field_is_from_update (field));
+		int field_offset = m_field_get_offset (field);
+		guint8 *this_field = (guint8 *)MONO_HANDLE_RAW (this_obj) + field_offset;
+		guint8 *that_field = (guint8 *)MONO_HANDLE_RAW (that) + field_offset;
 
 #define UNALIGNED_COMPARE(type) \
 			do { \
@@ -2004,7 +2008,10 @@ ves_icall_RuntimeFieldInfo_GetFieldOffset (MonoReflectionFieldHandle field, Mono
 	MonoClassField *class_field = MONO_HANDLE_GETVAL (field, field);
 	mono_class_setup_fields (m_field_get_parent (class_field));
 
-	return class_field->offset - MONO_ABI_SIZEOF (MonoObject);
+	/* TODO: metadata-update: figure out what CoreCLR does in this situation. */
+	g_assert (!m_field_is_from_update (class_field));
+
+	return m_field_get_offset (class_field) - MONO_ABI_SIZEOF (MonoObject);
 }
 
 MonoReflectionTypeHandle
@@ -2175,13 +2182,16 @@ ves_icall_System_RuntimeFieldHandle_GetValueDirect (MonoReflectionFieldHandle fi
 	MonoClassField *field = MONO_HANDLE_GETVAL (field_h, field);
 	MonoClass *klass = mono_class_from_mono_type_internal (field->type);
 
+	/* TODO: metadata-update: get the values of added fields */
+	g_assert (!m_field_is_from_update (field));
+
 	if (!MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_field_get_parent (field)))) {
 		mono_error_set_not_implemented (error, "");
 		return MONO_HANDLE_NEW (MonoObject, NULL);
 	} else if (MONO_TYPE_IS_REFERENCE (field->type)) {
-		return MONO_HANDLE_NEW (MonoObject, *(MonoObject**)((guint8*)obj->value + field->offset - sizeof (MonoObject)));
+		return MONO_HANDLE_NEW (MonoObject, *(MonoObject**)((guint8*)obj->value + m_field_get_offset (field) - sizeof (MonoObject)));
 	} else {
-		return mono_value_box_handle (klass, (guint8*)obj->value + field->offset - sizeof (MonoObject), error);
+		return mono_value_box_handle (klass, (guint8*)obj->value + m_field_get_offset (field) - sizeof (MonoObject), error);
 	}
 }
 
@@ -2193,6 +2203,9 @@ ves_icall_System_RuntimeFieldHandle_SetValueDirect (MonoReflectionFieldHandle fi
 	g_assert (obj);
 
 	mono_class_setup_fields (m_field_get_parent (f));
+
+	/* TODO: metadata-update: set the values of added fields */
+	g_assert (!m_field_is_from_update (f));
 
 	if (!MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_field_get_parent (f)))) {
 		MonoObjectHandle objHandle = typed_reference_to_object (obj, error);
@@ -6046,10 +6059,18 @@ ves_icall_System_Environment_get_TickCount64 (void)
 gpointer
 ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError *error)
 {
+	return mono_method_get_unmanaged_wrapper_ftnptr_internal (method, FALSE, error);
+}
+
+void*
+mono_method_get_unmanaged_wrapper_ftnptr_internal (MonoMethod *method, gboolean only_unmanaged_callers_only, MonoError *error)
+{
 	/* WISH: we should do this in managed */
 	if (G_UNLIKELY (mono_method_has_unmanaged_callers_only_attribute (method))) {
 		method = mono_marshal_get_managed_wrapper  (method, NULL, (MonoGCHandle)0, error);
 		return_val_if_nok (error, NULL);
+	} else {
+		g_assert (!only_unmanaged_callers_only);
 	}
 	return mono_get_runtime_callbacks ()->get_ftnptr (method, error);
 }
@@ -6244,10 +6265,13 @@ ves_icall_System_TypedReference_InternalMakeTypedReference (MonoTypedRef *res, M
 
 		g_assert (f);
 
+		/* TODO: metadata-update: the first field might be added, right? the rest are inside structs */
+		g_assert (!m_field_is_from_update (f));
+
 		if (i == 0)
-			offset = f->offset;
+			offset = m_field_get_offset (f);
 		else
-			offset += f->offset - sizeof (MonoObject);
+			offset += m_field_get_offset (f) - sizeof (MonoObject);
 		(void)mono_class_from_mono_type_internal (f->type);
 		ftype = f->type;
 	}
@@ -6756,7 +6780,7 @@ mono_add_internal_call_internal (const char *name, gconstpointer method)
 static int
 concat_class_name (char *buf, int bufsize, MonoClass *klass)
 {
-	int nspacelen, cnamelen;
+	size_t nspacelen, cnamelen;
 	nspacelen = strlen (m_class_get_name_space (klass));
 	cnamelen = strlen (m_class_get_name (klass));
 	if (nspacelen + cnamelen + 2 > bufsize)
@@ -6767,7 +6791,7 @@ concat_class_name (char *buf, int bufsize, MonoClass *klass)
 	}
 	memcpy (buf + nspacelen, m_class_get_name (klass), cnamelen);
 	buf [nspacelen + cnamelen] = 0;
-	return nspacelen + cnamelen;
+	return (int)(nspacelen + cnamelen);
 }
 
 static void
@@ -6792,7 +6816,8 @@ mono_lookup_internal_call_full_with_flags (MonoMethod *method, gboolean warn_on_
 	char *tmpsig = NULL;
 	char mname [2048];
 	char *classname = NULL;
-	int typelen = 0, mlen, siglen;
+	int typelen = 0;
+	size_t mlen, siglen;
 	gconstpointer res = NULL;
 	gboolean locked = FALSE;
 
