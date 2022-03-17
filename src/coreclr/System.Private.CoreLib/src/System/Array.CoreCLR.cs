@@ -4,10 +4,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -15,116 +15,8 @@ namespace System
     // IList<U> and IReadOnlyList<U>, where T : U dynamically.  See the SZArrayHelper class for details.
     public abstract partial class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable
     {
-        // Create instance will create an array
-        public static unsafe Array CreateInstance(Type elementType, int length)
-        {
-            if (elementType is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (length < 0)
-                ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
-
-            RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
-            if (t == null)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
-            return InternalCreate((void*)t.TypeHandle.Value, 1, &length, null);
-        }
-
-        public static unsafe Array CreateInstance(Type elementType, int length1, int length2)
-        {
-            if (elementType is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (length1 < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length1, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-            if (length2 < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length2, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-
-            RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
-            if (t == null)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
-            int* pLengths = stackalloc int[2];
-            pLengths[0] = length1;
-            pLengths[1] = length2;
-            return InternalCreate((void*)t.TypeHandle.Value, 2, pLengths, null);
-        }
-
-        public static unsafe Array CreateInstance(Type elementType, int length1, int length2, int length3)
-        {
-            if (elementType is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (length1 < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length1, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-            if (length2 < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length2, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-            if (length3 < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length3, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-
-            RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
-            if (t == null)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
-            int* pLengths = stackalloc int[3];
-            pLengths[0] = length1;
-            pLengths[1] = length2;
-            pLengths[2] = length3;
-            return InternalCreate((void*)t.TypeHandle.Value, 3, pLengths, null);
-        }
-
-        public static unsafe Array CreateInstance(Type elementType, params int[] lengths)
-        {
-            if (elementType is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (lengths == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
-            if (lengths.Length == 0)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
-
-            RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
-            if (t == null)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
-
-            // Check to make sure the lengths are all positive. Note that we check this here to give
-            // a good exception message if they are not; however we check this again inside the execution
-            // engine's low level allocation function after having made a copy of the array to prevent a
-            // malicious caller from mutating the array after this check.
-            for (int i = 0; i < lengths.Length; i++)
-                if (lengths[i] < 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-
-            fixed (int* pLengths = &lengths[0])
-                return InternalCreate((void*)t.TypeHandle.Value, lengths.Length, pLengths, null);
-        }
-
-        public static unsafe Array CreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
-        {
-            if (elementType == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (lengths == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
-            if (lowerBounds == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lowerBounds);
-            if (lengths.Length != lowerBounds!.Length)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RanksAndBounds);
-            if (lengths.Length == 0)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
-
-            RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
-            if (t == null)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
-
-            // Check to make sure the lenghts are all positive. Note that we check this here to give
-            // a good exception message if they are not; however we check this again inside the execution
-            // engine's low level allocation function after having made a copy of the array to prevent a
-            // malicious caller from mutating the array after this check.
-            for (int i = 0; i < lengths.Length; i++)
-                if (lengths[i] < 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-
-            fixed (int* pLengths = &lengths[0])
-            fixed (int* pLowerBounds = &lowerBounds[0])
-                return InternalCreate((void*)t.TypeHandle.Value, lengths.Length, pLengths, pLowerBounds);
-        }
-
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe Array InternalCreate(void* elementType, int rank, int* pLengths, int* pLowerBounds);
+        private static extern unsafe Array InternalCreate(RuntimeType elementType, int rank, int* pLengths, int* pLowerBounds);
 
         // Copies length elements from sourceArray, starting at index 0, to
         // destinationArray, starting at index 0.
@@ -521,7 +413,7 @@ namespace System
             _this[index] = value;
         }
 
-        private void Add<T>(T value)
+        private void Add<T>(T _)
         {
             // Not meaningful for arrays.
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
@@ -556,20 +448,20 @@ namespace System
             return Array.IndexOf(_this, value, 0, _this.Length);
         }
 
-        private void Insert<T>(int index, T value)
+        private void Insert<T>(int _, T _1)
         {
             // Not meaningful for arrays
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
         }
 
-        private bool Remove<T>(T value)
+        private bool Remove<T>(T _)
         {
             // Not meaningful for arrays
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
             return default;
         }
 
-        private void RemoveAt<T>(int index)
+        private void RemoveAt<T>(int _)
         {
             // Not meaningful for arrays
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);

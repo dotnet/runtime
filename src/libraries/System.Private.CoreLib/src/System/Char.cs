@@ -25,14 +25,15 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct Char : IComparable, IComparable<char>, IEquatable<char>, IConvertible, ISpanFormattable
-#if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
-        , IBinaryInteger<char>,
+    public readonly struct Char
+        : IComparable,
+          IComparable<char>,
+          IEquatable<char>,
+          IConvertible,
+          ISpanFormattable,
+          IBinaryInteger<char>,
           IMinMaxValue<char>,
           IUnsignedNumber<char>
-#pragma warning restore SA1001, CA2252
-#endif // FEATURE_GENERIC_MATH
     {
         //
         // Member Variables
@@ -1060,16 +1061,13 @@ namespace System
             return (int)s[index];
         }
 
-#if FEATURE_GENERIC_MATH
         //
         // IAdditionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IAdditionOperators<char, char, char>.operator +(char left, char right)
             => (char)(left + right);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked char IAdditionOperators<char, char, char>.operator +(char left, char right)
         //     => checked((char)(left + right));
 
@@ -1077,30 +1075,24 @@ namespace System
         // IAdditiveIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IAdditiveIdentity<char, char>.AdditiveIdentity => (char)0;
 
         //
         // IBinaryInteger
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IBinaryInteger<char>.LeadingZeroCount(char value)
             => (char)(BitOperations.LeadingZeroCount(value) - 16);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IBinaryInteger<char>.PopCount(char value)
             => (char)BitOperations.PopCount(value);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IBinaryInteger<char>.RotateLeft(char value, int rotateAmount)
             => (char)((value << (rotateAmount & 15)) | (value >> ((16 - rotateAmount) & 15)));
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IBinaryInteger<char>.RotateRight(char value, int rotateAmount)
             => (char)((value >> (rotateAmount & 15)) | (value << ((16 - rotateAmount) & 15)));
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IBinaryInteger<char>.TrailingZeroCount(char value)
             => (char)(BitOperations.TrailingZeroCount(value << 16) - 16);
 
@@ -1108,11 +1100,9 @@ namespace System
         // IBinaryNumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IBinaryNumber<char>.IsPow2(char value)
             => BitOperations.IsPow2((uint)value);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IBinaryNumber<char>.Log2(char value)
             => (char)BitOperations.Log2(value);
 
@@ -1120,19 +1110,15 @@ namespace System
         // IBitwiseOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IBitwiseOperators<char, char, char>.operator &(char left, char right)
             => (char)(left & right);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IBitwiseOperators<char, char, char>.operator |(char left, char right)
             => (char)(left | right);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IBitwiseOperators<char, char, char>.operator ^(char left, char right)
             => (char)(left ^ right);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IBitwiseOperators<char, char, char>.operator ~(char value)
             => (char)(~value);
 
@@ -1140,19 +1126,15 @@ namespace System
         // IComparisonOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<char, char>.operator <(char left, char right)
             => left < right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<char, char>.operator <=(char left, char right)
             => left <= right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<char, char>.operator >(char left, char right)
             => left > right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<char, char>.operator >=(char left, char right)
             => left >= right;
 
@@ -1160,11 +1142,9 @@ namespace System
         // IDecrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IDecrementOperators<char>.operator --(char value)
             => --value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked char IDecrementOperators<char>.operator --(char value)
         //     => checked(--value);
 
@@ -1172,11 +1152,9 @@ namespace System
         // IDivisionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IDivisionOperators<char, char, char>.operator /(char left, char right)
             => (char)(left / right);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked char IDivisionOperators<char, char, char>.operator /(char left, char right)
         //     => checked((char)(left / right));
 
@@ -1184,11 +1162,9 @@ namespace System
         // IEqualityOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<char, char>.operator ==(char left, char right)
             => left == right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<char, char>.operator !=(char left, char right)
             => left != right;
 
@@ -1196,11 +1172,9 @@ namespace System
         // IIncrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IIncrementOperators<char>.operator ++(char value)
             => ++value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked char IIncrementOperators<char>.operator ++(char value)
         //     => checked(++value);
 
@@ -1208,21 +1182,17 @@ namespace System
         // IMinMaxValue
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IMinMaxValue<char>.MinValue => MinValue;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IMinMaxValue<char>.MaxValue => MaxValue;
 
         //
         // IModulusOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IModulusOperators<char, char, char>.operator %(char left, char right)
             => (char)(left % right);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked char IModulusOperators<char, char, char>.operator %(char left, char right)
         //     => checked((char)(left % right));
 
@@ -1230,18 +1200,15 @@ namespace System
         // IMultiplicativeIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IMultiplicativeIdentity<char, char>.MultiplicativeIdentity => (char)1;
 
         //
         // IMultiplyOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IMultiplyOperators<char, char, char>.operator *(char left, char right)
             => (char)(left * right);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked char IMultiplyOperators<char, char, char>.operator *(char left, char right)
         //     => checked((char)(left * right));
 
@@ -1249,21 +1216,16 @@ namespace System
         // INumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char INumber<char>.One => (char)1;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char INumber<char>.Zero => (char)0;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char INumber<char>.Abs(char value)
             => value;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char INumber<char>.Clamp(char value, char min, char max)
             => (char)Math.Clamp(value, min, max);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static char INumber<char>.Create<TOther>(TOther value)
         {
@@ -1330,7 +1292,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static char INumber<char>.CreateSaturating<TOther>(TOther value)
         {
@@ -1414,7 +1375,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static char INumber<char>.CreateTruncating<TOther>(TOther value)
         {
@@ -1481,23 +1441,18 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static (char Quotient, char Remainder) INumber<char>.DivRem(char left, char right)
             => ((char, char))Math.DivRem(left, right);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char INumber<char>.Max(char x, char y)
             => (char)Math.Max(x, y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char INumber<char>.Min(char x, char y)
             => (char)Math.Min(x, y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char INumber<char>.Parse(string s, NumberStyles style, IFormatProvider? provider)
             => Parse(s);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char INumber<char>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
         {
             if (s.Length != 1)
@@ -1507,11 +1462,9 @@ namespace System
             return s[0];
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char INumber<char>.Sign(char value)
             => (char)((value == 0) ? 0 : 1);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumber<char>.TryCreate<TOther>(TOther value, out char result)
         {
@@ -1689,11 +1642,9 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool INumber<char>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result)
             => TryParse(s, out result);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool INumber<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result)
         {
             if (s.Length != 1)
@@ -1709,11 +1660,9 @@ namespace System
         // IParseable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IParseable<char>.Parse(string s, IFormatProvider? provider)
             => Parse(s);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IParseable<char>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out char result)
             => TryParse(s, out result);
 
@@ -1721,15 +1670,12 @@ namespace System
         // IShiftOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IShiftOperators<char, char>.operator <<(char value, int shiftAmount)
             => (char)(value << shiftAmount);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IShiftOperators<char, char>.operator >>(char value, int shiftAmount)
             => (char)(value >> shiftAmount);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static char IShiftOperators<char, char, char>.operator >>>(char value, int shiftAmount)
         //     => (char)(value >> shiftAmount);
 
@@ -1737,7 +1683,6 @@ namespace System
         // ISpanParseable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char ISpanParseable<char>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
         {
             if (s.Length != 1)
@@ -1747,7 +1692,6 @@ namespace System
             return s[0];
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool ISpanParseable<char>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out char result)
         {
             if (s.Length != 1)
@@ -1763,11 +1707,9 @@ namespace System
         // ISubtractionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char ISubtractionOperators<char, char, char>.operator -(char left, char right)
             => (char)(left - right);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked char ISubtractionOperators<char, char, char>.operator -(char left, char right)
         //     => checked((char)(left - right));
 
@@ -1775,11 +1717,9 @@ namespace System
         // IUnaryNegationOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IUnaryNegationOperators<char, char>.operator -(char value)
             => (char)(-value);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked char IUnaryNegationOperators<char, char>.operator -(char value)
         //     => checked((char)(-value));
 
@@ -1787,13 +1727,10 @@ namespace System
         // IUnaryPlusOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static char IUnaryPlusOperators<char, char>.operator +(char value)
             => (char)(+value);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked char IUnaryPlusOperators<char, char>.operator +(char value)
         //     => checked((char)(+value));
-#endif // FEATURE_GENERIC_MATH
     }
 }

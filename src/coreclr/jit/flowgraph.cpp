@@ -67,7 +67,6 @@ static bool blockNeedsGCPoll(BasicBlock* block)
 // Returns:
 //    PhaseStatus indicating what, if anything, was changed.
 //
-
 PhaseStatus Compiler::fgInsertGCPolls()
 {
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
@@ -181,13 +180,6 @@ PhaseStatus Compiler::fgInsertGCPolls()
         constexpr bool computeDoms  = false;
         fgUpdateChangedFlowGraph(computePreds, computeDoms);
     }
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** After fgInsertGCPolls()\n");
-        fgDispBasicBlocks(true);
-    }
-#endif // DEBUG
 
     return result;
 }
@@ -529,6 +521,7 @@ void Compiler::fgSwitchToOptimized(const char* reason)
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER0);
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBINSTR);
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_OSR);
+    opts.jitFlags->Set(JitFlags::JIT_FLAG_BBOPT);
 
     // Leave a note for jit diagnostics
     compSwitchedToOptimized = true;
@@ -3004,7 +2997,7 @@ void Compiler::fgSimpleLowering()
                     GenTreeCall* call = tree->AsCall();
                     // Fast tail calls use the caller-supplied scratch
                     // space so have no impact on this method's outgoing arg size.
-                    if (!call->IsFastTailCall())
+                    if (!call->IsFastTailCall() && !call->IsHelperCall(this, CORINFO_HELP_VALIDATE_INDIRECT_CALL))
                     {
                         // Update outgoing arg size to handle this call
                         const unsigned thisCallOutAreaSize = call->fgArgInfo->GetOutArgSize();
@@ -3093,6 +3086,9 @@ void Compiler::fgSimpleLowering()
         fgDispHandlerTab();
         printf("\n");
     }
+
+    fgDebugCheckBBlist();
+    fgDebugCheckLinks();
 #endif
 }
 
@@ -3374,7 +3370,7 @@ void Compiler::fgCreateFunclets()
  * or are rarely executed.
  */
 
-void Compiler::fgDetermineFirstColdBlock()
+PhaseStatus Compiler::fgDetermineFirstColdBlock()
 {
 #ifdef DEBUG
     if (verbose)
@@ -3388,19 +3384,19 @@ void Compiler::fgDetermineFirstColdBlock()
     //
     assert(fgSafeBasicBlockCreation);
 
-    fgFirstColdBlock = nullptr;
+    assert(fgFirstColdBlock == nullptr);
 
     if (!opts.compProcedureSplitting)
     {
         JITDUMP("No procedure splitting will be done for this method\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
     if ((compHndBBtabCount > 0) && !opts.compProcedureSplittingEH)
     {
         JITDUMP("No procedure splitting will be done for this method with EH (by request)\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 #endif // DEBUG
 
@@ -3411,7 +3407,7 @@ void Compiler::fgDetermineFirstColdBlock()
     if (compHndBBtabCount > 0)
     {
         JITDUMP("No procedure splitting will be done for this method with EH (implementation limitation)\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 #endif // FEATURE_EH_FUNCLETS
 
@@ -3482,7 +3478,7 @@ void Compiler::fgDetermineFirstColdBlock()
 
         if (prevToFirstColdBlock == nullptr)
         {
-            return; // To keep Prefast happy
+            return PhaseStatus::MODIFIED_EVERYTHING; // To keep Prefast happy
         }
 
         // If we only have one cold block
@@ -3578,14 +3574,12 @@ EXIT:;
         {
             printf("fgFirstColdBlock is NULL.\n");
         }
-
-        fgDispBasicBlocks();
     }
-
-    fgVerifyHandlerTab();
 #endif // DEBUG
 
     fgFirstColdBlock = firstColdBlock;
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 /* static */

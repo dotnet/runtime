@@ -103,7 +103,7 @@ namespace System.IO
         /// <param name="lineNumber">The line number of the function calling this method.</param>
         protected string GetTestFileName(int? index = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
         {
-            string testFileName = GenerateTestFileName(index, memberName, lineNumber);
+            string testFileName = PathGenerator.GenerateTestFileName(index, memberName, lineNumber);
             string testFilePath = Path.Combine(TestDirectory, testFileName);
 
             const int maxLength = 260 - 5; // Windows MAX_PATH minus a bit
@@ -121,7 +121,7 @@ namespace System.IO
                     int halfExcessLength = (int)Math.Ceiling((double)excessLength / 2);
                     memberName = memberName.Substring(0, halfMemberNameLength - halfExcessLength) + "..." + memberName.Substring(halfMemberNameLength + halfExcessLength);
 
-                    testFileName = GenerateTestFileName(index, memberName, lineNumber);
+                    testFileName = PathGenerator.GenerateTestFileName(index, memberName, lineNumber);
                     testFilePath = Path.Combine(TestDirectory, testFileName);
                 }
                 else
@@ -147,6 +147,11 @@ namespace System.IO
                 return Guid.NewGuid().ToString("N");
             }
 
+            if (!PlatformDetection.IsCaseSensitiveOS)
+            {
+                return $"/tmp/{Guid.NewGuid().ToString("N")}";
+            }
+
             const int MinUdsPathLength = 104; // required min is 92, but every platform we currently target is at least 104
             const int MinAvailableForSufficientRandomness = 5; // we want enough randomness in the name to avoid conflicts between concurrent tests
             string prefix = Path.Combine(Path.GetTempPath(), "CoreFxPipe_");
@@ -161,14 +166,6 @@ namespace System.IO
             }
             return sb.ToString();
         }
-
-        private string GenerateTestFileName(int? index, string memberName, int lineNumber) =>
-            string.Format(
-                index.HasValue ? "{0}_{1}_{2}_{3}" : "{0}_{1}_{3}",
-                memberName ?? "TestBase",
-                lineNumber,
-                index.GetValueOrDefault(),
-                Guid.NewGuid().ToString("N").Substring(0, 8)); // randomness to avoid collisions between derived test classes using same base method concurrently
 
         // Some Windows versions like Windows Nano Server have the %TEMP% environment variable set to "C:\TEMP" but the
         // actual folder name is "C:\Temp", which prevents asserting path values using Assert.Equal due to case sensitiveness.

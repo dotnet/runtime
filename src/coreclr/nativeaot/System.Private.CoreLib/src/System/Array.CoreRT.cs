@@ -63,145 +63,38 @@ namespace System
             return EETypePtr.EETypePtrOf<Array>().ToPointer();
         }
 
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-        public static Array CreateInstance(Type elementType, int length)
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        private static unsafe Array InternalCreate(RuntimeType elementType, int rank, int* pLengths, int* pLowerBounds)
         {
-            if (elementType is null)
-                throw new ArgumentNullException(nameof(elementType));
-
-            return CreateSzArray(elementType, length);
-        }
-
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "MDArrays of Rank != 1 can be created because they don't implement generic interfaces.")]
-        public static unsafe Array CreateInstance(Type elementType, int length1, int length2)
-        {
-            if (elementType is null)
-                throw new ArgumentNullException(nameof(elementType));
-            if (length1 < 0)
-                throw new ArgumentOutOfRangeException(nameof(length1));
-            if (length2 < 0)
-                throw new ArgumentOutOfRangeException(nameof(length2));
-
-            Type arrayType = GetArrayTypeFromElementType(elementType, true, 2);
-            int* pLengths = stackalloc int[2];
-            pLengths[0] = length1;
-            pLengths[1] = length2;
-            return NewMultiDimArray(arrayType.TypeHandle.ToEETypePtr(), pLengths, 2);
-        }
-
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "MDArrays of Rank != 1 can be created because they don't implement generic interfaces.")]
-        public static unsafe Array CreateInstance(Type elementType, int length1, int length2, int length3)
-        {
-            if (elementType is null)
-                throw new ArgumentNullException(nameof(elementType));
-            if (length1 < 0)
-                throw new ArgumentOutOfRangeException(nameof(length1));
-            if (length2 < 0)
-                throw new ArgumentOutOfRangeException(nameof(length2));
-            if (length3 < 0)
-                throw new ArgumentOutOfRangeException(nameof(length3));
-
-            Type arrayType = GetArrayTypeFromElementType(elementType, true, 3);
-            int* pLengths = stackalloc int[3];
-            pLengths[0] = length1;
-            pLengths[1] = length2;
-            pLengths[2] = length3;
-            return NewMultiDimArray(arrayType.TypeHandle.ToEETypePtr(), pLengths, 3);
-        }
-
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-        public static Array CreateInstance(Type elementType, params int[] lengths)
-        {
-            if (elementType is null)
-                throw new ArgumentNullException(nameof(elementType));
-            if (lengths is null)
-                throw new ArgumentNullException(nameof(lengths));
-            if (lengths.Length == 0)
-                throw new ArgumentException(SR.Arg_NeedAtLeast1Rank);
-
-            // Check to make sure the lengths are all positive. Note that we check this here to give
-            // a good exception message if they are not; however we check this again inside the execution
-            // engine's low level allocation function after having made a copy of the array to prevent a
-            // malicious caller from mutating the array after this check.
-            for (int i = 0; i < lengths.Length; i++)
-                if (lengths[i] < 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-
-            if (lengths.Length == 1)
-            {
-                int length = lengths[0];
-                return CreateSzArray(elementType, length);
-            }
-            else
-            {
-                return CreateMultiDimArray(elementType, lengths, null);
-            }
-        }
-
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-        public static Array CreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
-        {
-            if (elementType is null)
-                throw new ArgumentNullException(nameof(elementType));
-            if (lengths is null)
-                throw new ArgumentNullException(nameof(lengths));
-            if (lowerBounds is null)
-                throw new ArgumentNullException(nameof(lowerBounds));
-            if (lengths.Length != lowerBounds.Length)
-                throw new ArgumentException(SR.Arg_RanksAndBounds);
-            if (lengths.Length == 0)
-                throw new ArgumentException(SR.Arg_NeedAtLeast1Rank);
-
-            return CreateMultiDimArray(elementType, lengths, lowerBounds);
-        }
-
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-        private static Array CreateSzArray(Type elementType, int length)
-        {
-            // Though our callers already validated length once, this parameter is passed via arrays, so we must check it again
-            // in case a malicious caller modified the array after the check.
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length));
-
-            Type arrayType = GetArrayTypeFromElementType(elementType, false, 1);
-            return RuntimeImports.RhNewArray(arrayType.TypeHandle.ToEETypePtr(), length);
-        }
-
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-        private static Array CreateMultiDimArray(Type elementType, int[] lengths, int[] lowerBounds)
-        {
-            Debug.Assert(lengths != null);
-            Debug.Assert(lowerBounds == null || lowerBounds.Length == lengths.Length);
-
-            for (int i = 0; i < lengths.Length; i++)
-            {
-                if (lengths[i] < 0)
-                    throw new ArgumentOutOfRangeException("lengths[" + i + "]", SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-
-            int rank = lengths.Length;
-            Type arrayType = GetArrayTypeFromElementType(elementType, true, rank);
-            return RuntimeAugments.NewMultiDimArray(arrayType.TypeHandle, lengths, lowerBounds);
-        }
-
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-        private static Type GetArrayTypeFromElementType(Type elementType, bool multiDim, int rank)
-        {
-            elementType = elementType.UnderlyingSystemType;
             ValidateElementType(elementType);
 
-            if (multiDim)
-                return elementType.MakeArrayType(rank);
+            if (pLowerBounds != null)
+            {
+                for (int i = 0; i < rank; i++)
+                {
+                    if (pLowerBounds[i] != 0)
+                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_NonZeroLowerBound);
+                }
+            }
+
+            if (rank == 1)
+            {
+                return RuntimeImports.RhNewArray(elementType.MakeArrayType().TypeHandle.ToEETypePtr(), pLengths[0]);
+
+            }
             else
-                return elementType.MakeArrayType();
+            {
+                // Create a local copy of the lenghts that cannot be motified by the caller
+                int* pImmutableLengths = stackalloc int[rank];
+                for (int i = 0; i < rank; i++)
+                    pImmutableLengths[i] = pLengths[i];
+
+                return NewMultiDimArray(elementType.MakeArrayType(rank).TypeHandle.ToEETypePtr(), pImmutableLengths, rank);
+            }
         }
 
         private static void ValidateElementType(Type elementType)
         {
-            if (elementType is not RuntimeType)
-                throw new ArgumentException(SR.Arg_MustBeType, nameof(elementType));
             while (elementType.IsArray)
             {
                 elementType = elementType.GetElementType()!;

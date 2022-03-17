@@ -12,6 +12,7 @@ namespace System.Reflection
 {
     public partial class Assembly
     {
+        [Obsolete("Assembly.LoadWithPartialName has been deprecated. Use Assembly.Load() instead.")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly? LoadWithPartialName(string partialName)
         {
@@ -95,8 +96,5 @@ namespace System.Reflection
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern Type InternalGetType(Module? module, string name, bool throwOnError, bool ignoreCase);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void InternalGetAssemblyName(string assemblyFile, out Mono.MonoAssemblyName aname, out string codebase);
     }
 }

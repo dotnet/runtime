@@ -8,10 +8,7 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
-        [GeneratedDllImport(Libraries.User32, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        [LibraryImport(Libraries.User32)]
         public static partial IntPtr SendMessageW(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
-
-        [DllImport(Libraries.User32, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        public static extern IntPtr SendMessageW(HandleRef hWnd, int msg, IntPtr wParam, IntPtr lParam);
     }
 }

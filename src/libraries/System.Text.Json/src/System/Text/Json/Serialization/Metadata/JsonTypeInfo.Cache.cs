@@ -68,12 +68,10 @@ namespace System.Text.Json.Serialization.Metadata
                 memberType,
                 parentClassType,
                 memberInfo,
-                out Type runtimeType,
                 options);
 
             return CreateProperty(
                 declaredPropertyType: memberType,
-                runtimePropertyType: runtimeType,
                 memberInfo,
                 parentClassType,
                 isVirtual,
@@ -85,7 +83,6 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal static JsonPropertyInfo CreateProperty(
             Type declaredPropertyType,
-            Type? runtimePropertyType,
             MemberInfo? memberInfo,
             Type parentClassType,
             bool isVirtual,
@@ -100,8 +97,7 @@ namespace System.Text.Json.Serialization.Metadata
             jsonPropertyInfo.Initialize(
                 parentClassType,
                 declaredPropertyType,
-                runtimePropertyType,
-                runtimeClassType: converter.ConverterStrategy,
+                converterStrategy: converter.ConverterStrategy,
                 memberInfo,
                 isVirtual,
                 converter,
@@ -118,14 +114,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         internal static JsonPropertyInfo CreatePropertyInfoForTypeInfo(
             Type declaredPropertyType,
-            Type runtimePropertyType,
             JsonConverter converter,
             JsonNumberHandling? numberHandling,
             JsonSerializerOptions options)
         {
             JsonPropertyInfo jsonPropertyInfo = CreateProperty(
                 declaredPropertyType: declaredPropertyType,
-                runtimePropertyType: runtimePropertyType,
                 memberInfo: null, // Not a real property so this is null.
                 parentClassType: ObjectType, // a dummy value (not used)
                 isVirtual: false,
@@ -580,7 +574,7 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(PropertyCache == null);
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
-            JsonSerializerContext? context = Options._context;
+            JsonSerializerContext? context = Options.JsonSerializerContext;
             Debug.Assert(context != null);
 
             JsonPropertyInfo[] array;
@@ -636,7 +630,7 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(PropertyCache != null);
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
-            JsonSerializerContext? context = Options._context;
+            JsonSerializerContext? context = Options.JsonSerializerContext;
             Debug.Assert(context != null);
 
             JsonParameterInfoValues[] array;

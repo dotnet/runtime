@@ -153,11 +153,11 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 #define EP_RT_DEFINE_ARRAY_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, alloc) (array_type *ep_array) { \
 		EP_ASSERT (ep_array != NULL); \
-		ep_array->array = g_array_new (FALSE, FALSE, sizeof (item_type)); \
+		ep_array->array = g_array_new (FALSE, FALSE, (guint)sizeof (item_type)); \
 	} \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, alloc_capacity) (array_type *ep_array, size_t capacity) { \
 		EP_ASSERT (ep_array != NULL); \
-		ep_array->array = g_array_sized_new (FALSE, FALSE, sizeof (item_type), capacity); \
+		ep_array->array = g_array_sized_new (FALSE, FALSE, (guint)sizeof (item_type), (guint)capacity); \
 	} \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, free) (array_type *ep_array) { \
 		EP_ASSERT (ep_array != NULL); \
@@ -189,11 +189,11 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 #define EP_RT_DEFINE_LOCAL_ARRAY_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, init) (array_type *ep_array) { \
 		EP_ASSERT (ep_array != NULL); \
-		ep_array->array = g_array_new (FALSE, FALSE, sizeof (item_type)); \
+		ep_array->array = g_array_new (FALSE, FALSE, (guint)sizeof (item_type)); \
 	} \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, init_capacity) (array_type *ep_array, size_t capacity) { \
 		EP_ASSERT (ep_array != NULL); \
-		ep_array->array = g_array_sized_new (FALSE, FALSE, sizeof (item_type), capacity); \
+		ep_array->array = g_array_sized_new (FALSE, FALSE, (guint)sizeof (item_type), (guint)capacity); \
 	} \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, fini) (array_type *ep_array) { \
 		EP_ASSERT (ep_array != NULL); \
@@ -1317,7 +1317,7 @@ ep_rt_thread_sleep (uint64_t ns)
 		mono_thread_info_yield ();
 	} else {
 		MONO_ENTER_GC_SAFE;
-		g_usleep (ns / 1000);
+		g_usleep ((gulong)(ns / 1000));
 		MONO_EXIT_GC_SAFE;
 	}
 }
@@ -1786,7 +1786,7 @@ ep_rt_utf8_to_utf16_string (
 	const ep_char8_t *str,
 	size_t len)
 {
-	return (ep_char16_t *)(g_utf8_to_utf16 ((const gchar *)str, len, NULL, NULL, NULL));
+	return (ep_char16_t *)(g_utf8_to_utf16 ((const gchar *)str, (glong)len, NULL, NULL, NULL));
 }
 
 static
@@ -1824,7 +1824,7 @@ ep_rt_utf16_to_utf8_string (
 	const ep_char16_t *str,
 	size_t len)
 {
-	return g_utf16_to_utf8 ((const gunichar2 *)str, len, NULL, NULL, NULL);
+	return g_utf16_to_utf8 ((const gunichar2 *)str, (glong)len, NULL, NULL, NULL);
 }
 
 static

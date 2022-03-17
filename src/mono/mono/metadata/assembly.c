@@ -16,9 +16,9 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
-#include "assembly.h"
+#include <mono/metadata/assembly.h>
 #include "assembly-internals.h"
-#include "image.h"
+#include <mono/metadata/image.h>
 #include "image-internals.h"
 #include "object-internals.h"
 #include <mono/metadata/loader.h>
@@ -2137,13 +2137,10 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 #if defined (HOST_WIN32)
 	{
 		gchar *tmp_fn;
-		int i;
 
 		tmp_fn = g_strdup (fname);
-		for (i = strlen (tmp_fn) - 1; i >= 0; i--) {
-			if (tmp_fn [i] == '/')
-				tmp_fn [i] = '\\';
-		}
+
+		g_strdelimit (tmp_fn, '/', '\\');
 
 		base_dir = absolute_dir (tmp_fn);
 		g_free (tmp_fn);
@@ -2335,7 +2332,7 @@ parse_public_key (const gchar *key, gchar** pubkey, gboolean *is_ecma)
 	//both pubkey and is_ecma are required arguments
 	g_assert (pubkey && is_ecma);
 
-	keylen = strlen (key) >> 1;
+	keylen = (gint)strlen (key) >> 1;
 	if (keylen < 1)
 		return FALSE;
 
@@ -2367,7 +2364,7 @@ parse_public_key (const gchar *key, gchar** pubkey, gboolean *is_ecma)
 
 	/* We need the first 16 bytes
 	* to check whether this key is valid or not */
-	pkeylen = strlen (pkey) >> 1;
+	pkeylen = (gint)strlen (pkey) >> 1;
 	if (pkeylen < 16)
 		return FALSE;
 
@@ -2726,7 +2723,7 @@ unquote (const char *str)
 	if (str == NULL)
 		return NULL;
 
-	slen = strlen (str);
+	slen = (gint)strlen (str);
 	if (slen < 2)
 		return NULL;
 
@@ -3368,141 +3365,6 @@ void
 mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly **assemblies)
 {
 	satellite_bundles = assemblies;
-}
-
-#define MONO_DECLSEC_FORMAT_10		0x3C
-#define MONO_DECLSEC_FORMAT_20		0x2E
-#define MONO_DECLSEC_FIELD		0x53
-#define MONO_DECLSEC_PROPERTY		0x54
-
-#define SKIP_VISIBILITY_XML_ATTRIBUTE ("\"SkipVerification\"")
-#define SKIP_VISIBILITY_ATTRIBUTE_NAME ("System.Security.Permissions.SecurityPermissionAttribute")
-#define SKIP_VISIBILITY_ATTRIBUTE_SIZE (sizeof (SKIP_VISIBILITY_ATTRIBUTE_NAME) - 1)
-#define SKIP_VISIBILITY_PROPERTY_NAME ("SkipVerification")
-#define SKIP_VISIBILITY_PROPERTY_SIZE (sizeof (SKIP_VISIBILITY_PROPERTY_NAME) - 1)
-
-static gboolean
-mono_assembly_try_decode_skip_verification_param (const char *p, const char **resp, gboolean *abort_decoding)
-{
-	int len;
-	switch (*p++) {
-	case MONO_DECLSEC_PROPERTY:
-		break;
-	case MONO_DECLSEC_FIELD:
-	default:
-		*abort_decoding = TRUE;
-		return FALSE;
-		break;
-	}
-
-	if (*p++ != MONO_TYPE_BOOLEAN) {
-		*abort_decoding = TRUE;
-		return FALSE;
-	}
-
-	/* property name length */
-	len = mono_metadata_decode_value (p, &p);
-
-	if (len >= SKIP_VISIBILITY_PROPERTY_SIZE && !memcmp (p, SKIP_VISIBILITY_PROPERTY_NAME, SKIP_VISIBILITY_PROPERTY_SIZE)) {
-		p += len;
-		return *p;
-	}
-	p += len + 1;
-
-	*resp = p;
-	return FALSE;
-}
-
-static gboolean
-mono_assembly_try_decode_skip_verification (const char *p, const char *endn)
-{
-	int i, j, num, len, params_len;
-
-	if (*p == MONO_DECLSEC_FORMAT_10) {
-		gsize read, written;
-		char *res = g_convert (p, endn - p, "UTF-8", "UTF-16LE", &read, &written, NULL);
-		if (res) {
-			gboolean found = strstr (res, SKIP_VISIBILITY_XML_ATTRIBUTE) != NULL;
-			g_free (res);
-			return found;
-		}
-		return FALSE;
-	}
-	if (*p++ != MONO_DECLSEC_FORMAT_20)
-		return FALSE;
-
-	/* number of encoded permission attributes */
-	num = mono_metadata_decode_value (p, &p);
-	for (i = 0; i < num; ++i) {
-		gboolean is_valid = FALSE;
-		gboolean abort_decoding = FALSE;
-
-		/* attribute name length */
-		len =  mono_metadata_decode_value (p, &p);
-
-		/* We don't really need to fully decode the type. Comparing the name is enough */
-		is_valid = len >= SKIP_VISIBILITY_ATTRIBUTE_SIZE && !memcmp (p, SKIP_VISIBILITY_ATTRIBUTE_NAME, SKIP_VISIBILITY_ATTRIBUTE_SIZE);
-
-		p += len;
-
-		/*size of the params table*/
-		params_len =  mono_metadata_decode_value (p, &p);
-		if (is_valid) {
-			const char *params_end = p + params_len;
-
-			/* number of parameters */
-			len = mono_metadata_decode_value (p, &p);
-
-			for (j = 0; j < len; ++j) {
-				if (mono_assembly_try_decode_skip_verification_param (p, &p, &abort_decoding))
-					return TRUE;
-				if (abort_decoding)
-					break;
-			}
-			p = params_end;
-		} else {
-			p += params_len;
-		}
-	}
-
-	return FALSE;
-}
-
-
-gboolean
-mono_assembly_has_skip_verification (MonoAssembly *assembly)
-{
-	MonoTableInfo *t;
-	guint32 cols [MONO_DECL_SECURITY_SIZE];
-	const char *blob;
-	int i, len;
-
-	if (MONO_SECMAN_FLAG_INIT (assembly->skipverification))
-		return MONO_SECMAN_FLAG_GET_VALUE (assembly->skipverification);
-
-	t = &assembly->image->tables [MONO_TABLE_DECLSECURITY];
-
-	int rows = table_info_get_rows (t);
-	for (i = 0; i < rows; ++i) {
-		mono_metadata_decode_row (t, i, cols, MONO_DECL_SECURITY_SIZE);
-		if ((cols [MONO_DECL_SECURITY_PARENT] & MONO_HAS_DECL_SECURITY_MASK) != MONO_HAS_DECL_SECURITY_ASSEMBLY)
-			continue;
-		if (cols [MONO_DECL_SECURITY_ACTION] != SECURITY_ACTION_REQMIN)
-			continue;
-
-		blob = mono_metadata_blob_heap (assembly->image, cols [MONO_DECL_SECURITY_PERMISSIONSET]);
-		len = mono_metadata_decode_blob_size (blob, &blob);
-		if (!len)
-			continue;
-
-		if (mono_assembly_try_decode_skip_verification (blob, blob + len)) {
-			MONO_SECMAN_FLAG_SET_VALUE (assembly->skipverification, TRUE);
-			return TRUE;
-		}
-	}
-
-	MONO_SECMAN_FLAG_SET_VALUE (assembly->skipverification, FALSE);
-	return FALSE;
 }
 
 /**

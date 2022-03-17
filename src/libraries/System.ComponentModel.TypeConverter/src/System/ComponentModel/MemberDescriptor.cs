@@ -38,12 +38,8 @@ namespace System.ComponentModel
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.MemberDescriptor'/> class with the specified <paramref name="name"/> and <paramref name="attributes "/> array.
         /// </summary>
-        protected MemberDescriptor(string name, Attribute[]? attributes)
+        protected MemberDescriptor(string name!!, Attribute[]? attributes)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.InvalidMemberName, nameof(name));
@@ -65,13 +61,8 @@ namespace System.ComponentModel
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.MemberDescriptor'/> class with the specified <see cref='System.ComponentModel.MemberDescriptor'/>.
         /// </summary>
-        protected MemberDescriptor(MemberDescriptor descr)
+        protected MemberDescriptor(MemberDescriptor descr!!)
         {
-            if (descr == null)
-            {
-                throw new ArgumentNullException(nameof(descr));
-            }
-
             _name = descr.Name;
             _displayName = _name;
             _nameHash = _name?.GetHashCode() ?? 0;
@@ -89,13 +80,8 @@ namespace System.ComponentModel
         /// <see cref='System.ComponentModel.MemberDescriptor'/> and the attributes
         /// in both the old <see cref='System.ComponentModel.MemberDescriptor'/> and the <see cref='System.Attribute'/> array.
         /// </summary>
-        protected MemberDescriptor(MemberDescriptor oldMemberDescriptor, Attribute[]? newAttributes)
+        protected MemberDescriptor(MemberDescriptor oldMemberDescriptor!!, Attribute[]? newAttributes)
         {
-            if (oldMemberDescriptor == null)
-            {
-                throw new ArgumentNullException(nameof(oldMemberDescriptor));
-            }
-
             _name = oldMemberDescriptor.Name;
             _displayName = oldMemberDescriptor.DisplayName;
             _nameHash = _name.GetHashCode();
@@ -316,13 +302,8 @@ namespace System.ComponentModel
         /// specified list of attributes in the parent class. For duplicate attributes,
         /// the last one added to the list will be kept.
         /// </summary>
-        protected virtual void FillAttributes(IList attributeList)
+        protected virtual void FillAttributes(IList attributeList!!)
         {
-            if (attributeList == null)
-            {
-                throw new ArgumentNullException(nameof(attributeList));
-            }
-
             if (_originalAttributes != null)
             {
                 foreach (Attribute attr in _originalAttributes)
@@ -406,17 +387,12 @@ namespace System.ComponentModel
         /// Finds the given method through reflection.
         /// </summary>
         protected static MethodInfo? FindMethod(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type componentClass,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type componentClass!!,
             string name,
             Type[] args,
             Type returnType,
             bool publicOnly)
         {
-            if (componentClass == null)
-            {
-                throw new ArgumentNullException(nameof(componentClass));
-            }
-
             MethodInfo? result;
             if (publicOnly)
             {
@@ -445,18 +421,8 @@ namespace System.ComponentModel
         /// someone associated another object with this instance, or if the instance is a
         /// custom type descriptor, GetInvocationTarget may return a different value.
         /// </summary>
-        protected virtual object? GetInvocationTarget(Type type, object instance)
+        protected virtual object? GetInvocationTarget(Type type!!, object instance!!)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
-
             return TypeDescriptor.GetAssociation(type, instance);
         }
 
@@ -466,19 +432,8 @@ namespace System.ComponentModel
         protected static ISite? GetSite(object? component) => (component as IComponent)?.Site;
 
         [Obsolete("MemberDescriptor.GetInvokee has been deprecated. Use GetInvocationTarget instead.")]
-        protected static object GetInvokee(Type componentClass, object component)
+        protected static object GetInvokee(Type componentClass!!, object component!!)
         {
-
-            if (componentClass == null)
-            {
-                throw new ArgumentNullException(nameof(componentClass));
-            }
-
-            if (component == null)
-            {
-                throw new ArgumentNullException(nameof(component));
-            }
-
             return TypeDescriptor.GetAssociation(componentClass, component);
         }
     }

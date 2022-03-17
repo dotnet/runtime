@@ -498,6 +498,8 @@ function _wrap_error_flag(is_exception: Int32Ptr | null, ex: any): string {
             else
                 res += "\n" + stack;
         }
+
+        res = INTERNAL.mono_wasm_symbolicate_string(res);
     }
     if (is_exception) {
         Module.setValue(is_exception, 1, "i32");

@@ -5,18 +5,14 @@
 
 //
 // Types in this file are used for generated p/invokes (docs/design/features/source-generator-pinvokes.md).
-// See the DllImportGenerator experiment in https://github.com/dotnet/runtimelab.
 //
-#if DLLIMPORTGENERATOR_INTERNALUNSAFE
-using Internal.Runtime.CompilerServices;
-#else
-using System.Runtime.CompilerServices;
-#endif
+
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.GeneratedMarshalling
 {
-#if DLLIMPORT_GENERATOR_TEST
+#if LIBRARYIMPORT_GENERATOR_TEST
     public
 #else
     internal
@@ -110,7 +106,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         }
     }
 
-#if DLLIMPORT_GENERATOR_TEST
+#if LIBRARYIMPORT_GENERATOR_TEST
     public
 #else
     internal

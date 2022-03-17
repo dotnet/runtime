@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class OpenSslNoInit
     {
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OpenSslAvailable")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OpenSslAvailable")]
         private static partial int OpenSslAvailable();
 
         private static readonly Lazy<bool> s_openSslAvailable =

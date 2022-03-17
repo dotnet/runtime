@@ -14,14 +14,12 @@ namespace Microsoft.Interop
         private readonly IMarshallingGenerator _manualMarshallingGenerator;
         private readonly TypeSyntax _elementType;
         private readonly bool _enablePinning;
-        private readonly InteropGenerationOptions _options;
 
-        public ArrayMarshaller(IMarshallingGenerator manualMarshallingGenerator, TypeSyntax elementType, bool enablePinning, InteropGenerationOptions options)
+        public ArrayMarshaller(IMarshallingGenerator manualMarshallingGenerator, TypeSyntax elementType, bool enablePinning)
         {
             _manualMarshallingGenerator = manualMarshallingGenerator;
             _elementType = elementType;
             _enablePinning = enablePinning;
-            _options = options;
         }
 
         public bool IsSupported(TargetFramework target, Version version)
@@ -96,7 +94,7 @@ namespace Microsoft.Interop
                 // of an array as long as it is non-null, matching the behavior of the built-in interop system
                 // for single-dimensional zero-based arrays.
 
-                // ref <elementType> <byRefIdentifier> = <managedIdentifer> == null ? ref *(<elementType*)0 : ref MemoryMarshal.GetArrayDataReference(<managedIdentifer>);
+                // ref <elementType> <byRefIdentifier> = ref <managedIdentifer> == null ? ref *(<elementType>*)0 : ref MemoryMarshal.GetArrayDataReference(<managedIdentifer>);
                 PrefixUnaryExpressionSyntax nullRef =
                     PrefixUnaryExpression(SyntaxKind.PointerIndirectionExpression,
                         CastExpression(
@@ -138,7 +136,7 @@ namespace Microsoft.Interop
                                 PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
                                 InvocationExpression(
                                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                        ParseTypeName(TypeNames.Unsafe(_options)),
+                                        ParseTypeName(TypeNames.System_Runtime_CompilerServices_Unsafe),
                                         GenericName("As").AddTypeArgumentListArguments(
                                             arrayElementType,
                                             PredefinedType(Token(SyntaxKind.ByteKeyword)))))

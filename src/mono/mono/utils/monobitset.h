@@ -49,18 +49,16 @@ enum {
 #define mono_bitset_union_fast(dest,src) do { \
     MonoBitSet *tmp_src = (src); \
     MonoBitSet *tmp_dest = (dest); \
-    int i, size; \
-	size = tmp_dest->size / MONO_BITSET_BITS_PER_CHUNK; \
-	for (i = 0; i < size; ++i) \
+	size_t size = (tmp_dest->size / MONO_BITSET_BITS_PER_CHUNK); \
+	for (size_t i = 0; i < size; ++i) \
 		tmp_dest->data [i] |= tmp_src->data [i]; \
 } while (0)
 
 #define mono_bitset_sub_fast(dest,src) do { \
     MonoBitSet *tmp_src = (src); \
     MonoBitSet *tmp_dest = (dest); \
-    int i, size; \
-	size = tmp_dest->size / MONO_BITSET_BITS_PER_CHUNK; \
-	for (i = 0; i < size; ++i) \
+    size_t size = tmp_dest->size / MONO_BITSET_BITS_PER_CHUNK; \
+	for (size_t i = 0; i < size; ++i) \
 		tmp_dest->data [i] &= ~tmp_src->data [i]; \
 } while (0)
 

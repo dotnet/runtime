@@ -303,8 +303,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static double GetDateValueRef(ref object dtv!!)
         {
-            if (dtv == null)
-                throw new ArgumentNullException(nameof(dtv));
             if (!(dtv is DateTime dt))
                 throw new InvalidCastException(SR.Format(SR.UnableCastObjectToType, dtv.GetType(), typeof(DateTime)));
             if (dt.Kind == DateTimeKind.Local)

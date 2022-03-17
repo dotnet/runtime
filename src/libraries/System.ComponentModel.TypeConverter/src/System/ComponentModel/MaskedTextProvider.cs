@@ -227,10 +227,7 @@ namespace System.ComponentModel
         /// </summary>
         public MaskedTextProvider(string mask, CultureInfo? culture, bool allowPromptAsInput, char promptChar, char passwordChar, bool restrictToAscii)
         {
-            if (string.IsNullOrEmpty(mask))
-            {
-                throw new ArgumentException(SR.MaskedTextProviderMaskNullOrEmpty, nameof(mask));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(mask);
 
             foreach (char c in mask)
             {
@@ -885,13 +882,8 @@ namespace System.ComponentModel
         /// The MaskedTextResultHint out param gives a hint about the operation result reason.
         /// Returns true on success, false otherwise.
         /// </summary>
-        public bool Add(string input, out int testPosition, out MaskedTextResultHint resultHint)
+        public bool Add(string input!!, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
-
             testPosition = LastAssignedPosition + 1;
 
             if (input.Length == 0) // nothing to add.
@@ -1261,13 +1253,8 @@ namespace System.ComponentModel
         /// The MaskedTextResultHint out param gives more information about the operation result.
         /// Returns true on success, false otherwise.
         /// </summary>
-        public bool InsertAt(string input, int position, out int testPosition, out MaskedTextResultHint resultHint)
+        public bool InsertAt(string input!!, int position, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
-
             if (position < 0 || position >= _testString.Length)
             {
                 testPosition = position;
@@ -1822,13 +1809,8 @@ namespace System.ComponentModel
         /// The MaskedTextResultHint out param gives more information about the operation result.
         /// Returns true on success, false otherwise.
         /// </summary>
-        public bool Replace(string input, int position, out int testPosition, out MaskedTextResultHint resultHint)
+        public bool Replace(string input!!, int position, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
-
             if (position < 0 || position >= _testString.Length)
             {
                 testPosition = position;
@@ -1861,13 +1843,8 @@ namespace System.ComponentModel
         /// The MaskedTextResultHint out param gives more information about the operation result.
         /// Returns true on success, false otherwise.
         /// </summary>
-        public bool Replace(string input, int startPosition, int endPosition, out int testPosition, out MaskedTextResultHint resultHint)
+        public bool Replace(string input!!, int startPosition, int endPosition, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
-
             if (endPosition >= _testString.Length)
             {
                 testPosition = endPosition;
@@ -2047,13 +2024,8 @@ namespace System.ComponentModel
         /// The MaskedTextResultHint out param gives more information about the operation result.
         /// If passwordChar is assigned, it is rendered in the output string instead of the user-supplied values.
         /// </summary>
-        public bool Set(string input, out int testPosition, out MaskedTextResultHint resultHint)
+        public bool Set(string input!!, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
-
             testPosition = 0;
 
             if (input.Length == 0) // Clearing the input text.

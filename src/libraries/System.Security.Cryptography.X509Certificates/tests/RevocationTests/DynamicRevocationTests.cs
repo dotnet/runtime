@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
     public static partial class DynamicRevocationTests
     {
         // The CI machines are doing an awful lot of things at once, be generous with the timeout;
-        internal static readonly TimeSpan s_urlRetrievalLimit = TimeSpan.FromSeconds(15);
+        internal static readonly TimeSpan s_urlRetrievalLimit = TimeSpan.FromSeconds(30);
 
         private static readonly Oid s_tlsServerOid = new Oid("1.3.6.1.5.5.7.3.1", null);
 
@@ -640,7 +640,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(PolicyErrorsNotTimeValidData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
         public static void RevokeEndEntity_PolicyErrors_NotTimeValid(bool policyErrors, bool notTimeValid)
         {
             SimpleTest(
@@ -673,7 +672,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                         // [ActiveIssue("https://github.com/dotnet/runtime/issues/31246")]
                         // Linux reports this code at more levels than Windows does.
-                        if (OperatingSystem.IsLinux())
+                        if (!OperatingSystem.IsWindows())
                         {
                             issuerExtraProblems |= X509ChainStatusFlags.NotValidForUsage;
                         }

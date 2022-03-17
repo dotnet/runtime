@@ -424,7 +424,6 @@
 			* ves_icall_System_Reflection_Assembly_GetReferencedAssemblies
 			* fill_reflection_assembly_name
 				* ves_icall_System_Reflection_Assembly_FillName
-				* ves_icall_System_Reflection_Assembly_InternalGetAssemblyName
 				* ves_icall_System_Reflection_AssemblyName_ParseName
 			-->
 		<type fullname="System.Version">

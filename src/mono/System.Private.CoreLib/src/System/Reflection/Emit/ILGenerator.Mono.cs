@@ -34,6 +34,7 @@
 //
 
 #if MONO_FEATURE_SRE
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
@@ -218,7 +219,7 @@ namespace System.Reflection.Emit
         private int num_fixups;
         internal Module module;
         private int cur_block;
-        private Stack? open_blocks;
+        private Int32Stack? open_blocks;
         private ITokenGenerator token_gen;
 
         private const int defaultFixupSize = 4;
@@ -235,6 +236,9 @@ namespace System.Reflection.Emit
             this.token_gen = token_gen;
         }
 
+        [MemberNotNullWhen(true, nameof(open_blocks))]
+        private bool InExceptionBlock => open_blocks != null && open_blocks.Count > 0;
+
         private void make_room(int nbytes)
         {
             if (code_len + nbytes < code.Length)
@@ -246,10 +250,8 @@ namespace System.Reflection.Emit
 
         private void emit_int(int val)
         {
-            code[code_len++] = (byte)(val & 0xFF);
-            code[code_len++] = (byte)((val >> 8) & 0xFF);
-            code[code_len++] = (byte)((val >> 16) & 0xFF);
-            code[code_len++] = (byte)((val >> 24) & 0xFF);
+            BinaryPrimitives.WriteInt32LittleEndian(code.AsSpan(code_len), val);
+            code_len += 4;
         }
 
         /* change to pass by ref to avoid copy */
@@ -343,9 +345,7 @@ namespace System.Reflection.Emit
 
         public virtual void BeginCatchBlock(Type exceptionType)
         {
-            open_blocks ??= new Stack(defaultExceptionStackSize);
-
-            if (open_blocks.Count <= 0)
+            if (!InExceptionBlock)
                 throw new NotSupportedException("Not in an exception block");
             if (exceptionType != null && exceptionType.IsUserType)
                 throw new NotSupportedException("User defined subclasses of System.Type are not yet supported.");
@@ -371,10 +371,7 @@ namespace System.Reflection.Emit
 
         public virtual void BeginExceptFilterBlock()
         {
-            if (open_blocks == null)
-                open_blocks = new Stack(defaultExceptionStackSize);
-
-            if (open_blocks.Count <= 0)
+            if (!InExceptionBlock)
                 throw new NotSupportedException("Not in an exception block");
             InternalEndClause();
 
@@ -384,8 +381,7 @@ namespace System.Reflection.Emit
         public virtual Label BeginExceptionBlock()
         {
             //System.Console.WriteLine ("Begin Block");
-            if (open_blocks == null)
-                open_blocks = new Stack(defaultExceptionStackSize);
+            Int32Stack open_blocks = this.open_blocks ??= new Int32Stack(defaultExceptionStackSize);
 
             if (ex_handlers != null)
             {
@@ -406,10 +402,7 @@ namespace System.Reflection.Emit
 
         public virtual void BeginFaultBlock()
         {
-            if (open_blocks == null)
-                open_blocks = new Stack(defaultExceptionStackSize);
-
-            if (open_blocks.Count <= 0)
+            if (!InExceptionBlock)
                 throw new NotSupportedException("Not in an exception block");
 
             if (ex_handlers![cur_block].LastClauseType() == ILExceptionBlock.FILTER_START)
@@ -425,10 +418,7 @@ namespace System.Reflection.Emit
 
         public virtual void BeginFinallyBlock()
         {
-            if (open_blocks == null)
-                open_blocks = new Stack(defaultExceptionStackSize);
-
-            if (open_blocks.Count <= 0)
+            if (!InExceptionBlock)
                 throw new NotSupportedException("Not in an exception block");
 
             InternalEndClause();
@@ -520,25 +510,10 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, double arg)
         {
-            byte[] s = BitConverter.GetBytes(arg);
             make_room(10);
             ll_emit(opcode);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Copy(s, 0, code, code_len, 8);
-                code_len += 8;
-            }
-            else
-            {
-                code[code_len++] = s[7];
-                code[code_len++] = s[6];
-                code[code_len++] = s[5];
-                code[code_len++] = s[4];
-                code[code_len++] = s[3];
-                code[code_len++] = s[2];
-                code[code_len++] = s[1];
-                code[code_len++] = s[0];
-            }
+            BinaryPrimitives.WriteDoubleLittleEndian(code.AsSpan(code_len), arg);
+            code_len += 8;
         }
 
         public virtual void Emit(OpCode opcode, FieldInfo field)
@@ -553,8 +528,8 @@ namespace System.Reflection.Emit
         {
             make_room(4);
             ll_emit(opcode);
-            code[code_len++] = (byte)(arg & 0xFF);
-            code[code_len++] = (byte)((arg >> 8) & 0xFF);
+            BinaryPrimitives.WriteInt16LittleEndian(code.AsSpan(code_len), arg);
+            code_len += 2;
         }
 
         public virtual void Emit(OpCode opcode, int arg)
@@ -568,14 +543,8 @@ namespace System.Reflection.Emit
         {
             make_room(10);
             ll_emit(opcode);
-            code[code_len++] = (byte)(arg & 0xFF);
-            code[code_len++] = (byte)((arg >> 8) & 0xFF);
-            code[code_len++] = (byte)((arg >> 16) & 0xFF);
-            code[code_len++] = (byte)((arg >> 24) & 0xFF);
-            code[code_len++] = (byte)((arg >> 32) & 0xFF);
-            code[code_len++] = (byte)((arg >> 40) & 0xFF);
-            code[code_len++] = (byte)((arg >> 48) & 0xFF);
-            code[code_len++] = (byte)((arg >> 56) & 0xFF);
+            BinaryPrimitives.WriteInt64LittleEndian(code.AsSpan(code_len), arg);
+            code_len += 8;
         }
 
         public virtual void Emit(OpCode opcode, Label label)
@@ -792,21 +761,10 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, float arg)
         {
-            byte[] s = BitConverter.GetBytes(arg);
             make_room(6);
             ll_emit(opcode);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Copy(s, 0, code, code_len, 4);
-                code_len += 4;
-            }
-            else
-            {
-                code[code_len++] = s[3];
-                code[code_len++] = s[2];
-                code[code_len++] = s[1];
-                code[code_len++] = s[0];
-            }
+            BinaryPrimitives.WriteSingleLittleEndian(code.AsSpan(code_len), arg);
+            code_len += 4;
         }
 
         public virtual void Emit(OpCode opcode, string str)
@@ -909,10 +867,7 @@ namespace System.Reflection.Emit
 
         public virtual void EndExceptionBlock()
         {
-            if (open_blocks == null)
-                open_blocks = new Stack(defaultExceptionStackSize);
-
-            if (open_blocks.Count <= 0)
+            if (!InExceptionBlock)
                 throw new NotSupportedException("Not in an exception block");
 
             if (ex_handlers![cur_block].LastClauseType() == ILExceptionBlock.FILTER_START)
@@ -923,7 +878,7 @@ namespace System.Reflection.Emit
             ex_handlers[cur_block].End(code_len);
             open_blocks.Pop();
             if (open_blocks.Count > 0)
-                cur_block = (int)open_blocks.Peek()!;
+                cur_block = open_blocks.Peek()!;
         }
 
         public virtual void EndScope()
@@ -995,26 +950,15 @@ namespace System.Reflection.Emit
         internal unsafe void SetCode(byte* code, int code_size, int max_stack)
         {
             // Make a copy to avoid possible security problems
-            this.code = new byte[code_size];
-            for (int i = 0; i < code_size; ++i)
-                this.code[i] = code[i];
+            this.code = new ReadOnlySpan<byte>(code, code_size).ToArray();
             this.code_len = code_size;
             this.max_stack = max_stack;
             this.cur_stack = 0;
         }
 
-        internal ITokenGenerator TokenGenerator
-        {
-            get
-            {
-                return token_gen;
-            }
-        }
+        internal ITokenGenerator TokenGenerator => token_gen;
 
-        public virtual int ILOffset
-        {
-            get { return code_len; }
-        }
+        public virtual int ILOffset => code_len;
     }
 
     internal struct SequencePoint
@@ -1026,70 +970,33 @@ namespace System.Reflection.Emit
         public int EndCol;
     }
 
-    internal sealed class Stack
+    internal sealed class Int32Stack : List<int>
     {
-        private object?[] _array;
-        private int _size;
-        private int _version;
-
-        private const int _defaultCapacity = 10;
-
-        public Stack()
+        public Int32Stack(int initialCapacity) : base(initialCapacity)
         {
-            _array = new object[_defaultCapacity];
-            _size = 0;
-            _version = 0;
         }
 
-        public Stack(int initialCapacity)
+        public int Peek()
         {
-            if (initialCapacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(initialCapacity), SR.ArgumentOutOfRange_NeedNonNegNum);
-
-            if (initialCapacity < _defaultCapacity)
-                initialCapacity = _defaultCapacity;
-            _array = new object[initialCapacity];
-            _size = 0;
-            _version = 0;
-        }
-
-        public int Count
-        {
-            get
-            {
-                return _size;
-            }
-        }
-
-        public object? Peek()
-        {
-            if (_size == 0)
+            if (Count == 0)
                 throw new InvalidOperationException();
 
-            return _array[_size - 1];
+            return this[Count - 1];
         }
 
-        public object? Pop()
+        public int Pop()
         {
-            if (_size == 0)
+            if (Count == 0)
                 throw new InvalidOperationException();
 
-            _version++;
-            object? obj = _array[--_size];
-            _array[_size] = null;
-            return obj;
+            int value = this[Count - 1];
+            RemoveAt(Count - 1);
+            return value;
         }
 
-        public void Push(object obj)
+        public void Push(int value)
         {
-            if (_size == _array.Length)
-            {
-                object[] newArray = new object[2 * _array.Length];
-                Array.Copy(_array, 0, newArray, 0, _size);
-                _array = newArray;
-            }
-            _array[_size++] = obj;
-            _version++;
+            Add(value);
         }
     }
 }

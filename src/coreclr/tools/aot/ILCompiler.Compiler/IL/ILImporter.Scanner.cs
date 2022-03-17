@@ -456,6 +456,11 @@ namespace Internal.IL
 
                     exactType = constrained;
                 }
+                else if (method.Signature.IsStatic)
+                {
+                    Debug.Assert(method.OwningType.IsInterface);
+                    exactType = constrained;
+                }
                 else if (constrained.IsValueType)
                 {
                     // We'll need to box `this`. Note we use _constrained here, because the other one is canonical.
@@ -483,8 +488,16 @@ namespace Internal.IL
 
             if (targetMethod.Signature.IsStatic)
             {
-                // Static methods are always direct calls
-                directCall = true;
+                if (_constrained != null && (!resolvedConstraint || forceUseRuntimeLookup))
+                {
+                    // Constrained call to static virtual interface method we didn't resolve statically
+                    Debug.Assert(targetMethod.IsVirtual && targetMethod.OwningType.IsInterface);
+                }
+                else
+                {
+                    // Static methods are always direct calls
+                    directCall = true;
+                }
             }
             else if ((opcode != ILOpcode.callvirt && opcode != ILOpcode.ldvirtftn) || resolvedConstraint)
             {
@@ -533,8 +546,10 @@ namespace Internal.IL
                 MethodDesc targetOfLookup;
                 if (_constrained.IsRuntimeDeterminedType)
                     targetOfLookup = _compilation.TypeSystemContext.GetMethodForRuntimeDeterminedType(targetMethod.GetTypicalMethodDefinition(), (RuntimeDeterminedType)_constrained);
-                else
+                else if (_constrained.HasInstantiation)
                     targetOfLookup = _compilation.TypeSystemContext.GetMethodForInstantiatedType(targetMethod.GetTypicalMethodDefinition(), (InstantiatedType)_constrained);
+                else
+                    targetOfLookup = targetMethod.GetMethodDefinition();
                 if (targetOfLookup.HasInstantiation)
                 {
                     targetOfLookup = targetOfLookup.MakeInstantiatedMethod(runtimeDeterminedMethod.Instantiation);
@@ -689,6 +704,15 @@ namespace Internal.IL
 
                     _dependencies.Add(GetMethodEntrypoint(targetMethod), reason);
                 }
+            }
+            else if (method.Signature.IsStatic)
+            {
+                // This should be an unresolved static virtual interface method call. Other static methods should
+                // have been handled as a directCall above.
+                Debug.Assert(targetMethod.OwningType.IsInterface && targetMethod.IsVirtual && _constrained != null);
+
+                var constrainedCallInfo = new ConstrainedCallInfo(_constrained, runtimeDeterminedMethod);
+                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.ConstrainedDirectCall, constrainedCallInfo), reason);
             }
             else if (method.HasInstantiation)
             {

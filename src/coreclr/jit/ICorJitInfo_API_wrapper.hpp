@@ -61,11 +61,10 @@ bool WrapICorJitInfo::getMethodInfo(
 
 CorInfoInline WrapICorJitInfo::canInline(
           CORINFO_METHOD_HANDLE callerHnd,
-          CORINFO_METHOD_HANDLE calleeHnd,
-          uint32_t* pRestrictions)
+          CORINFO_METHOD_HANDLE calleeHnd)
 {
     API_ENTER(canInline);
-    CorInfoInline temp = wrapHnd->canInline(callerHnd, calleeHnd, pRestrictions);
+    CorInfoInline temp = wrapHnd->canInline(callerHnd, calleeHnd);
     API_LEAVE(canInline);
     return temp;
 }
@@ -1152,6 +1151,15 @@ bool WrapICorJitInfo::getSystemVAmd64PassStructInRegisterDescriptor(
     API_ENTER(getSystemVAmd64PassStructInRegisterDescriptor);
     bool temp = wrapHnd->getSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr);
     API_LEAVE(getSystemVAmd64PassStructInRegisterDescriptor);
+    return temp;
+}
+
+uint32_t WrapICorJitInfo::getLoongArch64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    API_ENTER(getLoongArch64PassStructInRegisterFlags);
+    uint32_t temp = wrapHnd->getLoongArch64PassStructInRegisterFlags(structHnd);
+    API_LEAVE(getLoongArch64PassStructInRegisterFlags);
     return temp;
 }
 

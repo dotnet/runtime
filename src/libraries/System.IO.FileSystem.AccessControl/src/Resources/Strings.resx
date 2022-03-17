@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -187,9 +188,6 @@
   </data>
   <data name="Argument_InvalidPathChars" xml:space="preserve">
     <value>Illegal characters in path '{0}'.</value>
-  </data>
-  <data name="Arg_PathEmpty" xml:space="preserve">
-    <value>The path is empty.</value>
   </data>
   <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
     <value>Positive number required.</value>

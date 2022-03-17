@@ -256,7 +256,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void NonNumber_AsBoxed_Property()
         {
-            DateTime dateTime = DateTime.Now;
+            DateTime dateTime = DateTimeTestHelpers.FixedDateTimeValue;
             Guid? nullableGuid = Guid.NewGuid();
 
             string expected = @$"{{""MyDateTime"":{JsonSerializer.Serialize(dateTime)},""MyNullableGuid"":{JsonSerializer.Serialize(nullableGuid)}}}";
@@ -293,7 +293,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void NonNumber_AsBoxed_CollectionRootType_Element()
         {
-            DateTime dateTime = DateTime.Now;
+            DateTime dateTime = DateTimeTestHelpers.FixedDateTimeValue;
             Guid? nullableGuid = Guid.NewGuid();
 
             string expected = @$"[{JsonSerializer.Serialize(dateTime)}]";
@@ -324,7 +324,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void NonNumber_AsBoxed_CollectionProperty_Element()
         {
-            DateTime dateTime = DateTime.Now;
+            DateTime dateTime = DateTimeTestHelpers.FixedDateTimeValue;
             Guid? nullableGuid = Guid.NewGuid();
 
             string expected = @$"{{""MyDateTimes"":[{JsonSerializer.Serialize(dateTime)}],""MyNullableGuids"":[{JsonSerializer.Serialize(nullableGuid)}]}}";
@@ -602,7 +602,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39674", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
         public static void DictionariesRoundTrip()
         {
             RunAllDictionariessRoundTripTest(JsonNumberTestData.ULongs);

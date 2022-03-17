@@ -63,7 +63,7 @@ namespace {namespacename}
 
             //generate bdd reprs for each of the category ranges
             BDD[] catBDDs = new BDD[catMap.Count];
-            CharSetSolver bddb = new CharSetSolver();
+            CharSetSolver bddb = CharSetSolver.Instance;
             for (int c = 0; c < catBDDs.Length; c++)
                 catBDDs[c] = bddb.CreateBddForIntRanges(catMap[(UnicodeCategory)c].ranges);
 

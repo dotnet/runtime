@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace SharedTypes
 {
@@ -16,7 +17,6 @@ namespace SharedTypes
         public string str2;
     }
 
-    [BlittableType]
     public struct StringContainerNative
     {
         public IntPtr str1;
@@ -70,7 +70,6 @@ namespace SharedTypes
         public bool b3;
     }
 
-    [BlittableType]
     public struct BoolStructNative
     {
         public byte b1;
@@ -120,18 +119,18 @@ namespace SharedTypes
         }
     }
 
-    public unsafe ref struct Utf16StringMarshaler
+    public unsafe ref struct Utf16StringMarshaller
     {
         private ushort* allocated;
         private Span<ushort> span;
         private bool isNullString;
 
-        public Utf16StringMarshaler(string str)
+        public Utf16StringMarshaller(string str)
             : this(str, default(Span<byte>))
         {
         }
 
-        public Utf16StringMarshaler(string str, Span<byte> buffer)
+        public Utf16StringMarshaller(string str, Span<byte> buffer)
         {
             isNullString = false;
             if (str is null)
@@ -195,7 +194,54 @@ namespace SharedTypes
         public const int BufferSize = 0x100;
         public const bool RequiresStackBuffer = true;
     }
+    
+    public unsafe ref struct Utf8StringMarshaller
+    {
+        private byte* allocated;
+        private Span<byte> span;
 
+        public Utf8StringMarshaller(string str)
+            : this(str, default(Span<byte>))
+        { }
+
+        public Utf8StringMarshaller(string str, Span<byte> buffer)
+        {
+            allocated = null;
+            span = default;
+            if (str is null)
+                return;
+
+            if (buffer.Length >= Encoding.UTF8.GetMaxByteCount(str.Length) + 1) // +1 for null terminator
+            {
+                int byteCount = Encoding.UTF8.GetBytes(str, buffer);
+                buffer[byteCount] = 0; // null-terminate
+                span = buffer;
+            }
+            else
+            {
+                allocated = (byte*)Marshal.StringToCoTaskMemUTF8(str);
+            }
+        }
+
+        public byte* Value
+        {
+            get
+            {
+                return allocated != null ? allocated : (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
+            }
+            set
+            {
+                allocated = value;
+            }
+        }
+
+        public string? ToManaged() => Marshal.PtrToStringUTF8((IntPtr)Value);
+
+        public void FreeNative() => Marshal.FreeCoTaskMem((IntPtr)allocated);
+
+        public const int BufferSize = 0x100;
+        public const bool RequiresStackBuffer = true;
+    }
 
     [NativeMarshalling(typeof(IntStructWrapperNative))]
     public struct IntStructWrapper

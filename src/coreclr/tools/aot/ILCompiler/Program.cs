@@ -62,6 +62,7 @@ namespace ILCompiler
         private string _guard;
         private int _maxGenericCycle = CompilerTypeSystemContext.DefaultGenericCycleCutoffPoint;
         private bool _useDwarf5;
+        private string _jitPath;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -84,6 +85,8 @@ namespace ILCompiler
         private IReadOnlyList<string> _directPInvokes = Array.Empty<string>();
 
         private IReadOnlyList<string> _directPInvokeLists = Array.Empty<string>();
+
+        private bool _resilient;
 
         private IReadOnlyList<string> _rootedAssemblies = Array.Empty<string>();
         private IReadOnlyList<string> _conditionallyRootedAssemblies = Array.Empty<string>();
@@ -190,6 +193,7 @@ namespace ILCompiler
                 syntax.DefineOption("systemmodule", ref _systemModuleName, "System module name (default: System.Private.CoreLib)");
                 syntax.DefineOption("multifile", ref _multiFile, "Compile only input files (do not compile referenced assemblies)");
                 syntax.DefineOption("waitfordebugger", ref waitForDebugger, "Pause to give opportunity to attach debugger");
+                syntax.DefineOption("resilient", ref _resilient, "Ignore unresolved types, methods, and assemblies. Defaults to false");
                 syntax.DefineOptionList("codegenopt", ref _codegenOptions, "Define a codegen option");
                 syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
@@ -227,6 +231,7 @@ namespace ILCompiler
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
+                syntax.DefineOption("jitpath", ref _jitPath, "Path to JIT compiler library");
 
                 syntax.DefineOption("singlemethodtypename", ref _singleMethodTypeName, "Single method compilation: assembly-qualified name of the owning type");
                 syntax.DefineOption("singlemethodname", ref _singleMethodName, "Single method compilation: name of the method");
@@ -639,6 +644,8 @@ namespace ILCompiler
 
             if (_mibcFilePaths.Count > 0)
                 ((RyuJitCompilationBuilder)builder).UseProfileData(_mibcFilePaths);
+            if (!String.IsNullOrEmpty(_jitPath))
+                ((RyuJitCompilationBuilder)builder).UseJitPath(_jitPath);
 
             PInvokeILEmitterConfiguration pinvokePolicy = new ConfigurablePInvokePolicy(typeSystemContext.Target, _directPInvokes, _directPInvokeLists);
 
@@ -801,6 +808,8 @@ namespace ILCompiler
                 builder.UseMethodImportationErrorProvider(scanResults.GetMethodImportationErrorProvider());
             }
 
+            builder.UseResilience(_resilient);
+
             ICompilation compilation = builder.ToCompilation();
 
             ObjectDumper dumper = _mapFileName != null ? new ObjectDumper(_mapFileName) : null;
@@ -836,7 +845,7 @@ namespace ILCompiler
                 // Check that methods and types generated during compilation are a subset of method and types scanned
                 bool scanningFail = false;
                 DiffCompilationResults(ref scanningFail, compilationResults.CompiledMethodBodies, scanResults.CompiledMethodBodies,
-                    "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || method.Name == "ThrowPlatformNotSupportedException" || method.Name == "ThrowArgumentOutOfRangeException");
+                    "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || method.Name == "ThrowPlatformNotSupportedException" || method.Name == "ThrowArgumentOutOfRangeException" || method.Name == "ThrowArgumentException");
                 DiffCompilationResults(ref scanningFail, compilationResults.ConstructedEETypes, scanResults.ConstructedEETypes,
                     "EETypes", "compiled", "scanned", type => !(type.GetTypeDefinition() is EcmaType));
 
