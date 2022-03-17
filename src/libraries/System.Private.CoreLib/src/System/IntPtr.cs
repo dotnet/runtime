@@ -23,14 +23,15 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct IntPtr : IEquatable<nint>, IComparable, IComparable<nint>, ISpanFormattable, ISerializable
-#if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
-        , IBinaryInteger<nint>,
+    public readonly struct IntPtr
+        : IEquatable<nint>,
+          IComparable,
+          IComparable<nint>,
+          ISpanFormattable,
+          ISerializable,
+          IBinaryInteger<nint>,
           IMinMaxValue<nint>,
           ISignedNumber<nint>
-#pragma warning restore SA1001, CA2252
-#endif // FEATURE_GENERIC_MATH
     {
         // WARNING: We allow diagnostic tools to directly inspect this member (_value).
         // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details.
@@ -247,16 +248,13 @@ namespace System
             return nint_t.TryParse(s, style, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
         }
 
-#if FEATURE_GENERIC_MATH
         //
         // IAdditionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IAdditionOperators<nint, nint, nint>.operator +(nint left, nint right)
             => left + right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked nint IAdditionOperators<nint, nint, nint>.operator +(nint left, nint right)
         //     => checked(left + right);
 
@@ -264,14 +262,12 @@ namespace System
         // IAdditiveIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IAdditiveIdentity<nint, nint>.AdditiveIdentity => 0;
 
         //
         // IBinaryInteger
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IBinaryInteger<nint>.LeadingZeroCount(nint value)
         {
             if (Environment.Is64BitProcess)
@@ -284,7 +280,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IBinaryInteger<nint>.PopCount(nint value)
         {
             if (Environment.Is64BitProcess)
@@ -297,7 +292,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IBinaryInteger<nint>.RotateLeft(nint value, int rotateAmount)
         {
             if (Environment.Is64BitProcess)
@@ -310,7 +304,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IBinaryInteger<nint>.RotateRight(nint value, int rotateAmount)
 
         {
@@ -324,7 +317,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IBinaryInteger<nint>.TrailingZeroCount(nint value)
         {
             if (Environment.Is64BitProcess)
@@ -341,11 +333,9 @@ namespace System
         // IBinaryNumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IBinaryNumber<nint>.IsPow2(nint value)
             => BitOperations.IsPow2(value);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IBinaryNumber<nint>.Log2(nint value)
         {
             if (value < 0)
@@ -367,19 +357,15 @@ namespace System
         // IBitwiseOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IBitwiseOperators<nint, nint, nint>.operator &(nint left, nint right)
             => left & right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IBitwiseOperators<nint, nint, nint>.operator |(nint left, nint right)
             => left | right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IBitwiseOperators<nint, nint, nint>.operator ^(nint left, nint right)
             => left ^ right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IBitwiseOperators<nint, nint, nint>.operator ~(nint value)
             => ~value;
 
@@ -387,19 +373,15 @@ namespace System
         // IComparisonOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<nint, nint>.operator <(nint left, nint right)
             => left < right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<nint, nint>.operator <=(nint left, nint right)
             => left <= right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<nint, nint>.operator >(nint left, nint right)
             => left > right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<nint, nint>.operator >=(nint left, nint right)
             => left >= right;
 
@@ -407,11 +389,9 @@ namespace System
         // IDecrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IDecrementOperators<nint>.operator --(nint value)
             => --value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked nint IDecrementOperators<nint>.operator --(nint value)
         //     => checked(--value);
 
@@ -419,11 +399,9 @@ namespace System
         // IDivisionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IDivisionOperators<nint, nint, nint>.operator /(nint left, nint right)
             => left / right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked nint IDivisionOperators<nint, nint, nint>.operator /(nint left, nint right)
         //     => checked(left / right);
 
@@ -431,11 +409,9 @@ namespace System
         // IEqualityOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<nint, nint>.operator ==(nint left, nint right)
             => left == right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<nint, nint>.operator !=(nint left, nint right)
             => left != right;
 
@@ -443,11 +419,9 @@ namespace System
         // IIncrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IIncrementOperators<nint>.operator ++(nint value)
             => ++value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked nint IIncrementOperators<nint>.operator ++(nint value)
         //     => checked(++value);
 
@@ -455,21 +429,17 @@ namespace System
         // IMinMaxValue
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IMinMaxValue<nint>.MinValue => MinValue;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IMinMaxValue<nint>.MaxValue => MaxValue;
 
         //
         // IModulusOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IModulusOperators<nint, nint, nint>.operator %(nint left, nint right)
             => left % right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked nint IModulusOperators<nint, nint, nint>.operator %(nint left, nint right)
         //     => checked(left % right);
 
@@ -477,18 +447,15 @@ namespace System
         // IMultiplicativeIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IMultiplicativeIdentity<nint, nint>.MultiplicativeIdentity => 1;
 
         //
         // IMultiplyOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IMultiplyOperators<nint, nint, nint>.operator *(nint left, nint right)
             => left * right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked nint IMultiplyOperators<nint, nint, nint>.operator *(nint left, nint right)
         //     => checked(left * right);
 
@@ -496,21 +463,16 @@ namespace System
         // INumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint INumber<nint>.One => 1;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint INumber<nint>.Zero => 0;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint INumber<nint>.Abs(nint value)
             => Math.Abs(value);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint INumber<nint>.Clamp(nint value, nint min, nint max)
             => Math.Clamp(value, min, max);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static nint INumber<nint>.Create<TOther>(TOther value)
         {
@@ -577,7 +539,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static nint INumber<nint>.CreateSaturating<TOther>(TOther value)
         {
@@ -655,7 +616,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static nint INumber<nint>.CreateTruncating<TOther>(TOther value)
         {
@@ -722,31 +682,24 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static (nint Quotient, nint Remainder) INumber<nint>.DivRem(nint left, nint right)
             => Math.DivRem(left, right);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint INumber<nint>.Max(nint x, nint y)
             => Math.Max(x, y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint INumber<nint>.Min(nint x, nint y)
             => Math.Min(x, y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint INumber<nint>.Parse(string s, NumberStyles style, IFormatProvider? provider)
             => Parse(s, style, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint INumber<nint>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
             => Parse(s, style, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint INumber<nint>.Sign(nint value)
             => Math.Sign(value);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumber<nint>.TryCreate<TOther>(TOther value, out nint result)
         {
@@ -884,11 +837,9 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool INumber<nint>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out nint result)
             => TryParse(s, style, provider, out result);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool INumber<nint>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out nint result)
             => TryParse(s, style, provider, out result);
 
@@ -896,11 +847,9 @@ namespace System
         // IParseable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IParseable<nint>.Parse(string s, IFormatProvider? provider)
             => Parse(s, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IParseable<nint>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out nint result)
             => TryParse(s, NumberStyles.Integer, provider, out result);
 
@@ -908,15 +857,12 @@ namespace System
         // IShiftOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IShiftOperators<nint, nint>.operator <<(nint value, int shiftAmount)
             => value << (int)shiftAmount;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IShiftOperators<nint, nint>.operator >>(nint value, int shiftAmount)
             => value >> (int)shiftAmount;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static nint IShiftOperators<nint, nint>.operator >>>(nint value, int shiftAmount)
         //     => (nint)((nuint)value >> (int)shiftAmount);
 
@@ -924,18 +870,15 @@ namespace System
         // ISignedNumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint ISignedNumber<nint>.NegativeOne => -1;
 
         //
         // ISpanParseable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint ISpanParseable<nint>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
             => Parse(s, NumberStyles.Integer, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool ISpanParseable<nint>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out nint result)
             => TryParse(s, NumberStyles.Integer, provider, out result);
 
@@ -943,11 +886,9 @@ namespace System
         // ISubtractionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint ISubtractionOperators<nint, nint, nint>.operator -(nint left, nint right)
             => left - right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked nint ISubtractionOperators<nint, nint, nint>.operator -(nint left, nint right)
         //     => checked(left - right);
 
@@ -955,11 +896,9 @@ namespace System
         // IUnaryNegationOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IUnaryNegationOperators<nint, nint>.operator -(nint value)
             => -value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked nint IUnaryNegationOperators<nint, nint>.operator -(nint value)
         //     => checked(-value);
 
@@ -967,13 +906,10 @@ namespace System
         // IUnaryPlusOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nint IUnaryPlusOperators<nint, nint>.operator +(nint value)
             => +value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked nint IUnaryPlusOperators<nint, nint>.operator +(nint value)
         //     => checked(+value);
-#endif // FEATURE_GENERIC_MATH
     }
 }

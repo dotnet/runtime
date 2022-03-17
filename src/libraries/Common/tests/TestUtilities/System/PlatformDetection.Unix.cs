@@ -326,13 +326,13 @@ namespace System
 
         private static partial class @libc
         {
-            [GeneratedDllImport("libc", SetLastError = true)]
+            [LibraryImport("libc", SetLastError = true)]
             public static unsafe partial uint geteuid();
 
-            [GeneratedDllImport("libc")]
+            [LibraryImport("libc")]
             public static partial IntPtr gnu_get_libc_release();
 
-            [GeneratedDllImport("libc")]
+            [LibraryImport("libc")]
             public static partial IntPtr gnu_get_libc_version();
         }
     }

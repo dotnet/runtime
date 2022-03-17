@@ -35,7 +35,7 @@ namespace System.Text.RegularExpressions.Tests
 
         public CustomDerivedRegex()
         {
-            pattern = /*lang=regex*/@"\G(\d{1,3})(?=(?:\d{3})+\b)";
+            pattern = @"\G(\d{1,3})(?=(?:\d{3})+\b)";
             roptions = RegexOptions.Compiled;
             internalMatchTimeout = Timeout.InfiniteTimeSpan;
             factory = new CustomRegexRunnerFactory();

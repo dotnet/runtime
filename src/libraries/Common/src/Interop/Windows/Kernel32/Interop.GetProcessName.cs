@@ -10,7 +10,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "QueryFullProcessImageNameW", SetLastError = true)]
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "QueryFullProcessImageNameW", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool QueryFullProcessImageName(
             SafeHandle hProcess,

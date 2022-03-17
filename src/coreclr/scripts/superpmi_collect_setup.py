@@ -155,6 +155,7 @@ native_binaries_to_ignore = [
     "mscordbi.dll",
     "mscorrc.dll",
     "msdia140.dll",
+    "msquic.dll",
     "R2RDump.exe",
     "R2RTest.exe",
     "superpmi.exe",
@@ -276,7 +277,8 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
 
 def first_fit(sorted_by_size, max_size):
     """ Given a list of file names along with size in descending order, divides the files
-    in number of buckets such that each bucket doesn't exceed max_size. Since this is a first-fit
+    in number of buckets such that each bucket doesn't exceed max_size (unless a single file exceeds
+    max_size, in which case it gets its own bucket). Since this is a first-fit
     approach, it doesn't guarantee to find the bucket with tighest spot available.
 
     Args:
@@ -301,8 +303,8 @@ def first_fit(sorted_by_size, max_size):
                     found_bucket = True
                     break
 
-            if not found_bucket:
-                partitions[len(partitions)] = [curr_file]
+        if not found_bucket:
+            partitions[len(partitions)] = [curr_file]
 
     total_size = 0
     for p_index in partitions:

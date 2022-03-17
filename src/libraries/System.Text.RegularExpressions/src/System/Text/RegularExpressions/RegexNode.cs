@@ -1445,6 +1445,17 @@ namespace System.Text.RegularExpressions
                     return Child(0);
             }
 
+            // If any node in the concatenation is a Nothing, the concatenation itself is a Nothing.
+            int childCount = ChildCount();
+            for (int i = 0; i < childCount; i++)
+            {
+                RegexNode child = Child(i);
+                if (child.Kind == RegexNodeKind.Nothing)
+                {
+                    return child;
+                }
+            }
+
             // Coalesce adjacent loops.  This helps to minimize work done by the interpreter, minimize code gen,
             // and also help to reduce catastrophic backtracking.
             ReduceConcatenationWithAdjacentLoops();
@@ -2385,6 +2396,103 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
+        /// Determines whether the specified child index of a concatenation begins a sequence whose values
+        /// should be used to perform an ordinal case-insensitive comparison.
+        /// </summary>
+        /// <param name="childIndex">The index of the child with which to start the sequence.</param>
+        /// <param name="exclusiveChildBound">The exclusive upper bound on the child index to iterate to.</param>
+        /// <param name="nodesConsumed">How many nodes make up the sequence, if any.</param>
+        /// <param name="caseInsensitiveString">The string to use for an ordinal case-insensitive comparison, if any.</param>
+        /// <returns>true if a sequence was found; otherwise, false.</returns>
+        public bool TryGetOrdinalCaseInsensitiveString(int childIndex, int exclusiveChildBound, out int nodesConsumed, [NotNullWhen(true)] out string? caseInsensitiveString)
+        {
+            Debug.Assert(Kind == RegexNodeKind.Concatenate, $"Expected Concatenate, got {Kind}");
+
+            var vsb = new ValueStringBuilder(stackalloc char[32]);
+
+            // We're looking in particular for sets of ASCII characters, so we focus only on sets with two characters in them, e.g. [Aa].
+            Span<char> twoChars = stackalloc char[2];
+
+            // Iterate from the child index to the exclusive upper bound.
+            int i = childIndex;
+            for ( ; i < exclusiveChildBound; i++)
+            {
+                RegexNode child = Child(i);
+                if ((child.Options & RegexOptions.IgnoreCase) != 0)
+                {
+                    // TODO https://github.com/dotnet/runtime/issues/61048: Remove this block once fixed.
+                    // We don't want any nodes that are still IgnoreCase, as they'd no longer be IgnoreCase if
+                    // they were applicable to this optimization.
+                    break;
+                }
+
+                if (child.Kind is RegexNodeKind.One)
+                {
+                    // We only want to include ASCII characters, and only if they don't participate in case conversion
+                    // such that they only case to themselves and nothing other cases to them.  Otherwise, including
+                    // them would potentially cause us to match against things not allowed by the pattern.
+                    if (child.Ch >= 128 ||
+                        RegexCharClass.ParticipatesInCaseConversion(child.Ch))
+                    {
+                        break;
+                    }
+
+                    vsb.Append(child.Ch);
+                }
+                else if (child.Kind is RegexNodeKind.Multi)
+                {
+                    // As with RegexNodeKind.One, the string needs to be composed solely of ASCII characters that
+                    // don't participate in case conversion.
+                    if (!RegexCharClass.IsAscii(child.Str.AsSpan()) ||
+                        RegexCharClass.ParticipatesInCaseConversion(child.Str.AsSpan()))
+                    {
+                        break;
+                    }
+
+                    vsb.Append(child.Str);
+                }
+                else if (child.Kind is RegexNodeKind.Set ||
+                         (child.Kind is RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic && child.M == child.N))
+                {
+                    // In particular we want to look for sets that contain only the upper and lowercase variant
+                    // of the same ASCII letter.
+                    if (RegexCharClass.IsNegated(child.Str!) ||
+                        RegexCharClass.GetSetChars(child.Str!, twoChars) != 2 ||
+                        twoChars[0] >= 128 ||
+                        twoChars[1] >= 128 ||
+                        twoChars[0] == twoChars[1] ||
+                        !char.IsLetter(twoChars[0]) ||
+                        !char.IsLetter(twoChars[1]) ||
+                        ((twoChars[0] | 0x20) != (twoChars[1] | 0x20)))
+                    {
+                        break;
+                    }
+
+                    vsb.Append((char)(twoChars[0] | 0x20), child.Kind is RegexNodeKind.Set ? 1 : child.M);
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            // If we found at least two characters, consider it a sequence found.  It's possible
+            // they all came from the same node, so this could be a sequence of just one node.
+            if (vsb.Length >= 2)
+            {
+                caseInsensitiveString = vsb.ToString();
+                nodesConsumed = i - childIndex;
+                return true;
+            }
+
+            // No sequence found.
+            caseInsensitiveString = null;
+            nodesConsumed = 0;
+            vsb.Dispose();
+            return false;
+        }
+
+        /// <summary>
         /// Determine whether the specified child node is the beginning of a sequence that can
         /// trivially have length checks combined in order to avoid bounds checks.
         /// </summary>
@@ -2403,6 +2511,8 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         public bool TryGetJoinableLengthCheckChildRange(int childIndex, out int requiredLength, out int exclusiveEnd)
         {
+            Debug.Assert(Kind == RegexNodeKind.Concatenate, $"Expected Concatenate, got {Kind}");
+
             static bool CanJoinLengthCheck(RegexNode node) => node.Kind switch
             {
                 RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set => true,
@@ -2558,39 +2668,46 @@ namespace System.Text.RegularExpressions
         // there's no need to localize).
         internal bool SupportsCompilation([NotNullWhen(false)] out string? reason)
         {
-            if (!StackHelper.TryEnsureSufficientExecutionStack())
-            {
-                reason = "run-time limits were exceeded";
-                return false;
-            }
-
-            // NonBacktracking isn't supported, nor RightToLeft.  The latter applies to both the top-level
-            // options as well as when used to specify positive and negative lookbehinds.
             if ((Options & RegexOptions.NonBacktracking) != 0)
             {
-                reason = "RegexOptions.NonBacktracking was specified";
+                reason = "RegexOptions.NonBacktracking isn't supported";
                 return false;
             }
 
-            if ((Options & RegexOptions.RightToLeft) != 0)
+            if (ExceedsMaxDepthAllowedDepth(this, allowedDepth: 40))
             {
-                reason = "RegexOptions.RightToLeft or a positive/negative lookbehind was used";
+                // For the source generator, deep RegexNode trees can result in emitting C# code that exceeds C# compiler
+                // limitations, leading to "CS8078: An expression is too long or complex to compile". As such, we place
+                // an artificial limit on max tree depth in order to mitigate such issues. The allowed depth can be tweaked
+                // as needed; its exceedingly rare to find expressions with such deep trees. And while RegexCompiler doesn't
+                // have to deal with C# compiler limitations, we still want to limit max tree depth as we want to limit
+                // how deep recursion we'll employ as part of code generation.
+                reason = "the expression may result exceeding run-time or compiler limits";
                 return false;
-            }
-
-            int childCount = ChildCount();
-            for (int i = 0; i < childCount; i++)
-            {
-                // The node isn't supported if any of its children aren't supported.
-                if (!Child(i).SupportsCompilation(out reason))
-                {
-                    return false;
-                }
             }
 
             // Supported.
             reason = null;
             return true;
+
+            static bool ExceedsMaxDepthAllowedDepth(RegexNode node, int allowedDepth)
+            {
+                if (allowedDepth <= 0)
+                {
+                    return true;
+                }
+
+                int childCount = node.ChildCount();
+                for (int i = 0; i < childCount; i++)
+                {
+                    if (ExceedsMaxDepthAllowedDepth(node.Child(i), allowedDepth - 1))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         /// <summary>Gets whether the node is a Set/Setloop/Setloopatomic/Setlazy node.</summary>

@@ -22,6 +22,7 @@ class Program
         Assert(!CustomAttributeExtensions.GetCustomAttributes(assembly, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());
 */
 
+        // Uncomment when https://github.com/dotnet/runtime/issues/66168 is resolved
         // Module module = programTypeInfo.Module;
         // AssertAny(CustomAttributeExtensions.GetCustomAttributes(module), a => a is SingleAttribute<long>);
         // Assert(CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<long>)).GetEnumerator().MoveNext());

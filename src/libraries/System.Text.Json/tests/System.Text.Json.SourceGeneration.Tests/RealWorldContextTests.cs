@@ -396,10 +396,10 @@ namespace System.Text.Json.SourceGeneration.Tests
                 CampaignManagedOrganizerName = "Name FamilyName",
                 CampaignName = "The very new campaign",
                 Description = "The .NET Foundation works with Microsoft and the broader industry to increase the exposure of open source projects in the .NET community and the .NET Foundation. The .NET Foundation provides access to these resources to projects and looks to promote the activities of our communities.",
-                EndDate = DateTime.UtcNow.AddYears(1),
+                EndDate = DateTimeTestHelpers.FixedDateTimeValue.AddYears(1),
                 Name = "Just a name",
                 ImageUrl = "https://www.dotnetfoundation.org/theme/img/carousel/foundation-diagram-content.png",
-                StartDate = DateTime.UtcNow,
+                StartDate = DateTimeTestHelpers.FixedDateTimeValue,
                 Offset = TimeSpan.FromHours(2)
             };
         }
@@ -460,10 +460,10 @@ namespace System.Text.Json.SourceGeneration.Tests
                         CampaignManagedOrganizerName = "Name FamilyName",
                         CampaignName = "The very new campaign",
                         Description = "The .NET Foundation works with Microsoft and the broader industry to increase the exposure of open source projects in the .NET community and the .NET Foundation. The .NET Foundation provides access to these resources to projects and looks to promote the activities of our communities.",
-                        EndDate = DateTime.UtcNow.AddYears(1),
+                        EndDate = DateTimeTestHelpers.FixedDateTimeValue.AddYears(1),
                         Name = "Just a name",
                         ImageUrl = "https://www.dotnetfoundation.org/theme/img/carousel/foundation-diagram-content.png",
-                        StartDate = DateTime.UtcNow
+                        StartDate = DateTimeTestHelpers.FixedDateTimeValue
                     },
                     count: 20).ToList()
             };

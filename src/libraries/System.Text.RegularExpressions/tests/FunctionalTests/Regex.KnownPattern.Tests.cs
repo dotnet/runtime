@@ -1431,11 +1431,20 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (DataSetExpression exp in s_patternsDataSet.Value)
             {
+                if ((exp.Options & (RegexOptions.ECMAScript | RegexOptions.RightToLeft)) != 0)
+                {
+                    // Unsupported options with NonBacktracking
+                    continue;
+                }
+
                 try
                 {
                     await RegexHelpers.GetRegexAsync(RegexEngine.NonBacktracking, exp.Pattern, exp.Options);
                 }
-                catch (Exception e) when (e.Message.Contains(nameof(RegexOptions.NonBacktracking))) { }
+                catch (NotSupportedException e) when (e.Message.Contains(nameof(RegexOptions.NonBacktracking)))
+                {
+                    // Unsupported patterns
+                }
             }
         }
 

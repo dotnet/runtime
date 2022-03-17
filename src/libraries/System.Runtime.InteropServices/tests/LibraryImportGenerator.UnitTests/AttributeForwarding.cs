@@ -17,7 +17,7 @@ namespace LibraryImportGenerator.UnitTests
 {
     public class AttributeForwarding
     {
-        [ConditionalTheory]
+        [Theory]
         [InlineData("SuppressGCTransition", "System.Runtime.InteropServices.SuppressGCTransitionAttribute")]
         [InlineData("UnmanagedCallConv", "System.Runtime.InteropServices.UnmanagedCallConvAttribute")]
         public async Task KnownParameterlessAttribute(string attributeSourceName, string attributeMetadataName)
@@ -29,7 +29,7 @@ using System.Runtime.InteropServices;
 partial class C
 {{
     [{attributeSourceName}]
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method1();
 }}
 
@@ -59,7 +59,7 @@ struct Native
                 attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task UnmanagedCallConvAttribute_EmptyCallConvArray()
         {
             string source = @"
@@ -70,7 +70,7 @@ using System.Runtime.InteropServices;
 partial class C
 {
     [UnmanagedCallConv(CallConvs = new Type[0])]
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method1();
 }
 
@@ -103,7 +103,7 @@ struct Native
                     && attr.NamedArguments[0].Value.Values.Length == 0);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task UnmanagedCallConvAttribute_SingleCallConvType()
         {
             string source = @"
@@ -113,7 +113,7 @@ using System.Runtime.InteropServices;
 partial class C
 {
     [UnmanagedCallConv(CallConvs = new[]{typeof(CallConvStdcall)})]
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method1();
 }
 
@@ -150,7 +150,7 @@ struct Native
                         callConvType));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task UnmanagedCallConvAttribute_MultipleCallConvTypes()
         {
             string source = @"
@@ -160,7 +160,7 @@ using System.Runtime.InteropServices;
 partial class C
 {
     [UnmanagedCallConv(CallConvs = new[]{typeof(CallConvStdcall), typeof(CallConvSuppressGCTransition)})]
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method1();
 }
 
@@ -201,7 +201,7 @@ struct Native
                         callConvType2));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task DefaultDllImportSearchPathsAttribute()
         {
             string source = @$"
@@ -211,7 +211,7 @@ using System.Runtime.InteropServices;
 partial class C
 {{
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32 | DllImportSearchPath.UserDirectories)]
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method1();
 }}
 
@@ -245,7 +245,7 @@ struct Native
                     && expected == (DllImportSearchPath)attr.ConstructorArguments[0].Value!);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task OtherAttributeType()
         {
             string source = @"
@@ -259,7 +259,7 @@ class OtherAttribute : Attribute {}
 partial class C
 {
     [Other]
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method1();
 }
 
@@ -290,7 +290,7 @@ struct Native
                 attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task InOutAttributes_Forwarded_To_ForwardedParameter()
         {
             string source = @"
@@ -298,11 +298,11 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 partial class C
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool Method1([In, Out] int[] a);
 }
-" + CodeSnippets.GeneratedDllImportAttributeDeclaration;
+" + CodeSnippets.LibraryImportAttributeDeclaration;
             Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
             Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
@@ -333,7 +333,7 @@ partial class C
                     }));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task MarshalAsAttribute_Forwarded_To_ForwardedParameter()
         {
             string source = @"
@@ -341,11 +341,11 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 partial class C
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool Method1([MarshalAs(UnmanagedType.I2)] int a);
 }
-" + CodeSnippets.GeneratedDllImportAttributeDeclaration;
+" + CodeSnippets.LibraryImportAttributeDeclaration;
             Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
             Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
@@ -362,7 +362,7 @@ partial class C
                     }));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task MarshalAsAttribute_Forwarded_To_ForwardedParameter_Array()
         {
             string source = @"
@@ -370,11 +370,11 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 partial class C
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool Method1([MarshalAs(UnmanagedType.LPArray, SizeConst = 10, SizeParamIndex = 1, ArraySubType = UnmanagedType.I4)] int[] a, int b);
 }
-" + CodeSnippets.GeneratedDllImportAttributeDeclaration;
+" + CodeSnippets.LibraryImportAttributeDeclaration;
             Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
             Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
 

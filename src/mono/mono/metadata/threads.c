@@ -1887,7 +1887,7 @@ mono_thread_set_name (MonoInternalThread *this_obj,
 
 	if (name8) {
 		this_obj->name.chars = (char*)name8;
-		this_obj->name.length = name8_length;
+		this_obj->name.length = (gint32)name8_length;
 		this_obj->name.free = !constant;
 		if (flags & MonoSetThreadNameFlag_Permanent)
 			this_obj->flags |= MONO_THREAD_FLAG_NAME_SET;

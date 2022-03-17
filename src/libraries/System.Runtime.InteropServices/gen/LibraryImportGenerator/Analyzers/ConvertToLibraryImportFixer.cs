@@ -25,9 +25,11 @@ namespace Microsoft.Interop.Analyzers
     {
         public override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(Ids.ConvertToLibraryImport);
 
-        public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+        public override FixAllProvider GetFixAllProvider() => CustomFixAllProvider.Instance;
 
         private const string ConvertToLibraryImportKey = "ConvertToLibraryImport";
+        private const string ConvertToLibraryImportWithASuffixKey = "ConvertToLibraryImportA";
+        private const string ConvertToLibraryImportWithWSuffixKey = "ConvertToLibraryImportW";
 
         private static readonly string[] s_preferredAttributeArgumentOrder =
             {
@@ -47,29 +49,11 @@ namespace Microsoft.Interop.Analyzers
             // Get the syntax root and semantic model
             Document doc = context.Document;
             SyntaxNode? root = await doc.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
-            SemanticModel? model = await doc.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
-            if (root == null || model == null)
-                return;
-
-            // Nothing to do if GeneratedDllImportAttribute is not in the compilation
-            INamedTypeSymbol? generatedDllImportAttrType = model.Compilation.GetTypeByMetadataName(TypeNames.GeneratedDllImportAttribute);
-            if (generatedDllImportAttrType == null)
-                return;
-
-            // Nothing to do if DllImportAttribute is not in the compilation
-            INamedTypeSymbol? dllImportAttrType = model.Compilation.GetTypeByMetadataName(typeof(DllImportAttribute).FullName);
-            if (dllImportAttrType == null)
+            if (root == null)
                 return;
 
             // Get the syntax node tied to the diagnostic and check that it is a method declaration
             if (root.FindNode(context.Span) is not MethodDeclarationSyntax methodSyntax)
-                return;
-
-            if (model.GetDeclaredSymbol(methodSyntax, context.CancellationToken) is not IMethodSymbol methodSymbol)
-                return;
-
-            // Make sure the method has the DllImportAttribute
-            if (!TryGetAttribute(methodSymbol, dllImportAttrType, out AttributeData? dllImportAttr))
                 return;
 
             // Register code fix
@@ -79,62 +63,102 @@ namespace Microsoft.Interop.Analyzers
                     cancelToken => ConvertToLibraryImport(
                         context.Document,
                         methodSyntax,
-                        methodSymbol,
-                        dllImportAttr!,
-                        generatedDllImportAttrType,
                         entryPointSuffix: null,
                         cancelToken),
                     equivalenceKey: ConvertToLibraryImportKey),
                 context.Diagnostics);
 
-            DllImportData dllImportData = methodSymbol.GetDllImportData()!;
-            if (!dllImportData.ExactSpelling)
+            foreach (Diagnostic diagnostic in context.Diagnostics)
             {
-                // CharSet.Auto traditionally maps to either an A or W suffix
-                // depending on the default CharSet of the platform.
-                // We will offer both suffix options when CharSet.Auto is provided
-                // to enable developers to pick which variant they mean (since they could explicitly decide they want one or the other)
-                if (dllImportData.CharacterSet is CharSet.None or CharSet.Ansi or CharSet.Auto)
+                if (!bool.Parse(diagnostic.Properties[ConvertToLibraryImportAnalyzer.ExactSpelling]))
                 {
-                    context.RegisterCodeFix(
-                        CodeAction.Create(
-                            string.Format(Resources.ConvertToLibraryImportWithSuffix, "A"),
-                            cancelToken => ConvertToLibraryImport(
-                                context.Document,
-                                methodSyntax,
-                                methodSymbol,
-                                dllImportAttr!,
-                                generatedDllImportAttrType,
-                                entryPointSuffix: 'A',
-                                cancelToken),
-                            equivalenceKey: ConvertToLibraryImportKey + "A"),
-                        context.Diagnostics);
-                }
-                if (dllImportData.CharacterSet is CharSet.Unicode or CharSet.Auto)
-                {
-                    context.RegisterCodeFix(
-                        CodeAction.Create(
-                            string.Format(Resources.ConvertToLibraryImportWithSuffix, "W"),
-                            cancelToken => ConvertToLibraryImport(
-                                context.Document,
-                                methodSyntax,
-                                methodSymbol,
-                                dllImportAttr!,
-                                generatedDllImportAttrType,
-                                entryPointSuffix: 'W',
-                                cancelToken),
-                            equivalenceKey: ConvertToLibraryImportKey + "W"),
-                        context.Diagnostics);
+                    CharSet charSet = (CharSet)Enum.Parse(typeof(CharSet), diagnostic.Properties[ConvertToLibraryImportAnalyzer.CharSet]);
+                    // CharSet.Auto traditionally maps to either an A or W suffix
+                    // depending on the default CharSet of the platform.
+                    // We will offer both suffix options when CharSet.Auto is provided
+                    // to enable developers to pick which variant they mean (since they could explicitly decide they want one or the other)
+                    if (charSet is CharSet.None or CharSet.Ansi or CharSet.Auto)
+                    {
+                        context.RegisterCodeFix(
+                            CodeAction.Create(
+                                string.Format(Resources.ConvertToLibraryImportWithSuffix, "A"),
+                                cancelToken => ConvertToLibraryImport(
+                                    context.Document,
+                                    methodSyntax,
+                                    entryPointSuffix: 'A',
+                                    cancelToken),
+                                equivalenceKey: ConvertToLibraryImportWithASuffixKey),
+                            context.Diagnostics);
+                    }
+                    if (charSet is CharSet.Unicode or CharSet.Auto)
+                    {
+                        context.RegisterCodeFix(
+                            CodeAction.Create(
+                                string.Format(Resources.ConvertToLibraryImportWithSuffix, "W"),
+                                cancelToken => ConvertToLibraryImport(
+                                    context.Document,
+                                    methodSyntax,
+                                    entryPointSuffix: 'W',
+                                    cancelToken),
+                                equivalenceKey: ConvertToLibraryImportWithWSuffixKey),
+                            context.Diagnostics);
+                    }
                 }
             }
         }
 
-        private async Task<Document> ConvertToLibraryImport(
+        private class CustomFixAllProvider : DocumentBasedFixAllProvider
+        {
+            public static readonly CustomFixAllProvider Instance = new();
+
+            protected override async Task<Document?> FixAllAsync(FixAllContext fixAllContext, Document document, ImmutableArray<Diagnostic> diagnostics)
+            {
+                DocumentEditor editor = await DocumentEditor.CreateAsync(document, fixAllContext.CancellationToken).ConfigureAwait(false);
+                SyntaxGenerator generator = editor.Generator;
+
+                SyntaxNode? root = await document.GetSyntaxRootAsync(fixAllContext.CancellationToken).ConfigureAwait(false);
+                if (root == null)
+                    return document;
+
+                foreach (Diagnostic diagnostic in diagnostics)
+                {
+                    // Get the syntax node tied to the diagnostic and check that it is a method declaration
+                    if (root.FindNode(diagnostic.Location.SourceSpan) is not MethodDeclarationSyntax methodSyntax)
+                        continue;
+                    if (editor.SemanticModel.GetDeclaredSymbol(methodSyntax, fixAllContext.CancellationToken) is not IMethodSymbol methodSymbol)
+                        continue;
+
+                    SyntaxNode generatedDeclaration = await ConvertMethodDeclarationToLibraryImport(methodSyntax, editor, generator, methodSymbol, GetSuffixFromEquivalenceKey(fixAllContext.CodeActionEquivalenceKey), fixAllContext.CancellationToken).ConfigureAwait(false);
+
+                    if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
+                    {
+                        bool shouldWarn = await TransformCallersOfNoPreserveSigMethod(editor, methodSymbol, fixAllContext.CancellationToken).ConfigureAwait(false);
+                        if (shouldWarn)
+                        {
+                            generatedDeclaration = generatedDeclaration.WithAdditionalAnnotations(WarningAnnotation.Create(Resources.ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode));
+                        }
+                    }
+
+                    // Replace the original method with the updated one
+                    editor.ReplaceNode(methodSyntax, generatedDeclaration);
+
+                    MakeEnclosingTypesPartial(editor, methodSyntax);
+                }
+
+                return editor.GetChangedDocument();
+            }
+
+            private static char? GetSuffixFromEquivalenceKey(string equivalenceKey) => equivalenceKey switch
+            {
+                ConvertToLibraryImportWithASuffixKey => 'A',
+                ConvertToLibraryImportWithWSuffixKey => 'W',
+                _ => null
+            };
+        }
+
+        private static async Task<Document> ConvertToLibraryImport(
             Document doc,
             MethodDeclarationSyntax methodSyntax,
-            IMethodSymbol methodSymbol,
-            AttributeData dllImportAttr,
-            INamedTypeSymbol generatedDllImportAttrType,
             char? entryPointSuffix,
             CancellationToken cancellationToken)
         {
@@ -142,28 +166,80 @@ namespace Microsoft.Interop.Analyzers
 
             SyntaxGenerator generator = editor.Generator;
 
+            if (editor.SemanticModel.GetDeclaredSymbol(methodSyntax, cancellationToken) is not IMethodSymbol methodSymbol)
+                return doc;
+
+            SyntaxNode generatedDeclaration = await ConvertMethodDeclarationToLibraryImport(methodSyntax, editor, generator, methodSymbol, entryPointSuffix, cancellationToken).ConfigureAwait(false);
+
+            if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
+            {
+                bool shouldWarn = await TransformCallersOfNoPreserveSigMethod(editor, methodSymbol, cancellationToken).ConfigureAwait(false);
+                if (shouldWarn)
+                {
+                    generatedDeclaration = generatedDeclaration.WithAdditionalAnnotations(WarningAnnotation.Create(Resources.ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode));
+                }
+            }
+
+            // Replace the original method with the updated one
+            editor.ReplaceNode(methodSyntax, generatedDeclaration);
+
+            MakeEnclosingTypesPartial(editor, methodSyntax);
+
+            return editor.GetChangedDocument();
+        }
+
+        private static async Task<SyntaxNode> ConvertMethodDeclarationToLibraryImport(
+            MethodDeclarationSyntax methodSyntax,
+            DocumentEditor editor,
+            SyntaxGenerator generator,
+            IMethodSymbol methodSymbol,
+            char? entryPointSuffix,
+            CancellationToken cancellationToken)
+        {
+            INamedTypeSymbol? dllImportAttrType = editor.SemanticModel.Compilation.GetTypeByMetadataName(typeof(DllImportAttribute).FullName);
+            if (dllImportAttrType == null)
+                return methodSyntax;
+
+            // We wouldn't have offered this code fix if the LibraryImport type isn't available, so we can be sure it isn't null here.
+            INamedTypeSymbol libraryImportAttrType = editor.SemanticModel.Compilation.GetTypeByMetadataName(TypeNames.LibraryImportAttribute)!;
+
+            // Make sure the method has the DllImportAttribute
+            if (!TryGetAttribute(methodSymbol, dllImportAttrType, out AttributeData? dllImportAttr))
+                return methodSyntax;
+
             var dllImportSyntax = (AttributeSyntax)await dllImportAttr!.ApplicationSyntaxReference!.GetSyntaxAsync(cancellationToken).ConfigureAwait(false);
 
-            // Create GeneratedDllImport attribute based on the DllImport attribute
-            SyntaxNode generatedDllImportSyntax = GetGeneratedDllImportAttribute(
+            // Create LibraryImport attribute based on the DllImport attribute
+            SyntaxNode libraryImportSyntax = GetLibraryImportAttribute(
                 editor,
                 generator,
                 dllImportSyntax,
                 methodSymbol,
-                generatedDllImportAttrType,
+                libraryImportAttrType,
                 entryPointSuffix,
                 out SyntaxNode? unmanagedCallConvAttributeMaybe);
 
             // Add annotation about potential behavioural and compatibility changes
-            generatedDllImportSyntax = generatedDllImportSyntax.WithAdditionalAnnotations(
+            libraryImportSyntax = libraryImportSyntax.WithAdditionalAnnotations(
                 WarningAnnotation.Create(string.Format(Resources.ConvertToLibraryImportWarning, "[TODO] Documentation link")));
 
-            // Replace DllImport with GeneratedDllImport
-            SyntaxNode generatedDeclaration = generator.ReplaceNode(methodSyntax, dllImportSyntax, generatedDllImportSyntax);
-
+            // Replace DllImport with LibraryImport
+            SyntaxNode generatedDeclaration = generator.ReplaceNode(methodSyntax, dllImportSyntax, libraryImportSyntax);
             if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
             {
-                generatedDeclaration = await RemoveNoPreserveSigTransform(editor, generatedDeclaration, methodSymbol, cancellationToken).ConfigureAwait(false);
+                if (!methodSymbol.ReturnsVoid)
+                {
+                    generatedDeclaration = editor.Generator.AddParameters(
+                        generatedDeclaration,
+                        new[]
+                        {
+                        editor.Generator.ParameterDeclaration("@return", editor.Generator.GetType(generatedDeclaration), refKind: RefKind.Out)
+                        });
+                }
+
+                generatedDeclaration = editor.Generator.WithType(
+                    generatedDeclaration,
+                    editor.Generator.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(SpecialType.System_Int32)));
             }
 
             if (unmanagedCallConvAttributeMaybe is not null)
@@ -197,13 +273,25 @@ namespace Microsoft.Interop.Analyzers
                     GenerateMarshalAsUnmanagedTypeBoolAttribute(generator));
             }
 
-            // Replace the original method with the updated one
-            editor.ReplaceNode(methodSyntax, generatedDeclaration);
-
-            return editor.GetChangedDocument();
+            return generatedDeclaration;
         }
 
-        private async Task<SyntaxNode> RemoveNoPreserveSigTransform(DocumentEditor editor, SyntaxNode generatedDeclaration, IMethodSymbol methodSymbol, CancellationToken cancellationToken)
+        private static SyntaxNode GenerateMarshalAsUnmanagedTypeBoolAttribute(SyntaxGenerator generator)
+         => generator.Attribute(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute,
+             generator.AttributeArgument(
+                 generator.MemberAccessExpression(
+                     generator.DottedName(TypeNames.System_Runtime_InteropServices_UnmanagedType),
+                     generator.IdentifierName("Bool"))));
+
+        private static void MakeEnclosingTypesPartial(DocumentEditor editor, MethodDeclarationSyntax method)
+        {
+            for (TypeDeclarationSyntax? typeDecl = method.FirstAncestorOrSelf<TypeDeclarationSyntax>(); typeDecl is not null; typeDecl = typeDecl.Parent.FirstAncestorOrSelf<TypeDeclarationSyntax>())
+            {
+                editor.ReplaceNode(typeDecl, (node, generator) => generator.WithModifiers(node, generator.GetModifiers(node).WithPartial(true)));
+            }
+        }
+
+        private static async Task<bool> TransformCallersOfNoPreserveSigMethod(DocumentEditor editor, IMethodSymbol methodSymbol, CancellationToken cancellationToken)
         {
             Document? document = editor.OriginalDocument;
             IEnumerable<ReferencedSymbol>? referencedSymbols = await SymbolFinder.FindReferencesAsync(
@@ -213,8 +301,6 @@ namespace Microsoft.Interop.Analyzers
 
             // Sometimes we can't validate that we've fixed all callers, so we warn the user that this fix might produce invalid code.
             bool shouldWarn = false;
-
-            List<(SyntaxNode invocation, Func<SyntaxNode, SyntaxGenerator, SyntaxNode> action)> invocations = new();
 
             foreach (ReferencedSymbol? referencedSymbol in referencedSymbols)
             {
@@ -254,12 +340,12 @@ namespace Microsoft.Interop.Analyzers
                     {
                         // There is no return value, so we don't need to add any arguments to the invocation.
                         // We only need to wrap the invocation with a call to ThrowExceptionForHR
-                        invocations.Add((invocation, WrapInvocationWithHRExceptionThrow));
+                        editor.ReplaceNode(invocation, WrapInvocationWithHRExceptionThrow);
                     }
                     else if (invocation.Parent.IsKind(SyntaxKind.ExpressionStatement))
                     {
                         // The return value isn't used, so discard the new out parameter value
-                        invocations.Add((invocation,
+                        editor.ReplaceNode(invocation,
                            (node, generator) =>
                            {
                                return WrapInvocationWithHRExceptionThrow(
@@ -274,7 +360,7 @@ namespace Microsoft.Interop.Analyzers
                                            .WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.OutKeyword))),
                                    generator);
                            }
-                        ));
+                        );
                     }
                     else if (invocation.Parent.IsKind(SyntaxKind.EqualsValueClause))
                     {
@@ -292,7 +378,7 @@ namespace Microsoft.Interop.Analyzers
                         }
                         // The result was used to initialize a variable,
                         // so initialize the variable inline
-                        invocations.Add((declaration,
+                        editor.ReplaceNode(declaration,
                            (node, generator) =>
                            {
                                var declaration = (LocalDeclarationStatementSyntax)node;
@@ -307,11 +393,11 @@ namespace Microsoft.Interop.Analyzers
                                                .WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.OutKeyword))),
                                                generator));
                            }
-                        ));
+                        );
                     }
                     else if (invocation.Parent.IsKind(SyntaxKind.SimpleAssignmentExpression) && invocation.Parent.Parent.IsKind(SyntaxKind.ExpressionStatement))
                     {
-                        invocations.Add((invocation.Parent,
+                        editor.ReplaceNode(invocation.Parent,
                            (node, generator) =>
                            {
                                var assignment = (AssignmentExpressionSyntax)node;
@@ -322,7 +408,7 @@ namespace Microsoft.Interop.Analyzers
                                            .WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.OutKeyword))),
                                    generator);
                            }
-                        ));
+                        );
                     }
                     else
                     {
@@ -331,34 +417,7 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
 
-            foreach ((SyntaxNode node, Func<SyntaxNode, SyntaxGenerator, SyntaxNode> action) nodesWithReplaceAction in invocations)
-            {
-                editor.ReplaceNode(
-                    nodesWithReplaceAction.node, (node, generator) =>
-                    {
-                        return nodesWithReplaceAction.action(node, generator);
-                    });
-            }
-
-            SyntaxNode noPreserveSigDeclaration = editor.Generator.WithType(
-                generatedDeclaration,
-                editor.Generator.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(SpecialType.System_Int32)));
-
-            if (!methodSymbol.ReturnsVoid)
-            {
-                noPreserveSigDeclaration = editor.Generator.AddParameters(
-                    noPreserveSigDeclaration,
-                    new[]
-                    {
-                        editor.Generator.ParameterDeclaration("@return", editor.Generator.GetType(generatedDeclaration), refKind: RefKind.Out)
-                    });
-            }
-
-            if (shouldWarn)
-            {
-                noPreserveSigDeclaration = noPreserveSigDeclaration.WithAdditionalAnnotations(WarningAnnotation.Create(Resources.ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode));
-            }
-            return noPreserveSigDeclaration;
+            return shouldWarn;
 
             SyntaxNode WrapInvocationWithHRExceptionThrow(SyntaxNode node, SyntaxGenerator generator)
             {
@@ -372,19 +431,12 @@ namespace Microsoft.Interop.Analyzers
             }
         }
 
-        private static SyntaxNode GenerateMarshalAsUnmanagedTypeBoolAttribute(SyntaxGenerator generator)
-            => generator.Attribute(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute,
-                generator.AttributeArgument(
-                    generator.MemberAccessExpression(
-                        generator.DottedName(TypeNames.System_Runtime_InteropServices_UnmanagedType),
-                        generator.IdentifierName("Bool"))));
-
-        private SyntaxNode GetGeneratedDllImportAttribute(
+        private static SyntaxNode GetLibraryImportAttribute(
             DocumentEditor editor,
             SyntaxGenerator generator,
             AttributeSyntax dllImportSyntax,
             IMethodSymbol methodSymbol,
-            INamedTypeSymbol generatedDllImportAttrType,
+            INamedTypeSymbol libraryImportAttrType,
             char? entryPointSuffix,
             out SyntaxNode? unmanagedCallConvAttributeMaybe)
         {
@@ -393,16 +445,16 @@ namespace Microsoft.Interop.Analyzers
             DllImportData dllImportData = methodSymbol.GetDllImportData()!;
             string methodName = methodSymbol.Name;
 
-            // Create GeneratedDllImport based on the DllImport attribute
-            SyntaxNode generatedDllImportSyntax = generator.ReplaceNode(dllImportSyntax,
+            // Create LibraryImport based on the DllImport attribute
+            SyntaxNode libraryImportSyntax = generator.ReplaceNode(dllImportSyntax,
                 dllImportSyntax.Name,
-                generator.TypeExpression(generatedDllImportAttrType));
+                generator.TypeExpression(libraryImportAttrType));
 
-            // Update attribute arguments for GeneratedDllImport
+            // Update attribute arguments for LibraryImport
             bool hasEntryPointAttributeArgument = false;
             List<SyntaxNode> argumentsToAdd= new List<SyntaxNode>();
             List<SyntaxNode> argumentsToRemove = new List<SyntaxNode>();
-            foreach (SyntaxNode argument in generator.GetAttributeArguments(generatedDllImportSyntax))
+            foreach (SyntaxNode argument in generator.GetAttributeArguments(libraryImportSyntax))
             {
                 if (argument is not AttributeArgumentSyntax attrArg)
                     continue;
@@ -412,7 +464,7 @@ namespace Microsoft.Interop.Analyzers
                     && IsMatchingNamedArg(attrArg, nameof(DllImportAttribute.BestFitMapping)))
                 {
                     // BestFitMapping=false is explicitly set
-                    // GeneratedDllImport does not support setting BestFitMapping. The generated code
+                    // LibraryImport does not support setting BestFitMapping. The generated code
                     // has the equivalent behaviour of BestFitMapping=false, so we can remove the argument.
                     argumentsToRemove.Add(argument);
                 }
@@ -440,7 +492,7 @@ namespace Microsoft.Interop.Analyzers
                     && IsMatchingNamedArg(attrArg, nameof(DllImportAttribute.ThrowOnUnmappableChar)))
                 {
                     // ThrowOnUnmappableChar=false is explicitly set
-                    // GeneratedDllImport does not support setting ThrowOnUnmappableChar. The generated code
+                    // LibraryImport does not support setting ThrowOnUnmappableChar. The generated code
                     // has the equivalent behaviour of ThrowOnUnmappableChar=false, so we can remove the argument.
                     argumentsToRemove.Add(argument);
                 }
@@ -499,9 +551,9 @@ namespace Microsoft.Interop.Analyzers
                     generator.LiteralExpression(methodName + entryPointSuffix.Value)));
             }
 
-            generatedDllImportSyntax = generator.RemoveNodes(generatedDllImportSyntax, argumentsToRemove);
-            generatedDllImportSyntax = generator.AddAttributeArguments(generatedDllImportSyntax, argumentsToAdd);
-            return SortDllImportAttributeArguments((AttributeSyntax)generatedDllImportSyntax, generator);
+            libraryImportSyntax = generator.RemoveNodes(libraryImportSyntax, argumentsToRemove);
+            libraryImportSyntax = generator.AddAttributeArguments(libraryImportSyntax, argumentsToAdd);
+            return SortDllImportAttributeArguments((AttributeSyntax)libraryImportSyntax, generator);
         }
 
         private static SyntaxNode SortDllImportAttributeArguments(AttributeSyntax attribute, SyntaxGenerator generator)
@@ -522,7 +574,7 @@ namespace Microsoft.Interop.Analyzers
             return generator.ReplaceNode(attribute, attribute.ArgumentList, updatedArgList);
         }
 
-        private bool TryCreateUnmanagedCallConvAttributeToEmit(
+        private static bool TryCreateUnmanagedCallConvAttributeToEmit(
             DocumentEditor editor,
             SyntaxGenerator generator,
             CallingConvention callingConvention,

@@ -1396,13 +1396,6 @@ void EEJitManager::SetCpuInfo()
                 }
             }
 
-            static ConfigDWORD fFeatureSIMD;
-
-            if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
-            {
-                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
-            }
-
             if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SIMD16ByteOnly) != 0)
             {
                 CPUCompileFlags.Clear(InstructionSet_AVX2);
@@ -1449,11 +1442,6 @@ void EEJitManager::SetCpuInfo()
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
 #if defined(TARGET_ARM64)
-    static ConfigDWORD fFeatureSIMD;
-    if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
-    {
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
-    }
 #if defined(TARGET_UNIX)
     PAL_GetJitCpuCapabilityFlags(&CPUCompileFlags);
 
@@ -5468,21 +5456,11 @@ static void EnumRuntimeFunctionEntriesToFindEntry(PTR_RUNTIME_FUNCTION pRtf, PTR
         return;
     }
 
-    // Review conversion of size_t to ULONG.
-#if defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable:4267)
-#endif // defined(_MSC_VER)
+    UINT_PTR indexToLocate = pRtf - firstFunctionEntry;
 
-    ULONG indexToLocate = pRtf - firstFunctionEntry;
-
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif // defined(_MSC_VER)
-
-    ULONG low = 0; // index in the function entry table of low end of search range
-    ULONG high = (pProgramExceptionsDirectory->Size) / sizeof(T_RUNTIME_FUNCTION) - 1; // index of high end of search range
-    ULONG mid = (low + high) / 2; // index of entry to be compared
+    UINT_PTR low = 0; // index in the function entry table of low end of search range
+    UINT_PTR high = (pProgramExceptionsDirectory->Size) / sizeof(T_RUNTIME_FUNCTION) - 1; // index of high end of search range
+    UINT_PTR mid = (low + high) / 2; // index of entry to be compared
 
     if (indexToLocate > high)
     {

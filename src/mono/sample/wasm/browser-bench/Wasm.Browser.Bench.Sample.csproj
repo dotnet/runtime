@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- don't need to run this on helix -->
     <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
     <WasmMainJSPath>main.js</WasmMainJSPath>
