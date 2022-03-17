@@ -27,10 +27,7 @@ trigger:
 pr: none
 
 jobs:
-#
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
+
 
 #
 # Debug builds

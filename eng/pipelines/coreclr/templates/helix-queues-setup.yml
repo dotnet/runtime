@@ -8,6 +8,7 @@ parameters:
   pool: ''
   platform: ''
   runtimeFlavorDisplayName: ''
+  dependOnEvaluatePaths: false
   jobParameters: {}
 
 jobs:
@@ -19,6 +20,7 @@ jobs:
     archType: ${{ parameters.archType }}
     container: ${{ parameters.container }}
     pool: ${{ parameters.pool }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
     helixQueues:
 

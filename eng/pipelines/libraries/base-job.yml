@@ -14,6 +14,7 @@ parameters:
   container: ''
   steps: []
   dependsOn: []
+  dependOnEvaluatePaths: false
   variables: {}
   name: ''
   displayName: ''
@@ -118,7 +119,8 @@ jobs:
         - _BuildConfig: ${{ parameters.buildConfig }}
 
       dependsOn:
-      - checkout
+      - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
+        - evaluate_paths
       - ${{ parameters.dependsOn }}
       workspace:
         clean: all
@@ -127,7 +129,9 @@ jobs:
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
       steps:
-      - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+      - checkout: self
+        clean: true
+        fetchDepth: $(checkoutFetchDepth)
 
       - ${{ if ne(variables['System.TeamProject'], 'public') }}:
         - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
