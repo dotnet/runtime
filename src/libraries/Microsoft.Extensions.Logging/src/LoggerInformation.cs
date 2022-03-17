@@ -47,10 +47,7 @@ namespace Microsoft.Extensions.Logging
     {
         public ScopeLogger(ILogger? logger, IExternalScopeProvider? externalScopeProvider)
         {
-            if (logger == null && externalScopeProvider == null)
-            {
-                throw new ArgumentNullException(nameof(logger), SR.Error_LoggerRequiredWithoutExternalScopeProvider);
-            }
+            Debug.Assert(logger != null || externalScopeProvider != null, "Logger can't be null when there isn't an ExternalScopeProvider");
 
             Logger = logger;
             ExternalScopeProvider = externalScopeProvider;
@@ -67,7 +64,7 @@ namespace Microsoft.Extensions.Logging
                 return ExternalScopeProvider.Push(state);
             }
 
-            Debug.Assert(Logger != null, "Logger can't be null when there isn't an ExternalScopeProvider");
+            Debug.Assert(Logger != null);
             return Logger.BeginScope<TState>(state);
         }
     }
