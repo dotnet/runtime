@@ -71,7 +71,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"internal sealed class {rm.GeneratedName} : Regex");
             writer.WriteLine($"{{");
             writer.WriteLine($"    /// <summary>Cached, thread-safe singleton instance.</summary>");
-            writer.WriteLine($"    internal static Regex Instance {{ get; }} = new({Literal(rm.Pattern)}, {Literal(rm.Options)}, {GetTimeoutExpression(rm.MatchTimeout)});");
+            writer.WriteLine($"    internal static readonly Regex Instance = new({Literal(rm.Pattern)}, {Literal(rm.Options)}, {GetTimeoutExpression(rm.MatchTimeout)});");
             writer.WriteLine($"}}");
         }
 
@@ -83,7 +83,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"internal sealed class {rm.GeneratedName} : Regex");
             writer.WriteLine($"{{");
             writer.WriteLine($"    /// <summary>Cached, thread-safe singleton instance.</summary>");
-            writer.WriteLine($"    internal static {rm.GeneratedName} Instance {{ get; }} = new();");
+            writer.WriteLine($"    internal static readonly {rm.GeneratedName} Instance = new();");
             writer.WriteLine($"");
             writer.WriteLine($"    /// <summary>Initializes the instance.</summary>");
             writer.WriteLine($"    private {rm.GeneratedName}()");
