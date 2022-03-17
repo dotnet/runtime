@@ -354,7 +354,7 @@ extern mono_lazy_init_t _ep_rt_mono_managed_cmd_line_init;
 extern ep_rt_spin_lock_handle_t _ep_rt_mono_config_lock;
 extern char * ep_rt_mono_get_managed_cmd_line (void);
 extern char * ep_rt_mono_get_os_cmd_line (void);
-extern ep_rt_file_handle_t ep_rt_mono_file_open_write(const ep_char8_t *path);
+extern ep_rt_file_handle_t ep_rt_mono_file_open_write (const ep_char8_t *path);
 extern bool ep_rt_mono_file_close (ep_rt_file_handle_t handle);
 extern bool ep_rt_mono_file_write (ep_rt_file_handle_t handle, const uint8_t *buffer, uint32_t numbytes, uint32_t *byteswritten);
 extern void * ep_rt_mono_thread_attach (bool background_thread);
@@ -1385,7 +1385,7 @@ ep_rt_file_open_write (const ep_char8_t *path)
 {
 	ep_rt_file_handle_t res = ep_rt_mono_file_open_write (path);
 
-	if (res == INVALID_HANDLE_VALUE)
+	return (res != INVALID_HANDLE_VALUE) ? res : INVALID_HANDLE_VALUE;
 		return NULL;
 	else
 		return res;

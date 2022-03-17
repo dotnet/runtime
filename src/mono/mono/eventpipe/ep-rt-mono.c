@@ -1134,7 +1134,11 @@ bool
 ep_rt_mono_file_close (ep_rt_file_handle_t handle);
 
 bool
-ep_rt_mono_file_write (ep_rt_file_handle_t handle, const uint8_t *buffer, uint32_t numbytes, uint32_t *byteswritten);
+ep_rt_mono_file_write (
+	ep_rt_file_handle_t handle,
+	const uint8_t *buffer,
+	uint32_t numbytes,
+	uint32_t *byteswritten);
 
 EventPipeThread *
 ep_rt_mono_thread_get_or_create (void);
@@ -2082,15 +2086,18 @@ ep_rt_mono_rand_try_get_bytes (
 	return mono_rand_try_get_bytes (&_ep_rt_mono_rand_provider, (guchar *)buffer, (gssize)buffer_size, error);
 }
 
-static GString *
-quote_escape_and_append_string (char *src_str, GString *target_str)
+static
+GString *
+quote_escape_and_append_string (
+	char *src_str,
+	GString *target_str)
 {
 #ifdef HOST_WIN32
 	char quote_char = '\"';
-	char escape_chars[] = "\"\\";
+	char escape_chars [] = "\"\\";
 #else
 	char quote_char = '\'';
-	char escape_chars[] = "\'\\";
+	char escape_chars [] = "\'\\";
 #endif
 
 	gboolean need_quote = FALSE;
@@ -2137,7 +2144,7 @@ ep_rt_mono_get_managed_cmd_line ()
 	char **argv = mono_runtime_get_main_args_argv_raw ();
 	GString *cmd_line = NULL;
 
-	host_path = minipal_getexepath();
+	host_path = minipal_getexepath ();
 
 	if (host_path)
 		// quote + string + quote
@@ -2187,13 +2194,13 @@ ep_rt_mono_get_os_cmd_line ()
 	// we only return the native host here since getting the full commandline is complicated and
 	// it's not super important to have the correct value since it'll only be used during startup
 	// until we have the managed commandline
-	return minipal_getexepath();
+	return minipal_getexepath ();
 }
 
 #ifdef HOST_WIN32
 
 ep_rt_file_handle_t
-ep_rt_mono_file_open_write(const ep_char8_t *path)
+ep_rt_mono_file_open_write (const ep_char8_t *path)
 {
 	if (!path)
 		return INVALID_HANDLE_VALUE;
@@ -2222,13 +2229,18 @@ ep_rt_mono_file_close (ep_rt_file_handle_t handle)
 	return res;
 }
 
-static void
-win32_io_interrupt_handler (void* ignored)
+static
+void
+win32_io_interrupt_handler (void *ignored)
 {
 }
 
 bool
-ep_rt_mono_file_write (ep_rt_file_handle_t handle, const uint8_t *buffer, uint32_t numbytes, uint32_t *byteswritten)
+ep_rt_mono_file_write (
+	ep_rt_file_handle_t handle,
+	const uint8_t *buffer,
+	uint32_t numbytes,
+	uint32_t *byteswritten)
 {
 	bool res;
 	MonoThreadInfo *info = mono_thread_info_current ();
@@ -2237,16 +2249,16 @@ ep_rt_mono_file_write (ep_rt_file_handle_t handle, const uint8_t *buffer, uint32
 	if (info) {
 		mono_thread_info_install_interrupt (win32_io_interrupt_handler, NULL, &alerted);
 		if (alerted) {
-			return FALSE;
+			return false;
 		}
 		mono_win32_enter_blocking_io_call (info, handle);
 	}
 
 	MONO_ENTER_GC_SAFE;
 	if (info && mono_thread_info_is_interrupt_state (info)) {
-		res = FALSE;
+		res = false;
 	} else {
-		res = WriteFile (handle, buffer, numbytes, (PDWORD)byteswritten, NULL) ? TRUE : FALSE;
+		res = WriteFile (handle, buffer, numbytes, (PDWORD)byteswritten, NULL) ? true : false;
 	}
 	MONO_EXIT_GC_SAFE;
 
@@ -2264,7 +2276,7 @@ ep_rt_mono_file_write (ep_rt_file_handle_t handle, const uint8_t *buffer, uint32
 #include <unistd.h>
 
 ep_rt_file_handle_t
-ep_rt_mono_file_open_write(const ep_char8_t *path)
+ep_rt_mono_file_open_write (const ep_char8_t *path)
 {
 	int fd;
 	mode_t perms = 0666;
@@ -2291,11 +2303,15 @@ ep_rt_mono_file_close (ep_rt_file_handle_t handle)
 	close (fd);
 	MONO_EXIT_GC_SAFE;
 
-	return TRUE;
+	return true;
 }
 
 bool
-ep_rt_mono_file_write (ep_rt_file_handle_t handle, const uint8_t *buffer, uint32_t numbytes, uint32_t *byteswritten)
+ep_rt_mono_file_write (
+	ep_rt_file_handle_t handle,
+	const uint8_t *buffer,
+	uint32_t numbytes,
+	uint32_t *byteswritten)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -2317,13 +2333,13 @@ ep_rt_mono_file_write (ep_rt_file_handle_t handle, const uint8_t *buffer, uint32
 		if (errno == EINTR)
 			ret = 0;
 		else
-			return FALSE;
+			return false;
 	}
 
 	if (byteswritten != NULL)
 		*byteswritten = ret;
 
-	return TRUE;
+	return true;
 }
 
 #endif // HOST_WIN32
