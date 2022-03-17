@@ -84,6 +84,13 @@ class GetLibraryExportTests : IDisposable
 
     private static unsafe int RunExportedFunction(IntPtr address, int arg1, int arg2)
     {
-        return ((delegate* unmanaged<int, int, int>)address)(arg1, arg2);
+        // We use a delegate here instead of a function pointer to avoid hitting issues
+        // where Mono AOT doesn't generate the managed->native wrapper and then fails
+        // when in AOT-only mode.
+        NativeFunctionWrapper wrapper = Marshal.GetDelegateForFunctionPointer<NativeFunctionWrapper>(address);
+        return wrapper(arg1, arg2);
     }
+
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    private delegate int NativeFunctionWrapper(int arg1, int arg2);
 }
