@@ -401,11 +401,12 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
-        private static object CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        [RequiresUnreferencedCode("In case type is a Nullable<T>, cannot statically analyze what the underlying type is so its members may be trimmed.")]
+        private static object CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type)
         {
             Debug.Assert(!type.IsArray);
 
-            if (type.IsInterface || type.IsAbstract)
+            if (type.IsAbstract)
             {
                 throw new InvalidOperationException(SR.Format(SR.Error_CannotActivateAbstractOrInterface, type));
             }
