@@ -907,7 +907,7 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/66852", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/66854", TestRuntimes.Mono)]
         public static void CooperativeBlockingCanCreateThreadsFaster()
         {
             // Run in a separate process to test in a clean thread pool environment such that work items queued by the test
