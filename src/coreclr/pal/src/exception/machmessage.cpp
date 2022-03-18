@@ -324,7 +324,7 @@ int MachMessage::GetExceptionCodeCount()
 }
 
 // Get the exception sub-code at the specified zero-based index for an exception notification message.
-MACH_EH_TYPE(exception_data_type_t) MachMessage::GetExceptionCode(int iIndex)
+mach_exception_data_type_t MachMessage::GetExceptionCode(int iIndex)
 {
     if (iIndex < 0 || iIndex >= GetExceptionCodeCount())
     {
@@ -334,19 +334,19 @@ MACH_EH_TYPE(exception_data_type_t) MachMessage::GetExceptionCode(int iIndex)
     switch (m_pMessage->header.msgh_id)
     {
     case EXCEPTION_RAISE_MESSAGE_ID:
-        return (MACH_EH_TYPE(exception_data_type_t))m_pMessage->data.raise.code[iIndex];
+        return (mach_exception_data_type_t)m_pMessage->data.raise.code[iIndex];
 
     case EXCEPTION_RAISE_64_MESSAGE_ID:
         return m_pMessage->data.raise_64.code[iIndex];
 
     case EXCEPTION_RAISE_STATE_MESSAGE_ID:
-        return (MACH_EH_TYPE(exception_data_type_t))m_pMessage->data.raise_state.code[iIndex];
+        return (mach_exception_data_type_t)m_pMessage->data.raise_state.code[iIndex];
 
     case EXCEPTION_RAISE_STATE_64_MESSAGE_ID:
         return m_pMessage->data.raise_state_64.code[iIndex];
 
     case EXCEPTION_RAISE_STATE_IDENTITY_MESSAGE_ID:
-        return (MACH_EH_TYPE(exception_data_type_t))m_pMessage->data.raise_state_identity.code[iIndex];
+        return (mach_exception_data_type_t)m_pMessage->data.raise_state_identity.code[iIndex];
 
     case EXCEPTION_RAISE_STATE_IDENTITY_64_MESSAGE_ID:
         return m_pMessage->data.raise_state_identity_64.code[iIndex];
@@ -1255,7 +1255,7 @@ void MachMessage::SetExceptionCodeCount(int cCodes)
 }
 
 // Set exception sub-code in an exception notification message.
-void MachMessage::SetExceptionCode(int iIndex, MACH_EH_TYPE(exception_data_type_t) iCode)
+void MachMessage::SetExceptionCode(int iIndex, mach_exception_data_type_t iCode)
 {
     if (iIndex < 0 || iIndex > 1)
         NONPAL_RETAIL_ASSERT("Exception code index out of range");

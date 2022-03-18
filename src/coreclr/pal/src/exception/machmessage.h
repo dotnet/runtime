@@ -21,12 +21,6 @@ using namespace CorUnix;
 
 #if HAVE_MACH_EXCEPTIONS
 
-#if defined(HOST_64BIT)
-#define MACH_EH_TYPE(x) mach_##x
-#else
-#define MACH_EH_TYPE(x) x
-#endif // defined(HOST_AMD64)
-
 // The vast majority of Mach calls we make in this module are critical: we cannot recover from failures of
 // these methods (principally because we're handling hardware exceptions in the context of a single dedicated
 // handler thread). The following macro encapsulates checking the return code from Mach methods and emitting
@@ -87,7 +81,7 @@ struct MachExceptionInfo
 {
     exception_type_t ExceptionType;
     mach_msg_type_number_t SubcodeCount;
-    MACH_EH_TYPE(exception_data_type_t) Subcodes[2];
+    mach_exception_data_type_t Subcodes[2];
 #if defined(HOST_AMD64)
     x86_thread_state_t ThreadState;
     x86_float_state_t FloatState;
@@ -165,7 +159,7 @@ public:
     thread_act_t GetThread();           // Get the faulting thread
     exception_type_t GetException();    // Get the exception type (e.g. EXC_BAD_ACCESS)
     int GetExceptionCodeCount();        // Get the number of exception sub-codes
-    MACH_EH_TYPE(exception_data_type_t) GetExceptionCode(int iIndex);   // Get the exception sub-code at the given index
+    mach_exception_data_type_t GetExceptionCode(int iIndex);   // Get the exception sub-code at the given index
 
     // Fetch the thread state flavor from a notification or reply message (return THREAD_STATE_NONE for the
     // messages that don't contain a thread state).
@@ -419,7 +413,7 @@ private:
     void SetThread(thread_act_t thread);
     void SetException(exception_type_t eException);
     void SetExceptionCodeCount(int cCodes);
-    void SetExceptionCode(int iIndex, MACH_EH_TYPE(exception_data_type_t) iCode);
+    void SetExceptionCode(int iIndex, mach_exception_data_type_t iCode);
 
     // Defined for replies:
     void SetReturnCode(kern_return_t eReturnCode);
