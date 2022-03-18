@@ -4149,9 +4149,9 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
         return nullptr;
     }
 
-    // prevent decomposed 64 integer node parts in x86 from being recognised
-    if (((xorNode->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS) || ((negOp->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS) ||
-        ((negNode->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS))
+     // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
+    if (((xorNode->gtFlags & GTF_SET_FLAGS) != 0) || ((negOp->gtFlags & GTF_SET_FLAGS) !=0) ||
+        ((negNode->gtFlags & GTF_SET_FLAGS) != 0))
     {
         return nullptr;
     }
