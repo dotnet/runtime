@@ -614,6 +614,11 @@ namespace ILLink.Shared.TrimAnalysis
 			// Type.BaseType
 			//
 			case IntrinsicId.Type_get_BaseType: {
+					if (instanceValue.IsEmpty ()) {
+						returnValue = MultiValueLattice.Top;
+						break;
+					}
+
 					foreach (var value in instanceValue) {
 						if (value is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers) {
 							DynamicallyAccessedMemberTypes propagatedMemberTypes = DynamicallyAccessedMemberTypes.None;
@@ -650,6 +655,7 @@ namespace ILLink.Shared.TrimAnalysis
 								AddReturnValue (GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes));
 						} else if (value == NullValue.Instance) {
 							// Ignore nulls - null.BaseType will fail at runtime, but it has no effect on static analysis
+							returnValue ??= MultiValueLattice.Top;
 							continue;
 						} else {
 							// Unknown input - propagate a return value without any annotation - we know it's a Type but we know nothing about it
