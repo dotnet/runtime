@@ -234,7 +234,7 @@ namespace Mono.Linker.Steps
 			_context = context;
 			_unreachableBlocksOptimizer = new UnreachableBlocksOptimizer (_context);
 			_markContext = new MarkStepContext ();
-			_scopeStack = new MarkScopeStack (_context);
+			_scopeStack = new MarkScopeStack ();
 			_dynamicallyAccessedMembersTypeHierarchy = new DynamicallyAccessedMembersTypeHierarchy (_context, this, _scopeStack);
 
 			Initialize ();
@@ -2890,17 +2890,24 @@ namespace Mono.Linker.Steps
 			// since that will be different for compiler generated code.
 			var currentOrigin = ScopeStack.CurrentScope.Origin;
 
-			ICustomAttributeProvider? suppressionContextMember = currentOrigin.SuppressionContextMember;
-			if (suppressionContextMember is MethodDefinition &&
-				Annotations.IsMethodInRequiresUnreferencedCodeScope ((MethodDefinition) suppressionContextMember))
-				return true;
-
 			ICustomAttributeProvider? originMember = currentOrigin.Provider;
-			if (originMember is MethodDefinition && suppressionContextMember != originMember &&
+			if (originMember == null)
+				return false;
+
+			if (originMember is MethodDefinition &&
 				Annotations.IsMethodInRequiresUnreferencedCodeScope ((MethodDefinition) originMember))
 				return true;
 
-			return false;
+			if (originMember is not IMemberDefinition member)
+				return false;
+
+			MethodDefinition? userDefinedMethod = Context.CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember (member);
+			if (userDefinedMethod == null)
+				return false;
+
+			Debug.Assert (userDefinedMethod != originMember);
+
+			return Annotations.IsMethodInRequiresUnreferencedCodeScope (userDefinedMethod);
 		}
 
 		internal void CheckAndReportRequiresUnreferencedCode (MethodDefinition method)
