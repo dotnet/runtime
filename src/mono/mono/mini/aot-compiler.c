@@ -3352,15 +3352,11 @@ encode_klass_ref_inner (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, gui
 		} else {
 			MonoClass *gclass = mono_class_get_generic_class (klass)->container_class;
 			MonoGenericInst *inst = mono_class_get_generic_class (klass)->context.class_inst;
-			static int count = 0;
-			guint8 *p1 = p;
 
 			encode_value (MONO_AOT_TYPEREF_GINST, p, &p);
 			encode_klass_ref (acfg, gclass, p, &p);
 			guint32 offset = get_shared_ginst_ref (acfg, inst);
 			encode_value (offset, p, &p);
-
-			count += p - p1;
 		}
 	} else if (m_class_get_type_token (klass)) {
 		int iindex = get_image_index (acfg, m_class_get_image (klass));
