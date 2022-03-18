@@ -40,7 +40,7 @@ public class LargeFuncletFrame
     static S1 s_s1_25 = new S1();
     static S2.S2_D1_F1 s_s2_s2_d1_f1_26 = new S2.S2_D1_F1();
     static S2 s_s2_27 = new S2();
-    char char_30 = 'Y';
+    char char_30 = '8';
     int int_34 = -2147483648;
     ushort ushort_39 = 1;
     ulong ulong_41 = 3;
@@ -125,8 +125,10 @@ public class LargeFuncletFrame
                         else
                         {
                         }
+
+                        throw new Exception();
                     }
-                    catch (System.InvalidCastException)
+                    catch (Exception)
                     {
                     }
                     finally

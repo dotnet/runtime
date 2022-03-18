@@ -1425,7 +1425,14 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     {
         assert(genFuncletInfo.fiFrameType == 5);
 
-        // Nothing to do here; the first SP adjustment will be done by saving the callee-saved registers.
+        if (compiler->opts.IsOSR())
+        {
+            genStackPointerAdjustment(genFuncletInfo.fiSpDelta1, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
+        }
+        else
+        {
+            // Nothing to do here; the first SP adjustment will be done by saving the callee-saved registers.
+        }
     }
 
     int lowestCalleeSavedOffset = genFuncletInfo.fiSP_to_CalleeSave_delta +
