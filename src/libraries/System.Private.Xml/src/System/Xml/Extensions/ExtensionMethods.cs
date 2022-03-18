@@ -1,18 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
-
-
 namespace System.Xml.Extensions
 {
     internal static class ExtensionMethods
     {
+        private static readonly char[] s_trimChars = new char[] { ' ', '\t', '\n', '\r' };
         internal static Uri ToUri(string s)
         {
             if (s != null && s.Length > 0)
             { //string.Empty is a valid uri but not "   "
-                s = s.Trim(new char[] { ' ', '\t', '\n', '\r' });
+                s = s.Trim(s_trimChars);
                 if (s.Length == 0 || s.IndexOf("##", StringComparison.Ordinal) != -1)
                 {
                     throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
