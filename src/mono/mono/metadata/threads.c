@@ -53,7 +53,6 @@
 
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/abi-details.h>
-#include <mono/metadata/w32error.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-os-wait.h>
 #include <mono/metadata/exception-internals.h>
@@ -1365,7 +1364,12 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoThreadStart
 		mono_g_hash_table_remove (threads_starting_up, thread);
 		mono_threads_unlock ();
 
-		throw_thread_start_exception (mono_w32error_get_last(), error);
+#if HOST_WIN32
+		throw_thread_start_exception (GetLastError (), error);
+#else
+		// we don't have a specific error code here, hardcode to 1
+		throw_thread_start_exception (1, error);
+#endif
 
 		/* ref is not going to be decremented in start_wrapper_internal */
 		mono_atomic_dec_i32 (&start_info->ref);
