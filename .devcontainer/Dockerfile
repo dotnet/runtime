@@ -36,4 +36,4 @@ RUN sudo apt-get install libnss3 -y \
     && apt-get install libasound2 -y 
 
 #install firefox dependecies to run debugger tests:
-RUN sudo apt-get install packagekit-gtk3-module -y
+RUN sudo apt-get install libdbus-glib-1-2 -y
