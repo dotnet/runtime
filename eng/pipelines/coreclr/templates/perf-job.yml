@@ -92,9 +92,9 @@ jobs:
       extraSetupParameters: -Architecture ${{ parameters.archType }} -iOSMono -iOSLlvmBuild:$${{ parameters.iOSLlvmBuild }}
 
     variables: ${{ parameters.variables }}
-    - ${{ if eq(parameters.runtimeType, 'wasm') }}:
-      - name : buildProductArtifactName
-        value : ${{ format('BrowserWasm_{0}', parameters.osGroup) }}
+    - name : buildProductArtifactName
+      value : ${{ format('BrowserWasm_{0}', parameters.osGroup) }}
+      condition: ${{ if eq(parameters.runtimeType, 'wasm') }}
 
     frameworks:
       - ${{ parameters.framework }}
