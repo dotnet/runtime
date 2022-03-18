@@ -10,6 +10,7 @@ using System.Linq;
 using ILLink.Shared;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
+using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Steps;
@@ -894,10 +895,10 @@ namespace Mono.Linker.Dataflow
 				var parameterTypeDef = _context.TryResolve (parameterType);
 
 				if (parameterTypeDef != null) {
-					if (parameterTypeDef.IsTypeOf ("System", "Array")) {
+					if (parameterTypeDef.IsTypeOf (WellKnownType.System_Array)) {
 						// System.Array marshals as IUnknown by default
 						return true;
-					} else if (parameterTypeDef.IsTypeOf ("System", "String") ||
+					} else if (parameterTypeDef.IsTypeOf (WellKnownType.System_String) ||
 						parameterTypeDef.IsTypeOf ("System.Text", "StringBuilder")) {
 						// String and StringBuilder are special cased by interop
 						return false;
