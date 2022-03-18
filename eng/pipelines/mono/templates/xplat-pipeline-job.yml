@@ -67,6 +67,10 @@ jobs:
       - name : buildProductArtifactName
         value : 'MonoProduct__llvmaot_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
+    - ${{ if eq(parameters.osGroup, 'Browser') }}:
+      - name: buildProductArtifactName
+        value: ${{ format('BrowserWasm_{0}', parameters.osGroup) }}
+
     - name: binTestsPath
       value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
 
