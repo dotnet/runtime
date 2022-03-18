@@ -11,13 +11,13 @@ namespace Microsoft.Extensions.Logging.Debug
     /// </summary>
     internal sealed partial class DebugLogger : ILogger
     {
-        private readonly string _name;
+        private readonly string? _name;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DebugLogger"/> class.
         /// </summary>
         /// <param name="name">The name of the logger.</param>
-        public DebugLogger(string name)
+        public DebugLogger(string? name)
         {
             _name = name;
         }
@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Logging.Debug
         }
 
         /// <inheritdoc />
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
             if (!IsEnabled(logLevel))
             {
