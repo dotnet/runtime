@@ -764,6 +764,16 @@ void MorphCopyBlockHelper::MorphStructCases()
         requiresCopyBlock = true;
     }
 
+    if (m_dstVarDsc && m_dstVarDsc->lvOpaqueBlob)
+    {
+        requiresCopyBlock = true;
+    }
+
+    if (m_srcVarDsc && m_srcVarDsc->lvOpaqueBlob)
+    {
+        requiresCopyBlock = true;
+    }
+
 #if defined(TARGET_ARM)
     if ((m_src->OperIsIndir()) && (m_src->gtFlags & GTF_IND_UNALIGNED))
     {

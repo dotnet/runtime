@@ -1718,6 +1718,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
 
     if (TreatStructAsOpaqueBlobOfBytes(typeFlags))
     {
+        structPromotionInfo.opaqueBlob = true;
         return false;
     }
 
@@ -1895,6 +1896,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     assert(typeHnd != NO_CLASS_HANDLE);
 
     bool canPromote = CanPromoteStructType(typeHnd);
+    varDsc->lvOpaqueBlob = structPromotionInfo.opaqueBlob;
     if (canPromote && varDsc->lvIsMultiRegArgOrRet())
     {
         unsigned fieldCnt = structPromotionInfo.fieldCnt;

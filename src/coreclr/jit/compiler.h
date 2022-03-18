@@ -522,6 +522,7 @@ public:
     unsigned char lvIsStructField : 1;     // Is this local var a field of a promoted struct local?
     unsigned char lvOverlappingFields : 1; // True when we have a struct with possibly overlapping fields
     unsigned char lvContainsHoles : 1;     // True when we have a promoted struct that contains holes
+    unsigned char lvOpaqueBlob : 1;
 
     unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
@@ -4102,12 +4103,13 @@ public:
         CORINFO_CLASS_HANDLE typeHnd;
         bool                 canPromote;
         bool                 containsHoles;
+        bool opaqueBlob;
         bool                 fieldsSorted;
         unsigned char        fieldCnt;
         lvaStructFieldInfo   fields[MAX_NumOfFieldsInPromotableStruct];
 
         lvaStructPromotionInfo(CORINFO_CLASS_HANDLE typeHnd = nullptr)
-            : typeHnd(typeHnd), canPromote(false), containsHoles(false), fieldsSorted(false), fieldCnt(0)
+            : typeHnd(typeHnd), canPromote(false), containsHoles(false), opaqueBlob(false), fieldsSorted(false), fieldCnt(0)
         {
         }
     };
