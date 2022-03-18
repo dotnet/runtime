@@ -4377,7 +4377,7 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
     ClrDataModule* pubModule = NULL;
     ClrDataMethodInstance* pubMethodInst = NULL;
     ClrDataExceptionState* pubExState = NULL;
-    GcEvtArgs pubGcEvtArgs;
+    GcEvtArgs pubGcEvtArgs = {};
     ULONG32 notifyType = 0;
     DWORD catcherNativeOffset = 0;
     TADDR nativeCodeLocation = NULL;
@@ -5491,7 +5491,7 @@ HRESULT
 ClrDataAccess::Initialize(void)
 {
     HRESULT hr;
-    CLRDATA_ADDRESS base;
+    CLRDATA_ADDRESS base = { 0 };
 
     //
     // We do not currently support cross-platform
@@ -6458,7 +6458,7 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
 {
     SUPPORTS_DAC_HOST_ONLY;
     PEImage *mdImage = NULL;
-    PEImageLayout   *layout;
+    PEImageLayout   *layout = NULL;
     IMAGE_DATA_DIRECTORY *pDir = NULL;
     COUNT_T uniPathChars = 0;
 

@@ -2359,7 +2359,7 @@
       <Link>Interop\Windows\Kernel32\Interop.Threading.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureGenericMath)' == 'true'">
+  <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)System\IAdditionOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IAdditiveIdentity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IBitwiseOperators.cs" />

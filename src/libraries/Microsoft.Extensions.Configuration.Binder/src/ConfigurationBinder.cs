@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -348,11 +349,12 @@ namespace Microsoft.Extensions.Configuration
 
             if (config != null && config.GetChildren().Any())
             {
-                if (type.IsArray)
+                // for arrays and read-only list-like interfaces, we concatenate on to what is already there
+                if (type.IsArray || IsArrayCompatibleReadOnlyInterface(type))
                 {
                     if (!bindingPoint.IsReadOnly)
                     {
-                        bindingPoint.SetValue(BindArray(type, (Array?)bindingPoint.Value, config, options));
+                        bindingPoint.SetValue(BindArray(type, (IEnumerable?)bindingPoint.Value, config, options));
                     }
                     return;
                 }
@@ -384,7 +386,7 @@ namespace Microsoft.Extensions.Configuration
                 }
                 else
                 {
-                    // See if its an ICollection
+                    // See if it's an ICollection
                     collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
                     if (collectionInterface != null)
                     {
@@ -516,25 +518,33 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the Array so its members may be trimmed.")]
-        private static Array BindArray(Type type, Array? source, IConfiguration config, BinderOptions options)
+        private static Array BindArray(Type type, IEnumerable? source, IConfiguration config, BinderOptions options)
         {
-            if (type.GetArrayRank() > 1)
+            Type elementType;
+            if (type.IsArray)
             {
-                throw new InvalidOperationException(SR.Format(SR.Error_UnsupportedMultidimensionalArray, type));
+                if (type.GetArrayRank() > 1)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.Error_UnsupportedMultidimensionalArray, type));
+                }
+                elementType = type.GetElementType()!;
+            }
+            else // e. g. IEnumerable<T>
+            {
+                elementType = type.GetGenericArguments()[0];
             }
 
-            IConfigurationSection[] children = config.GetChildren().ToArray();
-            int sourceLength = source?.Length ?? 0;
-            Type elementType = type.GetElementType()!;
-            var newArray = Array.CreateInstance(elementType, sourceLength + children.Length);
+            IList list = new List<object?>();
 
-            // binding to array has to preserve already initialized arrays with values
-            if (sourceLength > 0)
+            if (source != null)
             {
-                Array.Copy(source!, newArray, sourceLength);
+                foreach (object? item in source)
+                {
+                    list.Add(item);
+                }
             }
 
-            for (int i = 0; i < children.Length; i++)
+            foreach (IConfigurationSection section in config.GetChildren())
             {
                 var itemBindingPoint = new BindingPoint();
                 try
@@ -542,11 +552,11 @@ namespace Microsoft.Extensions.Configuration
                     BindInstance(
                         type: elementType,
                         bindingPoint: itemBindingPoint,
-                        config: children[i],
+                        config: section,
                         options: options);
                     if (itemBindingPoint.HasNewValue)
                     {
-                        newArray.SetValue(itemBindingPoint.Value, sourceLength + i);
+                        list.Add(itemBindingPoint.Value);
                     }
                 }
                 catch
@@ -554,7 +564,9 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
 
-            return newArray;
+            Array result = Array.CreateInstance(elementType, list.Count);
+            list.CopyTo(result, 0);
+            return result;
         }
 
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
@@ -622,6 +634,16 @@ namespace Microsoft.Extensions.Configuration
                 throw error;
             }
             return result;
+        }
+
+        private static bool IsArrayCompatibleReadOnlyInterface(Type type)
+        {
+            if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
+
+            Type genericTypeDefinition = type.GetGenericTypeDefinition();
+            return genericTypeDefinition == typeof(IEnumerable<>)
+                || genericTypeDefinition == typeof(IReadOnlyCollection<>)
+                || genericTypeDefinition == typeof(IReadOnlyList<>);
         }
 
         private static Type? FindOpenGenericInterface(

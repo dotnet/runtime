@@ -332,7 +332,7 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
 
 #ifdef FEATURE_SIMD
 #if defined(TARGET_XARCH)
-    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD) &&
+    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) &&
         jitFlags.GetInstructionSetFlags().HasInstructionSet(InstructionSet_AVX2))
     {
         if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)

@@ -97,13 +97,13 @@ STDMETHODIMP CLRDebuggingImpl::OpenVirtualProcess(
     HMODULE hDac = NULL;
     LPWSTR pDacModulePath = NULL;
     LPWSTR pDbiModulePath = NULL;
-    DWORD dbiTimestamp;
-    DWORD dbiSizeOfImage;
+    DWORD dbiTimestamp = 0;
+    DWORD dbiSizeOfImage = 0;
     WCHAR dbiName[MAX_PATH_FNAME] = { 0 };
     DWORD dacTimestamp;
     DWORD dacSizeOfImage;
     WCHAR dacName[MAX_PATH_FNAME] = { 0 };
-    CLR_DEBUGGING_VERSION version;
+    CLR_DEBUGGING_VERSION version = { 0 };
     BOOL versionSupportedByCaller = FALSE;
 
     // argument checking
@@ -541,7 +541,7 @@ HRESULT CLRDebuggingImpl::GetCLRInfo(ICorDebugDataTarget* pDataTarget,
                 hr = CORDBG_E_NOT_CLR;
         }
 
-        CLR_DEBUG_RESOURCE debugResource;
+        CLR_DEBUG_RESOURCE debugResource = {};
         if(SUCCEEDED(hr) && debugResourceSize != sizeof(debugResource))
         {
             hr = CORDBG_E_NOT_CLR;

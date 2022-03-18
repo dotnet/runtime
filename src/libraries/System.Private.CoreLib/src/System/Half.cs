@@ -17,13 +17,13 @@ namespace System
     /// An IEEE 754 compliant float16 type.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    public readonly struct Half : IComparable, ISpanFormattable, IComparable<Half>, IEquatable<Half>
-#if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
-        , IBinaryFloatingPoint<Half>,
+    public readonly struct Half
+        : IComparable,
+          ISpanFormattable,
+          IComparable<Half>,
+          IEquatable<Half>,
+          IBinaryFloatingPoint<Half>,
           IMinMaxValue<Half>
-#pragma warning restore SA1001, CA2252
-#endif // FEATURE_GENERIC_MATH
     {
         private const NumberStyles DefaultParseStyle = NumberStyles.Float | NumberStyles.AllowThousands;
 
@@ -702,16 +702,13 @@ namespace System
 
         #endregion
 
-#if FEATURE_GENERIC_MATH
         //
         // IAdditionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IAdditionOperators<Half, Half, Half>.operator +(Half left, Half right)
             => (Half)((float)left + (float)right);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked Half IAdditionOperators<Half, Half, Half>.operator +(Half left, Half right)
         //     => checked((Half)((float)left + (float)right));
 
@@ -719,14 +716,12 @@ namespace System
         // IAdditiveIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IAdditiveIdentity<Half, Half>.AdditiveIdentity => PositiveZero;
 
         //
         // IBinaryNumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IBinaryNumber<Half>.IsPow2(Half value)
         {
             uint bits = BitConverter.HalfToUInt16Bits(value);
@@ -739,7 +734,6 @@ namespace System
                 && (significand == MinSignificand);
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IBinaryNumber<Half>.Log2(Half value)
             => (Half)MathF.Log2((float)value);
 
@@ -747,28 +741,24 @@ namespace System
         // IBitwiseOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IBitwiseOperators<Half, Half, Half>.operator &(Half left, Half right)
         {
             ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) & BitConverter.HalfToUInt16Bits(right));
             return BitConverter.UInt16BitsToHalf(bits);
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IBitwiseOperators<Half, Half, Half>.operator |(Half left, Half right)
         {
             ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) | BitConverter.HalfToUInt16Bits(right));
             return BitConverter.UInt16BitsToHalf(bits);
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IBitwiseOperators<Half, Half, Half>.operator ^(Half left, Half right)
         {
             ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) ^ BitConverter.HalfToUInt16Bits(right));
             return BitConverter.UInt16BitsToHalf(bits);
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IBitwiseOperators<Half, Half, Half>.operator ~(Half value)
         {
             ushort bits = (ushort)(~BitConverter.HalfToUInt16Bits(value));
@@ -779,19 +769,15 @@ namespace System
         // IComparisonOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<Half, Half>.operator <(Half left, Half right)
             => left < right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<Half, Half>.operator <=(Half left, Half right)
             => left <= right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<Half, Half>.operator >(Half left, Half right)
             => left > right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<Half, Half>.operator >=(Half left, Half right)
             => left >= right;
 
@@ -799,7 +785,6 @@ namespace System
         // IDecrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IDecrementOperators<Half>.operator --(Half value)
         {
             var tmp = (float)value;
@@ -807,7 +792,6 @@ namespace System
             return (Half)tmp;
         }
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked Half IDecrementOperators<Half>.operator --(Half value)
         // {
         //     var tmp = (float)value;
@@ -819,11 +803,9 @@ namespace System
         // IEqualityOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<Half, Half>.operator ==(Half left, Half right)
             => left == right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<Half, Half>.operator !=(Half left, Half right)
             => left != right;
 
@@ -831,11 +813,9 @@ namespace System
         // IDivisionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IDivisionOperators<Half, Half, Half>.operator /(Half left, Half right)
             => (Half)((float)left / (float)right);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked Half IDivisionOperators<Half, Half, Half>.operator /(Half left, Half right)
         //     => checked((Half)((float)left / (float)right));
 
@@ -843,59 +823,43 @@ namespace System
         // IFloatingPoint
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.E => (Half)MathF.E;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Epsilon => Epsilon;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.NaN => NaN;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.NegativeInfinity => NegativeInfinity;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.NegativeZero => NegativeZero;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Pi => (Half)MathF.PI;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.PositiveInfinity => PositiveInfinity;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Tau => (Half)MathF.Tau;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Acos(Half x)
             => (Half)MathF.Acos((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Acosh(Half x)
             => (Half)MathF.Acosh((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Asin(Half x)
             => (Half)MathF.Asin((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Asinh(Half x)
             => (Half)MathF.Asinh((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Atan(Half x)
             => (Half)MathF.Atan((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Atan2(Half y, Half x)
             => (Half)MathF.Atan2((float)y, (float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Atanh(Half x)
             => (Half)MathF.Atanh((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.BitIncrement(Half x)
         {
             ushort bits = BitConverter.HalfToUInt16Bits(x);
@@ -921,7 +885,6 @@ namespace System
             return BitConverter.UInt16BitsToHalf(bits);
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.BitDecrement(Half x)
         {
             ushort bits = BitConverter.HalfToUInt16Bits(x);
@@ -947,140 +910,104 @@ namespace System
             return BitConverter.UInt16BitsToHalf(bits);
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Cbrt(Half x)
             => (Half)MathF.Cbrt((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Ceiling(Half x)
             => (Half)MathF.Ceiling((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.CopySign(Half x, Half y)
             => (Half)MathF.CopySign((float)x, (float)y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Cos(Half x)
             => (Half)MathF.Cos((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Cosh(Half x)
             => (Half)MathF.Cosh((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Exp(Half x)
             => (Half)MathF.Exp((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Floor(Half x)
             => (Half)MathF.Floor((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.FusedMultiplyAdd(Half left, Half right, Half addend)
             => (Half)MathF.FusedMultiplyAdd((float)left, (float)right, (float)addend);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.IEEERemainder(Half left, Half right)
             => (Half)MathF.IEEERemainder((float)left, (float)right);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static TInteger IFloatingPoint<Half>.ILogB<TInteger>(Half x)
             => TInteger.Create(MathF.ILogB((float)x));
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Log(Half x)
             => (Half)MathF.Log((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Log(Half x, Half newBase)
             => (Half)MathF.Log((float)x, (float)newBase);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Log2(Half x)
             => (Half)MathF.Log2((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Log10(Half x)
             => (Half)MathF.Log10((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.MaxMagnitude(Half x, Half y)
             => (Half)MathF.MaxMagnitude((float)x, (float)y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.MinMagnitude(Half x, Half y)
             => (Half)MathF.MinMagnitude((float)x, (float)y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Pow(Half x, Half y)
             => (Half)MathF.Pow((float)x, (float)y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Round(Half x)
             => (Half)MathF.Round((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Round<TInteger>(Half x, TInteger digits)
             => (Half)MathF.Round((float)x, int.Create(digits));
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Round(Half x, MidpointRounding mode)
             => (Half)MathF.Round((float)x, mode);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Round<TInteger>(Half x, TInteger digits, MidpointRounding mode)
             => (Half)MathF.Round((float)x, int.Create(digits), mode);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.ScaleB<TInteger>(Half x, TInteger n)
             => (Half)MathF.ScaleB((float)x, int.Create(n));
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Sin(Half x)
             => (Half)MathF.Sin((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Sinh(Half x)
             => (Half)MathF.Sinh((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Sqrt(Half x)
             => (Half)MathF.Sqrt((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Tan(Half x)
             => (Half)MathF.Tan((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Tanh(Half x)
             => (Half)MathF.Tanh((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IFloatingPoint<Half>.Truncate(Half x)
             => (Half)MathF.Truncate((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IFloatingPoint<Half>.IsFinite(Half x) => IsFinite(x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IFloatingPoint<Half>.IsInfinity(Half x) => IsInfinity(x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IFloatingPoint<Half>.IsNaN(Half x) => IsNaN(x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IFloatingPoint<Half>.IsNegative(Half x) => IsNegative(x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IFloatingPoint<Half>.IsNegativeInfinity(Half x) => IsNegativeInfinity(x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IFloatingPoint<Half>.IsNormal(Half x) => IsNormal(x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IFloatingPoint<Half>.IsPositiveInfinity(Half x) => IsPositiveInfinity(x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IFloatingPoint<Half>.IsSubnormal(Half x) => IsSubnormal(x);
 
 
@@ -1154,7 +1081,6 @@ namespace System
         // IIncrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IIncrementOperators<Half>.operator ++(Half value)
         {
             var tmp = (float)value;
@@ -1162,7 +1088,6 @@ namespace System
             return (Half)tmp;
         }
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked Half IIncrementOperators<Half>.operator ++(Half value)
         // {
         //     var tmp = (float)value;
@@ -1174,21 +1099,17 @@ namespace System
         // IMinMaxValue
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IMinMaxValue<Half>.MinValue => MinValue;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IMinMaxValue<Half>.MaxValue => MaxValue;
 
         //
         // IModulusOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IModulusOperators<Half, Half, Half>.operator %(Half left, Half right)
             => (Half)((float)left % (float)right);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked Half IModulusOperators<Half, Half, Half>.operator %(Half left, Half right)
         //     => checked((Half)((float)left % (float)right));
 
@@ -1196,18 +1117,15 @@ namespace System
         // IMultiplicativeIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IMultiplicativeIdentity<Half, Half>.MultiplicativeIdentity => (Half)1.0f;
 
         //
         // IMultiplyOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IMultiplyOperators<Half, Half, Half>.operator *(Half left, Half right)
             => (Half)((float)left * (float)right);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked Half IMultiplyOperators<Half, Half, Half>.operator *(Half left, Half right)
         //     => checked((Half)((float)left * (float)right));
 
@@ -1215,21 +1133,16 @@ namespace System
         // INumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half INumber<Half>.One => (Half)1.0f;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half INumber<Half>.Zero => PositiveZero;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half INumber<Half>.Abs(Half value)
             => (Half)MathF.Abs((float)value);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half INumber<Half>.Clamp(Half value, Half min, Half max)
             => (Half)Math.Clamp((float)value, (float)min, (float)max);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Half INumber<Half>.Create<TOther>(TOther value)
         {
@@ -1296,7 +1209,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Half INumber<Half>.CreateSaturating<TOther>(TOther value)
         {
@@ -1363,7 +1275,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Half INumber<Half>.CreateTruncating<TOther>(TOther value)
         {
@@ -1430,31 +1341,24 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static (Half Quotient, Half Remainder) INumber<Half>.DivRem(Half left, Half right)
             => ((Half, Half))((float)left / (float)right, (float)left % (float)right);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half INumber<Half>.Max(Half x, Half y)
             => (Half)MathF.Max((float)x, (float)y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half INumber<Half>.Min(Half x, Half y)
             => (Half)MathF.Min((float)x, (float)y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half INumber<Half>.Parse(string s, NumberStyles style, IFormatProvider? provider)
             => Parse(s, style, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half INumber<Half>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
             => Parse(s, style, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half INumber<Half>.Sign(Half value)
             => (Half)MathF.Sign((float)value);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumber<Half>.TryCreate<TOther>(TOther value, out Half result)
         {
@@ -1536,11 +1440,9 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool INumber<Half>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Half result)
             => TryParse(s, style, provider, out result);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool INumber<Half>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Half result)
             => TryParse(s, style, provider, out result);
 
@@ -1548,11 +1450,9 @@ namespace System
         // IParseable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IParseable<Half>.Parse(string s, IFormatProvider? provider)
             => Parse(s, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IParseable<Half>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Half result)
             => TryParse(s, DefaultParseStyle, provider, out result);
 
@@ -1560,18 +1460,15 @@ namespace System
         // ISignedNumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half ISignedNumber<Half>.NegativeOne => (Half)(-1.0f);
 
         //
         // ISpanParseable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half ISpanParseable<Half>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
             => Parse(s, DefaultParseStyle, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool ISpanParseable<Half>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Half result)
             => TryParse(s, DefaultParseStyle, provider, out result);
 
@@ -1579,11 +1476,9 @@ namespace System
         // ISubtractionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half ISubtractionOperators<Half, Half, Half>.operator -(Half left, Half right)
             => (Half)((float)left - (float)right);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked Half ISubtractionOperators<Half, Half, Half>.operator -(Half left, Half right)
         //     => checked((Half)((float)left - (float)right));
 
@@ -1591,11 +1486,9 @@ namespace System
         // IUnaryNegationOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IUnaryNegationOperators<Half, Half>.operator -(Half value)
             => (Half)(-(float)value);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked Half IUnaryNegationOperators<Half, Half>.operator -(Half value)
         //     => checked((Half)(-(float)value));
 
@@ -1603,13 +1496,10 @@ namespace System
         // IUnaryNegationOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Half IUnaryPlusOperators<Half, Half>.operator +(Half value)
             => value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked Half IUnaryPlusOperators<Half, Half>.operator +(Half value)
         //     => checked(value);
-#endif // FEATURE_GENERIC_MATH
     }
 }
