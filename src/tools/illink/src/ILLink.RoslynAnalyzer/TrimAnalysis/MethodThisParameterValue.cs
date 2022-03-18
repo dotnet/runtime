@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.RoslynAnalyzer;
+using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TrimAnalysis
@@ -22,6 +23,8 @@ namespace ILLink.Shared.TrimAnalysis
 
 		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
 			=> new string[] { MethodSymbol.GetDisplayName () };
+
+		public override SingleValue DeepCopy () => this; // This value is immutable
 
 		public override string ToString () => this.ValueToString (MethodSymbol, DynamicallyAccessedMemberTypes);
 	}

@@ -15,6 +15,8 @@ namespace ILLink.Shared.TrimAnalysis
 
 		public readonly MethodProxy MethodRepresented;
 
+		public override SingleValue DeepCopy () => this; // This value is immutable
+
 		public override string ToString () => this.ValueToString (MethodRepresented);
 	}
 }

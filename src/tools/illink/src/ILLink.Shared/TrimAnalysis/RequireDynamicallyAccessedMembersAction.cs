@@ -26,6 +26,9 @@ namespace ILLink.Shared.TrimAnalysis
 					&& genericParam.HasDefaultConstructorConstraint ()) {
 					// We allow a new() constraint on a generic parameter to satisfy DynamicallyAccessedMemberTypes.PublicParameterlessConstructor
 				} else if (uniqueValue is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers) {
+					if (uniqueValue is NullableValueWithDynamicallyAccessedMembers nullableValue) {
+						MarkTypeForDynamicallyAccessedMembers (nullableValue.NullableType, nullableValue.DynamicallyAccessedMemberTypes);
+					}
 					var availableMemberTypes = valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes;
 					if (!Annotations.SourceHasRequiredAnnotations (availableMemberTypes, targetValue.DynamicallyAccessedMemberTypes, out var missingMemberTypes)) {
 						(var diagnosticId, var diagnosticArguments) = Annotations.GetDiagnosticForAnnotationMismatch (valueWithDynamicallyAccessedMembers, targetValue, missingMemberTypes);
@@ -39,6 +42,9 @@ namespace ILLink.Shared.TrimAnalysis
 					} else {
 						MarkTypeForDynamicallyAccessedMembers (foundType, targetValue.DynamicallyAccessedMemberTypes);
 					}
+				} else if (uniqueValue is NullableSystemTypeValue nullableSystemTypeValue) {
+					MarkTypeForDynamicallyAccessedMembers (nullableSystemTypeValue.NullableType, targetValue.DynamicallyAccessedMemberTypes);
+					MarkTypeForDynamicallyAccessedMembers (nullableSystemTypeValue.UnderlyingTypeValue.RepresentedType, targetValue.DynamicallyAccessedMemberTypes);
 				} else if (uniqueValue == NullValue.Instance) {
 					// Ignore - probably unreachable path as it would fail at runtime anyway.
 				} else {

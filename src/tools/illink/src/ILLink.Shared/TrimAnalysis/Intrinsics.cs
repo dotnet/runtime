@@ -332,6 +332,10 @@ namespace ILLink.Shared.TrimAnalysis
 					&& calledMethod.HasParametersCount (1)
 					=> IntrinsicId.MethodInfo_MakeGenericMethod,
 
+				"GetUnderlyingType" when calledMethod.IsDeclaredOnType ("System.Nullable")
+					&& calledMethod.HasParameterOfType (0, "System.Type")
+					&& calledMethod.IsStatic ()
+					=> IntrinsicId.Nullable_GetUnderlyingType,
 				_ => IntrinsicId.None,
 			};
 		}

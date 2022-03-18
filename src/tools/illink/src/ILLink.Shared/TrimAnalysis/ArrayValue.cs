@@ -8,6 +8,8 @@ namespace ILLink.Shared.TrimAnalysis
 {
 	sealed partial record ArrayValue : SingleValue
 	{
+		static ValueSetLattice<SingleValue> MultiValueLattice => default;
+
 		public readonly SingleValue Size;
 
 		public partial bool TryGetValueByIndex (int index, out MultiValue value);

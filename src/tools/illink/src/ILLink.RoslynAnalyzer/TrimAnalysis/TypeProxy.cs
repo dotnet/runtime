@@ -12,10 +12,14 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		public readonly ITypeSymbol Type;
 
-		public string Name { get => Type.Name; }
+		public string Name { get => Type.MetadataName; }
+
+		public string Namespace { get => Type.ContainingNamespace.Name; }
 
 		public string GetDisplayName () => Type.GetDisplayName ();
 
 		public override string ToString () => Type.ToString ();
+
+		public bool IsTypeOf (string @namespace, string name) => Namespace == @namespace && Name == name;
 	}
 }

@@ -362,8 +362,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			// https://github.com/dotnet/linker/issues/2638
-			[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Analyzer)]
 			public static void Test ()
 			{
 				typeof (TestClassWithRUCMethods).GetMethods ((BindingFlags) 24);
