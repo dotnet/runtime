@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
@@ -50,6 +51,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestNoValue ();
 
 			Mixed_Derived.Test (typeof (TestType), 0);
+
+			LoopPatterns.Test ();
 		}
 
 		static void TestAllPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type derivedType)
@@ -272,6 +275,62 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 
 				type.BaseType.RequiresPublicMethods ();
+			}
+		}
+
+		class LoopPatterns
+		{
+			static void EnumerateInterfacesOnBaseTypes ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)] Type type)
+			{
+				Type? t = type;
+				while (t != null) {
+					Type[] interfaces = t.GetInterfaces ();
+					t = t.BaseType;
+				}
+			}
+
+			[ExpectedWarning ("IL2070")]
+			[ExpectedWarning ("IL2075", ProducedBy = ProducedBy.Analyzer)] // Linker doesn't implement backward branches data flow yet
+			static void EnumerateInterfacesOnBaseTypes_Unannotated (Type type)
+			{
+				Type? t = type;
+				while (t != null) {
+					Type[] interfaces = t.GetInterfaces ();
+					t = t.BaseType;
+				}
+			}
+
+			// Can only work with All annotation as NonPublicProperties doesn't propagate to base types
+			static void EnumeratePrivatePropertiesOnBaseTypes ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type type)
+			{
+				const BindingFlags DeclaredOnlyLookup = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+				Type? t = type;
+				while (t != null) {
+					t.GetProperties (DeclaredOnlyLookup).GetEnumerator ();
+					t = t.BaseType;
+				}
+			}
+
+			// Can only work with All annotation as NonPublicProperties doesn't propagate to base types
+			static void EnumeratePrivatePropertiesOnBaseTypesWithForeach ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type type)
+			{
+				const BindingFlags DeclaredOnlyLookup = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+				Type? t = type;
+				while (t != null) {
+					foreach (var p in t.GetProperties (DeclaredOnlyLookup)) {
+						// Do nothing
+					}
+					t = t.BaseType;
+				}
+			}
+
+			public static void Test ()
+			{
+				EnumerateInterfacesOnBaseTypes (typeof (TestType));
+				EnumerateInterfacesOnBaseTypes_Unannotated (typeof (TestType));
+
+				EnumeratePrivatePropertiesOnBaseTypes (typeof (TestType));
+				EnumeratePrivatePropertiesOnBaseTypesWithForeach (typeof (TestType));
 			}
 		}
 
