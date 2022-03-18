@@ -229,19 +229,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.BaseType.RequiresPublicMethods ();
 		}
 
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
 		static void TestNull ()
 		{
 			Type type = null;
 			type.BaseType.RequiresPublicMethods ();
 		}
 
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
 		static void TestNoValue ()
 		{
 			Type t = null;
 			Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
-			// Warns about the base type even though the above throws an exception at runtime.
+			// No warning because the above throws an exception at runtime.
 			noValue.BaseType.RequiresPublicMethods ();
 		}
 
