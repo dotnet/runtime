@@ -332,7 +332,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return values;
         }
 
-        internal static async Task<JObject> CompileAndRunTheExpression(string expression, MemberReferenceResolver resolver, CancellationToken token)
+        internal static async Task<JObject> CompileAndRunTheExpression(string expression, MemberReferenceResolver resolver, ExecutionContext context, CancellationToken token)
         {
             expression = expression.Trim();
             if (!expression.StartsWith('('))
@@ -404,7 +404,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     string.Join("\n", findVarNMethodCall.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
 
                 var state = await newScript.RunAsync(cancellationToken: token);
-                return JObject.FromObject(ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue?.GetType()));
+                return JObject.FromObject(ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue?.GetType(), context));
             }
             catch (CompilationErrorException cee)
             {
@@ -424,21 +424,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             typeof(float), typeof(double)
         };
 
-        private static object ConvertCSharpToJSType(object v, Type type)
+        private static object ConvertCSharpToJSType(object v, Type type, ExecutionContext context)
         {
             if (v == null)
-                return new { type = "object", subtype = "null", className = type?.ToString(), description = type?.ToString() };
+                return context.SdbAgent.CreateJObjectForNull(type?.ToString())?["value"];
             if (v is string s)
-                return new { type = "string", value = s, description = s };
+                return context.SdbAgent.CreateJObjectForString(s)?["value"];
             if (v is char c)
-                return new { type = "symbol", value = c, description = $"{(int)c} '{c}'" };
-            if (NumericTypes.Contains(v.GetType()))
-                return new { type = "number", value = v, description = Convert.ToDouble(v).ToString(CultureInfo.InvariantCulture) };
+                return context.SdbAgent.CreateJObjectForChar(Convert.ToInt32(c))?["value"];
+            if (NumericTypes.Contains(type))
+                return context.SdbAgent.CreateJObjectForNumber(v)?["value"];
             if (v is JObject)
                 return v;
-            return new { type = "object", value = v, description = v.ToString(), className = type.ToString() };
+            if (v is bool b)
+                return context.SdbAgent.CreateJObjectForBoolean(b)?["value"];
+            return context.SdbAgent.CreateJObjectForObject(type.ToString(), v.ToString())?["value"];
         }
-
     }
 
     internal class ReturnAsErrorException : Exception
