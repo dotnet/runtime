@@ -14,6 +14,8 @@ namespace ILLink.Shared.TrimAnalysis
 
 		public readonly string Contents;
 
+		public override SingleValue DeepCopy () => this; // This value is immutable
+
 		public override string ToString () => this.ValueToString ("\"" + Contents + "\"");
 	}
 }

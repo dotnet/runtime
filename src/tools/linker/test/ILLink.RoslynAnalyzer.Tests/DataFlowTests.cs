@@ -26,6 +26,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task ArrayDataFlow ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task AttributeConstructorDataflow ()
 		{
 			return RunTest (nameof (AttributeConstructorDataflow));
@@ -184,6 +190,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public Task MethodThisDataFlow ()
 		{
 			return RunTest (nameof (MethodThisDataFlow));
+		}
+
+		[Fact]
+		public Task NullableAnnotations ()
+		{
+			return RunTest ();
 		}
 
 		[Fact]

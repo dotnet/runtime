@@ -14,6 +14,8 @@ namespace ILLink.Shared.TrimAnalysis
 
 		public readonly int Value;
 
+		public override SingleValue DeepCopy () => this; // This value is immutable
+
 		public override string ToString () => this.ValueToString (Value);
 	}
 }

@@ -66,7 +66,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public abstract void HandleAssignment (TValue source, TValue target, IOperation operation);
 
-		public abstract TValue HandleArrayElementAccess (IOperation arrayReference);
+		public abstract TValue HandleArrayElementRead (TValue arrayValue, TValue indexValue, IOperation operation);
+
+		public abstract void HandleArrayElementWrite (TValue arrayValue, TValue indexValue, TValue valueToWrite, IOperation operation);
 
 		// This takes an IOperation rather than an IReturnOperation because the return value
 		// may (must?) come from BranchValue of an operation whose FallThroughSuccessor is the exit block.
@@ -112,8 +114,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					operation);
 				break;
 			// TODO: when setting a property in an attribute, target is an IPropertyReference.
-			case IArrayElementReferenceOperation:
-				// TODO
+			case IArrayElementReferenceOperation arrayElementRef:
+				if (arrayElementRef.Indices.Length != 1)
+					break;
+
+				HandleArrayElementWrite (Visit (arrayElementRef.ArrayReference, state), Visit (arrayElementRef.Indices[0], state), value, operation);
 				break;
 			case IDiscardOperation:
 				// Assignments like "_ = SomeMethod();" don't need dataflow tracking.
@@ -194,7 +199,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			if (operation.GetValueUsageInfo (Context.OwningSymbol).HasFlag (ValueUsageInfo.Read)) {
 				// Accessing an array element for reading is a call to the indexer
 				// or a plain array access. Just handle plain array access for now.
-				return HandleArrayElementAccess (operation.ArrayReference);
+
+				// Only handle simple index access
+				if (operation.Indices.Length != 1)
+					return TopValue;
+
+				return HandleArrayElementRead (Visit (operation.ArrayReference, state), Visit (operation.Indices[0], state), operation);
 			}
 
 			return TopValue;

@@ -6,10 +6,10 @@ using System.Collections.Generic;
 using System.Linq;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
+using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
-
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace Mono.Linker.Dataflow
@@ -188,25 +188,22 @@ namespace Mono.Linker.Dataflow
 			int? maxTrackedValues = null)
 			where KeyType : notnull
 		{
-			ValueBasicBlockPair newValue = new ValueBasicBlockPair { BasicBlockIndex = curBasicBlock };
-
-			ValueBasicBlockPair existingValue;
-			if (valueCollection.TryGetValue (collectionKey, out existingValue)) {
+			if (valueCollection.TryGetValue (collectionKey, out ValueBasicBlockPair existingValue)) {
+				MultiValue value;
 				if (existingValue.BasicBlockIndex == curBasicBlock) {
 					// If the previous value was stored in the current basic block, then we can safely 
 					// overwrite the previous value with the new one.
-					newValue.Value = valueToStore;
+					value = valueToStore;
 				} else {
 					// If the previous value came from a previous basic block, then some other use of 
 					// the local could see the previous value, so we must merge the new value with the 
 					// old value.
-					newValue.Value = MultiValueLattice.Meet (existingValue.Value, valueToStore);
+					value = MultiValueLattice.Meet (existingValue.Value, valueToStore);
 				}
-				valueCollection[collectionKey] = newValue;
+				valueCollection[collectionKey] = new ValueBasicBlockPair (value, curBasicBlock);
 			} else if (maxTrackedValues == null || valueCollection.Count < maxTrackedValues) {
 				// We're not currently tracking a value a this index, so store the value now.
-				newValue.Value = valueToStore;
-				valueCollection[collectionKey] = newValue;
+				valueCollection[collectionKey] = new ValueBasicBlockPair (valueToStore, curBasicBlock);
 			}
 		}
 
@@ -725,29 +722,41 @@ namespace Mono.Linker.Dataflow
 
 		void ScanLdtoken (Instruction operation, Stack<StackSlot> currentStack)
 		{
-			if (operation.Operand is GenericParameter genericParameter) {
-				StackSlot slot = new StackSlot (new RuntimeTypeHandleForGenericParameterValue (genericParameter));
-				currentStack.Push (slot);
+			switch (operation.Operand) {
+			case GenericParameter genericParameter:
+				var param = new RuntimeTypeHandleForGenericParameterValue (genericParameter);
+				currentStack.Push (new StackSlot (param));
+				return;
+			case TypeReference typeReference when ResolveToTypeDefinition (typeReference) is TypeDefinition resolvedDefinition:
+				// Note that Nullable types without a generic argument (i.e. Nullable<>) will be RuntimeTypeHandleValue / SystemTypeValue
+				if (typeReference is IGenericInstance instance && resolvedDefinition.IsTypeOf ("System", "Nullable`1")) {
+					switch (instance.GenericArguments[0]) {
+					case GenericParameter genericParam:
+						var nullableDam = new RuntimeTypeHandleForNullableValueWithDynamicallyAccessedMembers (new TypeProxy (resolvedDefinition),
+							new RuntimeTypeHandleForGenericParameterValue (genericParam));
+						currentStack.Push (new StackSlot (nullableDam));
+						return;
+					case TypeReference underlyingTypeReference when ResolveToTypeDefinition (underlyingTypeReference) is TypeDefinition underlyingType:
+						var nullableType = new RuntimeTypeHandleForNullableSystemTypeValue (new TypeProxy (resolvedDefinition), new SystemTypeValue (underlyingType));
+						currentStack.Push (new StackSlot (nullableType));
+						return;
+					default:
+						PushUnknown (currentStack);
+						return;
+					}
+				} else {
+					var typeHandle = new RuntimeTypeHandleValue (new TypeProxy (resolvedDefinition));
+					currentStack.Push (new StackSlot (typeHandle));
+					return;
+				}
+			case MethodReference methodReference when _context.TryResolve (methodReference) is MethodDefinition resolvedMethod:
+				var method = new RuntimeMethodHandleValue (resolvedMethod);
+				currentStack.Push (new StackSlot (method));
+				return;
+			default:
+				PushUnknown (currentStack);
 				return;
 			}
-
-			if (operation.Operand is TypeReference typeReference) {
-				var resolvedReference = ResolveToTypeDefinition (typeReference);
-				if (resolvedReference != null) {
-					StackSlot slot = new StackSlot (new RuntimeTypeHandleValue (resolvedReference));
-					currentStack.Push (slot);
-					return;
-				}
-			} else if (operation.Operand is MethodReference methodReference) {
-				var resolvedMethod = _context.TryResolve (methodReference);
-				if (resolvedMethod != null) {
-					StackSlot slot = new StackSlot (new RuntimeMethodHandleValue (resolvedMethod));
-					currentStack.Push (slot);
-					return;
-				}
-			}
-
-			PushUnknown (currentStack);
 		}
 
 		private void ScanStloc (
@@ -997,7 +1006,7 @@ namespace Mono.Linker.Dataflow
 		{
 			StackSlot indexToLoadFrom = PopUnknown (currentStack, 1, methodBody, operation.Offset);
 			StackSlot arrayToLoadFrom = PopUnknown (currentStack, 1, methodBody, operation.Offset);
-			if (arrayToLoadFrom.Value.Count () != 1 || arrayToLoadFrom.Value.Single () is not ArrayValue arr) {
+			if (arrayToLoadFrom.Value.AsSingleValue () is not ArrayValue arr) {
 				PushUnknown (currentStack);
 				return;
 			}
@@ -1012,8 +1021,10 @@ namespace Mono.Linker.Dataflow
 				return;
 			}
 
-			arr.IndexValues.TryGetValue (index.Value, out ValueBasicBlockPair arrayIndexValue);
-			currentStack.Push (new StackSlot (arrayIndexValue.Value, isByRef));
+			if (arr.IndexValues.TryGetValue (index.Value, out ValueBasicBlockPair arrayIndexValue))
+				currentStack.Push (new StackSlot (arrayIndexValue.Value, isByRef));
+			else
+				PushUnknown (currentStack);
 		}
 	}
 }

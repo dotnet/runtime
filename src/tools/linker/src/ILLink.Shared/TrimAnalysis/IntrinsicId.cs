@@ -57,5 +57,6 @@ namespace ILLink.Shared.TrimAnalysis
 		RuntimeReflectionExtensions_GetRuntimeProperty,
 		RuntimeHelpers_RunClassConstructor,
 		MethodInfo_MakeGenericMethod,
+		Nullable_GetUnderlyingType
 	}
 }

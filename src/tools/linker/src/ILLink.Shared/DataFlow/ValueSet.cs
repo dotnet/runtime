@@ -4,7 +4,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -105,15 +104,12 @@ namespace ILLink.Shared.DataFlow
 				return false;
 
 			if (_values is EnumerableValues enumerableValues) {
-				Debug.Assert (enumerableValues.Count > 1);
 				if (other._values is EnumerableValues otherValuesSet) {
-					Debug.Assert (otherValuesSet.Count > 1);
 					return enumerableValues.SetEquals (otherValuesSet);
 				} else
 					return false;
 			} else {
-				if (other._values is EnumerableValues otherEnumerableValues) {
-					Debug.Assert (otherEnumerableValues.Count > 1);
+				if (other._values is EnumerableValues) {
 					return false;
 				}
 
@@ -147,18 +143,18 @@ namespace ILLink.Shared.DataFlow
 		internal static ValueSet<TValue> Meet (ValueSet<TValue> left, ValueSet<TValue> right)
 		{
 			if (left._values == null)
-				return right;
+				return right.Clone ();
 			if (right._values == null)
-				return left;
+				return left.Clone ();
 
 			if (left._values is not EnumerableValues && right.Contains ((TValue) left._values))
-				return right;
+				return right.Clone ();
 
 			if (right._values is not EnumerableValues && left.Contains ((TValue) right._values))
-				return left;
+				return left.Clone ();
 
-			var values = new EnumerableValues (left);
-			values.UnionWith (right);
+			var values = new EnumerableValues (left.Clone ());
+			values.UnionWith (right.Clone ());
 			return new ValueSet<TValue> (values);
 		}
 
@@ -171,6 +167,24 @@ namespace ILLink.Shared.DataFlow
 			sb.Append (string.Join (",", this.Select (v => v.ToString ())));
 			sb.Append ("}");
 			return sb.ToString ();
+		}
+
+		// Meet should copy the values, but most SingleValues are immutable.
+		// Clone returns `this` if there are no mutable SingleValues (SingleValues that implement IDeepCopyValue), otherwise creates a new ValueSet with copies of the copiable Values
+		public ValueSet<TValue> Clone ()
+		{
+			if (_values is null)
+				return this;
+
+			// Optimize for the most common case with only a single value
+			if (_values is not EnumerableValues) {
+				if (_values is IDeepCopyValue<TValue> copyValue)
+					return new ValueSet<TValue> (copyValue.DeepCopy ());
+				else
+					return this;
+			}
+
+			return new ValueSet<TValue> (this.Select (value => value is IDeepCopyValue<TValue> copyValue ? copyValue.DeepCopy () : value));
 		}
 	}
 }

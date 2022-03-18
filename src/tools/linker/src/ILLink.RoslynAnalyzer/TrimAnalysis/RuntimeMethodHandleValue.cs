@@ -5,15 +5,9 @@ using ILLink.Shared.DataFlow;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	sealed record NullValue : SingleValue
+	partial record RuntimeMethodHandleValue
 	{
-		private NullValue ()
-		{
-		}
-
-		public static NullValue Instance { get; } = new NullValue ();
-
-		public override SingleValue DeepCopy () => this; // This value is immutable
+		public override SingleValue DeepCopy () => this; // immutable value
 
 		public override string ToString () => this.ValueToString ();
 	}

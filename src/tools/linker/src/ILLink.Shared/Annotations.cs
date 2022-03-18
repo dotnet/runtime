@@ -116,6 +116,12 @@ namespace ILLink.Shared
 				(GenericParameterValue, FieldValue) => DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsField,
 				(GenericParameterValue, MethodThisParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsThisParameter,
 				(GenericParameterValue, GenericParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter,
+				(NullableValueWithDynamicallyAccessedMembers, MethodParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsParameter,
+				(NullableValueWithDynamicallyAccessedMembers, MethodReturnValue) => DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsMethodReturnType,
+				(NullableValueWithDynamicallyAccessedMembers, FieldValue) => DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsField,
+				(NullableValueWithDynamicallyAccessedMembers, MethodThisParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsThisParameter,
+				(NullableValueWithDynamicallyAccessedMembers, GenericParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter,
+
 				_ => throw new NotImplementedException ($"Unsupported source context {source} or target context {target}.")
 			};
 

@@ -755,6 +755,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				switch (attr.AttributeType.FullName) {
 				case "System.Runtime.CompilerServices.RuntimeCompatibilityAttribute":
 				case "System.Runtime.CompilerServices.CompilerGeneratedAttribute":
+				case "System.Runtime.CompilerServices.IsReadOnlyAttribute":
 					continue;
 
 				// When mcs is used to compile the test cases, backing fields end up with this attribute on them
