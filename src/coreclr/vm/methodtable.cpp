@@ -5510,58 +5510,61 @@ namespace
                     MethodDesc *pMD = methodIt.GetMethodDesc();
                     int targetSlot = interfaceMD->GetSlot();
 
-                    // If this is not a MethodImpl, it can't be implementing the method we're looking for
-                    if (!pMD->IsMethodImpl())
-                        continue;
-
-                    // We have a MethodImpl - iterate over all the declarations it's implementing,
-                    // looking for the interface method we need.
-                    MethodImpl::Iterator it(pMD);
-                    for (; it.IsValid() && candidateMaybe == NULL; it.Next())
+                    if (pMD->IsMethodImpl())
                     {
-                        MethodDesc *pDeclMD = it.GetMethodDesc();
-
-                        // Is this the right slot?
-                        if (pDeclMD->GetSlot() != targetSlot)
-                            continue;
-
-                        // Is this the right interface?
-                        if (!pDeclMD->HasSameMethodDefAs(interfaceMD))
-                            continue;
-
-                        if (interfaceMD->HasClassInstantiation())
+                        // We have a MethodImpl with slots - iterate over all the declarations it's implementing,
+                        // looking for the interface method we need.
+                        MethodImpl::Iterator it(pMD);
+                        for (; it.IsValid() && candidateMaybe == NULL; it.Next())
                         {
-                            // pInterfaceMD will be in the canonical form, so we need to check the specific
-                            // instantiation against pInterfaceMT.
-                            //
-                            // The parent of pDeclMD is unreliable for this purpose because it may or
-                            // may not be canonicalized. Let's go from the metadata.
-
-                            SigTypeContext typeContext = SigTypeContext(pMT);
-
-                            mdTypeRef tkParent;
-                            IfFailThrow(pMD->GetModule()->GetMDImport()->GetParentToken(it.GetToken(), &tkParent));
-
-                            MethodTable *pDeclMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
-                                pMD->GetModule(),
-                                tkParent,
-                                &typeContext).AsMethodTable();
-
-                            // We do CanCastToInterface to also cover variance.
-                            // We already know this is a method on the same type definition as the (generic)
-                            // interface but we need to make sure the instantiations match.
-                            if ((allowVariance && pDeclMT->CanCastToInterface(interfaceMT))
-                                || pDeclMT == interfaceMT)
+                            MethodDesc *pDeclMD = it.GetMethodDesc();
+    
+                            // Is this the right slot?
+                            if (pDeclMD->GetSlot() != targetSlot)
+                                continue;
+    
+                            // Is this the right interface?
+                            if (!pDeclMD->HasSameMethodDefAs(interfaceMD))
+                                continue;
+    
+                            if (interfaceMD->HasClassInstantiation())
                             {
-                                // We have a match
+                                // pInterfaceMD will be in the canonical form, so we need to check the specific
+                                // instantiation against pInterfaceMT.
+                                //
+                                // The parent of pDeclMD is unreliable for this purpose because it may or
+                                // may not be canonicalized. Let's go from the metadata.
+    
+                                SigTypeContext typeContext = SigTypeContext(pMT);
+    
+                                mdTypeRef tkParent;
+                                IfFailThrow(pMD->GetModule()->GetMDImport()->GetParentToken(it.GetToken(), &tkParent));
+    
+                                MethodTable *pDeclMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
+                                    pMD->GetModule(),
+                                    tkParent,
+                                    &typeContext).AsMethodTable();
+    
+                                // We do CanCastToInterface to also cover variance.
+                                // We already know this is a method on the same type definition as the (generic)
+                                // interface but we need to make sure the instantiations match.
+                                if ((allowVariance && pDeclMT->CanCastToInterface(interfaceMT))
+                                    || pDeclMT == interfaceMT)
+                                {
+                                    // We have a match
+                                    candidateMaybe = pMD;
+                                }
+                            }
+                            else
+                            {
+                                // No generics involved. If the method definitions match, it's a match.
                                 candidateMaybe = pMD;
                             }
                         }
-                        else
-                        {
-                            // No generics involved. If the method definitions match, it's a match.
-                            candidateMaybe = pMD;
-                        }
+                    }
+                    else
+                    {
+                        wprintf(W("TODO!\n"));
                     }
                 }
             }
@@ -8063,6 +8066,11 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                             }
                         }
                     }
+                }
+
+                if (FindDefaultInterfaceImplementation(pInterfaceMD, pInterfaceType, &pMD, /* allowVariance */ allowVariantMatches, /* throwOnConflict */ verifyImplemented))
+                {
+                    return pMD;
                 }
             }
         }

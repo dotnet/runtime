@@ -61,7 +61,7 @@
 .class interface private abstract auto ansi IFoo2
        implements IFoo
 {
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig final 
           static int32  Foo(int32 a) cil managed
   {
     .override method int32 IFoo::Foo(int32)
@@ -87,7 +87,7 @@
 .class interface private abstract auto ansi IFooEx
        implements IFoo
 {
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig final 
           static int32  IFoo.Foo(int32 a) cil managed
   {
     .override method int32 IFoo::Foo(int32)
@@ -129,7 +129,7 @@
 .class interface private abstract auto ansi I2
        implements I1
 {
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig final 
           static int32  I1.Func(int32 a) cil managed
   {
     .override method int32 I1::Func(int32)
@@ -154,7 +154,7 @@
 .class interface private abstract auto ansi I3
        implements I1
 {
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig final 
           static int32  I1.Func(int32 a) cil managed
   {
     .override method int32 I1::Func(int32)
@@ -181,7 +181,7 @@
                   I1,
                   I3
 {
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig final 
           static int32  I1.Func(int32 a) cil managed
   {
     .override method int32 I1::Func(int32)
@@ -215,7 +215,7 @@
 .class interface private abstract auto ansi I5
        implements I1
 {
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig final 
           static int32  I1.Func(int32 a) cil managed
   {
     .override method int32 I1::Func(int32)
@@ -240,7 +240,7 @@
 .class interface private abstract auto ansi I6
        implements I1
 {
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig final 
           static int32  I1.Func(int32 a) cil managed
   {
     .override method int32 I1::Func(int32)
@@ -267,7 +267,7 @@
                   I1,
                   I6
 {
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig final 
           static int32  I1.Func(int32 a) cil managed
   {
     .override method int32 I1::Func(int32)
@@ -298,7 +298,7 @@
                   I5,
                   I6
 {
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig final 
           static int32  I1.Func(int32 a) cil managed
   {
     .override method int32 I1::Func(int32)
@@ -357,7 +357,7 @@
 .class interface private abstract auto ansi GI2`1<T>
        implements class GI1`1<!T>
 {
-.method private hidebysig newslot virtual final 
+.method private hidebysig final 
           static int32  'GI1<T>.Func'<S>([out] class [mscorlib]System.Type[]& types) cil managed
   {
     .override  method int32 class GI1`1<!T>::Func<[1]>(class [mscorlib]System.Type[]&)
@@ -414,7 +414,7 @@
 .class interface private abstract auto ansi GI3`1<T>
        implements class GI1`1<!T>
 {
-.method private hidebysig newslot virtual final 
+.method private hidebysig final 
           static int32  'GI1<T>.Func'<S>([out] class [mscorlib]System.Type[]& types) cil managed
   {
     .override  method int32 class GI1`1<!T>::Func<[1]>(class [mscorlib]System.Type[]&)
@@ -473,7 +473,7 @@
                   class GI1`1<!T>,
                   class GI3`1<!T>
 {
- .method private hidebysig newslot virtual final 
+ .method private hidebysig final 
           static int32  'GI1<T>.Func'<S>([out] class [mscorlib]System.Type[]& types) cil managed
   {
     .override  method int32 class GI1`1<!T>::Func<[1]>(class [mscorlib]System.Type[]&)
