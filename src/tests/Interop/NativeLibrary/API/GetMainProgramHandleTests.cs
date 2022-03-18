@@ -95,6 +95,13 @@ class GetMainProgramHandleTests
         }
     }
 
+    [Fact]
+    public static void FreeMainProgramHandle()
+    {
+        NativeLibrary.Free(NativeLibrary.GetMainProgramHandle());
+        Assert.True(true);
+    }
+
     public static bool IsHostedByCoreRun { get; } = Process.GetCurrentProcess().MainModule.ModuleName is "corerun" or "corerun.exe";
 
     static TestResult GetSymbolFromMainProgramHandle(string scenarioName, string symbolToLoadFromHandle)
