@@ -147,8 +147,9 @@ namespace System
         }
 
         /// <summary>
-        /// Returns true if Length is 0.
+        /// Gets a value indicating whether this read-only span is empty.
         /// </summary>
+        /// <value><see langword="true"/> if this span is empty; otherwise, <see langword="false"/>.</value>
         public bool IsEmpty
         {
             [NonVersionable]
