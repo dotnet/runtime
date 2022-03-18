@@ -18,8 +18,4 @@
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Uri\src\System.Private.Uri.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <!-- Set the ReferenceAssembly metadata to the inbox version of System.Runtime and not to System.Runtime.Experimental. -->
-    <ProjectReference Include="..\ref\System.Runtime.csproj" ReferenceOutputAssembly="false" OutputItemType="ResolvedMatchingContractOverride" />
-  </ItemGroup>
 </Project>
