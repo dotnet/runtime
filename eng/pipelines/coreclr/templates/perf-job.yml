@@ -96,7 +96,7 @@ jobs:
       - ${{insert}}: ${{ variable }}
     - name: buildProductArtifactName
       value: ${{ format('BrowserWasm_{0}', parameters.osGroup) }}
-      condition: ${{ if eq(parameters.runtimeType, 'wasm') }}
+      condition: ${{ eq(parameters.runtimeType, 'wasm') }}
 
     frameworks:
       - ${{ parameters.framework }}
