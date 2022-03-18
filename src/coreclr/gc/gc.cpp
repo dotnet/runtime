@@ -26993,7 +26993,7 @@ void gc_heap::check_loh_compact_mode (BOOL all_heaps_compacted_p)
 BOOL gc_heap::plan_loh()
 {
 #ifdef FEATURE_EVENT_TRACE
-    uint64_t start_time, end_time;
+    uint64_t start_time = 0, end_time;
     if (informational_event_enabled_p)
     {
         memset (loh_compact_info, 0, (sizeof (etw_loh_compact_info) * get_num_heaps()));
@@ -27161,7 +27161,7 @@ void gc_heap::compact_loh()
     assert (loh_compaction_requested() || heap_hard_limit || conserve_mem_setting);
 
 #ifdef FEATURE_EVENT_TRACE
-    uint64_t start_time, end_time;
+    uint64_t start_time = 0, end_time;
     if (informational_event_enabled_p)
     {
         start_time = GetHighPrecisionTimeStamp();
@@ -27324,7 +27324,7 @@ void gc_heap::relocate_in_loh_compact()
 #ifdef FEATURE_EVENT_TRACE
     size_t total_refs = 0;
     size_t zero_refs = 0;
-    uint64_t start_time, end_time;
+    uint64_t start_time = 0, end_time;
     if (informational_event_enabled_p)
     {
         start_time = GetHighPrecisionTimeStamp();
@@ -30918,7 +30918,7 @@ void gc_heap::make_free_lists (int condemned_gen_number)
     //Promotion has to happen in sweep case.
     assert (settings.promotion);
 
-    make_free_args args;
+    make_free_args args = {};
     int stop_gen_idx = get_stop_generation_index (condemned_gen_number);
     for (int i = condemned_gen_number; i >= stop_gen_idx; i--)
     {

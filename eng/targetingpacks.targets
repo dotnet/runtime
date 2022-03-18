@@ -23,7 +23,7 @@
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <GenerateErrorForMissingTargetingPacks>false</GenerateErrorForMissingTargetingPacks>
     <!-- Hardcode the apphost version until the SDK understands the net7.0 tfm. -->
-    <_AppHostBaselinePackVersion Condition="'$(UseLocalAppHostPack)' != 'true'">6.0.0-rc.1.21411.2</_AppHostBaselinePackVersion>
+    <_AppHostBaselinePackVersion Condition="'$(UseLocalAppHostPack)' != 'true'">6.0.3</_AppHostBaselinePackVersion>
   </PropertyGroup>
 
   <!-- Add Known* items if the SDK doesn't support the TargetFramework yet. -->

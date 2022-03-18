@@ -1430,7 +1430,7 @@ extern "C" BOOL QCALLTYPE ComWrappers_TryGetOrCreateComInterfaceForObject(
 {
     QCALL_CONTRACT;
 
-    bool success;
+    bool success = false;
 
     BEGIN_QCALL;
 
@@ -1465,7 +1465,7 @@ extern "C" BOOL QCALLTYPE ComWrappers_TryGetOrCreateObjectForComInstance(
 
     _ASSERTE(ext != NULL);
 
-    bool success;
+    bool success = false;
 
     BEGIN_QCALL;
 
