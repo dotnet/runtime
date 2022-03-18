@@ -664,6 +664,31 @@ namespace System.IO.Pipes.Tests
             }
         }
 
+        [Fact(Timeout = 1000)]
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation doesn't rely on a timeout and cancellation token when connecting
+        public async Task ClientConnectAsync_Cancel_With_InfiniteTimeout()
+        {
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
+
+            using (var cts = new CancellationTokenSource())
+            using (var server = new NamedPipeServerStream(pipeName))
+            using (var firstClient = new NamedPipeClientStream(pipeName))
+            using (var secondClient = new NamedPipeClientStream(pipeName))
+            {
+                Task[] clientAndServerTasks = new[]
+                    {
+                        firstClient.ConnectAsync(),
+                        Task.Run(() => server.WaitForConnectionAsync())
+                    };
+
+                Task.WaitAll(clientAndServerTasks);
+
+                cts.CancelAfter(50);
+                Task waitingClient = secondClient.ConnectAsync(cts.Token);
+                await Assert.ThrowsAsync<OperationCanceledException>(() => { return waitingClient; });
+            }
+        }
+
         public static IEnumerable<object[]> GetCancellationTokens =>
             new []
             {
