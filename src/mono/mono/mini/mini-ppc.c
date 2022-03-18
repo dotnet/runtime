@@ -1157,6 +1157,8 @@ get_call_info (MonoMethodSignature *sig)
 				if (is_all_floats) {
 					rest = PPC_LAST_FPARG_REG - fr + 1;
 				}
+
+				
 				// Pass small (<= 8 member) structures entirely made up of either float or double members
 				// in FR registers.  There have to be at least mbr_cnt registers left.
 				if (is_all_floats &&
@@ -1179,23 +1181,38 @@ get_call_info (MonoMethodSignature *sig)
 				} else
 #endif
 				{
-					align_size += (sizeof (target_mgreg_t) - 1);
-					align_size &= ~(sizeof (target_mgreg_t) - 1);
-					nregs = (align_size + sizeof (target_mgreg_t) -1 ) / sizeof (target_mgreg_t);
-					n_in_regs = MIN (rest, nregs);
-					if (n_in_regs < 0)
-						n_in_regs = 0;
+					if (is_all_floats && mbr_cnt > 0)
+					{
+						rest = PPC_LAST_ARG_REG - gr + 1;
+						nregs = mbr_cnt;
+						n_in_regs = (rest >= mbr_cnt) ? MIN (rest, nregs) : 0;
+						cinfo->args [n].regtype = RegTypeStructByVal;
+						cinfo->args [n].vtregs = n_in_regs;
+						cinfo->args [n].size = mbr_size;
+						cinfo->args [n].vtsize = nregs - n_in_regs;
+						cinfo->args [n].reg = gr;
+						gr += n_in_regs;
+					}
+					else
+					{
+						align_size += (sizeof (target_mgreg_t) - 1);
+						align_size &= ~(sizeof (target_mgreg_t) - 1);
+						nregs = (align_size + sizeof (target_mgreg_t) -1 ) / sizeof (target_mgreg_t);
+						n_in_regs = MIN (rest, nregs);
+						if (n_in_regs < 0)
+							n_in_regs = 0;			
 #ifdef __APPLE__
-					/* FIXME: check this */
-					if (size >= 3 && size % 4 != 0)
-						n_in_regs = 0;
+						/* FIXME: check this */
+						if (size >= 3 && size % 4 != 0)
+							n_in_regs = 0;
 #endif
-					cinfo->args [n].regtype = RegTypeStructByVal;
-					cinfo->args [n].vtregs = n_in_regs;
-					cinfo->args [n].size = n_in_regs;
-					cinfo->args [n].vtsize = nregs - n_in_regs;
-					cinfo->args [n].reg = gr;
-					gr += n_in_regs;
+						cinfo->args [n].regtype = RegTypeStructByVal;
+						cinfo->args [n].vtregs = n_in_regs;
+						cinfo->args [n].size = n_in_regs;
+						cinfo->args [n].vtsize = nregs - n_in_regs;
+						cinfo->args [n].reg = gr;
+						gr += n_in_regs;
+					}
 				}
 
 #ifdef __mono_ppc64__
