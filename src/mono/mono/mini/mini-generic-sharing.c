@@ -1128,7 +1128,7 @@ tramp_info_hash (gconstpointer key)
 {
 	GSharedVtTrampInfo *tramp = (GSharedVtTrampInfo *)key;
 
-	return (gsize)tramp->addr;
+	return (guint)(gsize)tramp->addr;
 }
 
 static gboolean
@@ -4038,7 +4038,7 @@ get_shared_gparam_name (MonoTypeEnum constraint, const char *name)
 		memset (&t, 0, sizeof (t));
 		t.type = constraint;
 		tname = mono_type_full_name (&t);
-		int len = strlen (tname);
+		size_t len = strlen (tname);
 		for (int i = 0; i < len; ++i)
 			tname [i] = toupper (tname [i]);
 		res = g_strdup_printf ("%s_%s", name, tname);

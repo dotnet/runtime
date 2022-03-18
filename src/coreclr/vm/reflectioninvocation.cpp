@@ -1058,6 +1058,11 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         gc.retVal = GET_THROWABLE();
         _ASSERTE(gc.retVal);
 
+#ifdef _MSC_VER
+        // Workaround bogus MSVC warning about uninitialized local variables
+        *(BYTE*)&callDescrData.returnValue = 0;
+#endif
+
         fExceptionThrown = true;
         } EX_END_CATCH(SwallowAllExceptions);
 
@@ -1067,7 +1072,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     {
         CallDescrWorkerWithHandler(&callDescrData);
     }
-
 
     // Now that we are safely out of the catch block, we can create and raise the
     // TargetInvocationException.

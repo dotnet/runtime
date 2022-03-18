@@ -1877,7 +1877,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
     LPCUTF8     pMethName=0;            // Name of custom attribute ctor, if any.
     CQuickBytes qSigName;               // Buffer to pretty-print signature.
     PCCOR_SIGNATURE pSig=0;             // Signature of ctor.
-    ULONG       cbSig;                  // Size of the signature.
+    ULONG       cbSig=0;                // Size of the signature.
     BOOL        bCoffSymbol = false;    // true for coff symbol CA's.
     WCHAR       rcName[MAX_CLASS_NAME]; // Name of the type.
 

@@ -600,7 +600,6 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4463>) # overflow; assigning value to bit-field that can only hold values from low_value to high_value
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4505>) # unreferenced function with internal linkage has been removed
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4611>) # interaction between 'function' and C++ object destruction is non-portable
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4701>) # potentially uninitialized local variable 'var' used
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4702>) # unreachable code
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4703>) # potentially uninitialized local pointer variable 'var' used
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4706>) # assignment within conditional expression

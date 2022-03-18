@@ -4332,16 +4332,16 @@ mono_profiler_fire_buffered_gc_event_root_register (
 	uint8_t root_source = (uint8_t)source;
 	uintptr_t root_key = (uintptr_t)key;
 	const char *root_name = (name ? name : "");
-	uint32_t root_name_len = strlen (root_name) + 1;
+	size_t root_name_len = strlen (root_name) + 1;
 
 	MonoProfilerBufferedGCEvent gc_event_data;
 	gc_event_data.type = MONO_PROFILER_BUFFERED_GC_EVENT_ROOT_REGISTER;
-	gc_event_data.payload_size =
-		sizeof (root_id) +
+	gc_event_data.payload_size = (uint32_t)
+		(sizeof (root_id) +
 		sizeof (root_size) +
 		sizeof (root_source) +
 		sizeof (root_key) +
-		root_name_len;
+		root_name_len);
 
 	uint8_t * buffer = mono_profiler_buffered_gc_event_alloc (gc_event_data.payload_size);
 	if (buffer) {
@@ -4545,8 +4545,8 @@ mono_profiler_fire_buffered_gc_event_moves (
 	MonoProfilerBufferedGCEvent gc_event_data;
 	gc_event_data.type = MONO_PROFILER_BUFFERED_GC_EVENT_MOVES;
 	gc_event_data.payload_size =
-		sizeof (count) +
-		(count * (sizeof (uintptr_t) + sizeof (uintptr_t)));
+		(uint32_t)(sizeof (count) +
+		(count * (sizeof (uintptr_t) + sizeof (uintptr_t))));
 
 	uint8_t * buffer = mono_profiler_buffered_gc_event_alloc (gc_event_data.payload_size);
 	if (buffer) {
@@ -4612,8 +4612,8 @@ mono_profiler_fire_buffered_gc_event_roots (
 	MonoProfilerBufferedGCEvent gc_event_data;
 	gc_event_data.type = MONO_PROFILER_BUFFERED_GC_EVENT_ROOTS;
 	gc_event_data.payload_size =
-		sizeof (count) +
-		(count * (sizeof (uintptr_t) + sizeof (uintptr_t)));
+		(uint32_t)(sizeof (count) +
+		(count * (sizeof (uintptr_t) + sizeof (uintptr_t))));
 
 	uint8_t * buffer = mono_profiler_buffered_gc_event_alloc (gc_event_data.payload_size);
 	if (buffer) {

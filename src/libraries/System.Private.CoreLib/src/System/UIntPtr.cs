@@ -24,14 +24,15 @@ namespace System
     [CLSCompliant(false)]
     [StructLayout(LayoutKind.Sequential)]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct UIntPtr : IEquatable<nuint>, IComparable, IComparable<nuint>, ISpanFormattable, ISerializable
-#if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
-        , IBinaryInteger<nuint>,
+    public readonly struct UIntPtr
+        : IEquatable<nuint>,
+          IComparable,
+          IComparable<nuint>,
+          ISpanFormattable,
+          ISerializable,
+          IBinaryInteger<nuint>,
           IMinMaxValue<nuint>,
           IUnsignedNumber<nuint>
-#pragma warning restore SA1001, CA2252
-#endif // FEATURE_GENERIC_MATH
     {
         private readonly unsafe void* _value; // Do not rename (binary serialization)
 
@@ -239,16 +240,13 @@ namespace System
             return nuint_t.TryParse(s, style, provider, out Unsafe.As<UIntPtr, nuint_t>(ref result));
         }
 
-#if FEATURE_GENERIC_MATH
         //
         // IAdditionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IAdditionOperators<nuint, nuint, nuint>.operator +(nuint left, nuint right)
             => (nuint)(left + right);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked nuint IAdditionOperators<nuint, nuint, nuint>.operator +(nuint left, nuint right)
         //     => checked((nuint)(left + right));
 
@@ -256,14 +254,12 @@ namespace System
         // IAdditiveIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IAdditiveIdentity<nuint, nuint>.AdditiveIdentity => 0;
 
         //
         // IBinaryInteger
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IBinaryInteger<nuint>.LeadingZeroCount(nuint value)
         {
             if (Environment.Is64BitProcess)
@@ -276,7 +272,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IBinaryInteger<nuint>.PopCount(nuint value)
         {
             if (Environment.Is64BitProcess)
@@ -289,7 +284,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IBinaryInteger<nuint>.RotateLeft(nuint value, int rotateAmount)
         {
             if (Environment.Is64BitProcess)
@@ -302,7 +296,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IBinaryInteger<nuint>.RotateRight(nuint value, int rotateAmount)
         {
             if (Environment.Is64BitProcess)
@@ -315,7 +308,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IBinaryInteger<nuint>.TrailingZeroCount(nuint value)
         {
             if (Environment.Is64BitProcess)
@@ -332,7 +324,6 @@ namespace System
         // IBinaryNumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IBinaryNumber<nuint>.IsPow2(nuint value)
         {
             if (Environment.Is64BitProcess)
@@ -345,7 +336,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IBinaryNumber<nuint>.Log2(nuint value)
         {
             if (Environment.Is64BitProcess)
@@ -362,19 +352,15 @@ namespace System
         // IBitwiseOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IBitwiseOperators<nuint, nuint, nuint>.operator &(nuint left, nuint right)
             => left & right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IBitwiseOperators<nuint, nuint, nuint>.operator |(nuint left, nuint right)
             => left | right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IBitwiseOperators<nuint, nuint, nuint>.operator ^(nuint left, nuint right)
             => left ^ right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IBitwiseOperators<nuint, nuint, nuint>.operator ~(nuint value)
             => ~value;
 
@@ -382,19 +368,15 @@ namespace System
         // IComparisonOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<nuint, nuint>.operator <(nuint left, nuint right)
             => left < right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<nuint, nuint>.operator <=(nuint left, nuint right)
             => left <= right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<nuint, nuint>.operator >(nuint left, nuint right)
             => left > right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<nuint, nuint>.operator >=(nuint left, nuint right)
             => left >= right;
 
@@ -402,11 +384,9 @@ namespace System
         // IDecrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IDecrementOperators<nuint>.operator --(nuint value)
             => --value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked nuint IDecrementOperators<nuint>.operator --(nuint value)
         //     => checked(--value);
 
@@ -414,11 +394,9 @@ namespace System
         // IDivisionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IDivisionOperators<nuint, nuint, nuint>.operator /(nuint left, nuint right)
             => left / right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked nuint IDivisionOperators<nuint, nuint, nuint>.operator /(nuint left, nuint right)
         //     => checked(left / right);
 
@@ -426,11 +404,9 @@ namespace System
         // IEqualityOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<nuint, nuint>.operator ==(nuint left, nuint right)
             => left == right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<nuint, nuint>.operator !=(nuint left, nuint right)
             => left != right;
 
@@ -438,11 +414,9 @@ namespace System
         // IIncrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IIncrementOperators<nuint>.operator ++(nuint value)
             => ++value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked nuint IIncrementOperators<nuint>.operator ++(nuint value)
         //     => checked(++value);
 
@@ -450,21 +424,17 @@ namespace System
         // IMinMaxValue
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IMinMaxValue<nuint>.MinValue => MinValue;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IMinMaxValue<nuint>.MaxValue => MaxValue;
 
         //
         // IModulusOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IModulusOperators<nuint, nuint, nuint>.operator %(nuint left, nuint right)
             => left % right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked nuint IModulusOperators<nuint, nuint, nuint>.operator %(nuint left, nuint right)
         //     => checked(left % right);
 
@@ -472,18 +442,15 @@ namespace System
         // IMultiplicativeIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IMultiplicativeIdentity<nuint, nuint>.MultiplicativeIdentity => 1;
 
         //
         // IMultiplyOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IMultiplyOperators<nuint, nuint, nuint>.operator *(nuint left, nuint right)
             => left * right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked nuint IMultiplyOperators<nuint, nuint, nuint>.operator *(nuint left, nuint right)
         //     => checked(left * right);
 
@@ -491,21 +458,16 @@ namespace System
         // INumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint INumber<nuint>.One => 1;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint INumber<nuint>.Zero => 0;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint INumber<nuint>.Abs(nuint value)
             => value;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint INumber<nuint>.Clamp(nuint value, nuint min, nuint max)
             => Math.Clamp(value, min, max);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static nuint INumber<nuint>.Create<TOther>(TOther value)
         {
@@ -572,7 +534,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static nuint INumber<nuint>.CreateSaturating<TOther>(TOther value)
         {
@@ -653,7 +614,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static nuint INumber<nuint>.CreateTruncating<TOther>(TOther value)
         {
@@ -720,31 +680,24 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static (nuint Quotient, nuint Remainder) INumber<nuint>.DivRem(nuint left, nuint right)
             => Math.DivRem(left, right);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint INumber<nuint>.Max(nuint x, nuint y)
             => Math.Max(x, y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint INumber<nuint>.Min(nuint x, nuint y)
             => Math.Min(x, y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint INumber<nuint>.Parse(string s, NumberStyles style, IFormatProvider? provider)
             => Parse(s, style, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint INumber<nuint>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
             => Parse(s, style, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint INumber<nuint>.Sign(nuint value)
             => (nuint)((value == 0) ? 0 : 1);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumber<nuint>.TryCreate<TOther>(TOther value, out nuint result)
         {
@@ -898,11 +851,9 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool INumber<nuint>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out nuint result)
             => TryParse(s, style, provider, out result);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool INumber<nuint>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out nuint result)
             => TryParse(s, style, provider, out result);
 
@@ -910,11 +861,9 @@ namespace System
         // IParseable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IParseable<nuint>.Parse(string s, IFormatProvider? provider)
             => Parse(s, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IParseable<nuint>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out nuint result)
             => TryParse(s, NumberStyles.Integer, provider, out result);
 
@@ -922,15 +871,12 @@ namespace System
         // IShiftOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IShiftOperators<nuint, nuint>.operator <<(nuint value, int shiftAmount)
             => value << (int)shiftAmount;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IShiftOperators<nuint, nuint>.operator >>(nuint value, int shiftAmount)
             => value >> (int)shiftAmount;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static nuint IShiftOperators<nuint, nuint>.operator >>>(nuint value, int shiftAmount)
         //     => value >> (int)shiftAmount;
 
@@ -938,11 +884,9 @@ namespace System
         // ISpanParseable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint ISpanParseable<nuint>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
             => Parse(s, NumberStyles.Integer, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool ISpanParseable<nuint>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out nuint result)
             => TryParse(s, NumberStyles.Integer, provider, out result);
 
@@ -950,11 +894,9 @@ namespace System
         // ISubtractionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint ISubtractionOperators<nuint, nuint, nuint>.operator -(nuint left, nuint right)
             => left - right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked nuint ISubtractionOperators<nuint, nuint, nuint>.operator -(nuint left, nuint right)
         //     => checked(left - right);
 
@@ -962,11 +904,9 @@ namespace System
         // IUnaryNegationOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IUnaryNegationOperators<nuint, nuint>.operator -(nuint value)
             => (nuint)0 - value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked nuint IUnaryNegationOperators<nuint, nuint>.operator -(nuint value)
         //     => checked((nuint)0 - value);
 
@@ -974,13 +914,10 @@ namespace System
         // IUnaryPlusOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static nuint IUnaryPlusOperators<nuint, nuint>.operator +(nuint value)
             => +value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked nuint IUnaryPlusOperators<nuint, nuint>.operator +(nuint value)
         //     => checked(+value);
-#endif // FEATURE_GENERIC_MATH
     }
 }

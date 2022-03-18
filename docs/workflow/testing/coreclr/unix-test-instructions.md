@@ -156,6 +156,7 @@ To only run enabled tests for the platform the tests were built for:
 artifacts/bin/coreclr/$(uname).x64.Debug/paltests/runpaltests.sh $(pwd)/artifacts/bin/coreclr/$(uname).x64.Debug/paltests
 # on macOS, replace $(uname) with OSX
 ```
+To run only specific tests, edit paltestlist.txt locally to delete the ones you don't want to run.
 
 Test results will go into: `/tmp/PalTestOutput/default/pal_tests.xml`
 

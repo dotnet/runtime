@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization.Tests
                 dictOfDictWithNull: new Dictionary<string, Dictionary<string, float?>> { { "key", dictWithFloatNull } },
                 42.0f);
 
-            DateTime now = DateTime.Now;
+            DateTime now = DateTimeTestHelpers.FixedDateTimeValue;
             Dictionary<string, DateTime?> dictWithDateTimeValue = new Dictionary<string, DateTime?> { { "key", now } };
             Dictionary<string, DateTime?> dictWithDateTimeNull = new Dictionary<string, DateTime?> { { "key", null } };
             TestDictionaryWithNullableValue<Dictionary<string, DateTime?>, Dictionary<string, Dictionary<string, DateTime?>>, DateTime?>(
@@ -205,7 +205,7 @@ namespace System.Text.Json.Serialization.Tests
                 enumerableOfEnumerableWithNull: new List<IEnumerable<float?>> { ieWithFloatNull },
                 42.0f);
 
-            DateTime now = DateTime.Now;
+            DateTime now = DateTimeTestHelpers.FixedDateTimeValue;
             IEnumerable<DateTime?> ieWithDateTimeValue = new List<DateTime?> { now };
             IEnumerable<DateTime?> ieWithDateTimeNull = new List<DateTime?> { null };
             TestEnumerableWithNullableValue<IEnumerable<DateTime?>, IEnumerable<IEnumerable<DateTime?>>, DateTime?>(
