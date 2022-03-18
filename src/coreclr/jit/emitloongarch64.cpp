@@ -500,7 +500,7 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 // clang-format off
 /*static*/ const BYTE CodeGenInterface::instInfo[] =
 {
-    #define INST(id, nm, fp, info, fmt, e1) info,
+    #define INST(id, nm, info, e1) info,
     #include "instrs.h"
 };
 // clang-format on
@@ -556,7 +556,7 @@ inline emitter::code_t emitter::emitInsCode(instruction ins /*, insFormat fmt*/)
     // clang-format off
     const static code_t insCode[] =
     {
-        #define INST(id, nm, fp, info, fmt, e1) e1,
+        #define INST(id, nm, info, e1) e1,
         #include "instrs.h"
     };
     // clang-format on

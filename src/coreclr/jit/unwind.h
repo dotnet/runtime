@@ -10,7 +10,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-////TODO for LOONGARCH64: should seperately define for loongarch64.
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 
 // Windows no longer imposes a maximum prolog size. However, we still have an
@@ -138,11 +137,9 @@ public:
     {
 #if defined(TARGET_ARM)
         return b >= 0xFD;
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         return (b == UWC_END); // TODO-ARM64-Bug?: what about the "end_c" code?
-#elif defined(TARGET_LOONGARCH64)
-        return (b == UWC_END);
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64
     }
 
 #ifdef DEBUG
@@ -875,4 +872,4 @@ void DumpUnwindInfo(Compiler*         comp,
 
 #endif // DEBUG
 
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64

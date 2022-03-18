@@ -127,9 +127,9 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
     /* Assume that we not fully interruptible */
 
     SetInterruptible(false);
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     SetHasTailCalls(false);
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 #ifdef DEBUG
     genInterruptibleUsed = false;
     genCurDispOffset     = (unsigned)-1;
@@ -138,10 +138,6 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 #ifdef TARGET_ARM64
     genSaveFpLrWithAllCalleeSavedRegisters = false;
 #endif // TARGET_ARM64
-
-#ifdef TARGET_LOONGARCH64
-    genSaveFpRaWithAllCalleeSavedRegisters = false;
-#endif // TARGET_LOONGARCH64
 }
 
 void CodeGenInterface::genMarkTreeInReg(GenTree* tree, regNumber reg)
@@ -4298,7 +4294,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
             bool FPbased;
             int  base = compiler->lvaFrameAddress(varNum, &FPbased);
 
-            if ((-2048 <= base) && (base < 2048))
+            if (emitter::isValidSimm12(base))
             {
                 GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
             }

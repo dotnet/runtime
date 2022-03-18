@@ -1869,23 +1869,10 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
             addrNode = arg;
 
 #if FEATURE_MULTIREG_ARGS
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
             assert(varTypeIsStruct(type));
             if (lvaIsMultiregStruct(varDsc, curArgTabEntry->IsVararg()))
             {
-                // We will create a GT_OBJ for the argument below.
-                // This will be passed by value in two registers.
-                assert(addrNode != nullptr);
-
-                // Create an Obj of the temp to use it as a call argument.
-                arg = gtNewObjNode(lvaGetStruct(tmpVarNum), arg);
-            }
-#elif defined(TARGET_LOONGARCH64)
-            assert(varTypeIsStruct(type));
-            if (lvaIsMultiregStruct(varDsc, curArgTabEntry->IsVararg()))
-            {
-                // ToDo-LOONGARCH64: Consider using:  arg->ChangeOper(GT_LCL_FLD);
-                // as that is how UNIX_AMD64_ABI works.
                 // We will create a GT_OBJ for the argument below.
                 // This will be passed by value in two registers.
                 assert(addrNode != nullptr);
@@ -1896,7 +1883,7 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
 #else
             // Always create an Obj of the temp to use it as a call argument.
             arg = gtNewObjNode(lvaGetStruct(tmpVarNum), arg);
-#endif // !TARGET_ARM64
+#endif // !(TARGET_ARM64 || TARGET_LOONGARCH64)
 #endif // FEATURE_MULTIREG_ARGS
         }
 
@@ -2939,7 +2926,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #endif
         }
 
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
         assert(!callIsVararg || !isHfaArg);
         passUsingFloatRegs = !callIsVararg && (isHfaArg || varTypeUsesFloatReg(argx));
@@ -2950,17 +2937,15 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
 #elif defined(TARGET_X86)
 
-        passUsingFloatRegs    = false;
-
-#elif defined(TARGET_LOONGARCH64)
-        assert(!callIsVararg);
-        assert(!isHfaArg);
-        passUsingFloatRegs = !callIsVararg && varTypeIsFloating(argx);
+        passUsingFloatRegs = false;
 
 #else
 #error Unsupported or unset target architecture
 #endif // TARGET*
 
+#if defined(TARGET_LOONGARCH64)
+        DWORD floatFieldFlags = 0;
+#endif
         bool      isBackFilled     = false;
         unsigned  nextFltArgRegNum = fltArgRegNum; // This is the next floating-point argument register number to use
         var_types structBaseType   = TYP_STRUCT;
@@ -3027,7 +3012,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         }
 
 #endif // UNIX_AMD64_ABI
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         if (isStructArg)
         {
             if (isHfaArg)
@@ -3073,27 +3058,6 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             size     = genTypeStSz(argx->gtType);
             byteSize = genTypeSize(argx);
         }
-#elif defined(TARGET_LOONGARCH64)
-        DWORD floatFieldFlags = 0;
-        if (!isStructArg)
-        {
-            size     = 1;
-            byteSize = genTypeSize(argx);
-        }
-        else
-        {
-            // Structs are either passed in 1 or 2 (64-bit) slots.
-            // Structs that are the size of 2 pointers are passed by value in multiple registers,
-            // if sufficient registers are available.
-            // Structs that are larger than 2 pointers are passed by reference (to a copy).
-            size = (unsigned)(roundUp(structSize, TARGET_POINTER_SIZE)) / TARGET_POINTER_SIZE;
-
-            if (size > 2)
-            {
-                size = 1;
-            }
-            byteSize = structSize;
-        }
 #else
 #error Unsupported or unset target architecture
 #endif // TARGET_XXX
@@ -3117,9 +3081,13 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                 compFloatingPointUsed |= passUsingFloatRegs;
 
                 if (floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_TWO))
+                {
                     size = 1;
+                }
                 else if (floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO)
+                {
                     size = 2;
+                }
             }
             else // if (passStructByRef)
             {
@@ -3284,7 +3252,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                 {
                     if ((floatFieldFlags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND)) &&
                         passUsingFloatRegs)
+                    {
                         passUsingFloatRegs = isRegArg = intArgRegNum < maxRegArgs;
+                    }
 
                     if (!passUsingFloatRegs)
                     {
@@ -3294,7 +3264,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                     else if (passUsingFloatRegs)
                     {
                         if (floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO)
+                        {
                             nextOtherRegNum = genMapFloatRegArgNumToRegNum(nextFltArgRegNum + 1);
+                        }
                         else if (floatFieldFlags & STRUCT_FLOAT_FIELD_SECOND)
                         {
                             assert(size == 1);
@@ -3320,7 +3292,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                 // Check if the last register needed is still in the int argument register range.
                 isRegArg = (intArgRegNum + (size - 1)) < maxRegArgs;
                 if (!passUsingFloatRegs && isRegArg && (size > 1))
+                {
                     nextOtherRegNum = genMapIntRegArgNumToRegNum(intArgRegNum + 1);
+                }
 
                 // Did we run out of registers when we had a 16-byte struct (size===2) ?
                 // (i.e we only have one register remaining but we needed two registers to pass this arg)
@@ -3502,23 +3476,20 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                 {
                     if ((size > 1) && ((intArgRegNum + 1) == maxRegArgs) && (nextOtherRegNum == REG_STK))
                     {
-#if FEATURE_ARG_SPLIT
-                        // This indicates a partial enregistration of a struct type
-                        assert((isStructArg) || argx->OperIs(GT_FIELD_LIST) || argx->OperIsCopyBlkOp() ||
-                               (argx->gtOper == GT_COMMA && (argx->gtFlags & GTF_ASG)));
-                        call->fgArgInfo->SplitArg(argIndex, 1, 1);
-#endif // FEATURE_ARG_SPLIT
                         assert(!passUsingFloatRegs);
                         assert(size == 2);
-                        // assert(nextOtherRegNum == REG_STK);
                         intArgRegNum = maxRegArgs;
                     }
                     else if ((floatFieldFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) == 0x0)
                     {
                         if (passUsingFloatRegs)
+                        {
                             fltArgRegNum += 1;
+                        }
                         else
+                        {
                             intArgRegNum += size;
+                        }
                     }
                     else if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                     {
@@ -4927,8 +4898,9 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                 }
                 else
                 {
-                    assert(!"----------------unimplemented type-case... on LOONGARCH");
-                    unreached();
+                    NYI_LOONGARCH64("fgMorphMultiregStructArg -- GT_LCL_FLD,GT_LCL_VAR");
+                    tmp_type_1 = TYP_UNDEF;
+                    tmp_type_2 = TYP_UNDEF;
                 }
                 elemSize = (floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) ? 8 : 4;
 
@@ -5014,8 +4986,9 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                 }
                 else
                 {
-                    assert(!"----------------unimplemented type-case... on LOONGARCH");
-                    unreached();
+                    NYI_LOONGARCH64("fgMorphMultiregStructArg -- GT_OBJ struct");
+                    tmp_type_1 = TYP_UNDEF;
+                    tmp_type_2 = TYP_UNDEF;
                 }
                 elemSize = (floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) ? 8 : 4;
 

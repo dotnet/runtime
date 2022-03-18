@@ -644,12 +644,6 @@ protected:
     bool         genSaveFpLrWithAllCalleeSavedRegisters;
 #endif // TARGET_ARM64
 
-#ifdef TARGET_LOONGARCH64
-    virtual void SetSaveFpRaWithAllCalleeSavedRegisters(bool value);
-    virtual bool IsSaveFpRaWithAllCalleeSavedRegisters() const;
-    bool         genSaveFpRaWithAllCalleeSavedRegisters;
-#endif // TARGET_LOONGARCH64
-
     //-------------------------------------------------------------------------
     //
     // End prolog/epilog generation

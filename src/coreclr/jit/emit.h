@@ -1790,13 +1790,11 @@ public:
 
 #endif // FEATURE_EH_FUNCLETS
 
-/************************************************************************/
-/*    Methods to record a code position and later convert to offset     */
-/************************************************************************/
+    /************************************************************************/
+    /*    Methods to record a code position and later convert to offset     */
+    /************************************************************************/
 
-#ifndef TARGET_LOONGARCH64
     unsigned emitFindInsNum(insGroup* ig, instrDesc* id);
-#endif
     UNATIVE_OFFSET emitFindOffset(insGroup* ig, unsigned insNum);
 
 /************************************************************************/

@@ -66,15 +66,13 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 
         switch (parentNode->OperGet())
         {
-            case GT_ADD:
-                return ((-2048 <= immVal) && (immVal <= 2047));
-                break;
             case GT_CMPXCHG:
             case GT_LOCKADD:
             case GT_XADD:
-                NYI_LOONGARCH64("unimplemented on LOONGARCH yet");
+                NYI_LOONGARCH64("GT_CMPXCHG,GT_LOCKADD,GT_XADD");
                 break;
 
+            case GT_ADD:
             case GT_EQ:
             case GT_NE:
             case GT_LT:
@@ -82,11 +80,11 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_GE:
             case GT_GT:
             case GT_BOUNDS_CHECK:
-                return ((-32768 <= immVal) && (immVal <= 32767));
+                return emitter::isValidSimm12(immVal);
             case GT_AND:
             case GT_OR:
             case GT_XOR:
-                return ((-2048 <= immVal) && (immVal <= 2047));
+                return emitter::isValidUimm11(immVal);
             case GT_JCMP:
                 assert(((parentNode->gtFlags & GTF_JCMP_TST) == 0) ? (immVal == 0) : isPow2(immVal));
                 return true;
@@ -411,11 +409,8 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     GenTreeIntCon* offsetNode = addr->AsOp()->gtGetOp2()->AsIntCon();
     ssize_t        offset     = offsetNode->IconValue();
 
-    // All integer load/store instructions on both ARM32 and ARM64 support
-    // offsets in range -255..255. Of course, this is a rather conservative
-    // check. For example, if the offset and size are a multiple of 8 we
-    // could allow a combined offset of up to 32760 on ARM64.
-    if ((offset < -255) || (offset > 255) || (offset + static_cast<int>(size) > 256))
+    // TODO-LoongArch64: not including the ldptr and SIMD offset which not used right now.
+    if (!emitter::isValidSimm12(offset) || !emitter::isValidSimm12(offset + static_cast<int>(size)))
     {
         return;
     }
@@ -514,7 +509,7 @@ void Lowering::LowerRotate(GenTree* tree)
 //
 void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 {
-    NYI_LOONGARCH64("unimplemented on LoongArch64 yet");
+    NYI_LOONGARCH64("LowerSIMD");
 }
 #endif // FEATURE_SIMD
 
@@ -527,7 +522,7 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 //
 void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NYI_LOONGARCH64("unimplemented on LoongArch64 yet");
+    NYI_LOONGARCH64("LowerHWIntrinsic");
 }
 
 //----------------------------------------------------------------------------------------------
@@ -543,7 +538,7 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 //     This check may end up modifying node->gtOp1 if it is a cast node that can be removed
 bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 {
-    NYI_LOONGARCH64("unimplemented on LoongArch64 yet");
+    NYI_LOONGARCH64("IsValidConstForMovImm");
     return false;
 }
 
@@ -556,7 +551,7 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 //
 void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 {
-    NYI_LOONGARCH64("unimplemented on LoongArch64 yet");
+    NYI_LOONGARCH64("LowerHWIntrinsicCmpOp");
 }
 
 //----------------------------------------------------------------------------------------------
@@ -567,7 +562,7 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 //
 void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 {
-    NYI_LOONGARCH64("unimplemented on LoongArch64 yet");
+    NYI_LOONGARCH64("LowerHWIntrinsicCreate");
 }
 
 //----------------------------------------------------------------------------------------------
@@ -578,7 +573,7 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 //
 void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 {
-    NYI_LOONGARCH64("unimplemented on LoongArch64 yet");
+    NYI_LOONGARCH64("LowerHWIntrinsicDot");
 }
 
 #endif // FEATURE_HW_INTRINSICS
@@ -598,7 +593,7 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 //
 void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 {
-    // There are no contained operands for LOONGARCH.
+    // There are no contained operands for LoongArch64.
 }
 
 //------------------------------------------------------------------------
@@ -640,18 +635,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     }
 
 #ifdef FEATURE_SIMD
-    assert(!"unimplemented on LOONGARCH yet");
-    // If indirTree is of TYP_SIMD12, don't mark addr as contained
-    // so that it always get computed to a register.  This would
-    // mean codegen side logic doesn't need to handle all possible
-    // addr expressions that could be contained.
-    //
-    // TODO-LOONGARCH64-CQ: handle other addr mode expressions that could be marked
-    // as contained.
-    if (indirNode->TypeGet() == TYP_SIMD12)
-    {
-        return;
-    }
+    NYI_LOONGARCH64("ContainCheckIndir-SIMD");
 #endif // FEATURE_SIMD
 
     GenTree* addr = indirNode->Addr();
@@ -790,6 +774,7 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
 //
 void Lowering::ContainCheckCast(GenTreeCast* node)
 {
+    // There are no contained operands for LoongArch64.
 }
 
 //------------------------------------------------------------------------
@@ -827,7 +812,7 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 //
 void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 {
-    NYI_LOONGARCH64("-----unimplemented on LOONGARCH64 yet----");
+    NYI_LOONGARCH64("ContainCheckSIMD");
 }
 #endif // FEATURE_SIMD
 
@@ -840,7 +825,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NYI_LOONGARCH64("-----unimplemented on LOONGARCH64 yet----");
+    NYI_LOONGARCH64("ContainCheckHWIntrinsic");
 }
 #endif // FEATURE_HW_INTRINSICS
 

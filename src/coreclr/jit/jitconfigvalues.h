@@ -548,13 +548,6 @@ CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSave
 #endif // defined(TARGET_ARM64)
 
 #if defined(TARGET_LOONGARCH64)
-// JitSaveFpRaWithCalleeSavedRegisters:
-//    0: use default frame type decision
-//    1: disable frames that save FP/RA registers with the callee-saved registers (at the top of the frame)
-//    2: force all frames to use the frame types that save FP/RA registers with the callee-saved registers (at the top
-//    of the frame)
-CONFIG_INTEGER(JitSaveFpRaWithCalleeSavedRegisters, W("JitSaveFpRaWithCalleeSavedRegisters"), 0)
-
 // Disable emitDispIns by default
 CONFIG_INTEGER(JitDispIns, W("JitDispIns"), 0)
 #endif // defined(TARGET_LOONGARCH64)

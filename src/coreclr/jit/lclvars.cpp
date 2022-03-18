@@ -5359,21 +5359,14 @@ void Compiler::lvaFixVirtualFrameOffsets()
         // We set FP to be after LR, FP
         delta += 2 * REGSIZE_BYTES;
     }
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     else
     {
         // FP is used.
         JITDUMP("--- delta bump %d for FP frame\n", codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta());
         delta += codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta();
     }
-#elif defined(TARGET_LOONGARCH64)
-    else
-    {
-        // FP is used.
-        JITDUMP("--- delta bump %d for RBP frame\n", codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta());
-        delta += codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta();
-    }
-#endif // TARGET_LOONGARCH64
+#endif // TARGET_AMD64 || TARGET_ARM64 || TARGET_LOONGARCH64
 
     if (opts.IsOSR())
     {
@@ -5487,11 +5480,11 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     // We normally add alignment below the locals between them and the outgoing
-    // arg space area. When we store fp/lr at the bottom, however, this will be
-    // below the alignment. So we should not apply the alignment adjustment to
-    // them. On ARM64 it turns out we always store these at +0 and +8 of the FP,
+    // arg space area. When we store fp/lr(ra) at the bottom, however, this will
+    // be below the alignment. So we should not apply the alignment adjustment to
+    // them. It turns out we always store these at +0 and +8 of the FP,
     // so instead of dealing with skipping adjustment just for them we just set
     // them here always.
     assert(codeGen->isFramePointerUsed());
@@ -5499,19 +5492,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
     {
         lvaTable[lvaRetAddrVar].SetStackOffset(REGSIZE_BYTES);
     }
-#elif defined(TARGET_LOONGARCH64)
-    // We normally add alignment below the locals between them and the outgoing
-    // arg space area. When we store fp/ra at the bottom, however, this will be
-    // below the alignment. So we should not apply the alignment adjustment to
-    // them. On LOONGARCH64 it turns out we always store these at +0 and +8 of the FP,
-    // so instead of dealing with skipping adjustment just for them we just set
-    // them here always.
-    assert(codeGen->isFramePointerUsed());
-    if (lvaRetAddrVar != BAD_VAR_NUM)
-    {
-        lvaTable[lvaRetAddrVar].SetStackOffset(REGSIZE_BYTES);
-    }
-#endif
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64
 }
 
 #ifdef TARGET_ARM
@@ -6018,16 +5999,8 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         }
 
 #elif defined(TARGET_LOONGARCH64)
-// if (compFeatureArgSplit() && this->info.compIsVarArgs)
-//{//TODO: should confirm for "info.compIsVarArgs".
-//    if (varDsc->lvType == TYP_STRUCT && varDsc->lvOtherArgReg >= MAX_REG_ARG && varDsc->lvOtherArgReg != REG_NA)
-//    {
-//        // This is a split struct. It will account for an extra (8 bytes)
-//        // of alignment.
-//        varDsc->lvStkOffs += TARGET_POINTER_SIZE;
-//        argOffs += TARGET_POINTER_SIZE;
-//    }
-//}
+// empty for LoongArch64.
+
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif // TARGET*
@@ -6267,30 +6240,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif
 
-#ifdef TARGET_LOONGARCH64
-    // Decide where to save FP and RA registers. We store FP/RA registers at the bottom of the frame if there is
-    // a frame pointer used (so we get positive offsets from the frame pointer to access locals), but not if we
-    // need a GS cookie AND localloc is used, since we need the GS cookie to protect the saved return value,
-    // and also the saved frame pointer. See CodeGen::genPushCalleeSavedRegisters() for more details about the
-    // frame types. Since saving FP/RA at high addresses is a relatively rare case, force using it during stress.
-    // (It should be legal to use these frame types for every frame).
-
-    if (opts.compJitSaveFpRaWithCalleeSavedRegisters == 0)
-    {
-        // Default configuration
-        codeGen->SetSaveFpRaWithAllCalleeSavedRegisters((getNeedsGSSecurityCookie() && compLocallocUsed) ||
-                                                        compStressCompile(STRESS_GENERIC_VARN, 20));
-    }
-    else if (opts.compJitSaveFpRaWithCalleeSavedRegisters == 1)
-    {
-        codeGen->SetSaveFpRaWithAllCalleeSavedRegisters(false); // Disable using new frames
-    }
-    else if (opts.compJitSaveFpRaWithCalleeSavedRegisters == 2)
-    {
-        codeGen->SetSaveFpRaWithAllCalleeSavedRegisters(true); // Force using new frames
-    }
-#endif // TARGET_LOONGARCH64
-
     int  preSpillSize    = 0;
     bool mustDoubleAlign = false;
 
@@ -6342,17 +6291,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         initialStkOffs = MAX_REG_ARG * REGSIZE_BYTES;
         stkOffs -= initialStkOffs;
     }
-    if (codeGen->IsSaveFpRaWithAllCalleeSavedRegisters() ||
-        !isFramePointerUsed()) // Note that currently we always have a frame pointer
-    {
-        stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
-    }
-    else
-    {
-        // Subtract off FP and RA.
-        assert(compCalleeRegsPushed >= 2);
-        stkOffs -= (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
-    }
+
+    // Subtract off FP and RA.
+    assert(compCalleeRegsPushed >= 2);
+    stkOffs -= (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
 
 #else // !TARGET_LOONGARCH64
 #ifdef TARGET_ARM
@@ -6451,7 +6393,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // TARGET_AMD64
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARMARCH)
+#if defined(FEATURE_EH_FUNCLETS) && (defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64))
     if (lvaPSPSym != BAD_VAR_NUM)
     {
         // On ARM/ARM64, if we need a PSPSym, allocate it first, before anything else, including
@@ -6460,18 +6402,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         noway_assert(codeGen->isFramePointerUsed()); // We need an explicit frame pointer
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaPSPSym, TARGET_POINTER_SIZE, stkOffs);
     }
-#endif // FEATURE_EH_FUNCLETS && defined(TARGET_ARMARCH)
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_LOONGARCH64)
-    if (lvaPSPSym != BAD_VAR_NUM)
-    {
-        // If we need a PSPSym, allocate it first, before anything else, including
-        // padding (so we can avoid computing the same padding in the funclet
-        // frame). Note that there is no special padding requirement for the PSPSym.
-        noway_assert(codeGen->isFramePointerUsed()); // We need an explicit frame pointer
-        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaPSPSym, TARGET_POINTER_SIZE, stkOffs);
-    }
-#endif // FEATURE_EH_FUNCLETS || TARGET_LOONGARCH64
+#endif // FEATURE_EH_FUNCLETS && (TARGET_ARMARCH || TARGET_LOONGARCH64)
 
     if (mustDoubleAlign)
     {
@@ -6866,7 +6797,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                     continue;
                 }
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
                 if (info.compIsVarArgs && varDsc->GetArgReg() != theFixedRetBuffArgNum())
                 {
                     // Stack offset to varargs (parameters) should point to home area which will be preallocated.
@@ -6884,16 +6815,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 if ((codeGen->regSet.rsMaskPreSpillRegs(false) & genRegMask(varDsc->GetArgReg())) != 0)
                 {
                     assert(varDsc->GetStackOffset() != BAD_STK_OFFS);
-                    continue;
-                }
-#endif
-
-#ifdef TARGET_LOONGARCH64
-                if (info.compIsVarArgs && varDsc->GetArgReg() != theFixedRetBuffArgNum())
-                { // TODO: add VarArgs for LOONGARCH64.
-                    // Stack offset to parameters should point to home area which will be preallocated.
-                    varDsc->SetStackOffset(-initialStkOffs +
-                                           genMapIntRegNumToRegArgNum(varDsc->GetArgReg()) * REGSIZE_BYTES);
                     continue;
                 }
 #endif
@@ -6980,7 +6901,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
             // Reserve the stack space for this variable
             stkOffs = lvaAllocLocalAndSetVirtualOffset(lclNum, lvaLclSize(lclNum), stkOffs);
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
             // If we have an incoming register argument that has a struct promoted field
             // then we need to copy the lvStkOff (the stack home) from the reg arg to the field lclvar
             //
@@ -7006,20 +6927,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 lvaTable[fieldVarNum + 1].SetStackOffset(varDsc->GetStackOffset() + 4);
             }
 #endif // TARGET_ARM
-#endif // TARGET_ARM64
-
-#ifdef TARGET_LOONGARCH64
-            // If we have an incoming register argument that has a struct promoted field
-            // then we need to copy the lvStkOff (the stack home) from the reg arg to the field lclvar
-            //
-            if (varDsc->lvIsRegArg && varDsc->lvPromotedStruct())
-            {
-                noway_assert(varDsc->lvFieldCnt == 1); // We only handle one field here
-
-                unsigned fieldVarNum = varDsc->lvFieldLclStart;
-                lvaTable[fieldVarNum].SetStackOffset(varDsc->GetStackOffset());
-            }
-#endif // TARGET_LOONGARCH64
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64
         }
     }
 
@@ -7124,13 +7032,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // TARGET_ARM64
 
-#ifdef TARGET_LOONGARCH64
-    if (!codeGen->IsSaveFpRaWithAllCalleeSavedRegisters() &&
-        isFramePointerUsed()) // Note that currently we always have a frame pointer
-    {
-        // Create space for saving FP and RA.
-        stkOffs -= 2 * REGSIZE_BYTES;
-    }
+#if defined(TARGET_LOONGARCH64)
+    assert(isFramePointerUsed()); // Note that currently we always have a frame pointer
+    stkOffs -= 2 * REGSIZE_BYTES;
 #endif // TARGET_LOONGARCH64
 
 #if FEATURE_FIXED_OUT_ARGS
@@ -7153,7 +7057,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     // and the pushed frame pointer register which for some strange reason isn't part of 'compCalleeRegsPushed'.
     int pushedCount = compCalleeRegsPushed;
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     if (info.compIsVarArgs)
     {
         pushedCount += MAX_REG_ARG;
@@ -7166,13 +7070,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         pushedCount += 1; // pushed EBP (frame pointer)
     }
     pushedCount += 1; // pushed PC (return address)
-#endif
-
-#ifdef TARGET_LOONGARCH64
-    if (info.compIsVarArgs)
-    {
-        pushedCount += MAX_REG_ARG;
-    }
 #endif
 
     noway_assert(compLclFrameSize + originalFrameSize ==
@@ -7343,9 +7240,9 @@ void Compiler::lvaAlignFrame()
         lvaIncrementFrameSize(REGSIZE_BYTES);
     }
 
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
-    // The stack on ARM64 must be 16 byte aligned.
+    // The stack on ARM64/LoongArch64 must be 16 byte aligned.
 
     // First, align up to 8.
     if ((compLclFrameSize % 8) != 0)
@@ -7426,34 +7323,6 @@ void Compiler::lvaAlignFrame()
         {
             lvaIncrementFrameSize(STACK_ALIGN - (adjustFrameSize % STACK_ALIGN));
         }
-    }
-
-#elif defined(TARGET_LOONGARCH64)
-
-    // First, align up to 8.
-    if ((compLclFrameSize % 8) != 0)
-    {
-        lvaIncrementFrameSize(8 - (compLclFrameSize % 8));
-    }
-    else if (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)
-    {
-        // If we are not doing final layout, we don't know the exact value of compLclFrameSize
-        // and thus do not know how much we will need to add in order to be aligned.
-        // We add 8 so compLclFrameSize is still a multiple of 8.
-        lvaIncrementFrameSize(8);
-    }
-    assert((compLclFrameSize % 8) == 0);
-
-    // Ensure that the stack is always 16-byte aligned by grabbing an unused 16-byte
-    // if needed.
-    bool regPushedCountAligned = (compCalleeRegsPushed % (16 / REGSIZE_BYTES)) != 0;
-    bool lclFrameSizeAligned   = (compLclFrameSize % 16) != 0;
-
-    // If this isn't the final frame layout, assume we have to push an extra QWORD
-    // Just so the offsets are true upper limits.
-    if ((lvaDoneFrameLayout != FINAL_FRAME_LAYOUT) || (regPushedCountAligned != lclFrameSizeAligned))
-    {
-        lvaIncrementFrameSize(REGSIZE_BYTES);
     }
 
 #else
@@ -8030,11 +7899,11 @@ unsigned Compiler::lvaFrameSize(FrameLayoutState curState)
 
     compCalleeRegsPushed = CNT_CALLEE_SAVED;
 
-#if defined(TARGET_ARMARCH)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     if (compFloatingPointUsed)
         compCalleeRegsPushed += CNT_CALLEE_SAVED_FLOAT;
 
-    compCalleeRegsPushed++; // we always push LR.  See genPushCalleeSavedRegisters
+    compCalleeRegsPushed++; // we always push LR/RA.  See genPushCalleeSavedRegisters
 #elif defined(TARGET_AMD64)
     if (compFloatingPointUsed)
     {
@@ -8044,11 +7913,6 @@ unsigned Compiler::lvaFrameSize(FrameLayoutState curState)
     {
         compCalleeFPRegsSavedMask = RBM_NONE;
     }
-#elif defined(TARGET_LOONGARCH64)
-    if (compFloatingPointUsed)
-        compCalleeRegsPushed += CNT_CALLEE_SAVED_FLOAT;
-
-    compCalleeRegsPushed++; // we always push RA.  See genPushCalleeSavedRegisters
 #endif
 
 #if DOUBLE_ALIGN
@@ -8071,20 +7935,12 @@ unsigned Compiler::lvaFrameSize(FrameLayoutState curState)
     lvaAssignFrameOffsets(curState);
 
     unsigned calleeSavedRegMaxSz = CALLEE_SAVED_REG_MAXSZ;
-#if defined(TARGET_ARMARCH)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     if (compFloatingPointUsed)
     {
         calleeSavedRegMaxSz += CALLEE_SAVED_FLOAT_MAXSZ;
     }
-    calleeSavedRegMaxSz += REGSIZE_BYTES; // we always push LR.  See genPushCalleeSavedRegisters
-#endif
-
-#if defined(TARGET_LOONGARCH64)
-    if (compFloatingPointUsed)
-    {
-        calleeSavedRegMaxSz += CALLEE_SAVED_FLOAT_MAXSZ;
-    }
-    calleeSavedRegMaxSz += REGSIZE_BYTES; // we always push RA.  See genPushCalleeSavedRegisters
+    calleeSavedRegMaxSz += REGSIZE_BYTES; // we always push LR/RA.  See genPushCalleeSavedRegisters
 #endif
 
     result = compLclFrameSize + calleeSavedRegMaxSz;
@@ -8396,20 +8252,13 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         // Calculate padding
         unsigned padding = LCL_FLD_PADDING(lclNum);
 
-#ifdef TARGET_ARMARCH
-        // We need to support alignment requirements to access memory on ARM ARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+        // We need to support alignment requirements to access memory.
         unsigned alignment = 1;
         pComp->codeGen->InferOpSizeAlign(lcl, &alignment);
         alignment = roundUp(alignment, TARGET_POINTER_SIZE);
         padding   = roundUp(padding, alignment);
-#endif // TARGET_ARMARCH
-
-#ifdef TARGET_LOONGARCH64
-        unsigned alignment = 1;
-        pComp->codeGen->InferOpSizeAlign(lcl, &alignment);
-        alignment = roundUp(alignment, TARGET_POINTER_SIZE);
-        padding   = roundUp(padding, alignment);
-#endif // TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
         // Change the variable to a TYP_BLK
         if (varType != TYP_BLK)

@@ -2858,11 +2858,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitSaveFpLrWithCalleeSavedRegisters = 0;
 #endif // defined(TARGET_ARM64)
 
-#if defined(TARGET_LOONGARCH64)
-    // 0 is default: use the appropriate frame type based on the function.
-    opts.compJitSaveFpRaWithCalleeSavedRegisters = 0;
-#endif // defined(TARGET_LOONGARCH64)
-
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -3361,13 +3356,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.compJitSaveFpLrWithCalleeSavedRegisters = JitConfig.JitSaveFpLrWithCalleeSavedRegisters();
     }
 #endif // defined(DEBUG) && defined(TARGET_ARM64)
-
-#if defined(DEBUG) && defined(TARGET_LOONGARCH64)
-    if ((s_pJitMethodSet == nullptr) || s_pJitMethodSet->IsActiveMethod(info.compFullName, info.compMethodHash()))
-    {
-        opts.compJitSaveFpRaWithCalleeSavedRegisters = JitConfig.JitSaveFpRaWithCalleeSavedRegisters();
-    }
-#endif // defined(DEBUG) && defined(TARGET_LOONGARCH64)
 }
 
 #ifdef DEBUG

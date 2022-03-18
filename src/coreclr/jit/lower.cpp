@@ -1461,7 +1461,7 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
 #endif // !defined(TARGET_64BIT)
     {
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
         if (call->IsVarargs() || comp->opts.compUseSoftFP)
         {
             // For vararg call or on armel, reg args should be all integer.
@@ -1472,32 +1472,8 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
                 type = newNode->TypeGet();
             }
         }
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
-#if defined(TARGET_LOONGARCH64)
-        if (call->IsVarargs())
-        {
-            // For vararg call, reg args should be all integer.
-            // Insert copies as needed to move float value to integer register.
-            GenTree* newNode = LowerFloatArg(ppArg, info);
-            if (newNode != nullptr)
-            {
-                type = newNode->TypeGet();
-            }
-        }
-        else
-        {
-            GenTree* putArg = NewPutArg(call, arg, info, type);
-
-            // In the case of register passable struct (in one or two registers)
-            // the NewPutArg returns a new node (GT_PUTARG_REG or a GT_FIELD_LIST with two GT_PUTARG_REGs.)
-            // If an extra node is returned, splice it in the right place in the tree.
-            if (arg != putArg)
-            {
-                ReplaceArgWithPutArgOrBitcast(ppArg, putArg);
-            }
-        }
-#else
         GenTree* putArg = NewPutArg(call, arg, info, type);
 
         // In the case of register passable struct (in one or two registers)
@@ -1507,7 +1483,6 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
         {
             ReplaceArgWithPutArgOrBitcast(ppArg, putArg);
         }
-#endif
     }
 }
 

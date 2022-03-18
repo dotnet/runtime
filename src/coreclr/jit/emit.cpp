@@ -6617,10 +6617,6 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         ig->igSize = (unsigned short)(cp - bp);
     }
 
-#ifdef TARGET_LOONGARCH64
-    unsigned actualCodeSize = (unsigned)(cp - codeBlock);
-#endif
-
 #if EMIT_TRACK_STACK_DEPTH
     assert(emitCurStackLvl == 0);
 #endif
@@ -6661,7 +6657,6 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         emitUpdateLiveGCregs(GCT_GCREF, RBM_NONE, cp);
     }
 
-#ifndef TARGET_LOONGARCH64
     /* Patch any forward jumps */
 
     if (emitFwdJumps)
@@ -6726,6 +6721,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #elif defined(TARGET_ARM64)
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
+#elif defined(TARGET_LOONGARCH64)
+                    // For LoongArch64 `emitFwdJumps` is always false.
+                    unreached();
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -6739,6 +6737,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #elif defined(TARGET_ARMARCH)
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
+#elif defined(TARGET_LOONGARCH64)
+                    // For LoongArch64 `emitFwdJumps` is always false.
+                    unreached();
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -6746,7 +6747,6 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             }
         }
     }
-#endif //! TARGET_LOONGARCH64
 
 #ifdef DEBUG
     if (emitComp->opts.disAsm)
@@ -6755,9 +6755,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     }
 #endif
 
-#ifndef TARGET_LOONGARCH64
     unsigned actualCodeSize = emitCurCodeOffs(cp);
-#endif
 
 #if defined(TARGET_ARM64)
     assert(emitTotalCodeSize == actualCodeSize);
@@ -6848,7 +6846,6 @@ void emitter::emitGenGCInfoIfFuncletRetTarget(insGroup* ig, BYTE* cp)
  *  instruction number for this instruction
  */
 
-#ifndef TARGET_LOONGARCH64
 unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch)
 {
     instrDesc* id = (instrDesc*)ig->igData;
@@ -6877,7 +6874,6 @@ unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch)
     assert(!"emitFindInsNum failed");
     return -1;
 }
-#endif
 
 /*****************************************************************************
  *

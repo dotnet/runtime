@@ -52,7 +52,7 @@ enum instruction : unsigned
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 
 #elif defined(TARGET_LOONGARCH64)
-    #define INST(id, nm, fp, ldst, fmt, e1) INS_##id,
+    #define INST(id, nm, ldst, e1) INS_##id,
     #include "instrs.h"
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals

@@ -1055,18 +1055,6 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     else if (genFuncletInfo.fiFrameType == 2)
     {
         // fiFrameType constraints:
-        assert(frameSize < 0);
-        assert(frameSize >= -2048);
-
-        assert(genFuncletInfo.fiSP_to_FPRA_save_delta < 2040);
-        genStackPointerAdjustment(frameSize, REG_R21, nullptr, /* reportUnwindData */ true);
-
-        genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, genFuncletInfo.fiSP_to_PSP_slot_delta + 8,
-                                        0);
-    }
-    else if (genFuncletInfo.fiFrameType == 3)
-    {
-        // fiFrameType constraints:
         assert(frameSize < -2048);
 
         offset       = -frameSize - genFuncletInfo.fiSP_to_FPRA_save_delta;
@@ -1084,21 +1072,6 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         maskSaveRegsInt &= ~(RBM_RA | RBM_FP); // We've saved these now
 
         offset = frameSize + SP_delta + genFuncletInfo.fiSP_to_PSP_slot_delta + 8;
-        genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset, 0);
-
-        genStackPointerAdjustment(frameSize + SP_delta, REG_R21, nullptr, /* reportUnwindData */ true);
-    }
-    else if (genFuncletInfo.fiFrameType == 4)
-    {
-        // fiFrameType constraints:
-        assert(frameSize < -2048);
-
-        offset       = -frameSize - (genFuncletInfo.fiSP_to_PSP_slot_delta + 8);
-        int SP_delta = roundUp((UINT)offset, STACK_ALIGN);
-        offset       = SP_delta - offset;
-
-        genStackPointerAdjustment(-SP_delta, REG_R21, nullptr, /* reportUnwindData */ true);
-
         genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset, 0);
 
         genStackPointerAdjustment(frameSize + SP_delta, REG_R21, nullptr, /* reportUnwindData */ true);
@@ -1216,17 +1189,6 @@ void CodeGen::genFuncletEpilog()
     else if (genFuncletInfo.fiFrameType == 2)
     {
         // fiFrameType constraints:
-        assert(frameSize >= -2048);
-        assert(genFuncletInfo.fiSP_to_FPRA_save_delta < 2040);
-
-        genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, genFuncletInfo.fiSP_to_PSP_slot_delta + 8, 0);
-
-        // generate daddiu SP,SP,imm
-        genStackPointerAdjustment(-frameSize, REG_R21, nullptr, /* reportUnwindData */ true);
-    }
-    else if (genFuncletInfo.fiFrameType == 3)
-    {
-        // fiFrameType constraints:
         assert(frameSize < -2048);
 
         int offset   = -frameSize - genFuncletInfo.fiSP_to_FPRA_save_delta;
@@ -1249,21 +1211,6 @@ void CodeGen::genFuncletEpilog()
         compiler->unwindSaveReg(REG_FP, offset);
 
         // second, generate daddiu SP,SP,imm for remaine space.
-        genStackPointerAdjustment(SP_delta, REG_R21, nullptr, /* reportUnwindData */ true);
-    }
-    else if (genFuncletInfo.fiFrameType == 4)
-    {
-        // fiFrameType constraints:
-        assert(frameSize < -2048);
-
-        int offset   = -frameSize - (genFuncletInfo.fiSP_to_PSP_slot_delta + 8);
-        int SP_delta = roundUp((UINT)offset, STACK_ALIGN);
-        offset       = SP_delta - offset;
-
-        genStackPointerAdjustment(-frameSize - SP_delta, REG_R21, nullptr, /* reportUnwindData */ true);
-
-        genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, offset, 0);
-
         genStackPointerAdjustment(SP_delta, REG_R21, nullptr, /* reportUnwindData */ true);
     }
     else
@@ -1309,16 +1256,8 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     unsigned saveRegsCount = genCountBits(rsMaskSaveRegs);
     assert((saveRegsCount == compiler->compCalleeRegsPushed) || (saveRegsCount == compiler->compCalleeRegsPushed - 1));
 
-    unsigned saveRegsPlusPSPSize;
-    if (!IsSaveFpRaWithAllCalleeSavedRegisters())
-    {
-        saveRegsPlusPSPSize =
-            roundUp((UINT)genTotalFrameSize(), STACK_ALIGN) - compiler->compLclFrameSize + PSPSize /* -2*8*/;
-    }
-    else
-    {
-        saveRegsPlusPSPSize = roundUp((UINT)genTotalFrameSize(), STACK_ALIGN) - compiler->compLclFrameSize + PSPSize;
-    }
+    unsigned saveRegsPlusPSPSize =
+        roundUp((UINT)genTotalFrameSize(), STACK_ALIGN) - compiler->compLclFrameSize + PSPSize;
 
     if (compiler->info.compIsVarArgs)
     {
@@ -1345,32 +1284,16 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
     if (maxFuncletFrameSizeAligned <= (2048 - 8))
     {
-        if (!IsSaveFpRaWithAllCalleeSavedRegisters())
-        {
-            genFuncletInfo.fiFrameType = 1;
-            saveRegsPlusPSPSize -= 2 * 8; // FP/RA
-        }
-        else
-        {
-            genFuncletInfo.fiFrameType = 2;
-            SP_to_FPRA_save_delta += REGSIZE_BYTES + PSPSize;
-        }
+        genFuncletInfo.fiFrameType = 1;
+        saveRegsPlusPSPSize -= 2 * 8; // FP/RA
     }
     else
     {
         unsigned saveRegsPlusPSPAlignmentPad = saveRegsPlusPSPSizeAligned - saveRegsPlusPSPSize;
         assert((saveRegsPlusPSPAlignmentPad == 0) || (saveRegsPlusPSPAlignmentPad == REGSIZE_BYTES));
 
-        if (!IsSaveFpRaWithAllCalleeSavedRegisters())
-        {
-            genFuncletInfo.fiFrameType = 3;
-            saveRegsPlusPSPSize -= 2 * 8; // FP/RA
-        }
-        else
-        {
-            genFuncletInfo.fiFrameType = 4;
-            SP_to_FPRA_save_delta += REGSIZE_BYTES + PSPSize;
-        }
+        genFuncletInfo.fiFrameType = 2;
+        saveRegsPlusPSPSize -= 2 * 8; // FP/RA
     }
 
     int CallerSP_to_PSP_slot_delta = -(int)saveRegsPlusPSPSize;
@@ -4903,16 +4826,7 @@ int CodeGenInterface::genSPtoFPdelta() const
 {
     assert(isFramePointerUsed());
 
-    int delta;
-    if (IsSaveFpRaWithAllCalleeSavedRegisters())
-    {
-        delta = genTotalFrameSize() - (compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
-                (compiler->compCalleeRegsPushed - 1) * REGSIZE_BYTES;
-    }
-    else
-    {
-        delta = compiler->lvaOutgoingArgSpaceSize;
-    }
+    int delta = compiler->lvaOutgoingArgSpaceSize;
 
     assert(delta >= 0);
     return delta;
@@ -4973,23 +4887,6 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 
     assert(callerSPtoSPdelta <= 0);
     return callerSPtoSPdelta;
-}
-
-//---------------------------------------------------------------------
-// SetSaveFpRaWithAllCalleeSavedRegisters - Set the variable that indicates if FP/RA registers
-// are stored with the rest of the callee-saved registers.
-void CodeGen::SetSaveFpRaWithAllCalleeSavedRegisters(bool value)
-{
-    JITDUMP("Setting genSaveFpRaWithAllCalleeSavedRegisters to %s\n", dspBool(value));
-    genSaveFpRaWithAllCalleeSavedRegisters = value;
-}
-
-//---------------------------------------------------------------------
-// IsSaveFpRaWithAllCalleeSavedRegisters - Return the value that indicates where FP/RA registers
-// are stored in the prolog.
-bool CodeGen::IsSaveFpRaWithAllCalleeSavedRegisters() const
-{
-    return genSaveFpRaWithAllCalleeSavedRegisters;
 }
 
 /*****************************************************************************
@@ -9031,79 +8928,48 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
             GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -totalFrameSize);
             compiler->unwindAllocStack(totalFrameSize);
 
-            if (!IsSaveFpRaWithAllCalleeSavedRegisters())
-            {
-                // Case #1.
-                //
-                // Generate:
-                //      daddiu sp, sp, -framesz
-                //      sd fp, outsz(sp)
-                //      sd ra, outsz+8(sp)
-                //
-                // The (totalFrameSize <= 2047) condition ensures the offsets of sd/ld.
-                //
-                // After saving callee-saved registers, we establish the frame pointer with:
-                //      daddiu fp, sp, offset-fp
-                // We do this *after* saving callee-saved registers, so the prolog/epilog unwind codes mostly match.
+            // Case #1.
+            //
+            // Generate:
+            //      daddiu sp, sp, -framesz
+            //      sd fp, outsz(sp)
+            //      sd ra, outsz+8(sp)
+            //
+            // The (totalFrameSize <= 2047) condition ensures the offsets of sd/ld.
+            //
+            // After saving callee-saved registers, we establish the frame pointer with:
+            //      daddiu fp, sp, offset-fp
+            // We do this *after* saving callee-saved registers, so the prolog/epilog unwind codes mostly match.
 
-                JITDUMP("Frame type 1. #outsz=%d; #framesz=%d; LclFrameSize=%d\n",
-                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compLclFrameSize);
+            JITDUMP("Frame type 1. #outsz=%d; #framesz=%d; LclFrameSize=%d\n",
+                    unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compLclFrameSize);
 
-                frameType = 1;
+            frameType = 1;
 
-                offsetSpToSavedFp = compiler->lvaOutgoingArgSpaceSize;
+            offsetSpToSavedFp = compiler->lvaOutgoingArgSpaceSize;
 
-                GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, offsetSpToSavedFp);
-                compiler->unwindSaveReg(REG_FP, offsetSpToSavedFp);
+            GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, offsetSpToSavedFp);
+            compiler->unwindSaveReg(REG_FP, offsetSpToSavedFp);
 
-                GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, offsetSpToSavedFp + 8);
-                compiler->unwindSaveReg(REG_RA, offsetSpToSavedFp + 8);
+            GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, offsetSpToSavedFp + 8);
+            compiler->unwindSaveReg(REG_RA, offsetSpToSavedFp + 8);
 
-                maskSaveRegsInt &= ~(RBM_FP | RBM_RA); // We've already saved FP/RA
+            maskSaveRegsInt &= ~(RBM_FP | RBM_RA); // We've already saved FP/RA
 
-                offset = compiler->compLclFrameSize + 2 * REGSIZE_BYTES; // FP/RA
-            }
-            else
-            {
-                frameType = 2;
-
-                offsetSpToSavedFp = genSPtoFPdelta();
-
-                JITDUMP("Frame type 2(Top). #outsz=%d; #framesz=%d; LclFrameSize=%d, fpDelta:%d\n",
-                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compLclFrameSize,
-                        offsetSpToSavedFp);
-
-                offset = compiler->compLclFrameSize;
-            }
+            offset = compiler->compLclFrameSize + 2 * REGSIZE_BYTES; // FP/RA
         }
         else
         {
-            if (!IsSaveFpRaWithAllCalleeSavedRegisters())
-            {
-                JITDUMP("Frame type 3. #outsz=%d; #framesz=%d; LclFrameSize=%d\n",
-                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compLclFrameSize);
+            JITDUMP("Frame type 2. #outsz=%d; #framesz=%d; LclFrameSize=%d\n",
+                    unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compLclFrameSize);
 
-                frameType = 3;
+            frameType = 2;
 
-                maskSaveRegsInt &= ~(RBM_FP | RBM_RA); // We've already saved FP/RA
+            maskSaveRegsInt &= ~(RBM_FP | RBM_RA); // We've already saved FP/RA
 
-                offset            = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
-                calleeSaveSPDelta = AlignUp((UINT)offset, STACK_ALIGN);
-                offset            = calleeSaveSPDelta - offset;
-            }
-            else
-            {
-                frameType = 4;
-
-                JITDUMP("Frame type 4(Top). #outsz=%d; #framesz=%d; LclFrameSize=%d, SPDelta-1:%d\n",
-                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compLclFrameSize,
-                        calleeSaveSPDelta);
-
-                offset            = totalFrameSize - compiler->compLclFrameSize;
-                calleeSaveSPDelta = AlignUp((UINT)offset, STACK_ALIGN);
-                offset            = calleeSaveSPDelta - offset;
-                offsetSpToSavedFp = offset + REGSIZE_BYTES;
-            }
+            offset            = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
+            calleeSaveSPDelta = AlignUp((UINT)offset, STACK_ALIGN);
+            offset            = calleeSaveSPDelta - offset;
         }
     }
     else
@@ -9124,28 +8990,14 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     JITDUMP("    offset=%d, calleeSaveSPDelta=%d\n", offset, calleeSaveSPDelta);
     genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset, -calleeSaveSPDelta);
 
-// For varargs, home the incoming arg registers last. Note that there is nothing to unwind here,
-// so we just report "NOP" unwind codes. If there's no more frame setup after this, we don't
-// need to add codes at all.
-
-// if (compiler->info.compIsVarArgs)
-//{
-//    JITDUMP("    compIsVarArgs=true\n");
-
-//    // There are 8 general-purpose registers to home, thus 'offset' must be 16-byte aligned here.
-//    assert((offset % 16) == 0);
-//    for (regNumber reg1 = REG_ARG_FIRST; reg1 < REG_ARG_LAST; reg1 = REG_NEXT(REG_NEXT(reg1)))
-//    {
-//        regNumber reg2 = REG_NEXT(reg1);
-//        // sd REG, offset(SP)
-//        // sd REG + 1, (offset+8)(SP)
-//        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, reg1, REG_SPBASE, offset);
-//        compiler->unwindNop();
-//        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, reg2, REG_SPBASE, offset + 8);
-//        compiler->unwindNop();
-//        offset += 2 * REGSIZE_BYTES;
-//    }
-//}
+    // For varargs, home the incoming arg registers last. Note that there is nothing to unwind here,
+    // so we just report "NOP" unwind codes. If there's no more frame setup after this, we don't
+    // need to add codes at all.
+    if (compiler->info.compIsVarArgs)
+    {
+        JITDUMP("    compIsVarArgs=true\n");
+        NYI_LOONGARCH64("genPushCalleeSavedRegisters - compIsVarArgs");
+    }
 
 #ifdef DEBUG
     if (compiler->opts.disAsm)
@@ -9158,10 +9010,6 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
         // offsetSpToSavedFp = genSPtoFPdelta();
     }
     else if (frameType == 2)
-    {
-        // offsetSpToSavedFp = genSPtoFPdelta();
-    }
-    else if (frameType == 3)
     {
         if (compiler->lvaOutgoingArgSpaceSize >= 2040)
         {
@@ -9201,19 +9049,6 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
         }
 
         establishFramePointer = false;
-    }
-    else if (frameType == 4)
-    {
-        genEstablishFramePointer(offsetSpToSavedFp, /* reportUnwindData */ true);
-
-        establishFramePointer = false;
-
-        int remainingFrameSz = totalFrameSize - calleeSaveSPDelta;
-
-        if (remainingFrameSz > 0)
-        {
-            genStackPointerAdjustment(-remainingFrameSz, initReg, pInitRegZeroed, /* reportUnwindData */ true);
-        }
     }
     else
     {
@@ -9261,131 +9096,84 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
                 compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
             }
 
-            if (!IsSaveFpRaWithAllCalleeSavedRegisters())
-            {
-                JITDUMP("Frame type 1(save FP/RA at bottom). #outsz=%d; #framesz=%d; localloc? %s\n",
-                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize,
-                        dspBool(compiler->compLocallocUsed));
+            JITDUMP("Frame type 1(save FP/RA at bottom). #outsz=%d; #framesz=%d; localloc? %s\n",
+                    unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(compiler->compLocallocUsed));
 
-                frameType = 1;
+            frameType = 1;
 
-                regsToRestoreMask &= ~(RBM_FP | RBM_RA); // We'll restore FP/RA at the end.
+            regsToRestoreMask &= ~(RBM_FP | RBM_RA); // We'll restore FP/RA at the end.
 
-                calleeSaveSPOffset = compiler->compLclFrameSize + 2 * REGSIZE_BYTES;
-            }
-            else
-            {
-                frameType = 2;
-
-                calleeSaveSPOffset = compiler->compLclFrameSize;
-
-                JITDUMP("Frame type 2(Top). #outsz=%d; #framesz=%d; localloc? %s\n",
-                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize,
-                        dspBool(compiler->compLocallocUsed));
-            }
-            // calleeSaveSPDelta = 0;
+            calleeSaveSPOffset = compiler->compLclFrameSize + 2 * REGSIZE_BYTES;
         }
         else
         {
-            if (!IsSaveFpRaWithAllCalleeSavedRegisters())
+            JITDUMP("Frame type 2(save FP/RA at bottom). #outsz=%d; #framesz=%d; #calleeSaveRegsPushed:%d; "
+                    "localloc? %s\n",
+                    unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compCalleeRegsPushed,
+                    dspBool(compiler->compLocallocUsed));
+
+            frameType = 2;
+
+            int outSzAligned;
+            if (compiler->lvaOutgoingArgSpaceSize >= 2040)
             {
-                JITDUMP("Frame type 3(save FP/RA at bottom). #outsz=%d; #framesz=%d; #calleeSaveRegsPushed:%d; "
-                        "localloc? %s\n",
-                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compCalleeRegsPushed,
-                        dspBool(compiler->compLocallocUsed));
+                int offset         = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
+                calleeSaveSPDelta  = AlignUp((UINT)offset, STACK_ALIGN);
+                calleeSaveSPOffset = calleeSaveSPDelta - offset;
 
-                frameType = 3;
-
-                int outSzAligned;
-                if (compiler->lvaOutgoingArgSpaceSize >= 2040)
-                {
-                    int offset         = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
-                    calleeSaveSPDelta  = AlignUp((UINT)offset, STACK_ALIGN);
-                    calleeSaveSPOffset = calleeSaveSPDelta - offset;
-
-                    int offset2       = totalFrameSize - calleeSaveSPDelta - compiler->lvaOutgoingArgSpaceSize;
-                    calleeSaveSPDelta = AlignUp((UINT)offset2, STACK_ALIGN);
-                    offset2           = calleeSaveSPDelta - offset2;
-
-                    if (compiler->compLocallocUsed)
-                    {
-                        // Restore sp from fp
-                        GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -offset2);
-                        compiler->unwindSetFrameReg(REG_FPBASE, offset2);
-                    }
-                    else
-                    {
-                        outSzAligned = compiler->lvaOutgoingArgSpaceSize & ~0xf;
-                        genStackPointerAdjustment(outSzAligned, REG_R21, nullptr, /* reportUnwindData */ true);
-                    }
-
-                    regsToRestoreMask &= ~(RBM_FP | RBM_RA); // We'll restore FP/RA at the end.
-
-                    GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, offset2 + 8);
-                    compiler->unwindSaveReg(REG_RA, offset2 + 8);
-
-                    GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, offset2);
-                    compiler->unwindSaveReg(REG_FP, offset2);
-
-                    genStackPointerAdjustment(calleeSaveSPDelta, REG_R21, nullptr, /* reportUnwindData */ true);
-
-                    calleeSaveSPDelta = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
-                    calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDelta, STACK_ALIGN);
-                }
-                else
-                {
-                    int offset2 = compiler->lvaOutgoingArgSpaceSize;
-                    if (compiler->compLocallocUsed)
-                    {
-                        // Restore sp from fp
-                        GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -offset2);
-                        compiler->unwindSetFrameReg(REG_FPBASE, offset2);
-                    }
-
-                    regsToRestoreMask &= ~(RBM_FP | RBM_RA); // We'll restore FP/RA at the end.
-
-                    GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, offset2 + 8);
-                    compiler->unwindSaveReg(REG_RA, offset2 + 8);
-
-                    GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, offset2);
-                    compiler->unwindSaveReg(REG_FP, offset2);
-
-                    calleeSaveSPOffset = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
-                    calleeSaveSPDelta  = AlignUp((UINT)calleeSaveSPOffset, STACK_ALIGN);
-                    calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPOffset;
-
-                    genStackPointerAdjustment(totalFrameSize - calleeSaveSPDelta, REG_R21, nullptr,
-                                              /* reportUnwindData */ true);
-                }
-            }
-            else
-            {
-                frameType = 4;
-
-                JITDUMP("Frame type 4(Top). #outsz=%d; #framesz=%d; #calleeSaveRegsPushed:%d; localloc? %s\n",
-                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compCalleeRegsPushed,
-                        dspBool(compiler->compLocallocUsed));
-
-                calleeSaveSPOffset = totalFrameSize - compiler->compLclFrameSize;
-                calleeSaveSPDelta  = AlignUp((UINT)calleeSaveSPOffset, STACK_ALIGN);
-                calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPOffset;
+                int offset2       = totalFrameSize - calleeSaveSPDelta - compiler->lvaOutgoingArgSpaceSize;
+                calleeSaveSPDelta = AlignUp((UINT)offset2, STACK_ALIGN);
+                offset2           = calleeSaveSPDelta - offset2;
 
                 if (compiler->compLocallocUsed)
                 {
-                    calleeSaveSPDelta = calleeSaveSPOffset + REGSIZE_BYTES;
-
                     // Restore sp from fp
-                    GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -calleeSaveSPDelta);
-                    compiler->unwindSetFrameReg(REG_FPBASE, calleeSaveSPDelta);
+                    GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -offset2);
+                    compiler->unwindSetFrameReg(REG_FPBASE, offset2);
                 }
                 else
                 {
-                    calleeSaveSPDelta = totalFrameSize - calleeSaveSPDelta;
-                    genStackPointerAdjustment(calleeSaveSPDelta, REG_R21, nullptr, /* reportUnwindData */ true);
+                    outSzAligned = compiler->lvaOutgoingArgSpaceSize & ~0xf;
+                    genStackPointerAdjustment(outSzAligned, REG_R21, nullptr, /* reportUnwindData */ true);
                 }
 
-                calleeSaveSPDelta = totalFrameSize - compiler->compLclFrameSize;
+                regsToRestoreMask &= ~(RBM_FP | RBM_RA); // We'll restore FP/RA at the end.
+
+                GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, offset2 + 8);
+                compiler->unwindSaveReg(REG_RA, offset2 + 8);
+
+                GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, offset2);
+                compiler->unwindSaveReg(REG_FP, offset2);
+
+                genStackPointerAdjustment(calleeSaveSPDelta, REG_R21, nullptr, /* reportUnwindData */ true);
+
+                calleeSaveSPDelta = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
                 calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDelta, STACK_ALIGN);
+            }
+            else
+            {
+                int offset2 = compiler->lvaOutgoingArgSpaceSize;
+                if (compiler->compLocallocUsed)
+                {
+                    // Restore sp from fp
+                    GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -offset2);
+                    compiler->unwindSetFrameReg(REG_FPBASE, offset2);
+                }
+
+                regsToRestoreMask &= ~(RBM_FP | RBM_RA); // We'll restore FP/RA at the end.
+
+                GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, offset2 + 8);
+                compiler->unwindSaveReg(REG_RA, offset2 + 8);
+
+                GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, offset2);
+                compiler->unwindSaveReg(REG_FP, offset2);
+
+                calleeSaveSPOffset = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
+                calleeSaveSPDelta  = AlignUp((UINT)calleeSaveSPOffset, STACK_ALIGN);
+                calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPOffset;
+
+                genStackPointerAdjustment(totalFrameSize - calleeSaveSPDelta, REG_R21, nullptr,
+                                          /* reportUnwindData */ true);
             }
         }
     }
@@ -9414,16 +9202,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     }
     else if (frameType == 2)
     {
-        GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
-        compiler->unwindAllocStack(totalFrameSize);
-    }
-    else if (frameType == 3)
-    {
-        // genStackPointerAdjustment(calleeSaveSPDelta, REG_R21, nullptr, /* reportUnwindData */ true);
-    }
-    else if (frameType == 4)
-    {
-        // genStackPointerAdjustment(calleeSaveSPDelta, REG_R21, nullptr, /* reportUnwindData */ true);
+        // had done.
     }
     else
     {

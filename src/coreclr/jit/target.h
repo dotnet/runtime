@@ -92,7 +92,7 @@ inline bool compUnixX86Abi()
 //                       be assigned during register allocation.
 //    REG_NA           - Used to indicate that a register is either not yet assigned or not required.
 //
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
@@ -172,27 +172,6 @@ enum _regMask_enum : unsigned
 {
     RBM_NONE = 0,
 
-#define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
-#include "register.h"
-};
-
-#elif defined(TARGET_LOONGARCH64)
-
-enum _regNumber_enum : unsigned
-{
-#define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
-#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
-#include "register.h"
-
-    REG_COUNT,
-    REG_NA           = REG_COUNT,
-    ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
-};
-
-enum _regMask_enum : unsigned __int64
-{
-    RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
 #include "register.h"

@@ -6108,13 +6108,6 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
     switch (type)
     {
         case TYP_INT:
-#ifdef TARGET_LOONGARCH64
-        case TYP_UINT:
-// For LoongArch64, the register $r0 is always const-zero with 64bits-width.
-// Besides the instructions's operation of the 64bits and 32bits using the whole
-// 64bits-width register which is unlike the AMD64 and ARM64.
-// So for UINT type, LoongArch64 can't share with INT liking AMD64 and ARM64.
-#endif
             zero = gtNewIconNode(0);
             break;
 

@@ -67,7 +67,7 @@ const char* CodeGen::genInsName(instruction ins)
         #include "instrs.h"
 
 #elif defined(TARGET_LOONGARCH64)
-        #define INST(id, nm, fp, ldst, fmt, e1) nm,
+        #define INST(id, nm, ldst, e1) nm,
         #include "instrs.h"
 
 #else
@@ -425,7 +425,8 @@ void CodeGen::inst_RV(instruction ins, regNumber reg, var_types type, emitAttr s
     }
 
 #ifdef TARGET_LOONGARCH64
-    NYI_LOONGARCH64("inst_RV-----unimplemented/unused on LOONGARCH64 yet----");
+    // inst_RV is not used for LoongArch64, so there is no need to define `emitIns_R`.
+    NYI_LOONGARCH64("inst_RV-----unused on LOONGARCH64----");
 #else
     GetEmitter()->emitIns_R(ins, size, reg);
 #endif

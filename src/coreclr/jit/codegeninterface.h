@@ -196,11 +196,6 @@ public:
     virtual bool IsSaveFpLrWithAllCalleeSavedRegisters() const      = 0;
 #endif // TARGET_ARM64
 
-#ifdef TARGET_LOONGARCH64
-    virtual void SetSaveFpRaWithAllCalleeSavedRegisters(bool value) = 0;
-    virtual bool IsSaveFpRaWithAllCalleeSavedRegisters() const      = 0;
-#endif // TARGET_LOONGARCH64
-
     regNumber genGetThisArgReg(GenTreeCall* call) const;
 
 #ifdef TARGET_XARCH

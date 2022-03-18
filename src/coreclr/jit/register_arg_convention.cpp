@@ -48,7 +48,7 @@ unsigned InitVarDscInfo::allocRegArg(var_types type, unsigned numRegs /* = 1 */)
         {
             assert(varTypeIsStruct(type));
             nextReg(TYP_INT, 1); // TYP_BYREF
-        }                        // TODO:struct-float.
+        }
         else
         {
             nextReg(type, numRegs);

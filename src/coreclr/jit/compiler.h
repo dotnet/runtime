@@ -10007,13 +10007,6 @@ public:
         int compJitSaveFpLrWithCalleeSavedRegisters;
 #endif // defined(TARGET_ARM64)
 
-#if defined(TARGET_LOONGARCH64)
-        // Decision about whether to save FP/RA registers with callee-saved registers (see
-        // COMPlus_JitSaveFpRaWithCalleSavedRegisters).
-        // TODO: will delete this in future.
-        int compJitSaveFpRaWithCalleeSavedRegisters;
-#endif // defined(TARGET_LOONGARCH64)
-
 #ifdef CONFIGURABLE_ARM_ABI
         bool compUseSoftFP = false;
 #else
