@@ -16,6 +16,7 @@ namespace System.IO.Pipes.Tests
     /// </summary>
     public class NamedPipeTest_Specific
     {
+        [Fact]
         public void InvalidConnectTimeout_Throws_ArgumentOutOfRangeException()
         {
             using (NamedPipeClientStream client = new NamedPipeClientStream("client1"))
@@ -23,7 +24,7 @@ namespace System.IO.Pipes.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => client.Connect(-111));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(-111); });
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => client.Connect(TimeSpan.FromMilliseconds(-111)));
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(TimeSpan.FromMilliseconds(-111)); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(TimeSpan.FromMilliseconds(-111), default); });
             }
         }
 
@@ -35,7 +36,7 @@ namespace System.IO.Pipes.Tests
                 var ctx = new CancellationTokenSource();
                 Assert.Throws<TimeoutException>(() =>
                     client.Connect(TimeSpan.FromMilliseconds(60))); // 60 to be over internal 50 interval
-                await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(TimeSpan.FromMilliseconds(50)));
+                await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(TimeSpan.FromMilliseconds(50), default));
                 await Assert.ThrowsAsync<TimeoutException>(() =>
                     client.ConnectAsync(TimeSpan.FromMilliseconds(60),
                         ctx.Token)); // testing Token overload; ctx is not canceled in this test

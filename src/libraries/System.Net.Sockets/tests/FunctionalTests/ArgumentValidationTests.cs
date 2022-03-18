@@ -358,17 +358,17 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void Select_NullOrEmptyLists_Throws_ArgumentNull_TimeSpan()
         {
-            TimeSpan infinity = Timeout.InfiniteTimeSpan;
+            TimeSpan nonInfinity = TimeSpan.FromMilliseconds(1);
             var emptyList = new List<Socket>();
 
-            Assert.Throws<ArgumentNullException>(() => Socket.Select(null, null, null, infinity));
-            Assert.Throws<ArgumentNullException>(() => Socket.Select(emptyList, null, null, infinity));
-            Assert.Throws<ArgumentNullException>(() => Socket.Select(null, emptyList, null, infinity));
-            Assert.Throws<ArgumentNullException>(() => Socket.Select(emptyList, emptyList, null, infinity));
-            Assert.Throws<ArgumentNullException>(() => Socket.Select(null, null, emptyList, infinity));
-            Assert.Throws<ArgumentNullException>(() => Socket.Select(emptyList, null, emptyList, infinity));
-            Assert.Throws<ArgumentNullException>(() => Socket.Select(null, emptyList, emptyList, infinity));
-            Assert.Throws<ArgumentNullException>(() => Socket.Select(emptyList, emptyList, emptyList, infinity));
+            Assert.Throws<ArgumentNullException>(() => Socket.Select(null, null, null, nonInfinity));
+            Assert.Throws<ArgumentNullException>(() => Socket.Select(emptyList, null, null, nonInfinity));
+            Assert.Throws<ArgumentNullException>(() => Socket.Select(null, emptyList, null, nonInfinity));
+            Assert.Throws<ArgumentNullException>(() => Socket.Select(emptyList, emptyList, null, nonInfinity));
+            Assert.Throws<ArgumentNullException>(() => Socket.Select(null, null, emptyList, nonInfinity));
+            Assert.Throws<ArgumentNullException>(() => Socket.Select(emptyList, null, emptyList, nonInfinity));
+            Assert.Throws<ArgumentNullException>(() => Socket.Select(null, emptyList, emptyList, nonInfinity));
+            Assert.Throws<ArgumentNullException>(() => Socket.Select(emptyList, emptyList, emptyList, nonInfinity));
         }
 
         [Fact]
