@@ -239,10 +239,4 @@
   <data name="LogAlreadyExistsAsSource" xml:space="preserve">
     <value>Log {0} has already been registered as a source on the local computer.</value>
   </data>
-  <data name="ArgumentOutOfRange_NeedNonNegOrNegative1" xml:space="preserve">
-    <value>Number must be either non-negative and less than or equal to Int32.MaxValue or -1.</value>
-  </data>
-  <data name="ArgumentOutOfRange_LessEqualToIntegerMaxVal" xml:space="preserve">
-    <value>Argument must be less than or equal to 2^31 - 1 milliseconds.</value>
-  </data>
 </root>
