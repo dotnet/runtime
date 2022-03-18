@@ -147,7 +147,7 @@ jobs:
           cp src/mono/wasm/test-main.js $(librariesDownloadDir)/bin/wasm/data/test-main.js &&
           find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \;
         displayName: "Create wasm directory (Linux)"
-        condition: ${{ if eq(parameters.osGroup, 'Linux') }}
+        condition: ${{ eq(parameters.osGroup, 'Linux') }}
 
       - script: >-
           mkdir -p $(librariesDownloadDir)/bin/wasm/data &&
