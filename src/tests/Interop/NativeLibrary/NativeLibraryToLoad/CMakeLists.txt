@@ -1,12 +1,11 @@
 project (NativeLibrary)
 include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
-set(SOURCES )
 
 # add the shared library
 add_library (NativeLibrary SHARED NativeLibrary.cpp)
 
 if (CLR_CMAKE_TARGET_UNIX)
-  target_link_libraries(NativeLibrary ${LINK_LIBRARIES_ADDITIONAL} dl)
+  target_link_libraries(NativeLibrary ${LINK_LIBRARIES_ADDITIONAL})
 endif()
 
 # add the shared library
