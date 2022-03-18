@@ -32,27 +32,9 @@ namespace System.ComponentModel.DataAnnotations
         public int MatchTimeoutInMilliseconds { get; set; }
 
         /// <summary>
-        /// Gets or sets the timeout to use when matching the regular expression pattern
+        /// Gets the timeout to use when matching the regular expression pattern
         /// </summary>
-        public TimeSpan MatchTimeout
-        {
-            get => TimeSpan.FromMilliseconds(MatchTimeoutInMilliseconds);
-            set
-            {
-                long timeoutMilliseconds = (long)value.TotalMilliseconds;
-                if (timeoutMilliseconds < -1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-                }
-
-                if (timeoutMilliseconds > int.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
-                }
-
-                MatchTimeoutInMilliseconds = (int)timeoutMilliseconds;
-            }
-        }
+        public TimeSpan MatchTimeout => TimeSpan.FromMilliseconds(MatchTimeoutInMilliseconds);
 
         /// <summary>
         ///     Gets the regular expression pattern to use
