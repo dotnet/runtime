@@ -138,7 +138,7 @@ jobs:
           vmImage: 'macOS-11'
 
         # Official Build Windows Pool
-        ${{ if and(eq(parameters.osGroup, 'windows'), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCore1ESPool-Internal
           demands: ImageOverride -equals Build.Windows.10.Amd64.VS2019
 
