@@ -6346,15 +6346,22 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			}
 			td->ip += 4;
 			break;
-		case CEE_CKFINITE:
+		case CEE_CKFINITE: {
 			CHECK_STACK (td, 1);
-			interp_add_ins (td, MINT_CKFINITE);
+			int stack_type = td->sp [-1].type;
+			switch (stack_type) {
+				case STACK_TYPE_R4: interp_add_ins (td, MINT_CKFINITE_R4); break;
+				case STACK_TYPE_R8: interp_add_ins (td, MINT_CKFINITE_R8); break;
+				default:
+					g_error ("Invalid stack type");
+			}
 			td->sp--;
 			interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-			push_simple_type (td, STACK_TYPE_R8);
+			push_simple_type (td, stack_type);
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 			++td->ip;
 			break;
+		}
 		case CEE_MKREFANY:
 			CHECK_STACK (td, 1);
 
