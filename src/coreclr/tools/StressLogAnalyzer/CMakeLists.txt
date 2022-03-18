@@ -1,5 +1,7 @@
 set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
-add_executable_clr(StressLogAnalyzer StressLogAnalyzer.cpp StressLogDump.cpp StressLogPlugin.cpp)
+# Using add_executable instead of add_executable_clr because changing the MSVC runtime causes issues with ASAN
+# TODO: Figure out why it causes problems
+add_executable(StressLogAnalyzer StressLogAnalyzer.cpp StressLogDump.cpp StressLogPlugin.cpp)
 
 if(CLR_CMAKE_TARGET_WIN32)
     target_link_libraries(StressLogAnalyzer
