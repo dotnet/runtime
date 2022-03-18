@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -416,15 +415,12 @@ namespace System
             ref byte last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, numBytes), sizeof(int));
             if (Avx2.IsSupported && Vector256<byte>.Count * 2 <= numBytes)
             {
-                Vector256<byte> reverseMask = Vector256.Create(
-                    (byte)12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3, // first 128-bit lane
-                    12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3); // second 128-bit lane
                 last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, numBytes), Vector256<byte>.Count);
                 do
                 {
                     // Load in values from beginning and end of the array.
-                    Vector256<byte> tempFirst = Unsafe.As<byte, Vector256<byte>>(ref first);
-                    Vector256<byte> tempLast = Unsafe.As<byte, Vector256<byte>>(ref last);
+                    Vector256<int> tempFirst = Unsafe.As<byte, Vector256<int>>(ref first);
+                    Vector256<int> tempLast = Unsafe.As<byte, Vector256<int>>(ref last);
 
                     // Avx2 operates on two 128-bit lanes rather than the full 256-bit vector.
                     // Perform a shuffle to reverse each 128-bit lane, then permute to finish reversing the vector:
@@ -439,14 +435,14 @@ namespace System
                     //     +-------------------------------+
                     //     | H | G | F | E | D | C | B | A |
                     //     +-------------------------------+
-                    tempFirst = Avx2.Shuffle(tempFirst, reverseMask);
+                    tempFirst = Avx2.Shuffle(tempFirst, 0b00011011);
                     tempFirst = Avx2.Permute2x128(tempFirst, tempFirst, 1);
-                    tempLast = Avx2.Shuffle(tempLast, reverseMask);
+                    tempLast = Avx2.Shuffle(tempLast, 0b00011011);
                     tempLast = Avx2.Permute2x128(tempLast, tempLast, 1);
 
                     // Store the reversed vectors
-                    Unsafe.As<byte, Vector256<byte>>(ref first) = tempLast;
-                    Unsafe.As<byte, Vector256<byte>>(ref last) = tempFirst;
+                    Unsafe.As<byte, Vector256<int>>(ref first) = tempLast;
+                    Unsafe.As<byte, Vector256<int>>(ref last) = tempFirst;
 
                     // Adjust the references to point to the next vector
                     first = ref Unsafe.Add(ref first, Vector256<byte>.Count);
@@ -454,15 +450,14 @@ namespace System
                     numBytesWritten += Vector256<byte>.Count * 2;
                 } while (numBytes - numBytesWritten >= Vector256<byte>.Count * 2);
             }
-            else if (Ssse3.IsSupported && Vector128<byte>.Count * 2 <= numBytes)
+            else if (Sse2.IsSupported && Vector128<byte>.Count * 2 <= numBytes)
             {
-                Vector128<byte> reverseMask = Vector128.Create((byte)12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3);
                 last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, numBytes), Vector128<byte>.Count);
                 do
                 {
                     // Load in values from beginning and end of the array.
-                    Vector128<byte> tempFirst = Unsafe.As<byte, Vector128<byte>>(ref first);
-                    Vector128<byte> tempLast = Unsafe.As<byte, Vector128<byte>>(ref last);
+                    Vector128<int> tempFirst = Unsafe.As<byte, Vector128<int>>(ref first);
+                    Vector128<int> tempLast = Unsafe.As<byte, Vector128<int>>(ref last);
 
                     // Shuffle to reverse each vector:
                     //     +---------------+
@@ -472,12 +467,12 @@ namespace System
                     //     +---------------+
                     //     | D | C | B | A |
                     //     +---------------+
-                    tempFirst = Ssse3.Shuffle(tempFirst, reverseMask);
-                    tempLast = Ssse3.Shuffle(tempLast, reverseMask);
+                    tempFirst = Sse2.Shuffle(tempFirst, 0b00011011);
+                    tempLast = Sse2.Shuffle(tempLast, 0b00011011);
 
                     // Store the reversed vectors
-                    Unsafe.As<byte, Vector128<byte>>(ref first) = tempLast;
-                    Unsafe.As<byte, Vector128<byte>>(ref last) = tempFirst;
+                    Unsafe.As<byte, Vector128<int>>(ref first) = tempLast;
+                    Unsafe.As<byte, Vector128<int>>(ref last) = tempFirst;
 
                     // Adjust the references to point to the next vector
                     first = ref Unsafe.Add(ref first, Vector128<byte>.Count);
@@ -507,15 +502,12 @@ namespace System
             ref byte last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, numBytes), sizeof(long));
             if (Avx2.IsSupported && Vector256<byte>.Count * 2 <= numBytes)
             {
-                Vector256<byte> reverseMask = Vector256.Create(
-                    (byte)8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7, // first 128-bit lane
-                     8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7); // second 128-bit lane
                 last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, numBytes), Vector256<byte>.Count);
                 do
                 {
                     // Load in values from beginning and end of the array.
-                    Vector256<byte> tempFirst = Unsafe.As<byte, Vector256<byte>>(ref first);
-                    Vector256<byte> tempLast = Unsafe.As<byte, Vector256<byte>>(ref last);
+                    Vector256<int> tempFirst = Unsafe.As<byte, Vector256<int>>(ref first);
+                    Vector256<int> tempLast = Unsafe.As<byte, Vector256<int>>(ref last);
 
                     // Avx2 operates on two 128-bit lanes rather than the full 256-bit vector.
                     // Perform a shuffle to reverse each 128-bit lane, then permute to finish reversing the vector:
@@ -530,14 +522,14 @@ namespace System
                     //     +---------------+
                     //     | D | C | B | A |
                     //     +---------------+
-                    tempFirst = Avx2.Shuffle(tempFirst, reverseMask);
+                    tempFirst = Avx2.Shuffle(tempFirst, 0b01001110);
                     tempFirst = Avx2.Permute2x128(tempFirst, tempFirst, 1);
-                    tempLast = Avx2.Shuffle(tempLast, reverseMask);
+                    tempLast = Avx2.Shuffle(tempLast, 0b01001110);
                     tempLast = Avx2.Permute2x128(tempLast, tempLast, 1);
 
                     // Store the reversed vectors
-                    Unsafe.As<byte, Vector256<byte>>(ref first) = tempLast;
-                    Unsafe.As<byte, Vector256<byte>>(ref last) = tempFirst;
+                    Unsafe.As<byte, Vector256<int>>(ref first) = tempLast;
+                    Unsafe.As<byte, Vector256<int>>(ref last) = tempFirst;
 
                     // Adjust the references to point to the next vector
                     first = ref Unsafe.Add(ref first, Vector256<byte>.Count);
@@ -545,15 +537,14 @@ namespace System
                     numBytesWritten += Vector256<byte>.Count * 2;
                 } while (numBytes - numBytesWritten >= Vector256<byte>.Count * 2);
             }
-            else if (Ssse3.IsSupported && Vector128<byte>.Count * 2 <= numBytes)
+            else if (Sse2.IsSupported && Vector128<byte>.Count * 2 <= numBytes)
             {
-                Vector128<byte> reverseMask = Vector128.Create((byte)8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7);
                 last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, numBytes), Vector128<byte>.Count);
                 do
                 {
                     // Load in values from beginning and end of the array.
-                    Vector128<byte> tempFirst = Unsafe.As<byte, Vector128<byte>>(ref first);
-                    Vector128<byte> tempLast = Unsafe.As<byte, Vector128<byte>>(ref last);
+                    Vector128<int> tempFirst = Unsafe.As<byte, Vector128<int>>(ref first);
+                    Vector128<int> tempLast = Unsafe.As<byte, Vector128<int>>(ref last);
 
                     // Shuffle to reverse each vector:
                     //     +-------+
@@ -563,12 +554,12 @@ namespace System
                     //     +-------+
                     //     | B | A |
                     //     +-------+
-                    tempFirst = Ssse3.Shuffle(tempFirst, reverseMask);
-                    tempLast = Ssse3.Shuffle(tempLast, reverseMask);
+                    tempFirst = Sse2.Shuffle(tempFirst, 0b01001110);
+                    tempLast = Sse2.Shuffle(tempLast, 0b01001110);
 
                     // Store the reversed vectors
-                    Unsafe.As<byte, Vector128<byte>>(ref first) = tempLast;
-                    Unsafe.As<byte, Vector128<byte>>(ref last) = tempFirst;
+                    Unsafe.As<byte, Vector128<int>>(ref first) = tempLast;
+                    Unsafe.As<byte, Vector128<int>>(ref last) = tempFirst;
 
                     // Adjust the references to point to the next vector
                     first = ref Unsafe.Add(ref first, Vector128<byte>.Count);

@@ -2247,8 +2247,9 @@ namespace System
             int numBytesWritten = 0;
             if (Avx2.IsSupported && Vector256<byte>.Count * 2 <= numBytes)
             {
-                Vector256<byte> reverseMask = Vector256.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, // first 128-bit lane
-                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);  // second 128-bit lane
+                Vector256<byte> reverseMask = Vector256.Create(
+                    (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, // first 128-bit lane
+                    15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0); // first 128-bit lane
                 last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, numBytes), Vector256<byte>.Count);
                 do
                 {
