@@ -106,10 +106,14 @@ namespace System.Net.NetworkInformation.Tests
             // Negative timeout
             AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { p.SendPingAsync(localIpAddress, -1); });
             AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { p.SendPingAsync(TestSettings.LocalHost, -1); });
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { p.SendPingAsync(localIpAddress, TimeSpan.FromMilliseconds(-1)); });
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { p.SendPingAsync(TestSettings.LocalHost, TimeSpan.FromMilliseconds(-1)); });
             AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { p.SendAsync(localIpAddress, -1, null); });
             AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { p.SendAsync(TestSettings.LocalHost, -1, null); });
             AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { p.Send(localIpAddress, -1); });
             AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { p.Send(TestSettings.LocalHost, -1); });
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { p.Send(localIpAddress, TimeSpan.FromMilliseconds(-1)); });
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { p.Send(TestSettings.LocalHost, TimeSpan.FromMilliseconds(-1)); });
 
             // Null byte[]
             AssertExtensions.Throws<ArgumentNullException>("buffer", () => { p.SendPingAsync(localIpAddress, 0, null); });
@@ -143,27 +147,6 @@ namespace System.Net.NetworkInformation.Tests
             SendBatchPing(
                 (ping) => ping.Send(localIpAddress, TestSettings.PingTimeout),
                 (pingReply) =>
-                {
-                    PingResultValidator(pingReply, localIpAddress);
-                });
-        }
-
-        [Theory]
-        [InlineData(AddressFamily.InterNetwork)]
-        [InlineData(AddressFamily.InterNetworkV6)]
-        public void SendPingWithIPAddress_TimeSpan(AddressFamily addressFamily)
-        {
-            IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
-            if (localIpAddress == null)
-            {
-                // No local address for given address family.
-                return;
-            }
-
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            SendBatchPing(
-                ping => ping.Send(localIpAddress, pingTimeout, default, default),
-                pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddress);
                 });
@@ -234,20 +217,6 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddress);
                 });
         }
-        [Fact]
-
-        public void SendPingWithIPAddressAndTimeout_TimeSpan()
-        {
-            IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
-
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            SendBatchPing(
-                ping => ping.Send(localIpAddress, pingTimeout, default, default),
-                pingReply =>
-                {
-                    PingResultValidator(pingReply, localIpAddress);
-                });
-        }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithIPAddressAndTimeout()
@@ -257,20 +226,6 @@ namespace System.Net.NetworkInformation.Tests
             await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(localIpAddress, TestSettings.PingTimeout),
                 (pingReply) =>
-                {
-                    PingResultValidator(pingReply, localIpAddress);
-                });
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task SendPingAsyncWithIPAddressAndTimeout_TimeSpan()
-        {
-            IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
-
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            await SendBatchPingAsync(
-                ping => ping.SendPingAsync(localIpAddress, pingTimeout, default, default, default),
-                pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddress);
                 });
@@ -291,22 +246,6 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [Fact]
-        public void SendPingWithIPAddressAndTimeoutAndBuffer_TimeSpan()
-        {
-            IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
-            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
-
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            SendBatchPing(
-                ping => ping.Send(localIpAddress, pingTimeout, buffer, default),
-                pingReply =>
-                {
-                    PingResultValidator(pingReply, localIpAddress);
-                    Assert.Equal(buffer, pingReply.Buffer);
-                });
-        }
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBuffer()
         {
@@ -316,22 +255,6 @@ namespace System.Net.NetworkInformation.Tests
             await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(localIpAddress, TestSettings.PingTimeout, buffer),
                 (pingReply) =>
-                {
-                    PingResultValidator(pingReply, localIpAddress);
-                    Assert.Equal(buffer, pingReply.Buffer);
-                });
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task SendPingAsyncWithIPAddressAndTimeoutAndBuffer_TimeSpan()
-        {
-            IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
-            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
-
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            await SendBatchPingAsync(
-                ping => ping.SendPingAsync(localIpAddress, pingTimeout, buffer, default, default),
-                pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddress);
                     Assert.Equal(buffer, pingReply.Buffer);
@@ -357,26 +280,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
-        [Fact]
-        public void SendPingWithIPAddressAndTimeoutAndBufferAndPingOptions_TimeSpan()
-        {
-            IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
-
-            var options = new PingOptions();
-            byte[] buffer = TestSettings.PayloadAsBytes;
-
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            SendBatchPing(
-                ping => ping.Send(localIpAddress, pingTimeout, buffer, options),
-                pingReply =>
-                {
-                    PingResultValidator(pingReply, localIpAddress);
-                    Assert.Equal(buffer, pingReply.Buffer);
-                    Assert.InRange(pingReply.RoundtripTime, 0, long.MaxValue);
-                });
-        }
-
-        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBufferAndPingOptions()
         {
@@ -387,26 +290,6 @@ namespace System.Net.NetworkInformation.Tests
             await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(localIpAddress, TestSettings.PingTimeout, buffer, options),
                 (pingReply) =>
-                {
-                    PingResultValidator(pingReply, localIpAddress);
-                    Assert.Equal(buffer, pingReply.Buffer);
-                    Assert.InRange(pingReply.RoundtripTime, 0, long.MaxValue);
-                });
-        }
-
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task SendPingAsyncWithIPAddressAndTimeoutAndBufferAndPingOptions_TimeSpan()
-        {
-            IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
-
-            var options = new PingOptions();
-            byte[] buffer = TestSettings.PayloadAsBytes;
-
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            await SendBatchPingAsync(
-                ping => ping.SendPingAsync(localIpAddress, pingTimeout, buffer, options, default),
-                pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddress);
                     Assert.Equal(buffer, pingReply.Buffer);
@@ -439,31 +322,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Theory]
-        [InlineData(AddressFamily.InterNetwork)]
-        [InlineData(AddressFamily.InterNetworkV6)]
-        public void SendPingWithIPAddressAndTimeoutAndBufferAndPingOptions_Unix_TimeSpan(AddressFamily addressFamily)
-        {
-            IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
-            if (localIpAddress == null)
-            {
-                // No local address for given address family.
-                return;
-            }
-
-            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
-
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            SendBatchPing(
-                ping => ping.Send(localIpAddress, pingTimeout, buffer, new PingOptions()),
-                pingReply =>
-                {
-                    PingResultValidator(pingReply, localIpAddress);
-                    Assert.Equal(buffer, pingReply.Buffer);
-                });
-        }
-
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
@@ -481,31 +339,6 @@ namespace System.Net.NetworkInformation.Tests
             await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(localIpAddress, TestSettings.PingTimeout, buffer, new PingOptions()),
                 (pingReply) =>
-                {
-                    PingResultValidator(pingReply, localIpAddress);
-                    Assert.Equal(buffer, pingReply.Buffer);
-                });
-        }
-
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [InlineData(AddressFamily.InterNetwork)]
-        [InlineData(AddressFamily.InterNetworkV6)]
-        public async Task SendPingAsyncWithIPAddressAndTimeoutAndBufferAndPingOptions_Unix_TimeSpan(AddressFamily addressFamily)
-        {
-            IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync(addressFamily);
-            if (localIpAddress == null)
-            {
-                // No local address for given address family.
-                return;
-            }
-
-            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
-
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            await SendBatchPingAsync(
-                ping => ping.SendPingAsync(localIpAddress, pingTimeout, buffer, new PingOptions(), default),
-                pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddress);
                     Assert.Equal(buffer, pingReply.Buffer);
@@ -551,20 +384,6 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [Fact]
-        public void SendPingWithHostAndTimeout_TimeSpan()
-        {
-            IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
-
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            SendBatchPing(
-                ping => ping.Send(TestSettings.LocalHost, pingTimeout, default, default),
-                pingReply =>
-                {
-                    PingResultValidator(pingReply, localIpAddresses);
-                });
-        }
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithHostAndTimeout()
         {
@@ -573,20 +392,6 @@ namespace System.Net.NetworkInformation.Tests
             await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout),
                 (pingReply) =>
-                {
-                    PingResultValidator(pingReply, localIpAddresses);
-                });
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task SendPingAsyncWithHostAndTimeout_TimeSpan()
-        {
-            IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
-
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            await SendBatchPingAsync(
-                ping => ping.SendPingAsync(TestSettings.LocalHost, pingTimeout, default, default, default),
-                pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddresses);
                 });
@@ -607,22 +412,6 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [Fact]
-        public void SendPingWithHostAndTimeoutAndBuffer_TimeSpan()
-        {
-            IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
-            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
-
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            SendBatchPing(
-                ping => ping.Send(TestSettings.LocalHost, pingTimeout, buffer, default),
-                pingReply =>
-                {
-                    PingResultValidator(pingReply, localIpAddress);
-                    Assert.Equal(buffer, pingReply.Buffer);
-                });
-        }
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithHostAndTimeoutAndBuffer()
         {
@@ -634,22 +423,6 @@ namespace System.Net.NetworkInformation.Tests
                 (pingReply) =>
                 {
                     PingResultValidator(pingReply, localIpAddresses);
-                    Assert.Equal(buffer, pingReply.Buffer);
-                });
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task SendPingAsyncWithHostAndTimeoutAndBuffer_TimeSpan()
-        {
-            IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
-            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
-
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            await SendBatchPingAsync(
-                ping => ping.SendPingAsync(TestSettings.LocalHost, pingTimeout, buffer, default, default),
-                pingReply =>
-                {
-                    PingResultValidator(pingReply, localIpAddress);
                     Assert.Equal(buffer, pingReply.Buffer);
                 });
         }
@@ -669,22 +442,6 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [Fact]
-        public void SendPingWithHostAndTimeoutAndBufferAndPingOptions_TimeSpan()
-        {
-            IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
-            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
-
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            SendBatchPing(
-                ping => ping.Send(TestSettings.LocalHost, pingTimeout, buffer, new PingOptions()),
-                pingReply =>
-                {
-                    PingResultValidator(pingReply, localIpAddress);
-                    Assert.Equal(buffer, pingReply.Buffer);
-                });
-        }
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithHostAndTimeoutAndBufferAndPingOptions()
         {
@@ -696,23 +453,6 @@ namespace System.Net.NetworkInformation.Tests
                 (pingReply) =>
                 {
                     PingResultValidator(pingReply, localIpAddresses);
-
-                    Assert.Equal(buffer, pingReply.Buffer);
-                });
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task SendPingAsyncWithHostAndTimeoutAndBufferAndPingOptions_TimeSpan()
-        {
-            IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
-            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
-
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            await SendBatchPingAsync(
-                ping => ping.SendPingAsync(TestSettings.LocalHost, pingTimeout, buffer, new PingOptions(), default),
-                pingReply =>
-                {
-                    PingResultValidator(pingReply, localIpAddress);
 
                     Assert.Equal(buffer, pingReply.Buffer);
                 });
@@ -738,29 +478,6 @@ namespace System.Net.NetworkInformation.Tests
                 {
                     Assert.Equal(IPStatus.PacketTooBig, pingReply.Status);
                 }
-            }
-        }
-
-        [ConditionalFact(nameof(DoesNotUsePingUtility))]
-        public async Task SendPingWithIPAddressAndBigSize_TimeSpan()
-        {
-            IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
-
-            using Ping p = new();
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-
-            // Assert.DoesNotThrow
-            PingReply pingReply = await p.SendPingAsync(localIpAddress, pingTimeout, new byte[10001], default, default);
-
-            // Depending on platform the call may either succeed, report timeout or report too big packet. It
-            // should not throw wrapped SocketException though which is what this test guards.
-            //
-            // On Windows 10 the maximum ping size seems essentially limited to 65500 bytes and thus any buffer
-            // size on the loopback ping succeeds. On macOS anything bigger than 8184 will report packet too
-            // big error.
-            if (OperatingSystem.IsMacOS())
-            {
-                Assert.Equal(IPStatus.PacketTooBig, pingReply.Status);
             }
         }
 
@@ -946,26 +663,6 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task SendPingAsyncWithHostAndTtlAndFragmentPingOptions_TimeSpan(bool fragment)
-        {
-            IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
-
-            byte[] buffer = GetPingPayload(localIpAddresses[0].AddressFamily);
-
-            PingOptions options = new() { Ttl = 32, DontFragment = fragment };
-
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            await SendBatchPingAsync(
-                ping => ping.SendPingAsync(TestSettings.LocalHost, pingTimeout, buffer, options, default),
-                pingReply =>
-                {
-                    PingResultValidator(pingReply, localIpAddresses);
-                });
-        }
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop] // Depends on external host and assumption that network respects and does not change TTL
         public async Task SendPingToExternalHostWithLowTtlTest()
@@ -996,40 +693,6 @@ namespace System.Net.NetworkInformation.Tests
             // This should always fail unless host is one IP hop away.
             pingReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, payload, options);
             Assert.True(pingReply.Status == IPStatus.TimeExceeded || pingReply.Status == IPStatus.TtlExpired);
-            Assert.NotEqual(IPAddress.Any, pingReply.Address);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [OuterLoop] // Depends on external host and assumption that network respects and does not change TTL
-        public async Task SendPingToExternalHostWithLowTtlTest_TimeSpan()
-        {
-            string host = System.Net.Test.Common.Configuration.Ping.PingHost;
-            PingReply pingReply;
-            PingOptions options = new();
-            bool reachable = false;
-
-            Ping ping = new();
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            for (int i = 0; i < s_pingcount; i++)
-            {
-                pingReply = await ping.SendPingAsync(host, pingTimeout, TestSettings.PayloadAsBytesShort, default, default);
-                if (pingReply.Status != IPStatus.Success)
-                {
-                    continue;
-                }
-
-                reachable = true;
-                break;
-            }
-            if (!reachable)
-            {
-                throw new SkipTestException($"Host {host} is not reachable. Skipping test.");
-            }
-
-            options.Ttl = 1;
-            // This should always fail unless host is one IP hop away.
-            pingReply = await ping.SendPingAsync(host, pingTimeout, TestSettings.PayloadAsBytesShort, options, default);
-            Assert.True(pingReply.Status is IPStatus.TimeExceeded or IPStatus.TtlExpired);
             Assert.NotEqual(IPAddress.Any, pingReply.Address);
         }
 
@@ -1153,39 +816,6 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(AddressFamily.InterNetworkV6, "ja_JP.UTF8", null, null)]
         [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", "ja_JP.UTF8", null)]
         [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", null, "ja_JP.UTF8")]
-        public void SendPing_LocaleEnvVarsMustBeIgnored_TimeSpan(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
-        {
-            IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
-
-            var remoteInvokeStartInfo = new ProcessStartInfo { EnvironmentVariables =
-                {
-                    ["LANG"] = envVar_LANG,
-                    ["LC_MESSAGES"] = envVar_LC_MESSAGES,
-                    ["LC_ALL"] = envVar_LC_ALL
-                }
-            };
-            
-            RemoteExecutor.Invoke(address =>
-            {
-                TimeSpan timeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-
-                SendBatchPing(
-                    ping => ping.Send(address, timeout, default, default),
-                    pingReply =>
-                    {
-                        PingResultValidator(pingReply, new[] { IPAddress.Parse(address) }, null);
-                    });
-            }, localIpAddress.ToString(), new RemoteInvokeOptions { StartInfo = remoteInvokeStartInfo }).Dispose();
-        }
-
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(AddressFamily.InterNetwork, "ja_JP.UTF8", null, null)]
-        [InlineData(AddressFamily.InterNetwork, "en_US.UTF8", "ja_JP.UTF8", null)]
-        [InlineData(AddressFamily.InterNetwork, "en_US.UTF8", null, "ja_JP.UTF8")]
-        [InlineData(AddressFamily.InterNetworkV6, "ja_JP.UTF8", null, null)]
-        [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", "ja_JP.UTF8", null)]
-        [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", null, "ja_JP.UTF8")]
         public void SendPingAsync_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
@@ -1208,37 +838,6 @@ namespace System.Net.NetworkInformation.Tests
             }, localIpAddress.ToString(), new RemoteInvokeOptions { StartInfo = remoteInvokeStartInfo }).Dispose();
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(AddressFamily.InterNetwork, "ja_JP.UTF8", null, null)]
-        [InlineData(AddressFamily.InterNetwork, "en_US.UTF8", "ja_JP.UTF8", null)]
-        [InlineData(AddressFamily.InterNetwork, "en_US.UTF8", null, "ja_JP.UTF8")]
-        [InlineData(AddressFamily.InterNetworkV6, "ja_JP.UTF8", null, null)]
-        [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", "ja_JP.UTF8", null)]
-        [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", null, "ja_JP.UTF8")]
-        public void SendPingAsync_LocaleEnvVarsMustBeIgnored_TimeSpan(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
-        {
-            IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
-
-            var remoteInvokeStartInfo = new ProcessStartInfo { EnvironmentVariables =
-                {
-                    ["LANG"] = envVar_LANG, ["LC_MESSAGES"] = envVar_LC_MESSAGES,
-                    ["LC_ALL"] = envVar_LC_ALL
-                }
-            };
-
-            RemoteExecutor.Invoke(async address =>
-            {
-                TimeSpan timeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-                await SendBatchPingAsync(
-                    ping => ping.SendPingAsync(address, timeout, default, default, default),
-                    (pingReply) =>
-                    {
-                        PingResultValidator(pingReply, new[] { IPAddress.Parse(address) }, null);
-                    });
-            }, localIpAddress.ToString(), new RemoteInvokeOptions { StartInfo = remoteInvokeStartInfo }).Dispose();
-        }
-
         [ConditionalFact(nameof(UsesPingUtility))]
         public void SendPing_CustomPayload_InsufficientPrivileges_Throws()
         {
@@ -1250,17 +849,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalFact(nameof(UsesPingUtility))]
-        public void SendPing_CustomPayload_InsufficientPrivileges_Throws_TimeSpan()
-        {
-            IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
-
-            byte[] buffer = TestSettings.PayloadAsBytes;
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            Ping ping = new();
-            Assert.Throws<PlatformNotSupportedException>(() => ping.Send(TestSettings.LocalHost, pingTimeout, buffer, default));
-        }
-
-        [ConditionalFact(nameof(UsesPingUtility))]
         public async Task SendPingAsync_CustomPayload_InsufficientPrivileges_Throws()
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
@@ -1268,17 +856,6 @@ namespace System.Net.NetworkInformation.Tests
             byte[] buffer = TestSettings.PayloadAsBytes;
             Ping ping = new Ping();
             await Assert.ThrowsAsync<PlatformNotSupportedException>(() => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout, buffer));
-        }
-
-        [ConditionalFact(nameof(UsesPingUtility))]
-        public async Task SendPingAsync_CustomPayload_InsufficientPrivileges_Throws_TimeSpan()
-        {
-            IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
-
-            byte[] buffer = TestSettings.PayloadAsBytes;
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
-            Ping ping = new();
-            await Assert.ThrowsAsync<PlatformNotSupportedException>(() => ping.SendPingAsync(TestSettings.LocalHost, pingTimeout, buffer, default, default));
         }
     }
 }
