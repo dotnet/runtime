@@ -147,10 +147,10 @@ jobs:
         condition: ${{ eq(parameters.osGroup, 'Linux') }}
 
       - script: >-
-          mkdir -p $(librariesDownloadDir)/bin/wasm/data &&
-          cp -r $(librariesDownloadDir)/BrowserWasm/staging/dotnet-workload $(librariesDownloadDir)/bin/wasm &&
-          cp src/mono/wasm/test-main.js $(librariesDownloadDir)/bin/wasm/data/test-main.js &&
-          find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \;
+          mkdir $(librariesDownloadDir)/bin/wasm/data &&
+          mkdir $(librariesDownloadDir)/bin/wasm/dotnet-workload &&
+          robocopy /s $(librariesDownloadDir)/BrowserWasm/staging/dotnet-workload $(librariesDownloadDir)/bin/wasm/dotnet-workload &&
+          copy src/mono/wasm/test-main.js $(librariesDownloadDir)/bin/wasm/data/test-main.js
         displayName: "Create wasm directory (Windows)"
         condition: ${{ ne(parameters.osGroup, 'Linux') }}
 
