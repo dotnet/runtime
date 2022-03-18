@@ -1,22 +1,24 @@
 parameters:
   configForBuild: 'Release'
 
-variables:
-  - name: _dotnetScriptPath
-    value: ./dotnet.sh
-    condition: eq($(_hostedOs), 'Linux')
-  - name: _dotnetScriptPath
-    value: .\dotnet.cmd
-    condition: eq($(_hostedOs), 'windows')
-
 steps:
   - script: >-
-      $(_dotnetScriptPath) build -p:TargetOS=Browser -p:TargetArchitecture=wasm /nr:false /p:TreatWarningsAsErrors=true
+      ./dotnet.sh build -p:TargetOS=Browser -p:TargetArchitecture=wasm /nr:false /p:TreatWarningsAsErrors=true
       /p:Configuration=${{ parameters.configForBuild }}
       /p:ContinuousIntegrationBuild=true
       /t:InstallWorkloadUsingArtifacts
       $(Build.SourcesDirectory)/src/tests/BuildWasmApps/Wasm.Build.Tests/Wasm.Build.Tests.csproj
     displayName: "Install workload using artifacts"
+    condition: eq($(_hostedOs), 'Linux')
+
+  - script: >-
+      .\dotnet.cmd build -p:TargetOS=Browser -p:TargetArchitecture=wasm /nr:false /p:TreatWarningsAsErrors=true
+      /p:Configuration=${{ parameters.configForBuild }}
+      /p:ContinuousIntegrationBuild=true
+      /t:InstallWorkloadUsingArtifacts
+      $(Build.SourcesDirectory)/src/tests/BuildWasmApps/Wasm.Build.Tests/Wasm.Build.Tests.csproj
+    displayName: "Install workload using artifacts"
+    condition: eq($(_hostedOs), 'windows')
 
   - script: >-
       mkdir -p $(Build.SourcesDirectory)/artifacts/staging &&
