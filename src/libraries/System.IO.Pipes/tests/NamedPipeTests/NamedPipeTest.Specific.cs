@@ -16,24 +16,14 @@ namespace System.IO.Pipes.Tests
     /// </summary>
     public class NamedPipeTest_Specific
     {
-        [Fact]
         public void InvalidConnectTimeout_Throws_ArgumentOutOfRangeException()
         {
             using (NamedPipeClientStream client = new NamedPipeClientStream("client1"))
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => client.Connect(-111));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(-111); });
-            }
-        }
-        [Fact]
-        public void InvalidConnectTimeout_Throws_ArgumentOutOfRangeException_TimeSpan()
-        {
-            using (NamedPipeClientStream client = new NamedPipeClientStream("client1"))
-            {
-                var ctx = new CancellationTokenSource();
-                TimeSpan negativeTimeout = TimeSpan.FromMilliseconds(-111);
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => client.Connect(negativeTimeout));
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(negativeTimeout, ctx.Token); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => client.Connect(TimeSpan.FromMilliseconds(-111)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(TimeSpan.FromMilliseconds(-111)); });
             }
         }
 
@@ -43,21 +33,12 @@ namespace System.IO.Pipes.Tests
             using (NamedPipeClientStream client = new NamedPipeClientStream(".", "notthere"))
             {
                 var ctx = new CancellationTokenSource();
-                Assert.Throws<TimeoutException>(() => client.Connect(60));  // 60 to be over internal 50 interval
-                await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(50));
-                await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(60, ctx.Token)); // testing Token overload; ctx is not canceled in this test
-            }
-        }
-
-        [Fact]
-        public async Task ConnectToNonExistentServer_Throws_TimeoutException_TimeSpan()
-        {
-            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "notthere"))
-            {
-                var ctx = new CancellationTokenSource();
-                Assert.Throws<TimeoutException>(() => client.Connect(TimeSpan.FromMilliseconds(60)));  // 60 to be over internal 50 interval
-                await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(TimeSpan.FromMilliseconds(50), ctx.Token));
-                await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(TimeSpan.FromMilliseconds(60), ctx.Token)); // testing Token overload; ctx is not canceled in this test
+                Assert.Throws<TimeoutException>(() =>
+                    client.Connect(TimeSpan.FromMilliseconds(60))); // 60 to be over internal 50 interval
+                await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(TimeSpan.FromMilliseconds(50)));
+                await Assert.ThrowsAsync<TimeoutException>(() =>
+                    client.ConnectAsync(TimeSpan.FromMilliseconds(60),
+                        ctx.Token)); // testing Token overload; ctx is not canceled in this test
             }
         }
 
@@ -624,17 +605,6 @@ namespace System.IO.Pipes.Tests
             using (NamedPipeClientStream client = new NamedPipeClientStream(pipeName))
             {
                 Assert.Throws<TimeoutException>(() => client.Connect(91));
-            }
-        }
-
-        [Fact]
-        public void ClientConnect_Throws_Timeout_When_Pipe_Not_Found_TimeSpan()
-        {
-            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
-            using (NamedPipeClientStream client = new NamedPipeClientStream(pipeName))
-            {
-                TimeSpan timeout = TimeSpan.FromMilliseconds(91);
-                Assert.Throws<TimeoutException>(() => client.Connect(timeout));
             }
         }
 
