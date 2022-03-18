@@ -1,9 +1,17 @@
 parameters:
   configForBuild: 'Release'
 
+variables:
+  - name: _dotnetScriptPath
+    value: ./dotnet.sh
+    condition: eq($(_hostedOs), 'Linux')
+  - name: _dotnetScriptPath
+    value: .\dotnet.cmd
+    condition: eq($(_hostedOs), 'windows')
+
 steps:
   - script: >-
-      ./dotnet.sh build -p:TargetOS=Browser -p:TargetArchitecture=wasm /nr:false /p:TreatWarningsAsErrors=true
+      $(_dotnetScriptPath) build -p:TargetOS=Browser -p:TargetArchitecture=wasm /nr:false /p:TreatWarningsAsErrors=true
       /p:Configuration=${{ parameters.configForBuild }}
       /p:ContinuousIntegrationBuild=true
       /t:InstallWorkloadUsingArtifacts
@@ -15,13 +23,24 @@ steps:
       cp -r $(Build.SourcesDirectory)/artifacts/bin/dotnet-workload $(Build.SourcesDirectory)/artifacts/staging &&
       cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm $(Build.SourcesDirectory)/artifacts/staging &&
       cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.ref $(Build.SourcesDirectory)/artifacts/staging
-    displayName: "Prepare artifacts staging directory"
+    displayName: "Prepare artifacts staging directory (Linux)"
+    condition: eq($(_hostedOs), 'Linux')
+
+  - script: >-
+      mkdir $(Build.SourcesDirectory)\artifacts\staging\dotnet-workload &&
+      mkdir $(Build.SourcesDirectory)\artifacts\staging\microsoft.netcore.app.runtime.browser-wasm &&
+      mkdir $(Build.SourcesDirectory)\artifacts\staging\microsoft.netcore.app.ref &&
+      robocopy /s $(Build.SourcesDirectory)\artifacts\bin\dotnet-workload $(Build.SourcesDirectory)\artifacts\staging\dotnet-workload &&
+      robocopy /s $(Build.SourcesDirectory)\artifacts\bin\microsoft.netcore.app.runtime.browser-wasm $(Build.SourcesDirectory)\artifacts\staging &&
+      robocopy /s $(Build.SourcesDirectory)\artifacts\bin\microsoft.netcore.app.ref $(Build.SourcesDirectory)\artifacts\staging
+    displayName: "Prepare artifacts staging directory (Windows)"
+    condition: eq($(_hostedOs), 'windows')
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
       rootFolder: '$(Build.SourcesDirectory)/artifacts/staging'
       includeRootFolder: true
       displayName: Browser Wasm Artifacts
-      artifactName: BrowserWasm
-      archiveType: zip
-      archiveExtension: .zip
+      artifactName: $(buildProductArtifactName)
+      archiveType: $(archiveType)
+      archiveExtension: $(archiveExtension)
