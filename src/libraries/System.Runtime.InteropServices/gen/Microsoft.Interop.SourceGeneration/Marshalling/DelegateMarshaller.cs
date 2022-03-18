@@ -19,27 +19,14 @@ namespace Microsoft.Interop
             return MarshallerHelpers.SystemIntPtrType;
         }
 
-        public ParameterSyntax AsParameter(TypePositionInfo info)
+        public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)
         {
-            TypeSyntax type = info.IsByRef
-                ? PointerType(AsNativeType(info))
-                : AsNativeType(info);
-            return Parameter(Identifier(info.InstanceIdentifier))
-                .WithType(type);
+            return info.IsByRef ? SignatureBehavior.PointerToNativeType : SignatureBehavior.NativeType;
         }
 
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
+        public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
-            string identifier = context.GetIdentifiers(info).native;
-            if (info.IsByRef)
-            {
-                return Argument(
-                    PrefixUnaryExpression(
-                        SyntaxKind.AddressOfExpression,
-                        IdentifierName(identifier)));
-            }
-
-            return Argument(IdentifierName(identifier));
+            return info.IsByRef ? ValueBoundaryBehavior.AddressOfNativeIdentifier : ValueBoundaryBehavior.NativeIdentifier;
         }
 
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
