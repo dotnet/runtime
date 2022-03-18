@@ -9,7 +9,7 @@ steps:
       /t:InstallWorkloadUsingArtifacts
       $(Build.SourcesDirectory)/src/tests/BuildWasmApps/Wasm.Build.Tests/Wasm.Build.Tests.csproj
     displayName: "Install workload using artifacts"
-    condition: eq($(_hostedOs), 'Linux')
+    condition: eq(variables['_hostedOs'], 'Linux')
 
   - script: >-
       .\dotnet.cmd build -p:TargetOS=Browser -p:TargetArchitecture=wasm /nr:false /p:TreatWarningsAsErrors=true
@@ -18,7 +18,7 @@ steps:
       /t:InstallWorkloadUsingArtifacts
       $(Build.SourcesDirectory)/src/tests/BuildWasmApps/Wasm.Build.Tests/Wasm.Build.Tests.csproj
     displayName: "Install workload using artifacts"
-    condition: eq($(_hostedOs), 'windows')
+    condition: eq(variables['_hostedOs'], 'windows')
 
   - script: >-
       mkdir -p $(Build.SourcesDirectory)/artifacts/staging &&
@@ -26,7 +26,7 @@ steps:
       cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm $(Build.SourcesDirectory)/artifacts/staging &&
       cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.ref $(Build.SourcesDirectory)/artifacts/staging
     displayName: "Prepare artifacts staging directory (Linux)"
-    condition: eq($(_hostedOs), 'Linux')
+    condition: eq(variables['_hostedOs'], 'Linux')
 
   - script: >-
       mkdir $(Build.SourcesDirectory)\artifacts\staging\dotnet-workload &&
@@ -36,7 +36,7 @@ steps:
       robocopy /s $(Build.SourcesDirectory)\artifacts\bin\microsoft.netcore.app.runtime.browser-wasm $(Build.SourcesDirectory)\artifacts\staging &&
       robocopy /s $(Build.SourcesDirectory)\artifacts\bin\microsoft.netcore.app.ref $(Build.SourcesDirectory)\artifacts\staging
     displayName: "Prepare artifacts staging directory (Windows)"
-    condition: eq($(_hostedOs), 'windows')
+    condition: eq(variables['_hostedOs'], 'windows')
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
