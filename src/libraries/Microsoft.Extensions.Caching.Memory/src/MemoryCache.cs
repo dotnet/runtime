@@ -27,8 +27,6 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private CoherentState _coherentState;
         private bool _disposed;
-        private long _totalHits;
-        private long _totalMisses;
         private DateTimeOffset _lastExpirationScan;
 
         /// <summary>
@@ -55,6 +53,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 _options.Clock = new SystemClock();
             }
 
+            _accumulatedStats = new Stats(this);
             _lastExpirationScan = _options.Clock.UtcNow;
             TrackLinkedCacheEntries = _options.TrackLinkedCacheEntries; // we store the setting now so it's consistent for entire MemoryCache lifetime
         }
@@ -222,7 +221,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
                     StartScanForExpiredItemsIfNeeded(utcNow);
 
-                    Interlocked.Increment(ref _totalHits);
+                    Hit();
                     return true;
                 }
                 else
@@ -235,7 +234,7 @@ namespace Microsoft.Extensions.Caching.Memory
             StartScanForExpiredItemsIfNeeded(utcNow);
 
             result = null;
-            Interlocked.Increment(ref _totalMisses);
+            Miss();
             return false;
         }
 
@@ -279,10 +278,11 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         public MemoryCacheStatistics GetCurrentStatistics()
         {
+            (int hit, int miss) sumTotal = Sum();
             return new MemoryCacheStatistics()
             {
-                TotalMisses = _totalMisses,
-                TotalHits = _totalHits,
+                TotalMisses = sumTotal.miss,
+                TotalHits = sumTotal.hit,
                 CurrentEntryCount = Count,
                 CurrentEstimatedSize = _options.SizeLimit.HasValue ? Size : null
             };
@@ -310,6 +310,88 @@ namespace Microsoft.Extensions.Caching.Memory
                 _lastExpirationScan = utcNow;
                 Task.Factory.StartNew(state => ScanForExpiredItems((MemoryCache)state!), this,
                     CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            }
+        }
+
+        internal readonly List<WeakReference<Stats>?> _allStats = new();
+        internal readonly Stats _accumulatedStats;
+
+        private (int, int) Sum()
+        {
+            int hits = 0, misses = 0;
+            lock (_allStats)
+            {
+                hits += _accumulatedStats.Hits;
+                misses += _accumulatedStats.Misses;
+                foreach (WeakReference<Stats>? wr in _allStats)
+                {
+                    if (wr is not null && wr.TryGetTarget(out Stats? stats))
+                    {
+                        hits += stats.Hits;
+                        misses += stats.Misses;
+                    }
+                }
+            }
+            return (hits, misses);
+        }
+
+        private ThreadLocal<Stats>? _stats;
+
+        private void Hit()
+        {
+            GetStats().Hits++;
+        }
+
+        private void Miss()
+        {
+            GetStats().Misses++;
+        }
+
+        private Stats GetStats()
+        {
+            if (_stats == null)
+            {
+                return Initialize();
+            }
+            return _stats!.Value!;
+
+            Stats Initialize()
+            {
+                var s = _stats = new ThreadLocal<Stats>(() => new Stats(this));
+                lock (_allStats)
+                {
+                    _allStats.Add(new WeakReference<Stats>(s.Value!));
+                }
+                return s.Value!;
+            }
+        }
+
+        internal sealed class Stats
+        {
+            public int Hits;
+            public int Misses;
+            private MemoryCache _memoryCache;
+            public Stats(MemoryCache memoryCache)
+            {
+                _memoryCache = memoryCache;
+            }
+            ~Stats()
+            {
+                var allStats = _memoryCache._allStats;
+                lock (allStats)
+                {
+                    for (int i = 0; i < allStats.Count; i++)
+                    {
+                        if (allStats[i] is WeakReference<Stats> wr && wr.TryGetTarget(out Stats? stats) && stats == this)
+                        {
+                            allStats[i] = null;
+                            break;
+                        }
+                    }
+                    allStats.RemoveAll(s => s is null);
+                    Interlocked.Add(ref _memoryCache._accumulatedStats.Hits, Hits);
+                    Interlocked.Add(ref _memoryCache._accumulatedStats.Misses, Misses);
+                }
             }
         }
 
@@ -487,6 +569,7 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 if (disposing)
                 {
+                    _stats?.Dispose();
                     GC.SuppressFinalize(this);
                 }
 
