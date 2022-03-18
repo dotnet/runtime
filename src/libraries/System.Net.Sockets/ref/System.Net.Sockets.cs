@@ -136,6 +136,7 @@ namespace System.Net.Sockets
         public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public void Close(int timeout) { }
+        public void Close(System.TimeSpan timeout) { }
         protected override void Dispose(bool disposing) { }
         public override int EndRead(System.IAsyncResult asyncResult) { throw null; }
         public override void EndWrite(System.IAsyncResult asyncResult) { }
@@ -154,7 +155,6 @@ namespace System.Net.Sockets
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void WriteByte(byte value) { }
-        public void Close(System.TimeSpan timeout) { }
     }
     public enum ProtocolFamily
     {
