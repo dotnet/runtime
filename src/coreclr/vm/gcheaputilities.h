@@ -16,15 +16,15 @@ GPTR_DECL(uint8_t,g_lowest_address);
 GPTR_DECL(uint8_t,g_highest_address);
 GPTR_DECL(uint32_t,g_card_table);
 GVAL_DECL(GCHeapType, g_heap_type);
-#ifndef DACCESS_COMPILE
-}
-#endif // !DACCESS_COMPILE
 
 // For single-proc machines, the EE will use a single, shared alloc context
 // for all allocations. In order to avoid extra indirections in assembly
 // allocation helpers, the EE owns the global allocation context and the
 // GC will update it when it needs to.
-extern "C" gc_alloc_context g_global_alloc_context;
+GVAL_DECL(gc_alloc_context, g_global_alloc_context);
+#ifndef DACCESS_COMPILE
+}
+#endif // !DACCESS_COMPILE
 
 extern "C" uint32_t* g_card_bundle_table;
 extern "C" uint8_t* g_ephemeral_low;
