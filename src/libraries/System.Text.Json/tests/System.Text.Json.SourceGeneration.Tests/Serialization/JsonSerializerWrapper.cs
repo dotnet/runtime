@@ -151,8 +151,25 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         protected internal override Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerOptions options = null) => throw new NotImplementedException();
         protected internal override Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo) => throw new NotImplementedException();
-        protected internal override Task SerializeWrapper<T>(Stream stream, T value, JsonSerializerOptions options = null) => throw new NotImplementedException();
-        protected internal override Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerOptions options = null) => throw new NotImplementedException();
+
+        protected internal override async Task SerializeWrapper<T>(Stream stream, T value, JsonSerializerOptions options = null)
+        {
+            JsonSerializerContext context = options != null
+                ? _customContextCreator(new JsonSerializerOptions(options))
+                : _defaultContext;
+
+            JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)context.GetTypeInfo(typeof(T));
+            await JsonSerializer.SerializeAsync<T>(stream, value, typeInfo);
+        }
+
+        protected internal override async Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerOptions options = null)
+        {
+            JsonSerializerContext context = options != null
+                ? _customContextCreator(new JsonSerializerOptions(options))
+                : _defaultContext;
+
+            await JsonSerializer.SerializeAsync(stream, value, inputType, context);
+        }
         protected internal override Task SerializeWrapper<T>(Stream stream, T value, JsonTypeInfo<T> jsonTypeInfo) => throw new NotImplementedException();
     }
 }

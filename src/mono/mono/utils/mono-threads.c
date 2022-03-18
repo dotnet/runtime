@@ -310,7 +310,7 @@ gboolean
 mono_threads_wait_pending_operations (void)
 {
 	int i;
-	int c = pending_suspends;
+	size_t c = pending_suspends;
 
 	/* Wait threads to park */
 	THREADS_SUSPEND_DEBUG ("[INITIATOR-WAIT-COUNT] %d\n", c);

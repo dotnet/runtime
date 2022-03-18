@@ -421,9 +421,11 @@ namespace ILCompiler
         {
             forceRuntimeLookup = false;
 
+            bool isStaticVirtualMethod = interfaceMethod.Signature.IsStatic;
+
             // We can't resolve constraint calls effectively for reference types, and there's
             // not a lot of perf. benefit in doing it anyway.
-            if (!constrainedType.IsValueType)
+            if (!constrainedType.IsValueType && (!isStaticVirtualMethod || constrainedType.IsCanonicalDefinitionType(CanonicalFormKind.Any)))
             {
                 return null;
             }
@@ -466,10 +468,17 @@ namespace ILCompiler
                                 potentialInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)potentialInterfaceType);
                         }
 
-                        method = canonType.ResolveInterfaceMethodToVirtualMethodOnType(potentialInterfaceMethod);
+                        if (isStaticVirtualMethod)
+                        {
+                            method = canonType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(potentialInterfaceMethod);
+                        }
+                        else
+                        {
+                            method = canonType.ResolveInterfaceMethodToVirtualMethodOnType(potentialInterfaceMethod);
+                        }
 
                         // See code:#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
-                        if (method != null && !method.OwningType.IsValueType)
+                        if (!isStaticVirtualMethod && method != null && !method.OwningType.IsValueType)
                         {
                             // We explicitly wouldn't want to abort if we found a default implementation.
                             // The above resolution doesn't consider the default methods.
@@ -500,7 +509,14 @@ namespace ILCompiler
                             // We can resolve to exact method
                             MethodDesc exactInterfaceMethod = context.GetMethodForInstantiatedType(
                                 genInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
-                            method = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
+                            if (isStaticVirtualMethod)
+                            {
+                                method = constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(exactInterfaceMethod);
+                            }
+                            else
+                            {
+                                method = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
+                            }
                             isExactMethodResolved = method != null;
                         }
                     }
@@ -523,7 +539,14 @@ namespace ILCompiler
                         if (genInterfaceMethod.OwningType != interfaceType)
                             exactInterfaceMethod = context.GetMethodForInstantiatedType(
                                 genInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
-                        method = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
+                        if (isStaticVirtualMethod)
+                        {
+                            method = constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(exactInterfaceMethod);
+                        }
+                        else
+                        {
+                            method = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
+                        }
                     }
                 }
             }
@@ -548,7 +571,7 @@ namespace ILCompiler
             //#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
             // Only return a method if the value type itself declares the method,
             // otherwise we might get a method from Object or System.ValueType
-            if (!method.OwningType.IsValueType)
+            if (!isStaticVirtualMethod && !method.OwningType.IsValueType)
             {
                 // Fall back to VSD
                 return null;

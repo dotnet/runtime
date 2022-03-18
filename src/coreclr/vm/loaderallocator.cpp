@@ -1116,11 +1116,6 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 
     dwTotalReserveMemSize = (DWORD) ALIGN_UP(dwTotalReserveMemSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 
-#if !defined(HOST_64BIT)
-    // Make sure that we reserve as little as possible on 32-bit to save address space
-    _ASSERTE(dwTotalReserveMemSize <= VIRTUAL_ALLOC_RESERVE_GRANULARITY);
-#endif
-
     BYTE * initReservedMem = (BYTE*)ExecutableAllocator::Instance()->Reserve(dwTotalReserveMemSize);
 
     m_InitialReservedMemForLoaderHeaps = initReservedMem;
@@ -1161,7 +1156,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
                                                                       initReservedMem,
                                                                       dwExecutableHeapReserveSize,
                                                                       NULL,
-                                                                      TRUE /* Make heap executable */
+                                                                      UnlockedLoaderHeap::HeapKind::Executable
                                                                       );
         initReservedMem += dwExecutableHeapReserveSize;
     }
@@ -1184,7 +1179,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
                                                        initReservedMem,
                                                        dwStubHeapReserveSize,
                                                        STUBMANAGER_RANGELIST(StubLinkStubManager),
-                                                       TRUE /* Make heap executable */);
+                                                       UnlockedLoaderHeap::HeapKind::Executable);
 
     initReservedMem += dwStubHeapReserveSize;
 
@@ -1193,6 +1188,22 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 #endif
 
     m_pPrecodeHeap = new (&m_PrecodeHeapInstance) CodeFragmentHeap(this, STUB_CODE_BLOCK_PRECODE);
+
+    m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) LoaderHeap(2 * GetOsPageSize(),
+                                                                           2 * GetOsPageSize(),
+                                                                           PrecodeStubManager::g_pManager->GetStubPrecodeRangeList(),
+                                                                           UnlockedLoaderHeap::HeapKind::Interleaved,
+                                                                           false /* fUnlocked */,
+                                                                           StubPrecode::GenerateCodePage,
+                                                                           StubPrecode::CodeSize);
+
+    m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) LoaderHeap(2 * GetOsPageSize(),
+                                                                       2 * GetOsPageSize(),
+                                                                       PrecodeStubManager::g_pManager->GetFixupPrecodeRangeList(),
+                                                                       UnlockedLoaderHeap::HeapKind::Interleaved,
+                                                                       false /* fUnlocked */,
+                                                                       FixupPrecode::GenerateCodePage,
+                                                                       FixupPrecode::CodeSize);
 
     // Initialize the EE marshaling data to NULL.
     m_pMarshalingData = NULL;
@@ -1374,6 +1385,18 @@ void LoaderAllocator::Terminate()
     {
         m_pPrecodeHeap->~CodeFragmentHeap();
         m_pPrecodeHeap = NULL;
+    }
+
+    if (m_pFixupPrecodeHeap != NULL)
+    {
+        m_pFixupPrecodeHeap->~LoaderHeap();
+        m_pFixupPrecodeHeap = NULL;
+    }
+
+    if (m_pNewStubPrecodeHeap != NULL)
+    {
+        m_pNewStubPrecodeHeap->~LoaderHeap();
+        m_pNewStubPrecodeHeap = NULL;
     }
 
 #ifdef FEATURE_READYTORUN

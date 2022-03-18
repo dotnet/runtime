@@ -107,7 +107,7 @@ jobs:
       displayName: Run ci setup script (Linux)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
     # copy wasm packs if running on wasm
-    - script: cp -r $(librariesDownloadDir)/BrowserWasm/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm $(PayloadDirectory);cp -r $(librariesDownloadDir)/BrowserWasm/artifacts/bin/microsoft.netcore.app.ref $(PayloadDirectory)
+    - script: cp -r $(librariesDownloadDir)/BrowserWasm/staging/microsoft.netcore.app.runtime.browser-wasm $(PayloadDirectory) && cp -r $(librariesDownloadDir)/BrowserWasm/staging/microsoft.netcore.app.ref $(PayloadDirectory)
       displayName: Copy browserwasm and runtime ref packs
       condition: and(succeeded(), eq('${{ parameters.runtimeType }}', 'wasm'))
     # copy scenario support files

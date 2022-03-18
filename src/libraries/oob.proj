@@ -1,0 +1,108 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <!-- By default, build the NetCoreAppCurrent vertical only. -->
+    <BuildTargetFramework Condition="'$(BuildAllConfigurations)' != 'true'">$(NetCoreAppCurrent)</BuildTargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
+    <ProjectReference Include="sfx-src.proj" OutputItemType="SharedFrameworkAssembly" />
+    <ProjectReference Include="oob-src.proj" OutputItemType="OOBAssembly" />
+    <ProjectReference Include="shims.proj" OutputItemType="SharedFrameworkAssembly" />
+
+    <ProjectReference Include="apicompat\ApiCompat.proj"
+                      Condition="'$(DotNetBuildFromSource)' != 'true' and '$(RunApiCompat)' != 'false'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(BuildTargetFramework)' != '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
+    <ProjectReference Include="oob-all.proj" SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+
+  <!-- Support building reference projects only. -->
+  <ItemGroup Condition="'$(RefOnly)' == 'true'">
+    <ProjectReference Remove="@(ProjectReference)" />
+    <ProjectReference Include="sfx-ref.proj" OutputItemType="SharedFrameworkAssembly" />
+    <ProjectReference Include="oob-ref.proj" />
+    <ProjectReference Include="shims.proj" OutputItemType="SharedFrameworkAssembly" />
+  </ItemGroup>
+
+  <ImportGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
+    <!-- Re-generate the targeting pack's framework list to include shims. -->
+    <Import Project="frameworklist.targets" />
+    <!-- Import the illink file which contains some of the logic required to illink the out-of-band assemblies. -->
+    <Import Project="$(RepositoryEngineeringDir)illink.targets" />
+  </ImportGroup>
+
+  <Target Name="GetTrimOOBAssembliesInputs"
+          DependsOnTargets="ResolveProjectReferences">
+    <PropertyGroup>
+      <OOBAssembliesTrimmedArtifactsPath>$([MSBuild]::NormalizeDirectory('$(ILLinkTrimAssemblyArtifactsRootDir)', 'trimmed-oobs'))</OOBAssembliesTrimmedArtifactsPath>
+      <OOBAssembliesMarkerFile>$(IntermediateOutputPath)linker-$(TargetArchitecture)-marker.txt</OOBAssembliesMarkerFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
+      <OOBLibrarySuppressionsXml Include="$(ILLinkTrimAssemblyOOBSuppressionsXmlsDir)*.xml" />
+      
+      <!-- The following is the list of all the OOBs we will ignore for now -->
+      <OOBAssemblyToIgnore Include="System.CodeDom;
+                                    System.ComponentModel.Composition;
+                                    System.ComponentModel.Composition.Registration;
+                                    System.Composition.AttributedModel;
+                                    System.Composition.Convention;
+                                    System.Composition.Hosting;
+                                    System.Composition.Runtime;
+                                    System.Composition.TypedParts;
+                                    System.Configuration.ConfigurationManager;
+                                    System.Speech;
+                                    Microsoft.Extensions.DependencyInjection.Specification.Tests" />
+
+      <!-- Move items to FileName so that we can subtract them. -->
+      <OOBAssemblyWithFilename Include="@(OOBAssembly->Metadata('Filename'))"
+                               OriginalIdentity="%(Identity)" />
+      <OOBAssemblyToTrimWithFilename Include="@(OOBAssemblyWithFilename)"
+                                     Exclude="@(OOBAssemblyToIgnore)" />
+      <OOBAssemblyToIgnoreWithFilename Include="@(OOBAssemblyWithFilename)"
+                                       Exclude="@(OOBAssemblyToTrimWithFilename)" />
+
+      <OOBAssemblyToTrim Include="@(OOBAssemblyToTrimWithFilename->Metadata('OriginalIdentity'))" />
+      <OOBAssemblyReference Include="@(OOBAssemblyToIgnoreWithFilename->Metadata('OriginalIdentity'));
+                                     @(SharedFrameworkAssembly)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="TrimOOBAssemblies"
+          AfterTargets="Build"
+          Condition="'$(RefOnly)' != 'true' and '@(OOBAssembly)' != ''"
+          DependsOnTargets="GetTrimOOBAssembliesInputs;PrepareForAssembliesTrim"
+          Inputs="$(ILLinkTasksAssembly);@(OOBAssemblyToTrim);@(OOBAssemblyReference);@(OOBLibrarySuppressionsXml)"
+          Outputs="$(OOBAssembliesMarkerFile)">
+    <Message Text="$(MSBuildProjectName) -> Trimming $(PackageRID) out-of-band assemblies with ILLinker..." Importance="high" />
+
+    <PropertyGroup>
+      <OOBILLinkArgs>$(ILLinkArgs)</OOBILLinkArgs>
+      <OOBILLinkArgs Condition="'@(OOBLibrarySuppressionsXml)' != ''" >$(OOBILLinkArgs) --link-attributes &quot;@(OOBLibrarySuppressionsXml->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</OOBILLinkArgs>
+    </PropertyGroup>
+
+    <ILLink AssemblyPaths=""
+        RootAssemblyNames="@(OOBAssemblyToTrim)"
+        ReferenceAssemblyPaths="@(OOBAssemblyReference)"
+        OutputDirectory="$(OOBAssembliesTrimmedArtifactsPath)"
+        ExtraArgs="$(OOBILLinkArgs)"
+        ToolExe="$(_DotNetHostFileName)"
+        ToolPath="$(_DotNetHostDirectory)" />
+
+    <!-- Create a marker file which serves as the target's output to enable incremental builds. -->
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(OOBAssembliesMarkerFile)'))" />
+    <Touch Files="$(OOBAssembliesMarkerFile)"
+           AlwaysCreate="true" />
+  </Target>
+
+  <Target Name="SetAzureDevOpsVariableForBuiltPackages"
+          Condition="'$(ContinuousIntegrationBuild)' == 'true'"
+          AfterTargets="Build;Pack">
+    <Message Condition="Exists('$(ArtifactsDir)packages')" Importance="High" Text="##vso[task.setvariable variable=_librariesBuildProducedPackages]true" />
+  </Target>
+
+</Project>

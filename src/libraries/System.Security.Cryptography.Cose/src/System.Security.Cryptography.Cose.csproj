@@ -34,6 +34,7 @@
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Numerics" />
   </ItemGroup>
   
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">

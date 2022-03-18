@@ -192,8 +192,17 @@ struct _MonoProperty {
 	const char *name;
 	MonoMethod *get;
 	MonoMethod *set;
-	guint32 attrs;
+	guint32 attrs; /* upper bits store non-ECMA flags */
 };
+
+/* non-ECMA flags for the MonoProperty attrs field */
+enum {
+	/* added by metadata-update after class was created;
+	 * not in MonoClassPropertyInfo array - don't do ptr arithmetic */
+	MONO_PROPERTY_META_FLAG_FROM_UPDATE = 0x00010000,
+	MONO_PROPERTY_META_FLAG_MASK = 0x00010000,
+};
+
 
 struct _MonoEvent {
 	MonoClass *parent;
@@ -204,8 +213,18 @@ struct _MonoEvent {
 #ifndef MONO_SMALL_CONFIG
 	MonoMethod **other;
 #endif
-	guint32 attrs;
+	guint32 attrs;  /* upper bits store non-ECMA flags */
 };
+
+/* non-ECMA flags for the MonoEvent attrs field */
+enum {
+	/* added by metadata-update after class was created;
+	 * not in MonoClassEventInfo array - don't do ptr arithmetic */
+	MONO_EVENT_META_FLAG_FROM_UPDATE = 0x00010000,
+	
+	MONO_EVENT_META_FLAG_MASK = 0x00010000,
+};
+
 
 /* type of exception being "on hold" for later processing (see exception_type) */
 typedef enum {
@@ -1371,12 +1390,14 @@ mono_class_get_first_field_idx (MonoClass *klass);
 void
 mono_class_set_first_field_idx (MonoClass *klass, guint32 idx);
 
+MONO_COMPONENT_API
 guint32
 mono_class_get_method_count (MonoClass *klass);
 
 void
 mono_class_set_method_count (MonoClass *klass, guint32 count);
 
+MONO_COMPONENT_API
 guint32
 mono_class_get_field_count (MonoClass *klass);
 
@@ -1401,9 +1422,11 @@ mono_class_get_exception_data (MonoClass *klass);
 void
 mono_class_set_exception_data (MonoClass *klass, MonoErrorBoxed *value);
 
+MONO_COMPONENT_API
 GList*
 mono_class_get_nested_classes_property (MonoClass *klass);
 
+MONO_COMPONENT_API
 void
 mono_class_set_nested_classes_property (MonoClass *klass, GList *value);
 
@@ -1587,7 +1610,7 @@ m_field_get_meta_flags (MonoClassField *field)
 	return (unsigned int)(field->parent_and_flags & MONO_CLASS_FIELD_META_FLAG_MASK);
 }
 
-static inline gboolean
+static inline int
 m_field_get_offset (MonoClassField *field)
 {
 	g_assert (m_class_is_fields_inited (m_field_get_parent (field)));
@@ -1598,6 +1621,18 @@ static inline gboolean
 m_field_is_from_update (MonoClassField *field)
 {
 	return (m_field_get_meta_flags (field) & MONO_CLASS_FIELD_META_FLAG_FROM_UPDATE) != 0;
+}
+
+static inline gboolean
+m_property_is_from_update (MonoProperty *prop)
+{
+	return (prop->attrs & MONO_PROPERTY_META_FLAG_FROM_UPDATE) != 0;
+}
+
+static inline gboolean
+m_event_is_from_update (MonoEvent *evt)
+{
+	return (evt->attrs & MONO_EVENT_META_FLAG_FROM_UPDATE) != 0;
 }
 
 /*

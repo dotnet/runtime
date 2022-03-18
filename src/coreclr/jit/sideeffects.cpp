@@ -140,14 +140,35 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
 {
     if (node->IsCall())
     {
+        // For calls having return buffer, update the local number that is written after this call.
+        GenTree* retBufArgNode = node->AsCall()->GetLclRetBufArgNode();
+        if (retBufArgNode != nullptr)
+        {
+            // If a copy/reload is inserted by LSRA, retrieve the returnBuffer
+            if (retBufArgNode->IsCopyOrReload())
+            {
+                retBufArgNode = retBufArgNode->AsCopyOrReload()->gtGetOp1();
+            }
+
+            m_flags |= ALIAS_WRITES_LCL_VAR;
+            m_lclNum  = retBufArgNode->AsLclVarCommon()->GetLclNum();
+            m_lclOffs = retBufArgNode->AsLclVarCommon()->GetLclOffs();
+
+            if (compiler->lvaTable[m_lclNum].IsAddressExposed())
+            {
+                m_flags |= ALIAS_WRITES_ADDRESSABLE_LOCATION;
+            }
+        }
+
         // Calls are treated as reads and writes of addressable locations unless they are known to be pure.
         if (node->AsCall()->IsPure(compiler))
         {
             m_flags = ALIAS_NONE;
-            return;
         }
-
-        m_flags = ALIAS_READS_ADDRESSABLE_LOCATION | ALIAS_WRITES_ADDRESSABLE_LOCATION;
+        else
+        {
+            m_flags = ALIAS_READS_ADDRESSABLE_LOCATION | ALIAS_WRITES_ADDRESSABLE_LOCATION;
+        }
         return;
     }
     else if (node->OperIsAtomicOp())
