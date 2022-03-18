@@ -109,15 +109,9 @@ public:
         SET_THREAD_MESSAGE_ID = 1,
         FORWARD_EXCEPTION_MESSAGE_ID = 2,
         NOTIFY_SEND_ONCE_MESSAGE_ID = 71,
-        EXCEPTION_RAISE_MESSAGE_ID = 2401,
-        EXCEPTION_RAISE_STATE_MESSAGE_ID = 2402,
-        EXCEPTION_RAISE_STATE_IDENTITY_MESSAGE_ID = 2403,
         EXCEPTION_RAISE_64_MESSAGE_ID = 2405,
         EXCEPTION_RAISE_STATE_64_MESSAGE_ID = 2406,
         EXCEPTION_RAISE_STATE_IDENTITY_64_MESSAGE_ID = 2407,
-        EXCEPTION_RAISE_REPLY_MESSAGE_ID = 2501,
-        EXCEPTION_RAISE_STATE_REPLY_MESSAGE_ID = 2502,
-        EXCEPTION_RAISE_STATE_IDENTITY_REPLY_MESSAGE_ID = 2503,
         EXCEPTION_RAISE_REPLY_64_MESSAGE_ID = 2505,
         EXCEPTION_RAISE_STATE_REPLY_64_MESSAGE_ID = 2506,
         EXCEPTION_RAISE_STATE_IDENTITY_REPLY_64_MESSAGE_ID = 2507
@@ -218,25 +212,6 @@ private:
 
 #pragma pack(4)
 
-    // EXCEPTION_RAISE_MESSAGE_ID
-    struct exception_raise_notification_t
-    {
-        mach_msg_body_t msgh_body;
-        mach_msg_port_descriptor_t thread_port;
-        mach_msg_port_descriptor_t task_port;
-        NDR_record_t ndr;
-        exception_type_t exception;
-        mach_msg_type_number_t code_count;
-        exception_data_type_t code[2];
-    };
-
-    // EXCEPTION_RAISE_REPLY_MESSAGE_ID
-    struct exception_raise_reply_t
-    {
-        NDR_record_t ndr;
-        kern_return_t ret;
-    };
-
     // EXCEPTION_RAISE_64_MESSAGE_ID
     struct exception_raise_notification_64_t
     {
@@ -256,28 +231,6 @@ private:
         kern_return_t ret;
     };
 
-    // EXCEPTION_RAISE_STATE_MESSAGE_ID
-    struct exception_raise_state_notification_t
-    {
-        NDR_record_t ndr;
-        exception_type_t exception;
-        mach_msg_type_number_t code_count;
-        exception_data_type_t code[2];
-        thread_state_flavor_t flavor;
-        mach_msg_type_number_t old_state_count;
-        natural_t old_state[THREAD_STATE_MAX];
-    };
-
-    // EXCEPTION_RAISE_STATE_REPLY_MESSAGE_ID
-    struct exception_raise_state_reply_t
-    {
-        NDR_record_t ndr;
-        kern_return_t ret;
-        thread_state_flavor_t flavor;
-        mach_msg_type_number_t new_state_count;
-        natural_t new_state[THREAD_STATE_MAX];
-    };
-
     // EXCEPTION_RAISE_STATE_64_MESSAGE_ID
     struct exception_raise_state_notification_64_t
     {
@@ -292,31 +245,6 @@ private:
 
     // EXCEPTION_RAISE_STATE_REPLY_64_MESSAGE_ID
     struct exception_raise_state_reply_64_t
-    {
-        NDR_record_t ndr;
-        kern_return_t ret;
-        thread_state_flavor_t flavor;
-        mach_msg_type_number_t new_state_count;
-        natural_t new_state[THREAD_STATE_MAX];
-    };
-
-    // EXCEPTION_RAISE_STATE_IDENTITY_MESSAGE_ID
-    struct exception_raise_state_identity_notification_t
-    {
-        mach_msg_body_t msgh_body;
-        mach_msg_port_descriptor_t thread_port;
-        mach_msg_port_descriptor_t task_port;
-        NDR_record_t ndr;
-        exception_type_t exception;
-        mach_msg_type_number_t code_count;
-        exception_data_type_t code[2];
-        thread_state_flavor_t flavor;
-        mach_msg_type_number_t old_state_count;
-        natural_t old_state[THREAD_STATE_MAX];
-    };
-
-    // EXCEPTION_RAISE_STATE_IDENTITY_REPLY_MESSAGE_ID
-    struct exception_raise_state_identity_reply_t
     {
         NDR_record_t ndr;
         kern_return_t ret;
@@ -361,15 +289,9 @@ private:
         {
             set_thread_request_t                                set_thread;
             forward_exception_request_t                         forward_exception;
-            exception_raise_notification_t                      raise;
-            exception_raise_state_notification_t                raise_state;
-            exception_raise_state_identity_notification_t       raise_state_identity;
             exception_raise_notification_64_t                   raise_64;
             exception_raise_state_notification_64_t             raise_state_64;
             exception_raise_state_identity_notification_64_t    raise_state_identity_64;
-            exception_raise_reply_t                             raise_reply;
-            exception_raise_state_reply_t                       raise_state_reply;
-            exception_raise_state_identity_reply_t              raise_state_identity_reply;
             exception_raise_reply_64_t                          raise_reply_64;
             exception_raise_state_reply_64_t                    raise_state_reply_64;
             exception_raise_state_identity_reply_64_t           raise_state_identity_reply_64;
