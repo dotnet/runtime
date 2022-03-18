@@ -975,7 +975,7 @@ namespace System.Xml.Serialization
                 throw new ArgumentException(SR.Format(SR.XmlEmptyArrayType, CurrentTag()), nameof(value));
             }
 
-            char[] chars = value.ToCharArray();
+            ReadOnlySpan<char> chars = value.AsSpan();
             int charsLength = chars.Length;
 
             SoapArrayInfo soapArrayInfo = default;
@@ -1005,7 +1005,7 @@ namespace System.Xml.Serialization
             int len = charsLength - pos - 2;
             if (len > 0)
             {
-                string lengthString = new string(chars, pos + 1, len);
+                string lengthString = new string(chars.Slice(pos + 1, len));
                 try
                 {
                     soapArrayInfo.length = int.Parse(lengthString, CultureInfo.InvariantCulture);
@@ -1043,7 +1043,7 @@ namespace System.Xml.Serialization
             soapArrayInfo.dimensions = 1;
 
             // everything else is qname - validation of qnames?
-            soapArrayInfo.qname = new string(chars, 0, pos + 1);
+            soapArrayInfo.qname = new string(chars.Slice(0, pos + 1));
             return soapArrayInfo;
         }
 
