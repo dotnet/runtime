@@ -24,14 +24,6 @@
 
 G_BEGIN_DECLS
 
-/*
- * If this is set, the memory belonging to appdomains is not freed when a domain is
- * unloaded, and assemblies loaded by the appdomain are not unloaded either. This
- * allows us to use typed gc in non-default appdomains too, leading to increased
- * performance.
- */
-extern gboolean mono_dont_free_domains;
-
 struct _MonoAppContext {
 	MonoObject obj;
 	gint32 domain_id;
