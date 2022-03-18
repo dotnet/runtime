@@ -50,13 +50,15 @@ namespace System.Reflection
 
             bool isInherited = declaredType != reflectedType;
 
-            IntPtr[]? genericArgumentHandles = null;
+            Span<IntPtr> genericArgumentHandles = stackalloc IntPtr[0];
             int genericArgumentCount = 0;
             RuntimeType[] genericArguments = declaredType.TypeHandle.GetInstantiationInternal();
             if (genericArguments != null)
             {
                 genericArgumentCount = genericArguments.Length;
-                genericArgumentHandles = new IntPtr[genericArguments.Length];
+                genericArgumentHandles = genericArguments.Length <= 16 ? // arbitrary stackalloc limit
+                    stackalloc IntPtr[16] :
+                    new IntPtr[genericArguments.Length];
                 for (int i = 0; i < genericArguments.Length; i++)
                 {
                     genericArgumentHandles[i] = genericArguments[i].TypeHandle.Value;
