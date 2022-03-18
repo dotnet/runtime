@@ -155,6 +155,35 @@ jobs:
       testGroup: innerloop
 
 #
+# Build PGO CoreCLR release
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    buildConfig: release
+    platforms:
+    - windows_arm64
+    - Linux_arm64
+    jobParameters:
+      testGroup: innerloop
+      pgoType: 'PGO'
+
+  #
+  # PGO Build
+  #
+  - template: /eng/pipelines/installer/installer-matrix.yml
+    parameters:
+      buildConfig: Release
+      jobParameters:
+        liveRuntimeBuildConfig: release
+        liveLibrariesBuildConfig: Release
+        pgoType: 'PGO'
+      platforms:
+      - windows_arm64
+      - Linux_arm64
+
+
+#
 # Build CoreCLR Formatting Job
 # Only when CoreCLR is changed, and only in the 'main' branch (no release branches;
 # both Rolling and PR builds).
