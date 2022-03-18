@@ -2349,7 +2349,7 @@ ves_icall_RuntimePropertyInfo_get_property_info (MonoReflectionPropertyHandle pr
 	}
 
 	if ((req_info & PInfo_Attributes) != 0)
-		info->attrs = pproperty->attrs;
+		info->attrs = (pproperty->attrs & ~MONO_PROPERTY_META_FLAG_MASK);
 
 	if ((req_info & PInfo_GetMethod) != 0) {
 		MonoClass *property_klass = MONO_HANDLE_GETVAL (property, klass);
@@ -2414,7 +2414,7 @@ ves_icall_RuntimeEventInfo_get_event_info (MonoReflectionMonoEventHandle ref_eve
 	return_if_nok (error);
 	MONO_STRUCT_SETREF_INTERNAL (info, name, MONO_HANDLE_RAW (ev_name));
 
-	info->attrs = event->attrs;
+	info->attrs = event->attrs & ~MONO_EVENT_META_FLAG_MASK;
 
 	MonoReflectionMethodHandle rm;
 	if (event->add) {
@@ -5048,9 +5048,8 @@ image_get_type (MonoImage *image, MonoTableInfo *tdef, int table_idx, int count,
 static MonoArrayHandle
 mono_module_get_types (MonoImage *image, MonoArrayHandleOut exceptions, MonoBoolean exportedOnly, MonoError *error)
 {
-	/* FIXME: metadata-update */
 	MonoTableInfo *tdef = &image->tables [MONO_TABLE_TYPEDEF];
-	int rows = table_info_get_rows (tdef);
+	int rows = mono_metadata_table_num_rows (image, MONO_TABLE_TYPEDEF);
 	int i, count;
 
 	/* we start the count from 1 because we skip the special type <Module> */
