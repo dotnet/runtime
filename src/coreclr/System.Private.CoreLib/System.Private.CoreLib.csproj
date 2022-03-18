@@ -117,7 +117,7 @@
   <!-- Sources -->
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivationContextInternal.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\InMemoryAssemblyLoader.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComponentActivator.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__Canon.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Array.CoreCLR.cs" />
@@ -285,10 +285,12 @@
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivator.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\InMemoryAssemblyLoader.PlatformNotSupported.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\InMemoryAssemblyLoader.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs">
       <Link>Common\Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
     </Compile>
