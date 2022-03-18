@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Logging.EventSource
     public partial class EventSourceLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, System.IDisposable
     {
         public EventSourceLoggerProvider(Microsoft.Extensions.Logging.EventSource.LoggingEventSource eventSource) { }
-        public Microsoft.Extensions.Logging.ILogger CreateLogger(string? categoryName) { throw null; }
+        public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) { throw null; }
         public void Dispose() { }
     }
     [System.Diagnostics.Tracing.EventSourceAttribute(Name="Microsoft-Extensions-Logging")]

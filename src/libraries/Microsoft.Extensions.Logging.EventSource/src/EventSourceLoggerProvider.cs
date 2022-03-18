@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace Microsoft.Extensions.Logging.EventSource
@@ -28,8 +27,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         }
 
         /// <inheritdoc />
-        [MemberNotNull(nameof(_loggers))]
-        public ILogger CreateLogger(string? categoryName)
+        public ILogger CreateLogger(string categoryName)
         {
             return _loggers = new EventSourceLogger(categoryName, _factoryID, _eventSource, _loggers);
         }
