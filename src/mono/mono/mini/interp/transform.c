@@ -1031,8 +1031,11 @@ store_local (TransformData *td, int local)
 	int mt = td->locals [local].mt;
 	CHECK_STACK (td, 1);
 #if SIZEOF_VOID_P == 8
+	// nint and int32 can be used interchangeably. Add implicit conversions.
 	if (td->sp [-1].type == STACK_TYPE_I4 && stack_type [mt] == STACK_TYPE_I8)
 		interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_I8_I4);
+	else if (td->sp [-1].type == STACK_TYPE_I8 && stack_type [mt] == STACK_TYPE_I4)
+		interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_MOV_8);
 #endif
 	if (td->sp [-1].type == STACK_TYPE_R4 && stack_type [mt] == STACK_TYPE_R8)
 		interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R8, MINT_CONV_R8_R4);
