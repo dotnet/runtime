@@ -140,6 +140,20 @@ endif
     align 16
     Exit:
         REPRET
+
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+
+        NOP_3_BYTE
 else
         ; JIT_WriteBarrier_PostGrow64
 

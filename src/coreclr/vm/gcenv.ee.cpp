@@ -1026,6 +1026,8 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 
         g_lowest_address = args->lowest_address;
         g_highest_address = args->highest_address;
+        g_region_to_generation_table = args->region_to_generation_table;
+        g_region_shr = args->region_shr;
         stompWBCompleteActions |= ::StompWriteBarrierResize(true, false);
 
         // StompWriteBarrierResize does not necessarily bash g_ephemeral_low

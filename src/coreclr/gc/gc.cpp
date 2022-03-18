@@ -2010,7 +2010,12 @@ void stomp_write_barrier_ephemeral(uint8_t* ephemeral_low, uint8_t* ephemeral_hi
     GCToEEInterface::StompWriteBarrier(&args);
 }
 
-void stomp_write_barrier_initialize(uint8_t* ephemeral_low, uint8_t* ephemeral_high)
+void stomp_write_barrier_initialize(uint8_t* ephemeral_low, uint8_t* ephemeral_high
+#ifdef USE_REGIONS
+                                   , uint8_t* map_region_to_generation_skewed
+                                   , uint8_t region_shr
+#endif //USE_REGIONS
+                                   )
 {
     WriteBarrierParameters args = {};
     args.operation = WriteBarrierOp::Initialize;
@@ -2026,6 +2031,12 @@ void stomp_write_barrier_initialize(uint8_t* ephemeral_low, uint8_t* ephemeral_h
     args.highest_address = g_gc_highest_address;
     args.ephemeral_low = ephemeral_low;
     args.ephemeral_high = ephemeral_high;
+
+#ifdef USE_REGIONS
+    args.region_to_generation_table = map_region_to_generation_skewed;
+    args.region_shr = region_shr;
+#endif //USE_REGIONS
+
     GCToEEInterface::StompWriteBarrier(&args);
 }
 
@@ -11267,6 +11278,17 @@ void gc_heap::set_region_gen_num (heap_segment* region, int gen_num)
     assert (gen_num < (1 << (sizeof (uint8_t) * 8)));
     assert (gen_num >= 0);
     heap_segment_gen_num (region) = (uint8_t)gen_num;
+
+    uint8_t* region_start = get_region_start (region);
+    uint8_t* region_end = heap_segment_reserved (region);
+
+    size_t region_index_start = ((size_t)region_start) >> min_segment_size_shr;
+    size_t region_index_end = ((size_t)region_end) >> min_segment_size_shr;
+    for (size_t region_index = region_index_start; region_index < region_index_end; region_index++)
+    {
+        assert (gen_num <= max_generation);
+        map_region_to_generation_skewed[region_index] = (uint8_t)gen_num;
+    }
 }
 
 inline
@@ -11295,6 +11317,17 @@ void gc_heap::set_region_plan_gen_num (heap_segment* region, int plan_gen_num)
     }
 
     heap_segment_plan_gen_num (region) = plan_gen_num;
+
+    uint8_t* region_start = get_region_start (region);
+    uint8_t* region_end = heap_segment_reserved (region);
+
+    size_t region_index_start = ((size_t)region_start) >> min_segment_size_shr;
+    size_t region_index_end = ((size_t)region_end) >> min_segment_size_shr;
+    for (size_t region_index = region_index_start; region_index < region_index_end; region_index++)
+    {
+        assert (gen_num <= max_generation);
+        map_region_to_generation_skewed[region_index] = (map_region_to_generation_skewed[region_index] & 0x0f) | (plan_gen_num & 0xf0);
+    }
 }
 
 inline
@@ -11443,8 +11476,7 @@ void gc_heap::init_heap_segment (heap_segment* seg, gc_heap* hp
 
 #ifdef USE_REGIONS
     int gen_num_for_region = min (gen_num, max_generation);
-    heap_segment_gen_num (seg) = (uint8_t)gen_num_for_region;
-    heap_segment_plan_gen_num (seg) = gen_num_for_region;
+    set_region_gen_num (seg, gen_num_for_region);
     heap_segment_swept_in_plan (seg) = false;
 #endif //USE_REGIONS
 
@@ -13975,11 +14007,14 @@ gc_heap::init_gc_heap (int  h_number)
     if (heap_number == 0)
     {
         stomp_write_barrier_initialize(
-#if defined(MULTIPLE_HEAPS) || defined(USE_REGIONS)
+#if defined(USE_REGIONS)
+            g_gc_lowest_address, g_gc_highest_address,
+            map_region_to_generation_skewed, (uint8_t)min_segment_size_shr
+#elif defined(MULTIPLE_HEAPS)
             reinterpret_cast<uint8_t*>(1), reinterpret_cast<uint8_t*>(~0)
 #else
             ephemeral_low, ephemeral_high
-#endif //!MULTIPLE_HEAPS || USE_REGIONS
+#endif //MULTIPLE_HEAPS || USE_REGIONS
         );
     }
 
