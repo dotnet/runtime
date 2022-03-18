@@ -38,7 +38,8 @@ namespace Microsoft.Extensions.Options
 #else
             if (!_cache.TryGetValue(name, out value))
             {
-                value = _cache.GetOrAdd(name, new Lazy<TOptions>(createOptions));
+                Func<TOptions> localCreateOptions = createOptions;
+                value = _cache.GetOrAdd(name, new Lazy<TOptions>(localCreateOptions));
             }
 #endif
 
@@ -50,7 +51,10 @@ namespace Microsoft.Extensions.Options
             // For compatibility, fall back to public GetOrAdd() if we're in a derived class.
             if (GetType() != typeof(OptionsCache<TOptions>))
             {
-                return GetOrAddHelper(name, createOptions, factoryArgument);
+                string? localName = name;
+                Func<string, TArg, TOptions> localCreateOptions = createOptions;
+                TArg localFactoryArgument = factoryArgument;
+                return GetOrAdd(name, () => localCreateOptions(localName ?? Options.DefaultName, localFactoryArgument));
             }
 
             name ??= Options.DefaultName;
@@ -61,16 +65,15 @@ namespace Microsoft.Extensions.Options
 #else
             if (!_cache.TryGetValue(name, out value))
             {
-                value = _cache.GetOrAdd(name, new Lazy<TOptions>(() => createOptions(name, factoryArgument)));
+                string? localName = name;
+                Func<string, TArg, TOptions> localCreateOptions = createOptions;
+                TArg localFactoryArgument = factoryArgument;
+                value = _cache.GetOrAdd(name, new Lazy<TOptions>(() => localCreateOptions(localName, localFactoryArgument)));
             }
 #endif
 
             return value.Value;
         }
-
-        // provides indirection to avoid the caller needing to allocate a closure
-        private TOptions GetOrAddHelper<TArg>(string? name, Func<string, TArg, TOptions> createOptions, TArg factoryArgument) =>
-            GetOrAdd(name, () => createOptions(name ?? Options.DefaultName, factoryArgument));
 
         /// <summary>
         /// Gets a named options instance, if available.
