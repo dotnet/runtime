@@ -2057,31 +2057,6 @@ ves_icall_System_Threading_Thread_Join_internal (MonoThreadObjectHandle thread_h
 	return FALSE;
 }
 
-#define MANAGED_WAIT_FAILED 0x7fffffff
-
-static gint32
-map_native_wait_result_to_managed (MonoW32HandleWaitRet val, gsize numobjects)
-{
-	if (val >= MONO_W32HANDLE_WAIT_RET_SUCCESS_0 && val < MONO_W32HANDLE_WAIT_RET_SUCCESS_0 + numobjects) {
-		return WAIT_OBJECT_0 + (val - MONO_W32HANDLE_WAIT_RET_SUCCESS_0);
-	} else if (val >= MONO_W32HANDLE_WAIT_RET_ABANDONED_0 && val < MONO_W32HANDLE_WAIT_RET_ABANDONED_0 + numobjects) {
-		return WAIT_ABANDONED_0 + (val - MONO_W32HANDLE_WAIT_RET_ABANDONED_0);
-	} else if (val == MONO_W32HANDLE_WAIT_RET_ALERTED) {
-		return WAIT_IO_COMPLETION;
-	} else if (val == MONO_W32HANDLE_WAIT_RET_TIMEOUT) {
-		return WAIT_TIMEOUT;
-	} else if (val == MONO_W32HANDLE_WAIT_RET_TOO_MANY_POSTS) {
-		return WAIT_TOO_MANY_POSTS;
-	} else if (val == MONO_W32HANDLE_WAIT_RET_NOT_OWNED_BY_CALLER) {
-		return WAIT_NOT_OWNED_BY_CALLER;
-	} else if (val == MONO_W32HANDLE_WAIT_RET_FAILED) {
-		/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
-		return MANAGED_WAIT_FAILED;
-	} else {
-		g_error ("%s: unknown val value %d", __func__, val);
-	}
-}
-
 gint32 ves_icall_System_Threading_Interlocked_Increment_Int (gint32 *location)
 {
 	return mono_atomic_inc_i32 (location);

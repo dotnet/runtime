@@ -32,17 +32,11 @@ else()
 endif()
 
 set(metadata_win32_sources
-    w32file-win32.c
     w32event-win32.c
     w32error-win32.c)
 
 set(metadata_unix_sources
     w32event-unix.c
-    w32process-unix-osx.c
-    w32process-unix-bsd.c
-    w32process-unix-haiku.c
-    w32process-unix-default.c
-    w32file-unix.c
     w32error-unix.c)
 
 if(HOST_WIN32)
@@ -83,7 +77,6 @@ set(metadata_common_sources
     environment.c
     exception.c
     exception-internals.h
-    w32file.h
     gc-internals.h
     gc_wrapper.h
     icall.c
@@ -133,7 +126,6 @@ set(metadata_common_sources
     opcodes.c
     property-bag.h
     property-bag.c
-    w32process.h
     profiler.c
     profiler-private.h
     runtime.c
@@ -169,8 +161,6 @@ set(metadata_common_sources
     sre.c
     sre-encode.c
     custom-attrs.c
-    fdhandle.h
-    fdhandle.c
     callspec.h
     callspec.c
     assembly-load-context.c
