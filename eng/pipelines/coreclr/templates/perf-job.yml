@@ -91,9 +91,8 @@ jobs:
     ${{ if eq(parameters.runtimeType, 'iosMono') }}:
       extraSetupParameters: -Architecture ${{ parameters.archType }} -iOSMono -iOSLlvmBuild:$${{ parameters.iOSLlvmBuild }}
 
-    variables: ${{ parameters.variables }}
-
     variables:
+    ${{ parameters.variables }}
     - name: buildProductArtifactName
       value: ${{ format('BrowserWasm_{0}', parameters.osGroup) }}
       condition: ${{ if eq(parameters.runtimeType, 'wasm') }}
@@ -155,7 +154,7 @@ jobs:
           cp src/mono/wasm/test-main.js $(librariesDownloadDir)/bin/wasm/data/test-main.js &&
           find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \;
         displayName: "Create wasm directory (Windows)"
-        condition: ${{ if ne(parameters.osGroup, 'Linux') }}
+        condition: ${{ ne(parameters.osGroup, 'Linux') }}
 
     # Download mono AOT
     - ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm')) }}:
