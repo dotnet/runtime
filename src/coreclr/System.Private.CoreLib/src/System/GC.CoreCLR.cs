@@ -357,7 +357,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern long GetAllocatedBytesForCurrentThread();
 
-
         /// <summary>
         /// Get a count of the bytes allocated over the lifetime of the process.
         /// <param name="precise">If true, gather a precise number, otherwise gather a fairly count. Gathering a precise value triggers at a significant performance penalty.</param>
@@ -424,8 +423,6 @@ namespace System
             return (GCNotificationStatus)_WaitForFullGCApproach(millisecondsTimeout);
         }
 
-        public static GCNotificationStatus WaitForFullGCApproach(TimeSpan timeout) => WaitForFullGCApproach(WaitHandle.ToTimeoutMilliseconds(timeout));
-
         public static GCNotificationStatus WaitForFullGCComplete()
         {
             return (GCNotificationStatus)_WaitForFullGCComplete(-1);
@@ -437,8 +434,6 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             return (GCNotificationStatus)_WaitForFullGCComplete(millisecondsTimeout);
         }
-
-        public static GCNotificationStatus WaitForFullGCComplete(TimeSpan timeout) => WaitForFullGCComplete(WaitHandle.ToTimeoutMilliseconds(timeout));
 
         private enum StartNoGCRegionStatus
         {

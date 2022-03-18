@@ -58,7 +58,7 @@ namespace System
         AllocationExceeded = 3
     }
 
-    public static class GC
+    public static partial class GC
     {
         public static int GetGeneration(object obj)
         {
@@ -216,14 +216,6 @@ namespace System
         }
 
         /// <summary>
-        /// Returns, in a specified time-out period, the status of a registered notification for determining whether a full,
-        /// blocking garbage collection by the common language runtime is imminent.
-        /// </summary>
-        /// <param name="timeout">The timeout on waiting for a full collection</param>
-        /// <returns>The status of a registered full GC notification</returns>
-        public static GCNotificationStatus WaitForFullGCApproach(TimeSpan timeout) => WaitForFullGCApproach(WaitHandle.ToTimeoutMilliseconds(timeout));
-
-        /// <summary>
         /// Returns the status of a registered notification about whether a blocking garbage collection
         /// has completed. May wait indefinitely for a full collection.
         /// </summary>
@@ -250,14 +242,6 @@ namespace System
 
             return (GCNotificationStatus)RuntimeImports.RhWaitForFullGCComplete(millisecondsTimeout);
         }
-
-        /// <summary>
-        /// Returns, in a specified time-out period, the status of a registered notification for determining whether a full,
-        /// blocking garbage collection by common language the runtime has completed.
-        /// </summary>
-        /// <param name="timeout">The timeout on waiting for a full collection</param>
-        /// <returns>The status of the registered garbage collection notification.</returns>
-        public static GCNotificationStatus WaitForFullGCComplete(TimeSpan timeout) => WaitForFullGCComplete(WaitHandle.ToTimeoutMilliseconds(timeout));
 
         /// <summary>
         /// Cancels an outstanding full GC notification.

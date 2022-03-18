@@ -204,9 +204,6 @@ namespace System
             return _WaitForFullGCApproach(millisecondsTimeout);
         }
 
-        public static GCNotificationStatus WaitForFullGCApproach(TimeSpan timeout) =>
-            WaitForFullGCApproach(WaitHandle.ToTimeoutMilliseconds(timeout));
-
         public static GCNotificationStatus WaitForFullGCComplete()
         {
             return _WaitForFullGCComplete(-1);
@@ -218,9 +215,6 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             return _WaitForFullGCComplete(millisecondsTimeout);
         }
-
-        public static GCNotificationStatus WaitForFullGCComplete(TimeSpan timeout) =>
-            WaitForFullGCComplete(WaitHandle.ToTimeoutMilliseconds(timeout));
 
         private static bool StartNoGCRegion(long totalSize, bool hasLohSize, long lohSize, bool disallowFullBlockingGC)
         {
