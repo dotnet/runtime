@@ -51,6 +51,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <minipal/getexepath.h>
 #include "cominterop.h"
 #include <mono/utils/w32api.h>
 #include <mono/utils/unlocked.h>
@@ -101,6 +102,12 @@ static MonoCoopMutex ldstr_section;
 /* Used by remoting proxies */
 static MonoMethod *create_proxy_for_type_method;
 static MonoGHashTable *ldstr_table;
+
+static GString *
+quote_escape_and_append_string (char *src_str, GString *target_str);
+
+static GString *
+format_cmd_line (int argc, char **argv);
 
 /**
  * mono_runtime_object_init:
@@ -3884,26 +3891,6 @@ mono_runtime_get_main_args_handle (MonoError *error)
 	}
 leave:
 	HANDLE_FUNCTION_RETURN_REF (MonoArray, array);
-}
-
-/**
- * mono_runtime_get_main_args_argc_raw:
- * \returns number of arguments from the command line
- */
-int
-mono_runtime_get_main_args_argc_raw ()
-{
-	return num_main_args;
-}
-
-/**
- * mono_runtime_get_main_args_argc_raw:
- * \returns array of strings from the command line
- */
-char**
-mono_runtime_get_main_args_argv_raw ()
-{
-	return num_main_args != 0 ? main_args : NULL;
 }
 
 static void
@@ -7809,6 +7796,109 @@ mono_vtype_get_field_addr (gpointer vtype, MonoClassField *field)
 {
 	g_assert (!m_field_is_from_update (field));
 	return ((char*)vtype) + m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject);
+}
+
+static GString *
+quote_escape_and_append_string (char *src_str, GString *target_str)
+{
+#ifdef HOST_WIN32
+	char quote_char = '\"';
+	char escape_chars[] = "\"\\";
+#else
+	char quote_char = '\'';
+	char escape_chars[] = "\'\\";
+#endif
+
+	gboolean need_quote = FALSE;
+	gboolean need_escape = FALSE;
+
+	for (char *pos = src_str; *pos; ++pos) {
+		if (isspace (*pos))
+			need_quote = TRUE;
+		if (strchr (escape_chars, *pos))
+			need_escape = TRUE;
+	}
+
+	if (need_quote)
+		target_str = g_string_append_c (target_str, quote_char);
+
+	if (need_escape) {
+		for (char *pos = src_str; *pos; ++pos) {
+			if (strchr (escape_chars, *pos))
+				target_str = g_string_append_c (target_str, '\\');
+			target_str = g_string_append_c (target_str, *pos);
+		}
+	} else {
+		target_str = g_string_append (target_str, src_str);
+	}
+
+	if (need_quote)
+		target_str = g_string_append_c (target_str, quote_char);
+
+	return target_str;
+}
+
+static GString *
+format_cmd_line (int argc, char **argv)
+{
+	// managed cmdline -> native host + managed argv (which includes the entrypoint assembly)
+	size_t total_size = 0;
+	char *host_path = NULL;
+	GString *cmd_line = NULL;
+
+	host_path = minipal_getexepath ();
+
+	if (host_path)
+		// quote + string + quote
+		total_size += strlen (host_path) + 2;
+
+	for (int i = 0; i < argc; ++i) {
+		if (argv [i]) {
+			if (total_size > 0) {
+				// add space
+				total_size++;
+			}
+			// quote + string + quote
+			total_size += strlen (argv [i]) + 2;
+		}
+	}
+
+	// String will grow if needed, so not over allocating
+	// to handle case of escaped characters in arguments, if
+	// that happens string will automatically grow.
+	cmd_line = g_string_sized_new (total_size + 1);
+
+	if (cmd_line) {
+		if (host_path)
+			cmd_line = quote_escape_and_append_string (host_path, cmd_line);
+
+		for (int i = 0; i < argc; ++i) {
+			if (argv [i]) {
+				if (cmd_line->len > 0) {
+					// add space
+					cmd_line = g_string_append_c (cmd_line, ' ');
+				}
+				cmd_line = quote_escape_and_append_string (argv [i], cmd_line);
+			}
+		}
+	}
+
+	// minipal_getexepath doesn't use Mono APIs to allocate strings so we can't use g_free
+	free (host_path);
+
+	return cmd_line;
+}
+
+char *
+mono_runtime_get_managed_cmd_line (void)
+{
+	MONO_REQ_GC_NEUTRAL_MODE;
+
+	if (num_main_args == 0)
+		return NULL;
+
+	GString *cmd_line = format_cmd_line (num_main_args, main_args);
+	return cmd_line ? g_string_free (cmd_line, FALSE) : NULL;
 }
 
 #if NEVER_DEFINED

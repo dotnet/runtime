@@ -1124,9 +1124,6 @@ ep_rt_mono_rand_try_get_bytes (
 	uint8_t *buffer,
 	size_t buffer_size);
 
-char *
-ep_rt_mono_get_cmd_line (bool add_host);
-
 ep_rt_file_handle_t
 ep_rt_mono_file_open_write(const ep_char8_t *path);
 
@@ -2086,104 +2083,10 @@ ep_rt_mono_rand_try_get_bytes (
 	return mono_rand_try_get_bytes (&_ep_rt_mono_rand_provider, (guchar *)buffer, (gssize)buffer_size, error);
 }
 
-static
-GString *
-quote_escape_and_append_string (
-	char *src_str,
-	GString *target_str)
-{
-#ifdef HOST_WIN32
-	char quote_char = '\"';
-	char escape_chars [] = "\"\\";
-#else
-	char quote_char = '\'';
-	char escape_chars [] = "\'\\";
-#endif
-
-	bool need_quote = false;
-	bool need_escape = false;
-
-	for (char *pos = src_str; *pos; ++pos) {
-		if (isspace (*pos))
-			need_quote = true;
-		if (strchr (escape_chars, *pos))
-			need_escape = true;
-	}
-
-	if (need_quote)
-		target_str = g_string_append_c (target_str, quote_char);
-
-	if (need_escape) {
-		for (char *pos = src_str; *pos; ++pos) {
-			if (strchr (escape_chars, *pos))
-				target_str = g_string_append_c (target_str, '\\');
-			target_str = g_string_append_c (target_str, *pos);
-		}
-	} else {
-		target_str = g_string_append (target_str, src_str);
-	}
-
-	if (need_quote)
-		target_str = g_string_append_c (target_str, quote_char);
-
-	return target_str;
-}
-
 char *
 ep_rt_mono_get_managed_cmd_line ()
 {
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	int argc = mono_runtime_get_main_args_argc_raw ();
-	if (argc == 0)
-		return NULL;
-
-	// managed cmdline -> native host + managed argv (which includes the entrypoint assembly)
-	size_t total_size = 0;
-	char *host_path = NULL;
-	char **argv = mono_runtime_get_main_args_argv_raw ();
-	GString *cmd_line = NULL;
-
-	host_path = minipal_getexepath ();
-
-	if (host_path)
-		// quote + string + quote
-		total_size += strlen (host_path) + 2;
-
-	for (int i = 0; i < argc; ++i) {
-		if (argv [i]) {
-			if (total_size > 0) {
-				// add space
-				total_size++;
-			}
-			// quote + string + quote
-			total_size += strlen (argv [i]) + 2;
-		}
-	}
-
-	// String will grow if needed, so not over allocating
-	// to handle case of escaped characters in arguments, if
-	// that happens string will automatically grow.
-	cmd_line = g_string_sized_new (total_size + 1);
-
-	if (cmd_line) {
-		if (host_path)
-			cmd_line = quote_escape_and_append_string (host_path, cmd_line);
-
-		for (int i = 0; i < argc; ++i) {
-			if (argv [i]) {
-				if (cmd_line->len > 0) {
-					// add space
-					cmd_line = g_string_append_c (cmd_line, ' ');
-				}
-				cmd_line = quote_escape_and_append_string (argv [i], cmd_line);
-			}
-		}
-	}
-
-	free (host_path);
-
-	return cmd_line ? g_string_free (cmd_line, FALSE) : NULL;
+	return mono_runtime_get_managed_cmd_line ();
 }
 
 char *

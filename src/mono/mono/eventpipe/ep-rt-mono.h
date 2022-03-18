@@ -1385,7 +1385,7 @@ ep_rt_file_open_write (const ep_char8_t *path)
 {
 	ep_rt_file_handle_t res = ep_rt_mono_file_open_write (path);
 
-	return (res != INVALID_HANDLE_VALUE) ? res : INVALID_HANDLE_VALUE;
+	return (res != INVALID_HANDLE_VALUE) ? res : NULL;
 }
 
 static
