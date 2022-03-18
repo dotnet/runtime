@@ -94,12 +94,12 @@ namespace Microsoft.Extensions.Logging.EventSource
                 if (exception != null)
                 {
                     ExceptionInfo exceptionInfo = GetExceptionInfo(exception);
-                    KeyValuePair<string, string?>[] exceptionInfoData = new KeyValuePair<string, string?>[]
+                    KeyValuePair<string, string?>[] exceptionInfoData = new[]
                     {
-                        new("TypeName", exceptionInfo.TypeName),
-                        new("Message", exceptionInfo.Message),
-                        new("HResult", exceptionInfo.HResult.ToString()),
-                        new("VerboseMessage", exceptionInfo.VerboseMessage),
+                        new KeyValuePair<string, string?>("TypeName", exceptionInfo.TypeName),
+                        new KeyValuePair<string, string?>("Message", exceptionInfo.Message),
+                        new KeyValuePair<string, string?>("HResult", exceptionInfo.HResult.ToString()),
+                        new KeyValuePair<string, string?>("VerboseMessage", exceptionInfo.VerboseMessage),
                     };
                     exceptionJson = ToJson(exceptionInfoData);
                 }
