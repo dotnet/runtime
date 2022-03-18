@@ -12,6 +12,11 @@ namespace Microsoft.Interop
 {
     public static class MarshallingGeneratorExtensions
     {
+        /// <summary>
+        /// Gets the return type for the unmanaged signature that represents the provided <paramref name="info"/>.
+        /// </summary>
+        /// <param name="generator">The marshalling generator for this <paramref name="info"/></param>
+        /// <param name="info">Object to marshal</param>
         public static TypeSyntax AsReturnType(this IMarshallingGenerator generator, TypePositionInfo info)
         {
             return generator.GetNativeSignatureBehavior(info) switch
@@ -42,6 +47,11 @@ namespace Microsoft.Interop
             return AttributeList(SingletonSeparatedList(marshalAsAttribute));
         }
 
+        /// <summary>
+        /// Gets a parameter for the unmanaged signature that represents the provided <paramref name="info"/>.
+        /// </summary>
+        /// <param name="generator">The marshalling generator for this <paramref name="info"/></param>
+        /// <param name="info">Object to marshal</param>
         public static ParameterSyntax AsParameter(this IMarshallingGenerator generator, TypePositionInfo info)
         {
             SignatureBehavior behavior = generator.GetNativeSignatureBehavior(info);
@@ -178,6 +188,12 @@ namespace Microsoft.Interop
             return false;
         }
 
+        /// <summary>
+        /// Gets an argument expression for the unmanaged signature that can be used to pass a value of the provided <paramref name="info" /> in the specified <paramref name="context" />.
+        /// </summary>
+        /// <param name="generator">The marshalling generator for this <paramref name="info"/></param>
+        /// <param name="info">Object to marshal</param>
+        /// <param name="context">Marshalling context</param>
         public static ArgumentSyntax AsArgument(this IMarshallingGenerator generator, TypePositionInfo info, StubCodeContext context)
         {
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
