@@ -150,7 +150,7 @@
     <NugetProjectModelVersion>5.8.0</NugetProjectModelVersion>
     <NugetPackagingVersion>5.8.0</NugetPackagingVersion>
     <!-- Testing -->
-    <MicrosoftNETCoreCoreDisToolsVersion>1.0.1-prerelease-00006</MicrosoftNETCoreCoreDisToolsVersion>
+    <MicrosoftNETCoreCoreDisToolsVersion>1.1.0</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>16.9.0-preview-20201201-01</MicrosoftNETTestSdkVersion>
     <MicrosoftDotNetXHarnessTestRunnersCommonVersion>1.0.0-prerelease.22164.2</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
     <MicrosoftDotNetXHarnessTestRunnersXunitVersion>1.0.0-prerelease.22164.2</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
