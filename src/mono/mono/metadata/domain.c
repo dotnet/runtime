@@ -69,8 +69,6 @@
 static MonoImage *exe_image;
 static MonoDomain *mono_root_domain;
 
-gboolean mono_dont_free_domains;
-
 /* AppConfigInfo: Information about runtime versions supported by an
  * aplication.
  */
