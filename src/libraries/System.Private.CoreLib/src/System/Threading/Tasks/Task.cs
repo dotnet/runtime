@@ -2637,16 +2637,7 @@ namespace System.Threading.Tasks
         /// infinite time-out -or- timeout is greater than
         /// <see cref="int.MaxValue"/>.
         /// </exception>
-        public bool Wait(TimeSpan timeout)
-        {
-            long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.timeout);
-            }
-
-            return Wait((int)totalMilliseconds, default);
-        }
+        public bool Wait(TimeSpan timeout) => Wait(timeout, default);
 
         /// <summary>
         /// Waits for the <see cref="Task"/> to complete execution.
