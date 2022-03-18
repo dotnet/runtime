@@ -43,23 +43,30 @@ namespace Mono.Linker
 			// (if they're different). This is to correctly handle compiler generated code
 			// which needs to use suppressions from both the compiler generated scope
 			// as well as the original user defined method.
-			ICustomAttributeProvider? suppressionContextMember = warningOrigin.SuppressionContextMember;
-
-			if (IsSuppressed (id, suppressionContextMember, out info))
-				return true;
+			info = default;
 
 			ICustomAttributeProvider? provider = warningOrigin.Provider;
-			if (suppressionContextMember != provider && IsSuppressed (id, provider, out info))
+			if (provider == null)
+				return false;
+
+			if (IsSuppressed (id, provider, out info))
 				return true;
 
-			return false;
+			if (provider is not IMemberDefinition member)
+				return false;
+
+			MethodDefinition? userDefinedMethod = _context.CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember (member);
+			if (userDefinedMethod == null)
+				return false;
+
+			Debug.Assert (userDefinedMethod != provider);
+
+			return IsSuppressed (id, userDefinedMethod, out info);
 		}
 
-		bool IsSuppressed (int id, ICustomAttributeProvider? warningOrigin, out SuppressMessageInfo info)
+		bool IsSuppressed (int id, ICustomAttributeProvider warningOrigin, out SuppressMessageInfo info)
 		{
 			info = default;
-			if (warningOrigin == null)
-				return false;
 
 			if (warningOrigin is IMemberDefinition warningOriginMember) {
 				while (warningOriginMember != null) {

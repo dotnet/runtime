@@ -20,7 +20,6 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		readonly LinkContext _context;
 		readonly Stack<Scope> _scopeStack;
 
 		readonly struct LocalScope : IDisposable
@@ -33,15 +32,7 @@ namespace Mono.Linker.Steps
 				_origin = origin;
 				_scopeStack = scopeStack;
 
-				// Compiler generated methods and types should "inherit" suppression context
-				// from the user defined method from which the compiler generated them.
-				// Detecting which method produced which piece of compiler generated code
-				// is currently not possible in all cases, but in cases where it works
-				// we will store the suppression context in the SuppressionContextMember.
-				// For code which is not compiler generated the suppression context
-				// is the same as the message's origin member.
-				IMemberDefinition? suppressionContextMember = _scopeStack.GetSuppressionContext (origin.Provider);
-				_scopeStack.Push (new Scope (new MessageOrigin (origin, suppressionContextMember)));
+				_scopeStack.Push (new Scope (new MessageOrigin (origin)));
 			}
 
 			public LocalScope (in Scope scope, MarkScopeStack scopeStack)
@@ -82,9 +73,8 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		public MarkScopeStack (LinkContext context)
+		public MarkScopeStack ()
 		{
-			_context = context;
 			_scopeStack = new Stack<Scope> ();
 		}
 
@@ -118,7 +108,7 @@ namespace Mono.Linker.Steps
 			if (scope.Origin.Provider is not MethodDefinition)
 				throw new InternalErrorException ($"Trying to update instruction offset of scope stack which is not a method. Current stack scope is '{scope}'.");
 
-			_scopeStack.Push (new Scope (new MessageOrigin (scope.Origin.Provider, offset, scope.Origin.SuppressionContextMember)));
+			_scopeStack.Push (new Scope (new MessageOrigin (scope.Origin.Provider, offset)));
 		}
 
 		void Push (in Scope scope)
@@ -137,11 +127,5 @@ namespace Mono.Linker.Steps
 		[Conditional ("DEBUG")]
 		public void AssertIsEmpty () => Debug.Assert (_scopeStack.Count == 0);
 
-		IMemberDefinition? GetSuppressionContext (ICustomAttributeProvider? provider)
-		{
-			if (provider is not IMemberDefinition sourceMember)
-				return null;
-			return _context.CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember (sourceMember) ?? sourceMember;
-		}
 	}
 }
