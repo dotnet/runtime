@@ -13,7 +13,6 @@ namespace System.Text.Json.Reflection
     {
         private readonly IPropertySymbol _property;
         private MetadataLoadContextInternal _metadataLoadContext;
-        private bool _needsAtSign;
 
         public PropertyInfoWrapper(IPropertySymbol property, MetadataLoadContextInternal metadataLoadContext)
         {
@@ -25,7 +24,7 @@ namespace System.Text.Json.Reflection
                 PropertyDeclarationSyntax paramSyntax = _property.DeclaringSyntaxReferences[0].GetSyntax() as PropertyDeclarationSyntax;
                 if (paramSyntax != null && !string.IsNullOrEmpty(paramSyntax.Identifier.Text))
                 {
-                    _needsAtSign = paramSyntax.Identifier.Text[0] == '@';
+                    NeedsAtSign = paramSyntax.Identifier.Text[0] == '@';
                 }
             }
         }
@@ -42,7 +41,7 @@ namespace System.Text.Json.Reflection
 
         public override string Name => _property.Name;
 
-        public bool NeedsAtSign => _needsAtSign;
+        public bool NeedsAtSign { get; }
 
         public override Type ReflectedType => throw new NotImplementedException();
 
