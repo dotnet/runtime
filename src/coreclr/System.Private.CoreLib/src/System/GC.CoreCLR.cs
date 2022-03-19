@@ -16,7 +16,6 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace System
 {
@@ -356,6 +355,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern long GetAllocatedBytesForCurrentThread();
+
 
         /// <summary>
         /// Get a count of the bytes allocated over the lifetime of the process.

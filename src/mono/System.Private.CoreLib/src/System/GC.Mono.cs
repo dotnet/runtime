@@ -4,7 +4,6 @@
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Diagnostics.Tracing;
-using System.Threading;
 
 namespace System
 {
