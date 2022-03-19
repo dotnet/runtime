@@ -354,31 +354,40 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             public int Hits;
             public int Misses;
-            private MemoryCache _memoryCache;
+            private readonly MemoryCache _memoryCache;
             public Stats(MemoryCache memoryCache, bool skipAdd = false)
             {
                 _memoryCache = memoryCache;
                 if (!skipAdd)
-                    _memoryCache._allStats.Add(new WeakReference<Stats>(this));
+                    _memoryCache.AddToStats(this);
             }
             ~Stats()
             {
-                var allStats = _memoryCache._allStats;
-                lock (allStats)
-                {
-                    for (int i = 0; i < allStats.Count; i++)
-                    {
-                        if (allStats[i] is WeakReference<Stats> wr && wr.TryGetTarget(out Stats? stats) && stats == this)
-                        {
-                            allStats[i] = null;
-                            break;
-                        }
-                    }
-                    allStats.RemoveAll(s => s is null);
-                    _memoryCache._accumulatedStats.Hits += Hits;
-                    _memoryCache._accumulatedStats.Misses += Misses;
-                }
+                _memoryCache.RemoveFromStats(this);
             }
+        }
+
+        private void RemoveFromStats(Stats current)
+        {
+            lock (_allStats)
+            {
+                for (int i = 0; i < _allStats.Count; i++)
+                {
+                    if (_allStats[i] is WeakReference<Stats> wr && wr.TryGetTarget(out Stats? stats) && stats == current)
+                    {
+                        _allStats[i] = null;
+                        break;
+                    }
+                }
+                _allStats.RemoveAll(s => s is null);
+                _accumulatedStats.Hits += current.Hits;
+                _accumulatedStats.Misses += current.Misses;
+            }
+        }
+
+        private void AddToStats(Stats current)
+        {
+            _allStats.Add(new WeakReference<Stats>(current));
         }
 
         private static void ScanForExpiredItems(MemoryCache cache)
@@ -555,7 +564,7 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 if (disposing)
                 {
-                    _stats?.Dispose();
+                    _stats.Dispose();
                     GC.SuppressFinalize(this);
                 }
 
