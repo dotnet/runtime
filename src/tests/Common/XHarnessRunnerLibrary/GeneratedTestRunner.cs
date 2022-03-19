@@ -14,11 +14,17 @@ public sealed class GeneratedTestRunner : TestRunner
     string _assemblyName;
     TestFilter.ISearchClause? _filter;
     Func<TestFilter?, TestSummary> _runTestsCallback;
-    public GeneratedTestRunner(LogWriter logger, Func<TestFilter?, TestSummary> runTestsCallback, string assemblyName)
+    HashSet<string> _testExclusionList;
+    public GeneratedTestRunner(
+        LogWriter logger, 
+        Func<TestFilter?, TestSummary> runTestsCallback, 
+        string assemblyName,
+        HashSet<string> testExclusionList)
         :base(logger)
     {
         _assemblyName = assemblyName;
         _runTestsCallback = runTestsCallback;
+        _testExclusionList = testExclusionList;
         ResultsFileName = $"{_assemblyName}.testResults.xml";
     }
 
@@ -28,7 +34,7 @@ public sealed class GeneratedTestRunner : TestRunner
 
     public override Task Run(IEnumerable<TestAssemblyInfo> testAssemblies)
     {
-        LastTestRun = _runTestsCallback(_filter is not null ? new TestFilter(_filter) : null);
+        LastTestRun = _runTestsCallback(new TestFilter(_filter, _testExclusionList));
         PassedTests = LastTestRun.PassedTests;
         FailedTests = LastTestRun.FailedTests;
         SkippedTests = LastTestRun.SkippedTests;

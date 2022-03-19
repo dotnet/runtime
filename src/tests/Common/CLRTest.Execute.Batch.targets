@@ -301,6 +301,8 @@ COPY /y %CORE_ROOT%\CoreShim.dll .
 $(BatchLinkerTestLaunchCmds)
 $(BatchCopyCoreShimLocalCmds)
 
+set TestExclusionListPath=%CORE_ROOT%\TestExclusionList.txt
+
 IF NOT "%CLRCustomTestLauncher%"=="" (
   set LAUNCHER=call %CLRCustomTestLauncher% %scriptPath%
 ) ELSE (
