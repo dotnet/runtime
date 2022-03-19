@@ -438,7 +438,7 @@ namespace Microsoft.Extensions.Options.Tests
                     cache);
         }
 
-        private class DerivedOptionsCache : OptionsCache<FakeOptions>
+        private sealed class DerivedOptionsCache : OptionsCache<FakeOptions>
         {
             public int GetOrAddCalls { get; private set; }
 
@@ -449,7 +449,7 @@ namespace Microsoft.Extensions.Options.Tests
             }
         }
 
-        private class ImplementedOptionsCache : IOptionsMonitorCache<FakeOptions>
+        private sealed class ImplementedOptionsCache : IOptionsMonitorCache<FakeOptions>
         {
             public int GetOrAddCalls { get; private set; }
 

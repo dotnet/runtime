@@ -38,6 +38,7 @@ namespace Microsoft.Extensions.Options
 #else
             if (!_cache.TryGetValue(name, out value))
             {
+                // copying captured variables to locals avoids allocating a closure if we don't enter the if
                 Func<TOptions> localCreateOptions = createOptions;
                 value = _cache.GetOrAdd(name, new Lazy<TOptions>(localCreateOptions));
             }
@@ -51,6 +52,7 @@ namespace Microsoft.Extensions.Options
             // For compatibility, fall back to public GetOrAdd() if we're in a derived class.
             if (GetType() != typeof(OptionsCache<TOptions>))
             {
+                // copying captured variables to locals avoids allocating a closure if we don't enter the if
                 string? localName = name;
                 Func<string, TArg, TOptions> localCreateOptions = createOptions;
                 TArg localFactoryArgument = factoryArgument;
@@ -65,6 +67,7 @@ namespace Microsoft.Extensions.Options
 #else
             if (!_cache.TryGetValue(name, out value))
             {
+                // copying captured variables to locals avoids allocating a closure if we don't enter the if
                 string? localName = name;
                 Func<string, TArg, TOptions> localCreateOptions = createOptions;
                 TArg localFactoryArgument = factoryArgument;
