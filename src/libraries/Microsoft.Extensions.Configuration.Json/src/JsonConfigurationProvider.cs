@@ -13,6 +13,8 @@ namespace Microsoft.Extensions.Configuration.Json
     /// </summary>
     public class JsonConfigurationProvider : FileConfigurationProvider
     {
+        private static string _keyDelimiter = "`";
+
         /// <summary>
         /// Initializes a new instance with the specified source.
         /// </summary>
@@ -34,5 +36,45 @@ namespace Microsoft.Extensions.Configuration.Json
                 throw new FormatException(SR.Error_JSONParseError, e);
             }
         }
+
+        public override IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string? parentPath)
+        {
+            var results = new List<string>();
+
+            if (parentPath is null)
+            {
+                foreach (KeyValuePair<string, string?> kv in Data)
+                {
+                    results.Add(Segment(kv.Key, 0));
+                }
+            }
+            else
+            {
+                // Debug.Assert(ConfigurationPath.KeyDelimiter == ":");
+
+                foreach (KeyValuePair<string, string?> kv in Data)
+                {
+                    if (kv.Key.Length > parentPath.Length &&
+                        kv.Key.StartsWith(parentPath, StringComparison.OrdinalIgnoreCase) &&
+                        kv.Key[parentPath.Length] == '`')
+                    {
+                        results.Add(Segment(kv.Key, parentPath.Length + 1));
+                    }
+                }
+            }
+
+            results.AddRange(earlierKeys);
+
+            results.Sort(Microsoft.Extensions.Configuration.ConfigurationKeyComparer.Instance.Compare);
+
+            return results;
+        }
+
+        private static string Segment(string key, int prefixLength)
+        {
+            int indexOf = key.IndexOf(_keyDelimiter, prefixLength, StringComparison.OrdinalIgnoreCase);
+            return indexOf < 0 ? key.Substring(prefixLength) : key.Substring(prefixLength, indexOf - prefixLength);
+        }
+
     }
 }

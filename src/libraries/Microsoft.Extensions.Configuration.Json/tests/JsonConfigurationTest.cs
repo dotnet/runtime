@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using Microsoft.Extensions.Configuration.Json;
@@ -36,6 +37,27 @@ namespace Microsoft.Extensions.Configuration
             Assert.Equal("last.name", config["test.last.name"]);
             Assert.Equal("Something street", config["residential.address:STREET.name"]);
             Assert.Equal("12345", config["residential.address:zipcode"]);
+        }
+
+        public class MyClass
+        {
+            public Dictionary<string, OtherType> Auths { get; set; }
+        }
+
+        public class OtherType
+        {
+            public string Uri { get; set; }
+        }
+
+
+        [Fact]
+        public void CanHaveColonsInKey()
+        {
+            var config = new ConfigurationBuilder()
+                 .AddJsonFile("json_with_colons_in_keys.json", optional: false, reloadOnChange: true).Build();
+            var settings = new MyClass();
+            config.Bind(settings);
+            Assert.Equal("https://www.google.es", settings.Auths["google"].Uri);
         }
 
         [Fact]

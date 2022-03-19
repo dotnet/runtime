@@ -15,6 +15,7 @@ namespace Microsoft.Extensions.Configuration.Json
 
         private readonly Dictionary<string, string?> _data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         private readonly Stack<string> _paths = new Stack<string>();
+        private string _keyDelimiter = "`";// ConfigurationPath.KeyDelimiter;
 
         public static IDictionary<string, string?> Parse(Stream input)
             => new JsonConfigurationFileParser().ParseStream(input);
@@ -99,7 +100,7 @@ namespace Microsoft.Extensions.Configuration.Json
 
         private void EnterContext(string context) =>
             _paths.Push(_paths.Count > 0 ?
-                _paths.Peek() + ConfigurationPath.KeyDelimiter + context :
+                _paths.Peek() + _keyDelimiter + context :
                 context);
 
         private void ExitContext() => _paths.Pop();

@@ -1,0 +1,10 @@
+{
+    "auths": {
+        "http://google": {
+            "uri": "https://www.google.es"
+        },
+        "http://microsoft": {
+            "uri": "https://www.microsoft.es"
+        }
+    }
+}
