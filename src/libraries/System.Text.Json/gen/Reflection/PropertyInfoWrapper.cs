@@ -43,18 +43,14 @@ namespace System.Text.Json.Reflection
             {
                 if (_property.DeclaringSyntaxReferences.Length == 1)
                 {
-                    var s = _property.DeclaringSyntaxReferences[0].GetSyntax();
-
-                    var location = s?.GetLocation();
+                    var location = _property.DeclaringSyntaxReferences[0].GetSyntax()?.GetLocation();
 
                     if (location != null && location != Location.None)
                     {
                         var node = location.SourceTree?.GetRoot()?.FindNode(location.SourceSpan) as PropertyDeclarationSyntax;
-                        if(node != null)
+                        if (node != null)
                         {
-
-                        var text = node.Identifier.Text;
-                        return text;
+                            return node.Identifier.Text;
                         }
                     }
                 }
