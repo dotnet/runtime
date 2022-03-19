@@ -255,12 +255,6 @@
   <data name="ArgumentOutOfRange_Bounds_Lower_Upper_Named" xml:space="preserve">
     <value>Argument '{2}' must be between {0} and {1}.</value>
   </data>
-  <data name="ArgumentOutOfRange_NeedNonNegOrNegative1" xml:space="preserve">
-    <value>Number must be either non-negative and less than or equal to Int32.MaxValue or -1.</value>
-  </data>
-  <data name="ArgumentOutOfRange_LessEqualToIntegerMaxVal" xml:space="preserve">
-    <value>Argument must be less than or equal to 2^31 - 1 milliseconds.</value>
-  </data>
   <data name="net_sockets_connect_multiconnect_notsupported" xml:space="preserve">
     <value>Sockets on this platform are invalid for use after a failed connection attempt.</value>
   </data>

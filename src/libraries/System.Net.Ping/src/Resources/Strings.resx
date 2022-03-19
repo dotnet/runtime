@@ -90,10 +90,4 @@
   <data name="net_ping_utility_custom_payload" xml:space="preserve">
     <value>Unable to send custom ping payload. Run program under privileged user account or grant cap_net_raw capability using setcap(8).</value>
   </data>
-  <data name="ArgumentOutOfRange_NeedNonNegOrNegative1" xml:space="preserve">
-    <value>Number must be either non-negative and less than or equal to Int32.MaxValue or -1.</value>
-  </data>
-  <data name="ArgumentOutOfRange_LessEqualToIntegerMaxVal" xml:space="preserve">
-    <value>Argument must be less than or equal to 2^31 - 1 milliseconds.</value>
-  </data>
 </root>

@@ -341,17 +341,12 @@ namespace System.Net.Sockets
 
         private static int ToTimeoutSeconds(TimeSpan timeout)
         {
-            long timeoutSeconds = (long)timeout.TotalSeconds;
-            if (timeoutSeconds < -1)
+            long totalSeconds = (long)timeout.TotalSeconds;
+            if (totalSeconds < -1 || totalSeconds > int.MaxValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             }
-
-            if (timeoutSeconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
-            }
-            return (int)timeoutSeconds;
+            return (int)totalSeconds;
         }
 
         protected override void Dispose(bool disposing)

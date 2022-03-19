@@ -200,17 +200,12 @@ namespace System.IO.Pipes
 
         private static int ToTimeoutMilliseconds(TimeSpan timeout)
         {
-            long timeoutMilliseconds = (long)timeout.TotalMilliseconds;
-            if (timeoutMilliseconds < -1)
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             }
-
-            if (timeoutMilliseconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
-            }
-            return (int)timeoutMilliseconds;
+            return (int)totalMilliseconds;
         }
 
         // override because named pipe clients can't get/set properties when waiting to connect

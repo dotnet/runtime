@@ -2178,18 +2178,12 @@ namespace System.Net.Sockets
 
         private static int ToTimeoutMicroseconds(TimeSpan timeout)
         {
-            long timeoutMicroseconds = (long)timeout.TotalMilliseconds * 1000;
-            if (timeoutMicroseconds < -1)
+            long totalMicroseconds = (long)timeout.TotalMilliseconds * 1000;
+            if (totalMicroseconds < -1 || totalMicroseconds > int.MaxValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             }
-
-            if (timeoutMicroseconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
-            }
-
-            return (int)timeoutMicroseconds;
+            return (int)totalMicroseconds;
         }
 
         public IAsyncResult BeginConnect(EndPoint remoteEP, AsyncCallback? callback, object? state) =>

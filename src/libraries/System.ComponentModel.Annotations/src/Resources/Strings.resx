@@ -216,10 +216,4 @@
   <data name="Validator_Property_Value_Wrong_Type" xml:space="preserve">
     <value>The value for property '{0}' must be of type '{1}'.</value>
   </data>
-  <data name="ArgumentOutOfRange_NeedNonNegOrNegative1" xml:space="preserve">
-    <value>Number must either be -1, or 0 through Int32.MaxValue inclusive.</value>
-  </data>
-  <data name="ArgumentOutOfRange_LessEqualToIntegerMaxVal" xml:space="preserve">
-    <value>Argument must be less than or equal to 2^31 - 1 milliseconds.</value>
-  </data>
 </root>
