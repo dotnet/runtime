@@ -749,6 +749,7 @@ jobs:
     buildConfig: Release
     platforms:
     - Linux_arm
+    - Linux_arm64
     - Linux_musl_arm
     - Linux_musl_arm64
     - windows_arm
