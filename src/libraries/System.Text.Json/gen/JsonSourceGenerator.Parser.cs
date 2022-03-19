@@ -1212,13 +1212,18 @@ namespace System.Text.Json.SourceGeneration
                     out bool setterIsVirtual,
                     out bool setterIsInitOnly);
 
+                var propInfoWrapper = memberInfo as PropertyInfoWrapper;
+
+                //todo: need the 'ClrName' as that now includes the '@' - but it causes compilation errors
+
                 string clrName = memberInfo.Name;
                 string runtimePropertyName = DetermineRuntimePropName(clrName, jsonPropertyName, _currentContextNamingPolicy);
                 string propertyNameVarName = DeterminePropNameIdentifier(runtimePropertyName);
 
                 return new PropertyGenerationSpec
                 {
-                    ClrName = clrName,
+                    ExactNameSpecifiedInSourceCode = propInfoWrapper?.ExactNameSpecifiedInSourceCode ?? memberInfo.Name,
+                    ClrName = memberInfo.Name,
                     IsProperty = memberInfo.MemberType == MemberTypes.Property,
                     IsPublic = isPublic,
                     IsVirtual = isVirtual,
