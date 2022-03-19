@@ -200,7 +200,6 @@
     <!-- Out of memory https://github.com/dotnet/runtime/issues/66831 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography\tests\System.Security.Cryptography.Tests.csproj" />
   </ItemGroup>
-  
 
   <ItemGroup Condition="'$(TargetOS)' == 'iOS' and '$(RunDisablediOSTests)' != 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
