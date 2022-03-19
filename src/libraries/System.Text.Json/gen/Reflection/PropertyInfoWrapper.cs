@@ -13,11 +13,21 @@ namespace System.Text.Json.Reflection
     {
         private readonly IPropertySymbol _property;
         private MetadataLoadContextInternal _metadataLoadContext;
+        private bool _needsAtSign;
 
         public PropertyInfoWrapper(IPropertySymbol property, MetadataLoadContextInternal metadataLoadContext)
         {
             _property = property;
             _metadataLoadContext = metadataLoadContext;
+
+            if (_property.DeclaringSyntaxReferences.Length > 0)
+            {
+                PropertyDeclarationSyntax paramSyntax = _property.DeclaringSyntaxReferences[0].GetSyntax() as PropertyDeclarationSyntax;
+                if (paramSyntax != null && !string.IsNullOrEmpty(paramSyntax.Identifier.Text))
+                {
+                    _needsAtSign = paramSyntax.Identifier.Text[0] == '@';
+                }
+            }
         }
 
         public override PropertyAttributes Attributes => throw new NotImplementedException();
@@ -32,32 +42,7 @@ namespace System.Text.Json.Reflection
 
         public override string Name => _property.Name;
 
-        /// <summary>
-        /// The exact name specified in the source code. This might be different
-        /// from the <see cref="ClrName"/> because source code might be decorated
-        /// with '@' for reserved keywords, e.g. public string @event { get; set; }
-        /// </summary>
-        public string ExactNameSpecifiedInSourceCode
-        {
-            get
-            {
-                if (_property.DeclaringSyntaxReferences.Length == 1)
-                {
-                    var location = _property.DeclaringSyntaxReferences[0].GetSyntax()?.GetLocation();
-
-                    if (location != null && location != Location.None)
-                    {
-                        var node = location.SourceTree?.GetRoot()?.FindNode(location.SourceSpan) as PropertyDeclarationSyntax;
-                        if (node != null)
-                        {
-                            return node.Identifier.Text;
-                        }
-                    }
-                }
-
-                return _property.Name;
-            }
-        }
+        public bool NeedsAtSign => _needsAtSign;
 
         public override Type ReflectedType => throw new NotImplementedException();
 
