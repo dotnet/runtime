@@ -82,6 +82,9 @@
 /* Host Platform is Darwin */
 #cmakedefine HOST_DARWIN 1
 
+/* Host Platform is OSX or Mac Catalyst */
+#cmakedefine HOST_OSX 1
+
 /* Host Platform is iOS */
 #cmakedefine HOST_IOS 1
 
@@ -153,9 +156,6 @@
 
 /* Define to 1 if you have the <sys/sysctl.h> header file. */
 #cmakedefine HAVE_SYS_SYSCTL_H 1
-
-/* Define to 1 if you have the <libproc.h> header file. */
-#cmakedefine HAVE_LIBPROC_H 1
 
 /* Define to 1 if you have the <sys/prctl.h> header file. */
 #cmakedefine HAVE_SYS_PRCTL_H 1
@@ -398,9 +398,6 @@
 
 /* Define to 1 if you have the `getpwuid_r' function. */
 #cmakedefine HAVE_GETPWUID_R 1
-
-/* Define to 1 if you have the `readlink' function. */
-#cmakedefine HAVE_READLINK 1
 
 /* Define to 1 if you have the `chmod' function. */
 #cmakedefine HAVE_CHMOD 1
@@ -819,7 +816,7 @@
 /* The JIT/AOT targets Mac Catalyst */
 #cmakedefine TARGET_MACCAT 1
 
-/* The JIT/AOT targets OSX */
+/* The JIT/AOT targets OSX or Mac Catalyst */
 #cmakedefine TARGET_OSX 1
 
 /* The JIT/AOT targets Apple platforms */

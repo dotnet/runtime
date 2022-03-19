@@ -16,6 +16,7 @@
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Diagnostics.Process" />
     <Reference Include="System.Diagnostics.TraceSource" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />

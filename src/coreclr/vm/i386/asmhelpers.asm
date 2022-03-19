@@ -804,27 +804,6 @@ _NDirectImportThunk@0 proc public
         jmp     eax     ; Jump to DLL target
 _NDirectImportThunk@0 endp
 
-;==========================================================================
-; The call in fixup precode initally points to this function.
-; The pupose of this function is to load the MethodDesc and forward the call the prestub.
-_PrecodeFixupThunk@0 proc public
-
-        pop     eax         ; Pop the return address. It points right after the call instruction in the precode.
-        push    esi
-        push    edi
-
-        ; Inline computation done by FixupPrecode::GetMethodDesc()
-        movzx   esi,byte ptr [eax+2]    ; m_PrecodeChunkIndex
-        movzx   edi,byte ptr [eax+1]    ; m_MethodDescChunkIndex
-        mov     eax,dword ptr [eax+esi*8+3]
-        lea     eax,[eax+edi*4]
-
-        pop     edi
-        pop     esi
-        jmp     _ThePreStub@0
-
-_PrecodeFixupThunk@0 endp
-
 ; void __stdcall setFPReturn(int fpSize, INT64 retVal)
 _setFPReturn@12 proc public
     mov     ecx, [esp+4]
@@ -1525,12 +1504,6 @@ ifdef FEATURE_TIERED_COMPILATION
 EXTERN _OnCallCountThresholdReached@8:proc
 
 _OnCallCountThresholdReachedStub@0 proc public
-    ; Pop the return address (the stub-identifying token) into a non-argument volatile register that can be trashed
-    pop     eax
-    jmp     _OnCallCountThresholdReachedStub2@0
-_OnCallCountThresholdReachedStub@0 endp
-
-_OnCallCountThresholdReachedStub2@0 proc public
     STUB_PROLOG
 
     mov     esi, esp
@@ -1545,7 +1518,7 @@ _OnCallCountThresholdReachedStub2@0 proc public
     ; This will never be executed. It is just to help out stack-walking logic
     ; which disassembles the epilog to unwind the stack.
     ret
-_OnCallCountThresholdReachedStub2@0 endp
+_OnCallCountThresholdReachedStub@0 endp
 
 endif ; FEATURE_TIERED_COMPILATION
 

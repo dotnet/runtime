@@ -43,7 +43,7 @@ namespace System
     //
     [StructLayout(LayoutKind.Auto)]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly partial struct DateTime
         : IComparable,
           ISpanFormattable,
@@ -1391,12 +1391,16 @@ namespace System
 
         public static bool operator !=(DateTime d1, DateTime d2) => !(d1 == d2);
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(DateTime t1, DateTime t2) => t1.Ticks < t2.Ticks;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(DateTime t1, DateTime t2) => t1.Ticks <= t2.Ticks;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(DateTime t1, DateTime t2) => t1.Ticks > t2.Ticks;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(DateTime t1, DateTime t2) => t1.Ticks >= t2.Ticks;
 
         // Returns a string array containing all of the known date and time options for the
@@ -1506,44 +1510,15 @@ namespace System
         // IAdditionOperators
         //
 
-        static DateTime IAdditionOperators<DateTime, TimeSpan, DateTime>.operator +(DateTime left, TimeSpan right)
-            => left + right;
-
-        // static checked DateTime IAdditionOperators<DateTime, TimeSpan, DateTime>.operator +(DateTime left, TimeSpan right)
-        //     => checked(left + right);
+        // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        // static DateTime IAdditionOperators<DateTime, TimeSpan, DateTime>.operator checked +(DateTime left, TimeSpan right) => checked(left + right);
 
         //
         // IAdditiveIdentity
         //
 
-        static TimeSpan IAdditiveIdentity<DateTime, TimeSpan>.AdditiveIdentity
-            => default;
-
-        //
-        // IComparisonOperators
-        //
-
-        static bool IComparisonOperators<DateTime, DateTime>.operator <(DateTime left, DateTime right)
-            => left < right;
-
-        static bool IComparisonOperators<DateTime, DateTime>.operator <=(DateTime left, DateTime right)
-            => left <= right;
-
-        static bool IComparisonOperators<DateTime, DateTime>.operator >(DateTime left, DateTime right)
-            => left > right;
-
-        static bool IComparisonOperators<DateTime, DateTime>.operator >=(DateTime left, DateTime right)
-            => left >= right;
-
-        //
-        // IEqualityOperators
-        //
-
-        static bool IEqualityOperators<DateTime, DateTime>.operator ==(DateTime left, DateTime right)
-            => left == right;
-
-        static bool IEqualityOperators<DateTime, DateTime>.operator !=(DateTime left, DateTime right)
-            => left != right;
+        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        public static TimeSpan AdditiveIdentity => default;
 
         //
         // IMinMaxValue
@@ -1557,36 +1532,27 @@ namespace System
         // IParseable
         //
 
-        static DateTime IParseable<DateTime>.Parse(string s, IFormatProvider? provider)
-            => Parse(s, provider);
-
-        static bool IParseable<DateTime>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out DateTime result)
-            => TryParse(s, provider, DateTimeStyles.None, out result);
+        /// <inheritdoc cref="IParseable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out DateTime result) => TryParse(s, provider, DateTimeStyles.None, out result);
 
         //
         // ISpanParseable
         //
 
-        static DateTime ISpanParseable<DateTime>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s, provider, DateTimeStyles.None);
+        /// <inheritdoc cref="ISpanParseable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        public static DateTime Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, provider, DateTimeStyles.None);
 
-        static bool ISpanParseable<DateTime>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out DateTime result)
-            => TryParse(s, provider, DateTimeStyles.None, out result);
+        /// <inheritdoc cref="ISpanParseable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out DateTime result) => TryParse(s, provider, DateTimeStyles.None, out result);
 
         //
         // ISubtractionOperators
         //
 
-        static DateTime ISubtractionOperators<DateTime, TimeSpan, DateTime>.operator -(DateTime left, TimeSpan right)
-            => left - right;
+        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        // static DateTime ISubtractionOperators<DateTime, TimeSpan, DateTime>.operator checked -(DateTime left, TimeSpan right) => checked(left - right);
 
-        // static checked DateTime ISubtractionOperators<DateTime, TimeSpan, DateTime>.operator -(DateTime left, TimeSpan right)
-        //     => checked(left - right);
-
-        static TimeSpan ISubtractionOperators<DateTime, DateTime, TimeSpan>.operator -(DateTime left, DateTime right)
-            => left - right;
-
-        // static checked TimeSpan ISubtractionOperators<DateTime, DateTime, TimeSpan>.operator -(DateTime left, DateTime right)
-        //     => checked(left - right);
+        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        // static TimeSpan ISubtractionOperators<DateTime, DateTime, TimeSpan>.operator checked -(DateTime left, DateTime right) => checked(left - right);
     }
 }

@@ -119,12 +119,6 @@ inline bool TargetHasAVXSupport()
     return false;
 }
 
-
-#ifndef DACCESS_COMPILE
-// Given an address in a slot, figure out if the prestub will be called
-BOOL DoesSlotCallPrestub(PCODE pCode);
-#endif
-
 #ifdef DACCESS_COMPILE
 
 // Used by dac/strike to make sense of non-jit/non-jit-helper call targets

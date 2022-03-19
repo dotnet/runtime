@@ -21,6 +21,7 @@
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
@@ -652,6 +653,15 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 			mono_class_set_field_count (klass, field_last - first_field_idx);
 		if (cols [MONO_TYPEDEF_METHOD_LIST] <= table_info_get_rows (&image->tables [MONO_TABLE_METHOD]))
 			mono_class_set_method_count (klass, method_last - first_method_idx);
+	} else if (G_UNLIKELY (cols [MONO_TYPEDEF_FIELD_LIST] == 0 && cols [MONO_TYPEDEF_METHOD_LIST] == 0 && image->has_updates)) {
+		uint32_t first_field_idx, first_method_idx, field_count, method_count;
+		if (mono_metadata_update_get_typedef_skeleton (image, type_token, &first_method_idx, &method_count, &first_field_idx, &field_count)) {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Creating class '%s.%s' from skeleton (first_method_idx = 0x%08x, count = 0x%08x, first_field_idx = 0x%08x, count=0x%08x)", nspace, name, first_method_idx, method_count, first_field_idx, field_count);
+			mono_class_set_first_field_idx (klass, first_field_idx - 1);
+			mono_class_set_first_method_idx (klass, first_method_idx - 1);
+			mono_class_set_field_count (klass, field_count);
+			mono_class_set_method_count (klass, method_count);
+		}
 	}
 
 	/* reserve space to store vector pointer in arrays */

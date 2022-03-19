@@ -86,28 +86,20 @@ namespace System.IO.Packaging
                 ValidateCarriageReturns(contentType);
 
                 //Begin Parsing
-                int semiColonIndex = contentType.IndexOf(SemicolonSeparator);
+                int semiColonIndex = contentType.IndexOf(';');
 
                 if (semiColonIndex == -1)
                 {
                     // Parse content type similar to - type/subtype
-                    ParseTypeAndSubType(contentType);
+                    ParseTypeAndSubType(contentType.AsSpan());
                 }
                 else
                 {
                     // Parse content type similar to - type/subtype ; param1=value1 ; param2=value2 ; param3="value3"
-                    ParseTypeAndSubType(contentType.Substring(0, semiColonIndex));
-                    ParseParameterAndValue(contentType.Substring(semiColonIndex));
+                    ParseTypeAndSubType(contentType.AsSpan(0, semiColonIndex));
+                    ParseParameterAndValue(contentType.AsSpan(semiColonIndex));
                 }
             }
-
-            // keep this untouched for return from OriginalString property
-            _originalString = contentType;
-
-            //This variable is used to print out the correct content type string representation
-            //using the ToString method. This is mainly important while debugging and seeing the
-            //value of the content type object in the debugger.
-            _isInitialized = true;
         }
 
         #endregion Internal Constructors
@@ -146,14 +138,8 @@ namespace System.IO.Packaging
         /// type/subtype ; param1=value1 ; param2=value2 ; param3="value3"
         /// This will return an enumerator over a dictionary of the parameter/value pairs.
         /// </summary>
-        internal Dictionary<string, string>.Enumerator ParameterValuePairs
-        {
-            get
-            {
-                EnsureParameterDictionary();
-                return _parameterDictionary.GetEnumerator();
-            }
-        }
+        internal Dictionary<string, string>.Enumerator ParameterValuePairs =>
+            (_parameterDictionary ??= new()).GetEnumerator();
         #endregion Internal Properties
 
         #region Internal Methods
@@ -225,13 +211,7 @@ namespace System.IO.Packaging
         {
             if (_contentType == null)
             {
-                //This is needed so that while debugging we get the correct
-                //string
-                if (!_isInitialized)
-                    return string.Empty;
-
-                Debug.Assert(string.CompareOrdinal(_type, string.Empty) != 0
-                   || string.CompareOrdinal(_subType, string.Empty) != 0);
+                Debug.Assert(!string.IsNullOrEmpty(_type) || !string.IsNullOrEmpty(_subType));
 
                 StringBuilder stringBuilder = new StringBuilder(_type);
                 stringBuilder.Append(PackUriHelper.ForwardSlashChar);
@@ -242,10 +222,10 @@ namespace System.IO.Packaging
                     foreach (string parameterKey in _parameterDictionary.Keys)
                     {
                         stringBuilder.Append(s_linearWhiteSpaceChars[0]);
-                        stringBuilder.Append(SemicolonSeparator);
+                        stringBuilder.Append(';');
                         stringBuilder.Append(s_linearWhiteSpaceChars[0]);
                         stringBuilder.Append(parameterKey);
-                        stringBuilder.Append(EqualSeparator);
+                        stringBuilder.Append('=');
                         stringBuilder.Append(_parameterDictionary[parameterKey]);
                     }
                 }
@@ -284,7 +264,9 @@ namespace System.IO.Packaging
                     index = contentType.IndexOf(s_linearWhiteSpaceChars[2], ++index);
                 }
                 else
+                {
                     throw new ArgumentException(SR.InvalidLinearWhiteSpaceCharacter);
+                }
             }
         }
 
@@ -294,18 +276,20 @@ namespace System.IO.Packaging
         /// </summary>
         /// <param name="typeAndSubType">substring that has the type and subType of the content type</param>
         /// <exception cref="ArgumentException">If the typeAndSubType parameter does not have the "/" character</exception>
-        private void ParseTypeAndSubType(string typeAndSubType)
+        private void ParseTypeAndSubType(ReadOnlySpan<char> typeAndSubType)
         {
             //okay to trim at this point the end of the string as Linear White Spaces(LWS) chars are allowed here.
             typeAndSubType = typeAndSubType.TrimEnd(s_linearWhiteSpaceChars);
 
-            string[] splitBasedOnForwardSlash = typeAndSubType.Split(PackUriHelper.s_forwardSlashCharArray);
-
-            if (splitBasedOnForwardSlash.Length != 2)
+            int forwardSlashPos = typeAndSubType.IndexOf('/');
+            if (forwardSlashPos < 0 || // no slashes
+                typeAndSubType.Slice(forwardSlashPos + 1).IndexOf('/') >= 0) // more than one slash
+            {
                 throw new ArgumentException(SR.InvalidTypeSubType);
+            }
 
-            _type = ValidateToken(splitBasedOnForwardSlash[0]);
-            _subType = ValidateToken(splitBasedOnForwardSlash[1]);
+            _type = ValidateToken(typeAndSubType.Slice(0, forwardSlashPos).ToString());
+            _subType = ValidateToken(typeAndSubType.Slice(forwardSlashPos + 1).ToString());
         }
 
         /// <summary>
@@ -314,13 +298,13 @@ namespace System.IO.Packaging
         /// <param name="parameterAndValue">This string has the parameter and value pair of the form
         /// parameter=value</param>
         /// <exception cref="ArgumentException">If the string does not have the required "="</exception>
-        private void ParseParameterAndValue(string parameterAndValue)
+        private void ParseParameterAndValue(ReadOnlySpan<char> parameterAndValue)
         {
-            while (parameterAndValue != string.Empty)
+            while (!parameterAndValue.IsEmpty)
             {
                 //At this point the first character MUST be a semi-colon
                 //First time through this test is serving more as an assert.
-                if (parameterAndValue[0] != SemicolonSeparator)
+                if (parameterAndValue[0] != ';')
                     throw new ArgumentException(SR.ExpectingSemicolon);
 
                 //At this point if we have just one semicolon, then its an error.
@@ -330,13 +314,13 @@ namespace System.IO.Packaging
                     throw new ArgumentException(SR.ExpectingParameterValuePairs);
 
                 //Removing the leading ; from the string
-                parameterAndValue = parameterAndValue.Substring(1);
+                parameterAndValue = parameterAndValue.Slice(1);
 
                 //okay to trim start as there can be spaces before the beginning
                 //of the parameter name.
                 parameterAndValue = parameterAndValue.TrimStart(s_linearWhiteSpaceChars);
 
-                int equalSignIndex = parameterAndValue.IndexOf(EqualSeparator);
+                int equalSignIndex = parameterAndValue.IndexOf('=');
 
                 if (equalSignIndex <= 0 || equalSignIndex == (parameterAndValue.Length - 1))
                     throw new ArgumentException(SR.InvalidParameterValuePair);
@@ -346,13 +330,11 @@ namespace System.IO.Packaging
                 //Get length of the parameter value
                 int parameterValueLength = GetLengthOfParameterValue(parameterAndValue, parameterStartIndex);
 
-                EnsureParameterDictionary();
+                (_parameterDictionary ??= new()).Add(
+                    ValidateToken(parameterAndValue.Slice(0, equalSignIndex).ToString()),
+                    ValidateQuotedStringOrToken(parameterAndValue.Slice(parameterStartIndex, parameterValueLength).ToString()));
 
-                _parameterDictionary.Add(
-                    ValidateToken(parameterAndValue.Substring(0, equalSignIndex)),
-                    ValidateQuotedStringOrToken(parameterAndValue.Substring(parameterStartIndex, parameterValueLength)));
-
-                parameterAndValue = parameterAndValue.Substring(parameterStartIndex + parameterValueLength).TrimStart(s_linearWhiteSpaceChars);
+                parameterAndValue = parameterAndValue.Slice(parameterStartIndex + parameterValueLength).TrimStart(s_linearWhiteSpaceChars);
             }
         }
 
@@ -362,7 +344,7 @@ namespace System.IO.Packaging
         /// <param name="s"></param>
         /// <param name="startIndex">Starting index for parsing</param>
         /// <returns></returns>
-        private static int GetLengthOfParameterValue(string s, int startIndex)
+        private static int GetLengthOfParameterValue(ReadOnlySpan<char> s, int startIndex)
         {
             Debug.Assert(s != null);
 
@@ -373,23 +355,20 @@ namespace System.IO.Packaging
             //a ';' as the terminator for the token value.
             if (s[startIndex] != '"')
             {
-                int semicolonIndex = s.IndexOf(SemicolonSeparator, startIndex);
+                int semicolonIndex = s.Slice(startIndex).IndexOf(';');
 
                 if (semicolonIndex != -1)
                 {
-                    int lwsIndex = s.IndexOfAny(s_linearWhiteSpaceChars, startIndex);
-                    if (lwsIndex != -1 && lwsIndex < semicolonIndex)
-                        length = lwsIndex;
-                    else
-                        length = semicolonIndex;
+                    int lwsIndex = s.Slice(startIndex).IndexOfAny(s_linearWhiteSpaceChars);
+                    length = lwsIndex != -1 && lwsIndex < semicolonIndex ? lwsIndex : semicolonIndex;
+                    length += startIndex; // the indexes from IndexOf{Any} are based on slicing from startIndex
                 }
                 else
-                    length = semicolonIndex;
-
-                //If there is no linear whitespace found we treat the entire remaining string as
-                //parameter value.
-                if (length == -1)
+                {
+                    //If there is no linear white space found we treat the entire remaining string as
+                    //parameter value.
                     length = s.Length;
+                }
             }
             else
             {
@@ -400,10 +379,14 @@ namespace System.IO.Packaging
 
                 while (!found)
                 {
-                    length = s.IndexOf('"', ++length);
+                    int startingLength = ++length;
+                    length = s.Slice(startingLength).IndexOf('"');
 
                     if (length == -1)
+                    {
                         throw new ArgumentException(SR.InvalidParameterValue);
+                    }
+                    length += startingLength; // IndexOf result is based on slicing from startingLength
 
                     if (s[length - 1] != '\\')
                     {
@@ -453,11 +436,15 @@ namespace System.IO.Packaging
                 throw new ArgumentException(SR.InvalidParameterValue);
 
             if (parameterValue.Length >= 2 &&
-                parameterValue.StartsWith(Quote, StringComparison.Ordinal) &&
-                parameterValue.EndsWith(Quote, StringComparison.Ordinal))
-                ValidateQuotedText(parameterValue.Substring(1, parameterValue.Length - 2));
+                parameterValue[0] == '"' &&
+                parameterValue[parameterValue.Length - 1] == '"')
+            {
+                ValidateQuotedText(parameterValue.AsSpan(1, parameterValue.Length - 2));
+            }
             else
+            {
                 ValidateToken(parameterValue);
+            }
 
             return parameterValue;
         }
@@ -466,7 +453,7 @@ namespace System.IO.Packaging
         /// This method validates if the text in the quoted string
         /// </summary>
         /// <param name="quotedText"></param>
-        private static void ValidateQuotedText(string quotedText)
+        private static void ValidateQuotedText(ReadOnlySpan<char> quotedText)
         {
             //empty is okay
 
@@ -477,9 +464,8 @@ namespace System.IO.Packaging
 
                 if (quotedText[i] <= ' ' || quotedText[i] >= 0xFF)
                     throw new ArgumentException(SR.InvalidParameterValue);
-                else
-                    if (quotedText[i] == '"' &&
-                        (i == 0 || quotedText[i - 1] != '\\'))
+
+                if (quotedText[i] == '"' && (i == 0 || quotedText[i - 1] != '\\'))
                     throw new ArgumentException(SR.InvalidParameterValue);
             }
         }
@@ -490,10 +476,8 @@ namespace System.IO.Packaging
         /// </summary>
         /// <param name="character">input character</param>
         /// <returns></returns>
-        private static bool IsAllowedCharacter(char character)
-        {
-            return Array.IndexOf(s_allowedCharacters, character) >= 0;
-        }
+        private static bool IsAllowedCharacter(char character) =>
+            Array.IndexOf(s_allowedCharacters, character) >= 0;
 
         /// <summary>
         /// Returns true if the input character is an ASCII digit or letter
@@ -501,23 +485,9 @@ namespace System.IO.Packaging
         /// </summary>
         /// <param name="character">input character</param>
         /// <returns></returns>
-        private static bool IsAsciiLetterOrDigit(char character)
-        {
-            return (IsAsciiLetter(character) || (character >= '0' && character <= '9'));
-        }
-
-        /// <summary>
-        /// Returns true if the input character is an ASCII letter
-        /// Returns false if the input character is not an ASCII letter
-        /// </summary>
-        /// <param name="character">input character</param>
-        /// <returns></returns>
-        private static bool IsAsciiLetter(char character)
-        {
-            return
-                (character >= 'a' && character <= 'z') ||
-                (character >= 'A' && character <= 'Z');
-        }
+        private static bool IsAsciiLetterOrDigit(char character) =>
+            ((((uint)character - 'A') & ~0x20) < 26) ||
+            (((uint)character - '0') < 10);
 
         /// <summary>
         /// Returns true if the input character is one of the Linear White Space characters -
@@ -526,28 +496,8 @@ namespace System.IO.Packaging
         /// </summary>
         /// <param name="ch">input character</param>
         /// <returns></returns>
-        private static bool IsLinearWhiteSpaceChar(char ch)
-        {
-            if (ch > ' ')
-            {
-                return false;
-            }
-
-            int whiteSpaceIndex = Array.IndexOf(s_linearWhiteSpaceChars, ch);
-            return whiteSpaceIndex != -1;
-        }
-
-        /// <summary>
-        /// Lazy initialization for the ParameterDictionary
-        /// </summary>
-        [MemberNotNull(nameof(_parameterDictionary))]
-        private void EnsureParameterDictionary()
-        {
-            if (_parameterDictionary == null)
-            {
-                _parameterDictionary = new Dictionary<string, string>(); //initial size 0
-            }
-        }
+        private static bool IsLinearWhiteSpaceChar(char ch) =>
+            ch <= ' ' && Array.IndexOf(s_linearWhiteSpaceChars, ch) != -1;
 
         #endregion Private Methods
 
@@ -556,13 +506,7 @@ namespace System.IO.Packaging
         private string? _contentType;
         private string _type = string.Empty;
         private string _subType = string.Empty;
-        private readonly string _originalString;
         private Dictionary<string, string>? _parameterDictionary;
-        private readonly bool _isInitialized;
-
-        private const string Quote = "\"";
-        private const char SemicolonSeparator = ';';
-        private const char EqualSeparator = '=';
 
         //This array is sorted by the ascii value of these characters.
         private static readonly char[] s_allowedCharacters =

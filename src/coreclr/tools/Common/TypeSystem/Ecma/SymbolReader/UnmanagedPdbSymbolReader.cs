@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Collections;
 using System.Diagnostics;
 using System.Runtime.InteropServices.ComTypes;
+using System.Runtime.CompilerServices;
 
 #if !DISABLE_UNMANAGED_PDB_SYMBOLS
 using Microsoft.DiaSymReader;
@@ -364,8 +365,701 @@ namespace Internal.TypeSystem.Ecma
 
         interface ISymUnmanagedReader
         {
-            int GetMethod(int methodToken, out ISymUnmanagedMethod method);
+            int GetMethod(int methodToken, out ISymUnmanagedMethod? method);
             // No more members are used
+        }
+
+        private sealed class SymUnmanagedNamespaceWrapperCache : ComWrappers
+        {
+            public static readonly SymUnmanagedNamespaceWrapperCache Instance = new SymUnmanagedNamespaceWrapperCache();
+
+            protected override unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) => throw new NotImplementedException();
+            protected override object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags)
+            {
+                Debug.Assert(flags == CreateObjectFlags.UniqueInstance);
+                return new SymUnmanagedNamespaceRcw(externalComObject);
+            }
+            protected override void ReleaseObjects(IEnumerable objects) => throw new NotImplementedException();
+
+            public unsafe sealed record SymUnmanagedNamespaceRcw(IntPtr Inst) : ISymUnmanagedNamespace
+            {
+                private bool _disposed = false;
+
+                public int GetName(int bufferLength, out int count, char[] name)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int, int*, char*, int>)(*(*(void***)Inst + 3));
+                    fixed (int* countPtr = &count)
+                    fixed (char* namePtr = name)
+                    {
+                        return func(Inst, bufferLength, countPtr, namePtr);
+                    }
+                }
+
+                public int GetNamespaces(int bufferLength, out int count, ISymUnmanagedNamespace[] namespaces)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int, int*, IntPtr*, int>)(*(*(void***)Inst + 4));
+                    int hr;
+
+                    fixed (int* countPtr = &count)
+                    {
+                        if (namespaces == null)
+                        {
+                            hr = func(Inst, bufferLength, countPtr, null);
+                        }
+                        else
+                        {
+                            IntPtr[] intermediate = new IntPtr[namespaces.Length];
+                            fixed (IntPtr* intermediatePtr = intermediate)
+                            {
+                                hr = func(Inst, bufferLength, countPtr, intermediatePtr);
+                            }
+
+                            if (hr == 0)
+                            {
+                                for (int i = 0; i < count; i++)
+                                {
+                                    namespaces[i] = (SymUnmanagedNamespaceWrapperCache.SymUnmanagedNamespaceRcw)SymUnmanagedNamespaceWrapperCache.Instance.GetOrCreateObjectForComInstance(intermediate[i], CreateObjectFlags.UniqueInstance);
+                                }
+                            }
+                        }
+                    }
+
+                    return hr;
+                }
+
+                public int GetVariables(int bufferLength, out int count, ISymUnmanagedVariable[] variables)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int, int*, IntPtr*, int>)(*(*(void***)Inst + 5));
+                    int hr;
+
+                    fixed (int* countPtr = &count)
+                    {
+                        if (variables == null)
+                        {
+                            hr = func(Inst, bufferLength, countPtr, null);
+                        }
+                        else
+                        {
+                            IntPtr[] intermediate = new IntPtr[variables.Length];
+                            fixed (IntPtr* intermediatePtr = intermediate)
+                            {
+                                hr = func(Inst, bufferLength, countPtr, intermediatePtr);
+                            }
+
+                            if (hr == 0)
+                            {
+                                for (int i = 0; i < count; i++)
+                                {
+                                    variables[i] = (SymUnmanagedVariableWrapperCache.SymUnmanagedVariableRcw)SymUnmanagedVariableWrapperCache.Instance.GetOrCreateObjectForComInstance(intermediate[i], CreateObjectFlags.UniqueInstance);
+                                }
+                            }
+                        }
+                    }
+
+                    return hr;
+                }
+
+                public void Dispose()
+                {
+                    DisposeInternal();
+                    GC.SuppressFinalize(this);
+                }
+
+                private void DisposeInternal()
+                {
+                    if (_disposed)
+                    {
+                        return;
+                    }
+                    _disposed = true;
+                    Marshal.Release(Inst);
+                }
+
+                ~SymUnmanagedNamespaceRcw()
+                {
+                    DisposeInternal();
+                }
+            }
+        }
+
+        private sealed class SymUnmanagedVariableWrapperCache : ComWrappers
+        {
+            public static readonly SymUnmanagedVariableWrapperCache Instance = new SymUnmanagedVariableWrapperCache();
+
+            protected override unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) => throw new NotImplementedException();
+            protected override object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags)
+            {
+                Debug.Assert(flags == CreateObjectFlags.UniqueInstance);
+                return new SymUnmanagedVariableRcw(externalComObject);
+            }
+            protected override void ReleaseObjects(IEnumerable objects) => throw new NotImplementedException();
+
+            public unsafe sealed record SymUnmanagedVariableRcw(IntPtr Inst) : ISymUnmanagedVariable
+            {
+                private bool _disposed = false;
+
+                public int GetName(int bufferLength, out int count, char[] name)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int, int*, char*, int>)(*(*(void***)Inst + 3));
+                    fixed (int* countPtr = &count)
+                    fixed (char* namePtr = name)
+                    {
+                        return func(Inst, bufferLength, countPtr, namePtr);
+                    }
+                }
+
+                public int GetAttributes(out int attributes) => SingleByRefIntWrapper(4, out attributes);
+
+                public int GetSignature(int bufferLength, out int count, byte[] signature)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int, int*, byte*, int>)(*(*(void***)Inst + 5));
+                    fixed (int* countPtr = &count)
+                    fixed (byte* signaturePtr = signature)
+                    {
+                        return func(Inst, bufferLength, countPtr, signaturePtr);
+                    }
+                }
+
+                public int GetAddressKind(out int kind) => SingleByRefIntWrapper(6, out kind);
+
+                public int GetAddressField1(out int value) => SingleByRefIntWrapper(7, out value);
+
+                public int GetAddressField2(out int value) => SingleByRefIntWrapper(8, out value);
+
+                public int GetAddressField3(out int value) => SingleByRefIntWrapper(9, out value);
+
+                public int GetStartOffset(out int offset) => SingleByRefIntWrapper(10, out offset);
+
+                public int GetEndOffset(out int offset) => SingleByRefIntWrapper(11, out offset);
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                private int SingleByRefIntWrapper(int methodSlot, out int value)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int*, int>)(*(*(void***)Inst + methodSlot));
+                    fixed (int* valuePtr = &value)
+                    {
+                        return func(Inst, valuePtr);
+                    }
+                }
+
+                public void Dispose()
+                {
+                    DisposeInternal();
+                    GC.SuppressFinalize(this);
+                }
+
+                private void DisposeInternal()
+                {
+                    if (_disposed)
+                    {
+                        return;
+                    }
+                    _disposed = true;
+                    Marshal.Release(Inst);
+                }
+
+                ~SymUnmanagedVariableRcw()
+                {
+                    DisposeInternal();
+                }
+            }
+        }
+
+        private sealed class SymUnmanagedScopeWrapperCache : ComWrappers
+        {
+            public static readonly SymUnmanagedScopeWrapperCache Instance = new SymUnmanagedScopeWrapperCache();
+
+            protected override unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) => throw new NotImplementedException();
+            protected override object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags)
+            {
+                Debug.Assert(flags == CreateObjectFlags.UniqueInstance);
+                return new SymUnmanagedScopeRcw(externalComObject);
+            }
+
+            protected override void ReleaseObjects(IEnumerable objects) => throw new NotImplementedException();
+
+            public unsafe sealed record SymUnmanagedScopeRcw(IntPtr Inst) : ISymUnmanagedScope
+            {
+                private bool _disposed = false;
+
+                public int GetMethod(out ISymUnmanagedMethod? method)
+                {
+                    var func = (delegate* unmanaged<IntPtr, IntPtr*, int>)(*(*(void***)Inst + 3));
+                    IntPtr methodPtr;
+                    int hr = func(Inst, &methodPtr);
+                    method = hr == 0
+                        ? (SymUnmanagedMethodWrapperCache.SymUnmanagedMethodRcw)SymUnmanagedMethodWrapperCache.Instance.GetOrCreateObjectForComInstance(methodPtr, CreateObjectFlags.UniqueInstance)
+                        : null;
+                    return hr;
+                }
+
+                public int GetParent(out ISymUnmanagedScope? scope)
+                {
+                    var func = (delegate* unmanaged<IntPtr, IntPtr*, int>)(*(*(void***)Inst + 4));
+                    IntPtr scopePtr;
+                    int hr = func(Inst, &scopePtr);
+                    scope = hr == 0
+                        ? (SymUnmanagedScopeWrapperCache.SymUnmanagedScopeRcw)SymUnmanagedScopeWrapperCache.Instance.GetOrCreateObjectForComInstance(scopePtr, CreateObjectFlags.UniqueInstance)
+                        : null;
+                    return hr;
+                }
+
+                public int GetChildren(int bufferLength, out int count, ISymUnmanagedScope[] children)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int, int*, IntPtr*, int>)(*(*(void***)Inst + 5));
+                    int hr;
+
+                    fixed (int* countPtr = &count)
+                    {
+                        if (children == null)
+                        {
+                            hr = func(Inst, bufferLength, countPtr, null);
+                        }
+                        else
+                        {
+                            IntPtr[] intermediate = new IntPtr[children.Length];
+                            fixed (IntPtr* intermediatePtr = intermediate)
+                            {
+                                hr = func(Inst, bufferLength, countPtr, intermediatePtr);
+                            }
+
+                            if (hr == 0)
+                            {
+                                for (int i = 0; i < count; i++)
+                                {
+                                    children[i] = (SymUnmanagedScopeWrapperCache.SymUnmanagedScopeRcw)SymUnmanagedScopeWrapperCache.Instance.GetOrCreateObjectForComInstance(intermediate[i], CreateObjectFlags.UniqueInstance);
+                                }
+                            }
+                        }
+                    }
+
+                    return hr;
+                }
+
+                public int GetStartOffset(out int offset) => SingleByRefIntWrapper(6, out offset);
+
+                public int GetEndOffset(out int offset) => SingleByRefIntWrapper(7, out offset);
+
+                public int GetLocalCount(out int count) => SingleByRefIntWrapper(8, out count);
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                private int SingleByRefIntWrapper(int methodSlot, out int value)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int*, int>)(*(*(void***)Inst + methodSlot));
+                    fixed (int* valuePtr = &value)
+                    {
+                        return func(Inst, valuePtr);
+                    }
+                }
+
+                public int GetLocals(int bufferLength, out int count, ISymUnmanagedVariable[] locals)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int, int*, IntPtr*, int>)(*(*(void***)Inst + 9));
+                    int hr;
+
+                    fixed (int* countPtr = &count)
+                    {
+                        if (locals == null)
+                        {
+                            hr = func(Inst, bufferLength, countPtr, null);
+                        }
+                        else
+                        {
+                            IntPtr[] intermediate = new IntPtr[locals.Length];
+                            fixed (IntPtr* intermediatePtr = intermediate)
+                            {
+                                hr = func(Inst, bufferLength, countPtr, intermediatePtr);
+                            }
+
+                            if (hr == 0)
+                            {
+                                for (int i = 0; i < count; i++)
+                                {
+                                    locals[i] = (SymUnmanagedVariableWrapperCache.SymUnmanagedVariableRcw)SymUnmanagedVariableWrapperCache.Instance.GetOrCreateObjectForComInstance(intermediate[i], CreateObjectFlags.UniqueInstance);
+                                }
+                            }
+                        }
+                    }
+
+                    return hr;
+                }
+
+                public int GetNamespaces(int bufferLength, out int count, ISymUnmanagedNamespace[] namespaces)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int, int*, IntPtr*, int>)(*(*(void***)Inst + 10));
+                    int hr;
+
+                    fixed (int* countPtr = &count)
+                    {
+                        if (namespaces == null)
+                        {
+                            hr = func(Inst, bufferLength, countPtr, null);
+                        }
+                        else
+                        {
+                            IntPtr[] intermediate = new IntPtr[namespaces.Length];
+                            fixed (IntPtr* intermediatePtr = intermediate)
+                            {
+                                hr = func(Inst, bufferLength, countPtr, intermediatePtr);
+                            }
+
+                            if (hr == 0)
+                            {
+                                for (int i = 0; i < count; i++)
+                                {
+                                    namespaces[i] = (SymUnmanagedNamespaceWrapperCache.SymUnmanagedNamespaceRcw)SymUnmanagedNamespaceWrapperCache.Instance.GetOrCreateObjectForComInstance(intermediate[i], CreateObjectFlags.UniqueInstance);
+                                }
+                            }
+                        }
+                    }
+
+                    return hr;
+                }
+
+                public void Dispose()
+                {
+                    DisposeInternal();
+                    GC.SuppressFinalize(this);
+                }
+
+                private void DisposeInternal()
+                {
+                    if (_disposed)
+                    {
+                        return;
+                    }
+                    _disposed = true;
+                    Marshal.Release(Inst);
+                }
+
+                ~SymUnmanagedScopeRcw()
+                {
+                    DisposeInternal();
+                }
+            }
+        }
+
+        private sealed class SymUnmanagedDocumentWrapperCache : ComWrappers
+        {
+            public static readonly SymUnmanagedDocumentWrapperCache Instance = new SymUnmanagedDocumentWrapperCache();
+
+            protected override unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) => throw new NotImplementedException();
+            protected override object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags)
+            {
+                Debug.Assert(flags == CreateObjectFlags.UniqueInstance);
+                return new SymUnmanagedDocumentRcw(externalComObject);
+            }
+            protected override void ReleaseObjects(IEnumerable objects) => throw new NotImplementedException();
+
+            public unsafe record SymUnmanagedDocumentRcw(IntPtr Inst) : ISymUnmanagedDocument
+            {
+                private bool _disposed = false;
+
+                public int GetUrl(int bufferLength, out int count, char[] url)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int, int*, char*, int>)(*(*(void***)Inst + 3));
+                    fixed (int* countPtr = &count)
+                    fixed (char* urlPtr = url)
+                    {
+                        return func(Inst, bufferLength, countPtr, urlPtr);
+                    }
+                }
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                private int SingleByRefGuidWrapper(int methodSolt, ref Guid guid)
+                {
+                    var func = (delegate* unmanaged<IntPtr, Guid*, int>)(*(*(void***)Inst + methodSolt));
+                    fixed (Guid* guidPtr = &guid)
+                    {
+                        return func(Inst, guidPtr);
+                    }
+                }
+
+                public int GetDocumentType(ref Guid documentType) => SingleByRefGuidWrapper(4, ref documentType);
+                public int GetLanguage(ref Guid language) => SingleByRefGuidWrapper(5, ref language);
+                public int GetLanguageVendor(ref Guid vendor) => SingleByRefGuidWrapper(6, ref vendor);
+                public int GetChecksumAlgorithmId(ref Guid algorithm) => SingleByRefGuidWrapper(7, ref algorithm);
+
+                public int GetChecksum(int bufferLength, out int count, byte[] checksum)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int, int*, byte*, int>)(*(*(void***)Inst + 8));
+                    fixed (int* countPtr = &count)
+                    fixed (byte* checksumPtr = checksum)
+                    {
+                        return func(Inst, bufferLength, countPtr, checksumPtr);
+                    }
+                }
+
+                public int FindClosestLine(int line, out int closestLine)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int, int*, int>)(*(*(void***)Inst + 9));
+                    fixed (int* closestLinePtr = &closestLine)
+                    {
+                        return func(Inst, line, closestLinePtr);
+                    }
+                }
+
+                public int HasEmbeddedSource(out bool value)
+                {
+                    var func = (delegate* unmanaged<IntPtr, bool*, int>)(*(*(void***)Inst + 10));
+                    fixed (bool* valuePtr = &value)
+                    {
+                        return func(Inst, valuePtr);
+                    }
+                }
+
+                public int GetSourceLength(out int length)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int*, int>)(*(*(void***)Inst + 11));
+                    fixed (int* lengthPtr = &length)
+                    {
+                        return func(Inst, lengthPtr);
+                    }
+                }
+
+                public int GetSourceRange(int startLine, int startColumn, int endLine, int endColumn, int bufferLength, out int count, byte[] source)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int, int, int, int, int, int*, byte*, int>)(*(*(void***)Inst + 12));
+                    fixed (int* countPtr = &count)
+                    fixed (byte* sourcePtr = source)
+                    {
+                        return func(Inst, startLine, startColumn, endLine, endColumn, bufferLength, countPtr, sourcePtr);
+                    }
+                }
+
+                public void Dispose()
+                {
+                    DisposeInternal();
+                    GC.SuppressFinalize(this);
+                }
+
+                private void DisposeInternal()
+                {
+                    if (_disposed)
+                    {
+                        return;
+                    }
+                    _disposed = true;
+                    Marshal.Release(Inst);
+                }
+
+                ~SymUnmanagedDocumentRcw()
+                {
+                    DisposeInternal();
+                }
+            }
+        }
+
+        private sealed class SymUnmanagedMethodWrapperCache : ComWrappers
+        {
+            public static readonly SymUnmanagedMethodWrapperCache Instance = new SymUnmanagedMethodWrapperCache();
+
+            protected override unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) => throw new NotImplementedException();
+            protected override object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags)
+            {
+                Debug.Assert(flags == CreateObjectFlags.UniqueInstance);
+                return new SymUnmanagedMethodRcw(externalComObject);
+            }
+            protected override void ReleaseObjects(IEnumerable objects) => throw new NotImplementedException();
+
+            public unsafe sealed record SymUnmanagedMethodRcw(IntPtr Inst) : ISymUnmanagedMethod
+            {
+                private bool _disposed = false;
+
+                public int GetToken(out int methodToken)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int*, int>)(*(*(void***)Inst + 3));
+                    fixed (int* methodTokenPtr = &methodToken)
+                    {
+                        return func(Inst, methodTokenPtr);
+                    }
+                }
+
+                public int GetSequencePointCount(out int count)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int*, int>)(*(*(void***)Inst + 4));
+                    fixed (int* countPtr = &count)
+                    {
+                        return func(Inst, countPtr);
+                    }
+                }
+
+                public int GetRootScope(out ISymUnmanagedScope? scope)
+                {
+                    var func = (delegate* unmanaged<IntPtr, IntPtr*, int>)(*(*(void***)Inst + 5));
+                    IntPtr scopePtr;
+                    int hr = func(Inst, &scopePtr);
+                    scope = hr == 0
+                        ? (SymUnmanagedScopeWrapperCache.SymUnmanagedScopeRcw)SymUnmanagedScopeWrapperCache.Instance.GetOrCreateObjectForComInstance(scopePtr, CreateObjectFlags.UniqueInstance)
+                        : null;
+                    return hr;
+                }
+
+                public int GetScopeFromOffset(int offset, out ISymUnmanagedScope? scope)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int, IntPtr*, int>)(*(*(void***)Inst + 6));
+                    IntPtr scopePtr;
+                    int hr = func(Inst, offset, &scopePtr);
+                    scope = hr == 0
+                        ? (SymUnmanagedScopeWrapperCache.SymUnmanagedScopeRcw)SymUnmanagedScopeWrapperCache.Instance.GetOrCreateObjectForComInstance(scopePtr, CreateObjectFlags.UniqueInstance)
+                        : null;
+                    return hr;
+                }
+
+                public int GetOffset(ISymUnmanagedDocument document, int line, int column, out int offset)
+                {
+                    var func = (delegate* unmanaged<IntPtr, IntPtr, int, int, int*, int>)(*(*(void***)Inst + 7));
+                    var handle = GCHandle.Alloc(document, GCHandleType.Pinned);
+                    try
+                    {
+                        fixed (int* offsetPtr = &offset)
+                        {
+                            return func(Inst, handle.AddrOfPinnedObject(), line, column, offsetPtr);
+                        }
+                    }
+                    finally
+                    {
+                        handle.Free();
+                    }
+                }
+
+                public int GetRanges(ISymUnmanagedDocument document, int line, int column, int bufferLength, out int count, int[] ranges)
+                {
+                    var func = (delegate* unmanaged<IntPtr, IntPtr, int, int, int, int*, int*, int>)(*(*(void***)Inst + 8));
+                    var handle = GCHandle.Alloc(document, GCHandleType.Pinned);
+                    try
+                    {
+                        fixed (int* countPtr = &count)
+                        fixed (int* rangesPtr = ranges)
+                        {
+                            return func(Inst, handle.AddrOfPinnedObject(), line, column, bufferLength, countPtr, rangesPtr);
+                        }
+                    }
+                    finally
+                    {
+                        handle.Free();
+                    }
+                }
+
+                public int GetParameters(int bufferLength, out int count, ISymUnmanagedVariable[] parameters)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int, int*, IntPtr*, int>)(*(*(void***)Inst + 9));
+                    int hr;
+
+                    fixed (int* countPtr = &count)
+                    {
+                        if (parameters == null)
+                        {
+                            hr = func(Inst, bufferLength, countPtr, null);
+                        }
+                        else
+                        {
+                            IntPtr[] intermediate = new IntPtr[parameters.Length];
+                            fixed (IntPtr* intermediatePtr = intermediate)
+                            {
+                                hr = func(Inst, bufferLength, countPtr, intermediatePtr);
+                            }
+
+                            if (hr == 0)
+                            {
+                                for (int i = 0; i < count; i++)
+                                {
+                                    parameters[i] = (SymUnmanagedVariableWrapperCache.SymUnmanagedVariableRcw)SymUnmanagedVariableWrapperCache.Instance.GetOrCreateObjectForComInstance(intermediate[i], CreateObjectFlags.UniqueInstance);
+                                }
+                            }
+                        }
+                    }
+
+                    return hr;
+                }
+
+                public int GetNamespace(out ISymUnmanagedNamespace? @namespace)
+                {
+                    var func = (delegate* unmanaged<IntPtr, IntPtr*, int>)(*(*(void***)Inst + 10));
+                    IntPtr namespacePtr;
+                    int hr = func(Inst, &namespacePtr);
+                    @namespace = hr == 0
+                        ? (SymUnmanagedNamespaceWrapperCache.SymUnmanagedNamespaceRcw)SymUnmanagedNamespaceWrapperCache.Instance.GetOrCreateObjectForComInstance(namespacePtr, CreateObjectFlags.UniqueInstance)
+                        : null;
+                    return hr;
+                }
+
+                public int GetSourceStartEnd(ISymUnmanagedDocument[] documents, int[] lines, int[] columns, out bool defined)
+                {
+                    var func = (delegate* unmanaged<IntPtr, IntPtr*, int*, int*, bool*, int>)(*(*(void***)Inst + 11));
+                    var handle = GCHandle.Alloc(documents, GCHandleType.Pinned);
+                    try
+                    {
+                        fixed (int* linesPtr = lines)
+                        fixed (int* columnsPtr = columns)
+                        fixed (bool* definedPtr = &defined)
+                        {
+                            return func(Inst, (IntPtr*)handle.AddrOfPinnedObject(), linesPtr, columnsPtr, definedPtr);
+                        }
+                    }
+                    finally
+                    {
+                        handle.Free();
+                    }
+                }
+
+                public int GetSequencePoints(int bufferLength, out int count, int[] offsets, ISymUnmanagedDocument[] documents, int[] startLines, int[] startColumns, int[] endLines, int[] endColumns)
+                {
+                    var func = (delegate* unmanaged<IntPtr, int, int*, int*, IntPtr*, int*, int*, int*, int*, int>)(*(*(void***)Inst + 12));
+                    int hr;
+
+                    fixed (int* countPtr = &count)
+                    fixed (int* offsetsPtr = offsets)
+                    fixed (int* startLinesPtr = startLines)
+                    fixed (int* endLinesPtr = endLines)
+                    fixed (int* startColumnsPtr = startColumns)
+                    fixed (int* endColumnsPtr = endColumns)
+                    {
+                        if (documents == null)
+                        {
+                            hr = func(Inst, bufferLength, countPtr, offsetsPtr, null, startLinesPtr, startColumnsPtr, endLinesPtr, endColumnsPtr);
+                        }
+                        else
+                        {
+                            IntPtr[] intermediate = new IntPtr[documents.Length];
+                            fixed (IntPtr* intermediatePtr = intermediate)
+                            {
+                                hr = func(Inst, bufferLength, countPtr, offsetsPtr, intermediatePtr, startLinesPtr, startColumnsPtr, endLinesPtr, endColumnsPtr);
+                            }
+                            if (hr == 0)
+                            {
+                                for (int i = 0; i < documents.Length; i++)
+                                {
+                                    documents[i] = (SymUnmanagedDocumentWrapperCache.SymUnmanagedDocumentRcw)SymUnmanagedDocumentWrapperCache.Instance.GetOrCreateObjectForComInstance(intermediate[i], CreateObjectFlags.UniqueInstance);
+                                }
+                            }
+                        }
+                    }
+
+                    return hr;
+                }
+
+                public void Dispose()
+                {
+                    DisposeInternal();
+                    GC.SuppressFinalize(this);
+                }
+
+                private void DisposeInternal()
+                {
+                    if (_disposed)
+                    {
+                        return;
+                    }
+                    _disposed = true;
+                    Marshal.Release(Inst);
+                }
+
+                ~SymUnmanagedMethodRcw()
+                {
+                    DisposeInternal();
+                }
+            }
         }
 
         private sealed class SymUnmanagedReaderWrapperCache : ComWrappers
@@ -388,10 +1082,17 @@ namespace Internal.TypeSystem.Ecma
             {
                 private bool _disposed = false;
 
-                // This is not actually called in any code path right now. Rather than implement this
-                // without testing, it's been lefted throwing an exception. If this code path is ever
-                // reached, it can be implemented and tested.
-                public int GetMethod(int methodToken, out ISymUnmanagedMethod method) => throw new NotImplementedException();
+                public unsafe int GetMethod(int methodToken, out ISymUnmanagedMethod? method)
+                {
+                    // ISymUnmanagedReader::GetMethod is slot 7 (0-based)
+                    var func = (delegate* unmanaged<IntPtr, int, IntPtr*, int>)(*(*(void***)Inst + 6));
+                    IntPtr methodPtr;
+                    int hr = func(Inst, methodToken, &methodPtr);
+                    method = hr == 0
+                        ? (SymUnmanagedMethodWrapperCache.SymUnmanagedMethodRcw)SymUnmanagedMethodWrapperCache.Instance.GetOrCreateObjectForComInstance(methodPtr, CreateObjectFlags.UniqueInstance)
+                        : null;
+                    return hr;
+                }
 
                 public void Dispose()
                 {
@@ -572,8 +1273,8 @@ namespace Internal.TypeSystem.Ecma
 
         public override IEnumerable<ILSequencePoint> GetSequencePointsForMethod(int methodToken)
         {
-            ISymUnmanagedMethod symbolMethod;
-            if (_symUnmanagedReader.GetMethod(methodToken, out symbolMethod) < 0)
+            ISymUnmanagedMethod? symbolMethod;
+            if (_symUnmanagedReader.GetMethod(methodToken, out symbolMethod) < 0 || symbolMethod is null)
                 yield break;
 
             int count;
@@ -644,8 +1345,8 @@ namespace Internal.TypeSystem.Ecma
         //
         public override IEnumerable<ILLocalVariable>? GetLocalVariableNamesForMethod(int methodToken)
         {
-            ISymUnmanagedMethod symbolMethod;
-            if (_symUnmanagedReader.GetMethod(methodToken, out symbolMethod) < 0)
+            ISymUnmanagedMethod? symbolMethod;
+            if (_symUnmanagedReader.GetMethod(methodToken, out symbolMethod) < 0 || symbolMethod is null)
                 return null;
             Debug.Assert(symbolMethod is not null);
 

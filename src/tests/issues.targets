@@ -522,6 +522,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_45929/test45929/*">
             <Issue>https://github.com/dotnet/runtime/issues/60152</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_d/**">
+            <Issue>https://github.com/dotnet/runtime/issues/66745</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_do/**">
+            <Issue>https://github.com/dotnet/runtime/issues/66745</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows arm64 specific excludes -->

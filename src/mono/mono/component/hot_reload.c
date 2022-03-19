@@ -11,6 +11,7 @@
 #include "mono/component/hot_reload-internals.h"
 
 #include <glib.h>
+#include <mono/metadata/image.h>
 #include "mono/metadata/assembly-internals.h"
 #include "mono/metadata/mono-hash-internals.h"
 #include "mono/metadata/metadata-internals.h"
@@ -32,9 +33,6 @@
 
 #include <mono/utils/mono-compiler.h>
 
-#define ALLOW_CLASS_ADD
-#define ALLOW_METHOD_ADD
-#define ALLOW_FIELD_ADD
 #undef ALLOW_INSTANCE_FIELD_ADD
 
 typedef struct _BaselineInfo BaselineInfo;
@@ -121,6 +119,21 @@ hot_reload_get_static_field_addr (MonoClassField *field);
 static MonoMethod *
 hot_reload_find_method_by_name (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
 
+static gboolean
+hot_reload_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_method_idx, uint32_t *method_count,  uint32_t *first_field_idx, uint32_t *field_count);
+
+static gboolean
+hot_reload_get_typedef_skeleton_properties (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_prop_idx, uint32_t *prop_count);
+
+static gboolean
+hot_reload_get_typedef_skeleton_events (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_event_idx, uint32_t *event_count);
+
+static MonoMethod *
+hot_reload_added_methods_iter (MonoClass *klass, gpointer *iter);
+
+static MonoClassField *
+hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy, gpointer *iter);
+
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error);
 
@@ -149,6 +162,11 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_get_field,
 	&hot_reload_get_static_field_addr,
 	&hot_reload_find_method_by_name,
+	&hot_reload_get_typedef_skeleton,
+	&hot_reload_get_typedef_skeleton_properties,
+	&hot_reload_get_typedef_skeleton_events,
+	&hot_reload_added_methods_iter,
+	&hot_reload_added_fields_iter,
 };
 
 MonoComponentHotReload *
@@ -240,6 +258,9 @@ struct _BaselineInfo {
 
 	/* Parents for added methods, fields, etc */
 	GHashTable *member_parent; /* maps added methoddef or fielddef tokens to typedef tokens */
+
+	/* Skeletons for all newly-added types from every generation. Accessing the array requires the image lock. */
+	GArray *skeletons;
 };
 
 
@@ -352,9 +373,7 @@ static void
 klass_info_destroy (gpointer value, gpointer user_data G_GNUC_UNUSED)
 {
 	MonoClassMetadataUpdateInfo *info = (MonoClassMetadataUpdateInfo *)value;
-	/* added_members is allocated from the class mempool, don't free it here */
-	/* The MonoClassMetadataUpdateField is allocated from the class mempool, don't free it here */
-	g_ptr_array_free (info->added_fields, TRUE);
+	/* added_members, added_fields, added_props, added_events list nodes are allocated from the class mempool, don't free them here */
 
 	if (info->runtime.static_fields) {
 		mono_g_hash_table_destroy (info->runtime.static_fields);
@@ -376,6 +395,10 @@ baseline_info_destroy (BaselineInfo *info)
 		g_slist_foreach (info->klass_info, klass_info_destroy, NULL);
 		g_slist_free (info->klass_info);
 	}
+
+	if (info->skeletons)
+		g_array_free (info->skeletons, TRUE);
+
 	g_free (info);
 }
 
@@ -574,13 +597,20 @@ image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, gconstpo
 static DeltaInfo*
 image_append_delta (MonoImage *base, BaselineInfo *base_info, MonoImage *delta, DeltaInfo *delta_info);
 
+
+/* Add member->parent reverse lookup for newly-added classes */
+static void
+add_member_parent (BaselineInfo *base_info, uint32_t typedef_token, uint32_t member_token);
+
 /* common method, don't use directly, use add_method_to_baseline, add_field_to_baseline, etc */
 static void
 add_member_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClass *klass, uint32_t member_token);
 
+/* Add method->parent reverse lookup for existing classes */
 static void
 add_method_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClass *klass, uint32_t method_token, MonoDebugInformationEnc* pdb_address);
 
+/* Add field->parent reverse lookup for existing classes */
 static void
 add_field_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClass *klass, uint32_t field_token);
 
@@ -1363,21 +1393,9 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 		if (token_table != MONO_TABLE_METHOD)
 			continue;
 
-#ifndef ALLOW_METHOD_ADD
-
-		if (is_addition) {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "\tcannot add new method with token 0x%08x", log_token);
-			mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: cannot add new method with token 0x%08x", log_token);
-			unsupported_edits = TRUE;
-		}
-
-#endif
-
-#ifdef ALLOW_METHOD_ADD
 		/* adding a new parameter to a new method is ok */
 		if (func_code == ENC_FUNC_ADD_PARAM && is_addition)
 			continue;
-#endif
 
 		g_assert (func_code == 0); /* anything else doesn't make sense here */
 	}
@@ -1399,60 +1417,53 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			/* okay, supported */
 			break;
 		case MONO_TABLE_METHOD:
-#ifdef ALLOW_METHOD_ADD
 			if (func_code == ENC_FUNC_ADD_PARAM)
 				continue; /* ok, allowed */
-#endif
 			/* handled above */
 			break;
 		case MONO_TABLE_FIELD:
-#ifdef ALLOW_FIELD_ADD
-			if (func_code == ENC_FUNC_DEFAULT)
-				continue; /* ok, allowed */
-#else
-			/* adding or modifying a field */
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support adding or modifying fields.", i, log_token);
-			mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support adding or modifying fields. token=0x%08x", log_token);
-			unsupported_edits = TRUE;
+			/* ok */
+			g_assert (func_code == ENC_FUNC_DEFAULT);
 			break;
-#endif
+		case MONO_TABLE_PROPERTYMAP: {
+			if (func_code == ENC_FUNC_ADD_PROPERTY) {
+				g_assert (i + 1 < rows);
+				i++; /* skip the next record */
+				continue;
+			}
+			if (!is_addition) {
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support patching of existing table cols.", i, log_token);
+				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing table cols. token=0x%08x", log_token);
+				unsupported_edits = TRUE;
+				continue;
+			}
+			/* new rows, ok */
+			break;
+		}
 		case MONO_TABLE_PROPERTY: {
-			/* modifying a property, ok */
-			if (!is_addition)
-				break;
-			/* adding a property */
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support adding new properties.", i, log_token);
-			mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support adding new properties. token=0x%08x", log_token);
-			unsupported_edits = TRUE;
-			continue;
+			/* ok */
+			g_assert (func_code == ENC_FUNC_DEFAULT);
+			break;
+		}
+		case MONO_TABLE_EVENTMAP: {
+			if (func_code == ENC_FUNC_ADD_EVENT) {
+				g_assert (i + 1 < rows);
+				i++; /* skip the next record */
+				continue;
+			}
+			if (!is_addition) {
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support patching of existing table cols.", i, log_token);
+				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing table cols. token=0x%08x", log_token);
+				unsupported_edits = TRUE;
+				continue;
+			}
+			/* new rows, ok */
+			break;
 		}
 		case MONO_TABLE_METHODSEMANTICS: {
 			if (is_addition) {
-				/* new rows are fine, as long as they point at existing methods */
-				guint32 sema_cols [MONO_METHOD_SEMA_SIZE];
-				int mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, mono_metadata_make_token (token_table, token_index));
-				g_assert (mapped_token != -1);
-				mono_metadata_decode_row (&image_dmeta->tables [MONO_TABLE_METHODSEMANTICS], mapped_token - 1, sema_cols, MONO_METHOD_SEMA_SIZE);
-
-				switch (sema_cols [MONO_METHOD_SEMA_SEMANTICS]) {
-				case METHOD_SEMANTIC_GETTER:
-				case METHOD_SEMANTIC_SETTER: {
-					int prop_method_index = sema_cols [MONO_METHOD_SEMA_METHOD];
-					/* ok, if it's pointing to an existing getter/setter */
-					gboolean is_prop_method_add = prop_method_index-1 >= delta_info->count[MONO_TABLE_METHOD].prev_gen_rows;
-					if (!is_prop_method_add)
-						break;
-					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x adding new getter/setter method 0x%08x to a property is not supported", i, log_token, prop_method_index);
-					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support adding a new getter or setter to a property, token=0x%08x", log_token);
-					unsupported_edits = TRUE;
-					continue;
-				}
-				default:
-					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x adding new non-getter/setter property or event methods is not supported.", i, log_token);
-					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support adding new non-getter/setter property or event methods. token=0x%08x", log_token);
-					unsupported_edits = TRUE;
-					continue;
-				}
+				/* new rows are fine */
+				break;
 			} else {
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support patching of existing table cols.", i, log_token);
 				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing table cols. token=0x%08x", log_token);
@@ -1489,11 +1500,16 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				 * (its parent is set to 0).  Once we support custom attribute
 				 * changes, we will support this kind of deletion for real.
 				 */
+				/* FIXME: https://github.com/dotnet/roslyn/issues/60125
+				 * Roslyn seems to emit CA rows out of order which puts rows with unexpected Parent values in the wrong place.
+				 */
+#ifdef DISALLOW_BROKEN_PARENT
 				if (ca_base_cols [MONO_CUSTOM_ATTR_PARENT] != ca_upd_cols [MONO_CUSTOM_ATTR_PARENT] && ca_upd_cols [MONO_CUSTOM_ATTR_PARENT] != 0) {
 					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing CA table cols with a different Parent. token=0x%08x", log_token);
 					unsupported_edits = TRUE;
 					continue;
 				}
+#endif
 				break;
 			} else  {
 				/* Added a row. ok */
@@ -1526,14 +1542,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				break; /* added a row. ok */
 		}
 		case MONO_TABLE_TYPEDEF: {
-			gboolean new_class G_GNUC_UNUSED = is_addition;
-#ifdef ALLOW_METHOD_ADD
-			/* only allow adding methods to existing classes for now */
-			if (
-#ifndef ALLOW_CLASS_ADD
-				!new_class &&
-#endif
-				func_code == ENC_FUNC_ADD_METHOD) {
+			if (func_code == ENC_FUNC_ADD_METHOD) {
 				/* next record should be a MONO_TABLE_METHOD addition (func == default) */
 				g_assert (i + 1 < rows);
 				guint32 next_cols [MONO_ENCLOG_SIZE];
@@ -1548,13 +1557,8 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				i++; /* skip the next record */
 				continue;
 			}
-#endif
-#ifdef ALLOW_FIELD_ADD
-			if (
-#ifndef ALLOW_CLASS_ADD
-				!new_class &&
-#endif
-				func_code == ENC_FUNC_ADD_FIELD) {
+
+			if (func_code == ENC_FUNC_ADD_FIELD) {
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x AddField to klass 0x%08x, skipping next EnClog record", i, log_token, token_index);
 				g_assert (i + 1 < rows);
 				guint32 next_cols [MONO_ENCLOG_SIZE];
@@ -1569,7 +1573,6 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				i++; /* skip the next record */
 				continue;
 			}
-#endif
 			/* fallthru */
 		}
 		default:
@@ -1662,10 +1665,295 @@ dump_assembly_ref_names (MonoImage *image)
 	}
 }
 
+static void
+skeleton_add_member (MonoAddedDefSkeleton *sk, uint32_t member_token)
+{
+	uint32_t table = mono_metadata_token_table (member_token);
+	uint32_t idx = mono_metadata_token_index (member_token);
+
+	switch (table) {
+	case MONO_TABLE_METHOD:
+		if (!sk->first_method_idx) {
+			sk->first_method_idx = idx;
+			sk->method_count = 1;
+		} else {
+			/* current token is contiguous with previously seen ones */
+			g_assert (sk->first_method_idx + sk->method_count == idx);
+			sk->method_count++;
+		}
+		break;
+	case MONO_TABLE_FIELD:
+		if (!sk->first_field_idx) {
+			sk->first_field_idx = idx;
+			sk->field_count = 1;
+		} else {
+			/* current token is contiguous with previously seen ones */
+			g_assert (sk->first_field_idx + sk->field_count == idx);
+			sk->field_count++;
+		}
+		break;
+	case MONO_TABLE_PROPERTY:
+		if (!sk->first_prop_idx) {
+			sk->first_prop_idx = idx;
+			sk->prop_count = 1;
+		} else {
+			g_assert (sk->first_prop_idx + sk->prop_count == idx);
+			sk->prop_count++;
+		}
+		break;
+	case MONO_TABLE_EVENT:
+		if (!sk->first_event_idx) {
+			sk->first_event_idx = idx;
+			sk->event_count = 1;
+		} else {
+			g_assert (sk->first_event_idx + sk->event_count == idx);
+			sk->event_count++;
+		}
+		break;
+	default:
+		g_error ("Expected method or field def token, got 0x%08x", member_token);
+		g_assert_not_reached();
+	}
+}
+
+typedef struct Pass2Context {
+	GArray *skeletons; /* Skeleton for each new added type definition */
+	GArray *nested_class_worklist; /* List of tokens in the NestedClass table to re-visit at the end of the pass */
+} Pass2Context;
+
+static void
+pass2_context_init (Pass2Context *ctx)
+{
+	ctx->skeletons = g_array_new (FALSE, TRUE, sizeof(MonoAddedDefSkeleton));
+	ctx->nested_class_worklist = g_array_new (FALSE, TRUE, sizeof(uint32_t));
+}
+
+static void
+pass2_context_destroy (Pass2Context *ctx)
+{
+	if (ctx->skeletons)
+		g_array_free (ctx->skeletons, TRUE);
+	if (ctx->nested_class_worklist)
+		g_array_free (ctx->nested_class_worklist, TRUE);
+}
+
+static void
+pass2_context_add_skeleton (Pass2Context *ctx, uint32_t typedef_token)
+{
+	MonoAddedDefSkeleton sk = {0, };
+	g_assert (mono_metadata_token_table (typedef_token) == MONO_TABLE_TYPEDEF);
+	sk.typedef_token = typedef_token;
+	g_array_append_val (ctx->skeletons, sk);
+}
+
+static MonoAddedDefSkeleton*
+pass2_context_get_skeleton (Pass2Context *ctx, uint32_t typedef_token)
+{
+	for (int i = 0 ; i < ctx->skeletons->len; ++i) {
+		MonoAddedDefSkeleton *sk = &((MonoAddedDefSkeleton*)ctx->skeletons->data)[i];
+		if (sk->typedef_token == typedef_token)
+			return sk;
+	}
+	return NULL;
+}
+
+static void
+pass2_context_add_skeleton_member (Pass2Context *ctx, uint32_t typedef_token, uint32_t member_token)
+{
+	MonoAddedDefSkeleton* sk = pass2_context_get_skeleton (ctx, typedef_token);
+	g_assert (sk);
+	skeleton_add_member (sk, member_token);
+}
+
+static gboolean
+pass2_context_is_skeleton (Pass2Context *ctx, uint32_t typedef_token)
+{
+	return pass2_context_get_skeleton (ctx, typedef_token) != NULL;
+}
+
+/*
+ * After processing all the EnCLog entries, transfer the skeletons from the Pass2Context to the BaselineInfo
+ * and make them available for mono_class_create_from_typedef to consume.
+ */
+static gboolean
+baseline_info_consume_skeletons (Pass2Context *ctx, MonoImage *base_image, BaselineInfo *base_info, MonoError *error)
+{
+	mono_image_lock (base_image);
+	if (!base_info->skeletons)
+		base_info->skeletons = g_array_new (FALSE, TRUE, sizeof(MonoAddedDefSkeleton));
+	g_array_append_vals (base_info->skeletons, ctx->skeletons->data, ctx->skeletons->len);
+	mono_image_unlock (base_image);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pass2: Added %d type definition skeletons.  Total now %d.", ctx->skeletons->len, base_info->skeletons->len);
+	return TRUE;
+}
+
+static gboolean
+hot_reload_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_method_idx, uint32_t *method_count,  uint32_t *first_field_idx, uint32_t *field_count)
+{
+	BaselineInfo *info = baseline_info_lookup (base_image);
+	if (!info || !info->skeletons)
+		return FALSE;
+	gboolean found = FALSE;
+	mono_image_lock (base_image);
+	for (int i = 0; i < info->skeletons->len; ++i) {
+		MonoAddedDefSkeleton *sk = &((MonoAddedDefSkeleton*)info->skeletons->data)[i];
+		if (sk->typedef_token == typedef_token) {
+			found = TRUE;
+			g_assert (first_method_idx);
+			*first_method_idx = sk->first_method_idx;
+			g_assert (method_count);
+			*method_count = sk->method_count;
+			g_assert (first_field_idx);
+			*first_field_idx = sk->first_field_idx;
+			g_assert (field_count);
+			*field_count = sk->field_count;
+			break;
+		}
+	}
+	mono_image_unlock (base_image);
+	return found;
+}
+
+static gboolean
+hot_reload_get_typedef_skeleton_properties (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_prop_idx, uint32_t *prop_count)
+{
+	BaselineInfo *info = baseline_info_lookup (base_image);
+	if (!info || !info->skeletons)
+		return FALSE;
+	gboolean found = FALSE;
+	mono_image_lock (base_image);
+	for (int i = 0; i < info->skeletons->len; ++i) {
+		MonoAddedDefSkeleton *sk = &((MonoAddedDefSkeleton*)info->skeletons->data)[i];
+		if (sk->typedef_token == typedef_token) {
+			found = TRUE;
+			g_assert (first_prop_idx);
+			*first_prop_idx = sk->first_prop_idx;
+			g_assert (prop_count);
+			*prop_count = sk->prop_count;
+			break;
+		}
+	}
+	mono_image_unlock (base_image);
+	return found;
+}
+
+static gboolean
+hot_reload_get_typedef_skeleton_events (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_event_idx, uint32_t *event_count)
+{
+	BaselineInfo *info = baseline_info_lookup (base_image);
+	if (!info || !info->skeletons)
+		return FALSE;
+	gboolean found = FALSE;
+	mono_image_lock (base_image);
+	for (int i = 0; i < info->skeletons->len; ++i) {
+		MonoAddedDefSkeleton *sk = &((MonoAddedDefSkeleton*)info->skeletons->data)[i];
+		if (sk->typedef_token == typedef_token) {
+			found = TRUE;
+			g_assert (first_event_idx);
+			*first_event_idx = sk->first_event_idx;
+			g_assert (event_count);
+			*event_count = sk->event_count;
+			break;
+		}
+	}
+	mono_image_unlock (base_image);
+	return found;
+}
+
+/**
+ * Adds the given newly-added class to the image, updating various data structures (e.g. name cache).
+ */
+static void
+add_typedef_to_image_metadata (MonoImage *image_base, uint32_t log_token)
+{
+	uint32_t cols[MONO_TYPEDEF_SIZE];
+	uint32_t row = mono_metadata_token_index (log_token);
+	mono_metadata_decode_row (&image_base->tables[MONO_TABLE_TYPEDEF], row - 1, cols, MONO_TYPEDEF_SIZE);
+	uint32_t visib = cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+
+	/*
+	 * Add the class name to the name chache. Except if the
+	 * class is nested (has one of the nested visibility flags), since those are
+	 * looked up differently.
+	 */
+	gboolean isNested = (visib >= TYPE_ATTRIBUTE_NESTED_PUBLIC && visib <= TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM);
+	if (!isNested) {
+		const char *name_space = mono_metadata_string_heap (image_base, cols[MONO_TYPEDEF_NAMESPACE]);
+		const char *name = mono_metadata_string_heap (image_base, cols[MONO_TYPEDEF_NAME]);
+		mono_image_add_to_name_cache (image_base, name_space, name, row);
+	}
+}
+
+/**
+ * Given a row in the NestedClass table, add it to the worklist if the enclosing type isn't a skeleton.
+ */
+static void
+add_nested_class_to_worklist (Pass2Context *ctx, MonoImage *image_base, uint32_t log_token)
+{
+	uint32_t cols[MONO_TABLE_NESTEDCLASS];
+	mono_metadata_decode_row (&image_base->tables[MONO_TABLE_NESTEDCLASS], mono_metadata_token_index (log_token) - 1, cols, MONO_NESTED_CLASS_SIZE);
+	/* if the enclosing clas hasn't been created yet, don't do anything.  mono_class_setup_nested_types() will pick up the new row */
+	if (pass2_context_is_skeleton (ctx, cols[MONO_NESTED_CLASS_ENCLOSING]))
+		return;
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: adding nested class row 0x%08x (enclosing: 0x%08x, nested: 0x%08x) to worklist", log_token, cols[MONO_NESTED_CLASS_ENCLOSING], cols[MONO_NESTED_CLASS_NESTED]);
+
+	g_array_append_val (ctx->nested_class_worklist, log_token);
+}
+
+/**
+ * For any enclosing classes that already had their nested classes property initialized,
+ * add any newly-added classes the the nested classes list.
+ *
+ * This has to be called late because we construct the nested class - which
+ * could have been a skeleton.
+ */
+static gboolean
+pass2_update_nested_classes (Pass2Context *ctx, MonoImage *image_base, MonoError *error)
+{
+	if (!ctx->nested_class_worklist)
+		return TRUE;
+	GArray *arr = ctx->nested_class_worklist;
+	for (int i = 0; i < arr->len; ++i) {
+		uint32_t log_token = g_array_index (arr, uint32_t, i);
+
+		uint32_t cols[MONO_TABLE_NESTEDCLASS];
+		mono_metadata_decode_row (&image_base->tables[MONO_TABLE_NESTEDCLASS], mono_metadata_token_index (log_token) - 1, cols, MONO_NESTED_CLASS_SIZE);
+		/* if the enclosing clas hasn't been created yet, don't do anything.  mono_class_setup_nested_types() will pick up the new row */
+		uint32_t enclosing_typedef_row = cols[MONO_NESTED_CLASS_ENCLOSING];
+		if (pass2_context_is_skeleton (ctx, enclosing_typedef_row))
+			continue;
+		
+		MonoClass *enclosing_klass = mono_class_get_checked (image_base, mono_metadata_make_token (MONO_TABLE_TYPEDEF, enclosing_typedef_row), error);
+		return_val_if_nok (error, FALSE);
+		g_assert (enclosing_klass);
+		/* enclosing class is set up, but noone asked for its nested classes yet.  Nothing to do here. */
+		if (!m_class_is_nested_classes_inited (enclosing_klass))
+			continue;
+		MonoClass *klass = mono_class_get_checked (image_base, mono_metadata_make_token (MONO_TABLE_TYPEDEF, cols[MONO_NESTED_CLASS_NESTED]), error);
+		return_val_if_nok (error, FALSE);
+		g_assert (klass);
+
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: worklist row 0x%08x adding to enclosing 0x%08x, the nested class 0x%08x", log_token, cols[MONO_NESTED_CLASS_ENCLOSING], cols[MONO_NESTED_CLASS_NESTED]);
+		GList *nested_classes = mono_class_get_nested_classes_property (enclosing_klass);
+
+		/* make a list node for the new class */
+		GList *new_list = mono_g_list_prepend_image (image_base, NULL, klass);
+
+		/* either set the property to the new node, or append the new node to the existing list */
+		if (!nested_classes) {
+			mono_class_set_nested_classes_property (enclosing_klass, new_list);
+		} else {
+			g_list_concat (nested_classes, new_list);
+		}
+	}
+
+	return TRUE;
+
+}
 
 /* do actuall enclog application */
 static gboolean
-apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, MonoImage *image_dmeta, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
+apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, MonoImage *image_dmeta, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
 {
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
 	int rows = table_info_get_rows (table_enclog);
@@ -1695,9 +1983,9 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Pass 2 begin: base '%s' delta image=%p", image_base->name, image_dmeta);
 
-#if defined(ALLOW_METHOD_ADD) || defined(ALLOW_FIELD_ADD)
-	MonoClass *add_member_klass = NULL;
-#endif
+	uint32_t add_member_typedef = 0;
+	uint32_t add_property_propertymap = 0;
+	uint32_t add_event_eventmap = 0;
 
 	gboolean assemblyref_updated = FALSE;
 	for (int i = 0; i < rows ; ++i) {
@@ -1720,15 +2008,9 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 		switch (func_code) {
 		case ENC_FUNC_DEFAULT: /* default */
 			break;
-#ifdef ALLOW_METHOD_ADD
 		case ENC_FUNC_ADD_METHOD: {
 			g_assert (token_table == MONO_TABLE_TYPEDEF);
-			MonoClass *klass = mono_class_get_checked (image_base, log_token, error);
-			if (!is_ok (error)) {
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Can't get class with token 0x%08x due to: %s", log_token, mono_error_get_message (error));
-				return FALSE;
-			}
-			add_member_klass = klass;
+			add_member_typedef = log_token;
 			break;
 		}
 
@@ -1736,19 +2018,24 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			g_assert (token_table == MONO_TABLE_METHOD);
 			break;
 		}
-#endif
-#ifdef ALLOW_FIELD_ADD
 		case ENC_FUNC_ADD_FIELD: {
 			g_assert (token_table == MONO_TABLE_TYPEDEF);
-			MonoClass *klass = mono_class_get_checked (image_base, log_token, error);
-			if (!is_ok (error)) {
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Can't get class with token 0x%08x due to: %s", log_token, mono_error_get_message (error));
-				return FALSE;
-			}
-			add_member_klass = klass;
+			add_member_typedef = log_token;
 			break;
 		}
-#endif
+
+		case ENC_FUNC_ADD_PROPERTY: {
+			g_assert (token_table == MONO_TABLE_PROPERTYMAP);
+			add_property_propertymap = log_token;
+			break;
+		}
+
+		case ENC_FUNC_ADD_EVENT: {
+			g_assert (token_table = MONO_TABLE_EVENTMAP);
+			add_event_eventmap = log_token;
+			break;
+		}
+
 		default:
 			g_error ("EnC: unsupported FuncCode, should be caught by pass1");
 			break;
@@ -1794,22 +2081,30 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			break;
 		}
 		case MONO_TABLE_METHOD: {
-#ifdef ALLOW_METHOD_ADD
 			/* if adding a param, handle it with the next record */
 			if (func_code == ENC_FUNC_ADD_PARAM)
 				break;
 
 			if (is_addition) {
-				if (!add_member_klass)
-					g_error ("EnC: new method added but I don't know the class, should be caught by pass1");
-				g_assert (add_member_klass);
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new method 0x%08x to class %s.%s", log_token, m_class_get_name_space (add_member_klass), m_class_get_name (add_member_klass));
-				MonoDebugInformationEnc *method_debug_information = hot_reload_get_method_debug_information (delta_info->ppdb_file, token_index);
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Debug info for method 0x%08x has ppdb idx 0x%08x", log_token, method_debug_information ? method_debug_information->idx : 0);
-				add_method_to_baseline (base_info, delta_info, add_member_klass, log_token, method_debug_information);
-				add_member_klass = NULL;
+				g_assertf (add_member_typedef, "EnC: new method added but I don't know the class, should be caught by pass1");
+				if (pass2_context_is_skeleton (ctx, add_member_typedef)) {
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new method 0x%08x to new class 0x%08x", log_token, add_member_typedef);
+					pass2_context_add_skeleton_member (ctx, add_member_typedef, log_token);
+ 					add_member_parent (base_info, add_member_typedef, log_token);
+				} else {
+					MonoClass *add_member_klass = mono_class_get_checked (image_base, add_member_typedef, error);
+					if (!is_ok (error)) {
+						mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Can't get class with token 0x%08x due to: %s", add_member_typedef, mono_error_get_message (error));
+						return FALSE;
+					}
+
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new method 0x%08x to class %s.%s", log_token, m_class_get_name_space (add_member_klass), m_class_get_name (add_member_klass));
+					MonoDebugInformationEnc *method_debug_information = hot_reload_get_method_debug_information (delta_info->ppdb_file, token_index);
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Debug info for method 0x%08x has ppdb idx 0x%08x", log_token, method_debug_information ? method_debug_information->idx : 0);
+					add_method_to_baseline (base_info, delta_info, add_member_klass, log_token, method_debug_information);
+				}
+				add_member_typedef = 0;
 			}
-#endif
 
 			if (!base_info->method_table_update)
 				base_info->method_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
@@ -1829,56 +2124,63 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 				/* rva points probably into image_base IL stream. can this ever happen? */
 				g_print ("TODO: this case is still a bit contrived. token=0x%08x with rva=0x%04x\n", log_token, rva);
 			}
-#if defined(ALLOW_METHOD_ADD) || defined(ALLOW_FIELD_ADD)
-			add_member_klass = NULL;
-#endif
+			add_member_typedef = 0;
 			break;
 		}
 		case MONO_TABLE_FIELD: {
-#ifdef ALLOW_FIELD_ADD
 			g_assert (is_addition);
-			g_assert (add_member_klass);
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new field 0x%08x to class %s.%s", log_token, m_class_get_name_space (add_member_klass), m_class_get_name (add_member_klass));
+			g_assert (add_member_typedef);
+			if (pass2_context_is_skeleton (ctx, add_member_typedef)) {
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new field 0x%08x to new class 0x%08x", log_token, add_member_typedef);
+				pass2_context_add_skeleton_member (ctx, add_member_typedef, log_token);
+				add_member_parent (base_info, add_member_typedef, log_token);
+			} else {
+				MonoClass *add_member_klass = mono_class_get_checked (image_base, add_member_typedef, error);
+				if (!is_ok (error)) {
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Can't get class with token 0x%08x due to: %s", add_member_typedef, mono_error_get_message (error));
+					return FALSE;
+				}
+				
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new field 0x%08x to class %s.%s", log_token, m_class_get_name_space (add_member_klass), m_class_get_name (add_member_klass));
 
-			uint32_t mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, log_token);
-			uint32_t field_flags = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_FIELD], mapped_token - 1, MONO_FIELD_FLAGS);
+				uint32_t mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, log_token);
+				uint32_t field_flags = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_FIELD], mapped_token - 1, MONO_FIELD_FLAGS);
 
 #ifndef ALLOW_INSTANCE_FIELD_ADD
-			if ((field_flags & FIELD_ATTRIBUTE_STATIC) == 0) {
-				/* TODO: implement instance (and literal?) fields */
-				mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_METADATA_UPDATE, "Adding non-static fields isn't implemented yet (token 0x%08x, class %s.%s)", log_token, m_class_get_name_space (add_member_klass), m_class_get_name (add_member_klass));
-				mono_error_set_not_implemented (error, "Adding non-static fields isn't implemented yet (token 0x%08x, class %s.%s)", log_token, m_class_get_name_space (add_member_klass), m_class_get_name (add_member_klass));
-				return FALSE;
-			}
+				if ((field_flags & FIELD_ATTRIBUTE_STATIC) == 0) {
+					/* TODO: implement instance (and literal?) fields */
+					mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_METADATA_UPDATE, "Adding non-static fields isn't implemented yet (token 0x%08x, class %s.%s)", log_token, m_class_get_name_space (add_member_klass), m_class_get_name (add_member_klass));
+					mono_error_set_not_implemented (error, "Adding non-static fields isn't implemented yet (token 0x%08x, class %s.%s)", log_token, m_class_get_name_space (add_member_klass), m_class_get_name (add_member_klass));
+					return FALSE;
+				}
 #endif
 
-			add_field_to_baseline (base_info, delta_info, add_member_klass, log_token);
+				add_field_to_baseline (base_info, delta_info, add_member_klass, log_token);
 
-			/* This actually does more than mono_class_setup_basic_field_info and
-			 * resolves MonoClassField:type and sets MonoClassField:offset to -1 to make
-			 * it easier to spot that the field is special.
-			 */
-			metadata_update_field_setup_basic_info_and_resolve (image_base, base_info, generation, delta_info, add_member_klass, log_token, field_flags, error);
-			if (!is_ok (error)) {
-				mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_METADATA_UPDATE, "Could not setup field (token 0x%08x) due to: %s", log_token, mono_error_get_message (error));
-				return FALSE;
+				/* This actually does more than mono_class_setup_basic_field_info and
+				 * resolves MonoClassField:type and sets MonoClassField:offset to -1 to make
+				 * it easier to spot that the field is special.
+				 */
+				metadata_update_field_setup_basic_info_and_resolve (image_base, base_info, generation, delta_info, add_member_klass, log_token, field_flags, error);
+				if (!is_ok (error)) {
+					mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_METADATA_UPDATE, "Could not setup field (token 0x%08x) due to: %s", log_token, mono_error_get_message (error));
+					return FALSE;
+				}
 			}
-
-			add_member_klass = NULL;
-#else
-			g_assert_not_reached ();
-#endif
+			
+			add_member_typedef = 0;
 			break;
 		}
 		case MONO_TABLE_TYPEDEF: {
-#ifdef ALLOW_CLASS_ADD
 			if (is_addition) {
 				/* Adding a new class. ok */
 				switch (func_code) {
-				case ENC_FUNC_DEFAULT:
+				case ENC_FUNC_DEFAULT: {
 					/* ok, added a new class */
-					/* TODO: do things here */
+					pass2_context_add_skeleton (ctx, log_token);
+					add_typedef_to_image_metadata (image_base, log_token);
 					break;
+				}
 				case ENC_FUNC_ADD_METHOD:
 				case ENC_FUNC_ADD_FIELD:
 					/* ok, adding a new field or method to a new class */
@@ -1887,7 +2189,6 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 					 * especially since from the next generation's point of view
 					 * that's what adding a field/method will be. */
 					break;
-				case ENC_FUNC_ADD_PROPERTY:
 				case ENC_FUNC_ADD_EVENT:
 					g_assert_not_reached (); /* FIXME: implement me */
 				default:
@@ -1895,21 +2196,120 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 				}
 				break;
 			}
-#endif
 			/* modifying an existing class by adding a method or field, etc. */
 			g_assert (!is_addition);
-#if !defined(ALLOW_METHOD_ADD) && !defined(ALLOW_FIELD_ADD)
-			g_assert_not_reached ();
-#else
 			g_assert (func_code != ENC_FUNC_DEFAULT);
-#endif
+			break;
+		}
+		case MONO_TABLE_NESTEDCLASS: {
+			g_assert (is_addition);
+			add_nested_class_to_worklist (ctx, image_base, log_token);
+			break;
+		}
+		case MONO_TABLE_PROPERTYMAP: {
+			switch (func_code) {
+			case ENC_FUNC_DEFAULT:
+				/* adding a new property map - parent could be new or existing class, but it didn't have a propertymap before */
+				g_assert (is_addition);
+				break;
+			case ENC_FUNC_ADD_PROPERTY:
+				/* adding a new property to a propertymap.  could be new or existing propertymap. */
+				break;
+			default:
+				g_assert_not_reached (); /* unexpected func code */
+			}
+			uint32_t cols[MONO_PROPERTY_MAP_SIZE];
+			mono_metadata_decode_row (&image_base->tables [MONO_TABLE_PROPERTYMAP], token_index - 1, cols, MONO_PROPERTY_MAP_SIZE);
+
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: propertymap parent = 0x%08x, props = 0x%08x\n", cols[MONO_PROPERTY_MAP_PARENT], cols [MONO_PROPERTY_MAP_PROPERTY_LIST]);
 			break;
 		}
 		case MONO_TABLE_PROPERTY: {
 			/* allow updates to existing properties. */
-			/* FIXME: use DeltaInfo:prev_gen_rows instead of image_base */
-			g_assert (token_index <= table_info_get_rows (&image_base->tables [token_table]));
+			if (!is_addition)
+				/* FIXME: use DeltaInfo:prev_gen_rows instead of image_base */
+				g_assert (token_index <= table_info_get_rows (&image_base->tables [token_table]));
+			else {
+				g_assert (add_property_propertymap != 0);
+
+				uint32_t parent_type_token = mono_metadata_decode_row_col (&image_base->tables [MONO_TABLE_PROPERTYMAP], mono_metadata_token_index (add_property_propertymap) - 1, MONO_PROPERTY_MAP_PARENT);
+				parent_type_token = mono_metadata_make_token (MONO_TABLE_TYPEDEF, parent_type_token);
+
+				g_assert (parent_type_token != 0);
+
+				if (pass2_context_is_skeleton (ctx, parent_type_token)) {
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new property 0x%08x to new class 0x%08x", log_token, parent_type_token);
+					pass2_context_add_skeleton_member (ctx, parent_type_token, log_token);
+					add_member_parent (base_info, parent_type_token, log_token);
+					break;
+				} else {
+					MonoClass *add_property_klass = mono_class_get_checked (image_base, parent_type_token, error);
+					if (!is_ok (error)) {
+						mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Can't get class with token 0x%08x due to: %s", parent_type_token, mono_error_get_message (error));
+						return FALSE;
+					}
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new property 0x%08x to class %s.%s", log_token, m_class_get_name_space (add_property_klass), m_class_get_name (add_property_klass));
+
+					/* TODO: metadata-update: add a new MonoClassMetadataUpdatePropertyInfo to added_props */
+					break;
+				}
+
+				add_property_propertymap = 0;
+			}
 			/* assuming that property attributes and type haven't changed. */
+			break;
+		}
+		case MONO_TABLE_EVENTMAP: {
+			switch (func_code) {
+			case ENC_FUNC_DEFAULT:
+				/* adding a new eventmap - parent could be new or existing class, but it didn't have an eventmap before */
+				g_assert (is_addition);
+				break;
+			case ENC_FUNC_ADD_EVENT:
+				/* adding a new event to an eventmap. could be new or existing eventmap. */
+				break;
+			default:
+				g_assert_not_reached (); /* unexpected func code */
+			}
+			uint32_t cols[MONO_EVENT_MAP_SIZE];
+			mono_metadata_decode_row (&image_base->tables [MONO_TABLE_EVENTMAP], token_index - 1, cols, MONO_EVENT_MAP_SIZE);
+
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: eventmap parent = 0x%08x, evts = 0x%08x\n", cols[MONO_EVENT_MAP_PARENT], cols [MONO_EVENT_MAP_EVENTLIST]);
+			break;
+			
+		}
+		case MONO_TABLE_EVENT: {
+			if (!is_addition)
+				/* FIXME: use DeltaInfo:prev_gen_rows instead of image_base */
+				g_assert (token_index <= table_info_get_rows (&image_base->tables [token_table]));
+			else {
+				g_assert (add_event_eventmap != 0);
+
+				uint32_t parent_type_token = mono_metadata_decode_row_col (&image_base->tables [MONO_TABLE_EVENTMAP], mono_metadata_token_index (add_event_eventmap) - 1, MONO_EVENT_MAP_PARENT);
+				parent_type_token = mono_metadata_make_token (MONO_TABLE_TYPEDEF, parent_type_token);
+
+				g_assert (parent_type_token != 0);
+
+				if (pass2_context_is_skeleton (ctx, parent_type_token)) {
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new event 0x%08x to new class 0x%08x", log_token, parent_type_token);
+					pass2_context_add_skeleton_member (ctx, parent_type_token, log_token);
+					add_member_parent (base_info, parent_type_token, log_token);
+					break;
+				} else {
+					MonoClass *add_event_klass = mono_class_get_checked (image_base, parent_type_token, error);
+					if (!is_ok (error)) {
+						mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Can't get class with token 0x%08x due to: %s", parent_type_token, mono_error_get_message (error));
+						return FALSE;
+					}
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new event 0x%08x to class %s.%s", log_token, m_class_get_name_space (add_event_klass), m_class_get_name (add_event_klass));
+
+					/* TODO: metadata-update: add a new MonoEventInfo to the bag on the class? */
+					break;
+				}
+
+				add_event_eventmap = 0;
+			}
+			/* assuming that event attributes and type haven't changed. */
 			break;
 		}
 		case MONO_TABLE_CUSTOMATTRIBUTE: {
@@ -1918,7 +2318,6 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 		}
 		case MONO_TABLE_PARAM: {
 			/* ok, pass1 checked for disallowed modifications */
-			/* ALLOW_METHOD_ADD: FIXME: here we would really like to update the method's paramlist column to point to the new params. */
 			/* if there were multiple added methods, this comes in as several method
 			 * additions, followed by the parameter additions.
 			 *
@@ -1940,6 +2339,11 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			 */
 			break;
 		}
+		case MONO_TABLE_INTERFACEIMPL: {
+			g_assert (is_addition);
+			/* added rows ok (for added classes). will be processed when the MonoClass is created. */
+			break;
+		}
 		default: {
 			g_assert (token_index > table_info_get_rows (&image_base->tables [token_table]));
 			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
@@ -1947,6 +2351,14 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 		}
 		}
 	}
+
+
+	if (!baseline_info_consume_skeletons (ctx, image_base, base_info, error))
+		return FALSE;
+
+	if (!pass2_update_nested_classes (ctx, image_base, error))
+		return FALSE;
+
 	return TRUE;
 }
 
@@ -2093,12 +2505,16 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
 		dump_update_summary (image_base, image_dmeta);
 
-	if (!apply_enclog_pass2 (image_base, base_info, generation, image_dmeta, delta_info, dil_bytes, dil_length, error)) {
+	Pass2Context pass2ctx = {0,};
+	pass2_context_init (&pass2ctx);
+	if (!apply_enclog_pass2 (&pass2ctx, image_base, base_info, generation, image_dmeta, delta_info, dil_bytes, dil_length, error)) {
+		pass2_context_destroy (&pass2ctx);
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Error applying delta image to base=%s, due to: %s", basename, mono_error_get_message (error));
 		hot_reload_update_cancel (generation);
 		return;
 	}
 	mono_error_assert_ok (error);
+	pass2_context_destroy (&pass2ctx);
 
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (image_base);
 	hot_reload_update_publish (alc, generation);
@@ -2267,7 +2683,7 @@ hot_reload_table_num_rows_slow (MonoImage *base, int table_index)
 {
 	BaselineInfo *base_info = baseline_info_lookup (base);
 	if (!base_info)
-		return FALSE;
+		return 0;
 
 	uint32_t current_gen = hot_reload_get_thread_generation ();
 
@@ -2284,19 +2700,27 @@ hot_reload_table_num_rows_slow (MonoImage *base, int table_index)
 }
 
 static void
+add_member_parent (BaselineInfo *base_info, uint32_t typedef_token, uint32_t member_token)
+{
+	if (!base_info->member_parent) {
+		base_info->member_parent = g_hash_table_new (g_direct_hash, g_direct_equal);
+	}
+	g_hash_table_insert (base_info->member_parent, GUINT_TO_POINTER (member_token), GUINT_TO_POINTER (typedef_token));
+}
+
+
+static void
 add_member_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClass *klass, uint32_t member_token)
 {
 	/* Check they really passed a table token, not just a table row index */
 	g_assert (mono_metadata_token_table (member_token) != 0);
 
-	if (!base_info->member_parent) {
-		base_info->member_parent = g_hash_table_new (g_direct_hash, g_direct_equal);
-	}
 	MonoClassMetadataUpdateInfo *klass_info = mono_class_get_or_add_metadata_update_info (klass);
 	GSList *members = klass_info->added_members;
 	klass_info->added_members = g_slist_prepend_mem_manager (m_class_get_mem_manager (klass), members, GUINT_TO_POINTER (member_token));
-	g_hash_table_insert (base_info->member_parent, GUINT_TO_POINTER (member_token), GUINT_TO_POINTER (m_class_get_type_token (klass)));
+	add_member_parent (base_info, m_class_get_type_token (klass), member_token);
 }
+
 
 static void
 add_method_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClass *klass, uint32_t method_token, MonoDebugInformationEnc* pdb_address)
@@ -2416,11 +2840,10 @@ static MonoClassField *
 hot_reload_get_field (MonoClass *klass, uint32_t fielddef_token) {
 	MonoClassMetadataUpdateInfo *info = mono_class_get_or_add_metadata_update_info (klass);
 	g_assert (mono_metadata_token_table (fielddef_token) == MONO_TABLE_FIELD);
-	/* FIXME: this needs locking in the multi-threaded case.  There could be an update happening that resizes the array. */
-	GPtrArray *added_fields = info->added_fields;
-	uint32_t count = added_fields->len;
-	for (uint32_t i = 0; i < count; ++i) {
-		MonoClassMetadataUpdateField *field = (MonoClassMetadataUpdateField *)g_ptr_array_index (added_fields, i);
+	GSList *added_fields = info->added_fields;
+
+	for (GSList *p = added_fields; p; p = p->next) {
+		MonoClassMetadataUpdateField *field = (MonoClassMetadataUpdateField *)p->data;
 		if (field->token == fielddef_token)
 			return &field->field;
 	}
@@ -2431,11 +2854,7 @@ hot_reload_get_field (MonoClass *klass, uint32_t fielddef_token) {
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error)
 {
-	// TODO: hang a "pending field" struct off the parent_klass if !parent_klass->fields
-	//   In that case we can do things simpler, maybe by just creating the MonoClassField array as usual, and just relying on the normal layout algorithm to make space for the instance.
-
-	if (!m_class_is_inited (parent_klass))
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding fielddef 0x%08x to uninited class 0x%08x", fielddef_token, m_class_get_type_token (parent_klass));
+	g_assert (m_class_is_inited (parent_klass));
 
 	MonoClassMetadataUpdateInfo *parent_info = mono_class_get_or_add_metadata_update_info (parent_klass);
 
@@ -2455,11 +2874,7 @@ metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, Basel
 	if (!is_ok (error))
 		return NULL;
 
-	if (!parent_info->added_fields) {
-		parent_info->added_fields = g_ptr_array_new ();
-	}
-
-	g_ptr_array_add (parent_info->added_fields, field);
+	parent_info->added_fields = g_slist_prepend_mem_manager (m_class_get_mem_manager (parent_klass), parent_info->added_fields, field);
 
 	return field;
 }
@@ -2604,4 +3019,71 @@ hot_reload_find_method_by_name (MonoClass *klass, const char *name, int param_co
 	}
 
 	return res;
+}
+
+static MonoMethod *
+hot_reload_added_methods_iter (MonoClass *klass, gpointer *iter)
+{
+	g_assert (iter);
+	// invariant: idx is one past the method we previously returned.
+	uint32_t idx = GPOINTER_TO_UINT (*iter);
+	g_assert (idx >= mono_class_get_method_count (klass));
+
+	GSList *members = hot_reload_get_added_members (klass);
+	if (!members)
+		return NULL;
+	// expect to only see class defs here.  Rationale: adding methods to generic classes is not
+	// allowed (if a generation adds a new generic class, it won't be here - those methods will
+	// be in the normal iteration code, not here.
+	g_assert (m_class_get_class_kind (klass) == MONO_CLASS_DEF);
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Iterating added methods of 0x%08x idx = %u", m_class_get_type_token (klass), idx);
+
+	// go through the added members incrementing cur_count until it's equal to idx or we run out
+	// of added members.
+	uint32_t cur_count = mono_class_get_method_count (klass);
+	for (GSList *ptr = members; ptr; ptr = ptr->next) {
+		uint32_t token = GPOINTER_TO_UINT(ptr->data);
+		if (mono_metadata_token_table (token) != MONO_TABLE_METHOD)
+			continue;
+		if (cur_count == idx) {
+			// found a method, advance iter and return the method.
+			*iter = GUINT_TO_POINTER (1+idx);
+			ERROR_DECL (local_error);
+			MonoMethod *method = mono_get_method_checked (m_class_get_image (klass), token, klass, NULL, local_error);
+			mono_error_cleanup (local_error);
+			return method;
+		}
+		cur_count++;
+	}
+	// ran out of added methods, iteration is finished.
+	return NULL;
+}
+
+static MonoClassField *
+hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy G_GNUC_UNUSED, gpointer *iter)
+{
+	MonoClassMetadataUpdateInfo *info = mono_class_get_metadata_update_info (klass);
+	if (!info)
+		return NULL;
+
+	GSList *added_fields = info->added_fields;
+
+	// invariant: idx is one past the field we previously returned.
+	uint32_t idx = GPOINTER_TO_UINT(*iter);
+
+	g_assert (idx >= mono_class_get_field_count (klass));
+
+	uint32_t field_idx = idx - mono_class_get_field_count (klass);
+	
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Iterating added fields of 0x%08x idx = %u", m_class_get_type_token (klass), field_idx);
+
+	GSList *field_node = g_slist_nth (added_fields, field_idx);
+	/* we reached the end, we're done */
+	if (!field_node)
+		return NULL;
+	MonoClassMetadataUpdateField *field = (MonoClassMetadataUpdateField *)field_node->data;
+	idx++;
+	*iter = GUINT_TO_POINTER (idx);
+	return &field->field;
 }
