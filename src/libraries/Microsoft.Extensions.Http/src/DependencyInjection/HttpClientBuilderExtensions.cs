@@ -488,11 +488,11 @@ namespace Microsoft.Extensions.DependencyInjection
         // See comments on HttpClientMappingRegistry.
         private static void ReserveClient(IHttpClientBuilder builder, Type type, string name, bool validateSingleType)
         {
-            var registry = (HttpClientMappingRegistry)builder.Services.Single(sd => sd.ServiceType == typeof(HttpClientMappingRegistry)).ImplementationInstance;
+            var registry = (HttpClientMappingRegistry?)builder.Services.Single(sd => sd.ServiceType == typeof(HttpClientMappingRegistry)).ImplementationInstance;
             Debug.Assert(registry != null);
 
             // Check for same name registered to two types. This won't work because we rely on named options for the configuration.
-            if (registry.NamedClientRegistrations.TryGetValue(name, out Type otherType) &&
+            if (registry.NamedClientRegistrations.TryGetValue(name, out Type? otherType) &&
 
                 // Allow using the same name with multiple types in some cases (see callers).
                 validateSingleType &&

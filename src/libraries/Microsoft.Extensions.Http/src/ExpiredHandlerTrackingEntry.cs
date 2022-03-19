@@ -25,10 +25,10 @@ namespace Microsoft.Extensions.Http
 
         public bool CanDispose => !_livenessTracker.IsAlive;
 
-        public HttpMessageHandler InnerHandler { get; }
+        public HttpMessageHandler? InnerHandler { get; }
 
         public string Name { get; }
 
-        public IServiceScope Scope { get; }
+        public IServiceScope? Scope { get; }
     }
 }
