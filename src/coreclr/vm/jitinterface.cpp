@@ -4921,6 +4921,16 @@ void CEEInfo::getCallInfo(
 
             exactType = constrainedType;
         }
+#ifdef FEATURE_DEFAULT_INTERFACES
+        else if (directMethod && pMD->IsStatic())
+        {
+            // Default interface implementation of static virtual method
+            pMDAfterConstraintResolution = directMethod;
+            fResolvedConstraint = TRUE;
+            pResult->thisTransform = CORINFO_NO_THIS_TRANSFORM;
+            exactType = directMethod->GetMethodTable();
+        }
+#endif
         else  if (constrainedType.IsValueType())
         {
             pResult->thisTransform = CORINFO_BOX_THIS;

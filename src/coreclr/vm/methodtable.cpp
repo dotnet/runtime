@@ -5475,7 +5475,8 @@ namespace
         MethodDesc *interfaceMD,
         MethodTable *interfaceMT,
         BOOL allowVariance,
-        MethodDesc **candidateMD)
+        MethodDesc **candidateMD,
+        BOOL throwOnConflict)
     {
         *candidateMD = NULL;
 
@@ -5562,9 +5563,14 @@ namespace
                             }
                         }
                     }
-                    else
+                    else if (pMD->IsStatic() && pMD->HasMethodImplSlot())
                     {
-                        wprintf(W("TODO!\n"));
+                        // Static virtual methods don't record MethodImpl slots so they need special handling
+                        candidateMaybe = pMT->TryResolveVirtualStaticMethodOnThisType(
+                            interfaceMT,
+                            interfaceMD,
+                            /* verifyImplemented */ FALSE,
+                            /* throwOnConflict */ throwOnConflict);
                     }
                 }
             }
@@ -5623,7 +5629,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
 
     // Check the current method table itself
     MethodDesc *candidateMaybe = NULL;
-    if (IsInterface() && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, allowVariance, &candidateMaybe))
+    if (IsInterface() && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, allowVariance, &candidateMaybe, throwOnConflict))
     {
         _ASSERTE(candidateMaybe != NULL);
 
@@ -5663,7 +5669,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
                 MethodTable *pCurMT = it.GetInterface(pMT);
 
                 MethodDesc *pCurMD = NULL;
-                if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, allowVariance, &pCurMD))
+                if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, allowVariance, &pCurMD, throwOnConflict))
                 {
                     //
                     // Found a match. But is it a more specific match (we want most specific interfaces)
@@ -5753,8 +5759,8 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             pBestCandidateMD = candidates[i].pMD;
 
             // If this is a second pass lookup, we know this is a variant match. As such
-            // we pick the first result as the winner and don't look for a conflict.
-            if (allowVariance)
+            // we pick the first result as the winner and don't look for a conflict for instance methods.
+            if (allowVariance && !pInterfaceMD->IsStatic())
                 break;
         }
         else if (pBestCandidateMT != candidates[i].pMT)
@@ -5762,7 +5768,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             if (throwOnConflict)
                 ThrowExceptionForConflictingOverride(this, pInterfaceMT, pInterfaceMD);
 
-            *ppDefaultMethod = NULL;
+            *ppDefaultMethod = pBestCandidateMD;
             RETURN(FALSE);
         }
     }
@@ -7986,7 +7992,13 @@ MethodDesc *MethodTable::GetDefaultConstructor(BOOL forceBoxedEntryPoint /* = FA
 //==========================================================================================
 // Finds the (non-unboxing) MethodDesc that implements the interface virtual static method pInterfaceMD.
 MethodDesc *
-MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL allowNullResult, BOOL verifyImplemented, BOOL allowVariantMatches)
+MethodTable::ResolveVirtualStaticMethod(
+    MethodTable* pInterfaceType,
+    MethodDesc* pInterfaceMD,
+    BOOL allowNullResult,
+    BOOL verifyImplemented,
+    BOOL allowVariantMatches,
+    BOOL throwOnConflict)
 {
     if (!pInterfaceMD->IsSharedByGenericMethodInstantiations() && !pInterfaceType->IsSharedByGenericInstantiations())
     {
@@ -8015,7 +8027,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
             // Search for match on a per-level in the type hierarchy
             for (MethodTable* pMT = this; pMT != nullptr; pMT = pMT->GetParentMethodTable())
             {
-                MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceType, pInterfaceMD, verifyImplemented);
+                MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceType, pInterfaceMD, verifyImplemented, throwOnConflict);
                 if (pMD != nullptr)
                 {
                     return pMD;
@@ -8059,7 +8071,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                         {
                             // Variant or equivalent matching interface found
                             // Attempt to resolve on variance matched interface
-                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pItfInMap, pInterfaceMD, verifyImplemented);
+                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pItfInMap, pInterfaceMD, verifyImplemented, throwOnConflict);
                             if (pMD != nullptr)
                             {
                                 return pMD;
@@ -8068,8 +8080,19 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                     }
                 }
 
-                if (FindDefaultInterfaceImplementation(pInterfaceMD, pInterfaceType, &pMD, /* allowVariance */ allowVariantMatches, /* throwOnConflict */ verifyImplemented))
+                // I have yet to figure out how to modify getCallInfo to support lazy throws upon
+                // ambiguous default interface method resolution. For now this effectively disables
+                // the uniqueness check.
+                /*BOOL haveUniqueDefaultImplementation =*/ pMT->FindDefaultInterfaceImplementation(
+                    pInterfaceMD,
+                    pInterfaceType,
+                    &pMD,
+                    /* allowVariance */ allowVariantMatches,
+                    /* throwOnConflict */ throwOnConflict);
+                // if (haveUniqueDefaultImplementation || (pMD != nullptr && verifyImplemented))
+                if (pMD != nullptr)
                 {
+                    // We tolerate conflicts upon verification of implemented SVMs so that they only blow up when actually called at execution time.
                     return pMD;
                 }
             }
@@ -8092,7 +8115,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
 // Try to locate the appropriate MethodImpl matching a given interface static virtual method.
 // Returns nullptr on failure.
 MethodDesc*
-MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented)
+MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, BOOL throwOnConflict)
 {
     HRESULT hr = S_OK;
     IMDInternalImport* pMDInternalImport = GetMDImport();
@@ -8227,7 +8250,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             {
                 return pMethodImpl;
             }
-            if (pPrevMethodImpl != nullptr)
+            if (pPrevMethodImpl != nullptr && throwOnConflict)
             {
                 // Two MethodImpl records found for the same virtual static interface method
                 COMPlusThrow(kTypeLoadException, E_FAIL);
@@ -8254,7 +8277,14 @@ MethodTable::VerifyThatAllVirtualStaticMethodsAreImplemented()
                 MethodDesc *pMD = it.GetMethodDesc();
                 if (pMD->IsVirtual() &&
                     pMD->IsStatic() &&
-                    (pMD->IsAbstract() && !ResolveVirtualStaticMethod(pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE, /* allowVariantMatches */ FALSE)))
+                    (pMD->IsAbstract() &&
+                    !ResolveVirtualStaticMethod(
+                        pInterfaceMT,
+                        pMD,
+                        /* allowNullResult */ TRUE,
+                        /* verifyImplemented */ TRUE,
+                        /* allowVariantMatches */ FALSE,
+                        /* throwOnConflict */ FALSE)))
                 {
                     IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
                     GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, GetCl(), pMD->GetName(), IDS_CLASSLOAD_STATICVIRTUAL_NOTIMPL);
@@ -8287,7 +8317,13 @@ MethodTable::TryResolveConstraintMethodApprox(
     {
         _ASSERTE(!thInterfaceType.IsTypeDesc());
         _ASSERTE(thInterfaceType.IsInterface());
-        MethodDesc *result = ResolveVirtualStaticMethod(thInterfaceType.GetMethodTable(), pInterfaceMD, pfForceUseRuntimeLookup != NULL);
+        MethodDesc *result = ResolveVirtualStaticMethod(
+            thInterfaceType.GetMethodTable(),
+            pInterfaceMD,
+            /* allowNullResult */pfForceUseRuntimeLookup != NULL,
+            /* verifyImplemented */ FALSE,
+            /* allowVariantMatches */ TRUE,
+            /* throwOnConflict */ FALSE);
         if (result == NULL)
         {
             *pfForceUseRuntimeLookup = TRUE;

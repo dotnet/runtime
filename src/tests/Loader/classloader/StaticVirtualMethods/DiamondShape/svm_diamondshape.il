@@ -633,7 +633,7 @@
     {
       IL_00a9:  nop
       IL_00ac:  ldloca.s   V_8
-                constrained. class [svm_diamondshape]GI23Class`<object>
+                constrained. class [svm_diamondshape]GI23Class`1<object>
       IL_00ae:  call         int32 class GI1`1<object>::Func<string>(class [mscorlib]System.Type[]&)
       IL_00b3:  pop
       IL_00b4:  ldc.i4.0
