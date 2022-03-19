@@ -2113,9 +2113,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b65176/b65176/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b27883/b27883/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54394</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b34953/b34953/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
