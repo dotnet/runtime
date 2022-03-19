@@ -1220,7 +1220,7 @@ namespace System.Text.Json.SourceGeneration
 
                 return new PropertyGenerationSpec
                 {
-                    ExactNameSpecifiedInSourceCode = propInfoWrapper?.NeedsAtSign ?? false ? "@" + memberInfo.Name : memberInfo.Name,
+                    ExactNameSpecifiedInSourceCode = propInfoWrapper?.NeedsAtSign == true ? "@" + memberInfo.Name : memberInfo.Name,
                     ClrName = memberInfo.Name,
                     IsProperty = memberInfo.MemberType == MemberTypes.Property,
                     IsPublic = isPublic,
