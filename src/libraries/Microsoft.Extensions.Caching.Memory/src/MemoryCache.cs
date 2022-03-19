@@ -53,7 +53,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 _options.Clock = new SystemClock();
             }
 
-            _accumulatedStats = new Stats(this);
+            _accumulatedStats = new Stats(this, skipAdd: true);
+            _stats = new ThreadLocal<Stats>(() => new Stats(this));
             _lastExpirationScan = _options.Clock.UtcNow;
             TrackLinkedCacheEntries = _options.TrackLinkedCacheEntries; // we store the setting now so it's consistent for entire MemoryCache lifetime
         }
@@ -335,7 +336,7 @@ namespace Microsoft.Extensions.Caching.Memory
             return (hits, misses);
         }
 
-        private ThreadLocal<Stats>? _stats;
+        private ThreadLocal<Stats> _stats;
 
         private void Hit()
         {
@@ -347,33 +348,18 @@ namespace Microsoft.Extensions.Caching.Memory
             GetStats().Misses++;
         }
 
-        private Stats GetStats()
-        {
-            if (_stats == null)
-            {
-                return Initialize();
-            }
-            return _stats!.Value!;
-
-            Stats Initialize()
-            {
-                var s = _stats = new ThreadLocal<Stats>(() => new Stats(this));
-                lock (_allStats)
-                {
-                    _allStats.Add(new WeakReference<Stats>(s.Value!));
-                }
-                return s.Value!;
-            }
-        }
+        private Stats GetStats() => _stats!.Value!;
 
         internal sealed class Stats
         {
             public int Hits;
             public int Misses;
             private MemoryCache _memoryCache;
-            public Stats(MemoryCache memoryCache)
+            public Stats(MemoryCache memoryCache, bool skipAdd = false)
             {
                 _memoryCache = memoryCache;
+                if (!skipAdd)
+                    _memoryCache._allStats.Add(new WeakReference<Stats>(this));
             }
             ~Stats()
             {
@@ -389,8 +375,8 @@ namespace Microsoft.Extensions.Caching.Memory
                         }
                     }
                     allStats.RemoveAll(s => s is null);
-                    Interlocked.Add(ref _memoryCache._accumulatedStats.Hits, Hits);
-                    Interlocked.Add(ref _memoryCache._accumulatedStats.Misses, Misses);
+                    _memoryCache._accumulatedStats.Hits += Hits;
+                    _memoryCache._accumulatedStats.Misses += Misses;
                 }
             }
         }
