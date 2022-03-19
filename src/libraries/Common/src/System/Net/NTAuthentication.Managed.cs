@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -28,6 +29,7 @@ namespace System.Net
         private readonly ChannelBinding? _channelBinding;
 
         // State parameters
+        private byte[]? _spnegoMechList;
         private byte[]? _negotiateMessage;
         private byte[]? _clientSigningKey;
         private byte[]? _serverSigningKey;
@@ -36,6 +38,10 @@ namespace System.Net
         private uint _clientSequenceNumber;
         private uint _serverSequenceNumber;
         public bool IsCompleted { get; set; }
+
+        // value should match the Windows sspicli NTE_FAIL value
+        // defined in winerror.h
+        private const int NTE_FAIL = unchecked((int)0x80090020);
 
         private static ReadOnlySpan<byte> NtlmHeader => new byte[] {
             (byte)'N', (byte)'T', (byte)'L', (byte)'M',
@@ -50,6 +56,11 @@ namespace System.Net
         private static byte[] ServerSealingKeyMagic = Encoding.ASCII.GetBytes("session key to server-to-client sealing key magic constant\0");
 
         private static readonly byte[] s_workstation = Encoding.Unicode.GetBytes(Environment.MachineName);
+
+        private const Flags s_requiredFlags =
+            Flags.NegotiateNtlm2 | Flags.NegotiateNtlm | Flags.NegotiateUnicode | Flags.TargetName |
+            Flags.NegotiateVersion | Flags.NegotiateKeyExchange | Flags.Negotiate128 |
+            Flags.NegotiateTargetInfo | Flags.NegotiateAlwaysSign | Flags.NegotiateSign;
 
         private static readonly Version s_version = new Version { VersionMajor = 6, VersionMinor = 1, ProductBuild = 7600, CurrentRevision = 15 };
 
@@ -337,10 +348,7 @@ namespace System.Net
             asBytes.Clear();
             NtlmHeader.CopyTo(asBytes);
             message.Header.MessageType = MessageType.Negotiate;
-            message.Flags =
-                Flags.NegotiateNtlm2 | Flags.NegotiateNtlm | Flags.NegotiateUnicode | Flags.TargetName |
-                Flags.NegotiateVersion | Flags.NegotiateKeyExchange | Flags.Negotiate128 |
-                Flags.NegotiateTargetInfo | Flags.NegotiateAlwaysSign | Flags.NegotiateSign;
+            message.Flags = s_requiredFlags;
             message.Version = s_version;
         }
 
@@ -371,10 +379,14 @@ namespace System.Net
 
         private static unsafe void SetField(ref MessageField field, int length, int offset)
         {
+            if (length > short.MaxValue)
+            {
+                throw new Win32Exception(NTE_FAIL);
+            }
+
             fixed (void* ptr = &field)
             {
                 Span<byte> span = new Span<byte>(ptr, sizeof(MessageField));
-                // TODO: Length validation!
                 BinaryPrimitives.WriteInt16LittleEndian(span, (short)length);
                 BinaryPrimitives.WriteInt16LittleEndian(span.Slice(2), (short)length);
                 BinaryPrimitives.WriteInt32LittleEndian(span.Slice(4), offset);
@@ -399,19 +411,35 @@ namespace System.Net
         // Define NTOWFv2(Passwd, User, UserDom) as HMAC_MD5(MD4(UNICODE(Passwd)), UNICODE(ConcatenationOf(Uppercase(User),
         // UserDom ) ) )
         // EndDefine
-        private static byte[] makeNtlm2Hash(string domain, string userName, string password)
+        private static void makeNtlm2Hash(string domain, string userName, ReadOnlySpan<char> password, Span<byte> hash)
         {
-            // TODO: Don't leak the buffers onto heap
-            byte[] pwHash = new byte[DigestLength];
-            byte[] pwBytes = Encoding.Unicode.GetBytes(password);
+            // Maximum password length for Windows authentication is 128 characters, we enforce
+            // the limit early to prevent allocating large buffers on stack.
+            if (password.Length > 128)
+            {
+                throw new Win32Exception(NTE_FAIL);
+            }
 
-            MD4.HashData(pwBytes, pwHash);
-            HMACMD5 hmac = new HMACMD5(pwHash);
+            Span<byte> pwHash = stackalloc byte[DigestLength];
+            Span<byte> pwBytes = stackalloc byte[Encoding.Unicode.GetByteCount(password)];
 
-            // strangely, user is upper case, domain is not.
-            byte[] blob = Encoding.Unicode.GetBytes(string.Concat(userName.ToUpper(), domain));
+            try
+            {
+                Encoding.Unicode.GetBytes(password, pwBytes);
+                MD4.HashData(pwBytes, pwHash);
 
-            return hmac.ComputeHash(blob);
+                using (var hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, pwHash))
+                {
+                    // strangely, user is upper case, domain is not.
+                    byte[] blob = Encoding.Unicode.GetBytes(string.Concat(userName.ToUpper(), domain));
+                    hmac.GetHashAndReset(hash);
+                }
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(pwBytes);
+                CryptographicOperations.ZeroMemory(pwHash);
+            }
         }
 
         // Section 3.3.2
@@ -419,11 +447,11 @@ namespace System.Net
         // Set temp to ConcatenationOf(Responserversion, HiResponserversion, Z(6), Time, ClientChallenge, Z(4), ServerName, Z(4))
         // Set NTProofStr to HMAC_MD5(ResponseKeyNT, ConcatenationOf(CHALLENGE_MESSAGE.ServerChallenge, temp))
         // Set NtChallengeResponse to ConcatenationOf(NTProofStr, temp)
-        private unsafe void makeNtlm2ChallengeResponse(DateTime time, byte[] lm2Hash, ReadOnlySpan<byte> serverChallenge, Span<byte> clientChallenge, ReadOnlySpan<byte> serverInfo, ref MessageField field, Span<byte> payload, ref int payloadOffset)
+        private unsafe void makeNtlm2ChallengeResponse(DateTime time, ReadOnlySpan<byte> ntlm2hash, ReadOnlySpan<byte> serverChallenge, Span<byte> clientChallenge, ReadOnlySpan<byte> serverInfo, ref MessageField field, Span<byte> payload, ref int payloadOffset)
         {
             Debug.Assert(serverChallenge.Length == ChallengeLength);
             Debug.Assert(clientChallenge.Length == ChallengeLength);
-            Debug.Assert(lm2Hash.Length == DigestLength);
+            Debug.Assert(ntlm2hash.Length == DigestLength);
 
             Span<byte> blob = payload.Slice(payloadOffset, sizeof(NtChallengeResponse) + serverInfo.Length);
             ref NtChallengeResponse temp = ref MemoryMarshal.AsRef<NtChallengeResponse>(blob.Slice(0, sizeof(NtChallengeResponse)));
@@ -438,7 +466,7 @@ namespace System.Net
             // Calculate NTProofStr
             // we created temp part in place where it needs to be.
             // now we need to prepend it with calculated hmac.
-            using (var hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, lm2Hash))
+            using (var hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, ntlm2hash))
             {
                 hmac.AppendData(serverChallenge);
                 hmac.AppendData(blob.Slice(DigestLength));
@@ -450,9 +478,34 @@ namespace System.Net
             payloadOffset += blob.Length;
         }
 
+        private unsafe void WriteChannelBindingHash(Span<byte> hashBuffer)
+        {
+            if (_channelBinding != null)
+            {
+                IntPtr cbtData = _channelBinding.DangerousGetHandle();
+                int cbtDataSize = _channelBinding.Size;
+
+                using (var md5 = IncrementalHash.CreateHash(HashAlgorithmName.MD5))
+                {
+                    md5.AppendData(new Span<byte>((void *)cbtData, cbtDataSize));
+                    md5.GetHashAndReset(hashBuffer);
+                }
+            }
+            else
+            {
+                hashBuffer.Fill(0);
+            }
+        }
+
         private byte[] ProcessTargetInfo(ReadOnlySpan<byte> targetInfo, out DateTime time)
         {
             int spnSize = _spn != null ? Encoding.Unicode.GetByteCount(_spn) : 0;
+
+            if (spnSize > short.MaxValue)
+            {
+                throw new Win32Exception(NTE_FAIL);
+            }
+
             byte[] targetInfoBuffer = new byte[targetInfo.Length + 20 /* channel binding */ + 4 + spnSize /* SPN */ + 8 /* flags */];
             int targetInfoOffset = 0;
 
@@ -478,6 +531,13 @@ namespace System.Net
                         time = DateTime.FromFileTimeUtc(BitConverter.ToInt64(info.Slice(4, 8)));
                     }
 
+                    if (ID == AvId.TargetName || ID == AvId.ChannelBindings)
+                    {
+                        // Skip these, we insert them ourselves
+                        info = info.Slice(length + 4);
+                        continue;
+                    }
+
                     // Copy attribute-value pair into destination target info
                     info.Slice(0, length + 4).CopyTo(targetInfoBuffer.AsSpan(targetInfoOffset, length + 4));
                     targetInfoOffset += length + 4;
@@ -490,7 +550,6 @@ namespace System.Net
 
             // Target name (eg. HTTP/example.org)
             targetInfoBuffer[targetInfoOffset] = (byte)AvId.TargetName;
-            // TODO: Length validation
             BinaryPrimitives.WriteUInt16LittleEndian(targetInfoBuffer.AsSpan(2 + targetInfoOffset), (ushort)spnSize);
             if (_spn != null)
             {
@@ -499,11 +558,10 @@ namespace System.Net
             }
             targetInfoOffset += spnSize + 4;
 
+            // Channel binding
             targetInfoBuffer[targetInfoOffset] = (byte)AvId.ChannelBindings;
             targetInfoBuffer[targetInfoOffset + 2] = 16;
-
-            // TBD: Copy channel bindings to targetInfoBuffer + 4
-            // (zeros for no channel binding)
+            WriteChannelBindingHash(targetInfoBuffer.AsSpan(targetInfoOffset + 4, 16));
             targetInfoOffset += 16 + 4;
 
             // Flags
@@ -515,9 +573,12 @@ namespace System.Net
             // EOL
             targetInfoOffset += 4;
 
-            Debug.Assert(targetInfoOffset == targetInfoBuffer.Length);
+            if (targetInfoOffset == targetInfoBuffer.Length)
+            {
+                return targetInfoBuffer;
+            }
 
-            return targetInfoBuffer;
+            return targetInfoBuffer.AsSpan(targetInfoOffset).ToArray();
         }
 
         // Section 3.4.5.2 SIGNKEY, 3.4.5.3 SEALKEY
@@ -546,18 +607,14 @@ namespace System.Net
                 return null;
             }
 
-            Flags flags = (Flags)BinaryPrimitives.ReadInt32LittleEndian(asBytes.Slice((int)Marshal.OffsetOf(typeof(ChallengeMessage), "Flags"), 4));
+            Flags flags = BitConverter.IsLittleEndian ? challengeMessage.Flags : (Flags)BinaryPrimitives.ReverseEndianness((uint)challengeMessage.Flags);
             ReadOnlySpan<byte> targetName = GetField(challengeMessage.TargetName, asBytes);
 
             // Only NTLMv2 with MIC is supported
             //
             // NegotiateSign and NegotiateKeyExchange are necessary to calculate the key
             // that is used for MIC.
-            // TODO: Verify remaining flags (Unicode, etc.)
-            if (((flags & Flags.NegotiateNtlm2) != Flags.NegotiateNtlm2) ||
-                ((flags & Flags.NegotiateTargetInfo) != Flags.NegotiateTargetInfo) ||
-                !flags.HasFlag(Flags.NegotiateSign) ||
-                !flags.HasFlag(Flags.NegotiateKeyExchange))
+            if ((flags & s_requiredFlags) != s_requiredFlags)
             {
                 return null;
             }
@@ -586,16 +643,13 @@ namespace System.Net
             responseAsSpan.Clear();
             NtlmHeader.CopyTo(responseAsSpan);
 
-            // TBD calculate flags.
             response.Header.MessageType = MessageType.Authenticate;
-            response.Flags =
-                Flags.NegotiateNtlm2 | Flags.NegotiateNtlm | Flags.NegotiateUnicode | Flags.TargetName |
-                Flags.NegotiateVersion | Flags.NegotiateKeyExchange | Flags.Negotiate128 | Flags.NegotiateTargetInfo |
-                Flags.NegotiateAlwaysSign | Flags.NegotiateSign;
-            response.Version = new Version { VersionMajor = 6, VersionMinor = 1, ProductBuild = 7600, CurrentRevision = 15 };
+            response.Flags = s_requiredFlags;
+            response.Version = s_version;
 
             // Calculate hash for hmac - same for lm2 and ntlm2
-            byte[] ntlm2hash = makeNtlm2Hash(_credential.Domain, _credential.UserName, _credential.Password);
+            Span<byte> ntlm2hash = stackalloc byte[DigestLength];
+            makeNtlm2Hash(_credential.Domain, _credential.UserName, _credential.Password, ntlm2hash);
 
             // Get random bytes for client challenge
             byte[] clientChallenge = new byte[ChallengeLength];
@@ -739,10 +793,15 @@ namespace System.Net
                         // MechTypeList::= SEQUENCE OF MechType
                         using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenInit.MechTypes)))
                         {
-                            using (writer.PushSequence())
+                            AsnWriter mechListWriter = new AsnWriter(AsnEncodingRules.DER);
+
+                            using (mechListWriter.PushSequence())
                             {
-                                writer.WriteObjectIdentifier(NtlmOid);
+                                mechListWriter.WriteObjectIdentifier(NtlmOid);
                             }
+
+                            _spnegoMechList = mechListWriter.Encode();
+                            mechListWriter.CopyTo(writer);
                         }
 
                         using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenInit.MechToken)))
@@ -817,8 +876,7 @@ namespace System.Net
             // as NTLM has only one challenege message.
             if (!NtlmOid.Equals(mech))
             {
-                // TODO: Use correct exception
-                throw new NotSupportedException($"'{mech}' mechanism is not supported");
+                throw new Win32Exception(NTE_FAIL, $"'{mech}' mechanism is not supported");
             }
 
             if (state != NegState.Unknown && state != NegState.AcceptIncomplete)
@@ -846,15 +904,7 @@ namespace System.Net
 
                             using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenInit.MechListMIC)))
                             {
-                                // TODO: Save this or extract it from CreateSpNegoNegotiateMessage
-                                AsnWriter initialMachTypesWriter = new AsnWriter(AsnEncodingRules.DER);
-                                using (initialMachTypesWriter.PushSequence())
-                                {
-                                    initialMachTypesWriter.WriteObjectIdentifier(NtlmOid);
-                                }
-                                byte[] initialMachTypes = initialMachTypesWriter.Encode();
-
-                                writer.WriteOctetString(GetMIC(initialMachTypes));
+                                writer.WriteOctetString(GetMIC(_spnegoMechList));
                             }
                         }
                     }
