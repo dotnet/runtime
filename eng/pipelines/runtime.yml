@@ -171,16 +171,16 @@ jobs:
   #
   # PGO Build
   #
-  - template: /eng/pipelines/installer/installer-matrix.yml
-    parameters:
-      buildConfig: Release
-      jobParameters:
-        liveRuntimeBuildConfig: release
-        liveLibrariesBuildConfig: Release
-        pgoType: 'PGO'
-      platforms:
-      - windows_arm64
-      - Linux_arm64
+- template: /eng/pipelines/installer/installer-matrix.yml
+  parameters:
+    buildConfig: Release
+    jobParameters:
+      liveRuntimeBuildConfig: release
+      liveLibrariesBuildConfig: Release
+      pgoType: 'PGO'
+    platforms:
+    - windows_arm64
+    - Linux_arm64
 
 
 #
