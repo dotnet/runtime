@@ -465,5 +465,24 @@ namespace Microsoft.Extensions.Options.Tests
 
             public bool TryRemove(string? name) => throw new NotImplementedException();
         }
+
+#if NET // need GC.GetAllocatedBytesForCurrentThread()
+        /// <summary>
+        /// Tests the fix for https://github.com/dotnet/runtime/issues/61086
+        /// </summary>
+        [Fact]
+        public void TestCurrentValueDoesNotAllocateOnceValueIsCached()
+        {
+            var monitor = new OptionsMonitor<FakeOptions>(
+                new OptionsFactory<FakeOptions>(Enumerable.Empty<IConfigureOptions<FakeOptions>>(), Enumerable.Empty<IPostConfigureOptions<FakeOptions>>()),
+                Enumerable.Empty<IOptionsChangeTokenSource<FakeOptions>>(),
+                new OptionsCache<FakeOptions>());
+            Assert.NotNull(monitor.CurrentValue); // populate the cache
+
+            long initialBytes = GC.GetAllocatedBytesForCurrentThread();
+            _ = monitor.CurrentValue;
+            Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - initialBytes);
+        }
+#endif
     }
 }

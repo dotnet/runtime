@@ -85,9 +85,17 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         public virtual TOptions Get(string? name)
         {
-            return _cache is OptionsCache<TOptions> optionsCache
-                ? optionsCache.GetOrAdd(name, (name, factory) => factory.Create(name), _factory)
-                : _cache.GetOrAdd(name ??= Options.DefaultName, () => _factory.Create(name));
+            if (_cache is not OptionsCache<TOptions> optionsCache)
+            {
+                // copying captured variables to locals avoids allocating a closure if we don't enter the if
+                string localName = name ?? Options.DefaultName;
+                IOptionsFactory<TOptions> localFactory = _factory;
+                return _cache.GetOrAdd(localName, () => localFactory.Create(localName));
+            }
+
+            // non-allocating fast path
+            return optionsCache.GetOrAdd(name, static (name, factory) => factory.Create(name), _factory);
+
         }
 
         /// <summary>
