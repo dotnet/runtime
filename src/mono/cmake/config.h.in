@@ -351,9 +351,6 @@
 /* Define to 1 if you have the <execinfo.h> header file. */
 #cmakedefine HAVE_EXECINFO_H 1
 
-/* Define to 1 if you have the <sys/auxv.h> header file. */
-#cmakedefine HAVE_SYS_AUXV_H 1
-
 /* Define to 1 if you have the <sys/resource.h> header file. */
 #cmakedefine HAVE_SYS_RESOURCE_H 1
 
