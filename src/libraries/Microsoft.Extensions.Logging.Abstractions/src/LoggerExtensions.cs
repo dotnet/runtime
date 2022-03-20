@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogDebug(0, exception, "Error while processing request from {Address}", address)</example>
         public static void LogDebug(this ILogger logger, EventId eventId, Exception? exception, string? message, params object?[] args)
         {
-            if(logger.IsEnabled(LogLevel.Debug))
+            if (logger.IsEnabled(LogLevel.Debug))
             {
                 logger.Log(LogLevel.Debug, eventId, exception, message, args);
             }
