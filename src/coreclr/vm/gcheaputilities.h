@@ -121,14 +121,7 @@ public:
 
     static bool UseThreadAllocationContexts()
     {
-        // When running on a single-proc Intel system, it's more efficient to use a single global
-        // allocation context for SOH allocations than to use one for every thread.
-#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(TARGET_UNIX)
-        return IsServerHeap() || ::g_SystemInfo.dwNumberOfProcessors != 1 || CPUGroupInfo::CanEnableGCCPUGroups();
-#else
-        return true;
-#endif
-
+        return s_useThreadAllocationContexts;
     }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
@@ -212,6 +205,8 @@ public:
 private:
     // This class should never be instantiated.
     GCHeapUtilities() = delete;
+
+    static bool s_useThreadAllocationContexts;
 };
 
 #endif // _GCHEAPUTILITIES_H_
