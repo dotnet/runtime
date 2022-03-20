@@ -77,8 +77,8 @@ namespace System.IO
 
         internal static bool EndsWithPeriodOrSpaceSlim(string path)
         {
-            char c = path[^1];
-            return c is ' ' or '.';
+            char c = path[path.Length - 1];
+            return c == ' ' || c == '.';
         }
 
         /// <summary>
