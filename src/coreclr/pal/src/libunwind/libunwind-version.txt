@@ -6,6 +6,7 @@ Keep .NET oop directory
 Reapply changes from https://github.com/dotnet/runtime/commit/1b5719c2e3dde393531eaeb5b5cde05dabeef5b8
 Apply https://github.com/libunwind/libunwind/pull/317
 Apply https://github.com/libunwind/libunwind/pull/333
+Apply https://github.com/libunwind/libunwind/pull/342
 
 For LoongArch64:
 Apply https://github.com/libunwind/libunwind/pull/316 and https://github.com/libunwind/libunwind/pull/322

@@ -26,7 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
 #include "_UPT_internal.h"
 
-#if HAVE_DECL_PTRACE_POKEUSER || HAVE_TTRACE
+#if HAVE_DECL_PTRACE_POKEUSER || defined(HAVE_TTRACE)
 int
 _UPT_access_fpreg (unw_addr_space_t as, unw_regnum_t reg, unw_fpreg_t *val,
                    int write, void *arg)
