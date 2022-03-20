@@ -347,7 +347,8 @@ namespace Microsoft.Extensions.Configuration
                 return convertedValue;
             }
 
-            if (config != null && config.GetChildren().Any())
+            //todo: steve: need separator here somewhere
+            if (config != null && config.GetChildren(options.Separator).Any())
             {
                 // If we don't have an instance, try to create one
                 if (instance == null)
@@ -455,7 +456,7 @@ namespace Microsoft.Extensions.Configuration
             }
             MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue")!;
             PropertyInfo setter = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
-            foreach (IConfigurationSection child in config.GetChildren())
+            foreach (IConfigurationSection child in config.GetChildren(options.Separator))
             {
                 try
                 {
@@ -694,7 +695,7 @@ namespace Microsoft.Extensions.Configuration
             return BindInstance(
                 property.PropertyType,
                 property.GetValue(instance),
-                config.GetSection(propertyName),
+                config.GetSection(propertyName, options.Separator),
                 options);
         }
 

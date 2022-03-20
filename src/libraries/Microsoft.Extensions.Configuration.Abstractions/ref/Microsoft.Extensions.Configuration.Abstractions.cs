@@ -26,9 +26,11 @@ namespace Microsoft.Extensions.Configuration
         public static readonly string KeyDelimiter;
         public static string Combine(System.Collections.Generic.IEnumerable<string> pathSegments) { throw null; }
         public static string Combine(params string[] pathSegments) { throw null; }
+        public static string CombineWith(string separator, params string[] pathSegments) { throw null; }
         public static string? GetParentPath(string? path) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("path")]
         public static string? GetSectionKey(string? path) { throw null; }
+        public static string? GetSectionKeyWith(string separator, string? path) { throw null; }
     }
     public static partial class ConfigurationRootExtensions
     {
@@ -46,9 +48,9 @@ namespace Microsoft.Extensions.Configuration
     public partial interface IConfiguration
     {
         string? this[string key] { get; set; }
-        System.Collections.Generic.IEnumerable<Microsoft.Extensions.Configuration.IConfigurationSection> GetChildren();
+        System.Collections.Generic.IEnumerable<Microsoft.Extensions.Configuration.IConfigurationSection> GetChildren(string separator = ":");
         Microsoft.Extensions.Primitives.IChangeToken GetReloadToken();
-        Microsoft.Extensions.Configuration.IConfigurationSection GetSection(string key);
+        Microsoft.Extensions.Configuration.IConfigurationSection GetSection(string key, string separator = ":");
     }
     public partial interface IConfigurationBuilder
     {

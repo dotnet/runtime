@@ -17,8 +17,9 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="root">Configuration from which to retrieve sub-sections.</param>
         /// <param name="path">Key of a section of which children to retrieve.</param>
+        /// <param name="pathSeparator">...</param>
         /// <returns>Immediate children sub-sections of section specified by key.</returns>
-        internal static IEnumerable<IConfigurationSection> GetChildrenImplementation(this IConfigurationRoot root, string? path)
+        internal static IEnumerable<IConfigurationSection> GetChildrenImplementation(this IConfigurationRoot root, string? path, string pathSeparator = ":")
         {
             using ReferenceCountedProviders? reference = (root as ConfigurationManager)?.GetProvidersReference();
             IEnumerable<IConfigurationProvider> providers = reference?.Providers ?? root.Providers;
@@ -27,8 +28,7 @@ namespace Microsoft.Extensions.Configuration
                 .Aggregate(Enumerable.Empty<string>(),
                     (seed, source) => source.GetChildKeys(seed, path))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Select(key => root.GetSection(path == null ? key : ConfigurationPath.Combine(path, key)));
-
+                .Select(key => root.GetSection(path == null ? key : ConfigurationPath.CombineWith(pathSeparator, path, key), pathSeparator));
             if (reference is null)
             {
                 return children;

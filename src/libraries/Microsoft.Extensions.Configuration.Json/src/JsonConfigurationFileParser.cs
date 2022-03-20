@@ -38,6 +38,7 @@ namespace Microsoft.Extensions.Configuration.Json
                 VisitElement(doc.RootElement);
             }
 
+            // we need a way to say that our data is delimited by backtick rather than colon here
             return _data;
         }
 

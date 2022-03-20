@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.Configuration
         /// Gets the immediate children sub-sections.
         /// </summary>
         /// <returns>The children.</returns>
-        public IEnumerable<IConfigurationSection> GetChildren() => this.GetChildrenImplementation(null);
+        public IEnumerable<IConfigurationSection> GetChildren(string separator = ":") => this.GetChildrenImplementation(null, separator);
 
         /// <summary>
         /// Returns a <see cref="IChangeToken"/> that can be used to observe when this configuration is reloaded.
@@ -64,13 +64,14 @@ namespace Microsoft.Extensions.Configuration
         /// Gets a configuration sub-section with the specified key.
         /// </summary>
         /// <param name="key">The key of the configuration section.</param>
+        /// <param name="separator"></param>
         /// <returns>The <see cref="IConfigurationSection"/>.</returns>
         /// <remarks>
         ///     This method will never return <c>null</c>. If no matching sub-section is found with the specified key,
         ///     an empty <see cref="IConfigurationSection"/> will be returned.
         /// </remarks>
-        public IConfigurationSection GetSection(string key)
-            => new ConfigurationSection(this, key);
+        public IConfigurationSection GetSection(string key, string separator = ":")
+            => new ConfigurationSection(this, key, separator);
 
         /// <summary>
         /// Force the configuration values to be reloaded from the underlying sources.

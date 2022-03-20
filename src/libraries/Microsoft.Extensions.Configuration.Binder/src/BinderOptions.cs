@@ -21,5 +21,7 @@ namespace Microsoft.Extensions.Configuration
         /// of the missing properties.
         /// </summary>
         public bool ErrorOnUnknownConfiguration { get; set; }
+
+        public string Separator { get; set; } = ":";
     }
 }

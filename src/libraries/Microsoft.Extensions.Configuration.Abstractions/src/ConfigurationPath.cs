@@ -27,6 +27,11 @@ namespace Microsoft.Extensions.Configuration
             return string.Join(KeyDelimiter, pathSegments);
         }
 
+        public static string CombineWith(string separator, params string[] pathSegments!!)
+        {
+            return string.Join(separator, pathSegments);
+        }
+
         /// <summary>
         /// Combines path segments into one path.
         /// </summary>
@@ -51,6 +56,24 @@ namespace Microsoft.Extensions.Configuration
             }
 
             int lastDelimiterIndex = path.LastIndexOf(KeyDelimiter, StringComparison.OrdinalIgnoreCase);
+            return lastDelimiterIndex == -1 ? path : path.Substring(lastDelimiterIndex + 1);
+        }
+
+        /// <summary>
+        /// Extracts the last path segment from the path.
+        /// </summary>
+        /// <param name="separator"></param>
+        /// <param name="path">The path.</param>
+        /// <returns>The last path segment of the path.</returns>
+        [return: NotNullIfNotNull("path")]
+        public static string? GetSectionKeyWith(string separator, string? path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return path;
+            }
+
+            int lastDelimiterIndex = path.LastIndexOf(separator, StringComparison.OrdinalIgnoreCase);
             return lastDelimiterIndex == -1 ? path : path.Substring(lastDelimiterIndex + 1);
         }
 
