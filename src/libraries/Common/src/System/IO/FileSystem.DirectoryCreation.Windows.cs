@@ -93,7 +93,7 @@ namespace System.IO
                     lpSecurityDescriptor = (IntPtr)pSecurityDescriptor
                 };
 
-                for (int i = count - 1; 0 <= i; i--)
+                for (int i = count - 1; i >= 0; i--)
                 {
                     string name = stackDir[i];
 
