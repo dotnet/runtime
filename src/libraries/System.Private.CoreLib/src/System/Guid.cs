@@ -860,7 +860,7 @@ namespace System
         {
             if (Vector128.IsHardwareAccelerated)
             {
-                return Unsafe.As<Guid, Vector128<byte>>(ref Unsafe.AsRef(in left)) == Unsafe.As<Guid, Vector128<byte>>(ref Unsafe.AsRef(in right));
+                return Vector128.LoadUnsafe(ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in left))) == Vector128.LoadUnsafe(ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in right)));
             }
 
             ref int rA = ref Unsafe.AsRef(in left._a);
