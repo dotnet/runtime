@@ -13548,17 +13548,28 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 }
                 else // no scale
                 {
-                    if (index->OperIs(GT_BFIZ) && index->isContained())
+                    if (index->OperIs(GT_BFIZ, GT_CAST) && index->isContained())
                     {
                         // Then load/store dataReg from/to [memBase + index*scale with sign/zero extension]
-                        GenTreeCast* cast = index->gtGetOp1()->AsCast();
+                        GenTreeCast* cast;
+                        int          cns;
+
+                        if (index->OperIs(GT_BFIZ))
+                        {
+                            cast = index->gtGetOp1()->AsCast();
+                            cns  = (int)index->gtGetOp2()->AsIntCon()->IconValue();
+                        }
+                        else
+                        {
+                            cast = index->AsCast();
+                            cns  = 0;
+                        }
 
                         // For now, this code only supports extensions from i32/u32
-                        assert(cast->isContained() && varTypeIsInt(cast->CastFromType()));
+                        assert(cast->isContained());
 
                         emitIns_R_R_R_Ext(ins, attr, dataReg, memBase->GetRegNum(), cast->CastOp()->GetRegNum(),
-                                          cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW,
-                                          (int)index->gtGetOp2()->AsIntCon()->IconValue());
+                                          cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW, cns);
                     }
                     else
                     {

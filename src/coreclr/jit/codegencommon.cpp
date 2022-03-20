@@ -1062,17 +1062,16 @@ bool CodeGen::genCreateAddrMode(
 
     /* All indirect address modes require the address to be an addition */
 
-    if (addr->gtOper != GT_ADD)
+    if (!addr->OperIs(GT_ADD))
     {
+#if TARGET_ARM64
+        if (!addr->OperIs(GT_ADDEX))
+        {
+            return false;
+        }
+#else
         return false;
-    }
-
-    // Can't use indirect addressing mode as we need to check for overflow.
-    // Also, can't use 'lea' as it doesn't set the flags.
-
-    if (addr->gtOverflow())
-    {
-        return false;
+#endif
     }
 
     GenTree* rv1 = nullptr;
@@ -1097,6 +1096,31 @@ bool CodeGen::genCreateAddrMode(
     {
         op1 = addr->AsOp()->gtOp1;
         op2 = addr->AsOp()->gtOp2;
+    }
+
+#if TARGET_ARM64
+    if (addr->OperIs(GT_ADDEX))
+    {
+        if (op2->isContained() && op2->OperIs(GT_CAST))
+        {
+            *rv1Ptr = op1;
+            *rv2Ptr = op2;
+            *mulPtr = 1;
+            *cnsPtr = 0;
+            *revPtr = false; // op2 is never a gc type
+            assert(!varTypeIsGC(op2));
+            return true;
+        }
+        return false;
+    }
+#endif
+
+    // Can't use indirect addressing mode as we need to check for overflow.
+    // Also, can't use 'lea' as it doesn't set the flags.
+
+    if (addr->gtOverflow())
+    {
+        return false;
     }
 
     bool rev = false; // Is op2 first in the evaluation order?

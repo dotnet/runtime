@@ -3076,6 +3076,13 @@ int LinearScan::BuildAddrUses(GenTree* addr, regMaskTP candidates)
             BuildUse(cast->CastOp(), candidates);
             srcCount++;
         }
+        else if (addrMode->Index()->OperIs(GT_CAST))
+        {
+            GenTreeCast* cast = addrMode->Index()->AsCast();
+            assert(cast->isContained());
+            BuildUse(cast->CastOp(), candidates);
+            srcCount++;
+        }
 #endif
     }
     return srcCount;
