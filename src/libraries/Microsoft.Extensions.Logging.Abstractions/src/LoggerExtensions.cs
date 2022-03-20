@@ -25,7 +25,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogDebug(0, exception, "Error while processing request from {Address}", address)</example>
         public static void LogDebug(this ILogger logger, EventId eventId, Exception? exception, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Debug, eventId, exception, message, args);
+            if(logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.Log(LogLevel.Debug, eventId, exception, message, args);
+            }
         }
 
         /// <summary>
@@ -38,7 +41,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogDebug(0, "Processing request from {Address}", address)</example>
         public static void LogDebug(this ILogger logger, EventId eventId, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Debug, eventId, message, args);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.Log(LogLevel.Debug, eventId, message, args);
+            }
         }
 
         /// <summary>
@@ -51,7 +57,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogDebug(exception, "Error while processing request from {Address}", address)</example>
         public static void LogDebug(this ILogger logger, Exception? exception, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Debug, exception, message, args);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.Log(LogLevel.Debug, exception, message, args);
+            }
         }
 
         /// <summary>
@@ -63,7 +72,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogDebug("Processing request from {Address}", address)</example>
         public static void LogDebug(this ILogger logger, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Debug, message, args);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.Log(LogLevel.Debug, message, args);
+            }
         }
 
         //------------------------------------------TRACE------------------------------------------//
@@ -79,7 +91,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogTrace(0, exception, "Error while processing request from {Address}", address)</example>
         public static void LogTrace(this ILogger logger, EventId eventId, Exception? exception, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Trace, eventId, exception, message, args);
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.Log(LogLevel.Trace, eventId, exception, message, args);
+            }
         }
 
         /// <summary>
@@ -92,7 +107,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogTrace(0, "Processing request from {Address}", address)</example>
         public static void LogTrace(this ILogger logger, EventId eventId, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Trace, eventId, message, args);
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.Log(LogLevel.Trace, eventId, message, args);
+            }
         }
 
         /// <summary>
@@ -105,7 +123,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogTrace(exception, "Error while processing request from {Address}", address)</example>
         public static void LogTrace(this ILogger logger, Exception? exception, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Trace, exception, message, args);
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.Log(LogLevel.Trace, exception, message, args);
+            }
         }
 
         /// <summary>
@@ -117,7 +138,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogTrace("Processing request from {Address}", address)</example>
         public static void LogTrace(this ILogger logger, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Trace, message, args);
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.Log(LogLevel.Trace, message, args);
+            }
         }
 
         //------------------------------------------INFORMATION------------------------------------------//
@@ -133,7 +157,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogInformation(0, exception, "Error while processing request from {Address}", address)</example>
         public static void LogInformation(this ILogger logger, EventId eventId, Exception? exception, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Information, eventId, exception, message, args);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.Log(LogLevel.Information, eventId, exception, message, args);
+            }
         }
 
         /// <summary>
@@ -146,7 +173,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogInformation(0, "Processing request from {Address}", address)</example>
         public static void LogInformation(this ILogger logger, EventId eventId, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Information, eventId, message, args);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.Log(LogLevel.Information, eventId, message, args);
+            }
         }
 
         /// <summary>
@@ -159,7 +189,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogInformation(exception, "Error while processing request from {Address}", address)</example>
         public static void LogInformation(this ILogger logger, Exception? exception, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Information, exception, message, args);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.Log(LogLevel.Information, exception, message, args);
+            }
         }
 
         /// <summary>
@@ -171,7 +204,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogInformation("Processing request from {Address}", address)</example>
         public static void LogInformation(this ILogger logger, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Information, message, args);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.Log(LogLevel.Information, message, args);
+            }
         }
 
         //------------------------------------------WARNING------------------------------------------//
@@ -187,7 +223,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogWarning(0, exception, "Error while processing request from {Address}", address)</example>
         public static void LogWarning(this ILogger logger, EventId eventId, Exception? exception, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Warning, eventId, exception, message, args);
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.Log(LogLevel.Warning, eventId, exception, message, args);
+            }
         }
 
         /// <summary>
@@ -200,7 +239,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogWarning(0, "Processing request from {Address}", address)</example>
         public static void LogWarning(this ILogger logger, EventId eventId, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Warning, eventId, message, args);
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.Log(LogLevel.Warning, eventId, message, args);
+            }
         }
 
         /// <summary>
@@ -213,7 +255,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogWarning(exception, "Error while processing request from {Address}", address)</example>
         public static void LogWarning(this ILogger logger, Exception? exception, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Warning, exception, message, args);
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.Log(LogLevel.Warning, exception, message, args);
+            }
         }
 
         /// <summary>
@@ -225,7 +270,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogWarning("Processing request from {Address}", address)</example>
         public static void LogWarning(this ILogger logger, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Warning, message, args);
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.Log(LogLevel.Warning, message, args);
+            }
         }
 
         //------------------------------------------ERROR------------------------------------------//
@@ -241,7 +289,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogError(0, exception, "Error while processing request from {Address}", address)</example>
         public static void LogError(this ILogger logger, EventId eventId, Exception? exception, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Error, eventId, exception, message, args);
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.Log(LogLevel.Error, eventId, exception, message, args);
+            }
         }
 
         /// <summary>
@@ -254,7 +305,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogError(0, "Processing request from {Address}", address)</example>
         public static void LogError(this ILogger logger, EventId eventId, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Error, eventId, message, args);
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.Log(LogLevel.Error, eventId, message, args);
+            }
         }
 
         /// <summary>
@@ -267,7 +321,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogError(exception, "Error while processing request from {Address}", address)</example>
         public static void LogError(this ILogger logger, Exception? exception, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Error, exception, message, args);
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.Log(LogLevel.Error, exception, message, args);
+            }
         }
 
         /// <summary>
@@ -279,7 +336,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogError("Processing request from {Address}", address)</example>
         public static void LogError(this ILogger logger, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Error, message, args);
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.Log(LogLevel.Error, message, args);
+            }
         }
 
         //------------------------------------------CRITICAL------------------------------------------//
@@ -295,7 +355,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogCritical(0, exception, "Error while processing request from {Address}", address)</example>
         public static void LogCritical(this ILogger logger, EventId eventId, Exception? exception, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Critical, eventId, exception, message, args);
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.Log(LogLevel.Critical, eventId, exception, message, args);
+            }
         }
 
         /// <summary>
@@ -308,7 +371,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogCritical(0, "Processing request from {Address}", address)</example>
         public static void LogCritical(this ILogger logger, EventId eventId, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Critical, eventId, message, args);
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.Log(LogLevel.Critical, eventId, message, args);
+            }
         }
 
         /// <summary>
@@ -321,7 +387,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogCritical(exception, "Error while processing request from {Address}", address)</example>
         public static void LogCritical(this ILogger logger, Exception? exception, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Critical, exception, message, args);
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.Log(LogLevel.Critical, exception, message, args);
+            }
         }
 
         /// <summary>
@@ -333,7 +402,10 @@ namespace Microsoft.Extensions.Logging
         /// <example>logger.LogCritical("Processing request from {Address}", address)</example>
         public static void LogCritical(this ILogger logger, string? message, params object?[] args)
         {
-            logger.Log(LogLevel.Critical, message, args);
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.Log(LogLevel.Critical, message, args);
+            }
         }
 
         /// <summary>
@@ -345,7 +417,10 @@ namespace Microsoft.Extensions.Logging
         /// <param name="args">An object array that contains zero or more objects to format.</param>
         public static void Log(this ILogger logger, LogLevel logLevel, string? message, params object?[] args)
         {
-            logger.Log(logLevel, 0, null, message, args);
+            if (logger.IsEnabled(logLevel))
+            {
+                logger.Log(logLevel, 0, null, message, args);
+            }
         }
 
         /// <summary>
@@ -358,7 +433,10 @@ namespace Microsoft.Extensions.Logging
         /// <param name="args">An object array that contains zero or more objects to format.</param>
         public static void Log(this ILogger logger, LogLevel logLevel, EventId eventId, string? message, params object?[] args)
         {
-            logger.Log(logLevel, eventId, null, message, args);
+            if (logger.IsEnabled(logLevel))
+            {
+                logger.Log(logLevel, eventId, null, message, args);
+            }
         }
 
         /// <summary>
@@ -385,7 +463,10 @@ namespace Microsoft.Extensions.Logging
         /// <param name="args">An object array that contains zero or more objects to format.</param>
         public static void Log(this ILogger logger!!, LogLevel logLevel, EventId eventId, Exception? exception, string? message, params object?[] args)
         {
-            logger.Log(logLevel, eventId, new FormattedLogValues(message, args), exception, _messageFormatter);
+            if (logger.IsEnabled(logLevel))
+            {
+                logger.Log(logLevel, eventId, new FormattedLogValues(message, args), exception, _messageFormatter);
+            }
         }
 
         //------------------------------------------Scope------------------------------------------//
