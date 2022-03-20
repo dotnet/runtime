@@ -211,7 +211,7 @@ static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
     dst->BirthTimeNsec = 0;
 #endif
 
-#if defined(HAVE_STAT_FLAGS) && defined(UF_HIDDEN)
+#if HAVE_STAT_FLAGS && defined(UF_HIDDEN)
     dst->UserFlags = ((src->st_flags & UF_HIDDEN) == UF_HIDDEN) ? PAL_UF_HIDDEN : 0;
 #else
     dst->UserFlags = 0;
@@ -1607,7 +1607,7 @@ int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length,
     struct flock lockArgs;
 #endif
 
-#if defined(TARGET_ANDROID) && defined(HAVE_FLOCK64)
+#if defined(TARGET_ANDROID) && HAVE_FLOCK64
     // On Android, fcntl is always implemented by fcntl64 but before https://github.com/aosp-mirror/platform_bionic/commit/09e77f35ab8d291bf88302bb9673aaa518c6bcb0
     // there was no remapping of F_SETLK to F_SETLK64 when _FILE_OFFSET_BITS=64 (which we set in eng/native/configurecompiler.cmake) so we need to always pass F_SETLK64
     int command = F_SETLK64;
@@ -1640,7 +1640,7 @@ int32_t SystemNative_LChflags(const char* path, uint32_t flags)
 
 int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
 {
-#if defined(HAVE_LCHFLAGS)
+#if HAVE_LCHFLAGS
     return SystemNative_CanGetHiddenFlag();
 #else
     return false;
@@ -1649,7 +1649,7 @@ int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
 
 int32_t SystemNative_CanGetHiddenFlag(void)
 {
-#if defined(UF_HIDDEN) && defined(HAVE_STAT_FLAGS)
+#if HAVE_STAT_FLAGS && defined(UF_HIDDEN)
     return true;
 #else
     return false;

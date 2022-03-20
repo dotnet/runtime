@@ -42,9 +42,9 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #include <unistd.h>
 #if HAVE_PROCFS_CTL
 #include <unistd.h>
-#elif HAVE_TTRACE // HAVE_PROCFS_CTL
+#elif defined(HAVE_TTRACE) // HAVE_PROCFS_CTL
 #include <sys/ttrace.h>
-#else // HAVE_TTRACE
+#else // defined(HAVE_TTRACE)
 #include <sys/ptrace.h>
 #endif  // HAVE_PROCFS_CTL
 #if HAVE_VM_READ
