@@ -115,13 +115,10 @@ namespace System.IO
                         }
                         else
                         {
-                            (int fileAttributes, int lastError) = GetFileAttributes(name);
+                            (bool fileExists, bool directoryExists, int lastError) = GetFileAttributes(name);
                             currentError = lastError;
 
-                            int directoryAttributeValue = fileAttributes &
-                                                          Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY;
-                            bool fileExists = lastError == Interop.Errors.ERROR_SUCCESS && directoryAttributeValue != 0;
-                            bool directoryExists = directoryAttributeValue == 0;
+                            fileExists = lastError == Interop.Errors.ERROR_SUCCESS && fileExists;
 
                             // If there's a file in this directory's place, or if we have ERROR_ACCESS_DENIED when checking if the directory already exists throw.
                             if (fileExists || !directoryExists && currentError == Interop.Errors.ERROR_ACCESS_DENIED)

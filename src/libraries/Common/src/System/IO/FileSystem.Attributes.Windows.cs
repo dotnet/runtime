@@ -51,13 +51,13 @@ namespace System.IO
                 ((data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == 0);
         }
 
-        public static (int fileAttributes, int lastError) GetFileAttributes(string fullPath)
+        public static (bool fileExists, bool directoryExists, int lastError) GetFileAttributes(string fullPath)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             int lastError = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
-            int fileAttributes = data.dwFileAttributes;
+            int directoryAttributeValue = data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY;
 
-            return (fileAttributes, lastError);
+            return (directoryAttributeValue != 0, directoryAttributeValue == 0, lastError);
         }
 
         /// <summary>
