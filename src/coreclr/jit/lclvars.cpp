@@ -1867,7 +1867,7 @@ bool Compiler::StructPromotionHelper::CanConstructAndPromoteField(lvaStructPromo
     fldInfo.fldOffset  = 0;
     fldInfo.fldOrdinal = 0;
     fldInfo.fldSize    = TARGET_POINTER_SIZE;
-    fldInfo.fldType    = TYP_BYREF;
+    fldInfo.fldType    = TYP_REF;
 
     structPromotionInfo->canPromote = true;
     return true;
