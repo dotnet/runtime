@@ -67,6 +67,29 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
         return MethodDesc::GetMethodDescFromStubAddr(target, TRUE);
     }
 
+    if (PrecodeStubManager::g_pManager->GetStubPrecodeRangeList()->IsInRange(target))
+    {
+        return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(target))->GetMethodDesc();
+    }
+
+    if (PrecodeStubManager::g_pManager->GetFixupPrecodeRangeList()->IsInRange(target))
+    {
+        if (!FixupPrecode::IsFixupPrecodeByASM(target))
+        {
+            // If the target slot points to the fixup part of the stub, the actual
+            // stub starts FixupPrecode::FixupCodeOffset bytes below the target,
+            // so we need to compensate for it.
+            target -= FixupPrecode::FixupCodeOffset;
+            if (!FixupPrecode::IsFixupPrecodeByASM(target))
+            {
+                _ASSERTE(!"Invalid FixupPrecode address"); // We should never get other precode type here
+                return nullptr;
+            }
+        }
+
+        return (MethodDesc*)((FixupPrecode*)PCODEToPINSTR(target))->GetMethodDesc();
+    }
+
     return nullptr;
 }
 
@@ -418,7 +441,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
 #if (defined(TARGET_X86) || defined(TARGET_AMD64)) && USE_DISASSEMBLER
 
     BYTE * codeStart = (BYTE *)pCode;
-    ExecutableWriterHolder<BYTE> codeWriterHolder;
+    ExecutableWriterHolderNoLog<BYTE> codeWriterHolder;
     size_t writeableOffset;
 
     memcpy(saveAddr, codeStart, codeSize);
@@ -432,7 +455,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
     }
     else
     {
-        codeWriterHolder = ExecutableWriterHolder<BYTE>(codeStart, codeSize);
+        codeWriterHolder.AssignExecutableWriterHolder(codeStart, codeSize);
         writeableOffset = codeWriterHolder.GetRW() - codeStart;
     }
 

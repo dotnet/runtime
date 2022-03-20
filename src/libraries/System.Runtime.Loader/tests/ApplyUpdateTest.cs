@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -306,7 +307,6 @@ namespace System.Reflection.Metadata
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/63643", TestRuntimes.Mono)]
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
         public static void TestAddNestedClass()
         {
@@ -325,7 +325,7 @@ namespace System.Reflection.Metadata
 
                 r = x.TestMethod();
 
-                Assert.Equal("123456", r);
+                Assert.Equal("123456789", r);
             });
         }
 
@@ -425,6 +425,206 @@ namespace System.Reflection.Metadata
 
                 Assert.Equal (6, x.count);
 
+            });
+        }
+
+        private static bool ContainsTypeWithName(Type[] types, string fullName)
+        {
+            foreach (var ty in types) {
+                if (ty.FullName == fullName)
+                    return true;
+            }
+            return false;
+        }
+
+        internal static Type CheckReflectedType(Assembly assm, Type[] allTypes, string nameSpace, string typeName, Action<Type> moreChecks = null, [CallerMemberName] string callerMemberName = "", [CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = 0)
+        {
+            var fullName = $"{nameSpace}.{typeName}";
+            var ty = assm.GetType(fullName);
+            Assert.True(ty != null, $"{callerFilePath}:{callerLineNumber}: expected Assembly.GetType for '{typeName}' to return non-null in {callerMemberName}");
+            int nestedIdx = typeName.LastIndexOf('+');
+            string comparisonName = typeName;
+            if (nestedIdx != -1)
+                comparisonName = typeName.Substring(nestedIdx+1);
+            Assert.True(comparisonName == ty.Name, $"{callerFilePath}:{callerLineNumber}: returned type has unexpected name '{ty.Name}' (expected: '{comparisonName}') in {callerMemberName}");
+            Assert.True(ContainsTypeWithName (allTypes, fullName), $"{callerFilePath}:{callerLineNumber}: expected Assembly.GetTypes to contain '{fullName}', but it didn't in {callerMemberName}");
+            if (moreChecks != null)
+                moreChecks(ty);
+            return ty;
+        }
+
+
+        internal static void CheckCustomNoteAttribute(MemberInfo subject, string expectedAttributeValue, [CallerMemberName] string callerMemberName = "", [CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = 0)
+        {
+            var attrData = subject.GetCustomAttributesData();
+            CustomAttributeData noteData = null;
+            foreach (var cad in attrData)
+            {
+                if (cad.AttributeType.FullName.Contains("CustomNoteAttribute"))
+                    noteData = cad;
+            }
+            Assert.True(noteData != null, $"{callerFilePath}:{callerLineNumber}: expected a CustomNoteAttribute attributes on '{subject.Name}', but got null, in {callerMemberName}");
+            Assert.True(1 == noteData.ConstructorArguments.Count, $"{callerFilePath}:{callerLineNumber}: expected exactly 1 constructor argument on CustomNoteAttribute, got {noteData.ConstructorArguments.Count}, in {callerMemberName}");
+            object argVal = noteData.ConstructorArguments[0].Value;
+            Assert.True(expectedAttributeValue.Equals(argVal), $"{callerFilePath}:{callerLineNumber}: expected '{expectedAttributeValue}' as CustomNoteAttribute argument, got '{argVal}', in {callerMemberName}");
+
+            var attrs = subject.GetCustomAttributes(false);
+            object note = null;
+            foreach (var attr in attrs)
+            {
+                if (attr.GetType().FullName.Contains("CustomNoteAttribute"))
+                    note = attr;
+            }
+            Assert.True(note != null, $"{callerFilePath}:{callerLineNumber}: expected a CustomNoteAttribute object on '{subject.Name}', but got null, in {callerMemberName}");
+            object v = note.GetType().GetField("Note").GetValue(note);
+            Assert.True(expectedAttributeValue.Equals(v), $"{callerFilePath}:{callerLineNumber}: expected '{expectedAttributeValue}' in CustomNoteAttribute Note field, but got '{v}', in {callerMemberName}");
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestReflectionAddNewType()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                const string ns = "System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType";
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.ZExistingClass).Assembly;
+
+                var allTypes = assm.GetTypes();
+
+                CheckReflectedType(assm, allTypes, ns, "ZExistingClass");
+                CheckReflectedType(assm, allTypes, ns, "ZExistingClass+PreviousNestedClass");
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                allTypes = assm.GetTypes();
+
+                CheckReflectedType(assm, allTypes, ns, "ZExistingClass", static (ty) =>
+                {
+                    var allMethods = ty.GetMethods();
+
+                    MethodInfo newMethod = null;
+                    foreach (var meth in allMethods)
+                    {
+                        if (meth.Name == "NewMethod")
+                            newMethod = meth;
+                    }
+                    Assert.NotNull (newMethod);
+
+                    Assert.Equal (newMethod, ty.GetMethod ("NewMethod"));
+
+                    var allFields = ty.GetFields(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public);
+
+                    // Mono doesn't do instance fields yet
+#if false
+                    FieldInfo newField = null;
+#endif
+                    FieldInfo newStaticField = null;
+                    foreach (var fld in allFields)
+                    {
+#if false
+                        if (fld.Name == "NewField")
+                            newField = fld;
+#endif
+                        if (fld.Name == "NewStaticField")
+                            newStaticField = fld;
+                    }
+#if false
+                    Assert.NotNull(newField);
+                    Assert.Equal(newField, ty.GetField("NewField"));
+#endif
+
+                    Assert.NotNull(newStaticField);
+                    Assert.Equal(newStaticField, ty.GetField("NewStaticField", BindingFlags.Static | BindingFlags.Public));
+
+                });
+                CheckReflectedType(assm, allTypes, ns, "ZExistingClass+PreviousNestedClass");
+                CheckReflectedType(assm, allTypes, ns, "IExistingInterface");
+
+                CheckReflectedType(assm, allTypes, ns, "ZExistingClass+NewNestedClass");
+
+                var newTy = CheckReflectedType(assm, allTypes, ns, "NewToplevelClass", static (ty) =>
+                {
+                    CheckCustomNoteAttribute(ty, "123");
+
+                    var nested = ty.GetNestedType("AlsoNested");
+                    var allNested = ty.GetNestedTypes();
+
+                    Assert.Equal("AlsoNested", nested.Name);
+                    Assert.Same(ty, nested.DeclaringType);
+
+                    Assert.Equal(1, allNested.Length);
+                    Assert.Same(nested, allNested[0]);
+
+                    var allInterfaces = ty.GetInterfaces();
+
+                    Assert.Equal (2, allInterfaces.Length);
+                    bool hasICloneable = false, hasINewInterface = false;
+                    for (int i = 0; i < allInterfaces.Length; ++i) {
+                        var itf = allInterfaces[i];
+                        if (itf.Name == "ICloneable")
+                            hasICloneable = true;
+                        if (itf.Name == "IExistingInterface")
+                            hasINewInterface = true;
+                    }
+                    Assert.True(hasICloneable);
+                    Assert.True(hasINewInterface);
+
+                    var allProperties = ty.GetProperties();
+
+                    PropertyInfo newProp = null;
+                    foreach (var prop in allProperties)
+                    {
+                        if (prop.Name == "NewProp")
+                            newProp = prop;
+                    }
+                    Assert.NotNull(newProp);
+
+                    Assert.Equal(newProp, ty.GetProperty("NewProp"));
+                    MethodInfo newPropGet = newProp.GetGetMethod();
+                    Assert.NotNull(newPropGet);
+                    MethodInfo newPropSet = newProp.GetSetMethod();
+                    Assert.NotNull(newPropSet);
+
+                    Assert.Equal("get_NewProp", newPropGet.Name);
+
+                    CheckCustomNoteAttribute (newProp, "hijkl");
+
+                    var allEvents = ty.GetEvents();
+
+                    EventInfo newEvt = null;
+                    foreach (var evt in allEvents)
+                    {
+                        if (evt.Name == "NewEvent")
+                            newEvt = evt;
+                    }
+                    Assert.NotNull(newEvt);
+
+                    Assert.Equal(newEvt, ty.GetEvent("NewEvent"));
+                    MethodInfo newEvtAdd = newEvt.GetAddMethod();
+                    Assert.NotNull(newEvtAdd);
+                    MethodInfo newEvtRemove = newEvt.GetRemoveMethod();
+                    Assert.NotNull(newEvtRemove);
+
+                    Assert.Equal("add_NewEvent", newEvtAdd.Name);
+                });
+                CheckReflectedType(assm, allTypes, ns, "NewGenericClass`1");
+                CheckReflectedType(assm, allTypes, ns, "NewToplevelStruct");
+                CheckReflectedType(assm, allTypes, ns, "INewInterface");
+                CheckReflectedType(assm, allTypes, ns, "NewEnum", static (ty) => {
+                    var names = Enum.GetNames (ty);
+                    Assert.Equal(3, names.Length);
+                    var vals = Enum.GetValues (ty);
+                    Assert.Equal(3, vals.Length);
+
+                    Assert.NotNull(Enum.Parse (ty, "Red"));
+                    Assert.NotNull(Enum.Parse (ty, "Yellow"));
+                });
+
+                // make some instances using reflection and use them through known interfaces
+                var o = Activator.CreateInstance(newTy);
+
+                var i = (System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.IExistingInterface)o;
+
+                Assert.Equal("123", i.ItfMethod(123));
             });
         }
     }

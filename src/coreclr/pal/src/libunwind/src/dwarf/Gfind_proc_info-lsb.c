@@ -910,15 +910,15 @@ dwarf_search_unwind_table (unw_addr_space_t as, unw_word_t ip,
                            unw_dyn_info_t *di, unw_proc_info_t *pi,
                            int need_unwind_info, void *arg)
 {
-  const struct table_entry *e = NULL, *table;
+  const struct table_entry *e = NULL, *table = NULL;
   unw_word_t ip_base = 0, segbase = 0, last_ip, fde_addr;
   unw_accessors_t *a;
 #ifndef UNW_LOCAL_ONLY
   struct table_entry ent;
 #endif
   int ret;
-  unw_word_t debug_frame_base;
-  size_t table_len;
+  unw_word_t debug_frame_base = 0;
+  size_t table_len = 0;
 
 #ifdef UNW_REMOTE_ONLY
   assert (is_remote_table(di->format));

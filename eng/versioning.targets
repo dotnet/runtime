@@ -177,4 +177,11 @@
       WriteOnlyWhenDifferent="true" />
   </Target>
 
+  <Target Name="GenerateNativeSourcelinkFile"
+          DependsOnTargets="GenerateSourceLinkFile"
+          Condition="'$(DisableSourceLink)' != 'true'"
+          Inputs="$(SourceLink)" Outputs="$(NativeSourceLinkFile)">
+    <Error Condition="'$(NativeSourceLinkFile)' == ''" Text="Please set NativeSourceLinkFile to forward appropriate information for sourcelink."/>
+    <Copy SourceFiles="$(SourceLink)" DestinationFiles="$(NativeSourceLinkFile)" />
+  </Target>
 </Project>

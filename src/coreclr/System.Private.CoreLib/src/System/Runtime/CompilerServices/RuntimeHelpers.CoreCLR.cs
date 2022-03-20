@@ -97,10 +97,10 @@ namespace System.Runtime.CompilerServices
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
             instantiation = (RuntimeTypeHandle[]?)instantiation?.Clone();
 
-            IntPtr[]? instantiationHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(instantiation, out int length);
+            ReadOnlySpan<IntPtr> instantiationHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(instantiation, stackScratch: stackalloc IntPtr[8]);
             fixed (IntPtr* pInstantiation = instantiationHandles)
             {
-                PrepareMethod(methodInfo.Value, pInstantiation, length);
+                PrepareMethod(methodInfo.Value, pInstantiation, instantiationHandles.Length);
                 GC.KeepAlive(instantiation);
                 GC.KeepAlive(methodInfo);
             }

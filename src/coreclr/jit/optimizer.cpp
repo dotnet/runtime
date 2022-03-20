@@ -5542,13 +5542,30 @@ Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* dat
 {
     GenTree* tree = *pTree;
 
-    if (tree->OperIs(GT_ASG))
+    if (tree->OperIsSsaDef())
     {
-        GenTree*   dest     = tree->AsOp()->gtOp1;
-        genTreeOps destOper = dest->OperGet();
-
         isVarAssgDsc* desc = (isVarAssgDsc*)data->pCallbackData;
         assert(desc && desc->ivaSelf == desc);
+
+        GenTree* dest = nullptr;
+        if (tree->OperIs(GT_CALL))
+        {
+            desc->ivaMaskCall = optCallInterf(tree->AsCall());
+
+            dest = tree->AsCall()->GetLclRetBufArgNode();
+            if (dest == nullptr)
+            {
+                return WALK_CONTINUE;
+            }
+
+            dest = dest->AsOp()->gtOp1;
+        }
+        else
+        {
+            dest = tree->AsOp()->gtOp1;
+        }
+
+        genTreeOps destOper = dest->OperGet();
 
         if (destOper == GT_LCL_VAR)
         {
@@ -5593,13 +5610,6 @@ Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* dat
             varRefKinds refs = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
             desc->ivaMaskInd = varRefKinds(desc->ivaMaskInd | refs);
         }
-    }
-    else if (tree->gtOper == GT_CALL)
-    {
-        isVarAssgDsc* desc = (isVarAssgDsc*)data->pCallbackData;
-        assert(desc && desc->ivaSelf == desc);
-
-        desc->ivaMaskCall = optCallInterf(tree->AsCall());
     }
 
     return WALK_CONTINUE;
@@ -9406,6 +9416,10 @@ void Compiler::optRemoveRedundantZeroInits()
 
                         break;
                     }
+                    // case GT_CALL:
+                    // TODO-CQ: Need to remove redundant zero-inits for "return buffer".
+                    // assert(!"Need to handle zero inits.\n");
+                    // break;
                     case GT_ASG:
                     {
                         GenTreeOp* treeOp = tree->AsOp();

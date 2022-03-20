@@ -1587,6 +1587,11 @@ public:
         return OperIsMultiOp(OperGet());
     }
 
+    bool OperIsSsaDef() const
+    {
+        return OperIs(GT_ASG, GT_CALL);
+    }
+
     // This is here for cleaner FEATURE_SIMD #ifdefs.
     static bool OperIsSIMD(genTreeOps gtOper)
     {
@@ -4830,13 +4835,47 @@ struct GenTreeCall final : public GenTree
 
     GenTreeCall(var_types type) : GenTree(GT_CALL, type)
     {
-        fgArgInfo = nullptr;
+        fgArgInfo   = nullptr;
+        gtRetBufArg = nullptr;
     }
 #if DEBUGGABLE_GENTREE
     GenTreeCall() : GenTree()
     {
     }
 #endif
+
+    GenTree* GetLclRetBufArgNode() const
+    {
+        if (gtRetBufArg == nullptr)
+        {
+            return nullptr;
+        }
+
+        assert(HasRetBufArg());
+        GenTree* lclRetBufArgNode = gtRetBufArg->GetNode();
+
+        switch (lclRetBufArgNode->OperGet())
+        {
+            // Get the true value from setup args
+            case GT_ASG:
+                return lclRetBufArgNode->AsOp()->gtGetOp2();
+            case GT_STORE_LCL_VAR:
+                return lclRetBufArgNode->AsUnOp()->gtGetOp1();
+
+            // Get the value from putarg wrapper nodes
+            case GT_PUTARG_REG:
+            case GT_PUTARG_STK:
+                return lclRetBufArgNode->AsOp()->gtGetOp1();
+
+            // Otherwise the node should be in the Use*
+            default:
+                return lclRetBufArgNode;
+        }
+    }
+
+    void SetLclRetBufArg(Use* retBufArg);
+
+    Use* gtRetBufArg; // The argument that holds return buffer argument
 };
 
 struct GenTreeCmpXchg : public GenTree

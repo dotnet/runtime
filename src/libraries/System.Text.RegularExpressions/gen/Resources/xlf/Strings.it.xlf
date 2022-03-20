@@ -228,8 +228,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>Regex method must be partial, parameterless, non-generic, and return Regex</source>
-        <target state="translated">Il metodo Regex deve essere parziale, senza parametri, non generico e restituire Regex</target>
+        <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
+        <target state="needs-review-translation">Il metodo Regex deve essere parziale, senza parametri, non generico e restituire Regex</target>
         <note />
       </trans-unit>
       <trans-unit id="ReplacementError">

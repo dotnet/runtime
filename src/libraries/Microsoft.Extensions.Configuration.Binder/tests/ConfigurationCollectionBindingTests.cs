@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -959,6 +960,101 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void CanBindInitializedIEnumerableAndTheOriginalItemsAreNotMutated()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"AlreadyInitializedIEnumerableInterface:0", "val0"},
+                {"AlreadyInitializedIEnumerableInterface:1", "val1"},
+                {"AlreadyInitializedIEnumerableInterface:2", "val2"},
+                {"AlreadyInitializedIEnumerableInterface:x", "valx"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new InitializedCollectionsOptions();
+            config.Bind(options);
+
+            var array = options.AlreadyInitializedIEnumerableInterface.ToArray();
+
+            Assert.Equal(6, array.Length);
+
+            Assert.Equal("This was here too", array[0]);
+            Assert.Equal("Don't touch me!", array[1]);
+            Assert.Equal("val0", array[2]);
+            Assert.Equal("val1", array[3]);
+            Assert.Equal("val2", array[4]);
+            Assert.Equal("valx", array[5]);
+
+            // the original list hasn't been touched
+            Assert.Equal(2, options.ListUsedInIEnumerableFieldAndShouldNotBeTouched.Count);
+            Assert.Equal("This was here too", options.ListUsedInIEnumerableFieldAndShouldNotBeTouched.ElementAt(0));
+            Assert.Equal("Don't touch me!", options.ListUsedInIEnumerableFieldAndShouldNotBeTouched.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInitializedCustomIEnumerableBasedList()
+        {
+            // A field declared as IEnumerable<T> that is instantiated with a class
+            // that directly implements IEnumerable<T> is still bound, but with
+            // a new List<T> with the original values copied over.
+
+            var input = new Dictionary<string, string>
+            {
+                {"AlreadyInitializedCustomListDerivedFromIEnumerable:0", "val0"},
+                {"AlreadyInitializedCustomListDerivedFromIEnumerable:1", "val1"},
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new InitializedCollectionsOptions();
+            config.Bind(options);
+
+            var array = options.AlreadyInitializedCustomListDerivedFromIEnumerable.ToArray();
+
+            Assert.Equal(4, array.Length);
+
+            Assert.Equal("Item1", array[0]);
+            Assert.Equal("Item2", array[1]);
+            Assert.Equal("val0", array[2]);
+            Assert.Equal("val1", array[3]);
+        }
+
+        [Fact]
+        public void CanBindInitializedCustomIndirectlyDerivedIEnumerableList()
+        {
+            // A field declared as IEnumerable<T> that is instantiated with a class
+            // that indirectly implements IEnumerable<T> is still bound, but with
+            // a new List<T> with the original values copied over.
+
+            var input = new Dictionary<string, string>
+            {
+                {"AlreadyInitializedCustomListIndirectlyDerivedFromIEnumerable:0", "val0"},
+                {"AlreadyInitializedCustomListIndirectlyDerivedFromIEnumerable:1", "val1"},
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new InitializedCollectionsOptions();
+            config.Bind(options);
+
+            var array = options.AlreadyInitializedCustomListIndirectlyDerivedFromIEnumerable.ToArray();
+
+            Assert.Equal(4, array.Length);
+
+            Assert.Equal("Item1", array[0]);
+            Assert.Equal("Item2", array[1]);
+            Assert.Equal("val0", array[2]);
+            Assert.Equal("val1", array[3]);
+        }
+
+        [Fact]
         public void CanBindUninitializedICollection()
         {
             var input = new Dictionary<string, string>
@@ -1101,12 +1197,60 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public IReadOnlyDictionary<string, string> IReadOnlyDictionary { get; set; }
         }
 
+        private class InitializedCollectionsOptions
+        {
+            public InitializedCollectionsOptions()
+            {
+                AlreadyInitializedIEnumerableInterface = ListUsedInIEnumerableFieldAndShouldNotBeTouched;
+            }
+
+            public List<string> ListUsedInIEnumerableFieldAndShouldNotBeTouched = new List<string>
+            {
+                "This was here too",
+                "Don't touch me!"
+            };
+
+            public IEnumerable<string> AlreadyInitializedIEnumerableInterface { get; set; }
+
+            public IEnumerable<string> AlreadyInitializedCustomListDerivedFromIEnumerable { get; set; } =
+                new CustomListDerivedFromIEnumerable();
+
+            public IEnumerable<string> AlreadyInitializedCustomListIndirectlyDerivedFromIEnumerable { get; set; } =
+                new CustomListIndirectlyDerivedFromIEnumerable();
+        }
+
         private class CustomList : List<string>
         {
             // Add an overload, just to make sure binding picks the right Add method
             public void Add(string a, string b)
             {
             }
+        }
+
+        private class CustomListDerivedFromIEnumerable : IEnumerable<string>
+        {
+            private readonly List<string> _items = new List<string> { "Item1", "Item2" };
+
+            public IEnumerator<string> GetEnumerator() => _items.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        internal interface IDerivedOne : IDerivedTwo
+        {
+        }
+
+        internal interface IDerivedTwo : IEnumerable<string>
+        {
+        }
+
+        private class CustomListIndirectlyDerivedFromIEnumerable : IDerivedOne
+        {
+            private readonly List<string> _items = new List<string> { "Item1", "Item2" };
+
+            public IEnumerator<string> GetEnumerator() => _items.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         private class CustomDictionary<T> : Dictionary<string, T>

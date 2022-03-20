@@ -116,7 +116,6 @@
     <FeatureMono>true</FeatureMono>
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureManagedEtw>true</FeatureManagedEtw>
-    <FeatureGenericMath>true</FeatureGenericMath>
     <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>
     <FeaturePortableThreadPool Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableThreadPool>
     <FeaturePerfTracing Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePerfTracing>
@@ -124,7 +123,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefineConstants Condition="'$(FeatureGenericMath)' == 'true'">$(DefineConstants);FEATURE_GENERIC_MATH</DefineConstants>
     <DefineConstants Condition="'$(FeatureManagedEtw)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW</DefineConstants>
     <DefineConstants Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW_CHANNELS</DefineConstants>
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
