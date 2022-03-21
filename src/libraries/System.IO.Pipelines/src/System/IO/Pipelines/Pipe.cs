@@ -178,7 +178,7 @@ namespace System.IO.Pipelines
                 if (_writingHead == null)
                 {
                     // We need to allocate memory to write since nobody has written before
-                    BufferSegment newSegment = AllocateSegment(sizeHint);
+                    BufferSegment newSegment = AllocateSegment(MinimumSegmentSize, sizeHint);
 
                     // Set all the pointers
                     _writingHead = _readHead = _readTail = newSegment;
@@ -197,7 +197,9 @@ namespace System.IO.Pipelines
                             _writingHeadBytesBuffered = 0;
                         }
 
-                        BufferSegment newSegment = AllocateSegment(sizeHint);
+                        // Double the minimum segment size on subsequent segements
+                        int newSegmentSize = Math.Min(PipeOptions.MaximumSegmentSize, _writingHead.Capacity * 2);
+                        BufferSegment newSegment = AllocateSegment(newSegmentSize, sizeHint);
 
                         _writingHead.SetNext(newSegment);
                         _writingHead = newSegment;
@@ -206,7 +208,7 @@ namespace System.IO.Pipelines
             }
         }
 
-        private BufferSegment AllocateSegment(int sizeHint)
+        private BufferSegment AllocateSegment(int minimumSegmentSize, int sizeHint)
         {
             Debug.Assert(sizeHint >= 0);
             BufferSegment newSegment = CreateSegmentUnsynchronized();
@@ -223,12 +225,12 @@ namespace System.IO.Pipelines
             if (sizeHint <= maxSize)
             {
                 // Use the specified pool as it fits. Specified pool is not null as maxSize == -1 if _pool is null.
-                newSegment.SetOwnedMemory(pool!.Rent(GetSegmentSize(sizeHint, maxSize)));
+                newSegment.SetOwnedMemory(pool!.Rent(GetSegmentSize(minimumSegmentSize, sizeHint, maxSize)));
             }
             else
             {
                 // Use the array pool
-                int sizeToRequest = GetSegmentSize(sizeHint);
+                int sizeToRequest = GetSegmentSize(minimumSegmentSize, sizeHint);
                 newSegment.SetOwnedMemory(ArrayPool<byte>.Shared.Rent(sizeToRequest));
             }
 
@@ -237,10 +239,11 @@ namespace System.IO.Pipelines
             return newSegment;
         }
 
-        private int GetSegmentSize(int sizeHint, int maxBufferSize = int.MaxValue)
+        private int GetSegmentSize(int minimumSegmentSize, int sizeHint, int maxBufferSize = int.MaxValue)
         {
             // First we need to handle case where hint is smaller than minimum segment size
-            sizeHint = Math.Max(MinimumSegmentSize, sizeHint);
+            sizeHint = Math.Max(minimumSegmentSize, sizeHint);
+
             // After that adjust it to fit into pools max buffer size
             int adjustedToMaximumSize = Math.Min(maxBufferSize, sizeHint);
             return adjustedToMaximumSize;
@@ -1090,7 +1093,8 @@ namespace System.IO.Pipelines
 
                 // This is optimized to use pooled memory. That's why we pass 0 instead of
                 // source.Length
-                BufferSegment newSegment = AllocateSegment(0);
+                int newSegmentSize = Math.Min(PipeOptions.MaximumSegmentSize, _writingHead.Capacity * 2);
+                BufferSegment newSegment = AllocateSegment(newSegmentSize, 0);
 
                 _writingHead.SetNext(newSegment);
                 _writingHead = newSegment;

@@ -11,6 +11,9 @@ namespace System.IO.Pipelines
     {
         private const int DefaultMinimumSegmentSize = 4096;
 
+        // Arbitrary 1MB max segment size
+        internal const int MaximumSegmentSize = 1024 * 1024;
+
         /// <summary>Gets the default instance of <see cref="System.IO.Pipelines.PipeOptions" />.</summary>
         /// <value>A <see cref="System.IO.Pipelines.PipeOptions" /> object initialized with default parameters.</value>
         public static PipeOptions Default { get; } = new PipeOptions();
@@ -38,10 +41,10 @@ namespace System.IO.Pipelines
             // to let users specify the maximum buffer size, so we pick a reasonable number based on defaults. They can influence
             // how much gets buffered by increasing the minimum segment size.
 
-            // With a defaukt segment size of 4K this maps to 16K
+            // With a default minimum segment size of 4 this maps to 60K
             InitialSegmentPoolSize = 4;
 
-            // With a defaukt segment size of 4K this maps to 1MB. If the pipe has large segments this will be bigger than 1MB...
+            // With a default minimum segment size of 4K this maps to 1MB. If the pipe has large segments this will be bigger than 1MB...
             MaxSegmentPoolSize = 256;
 
             // By default, we'll throttle the writer at 64K of buffered data

@@ -15,6 +15,11 @@ namespace System.IO.Pipelines
         private int _end;
 
         /// <summary>
+        /// The amount of avaiable memory in the segment.
+        /// </summary>
+        public int Capacity => AvailableMemory.Length;
+
+        /// <summary>
         /// The End represents the offset into AvailableMemory where the range of "active" bytes ends. At the point when the block is leased
         /// the End is guaranteed to be equal to Start. The value of Start may be assigned anywhere between 0 and
         /// Buffer.Length, and must be equal to or less than End.
