@@ -48,6 +48,10 @@
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>f17917e8d6a2e3ba069cddeab873554706d502a5</Sha>
     </Dependency>
+    <Dependency Name="System.CommandLine" Version="2.0.0-beta3.22151.2">
+      <Uri>https://github.com/dotnet/command-line-api</Uri>
+      <Sha>021ec68a4cb510c2cc125c6ebb78b9cfd4e3847a</Sha>
+    </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="7.0.0-beta.22166.1">
