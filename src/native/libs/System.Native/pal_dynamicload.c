@@ -61,7 +61,7 @@ static volatile void* g_defaultSearchOrderPseudoHandle = NULL;
 void* SystemNative_GetDefaultSearchOrderPseudoHandle(void)
 {
     // Read the value once from the volatile static to avoid reading from memory twice.
-    void* defaultSearchOrderPseudoHandle = g_defaultSearchOrderPseudoHandle;
+    void* defaultSearchOrderPseudoHandle = (void*)g_defaultSearchOrderPseudoHandle;
     if (defaultSearchOrderPseudoHandle == NULL)
     {
         // Assign back to the static as well as the local here.
