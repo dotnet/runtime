@@ -1312,7 +1312,7 @@ void CordbProcess::NeuterChildren()
     m_steppers.NeuterAndClear(GetProcessLock());
 
 #ifdef FEATURE_INTEROP_DEBUGGING
-    if(m_lastDispatchedIBEvent != NULL)
+    if (m_lastDispatchedIBEvent != NULL)
     {
         m_lastDispatchedIBEvent->m_owner->InternalRelease();
         m_lastDispatchedIBEvent = NULL;
