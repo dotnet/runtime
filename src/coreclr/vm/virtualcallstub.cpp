@@ -3346,7 +3346,7 @@ void BucketTable::Reclaim()
     while (list)
     {
         size_t next = list->contents[CALL_STUB_DEAD_LINK];
-        delete [] (size_t*)list;
+        delete list;
         list = (FastTable*) next;
     }
 }
