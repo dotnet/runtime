@@ -74,8 +74,8 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor NativeTypeMustHaveCustomTypeMarshallerAttributeRule =
             new DiagnosticDescriptor(
-                Ids.NativeTypeMustHaveCustomTypeMarshallerAttribute,
-                "NativeTypeMustHaveCustomTypeMarshallerAttribute",
+                Ids.InvalidNativeType,
+                "InvalidNativeType",
                 GetResourceString(nameof(Resources.NativeTypeMustHaveCustomTypeMarshallerAttributeMessage)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -84,8 +84,8 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor NativeTypeMustBeBlittableRule =
             new DiagnosticDescriptor(
-                Ids.NativeTypeMustBeBlittable,
-                "NativeTypeMustBeBlittable",
+                Ids.InvalidNativeType,
+                "InvalidNativeType",
                 GetResourceString(nameof(Resources.NativeTypeMustBeBlittableMessage)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -104,8 +104,8 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor NativeTypeMustBePointerSizedRule =
             new DiagnosticDescriptor(
-                Ids.NativeTypeMustBePointerSized,
-                "NativeTypeMustBePointerSized",
+                Ids.InvalidNativeType,
+                "InvalidNativeType",
                 GetResourceString(nameof(Resources.NativeTypeMustBePointerSizedMessage)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -234,7 +234,7 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackRule =
             new DiagnosticDescriptor(
-                Ids.GetPinnableReferenceShouldSupportAllocatingMarshallingFallback,
+                Ids.MissingAllocatingMarshallingFallback,
                 "GetPinnableReferenceShouldSupportAllocatingMarshallingFallback",
                 GetResourceString(nameof(Resources.GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage)),
                 Category,
@@ -244,7 +244,7 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackRule =
             new DiagnosticDescriptor(
-                Ids.CallerAllocMarshallingShouldSupportAllocatingMarshallingFallback,
+                Ids.MissingAllocatingMarshallingFallback,
                 "CallerAllocMarshallingShouldSupportAllocatingMarshallingFallback",
                 GetResourceString(nameof(Resources.CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackMessage)),
                 Category,
@@ -264,8 +264,8 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor RefNativeValueUnsupportedRule =
             new DiagnosticDescriptor(
-                Ids.RefNativeValueUnsupported,
-                "RefNativeValueUnsupported",
+                Ids.InvalidSignaturesInMarshallerShape,
+                "InvalidSignaturesInMarshallerShape",
                 GetResourceString(nameof(Resources.RefNativeValueUnsupportedMessage)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -274,7 +274,7 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor NativeGenericTypeMustBeClosedOrMatchArityRule =
             new DiagnosticDescriptor(
-                Ids.NativeGenericTypeMustBeClosedOrMatchArity,
+                Ids.InvalidNativeType,
                 "NativeGenericTypeMustBeClosedOrMatchArity",
                 GetResourceString(nameof(Resources.NativeGenericTypeMustBeClosedOrMatchArityMessage)),
                 Category,
@@ -334,8 +334,8 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor TwoStageMarshallingNativeTypesMustMatchRule =
             new DiagnosticDescriptor(
-                Ids.TwoStageMarshallingNativeTypesMustMatch,
-                "TwoStageMarshallingNativeTypesMustMatch",
+                Ids.InvalidSignaturesInMarshallerShape,
+                "InvalidSignaturesInMarshallerShape",
                 GetResourceString(nameof(Resources.TwoStageMarshallingNativeTypesMustMatchMessage)),
                 Category,
                 DiagnosticSeverity.Warning,
@@ -344,8 +344,8 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor LinearCollectionElementTypesMustMatchRule =
             new DiagnosticDescriptor(
-                Ids.LinearCollectionElementTypesMustMatch,
-                "LinearCollectionElementTypesMustMatch",
+                Ids.InvalidSignaturesInMarshallerShape,
+                "InvalidSignaturesInMarshallerShape",
                 GetResourceString(nameof(Resources.LinearCollectionElementTypesMustMatchMessage)),
                 Category,
                 DiagnosticSeverity.Warning,
