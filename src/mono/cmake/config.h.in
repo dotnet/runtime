@@ -279,12 +279,6 @@
 /* Disable Soft Debugger Agent. */
 #cmakedefine DISABLE_DEBUGGER_AGENT 1
 
-/* Disable Performance Counters. */
-#cmakedefine DISABLE_PERFCOUNTERS 1
-
-/* Disable shared perfcounters. */
-#cmakedefine DISABLE_SHARED_PERFCOUNTERS 1
-
 /* Disable support code for the LLDB plugin. */
 #cmakedefine DISABLE_LLDB 1
 
@@ -311,9 +305,6 @@
 
 /* Disable Threads */
 #cmakedefine DISABLE_THREADS 1
-
-/* Disable perf counters */
-#cmakedefine DISABLE_PERF_COUNTERS
 
 /* Disable MONO_LOG_DEST */
 #cmakedefine DISABLE_LOG_DEST
@@ -514,9 +505,6 @@
 
 /* Enable support for using sigaltstack for SIGSEGV and stack overflow handling, this doesn't work on some platforms */
 #cmakedefine ENABLE_SIGALTSTACK 1
-
-/* Define to 1 if you have the `shm_open' function. */
-#cmakedefine HAVE_SHM_OPEN 1
 
 /* Define to 1 if you have the `poll' function. */
 #cmakedefine HAVE_POLL 1

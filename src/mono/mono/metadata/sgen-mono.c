@@ -2486,8 +2486,6 @@ static size_t worker_heap_size;
 void
 sgen_client_total_allocated_heap_changed (size_t allocated_heap)
 {
-	mono_runtime_resource_check_limit (MONO_RESOURCE_GC_HEAP, allocated_heap);
-
 	/*
 	 * This function can be called from SGen's worker threads. We want to try
 	 * and avoid exposing those threads to the profiler API, so save the heap
@@ -2816,9 +2814,6 @@ mono_gchandle_set_target (MonoGCHandle gchandle, MonoObject *obj)
 void
 sgen_client_gchandle_created (int handle_type, GCObject *obj, guint32 handle)
 {
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_inc_i32 (&mono_perfcounters->gc_num_handles);
-#endif
 
 	MONO_PROFILER_RAISE (gc_handle_created, (handle, (MonoGCHandleType)handle_type, obj));
 }
@@ -2826,9 +2821,6 @@ sgen_client_gchandle_created (int handle_type, GCObject *obj, guint32 handle)
 void
 sgen_client_gchandle_destroyed (int handle_type, guint32 handle)
 {
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_dec_i32 (&mono_perfcounters->gc_num_handles);
-#endif
 
 	MONO_PROFILER_RAISE (gc_handle_deleted, (handle, (MonoGCHandleType)handle_type));
 }
@@ -3095,20 +3087,8 @@ mono_gc_base_init (void)
 	if (gc_inited)
 		return;
 
-	mono_counters_init ();
-
 #ifndef HOST_WIN32
 	mono_w32handle_init ();
-#endif
-
-#ifdef HEAVY_STATISTICS
-	mono_counters_register ("los marked cards", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &los_marked_cards);
-	mono_counters_register ("los array cards scanned ", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &los_array_cards);
-	mono_counters_register ("los array remsets", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &los_array_remsets);
-
-	mono_counters_register ("WBarrier set arrayref", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_set_arrayref);
-	mono_counters_register ("WBarrier value copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_value_copy);
-	mono_counters_register ("WBarrier object copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_object_copy);
 #endif
 
 	sgen_gc_init ();
@@ -3165,12 +3145,6 @@ sgen_client_binary_protocol_collection_begin (int minor_gc_count, int generation
 		MONO_PROFILER_RAISE (gc_root_register, (SPECIAL_ADDRESS_TOGGLEREF, 1, MONO_ROOT_SOURCE_TOGGLEREF, NULL, "ToggleRefs"));
 	}
 
-#ifndef DISABLE_PERFCOUNTERS
-	if (generation == GENERATION_NURSERY)
-		mono_atomic_inc_i32 (&mono_perfcounters->gc_collections0);
-	else
-		mono_atomic_inc_i32 (&mono_perfcounters->gc_collections1);
-#endif
 }
 
 void

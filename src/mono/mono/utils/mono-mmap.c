@@ -35,7 +35,6 @@
 #include "mono-proclib.h"
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/atomic.h>
-#include <mono/utils/mono-counters.h>
 
 #define BEGIN_CRITICAL_SECTION do { \
 	MonoThreadInfo *__info = mono_thread_info_current_unchecked (); \
@@ -54,27 +53,6 @@
 #define MAP_32BIT 0
 #endif
 #endif
-
-typedef struct {
-	int size;
-	int pid;
-	int reserved;
-	short stats_start;
-	short stats_end;
-} SAreaHeader;
-
-void*
-mono_malloc_shared_area (int pid)
-{
-	int size = mono_pagesize ();
-	SAreaHeader *sarea = (SAreaHeader *) g_malloc0 (size);
-	sarea->size = size;
-	sarea->pid = pid;
-	sarea->stats_start = sizeof (SAreaHeader);
-	sarea->stats_end = sizeof (SAreaHeader);
-
-	return sarea;
-}
 
 char*
 mono_aligned_address (char *mem, size_t size, size_t alignment)
@@ -109,43 +87,6 @@ mono_valloc_can_alloc (size_t size)
 	return TRUE;
 }
 
-const char*
-mono_mem_account_type_name (MonoMemAccountType type)
-{
-	static const char *names[] = {
-		"code",
-		"hazard pointers",
-		"mem manager",
-		"SGen internal",
-		"SGen nursery",
-		"SGen LOS",
-		"SGen mark&sweep",
-		"SGen card table",
-		"SGen shadow card table",
-		"SGen debugging",
-		"SGen binary protocol",
-		"exceptions",
-		"profiler",
-		"interp stack",
-		"other"
-	};
-
-	return names [type];
-}
-
-void
-mono_mem_account_register_counters (void)
-{
-	for (int i = 0; i < MONO_MEM_ACCOUNT_MAX; ++i) {
-		const char *prefix = "Valloc ";
-		const char *name = mono_mem_account_type_name ((MonoMemAccountType)i);
-		char descr [128];
-		g_assert (strlen (prefix) + strlen (name) < sizeof (descr));
-		sprintf (descr, "%s%s", prefix, name);
-		mono_counters_register (descr, MONO_COUNTER_WORD | MONO_COUNTER_RUNTIME | MONO_COUNTER_BYTES | MONO_COUNTER_VARIABLE, (void*)&allocation_count [i]);
-	}
-}
-
 #ifdef HOST_WIN32
 // Windows specific implementation in mono-mmap-windows.c
 #define HAVE_VALLOC_ALIGNED
@@ -156,7 +97,6 @@ mono_mem_account_register_counters (void)
 
 #else
 
-static void* malloced_shared_area = NULL;
 #if defined(HAVE_MMAP)
 
 /**
@@ -529,236 +469,6 @@ mono_mprotect (void *addr, size_t length, int flags)
 }
 
 #endif // HAVE_MMAP
-
-#if defined(HAVE_SHM_OPEN) && !defined (DISABLE_SHARED_PERFCOUNTERS)
-
-static int use_shared_area;
-
-static gboolean
-shared_area_disabled (void)
-{
-	if (!use_shared_area) {
-		if (g_hasenv ("MONO_DISABLE_SHARED_AREA"))
-			use_shared_area = -1;
-		else
-			use_shared_area = 1;
-	}
-	return use_shared_area == -1;
-}
-
-static int
-mono_shared_area_instances_slow (void **array, int count, gboolean cleanup)
-{
-	int i, j = 0;
-	int num;
-	void *data;
-	gpointer *processes = mono_process_list (&num);
-	for (i = 0; i < num; ++i) {
-		data = mono_shared_area_for_pid (processes [i]);
-		if (!data)
-			continue;
-		mono_shared_area_unload (data);
-		if (!cleanup) {
-			if (j < count)
-				array [j++] = processes [i];
-			else
-				break;
-		}
-	}
-	g_free (processes);
-	return j;
-}
-
-static int
-mono_shared_area_instances_helper (void **array, int count, gboolean cleanup)
-{
-	const char *name;
-	int i = 0;
-	int curpid = getpid ();
-	GDir *dir = g_dir_open ("/dev/shm/", 0, NULL);
-	if (!dir)
-		return mono_shared_area_instances_slow (array, count, cleanup);
-	while ((name = g_dir_read_name (dir))) {
-		int pid;
-		char *nend;
-		if (strncmp (name, "mono.", 5))
-			continue;
-		pid = strtol (name + 5, &nend, 10);
-		if (pid <= 0 || nend == name + 5 || *nend)
-			continue;
-		if (!cleanup) {
-			if (i < count)
-				array [i++] = GINT_TO_POINTER (pid);
-			else
-				break;
-		}
-		if (curpid != pid && kill (pid, 0) == -1 && (errno == ESRCH || errno == ENOMEM)) {
-			char buf [128];
-			g_snprintf (buf, sizeof (buf), "/mono.%d", pid);
-			shm_unlink (buf);
-		}
-	}
-	g_dir_close (dir);
-	return i;
-}
-
-void*
-mono_shared_area (void)
-{
-	int fd;
-	int pid = getpid ();
-	/* we should allow the user to configure the size */
-	int size = mono_pagesize ();
-	char buf [128];
-	void *res;
-	SAreaHeader *header;
-
-	if (shared_area_disabled ()) {
-		if (!malloced_shared_area)
-			malloced_shared_area = mono_malloc_shared_area (0);
-		/* get the pid here */
-		return malloced_shared_area;
-	}
-
-	/* perform cleanup of segments left over from dead processes */
-	mono_shared_area_instances_helper (NULL, 0, TRUE);
-
-	g_snprintf (buf, sizeof (buf), "/mono.%d", pid);
-
-	fd = shm_open (buf, O_CREAT|O_EXCL|O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP);
-	if (fd == -1 && errno == EEXIST) {
-		/* leftover */
-		shm_unlink (buf);
-		fd = shm_open (buf, O_CREAT|O_EXCL|O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP);
-	}
-	/* in case of failure we try to return a memory area anyway,
-	 * even if it means the data can't be read by other processes
-	 */
-	if (fd == -1)
-		return mono_malloc_shared_area (pid);
-	if (ftruncate (fd, size) != 0) {
-		shm_unlink (buf);
-		close (fd);
-	}
-	BEGIN_CRITICAL_SECTION;
-	res = mmap (NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-	END_CRITICAL_SECTION;
-
-	if (res == MAP_FAILED) {
-		shm_unlink (buf);
-		close (fd);
-		return mono_malloc_shared_area (pid);
-	}
-	/* we don't need the file descriptor anymore */
-	close (fd);
-	header = (SAreaHeader *) res;
-	header->size = size;
-	header->pid = pid;
-	header->stats_start = sizeof (SAreaHeader);
-	header->stats_end = sizeof (SAreaHeader);
-
-	mono_atexit (mono_shared_area_remove);
-	return res;
-}
-
-void
-mono_shared_area_remove (void)
-{
-	char buf [128];
-
-	if (shared_area_disabled ()) {
-		if (malloced_shared_area)
-			g_free (malloced_shared_area);
-		return;
-	}
-
-	g_snprintf (buf, sizeof (buf), "/mono.%d", getpid ());
-	shm_unlink (buf);
-	if (malloced_shared_area)
-		g_free (malloced_shared_area);
-}
-
-void*
-mono_shared_area_for_pid (void *pid)
-{
-	int fd;
-	/* we should allow the user to configure the size */
-	int size = mono_pagesize ();
-	char buf [128];
-	void *res;
-
-	if (shared_area_disabled ())
-		return NULL;
-
-	g_snprintf (buf, sizeof (buf), "/mono.%d", GPOINTER_TO_INT (pid));
-
-	fd = shm_open (buf, O_RDONLY, S_IRUSR|S_IRGRP);
-	if (fd == -1)
-		return NULL;
-	BEGIN_CRITICAL_SECTION;
-	res = mmap (NULL, size, PROT_READ, MAP_SHARED, fd, 0);
-	END_CRITICAL_SECTION;
-
-	if (res == MAP_FAILED) {
-		close (fd);
-		return NULL;
-	}
-	/* FIXME: validate the area */
-	/* we don't need the file descriptor anymore */
-	close (fd);
-	return res;
-}
-
-void
-mono_shared_area_unload  (void *area)
-{
-	/* FIXME: currently we load only a page */
-	BEGIN_CRITICAL_SECTION;
-	munmap (area, mono_pagesize ());
-	END_CRITICAL_SECTION;
-}
-
-int
-mono_shared_area_instances (void **array, int count)
-{
-	return mono_shared_area_instances_helper (array, count, FALSE);
-}
-#else
-void*
-mono_shared_area (void)
-{
-	if (!malloced_shared_area)
-		malloced_shared_area = mono_malloc_shared_area (getpid ());
-	/* get the pid here */
-	return malloced_shared_area;
-}
-
-void
-mono_shared_area_remove (void)
-{
-	if (malloced_shared_area)
-		g_free (malloced_shared_area);
-	malloced_shared_area = NULL;
-}
-
-void*
-mono_shared_area_for_pid (void *pid)
-{
-	return NULL;
-}
-
-void
-mono_shared_area_unload (void *area)
-{
-}
-
-int
-mono_shared_area_instances (void **array, int count)
-{
-	return 0;
-}
-
-#endif // HAVE_SHM_OPEN
 
 #endif // HOST_WIN32
 

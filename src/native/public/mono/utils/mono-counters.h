@@ -1,5 +1,8 @@
 /**
  * \file
+ *
+ * WARNING: The functions in this header are no-ops and provided for source compatibility with older versions of mono only.
+ *
  */
 
 #ifndef __MONO_COUNTERS_H__
