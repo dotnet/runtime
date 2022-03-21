@@ -254,7 +254,7 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor CallerAllocConstructorMustHaveBufferSizeRule =
             new DiagnosticDescriptor(
-                Ids.CallerAllocConstructorMustHaveStackBufferSize,
+                Ids.CallerAllocConstructorMustHaveBufferSize,
                 "CallerAllocConstructorMustHaveBufferSize",
                 GetResourceString(nameof(Resources.CallerAllocConstructorMustHaveBufferSizeMessage)),
                 Category,
@@ -262,15 +262,15 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.CallerAllocConstructorMustHaveBufferSizeDescription)));
 
-        public static readonly DiagnosticDescriptor RefValuePropertyUnsupportedRule =
+        public static readonly DiagnosticDescriptor RefNativeValueUnsupportedRule =
             new DiagnosticDescriptor(
-                Ids.RefValuePropertyUnsupported,
-                "RefValuePropertyUnsupported",
-                GetResourceString(nameof(Resources.RefValuePropertyUnsupportedMessage)),
+                Ids.RefNativeValueUnsupported,
+                "RefNativeValueUnsupported",
+                GetResourceString(nameof(Resources.RefNativeValueUnsupportedMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.RefValuePropertyUnsupportedDescription)));
+                description: GetResourceString(nameof(Resources.RefNativeValueUnsupportedDescription)));
 
         public static readonly DiagnosticDescriptor NativeGenericTypeMustBeClosedOrMatchArityRule =
             new DiagnosticDescriptor(
@@ -374,7 +374,7 @@ namespace Microsoft.Interop.Analyzers
                 GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackRule,
                 CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackRule,
                 CallerAllocConstructorMustHaveBufferSizeRule,
-                RefValuePropertyUnsupportedRule,
+                RefNativeValueUnsupportedRule,
                 NativeGenericTypeMustBeClosedOrMatchArityRule,
                 MarshallerGetPinnableReferenceRequiresTwoStageMarshallingRule,
                 FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureRule,
@@ -819,7 +819,7 @@ namespace Microsoft.Interop.Analyzers
                     {
                         context.ReportDiagnostic(
                             toNativeValueMethod.CreateDiagnostic(
-                                RefValuePropertyUnsupportedRule,
+                                RefNativeValueUnsupportedRule,
                                 marshallerType.ToDisplayString()));
                     }
 

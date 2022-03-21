@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if !TEST_CORELIB
 using System.ComponentModel;
-#endif
 
 namespace System.Runtime.InteropServices
 {
@@ -21,9 +19,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// No marshalling direction
         /// </summary>
-#if !TEST_CORELIB
         [EditorBrowsable(EditorBrowsableState.Never)]
-#endif
         None = 0,
         /// <summary>
         /// Marshalling from a managed environment to an unmanaged environment

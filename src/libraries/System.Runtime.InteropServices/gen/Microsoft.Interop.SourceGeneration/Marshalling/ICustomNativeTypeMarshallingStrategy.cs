@@ -146,7 +146,7 @@ namespace Microsoft.Interop
     }
 
     /// <summary>
-    /// Marshaller that enables support of a Value property on a native type.
+    /// Marshaller that enables support of ToNativeValue/FromNativeValue methods on a native type.
     /// </summary>
     internal sealed class CustomNativeTypeWithToFromNativeValueMarshalling : ICustomNativeTypeMarshallingStrategy
     {
@@ -1111,6 +1111,7 @@ namespace Microsoft.Interop
             // but this is an uncommon case so we don't want to design the API around enabling just it.
             var (_, nativeIdentifier) = context.GetIdentifiers(info);
             string numElementsIdentifier = context.GetAdditionalIdentifier(info, "numElements");
+            // int <numElements> = <nativeIdentifier>.GetManagedValuesSource().Length;
             LocalDeclarationStatementSyntax numElementsDeclaration = LocalDeclarationStatement(
                 VariableDeclaration(
                     PredefinedType(Token(SyntaxKind.IntKeyword)),
@@ -1125,6 +1126,7 @@ namespace Microsoft.Interop
                                 IdentifierName("Length")))))));
 
             string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(info, context);
+            // Span<TElement> <managedSpan> = MemoryMarshal.CreateSpan(ref Unsafe.AsRef(ref <nativeIdentifier>.GetManagedValuesSource().GetPinnableReference(), <numElements>));
             LocalDeclarationStatementSyntax managedValuesDeclaration = LocalDeclarationStatement(VariableDeclaration(
                 GenericName(
                     Identifier(TypeNames.System_Span),

@@ -297,18 +297,18 @@ namespace Microsoft.Interop {
         /// <summary>
         ///   Looks up a localized string similar to The &apos;Value&apos; property must not be a &apos;ref&apos; or &apos;readonly ref&apos; property..
         /// </summary>
-        internal static string RefValuePropertyUnsupportedDescription {
+        internal static string RefNativeValueUnsupportedDescription {
             get {
-                return ResourceManager.GetString("RefValuePropertyUnsupportedDescription", resourceCulture);
+                return ResourceManager.GetString("RefNativeValueUnsupportedDescription", resourceCulture);
             }
         }
 
         /// <summary>
         ///   Looks up a localized string similar to The &apos;Value&apos; property on the native type &apos;{0}&apos; must not be a &apos;ref&apos; or &apos;readonly ref&apos; property..
         /// </summary>
-        internal static string RefValuePropertyUnsupportedMessage {
+        internal static string RefNativeValueUnsupportedMessage {
             get {
-                return ResourceManager.GetString("RefValuePropertyUnsupportedMessage", resourceCulture);
+                return ResourceManager.GetString("RefNativeValueUnsupportedMessage", resourceCulture);
             }
         }
 

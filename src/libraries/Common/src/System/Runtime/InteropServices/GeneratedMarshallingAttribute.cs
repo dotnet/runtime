@@ -8,16 +8,6 @@
 //
 namespace System.Runtime.InteropServices
 {
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-#if LIBRARYIMPORT_GENERATOR_TEST
-    public
-#else
-    internal
-#endif
-    sealed class GeneratedMarshallingAttribute : Attribute
-    {
-    }
-
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Delegate)]
 #if LIBRARYIMPORT_GENERATOR_TEST
     public

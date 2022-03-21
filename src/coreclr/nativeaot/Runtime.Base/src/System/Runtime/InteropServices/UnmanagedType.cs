@@ -3,8 +3,8 @@
 
 namespace System.Runtime.InteropServices
 {
+    // Included because the C# compiler requires it for the unmanaged constraint
     public enum UnmanagedType
     {
-        Bool = 0x2,         // 4 byte boolean value (true != 0, false == 0)
     }
 }

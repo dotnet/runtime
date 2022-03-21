@@ -440,7 +440,7 @@ unsafe struct Native
 }";
 
             await VerifyCS.VerifyCodeFixAsync(source,
-                VerifyCS.Diagnostic(RefValuePropertyUnsupportedRule).WithLocation(0).WithArguments("Native"),
+                VerifyCS.Diagnostic(RefNativeValueUnsupportedRule).WithLocation(0).WithArguments("Native"),
                 source);
         }
 
@@ -473,7 +473,7 @@ unsafe struct Native
 }";
 
             await VerifyCS.VerifyCodeFixAsync(source,
-                VerifyCS.Diagnostic(RefValuePropertyUnsupportedRule).WithLocation(0).WithArguments("Native"),
+                VerifyCS.Diagnostic(RefNativeValueUnsupportedRule).WithLocation(0).WithArguments("Native"),
                 source);
         }
 

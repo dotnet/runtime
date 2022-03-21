@@ -144,26 +144,32 @@ public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
     public GenericContiguousCollectionMarshallerImpl(GenericCollection<T, U, V, ...> collection, Span<byte> stackSpace, int nativeSizeOfElement); // optional
 
     /// <summary>
-    /// A span that points to the memory where the managed values of the collection are stored (in the marshalling case) or should be stored (in the unmarshalling case).
+    /// A span that points to the memory where the managed values of the collection are stored.
     /// </summary>
-    public Span<TCollectionElement> ManagedValues { get; }
-
+    public ReadOnlySpan<TCollectionElement> GetManagedValuesSource();
     /// <summary>
-    /// Set the expected length of the managed collection based on the parameter/return value/field marshalling information.
-    /// Required only when unmarshalling is supported.
+    /// A span that points to the memory where the unmarshalled managed values of the collection should be stored.
     /// </summary>
-    public void SetUnmarshalledCollectionLength(int length);
-
-    public IntPtr Value { get; set; }
+    public Span<TCollectionElement> GetManagedValuesDestination(int length);
+    /// <summary>
+    /// A span that points to the memory where the native values of the collection are stored after the native call.
+    /// </summary>
+    public ReadOnlySpan<TCollectionElement> GetNativeValuesSource(int length);
+    /// <summary>
+    /// A span that points to the memory where the native values of the collection should be stored.
+    /// </summary>
+    public Span<TCollectionElement> GetNativeValuesDestination();
 
     /// <summary>
     /// A span that points to the memory where the native values of the collection should be stored.
     /// </summary>
     public unsafe Span<byte> NativeValueStorage { get; }
 
-    // The requirements on the Value property are the same as when used with `NativeTypeMarshallingAttribute`.
+    // The requirements on the TNative type are the same as when used with `NativeTypeMarshallingAttribute`.
     // The property is required with the generic collection marshalling.
-    public TNative Value { get; set; }
+    public TNative ToNativeValue();
+
+    public void FromNativeValue(TNative value);
 }
 ```
 
@@ -215,12 +221,14 @@ Alternatively, the `MarshalUsingAttribute` could provide a `Type ElementNativeTy
 This design could be used to provide a default marshaller for spans and arrays. Below is an example simple marshaller for `Span<T>`. This design does not include all possible optimizations, such as stack allocation, for simpilicity of the example.
 
 ```csharp
-[CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.LinearCollection)]
+[CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.LinearCollection, Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
 public ref struct SpanMarshaller<T>
 {
     private Span<T> managedCollection;
 
     private int nativeElementSize;
+  
+    private IntPtr Value { get; set; }
 
     public SpanMarshaller(Span<T> collection, int nativeSizeOfElement)
     {
@@ -230,18 +238,19 @@ public ref struct SpanMarshaller<T>
        nativeElementSize = nativeSizeOfElement;
     }
 
-    public Span<T> ManagedValues => managedCollection;
+    public ReadOnlySpan<T> GetManagedValuesSource() => managedCollection;
+  
+    public Span<T> GetManagedValuesDestination(int length) => managedCollection = new T[length];
 
-    public void SetUnmarshalledCollectionLength(int length)
-    {
-       managedCollection = new T[value];
-    }
+    public unsafe Span<byte> GetNativeValuesDestination() => MemoryMarshal.CreateSpan(ref *(byte*)(Value), managedCollection.Length);
 
-    public IntPtr Value { get; set; }
-
-    public unsafe Span<byte> NativeValueStorage => MemoryMarshal.CreateSpan(ref *(byte*)(Value), Length);
+    public unsafe Span<byte> GetNativeValuesSource(int length) => MemoryMarshal.CreateSpan(ref *(byte*)(Value), length);
 
     public Span<T> ToManaged() => managedCollection;
+
+    public IntPtr ToNativeValue() => Value;
+    
+    public void FromNativeValue(IntPtr value) => Value = value;
 
     public void FreeNative()
     {
@@ -276,19 +285,20 @@ public static partial Span<int> DuplicateValues([MarshalUsing(typeof(WrappedInt)
 public static partial unsafe Span<int> DuplicateValues(Span<int> values, int length)
 {
      SpanMarshaller<int> __values_marshaller = new SpanMarshaller<int>(values, sizeof(WrappedInt));
-     for (int i = 0; i < __values_marshaller.ManagedValues.Length; ++i)
      {
-        WrappedInt native = new WrappedInt(__values_marshaller.ManagedValues[i]);
-        MemoryMarshal.Write(__values_marshaller.NativeValueStorage.Slice(sizeof(WrappedInt) * i), ref native);
+          ReadOnlySpan<int> __values_managedSpan = __values_marshaller.GetManagedValuesSource();
+          Span<byte> __values_nativeSpan = __values_marshaller.GetNativeValuesDestination();
+          for (int i = 0; i < __values_managedSpan.Length; ++i)
+          {
+              WrappedInt native = new WrappedInt(__values_managedSpan[i]);
+              MemoryMarshal.Write(__values_nativeSpan.Slice(sizeof(WrappedInt) * i), ref native);
+          }
      }
 
-     IntPtr __retVal_native = __PInvoke__(__values_marshaller.Value, length);
-     SpanMarshaller<int> __retVal_marshaller = new
-     {
-        Value = __retVal_native
-     };
-     __retVal_marshaller.SetUnmarshalledCollectionLength(length);
-     MemoryMarshal.Cast<byte, int>(__retVal_marshaller.NativeValueStorage).CopyTo(__retVal_marshaller.ManagedValues);
+     IntPtr __retVal_native = __PInvoke__(__values_marshaller.ToNativeValue(), length);
+     SpanMarshaller<int> __retVal_marshaller = new();
+     __retVal_marshaller.FromNativeValue(__retVal_native);
+     MemoryMarshal.Cast<byte, int>(__retVal_marshaller.GetNativeValuesSource(length)).CopyTo(__retVal_marshaller.GetManagedValuesDestination(length));
      return __retVal_marshaller.ToManaged();
 
      [DllImport("Native", EntryPoint="DuplicateValues")]
@@ -313,17 +323,13 @@ public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
     public GenericContiguousCollectionMarshallerImpl(GenericCollection<T, U, V, ...> collection, int nativeSizeOfElements);
     public GenericContiguousCollectionMarshallerImpl(GenericCollection<T, U, V, ...> collection, Span<byte> stackSpace, int nativeSizeOfElements); // optional
 
--    public Span<TCollectionElement> ManagedValues { get; }
+    public TNative ToNativeValue();
+    public void FromNativeValue(TNative value);
 
--    public void SetUnmarshalledCollectionLength(int length);
-
-    public IntPtr Value { get; set; }
-
--    public unsafe Span<byte> NativeValueStorage { get; }
-
-    // The requirements on the Value property are the same as when used with `NativeTypeMarshallingAttribute`.
-    // The property is required with the generic collection marshalling.
-    public TNative Value { get; set; }
+-   public ReadOnlySpan<TCollectionElement> GetManagedValuesSource();
+-   public Span<TCollectionElement> GetManagedValuesDestination(int length);
+-   public ReadOnlySpan<TCollectionElement> GetNativeValuesSource(int length);
+-   public Span<TCollectionElement> GetNativeValuesDestination();
 
 +    public ref byte GetOffsetForNativeValueAtIndex(int index);
 +    public TCollectionElement GetManagedValueAtIndex(int index);
@@ -332,9 +338,9 @@ public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
 }
 ```
 
-The `GetManagedValueAtIndex` method and `Count` getter are used in the process of marshalling from managed to native. The generated code will iterate through `Count` elements (retrieved through `GetManagedValueAtIndex`) and assign their marshalled result to the address represented by `GetOffsetForNativeValueAtIndex` called with the same index. Then either the `Value` property getter will be called or the marshaller's `GetPinnableReference` method will be called, depending on if pinning is supported in the current scenario.
+The `GetManagedValueAtIndex` method and `Count` getter are used in the process of marshalling from managed to native. The generated code will iterate through `Count` elements (retrieved through `GetManagedValueAtIndex`) and assign their marshalled result to the address represented by `GetOffsetForNativeValueAtIndex` called with the same index. Then the `ToNativeValue` method will be called to get the value to pass to native code.
 
-The `SetManagedValueAtIndex` method and the `Count` setter are used in the process of marshalling from native to managed. The `Count` property will be set to the number of elements that the native collection contains, and the `Value` property will be assigned the result value from native code. Then the stub will iterate through the native collection `Count` times, calling `GetOffsetForNativeValueAtIndex` to get the offset of the native value and calling `SetManagedValueAtIndex` to set the unmarshalled managed value at that index.
+The `SetManagedValueAtIndex` method and the `Count` setter are used in the process of marshalling from native to managed. The `Count` property will be set to the number of elements that the native collection contains, and the `FromNativeValue` property will be called with the result value from native code. Then the stub will iterate through the native collection `Count` times, calling `GetOffsetForNativeValueAtIndex` to get the offset of the native value and calling `SetManagedValueAtIndex` to set the unmarshalled managed value at that index.
 
 ### Pros/Cons of Design 2
 
