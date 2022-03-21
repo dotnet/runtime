@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         private readonly LoggingEventSource _eventSource;
         private readonly int _factoryID;
 
-        public EventSourceLogger(string? categoryName, int factoryID, LoggingEventSource eventSource, EventSourceLogger? next)
+        public EventSourceLogger(string categoryName, int factoryID, LoggingEventSource eventSource, EventSourceLogger? next)
         {
             CategoryName = categoryName;
 
@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             Next = next;
         }
 
-        public string? CategoryName { get; }
+        public string CategoryName { get; }
 
         public LogLevel Level { get; set; }
 
@@ -151,13 +151,13 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// </summary>
         private sealed class ActivityScope : IDisposable
         {
-            private readonly string? _categoryName;
+            private readonly string _categoryName;
             private readonly int _activityID;
             private readonly int _factoryID;
             private readonly bool _isJsonStop;
             private readonly LoggingEventSource _eventSource;
 
-            public ActivityScope(LoggingEventSource eventSource, string? categoryName, int activityID, int factoryID, bool isJsonStop)
+            public ActivityScope(LoggingEventSource eventSource, string categoryName, int activityID, int factoryID, bool isJsonStop)
             {
                 _categoryName = categoryName;
                 _activityID = activityID;

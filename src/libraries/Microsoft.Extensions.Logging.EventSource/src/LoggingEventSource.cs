@@ -129,7 +129,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [Event(1, Keywords = Keywords.FormattedMessage, Level = EventLevel.LogAlways)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventCoreSuppressionJustification)]
-        internal unsafe void FormattedMessage(LogLevel Level, int FactoryID, string? LoggerName, int EventId, string? EventName, string? FormattedMessage)
+        internal unsafe void FormattedMessage(LogLevel Level, int FactoryID, string LoggerName, int EventId, string? EventName, string FormattedMessage)
         {
             if (IsEnabled())
             {
@@ -164,7 +164,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<string, string>))]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventDynamicDependencySuppressionJustification)]
-        internal void Message(LogLevel Level, int FactoryID, string? LoggerName, int EventId, string? EventName, ExceptionInfo Exception, IEnumerable<KeyValuePair<string, string?>> Arguments)
+        internal void Message(LogLevel Level, int FactoryID, string LoggerName, int EventId, string? EventName, ExceptionInfo Exception, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
             if (IsEnabled())
             {
@@ -179,7 +179,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<string, string>))]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventDynamicDependencySuppressionJustification)]
-        internal void ActivityStart(int ID, int FactoryID, string? LoggerName, IEnumerable<KeyValuePair<string, string?>> Arguments)
+        internal void ActivityStart(int ID, int FactoryID, string LoggerName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
             if (IsEnabled())
             {
@@ -190,7 +190,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [Event(4, Keywords = Keywords.Message | Keywords.FormattedMessage, Level = EventLevel.LogAlways)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventCoreSuppressionJustification)]
-        internal unsafe void ActivityStop(int ID, int FactoryID, string? LoggerName)
+        internal unsafe void ActivityStop(int ID, int FactoryID, string LoggerName)
         {
             if (IsEnabled())
             {
@@ -213,7 +213,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [Event(5, Keywords = Keywords.JsonMessage, Level = EventLevel.LogAlways)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventCoreSuppressionJustification)]
-        internal unsafe void MessageJson(LogLevel Level, int FactoryID, string? LoggerName, int EventId, string? EventName, string? ExceptionJson, string? ArgumentsJson, string? FormattedMessage)
+        internal unsafe void MessageJson(LogLevel Level, int FactoryID, string LoggerName, int EventId, string? EventName, string ExceptionJson, string ArgumentsJson, string FormattedMessage)
         {
             if (IsEnabled())
             {
@@ -249,7 +249,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [Event(6, Keywords = Keywords.JsonMessage | Keywords.FormattedMessage, Level = EventLevel.LogAlways, ActivityOptions = EventActivityOptions.Recursive)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventCoreSuppressionJustification)]
-        internal unsafe void ActivityJsonStart(int ID, int FactoryID, string? LoggerName, string? ArgumentsJson)
+        internal unsafe void ActivityJsonStart(int ID, int FactoryID, string LoggerName, string ArgumentsJson)
         {
             if (IsEnabled())
             {
@@ -275,7 +275,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [Event(7, Keywords = Keywords.JsonMessage | Keywords.FormattedMessage, Level = EventLevel.LogAlways)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventCoreSuppressionJustification)]
-        internal unsafe void ActivityJsonStop(int ID, int FactoryID, string? LoggerName)
+        internal unsafe void ActivityJsonStop(int ID, int FactoryID, string LoggerName)
         {
             if (IsEnabled())
             {
