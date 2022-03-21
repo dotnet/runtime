@@ -19,6 +19,10 @@
 #define DOTNET_CORE_DOWNLOAD_URL _X("https://aka.ms/dotnet-download")
 #define DOTNET_CORE_APPLAUNCH_URL _X("https://aka.ms/dotnet-core-applaunch")
 
+#define DOTNET_INFO_URL _X("https://aka.ms/dotnet/runtimes-sdk-info")
+#define DOTNET_APP_LAUNCH_FAILED_URL _X("https://aka.ms/dotnet/app-launch-failed")
+#define DOTNET_SDK_NOT_FOUND_URL _X("https://aka.ms/dotnet/sdk-not-found")
+
 #define RUNTIME_STORE_DIRECTORY_NAME _X("store")
 
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);
