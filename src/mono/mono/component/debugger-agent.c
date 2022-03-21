@@ -8012,7 +8012,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			buffer_add_string (buf, p->name);
 			buffer_add_methodid (buf, domain, p->get);
 			buffer_add_methodid (buf, domain, p->set);
-			buffer_add_int (buf, p->attrs);
+			buffer_add_int (buf, p->attrs & ~MONO_PROPERTY_META_FLAG_MASK);
 			i ++;
 		}
 		g_assert (i == nprops);

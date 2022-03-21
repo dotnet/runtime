@@ -308,6 +308,21 @@ private:
 #endif // _DEBUG
 };
 
+// These macros are used to narrowly suppress
+// warning 4611 - interaction between 'function' and C++ object destruction is non-portable
+// See usage of setjmp() and inclusion of setjmp.h for reasoning behind usage.
+#ifdef _MSC_VER
+#define DISABLE_4611()          \
+    _Pragma("warning(push)")    \
+    _Pragma("warning(disable:4611)")
+
+#define RESET_4611()    \
+    _Pragma("warning(pop)")
+#else
+#define DISABLE_4611()
+#define RESET_4611()
+#endif // _MSC_VER
+
 #define PERMIT_HELPER_METHOD_FRAME_BEGIN()                                  \
         if (1)                                                              \
         {                                                                   \
@@ -318,7 +333,9 @@ private:
         else                                \
         {                                   \
             jmp_buf ___jmpbuf;              \
+            DISABLE_4611()                  \
             setjmp(___jmpbuf);              \
+            RESET_4611()                    \
             __assume(0);                    \
         }
 

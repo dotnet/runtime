@@ -27,7 +27,7 @@
 
 .macro PATCH_LABEL Name
         .global C_FUNC(\Name)
-C_FUNC(\Name):
+        C_FUNC(\Name) = .
 .endm
 
 .macro LEAF_ENTRY Name, Section

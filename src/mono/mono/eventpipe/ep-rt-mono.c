@@ -26,7 +26,8 @@
 #include <mono/mini/mini-runtime.h>
 #include <mono/sgen/sgen-conf.h>
 #include <mono/sgen/sgen-tagged-pointer.h>
-#include "mono/utils/mono-logger-internals.h"
+#include <mono/utils/mono-logger-internals.h>
+#include <minipal/getexepath.h>
 #include <runtime_version.h>
 #include <clretwallmain.h>
 
@@ -1123,6 +1124,19 @@ ep_rt_mono_rand_try_get_bytes (
 	uint8_t *buffer,
 	size_t buffer_size);
 
+ep_rt_file_handle_t
+ep_rt_mono_file_open_write(const ep_char8_t *path);
+
+bool
+ep_rt_mono_file_close (ep_rt_file_handle_t handle);
+
+bool
+ep_rt_mono_file_write (
+	ep_rt_file_handle_t handle,
+	const uint8_t *buffer,
+	uint32_t numbytes,
+	uint32_t *byteswritten);
+
 EventPipeThread *
 ep_rt_mono_thread_get_or_create (void);
 
@@ -2069,6 +2083,179 @@ ep_rt_mono_rand_try_get_bytes (
 	return mono_rand_try_get_bytes (&_ep_rt_mono_rand_provider, (guchar *)buffer, (gssize)buffer_size, error);
 }
 
+char *
+ep_rt_mono_get_managed_cmd_line ()
+{
+	return mono_runtime_get_managed_cmd_line ();
+}
+
+char *
+ep_rt_mono_get_os_cmd_line ()
+{
+	MONO_REQ_GC_NEUTRAL_MODE;
+
+	// we only return the native host here since getting the full commandline is complicated and
+	// it's not super important to have the correct value since it'll only be used during startup
+	// until we have the managed commandline
+	char *host_path = minipal_getexepath ();
+
+	// minipal_getexepath doesn't use Mono APIs to allocate strings so
+	// we can't use g_free (which the callers of this method expect to do)
+	// so create another copy and return that one
+	char *res = g_strdup (host_path);
+	free (host_path);
+	return res;
+}
+
+#ifdef HOST_WIN32
+
+ep_rt_file_handle_t
+ep_rt_mono_file_open_write (const ep_char8_t *path)
+{
+	if (!path)
+		return INVALID_HANDLE_VALUE;
+
+	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16_string (path, -1);
+
+	if (!path_utf16)
+		return INVALID_HANDLE_VALUE;
+
+	ep_rt_file_handle_t res;
+	MONO_ENTER_GC_SAFE;
+	res = (ep_rt_file_handle_t)CreateFileW (path_utf16, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	MONO_EXIT_GC_SAFE;
+	ep_rt_utf16_string_free (path_utf16);
+
+	return res;
+}
+
+bool
+ep_rt_mono_file_close (ep_rt_file_handle_t handle)
+{
+	bool res;
+	MONO_ENTER_GC_SAFE;
+	res = CloseHandle (handle);
+	MONO_EXIT_GC_SAFE;
+	return res;
+}
+
+static
+void
+win32_io_interrupt_handler (void *ignored)
+{
+}
+
+bool
+ep_rt_mono_file_write (
+	ep_rt_file_handle_t handle,
+	const uint8_t *buffer,
+	uint32_t numbytes,
+	uint32_t *byteswritten)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	bool res;
+	MonoThreadInfo *info = mono_thread_info_current ();
+	gboolean alerted = FALSE;
+
+	if (info) {
+		mono_thread_info_install_interrupt (win32_io_interrupt_handler, NULL, &alerted);
+		if (alerted) {
+			return false;
+		}
+		mono_win32_enter_blocking_io_call (info, handle);
+	}
+
+	MONO_ENTER_GC_SAFE;
+	if (info && mono_thread_info_is_interrupt_state (info)) {
+		res = false;
+	} else {
+		res = WriteFile (handle, buffer, numbytes, (PDWORD)byteswritten, NULL) ? true : false;
+	}
+	MONO_EXIT_GC_SAFE;
+
+	if (info) {
+		mono_win32_leave_blocking_io_call (info, handle);
+		mono_thread_info_uninstall_interrupt (&alerted);
+	}
+
+	return res;
+}
+
+#else
+
+#include <fcntl.h>
+#include <unistd.h>
+
+ep_rt_file_handle_t
+ep_rt_mono_file_open_write (const ep_char8_t *path)
+{
+	int fd;
+	mode_t perms = 0666;
+
+	if (!path)
+		return INVALID_HANDLE_VALUE;
+
+	MONO_ENTER_GC_SAFE;
+	fd = creat (path, perms);
+	MONO_EXIT_GC_SAFE;
+
+	if (fd == -1)
+		return INVALID_HANDLE_VALUE;
+
+	return (ep_rt_file_handle_t)(ptrdiff_t)fd;
+}
+
+bool
+ep_rt_mono_file_close (ep_rt_file_handle_t handle)
+{
+	int fd = (int)(ptrdiff_t)handle;
+
+	MONO_ENTER_GC_SAFE;
+	close (fd);
+	MONO_EXIT_GC_SAFE;
+
+	return true;
+}
+
+bool
+ep_rt_mono_file_write (
+	ep_rt_file_handle_t handle,
+	const uint8_t *buffer,
+	uint32_t numbytes,
+	uint32_t *byteswritten)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	int fd = (int)(ptrdiff_t)handle;
+	uint32_t ret;
+	MonoThreadInfo *info = mono_thread_info_current ();
+
+	if (byteswritten != NULL)
+		*byteswritten = 0;
+
+	do {
+		MONO_ENTER_GC_SAFE;
+		ret = write (fd, buffer, numbytes);
+		MONO_EXIT_GC_SAFE;
+	} while (ret == -1 && errno == EINTR &&
+		 !mono_thread_info_is_interrupt_state (info));
+
+	if (ret == -1) {
+		if (errno == EINTR)
+			ret = 0;
+		else
+			return false;
+	}
+
+	if (byteswritten != NULL)
+		*byteswritten = ret;
+
+	return true;
+}
+
+#endif // HOST_WIN32
+
 EventPipeThread *
 ep_rt_mono_thread_get_or_create (void)
 {
@@ -2224,7 +2411,7 @@ static const int64_t SECS_TO_NS = 1000000000;
 static const int64_t MSECS_TO_MIS = 1000;
 
 /* clock_gettime () is found by configure on Apple builds, but its only present from ios 10, macos 10.12, tvos 10 and watchos 3 */
-#if defined (HAVE_CLOCK_MONOTONIC) && (defined(TARGET_IOS) || defined(TARGET_OSX) || defined(TARGET_WATCHOS) || defined(TARGET_TVOS))
+#if defined (HAVE_CLOCK_MONOTONIC) && (defined(HOST_IOS) || defined(HOST_OSX) || defined(HOST_WATCHOS) || defined(HOST_TVOS))
 #undef HAVE_CLOCK_MONOTONIC
 #endif
 
@@ -2375,7 +2562,7 @@ ep_rt_mono_system_timestamp_get (void)
 
 #ifndef HOST_WIN32
 #if defined(__APPLE__)
-#if defined (TARGET_OSX)
+#if defined (HOST_OSX)
 G_BEGIN_DECLS
 gchar ***_NSGetEnviron(void);
 G_END_DECLS
@@ -2383,7 +2570,7 @@ G_END_DECLS
 #else
 static char *_ep_rt_mono_environ[1] = { NULL };
 #define environ _ep_rt_mono_environ
-#endif /* defined (TARGET_OSX) */
+#endif /* defined (HOST_OSX) */
 #else
 G_BEGIN_DECLS
 extern char **environ;

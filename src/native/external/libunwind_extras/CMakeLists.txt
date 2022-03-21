@@ -4,12 +4,6 @@ project(unwind)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-# define variables for the configure_file below
-
-set(PKG_MAJOR "1")
-set(PKG_MINOR "5")
-set(PKG_EXTRA "-rc2")
-
 # The HAVE___THREAD set to 1 causes creation of thread local variable with tls_model("initial-exec")
 # which is incompatible with usage of the unwind code in a shared library.
 add_definitions(-DHAVE___THREAD=0)
@@ -89,15 +83,6 @@ if(CLR_CMAKE_HOST_UNIX)
         # Our posix abstraction layer will provide these headers
         set(HAVE_ELF_H 1)
         set(HAVE_ENDIAN_H 1)
-
-        # include paths
-        include_directories(include/tdep)
-        include_directories(include)
-        include_directories(${CMAKE_CURRENT_BINARY_DIR}/include/tdep)
-        include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
-
-        # files for macos compilation
-        include_directories(../libunwind_mac/include)
     endif(CLR_CMAKE_HOST_OSX)
 
 endif(CLR_CMAKE_HOST_UNIX)
@@ -145,13 +130,13 @@ if(CLR_CMAKE_HOST_WIN32)
     add_compile_options(/permissive-)
 
     # include paths
-    include_directories(include/tdep)
-    include_directories(include)
-    include_directories(${CMAKE_CURRENT_BINARY_DIR}/include/tdep)
-    include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
+    include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep)
+    include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include)
+    include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include/tdep)
+    include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include)
 
     # files for cross os compilation
-    include_directories(include/win)
+    include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/win)
 
     add_definitions(-D_CRT_DECLARE_NONSTDC_NAMES)
 
@@ -170,8 +155,27 @@ if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARMV6)
     # The arm sources include ex_tables.h from include/tdep-arm without going through a redirection
     # in include/tdep like it works for similar files on other architectures. So we need to add
     # the include/tdep-arm to include directories
-    include_directories(include/tdep-arm)
+    include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep-arm)
 endif()
 
 include(configure.cmake)
-add_subdirectory(src)
+include(${CLR_SRC_NATIVE_DIR}/external/libunwind.cmake)
+
+set(LIBUNWIND_SOURCES
+  ${LIBUNWIND_SOURCES}
+  ${CMAKE_CURRENT_LIST_DIR}/oop/_OOP_find_proc_info.c)
+
+if(CLR_CMAKE_HOST_UNIX)
+    if(CLR_CMAKE_HOST_OSX)
+        include_directories(${CMAKE_CURRENT_LIST_DIR}/mac)
+        add_library(libunwind_dac OBJECT
+          ${CMAKE_CURRENT_LIST_DIR}/mac/missing-functions.c
+          ${LIBUNWIND_SOURCES})
+    else()
+        add_library(libunwind OBJECT ${LIBUNWIND_SOURCES})
+    endif(CLR_CMAKE_HOST_OSX)
+else(CLR_CMAKE_HOST_UNIX)
+    add_library(libunwind_xdac OBJECT
+      ${CLR_DIR}/pal/src/exception/remote-unwind.cpp
+      ${LIBUNWIND_SOURCES})
+endif(CLR_CMAKE_HOST_UNIX)

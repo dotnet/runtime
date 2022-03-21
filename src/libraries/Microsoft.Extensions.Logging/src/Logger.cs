@@ -8,19 +8,21 @@ namespace Microsoft.Extensions.Logging
 {
     internal sealed class Logger : ILogger
     {
-        public LoggerInformation[] Loggers { get; set; }
-        public MessageLogger[] MessageLoggers { get; set; }
-        public ScopeLogger[] ScopeLoggers { get; set; }
+        public Logger(LoggerInformation[] loggers) => Loggers = loggers;
 
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        public LoggerInformation[] Loggers { get; set; }
+        public MessageLogger[]? MessageLoggers { get; set; }
+        public ScopeLogger[]? ScopeLoggers { get; set; }
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
-            MessageLogger[] loggers = MessageLoggers;
+            MessageLogger[]? loggers = MessageLoggers;
             if (loggers == null)
             {
                 return;
             }
 
-            List<Exception> exceptions = null;
+            List<Exception>? exceptions = null;
             for (int i = 0; i < loggers.Length; i++)
             {
                 ref readonly MessageLogger loggerInfo = ref loggers[i];
@@ -37,7 +39,7 @@ namespace Microsoft.Extensions.Logging
                 ThrowLoggingError(exceptions);
             }
 
-            static void LoggerLog(LogLevel logLevel, EventId eventId, ILogger logger, Exception exception, Func<TState, Exception, string> formatter, ref List<Exception> exceptions, in TState state)
+            static void LoggerLog(LogLevel logLevel, EventId eventId, ILogger logger, Exception? exception, Func<TState, Exception?, string> formatter, ref List<Exception>? exceptions, in TState state)
             {
                 try
                 {
@@ -57,13 +59,13 @@ namespace Microsoft.Extensions.Logging
 
         public bool IsEnabled(LogLevel logLevel)
         {
-            MessageLogger[] loggers = MessageLoggers;
+            MessageLogger[]? loggers = MessageLoggers;
             if (loggers == null)
             {
                 return false;
             }
 
-            List<Exception> exceptions = null;
+            List<Exception>? exceptions = null;
             int i = 0;
             for (; i < loggers.Length; i++)
             {
@@ -86,7 +88,7 @@ namespace Microsoft.Extensions.Logging
 
             return i < loggers.Length ? true : false;
 
-            static bool LoggerIsEnabled(LogLevel logLevel, ILogger logger, ref List<Exception> exceptions)
+            static bool LoggerIsEnabled(LogLevel logLevel, ILogger logger, ref List<Exception>? exceptions)
             {
                 try
                 {
@@ -111,7 +113,7 @@ namespace Microsoft.Extensions.Logging
 
         public IDisposable BeginScope<TState>(TState state)
         {
-            ScopeLogger[] loggers = ScopeLoggers;
+            ScopeLogger[]? loggers = ScopeLoggers;
 
             if (loggers == null)
             {
@@ -124,7 +126,7 @@ namespace Microsoft.Extensions.Logging
             }
 
             var scope = new Scope(loggers.Length);
-            List<Exception> exceptions = null;
+            List<Exception>? exceptions = null;
             for (int i = 0; i < loggers.Length; i++)
             {
                 ref readonly ScopeLogger scopeLogger = ref loggers[i];
@@ -162,9 +164,9 @@ namespace Microsoft.Extensions.Logging
         {
             private bool _isDisposed;
 
-            private IDisposable _disposable0;
-            private IDisposable _disposable1;
-            private readonly IDisposable[] _disposable;
+            private IDisposable? _disposable0;
+            private IDisposable? _disposable1;
+            private readonly IDisposable?[]? _disposable;
 
             public Scope(int count)
             {
@@ -174,7 +176,7 @@ namespace Microsoft.Extensions.Logging
                 }
             }
 
-            public void SetDisposable(int index, IDisposable disposable)
+            public void SetDisposable(int index, IDisposable? disposable)
             {
                 switch (index)
                 {
@@ -185,7 +187,7 @@ namespace Microsoft.Extensions.Logging
                         _disposable1 = disposable;
                         break;
                     default:
-                        _disposable[index - 2] = disposable;
+                        _disposable![index - 2] = disposable;
                         break;
                 }
             }
@@ -202,10 +204,7 @@ namespace Microsoft.Extensions.Logging
                         int count = _disposable.Length;
                         for (int index = 0; index != count; ++index)
                         {
-                            if (_disposable[index] != null)
-                            {
-                                _disposable[index].Dispose();
-                            }
+                            _disposable[index]?.Dispose();
                         }
                     }
 

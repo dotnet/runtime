@@ -425,12 +425,10 @@ free_data (void)
 {
 	GCObject *obj G_GNUC_UNUSED;
 	HashEntry *entry;
-	int total_srcs = 0;
 	int max_srcs = 0;
 
 	SGEN_HASH_TABLE_FOREACH (&hash_table, GCObject *, obj, HashEntry *, entry) {
 		int entry_size = dyn_array_ptr_size (&entry->srcs);
-		total_srcs += entry_size;
 		if (entry_size > max_srcs)
 			max_srcs = entry_size;
 		dyn_array_ptr_uninit (&entry->srcs);
@@ -439,7 +437,6 @@ free_data (void)
 	sgen_hash_table_clean (&hash_table);
 
 	dyn_array_int_uninit (&merge_array);
-	//g_print ("total srcs %d - max %d\n", total_srcs, max_srcs);
 }
 
 static HashEntry*

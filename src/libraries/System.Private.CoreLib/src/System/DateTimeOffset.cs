@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
@@ -31,7 +32,7 @@ namespace System
 
     [StructLayout(LayoutKind.Auto)]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct DateTimeOffset
         : IComparable,
           ISpanFormattable,
@@ -845,15 +846,19 @@ namespace System
         public static bool operator !=(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime != right.UtcDateTime;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime < right.UtcDateTime;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime <= right.UtcDateTime;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime > right.UtcDateTime;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime >= right.UtcDateTime;
 
@@ -861,43 +866,15 @@ namespace System
         // IAdditionOperators
         //
 
-        static DateTimeOffset IAdditionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>.operator +(DateTimeOffset left, TimeSpan right)
-            => left + right;
-
-        // static checked DateTimeOffset IAdditionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>.operator +(DateTimeOffset left, TimeSpan right)
-        //     => checked(left + right);
+        // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        // static DateTimeOffset IAdditionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>.operator checked +(DateTimeOffset left, TimeSpan right) => checked(left + right);
 
         //
         // IAdditiveIdentity
         //
 
-        static TimeSpan IAdditiveIdentity<DateTimeOffset, TimeSpan>.AdditiveIdentity => default;
-
-        //
-        // IComparisonOperators
-        //
-
-        static bool IComparisonOperators<DateTimeOffset, DateTimeOffset>.operator <(DateTimeOffset left, DateTimeOffset right)
-            => left < right;
-
-        static bool IComparisonOperators<DateTimeOffset, DateTimeOffset>.operator <=(DateTimeOffset left, DateTimeOffset right)
-            => left <= right;
-
-        static bool IComparisonOperators<DateTimeOffset, DateTimeOffset>.operator >(DateTimeOffset left, DateTimeOffset right)
-            => left > right;
-
-        static bool IComparisonOperators<DateTimeOffset, DateTimeOffset>.operator >=(DateTimeOffset left, DateTimeOffset right)
-            => left >= right;
-
-        //
-        // IEqualityOperators
-        //
-
-        static bool IEqualityOperators<DateTimeOffset, DateTimeOffset>.operator ==(DateTimeOffset left, DateTimeOffset right)
-            => left == right;
-
-        static bool IEqualityOperators<DateTimeOffset, DateTimeOffset>.operator !=(DateTimeOffset left, DateTimeOffset right)
-            => left != right;
+        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        public static TimeSpan AdditiveIdentity => default;
 
         //
         // IMinMaxValue
@@ -911,36 +888,27 @@ namespace System
         // IParseable
         //
 
-        static DateTimeOffset IParseable<DateTimeOffset>.Parse(string s, IFormatProvider? provider)
-            => Parse(s, provider);
-
-        static bool IParseable<DateTimeOffset>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out DateTimeOffset result)
-            => TryParse(s, provider, DateTimeStyles.None, out result);
+        /// <inheritdoc cref="IParseable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out DateTimeOffset result) => TryParse(s, provider, DateTimeStyles.None, out result);
 
         //
         // ISpanParseable
         //
 
-        static DateTimeOffset ISpanParseable<DateTimeOffset>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s, provider, DateTimeStyles.None);
+        /// <inheritdoc cref="ISpanParseable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        public static DateTimeOffset Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, provider, DateTimeStyles.None);
 
-        static bool ISpanParseable<DateTimeOffset>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out DateTimeOffset result)
-            => TryParse(s, provider, DateTimeStyles.None, out result);
+        /// <inheritdoc cref="ISpanParseable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out DateTimeOffset result) => TryParse(s, provider, DateTimeStyles.None, out result);
 
         //
         // ISubtractionOperators
         //
 
-        static DateTimeOffset ISubtractionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>.operator -(DateTimeOffset left, TimeSpan right)
-            => left - right;
+        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        // static DateTimeOffset ISubtractionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>.operator checked -(DateTimeOffset left, TimeSpan right) => checked(left - right);
 
-        // static checked DateTimeOffset ISubtractionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>.operator -(DateTimeOffset left, TimeSpan right)
-        //     => checked(left - right);
-
-        static TimeSpan ISubtractionOperators<DateTimeOffset, DateTimeOffset, TimeSpan>.operator -(DateTimeOffset left, DateTimeOffset right)
-            => left - right;
-
-        // static checked TimeSpan ISubtractionOperators<DateTimeOffset, DateTimeOffset, TimeSpan>.operator -(DateTimeOffset left, DateTimeOffset right)
-        //     => checked(left - right);
+        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        // static TimeSpan ISubtractionOperators<DateTimeOffset, DateTimeOffset, TimeSpan>.operator checked -(DateTimeOffset left, DateTimeOffset right) => checked(left - right);
     }
 }

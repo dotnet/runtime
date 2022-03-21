@@ -171,20 +171,20 @@ namespace System
         // may need to make a defensive copy of the input array to ensure it's not
         // mutated by another thread, and this defensive copy should be passed to
         // a KeepAlive routine.
-        internal static IntPtr[]? CopyRuntimeTypeHandles(RuntimeTypeHandle[]? inHandles, out int length)
+        internal static ReadOnlySpan<IntPtr> CopyRuntimeTypeHandles(RuntimeTypeHandle[]? inHandles, Span<IntPtr> stackScratch)
         {
             if (inHandles == null || inHandles.Length == 0)
             {
-                length = 0;
-                return null;
+                return default;
             }
 
-            IntPtr[] outHandles = new IntPtr[inHandles.Length];
+            Span<IntPtr> outHandles = inHandles.Length <= stackScratch.Length ?
+                stackScratch.Slice(0, inHandles.Length) :
+                new IntPtr[inHandles.Length];
             for (int i = 0; i < inHandles.Length; i++)
             {
                 outHandles[i] = inHandles[i].Value;
             }
-            length = outHandles.Length;
             return outHandles;
         }
 
@@ -1323,21 +1323,19 @@ namespace System
             RuntimeModule module = GetRuntimeModule();
             ValidateModulePointer(module);
 
-            IntPtr[]? typeInstantiationContextHandles = null;
-            int typeInstCount = 0;
-            IntPtr[]? methodInstantiationContextHandles = null;
-            int methodInstCount = 0;
+            ReadOnlySpan<IntPtr> typeInstantiationContextHandles = stackalloc IntPtr[0];
+            ReadOnlySpan<IntPtr> methodInstantiationContextHandles = stackalloc IntPtr[0];
 
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
             if (typeInstantiationContext?.Length > 0)
             {
                 typeInstantiationContext = (RuntimeTypeHandle[]?)typeInstantiationContext.Clone();
-                typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out typeInstCount);
+                typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, stackScratch: stackalloc IntPtr[8]);
             }
             if (methodInstantiationContext?.Length > 0)
             {
                 methodInstantiationContext = (RuntimeTypeHandle[]?)methodInstantiationContext.Clone();
-                methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out methodInstCount);
+                methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, stackScratch: stackalloc IntPtr[8]);
             }
 
             fixed (IntPtr* typeInstArgs = typeInstantiationContextHandles, methodInstArgs = methodInstantiationContextHandles)
@@ -1345,7 +1343,7 @@ namespace System
                 try
                 {
                     RuntimeType? type = null;
-                    ResolveType(new QCallModule(ref module), typeToken, typeInstArgs, typeInstCount, methodInstArgs, methodInstCount, ObjectHandleOnStack.Create(ref type));
+                    ResolveType(new QCallModule(ref module), typeToken, typeInstArgs, typeInstantiationContextHandles.Length, methodInstArgs, methodInstantiationContextHandles.Length, ObjectHandleOnStack.Create(ref type));
                     GC.KeepAlive(typeInstantiationContext);
                     GC.KeepAlive(methodInstantiationContext);
                     return new RuntimeTypeHandle(type!);
@@ -1382,17 +1380,17 @@ namespace System
             typeInstantiationContext = (RuntimeTypeHandle[]?)typeInstantiationContext?.Clone();
             methodInstantiationContext = (RuntimeTypeHandle[]?)methodInstantiationContext?.Clone();
 
-            IntPtr[]? typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out int typeInstCount);
-            IntPtr[]? methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out int methodInstCount);
+            ReadOnlySpan<IntPtr> typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, stackScratch: stackalloc IntPtr[8]);
+            ReadOnlySpan<IntPtr> methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, stackScratch: stackalloc IntPtr[8]);
 
-            RuntimeMethodHandleInternal handle = ResolveMethodHandleInternal(module, methodToken, typeInstantiationContextHandles, typeInstCount, methodInstantiationContextHandles, methodInstCount);
+            RuntimeMethodHandleInternal handle = ResolveMethodHandleInternal(module, methodToken, typeInstantiationContextHandles, methodInstantiationContextHandles);
             IRuntimeMethodInfo retVal = new RuntimeMethodInfoStub(handle, RuntimeMethodHandle.GetLoaderAllocator(handle));
             GC.KeepAlive(typeInstantiationContext);
             GC.KeepAlive(methodInstantiationContext);
             return new RuntimeMethodHandle(retVal);
         }
 
-        internal static RuntimeMethodHandleInternal ResolveMethodHandleInternal(RuntimeModule module, int methodToken, IntPtr[]? typeInstantiationContext, int typeInstCount, IntPtr[]? methodInstantiationContext, int methodInstCount)
+        internal static RuntimeMethodHandleInternal ResolveMethodHandleInternal(RuntimeModule module, int methodToken, ReadOnlySpan<IntPtr> typeInstantiationContext, ReadOnlySpan<IntPtr> methodInstantiationContext)
         {
             ValidateModulePointer(module);
 
@@ -1400,12 +1398,12 @@ namespace System
             {
                 fixed (IntPtr* typeInstArgs = typeInstantiationContext, methodInstArgs = methodInstantiationContext)
                 {
-                    return ResolveMethod(new QCallModule(ref module), methodToken, typeInstArgs, typeInstCount, methodInstArgs, methodInstCount);
+                    return ResolveMethod(new QCallModule(ref module), methodToken, typeInstArgs, typeInstantiationContext.Length, methodInstArgs, methodInstantiationContext.Length);
                 }
             }
             catch (Exception)
             {
-                if (!ModuleHandle.GetMetadataImport(module).IsValidToken(methodToken))
+                if (!GetMetadataImport(module).IsValidToken(methodToken))
                     throw new ArgumentOutOfRangeException(nameof(methodToken),
                         SR.Format(SR.Argument_InvalidToken, methodToken, new ModuleHandle(module)));
                 throw;
@@ -1431,21 +1429,19 @@ namespace System
             RuntimeModule module = GetRuntimeModule();
             ValidateModulePointer(module);
 
-            IntPtr[]? typeInstantiationContextHandles = null;
-            int typeInstCount = 0;
-            IntPtr[]? methodInstantiationContextHandles = null;
-            int methodInstCount = 0;
+            ReadOnlySpan<IntPtr> typeInstantiationContextHandles = stackalloc IntPtr[0];
+            ReadOnlySpan<IntPtr> methodInstantiationContextHandles = stackalloc IntPtr[0];
 
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
             if (typeInstantiationContext?.Length > 0)
             {
                 typeInstantiationContext = (RuntimeTypeHandle[]?)typeInstantiationContext.Clone();
-                typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out typeInstCount);
+                typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, stackScratch: stackalloc IntPtr[8]);
             }
             if (methodInstantiationContext?.Length > 0)
             {
                 methodInstantiationContext = (RuntimeTypeHandle[]?)methodInstantiationContext.Clone();
-                methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out methodInstCount);
+                methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, stackScratch: stackalloc IntPtr[8]);
             }
 
             fixed (IntPtr* typeInstArgs = typeInstantiationContextHandles, methodInstArgs = methodInstantiationContextHandles)
@@ -1453,7 +1449,7 @@ namespace System
                 try
                 {
                     IRuntimeFieldInfo? field = null;
-                    ResolveField(new QCallModule(ref module), fieldToken, typeInstArgs, typeInstCount, methodInstArgs, methodInstCount, ObjectHandleOnStack.Create(ref field));
+                    ResolveField(new QCallModule(ref module), fieldToken, typeInstArgs, typeInstantiationContextHandles.Length, methodInstArgs, methodInstantiationContextHandles.Length, ObjectHandleOnStack.Create(ref field));
                     GC.KeepAlive(typeInstantiationContext);
                     GC.KeepAlive(methodInstantiationContext);
                     return new RuntimeFieldHandle(field!);

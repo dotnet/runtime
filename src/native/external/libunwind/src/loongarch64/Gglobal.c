@@ -46,9 +46,9 @@ tdep_init (void)
 
     dwarf_init ();
 
+#ifndef UNW_REMOTE_ONLY
     tdep_init_mem_validate ();
 
-#ifndef UNW_REMOTE_ONLY
     loongarch64_local_addr_space_init ();
 #endif
     tdep_init_done = 1; /* signal that we're initialized... */
