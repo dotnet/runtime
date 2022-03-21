@@ -19,8 +19,9 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="path">Path relative to the base path stored in
         /// <see cref="IConfigurationBuilder.Properties"/> of <paramref name="builder"/>.</param>
+        /// <param name="separator"></param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, string path)
+        public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, string path, string separator = ":")
         {
             return AddJsonFile(builder, provider: null, path: path, optional: false, reloadOnChange: false);
         }
@@ -32,8 +33,9 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="path">Path relative to the base path stored in
         /// <see cref="IConfigurationBuilder.Properties"/> of <paramref name="builder"/>.</param>
         /// <param name="optional">Whether the file is optional.</param>
+        /// <param name="separator"></param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, string path, bool optional)
+        public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, string path, bool optional, string separator = ":")
         {
             return AddJsonFile(builder, provider: null, path: path, optional: optional, reloadOnChange: false);
         }
@@ -46,10 +48,11 @@ namespace Microsoft.Extensions.Configuration
         /// <see cref="IConfigurationBuilder.Properties"/> of <paramref name="builder"/>.</param>
         /// <param name="optional">Whether the file is optional.</param>
         /// <param name="reloadOnChange">Whether the configuration should be reloaded if the file changes.</param>
+        /// <param name="separator"></param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, string path, bool optional, bool reloadOnChange)
+        public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, string path, bool optional, bool reloadOnChange, string separator = ":")
         {
-            return AddJsonFile(builder, provider: null, path: path, optional: optional, reloadOnChange: reloadOnChange);
+            return AddJsonFile(builder, provider: null, path: path, optional: optional, reloadOnChange: reloadOnChange, separator);
         }
 
         /// <summary>
@@ -61,8 +64,9 @@ namespace Microsoft.Extensions.Configuration
         /// <see cref="IConfigurationBuilder.Properties"/> of <paramref name="builder"/>.</param>
         /// <param name="optional">Whether the file is optional.</param>
         /// <param name="reloadOnChange">Whether the configuration should be reloaded if the file changes.</param>
+        /// <param name="separator"></param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder!!, IFileProvider? provider, string path, bool optional, bool reloadOnChange)
+        public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder!!, IFileProvider? provider, string path, bool optional, bool reloadOnChange, string separator = ":")
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -76,6 +80,7 @@ namespace Microsoft.Extensions.Configuration
                 s.Optional = optional;
                 s.ReloadOnChange = reloadOnChange;
                 s.ResolveFileProvider();
+                //s.Separator = separator;
             });
         }
 
@@ -84,8 +89,9 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="configureSource">Configures the source.</param>
+        /// <param name="separator"></param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, Action<JsonConfigurationSource>? configureSource)
+        public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, Action<JsonConfigurationSource>? configureSource, string separator = ":")
             => builder.Add(configureSource);
 
         /// <summary>
@@ -93,8 +99,9 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="stream">The <see cref="Stream"/> to read the json configuration data from.</param>
+        /// <param name="separator"></param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddJsonStream(this IConfigurationBuilder builder!!, Stream stream)
+        public static IConfigurationBuilder AddJsonStream(this IConfigurationBuilder builder!!, Stream stream, string separator = ":")
         {
             return builder.Add<JsonStreamConfigurationSource>(s => s.Stream = stream);
         }

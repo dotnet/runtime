@@ -14,6 +14,8 @@ namespace Microsoft.Extensions.Configuration
     /// </summary>
     public abstract class ConfigurationProvider : IConfigurationProvider
     {
+        public virtual string GetDelimiter() => ":";
+
         private ConfigurationReloadToken _reloadToken = new ConfigurationReloadToken();
 
         /// <summary>
@@ -49,7 +51,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Loads (or reloads) the data for this provider.
         /// </summary>
-        public virtual void Load()
+        public virtual void Load(string separator = ":")
         { }
 
         /// <summary>

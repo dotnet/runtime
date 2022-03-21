@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.Configuration
     {
         System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string? parentPath);
         Microsoft.Extensions.Primitives.IChangeToken GetReloadToken();
-        void Load();
+        void Load(string separator = ":");
         void Set(string key, string? value);
         bool TryGet(string key, out string? value);
     }

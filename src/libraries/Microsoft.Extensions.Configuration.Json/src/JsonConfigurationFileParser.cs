@@ -11,14 +11,20 @@ namespace Microsoft.Extensions.Configuration.Json
 {
     internal sealed class JsonConfigurationFileParser
     {
-        private JsonConfigurationFileParser() { }
+        private JsonConfigurationFileParser(string separator)
+        {
+            //_keyDelimiter = separator;
+            _keyDelimiter = "`";
+        }
 
         private readonly Dictionary<string, string?> _data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         private readonly Stack<string> _paths = new Stack<string>();
-        private string _keyDelimiter = "`";// ConfigurationPath.KeyDelimiter;
+        private readonly string _keyDelimiter = ":";// ConfigurationPath.KeyDelimiter;
 
-        public static IDictionary<string, string?> Parse(Stream input)
-            => new JsonConfigurationFileParser().ParseStream(input);
+        public static IDictionary<string, string?> Parse(Stream input, string separator = ":")
+        {
+            return new JsonConfigurationFileParser(separator).ParseStream(input);
+        }
 
         private IDictionary<string, string?> ParseStream(Stream input)
         {

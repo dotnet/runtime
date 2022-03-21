@@ -13,23 +13,29 @@ namespace Microsoft.Extensions.Configuration.Json
     /// </summary>
     public class JsonConfigurationProvider : FileConfigurationProvider
     {
-        private static string _keyDelimiter = "`";
+        private const string _keyDelimiter = "`";
+
+        public override string GetDelimiter() => _keyDelimiter;
 
         /// <summary>
         /// Initializes a new instance with the specified source.
         /// </summary>
         /// <param name="source">The source settings.</param>
-        public JsonConfigurationProvider(JsonConfigurationSource source) : base(source) { }
+        public JsonConfigurationProvider(JsonConfigurationSource source) : base(source)
+        {
+            //_keyDelimiter = source.Separator;
+        }
 
         /// <summary>
         /// Loads the JSON data from a stream.
         /// </summary>
         /// <param name="stream">The stream to read.</param>
-        public override void Load(Stream stream)
+        /// <param name="separator"></param>
+        public override void Load(Stream stream, string separator = ":")
         {
             try
             {
-                Data = JsonConfigurationFileParser.Parse(stream);
+                Data = JsonConfigurationFileParser.Parse(stream, separator);
             }
             catch (JsonException e)
             {
@@ -56,7 +62,7 @@ namespace Microsoft.Extensions.Configuration.Json
                 {
                     if (kv.Key.Length > parentPath.Length &&
                         kv.Key.StartsWith(parentPath, StringComparison.OrdinalIgnoreCase) &&
-                        kv.Key[parentPath.Length] == '`')
+                        kv.Key[parentPath.Length] == _keyDelimiter[0]) //todo: should be char or string?
                     {
                         results.Add(Segment(kv.Key, parentPath.Length + 1));
                     }

@@ -20,5 +20,7 @@ namespace Microsoft.Extensions.Configuration.Json
             EnsureDefaults(builder);
             return new JsonConfigurationProvider(this);
         }
+
+        public string Separator { get; set; } = "`";
     }
 }

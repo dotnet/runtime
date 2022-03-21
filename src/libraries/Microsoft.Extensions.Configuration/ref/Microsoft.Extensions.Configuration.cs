@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Configuration
         public void Dispose() { }
         public System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string? parentPath) { throw null; }
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() { throw null; }
-        public void Load() { }
+        public void Load(string separator = ":") { }
         public void Set(string key, string? value) { }
         public bool TryGet(string key, out string? value) { throw null; }
     }
@@ -60,11 +60,12 @@ namespace Microsoft.Extensions.Configuration
     }
     public abstract partial class ConfigurationProvider : Microsoft.Extensions.Configuration.IConfigurationProvider
     {
+        public virtual string GetDelimiter() => ":";
         protected ConfigurationProvider() { }
         protected System.Collections.Generic.IDictionary<string, string?> Data { get { throw null; } set { } }
         public virtual System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string? parentPath) { throw null; }
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() { throw null; }
-        public virtual void Load() { }
+        public virtual void Load(string separator = ":") { }
         protected void OnReload() { }
         public virtual void Set(string key, string? value) { }
         public override string ToString() { throw null; }
@@ -109,8 +110,8 @@ namespace Microsoft.Extensions.Configuration
     {
         public StreamConfigurationProvider(Microsoft.Extensions.Configuration.StreamConfigurationSource source) { }
         public Microsoft.Extensions.Configuration.StreamConfigurationSource Source { get { throw null; } }
-        public override void Load() { }
-        public abstract void Load(System.IO.Stream stream);
+        public override void Load(string separator = ":") { }
+        public abstract void Load(System.IO.Stream stream, string separator = ":");
     }
     public abstract partial class StreamConfigurationSource : Microsoft.Extensions.Configuration.IConfigurationSource
     {

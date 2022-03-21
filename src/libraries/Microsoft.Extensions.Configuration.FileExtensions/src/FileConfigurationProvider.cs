@@ -34,7 +34,8 @@ namespace Microsoft.Extensions.Configuration
                     () =>
                     {
                         Thread.Sleep(Source.ReloadDelay);
-                        Load(reload: true);
+                        throw new NotImplementedException("Need to know the separator string here...");
+                        // Load(reload: true, ":");
                     });
             }
         }
@@ -51,7 +52,7 @@ namespace Microsoft.Extensions.Configuration
         public override string ToString()
             => $"{GetType().Name} for '{Source.Path}' ({(Source.Optional ? "Optional" : "Required")})";
 
-        private void Load(bool reload)
+        private void Load(bool reload, string separator)
         {
             IFileInfo? file = Source.FileProvider?.GetFileInfo(Source.Path ?? string.Empty);
             if (file == null || !file.Exists)
@@ -94,7 +95,7 @@ namespace Microsoft.Extensions.Configuration
                 using Stream stream = OpenRead(file);
                 try
                 {
-                    Load(stream);
+                    Load(stream, separator);
                 }
                 catch (Exception ex)
                 {
@@ -118,18 +119,19 @@ namespace Microsoft.Extensions.Configuration
         /// <exception cref="FileNotFoundException">Optional is <c>false</c> on the source and a
         /// file does not exist at specified Path.</exception>
         /// <exception cref="InvalidDataException">An exception was thrown by the concrete implementation of the
-        /// <see cref="Load()"/> method. Use the source <see cref="FileConfigurationSource.OnLoadException"/> callback
+        /// <see cref="Load(string)"/> method. Use the source <see cref="FileConfigurationSource.OnLoadException"/> callback
         /// if you need more control over the exception.</exception>
-        public override void Load()
+        public override void Load(string separator = ":")
         {
-            Load(reload: false);
+            Load(reload: false, separator);
         }
 
         /// <summary>
         /// Loads this provider's data from a stream.
         /// </summary>
         /// <param name="stream">The stream to read.</param>
-        public abstract void Load(Stream stream);
+        /// <param name="separator"></param>
+        public abstract void Load(Stream stream, string separator = ":");
 
         private void HandleException(ExceptionDispatchInfo info)
         {
