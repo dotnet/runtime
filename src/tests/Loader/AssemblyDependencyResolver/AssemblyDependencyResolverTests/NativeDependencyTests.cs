@@ -51,21 +51,21 @@ namespace AssemblyDependencyResolverTests
         public void TestRelativeNameAndLibPrefixAndNoSuffix()
         {
             // The lib prefix is not added if the lookup is a relative path.
-            ValidateNativeLibraryWithRelativeLookupResolutions("lib{0}", "{0}", 0);
+            ValidateNativeLibraryWithRelativeLookupResolutions("lib{0}", "{0}", OS.None);
         }
 
         public void TestSimpleNameAndLibPrefixAndSuffix()
         {
-            ValidateNativeLibraryResolutions("lib{0}.dll", "{0}", 0);
+            ValidateNativeLibraryResolutions("lib{0}.dll", "{0}", OS.None);
             ValidateNativeLibraryResolutions("lib{0}.dylib", "{0}", OS.OSX);
             ValidateNativeLibraryResolutions("lib{0}.so", "{0}", OS.Linux);
         }
 
         public void TestNameWithSuffixAndNoPrefixAndNoSuffix()
         {
-            ValidateNativeLibraryResolutions("{0}", "{0}.dll", 0);
-            ValidateNativeLibraryResolutions("{0}", "{0}.dylib", 0);
-            ValidateNativeLibraryResolutions("{0}", "{0}.so", 0);
+            ValidateNativeLibraryResolutions("{0}", "{0}.dll", OS.None);
+            ValidateNativeLibraryResolutions("{0}", "{0}.dylib", OS.None);
+            ValidateNativeLibraryResolutions("{0}", "{0}.so", OS.None);
         }
 
         public void TestNameWithSuffixAndNoPrefixAndSuffix()
@@ -78,16 +78,16 @@ namespace AssemblyDependencyResolverTests
         public void TestNameWithSuffixAndNoPrefixAndDoubleSuffix()
         {
             // Unixes add the suffix even if one is already present.
-            ValidateNativeLibraryResolutions("{0}.dll.dll", "{0}.dll", 0);
+            ValidateNativeLibraryResolutions("{0}.dll.dll", "{0}.dll", OS.None);
             ValidateNativeLibraryResolutions("{0}.dylib.dylib", "{0}.dylib", OS.OSX);
             ValidateNativeLibraryResolutions("{0}.so.so", "{0}.so", OS.Linux);
         }
 
         public void TestNameWithSuffixAndPrefixAndNoSuffix()
         {
-            ValidateNativeLibraryResolutions("lib{0}", "{0}.dll", 0);
-            ValidateNativeLibraryResolutions("lib{0}", "{0}.dylib", 0);
-            ValidateNativeLibraryResolutions("lib{0}", "{0}.so", 0);
+            ValidateNativeLibraryResolutions("lib{0}", "{0}.dll", OS.None);
+            ValidateNativeLibraryResolutions("lib{0}", "{0}.dylib", OS.None);
+            ValidateNativeLibraryResolutions("lib{0}", "{0}.so", OS.None);
         }
 
         public void TestNameWithSuffixAndPrefixAndSuffix()
@@ -100,14 +100,14 @@ namespace AssemblyDependencyResolverTests
         public void TestRelativeNameWithSuffixAndPrefixAndSuffix()
         {
             // The lib prefix is not added if the lookup is a relative path
-            ValidateNativeLibraryWithRelativeLookupResolutions("lib{0}.dll", "{0}.dll", 0);
-            ValidateNativeLibraryWithRelativeLookupResolutions("lib{0}.dylib", "{0}.dylib", 0);
-            ValidateNativeLibraryWithRelativeLookupResolutions("lib{0}.so", "{0}.so", 0);
+            ValidateNativeLibraryWithRelativeLookupResolutions("lib{0}.dll", "{0}.dll", OS.None);
+            ValidateNativeLibraryWithRelativeLookupResolutions("lib{0}.dylib", "{0}.dylib", OS.None);
+            ValidateNativeLibraryWithRelativeLookupResolutions("lib{0}.so", "{0}.so", OS.None);
         }
 
         public void TestNameWithPrefixAndNoPrefixAndNoSuffix()
         {
-            ValidateNativeLibraryResolutions("{0}", "lib{0}", 0);
+            ValidateNativeLibraryResolutions("{0}", "lib{0}", OS.None);
         }
 
         public void TestNameWithPrefixAndPrefixAndNoSuffix()
@@ -117,9 +117,9 @@ namespace AssemblyDependencyResolverTests
 
         public void TestNameWithPrefixAndNoPrefixAndSuffix()
         {
-            ValidateNativeLibraryResolutions("{0}.dll", "lib{0}", 0);
-            ValidateNativeLibraryResolutions("{0}.dylib", "lib{0}", 0);
-            ValidateNativeLibraryResolutions("{0}.so", "lib{0}", 0);
+            ValidateNativeLibraryResolutions("{0}.dll", "lib{0}", OS.None);
+            ValidateNativeLibraryResolutions("{0}.dylib", "lib{0}", OS.None);
+            ValidateNativeLibraryResolutions("{0}.so", "lib{0}", OS.None);
         }
 
         public void TestNameWithPrefixAndPrefixAndSuffix()
@@ -136,10 +136,10 @@ namespace AssemblyDependencyResolverTests
 
         public void TestWindowsDoesntAddSuffixWhenExectubaleIsPresent()
         {
-            ValidateNativeLibraryResolutions("{0}.dll.dll", "{0}.dll", 0);
-            ValidateNativeLibraryResolutions("{0}.dll.exe", "{0}.dll", 0);
-            ValidateNativeLibraryResolutions("{0}.exe.dll", "{0}.exe", 0);
-            ValidateNativeLibraryResolutions("{0}.exe.exe", "{0}.exe", 0);
+            ValidateNativeLibraryResolutions("{0}.dll.dll", "{0}.dll", OS.None);
+            ValidateNativeLibraryResolutions("{0}.dll.exe", "{0}.dll", OS.None);
+            ValidateNativeLibraryResolutions("{0}.exe.dll", "{0}.exe", OS.None);
+            ValidateNativeLibraryResolutions("{0}.exe.exe", "{0}.exe", OS.None);
         }
 
         private void TestLookupWithSuffixPrefersUnmodifiedSuffixOnUnixes()
@@ -174,21 +174,22 @@ namespace AssemblyDependencyResolverTests
 
         public void TestFullPathLookupWithDifferentFileName()
         {
-            ValidateFullPathNativeLibraryResolutions("lib{0}", "{0}", 0);
-            ValidateFullPathNativeLibraryResolutions("{0}.dll", "{0}", 0);
-            ValidateFullPathNativeLibraryResolutions("{0}.dylib", "{0}", 0);
-            ValidateFullPathNativeLibraryResolutions("{0}.so", "{0}", 0);
-            ValidateFullPathNativeLibraryResolutions("lib{0}.dll", "{0}", 0);
-            ValidateFullPathNativeLibraryResolutions("lib{0}.dylib", "{0}", 0);
-            ValidateFullPathNativeLibraryResolutions("lib{0}.so", "{0}", 0);
-            ValidateFullPathNativeLibraryResolutions("lib{0}.dll", "{0}.dll", 0);
-            ValidateFullPathNativeLibraryResolutions("lib{0}.dylib", "{0}.dylib", 0);
-            ValidateFullPathNativeLibraryResolutions("lib{0}.so", "{0}.so", 0);
+            ValidateFullPathNativeLibraryResolutions("lib{0}", "{0}", OS.None);
+            ValidateFullPathNativeLibraryResolutions("{0}.dll", "{0}", OS.None);
+            ValidateFullPathNativeLibraryResolutions("{0}.dylib", "{0}", OS.None);
+            ValidateFullPathNativeLibraryResolutions("{0}.so", "{0}", OS.None);
+            ValidateFullPathNativeLibraryResolutions("lib{0}.dll", "{0}", OS.None);
+            ValidateFullPathNativeLibraryResolutions("lib{0}.dylib", "{0}", OS.None);
+            ValidateFullPathNativeLibraryResolutions("lib{0}.so", "{0}", OS.None);
+            ValidateFullPathNativeLibraryResolutions("lib{0}.dll", "{0}.dll", OS.None);
+            ValidateFullPathNativeLibraryResolutions("lib{0}.dylib", "{0}.dylib", OS.None);
+            ValidateFullPathNativeLibraryResolutions("lib{0}.so", "{0}.so", OS.None);
         }
 
         [Flags]
         private enum OS
         {
+            None = 0,
             Windows = 0x1,
             OSX = 0x2,
             Linux = 0x4

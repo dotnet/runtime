@@ -61,7 +61,7 @@ parse_trusted_platform_assemblies (const char *assemblies_paths)
 	a->basename_lens = g_new0 (uint32_t, asm_count + 1);
 	for (int i = 0; i < asm_count; ++i) {
 		a->basenames [i] = g_path_get_basename (a->assembly_filepaths [i]);
-		a->basename_lens [i] = strlen (a->basenames [i]);
+		a->basename_lens [i] = (uint32_t)strlen (a->basenames [i]);
 	}
 	a->basenames [asm_count] = NULL;
 	a->basename_lens [asm_count] = 0;

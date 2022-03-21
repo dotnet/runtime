@@ -151,7 +151,8 @@ namespace System.Net.Tests
         public void Setter_InvalidName_Throws(string name)
         {
             WebHeaderCollection w = new WebHeaderCollection();
-            AssertExtensions.Throws<ArgumentException>("name", () => w[name] = "test");
+            ArgumentException exception = AssertExtensions.Throws<ArgumentException>("name", () => w[name] = "test");
+            Assert.Contains(name, exception.Message);
         }
 
         public static object[][] InvalidValues = {
@@ -234,7 +235,8 @@ namespace System.Net.Tests
         public void Remove_InvalidHeader_ThrowsArgumentException(string name)
         {
             var headers = new WebHeaderCollection();
-            AssertExtensions.Throws<ArgumentException>("name", () => headers.Remove(name));
+            ArgumentException exception = AssertExtensions.Throws<ArgumentException>("name", () => headers.Remove(name));
+            Assert.Contains(name, exception.Message);
         }
 
         [Fact]
@@ -481,7 +483,12 @@ namespace System.Net.Tests
         public void Add_InvalidName_ThrowsArgumentException(string name)
         {
             var headers = new WebHeaderCollection();
-            AssertExtensions.Throws<ArgumentException>("name", () => headers.Add(name, "value"));
+            ArgumentException exception = AssertExtensions.Throws<ArgumentException>("name", () => headers.Add(name, "value"));
+
+            if (!string.IsNullOrEmpty(name))
+            {
+                Assert.Contains(name, exception.Message);
+            }
         }
 
         [Theory]

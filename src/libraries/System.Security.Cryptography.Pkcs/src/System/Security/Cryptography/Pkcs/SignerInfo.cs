@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Linq;
@@ -291,9 +292,10 @@ namespace System.Security.Cryptography.Pkcs
             return new SignerInfoCollection(signerInfos.ToArray());
         }
 
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
         [Obsolete(Obsoletions.SignerInfoCounterSigMessage, DiagnosticId = Obsoletions.SignerInfoCounterSigDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
  #endif
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void ComputeCounterSignature()
         {
             throw new PlatformNotSupportedException(SR.Cryptography_Cms_NoSignerCert);

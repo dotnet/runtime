@@ -23,38 +23,20 @@ namespace Microsoft.Interop
             _utf8StringMarshaller = utf8StringMarshaller;
         }
 
-        public override ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
+        public override SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)
         {
-            string identifier = context.GetIdentifiers(info).native;
-            if (info.IsByRef)
-            {
-                // &<nativeIdentifier>
-                return Argument(
-                    PrefixUnaryExpression(
-                        SyntaxKind.AddressOfExpression,
-                        IdentifierName(identifier)));
-            }
+            return info.IsByRef ? SignatureBehavior.PointerToNativeType : SignatureBehavior.NativeType;
+        }
 
-            // <nativeIdentifier>
-            return Argument(IdentifierName(identifier));
+        public override ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
+        {
+            return info.IsByRef ? ValueBoundaryBehavior.AddressOfNativeIdentifier : ValueBoundaryBehavior.NativeIdentifier;
         }
 
         public override TypeSyntax AsNativeType(TypePositionInfo info)
         {
             // byte*
             return s_nativeType;
-        }
-
-        public override ParameterSyntax AsParameter(TypePositionInfo info)
-        {
-            // byte**
-            // or
-            // byte*
-            TypeSyntax type = info.IsByRef
-                ? PointerType(AsNativeType(info))
-                : AsNativeType(info);
-            return Parameter(Identifier(info.InstanceIdentifier))
-                .WithType(type);
         }
 
         public override IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)

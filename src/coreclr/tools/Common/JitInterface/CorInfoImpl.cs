@@ -642,7 +642,8 @@ namespace Internal.JitInterface
             methodInfo->ILCode = (byte*)GetPin(ilCode);
             methodInfo->ILCodeSize = (uint)ilCode.Length;
             methodInfo->maxStack = (uint)methodIL.MaxStack;
-            methodInfo->EHcount = (uint)methodIL.GetExceptionRegions().Length;
+            var exceptionRegions = methodIL.GetExceptionRegions();
+            methodInfo->EHcount = (uint)exceptionRegions.Length;
             methodInfo->options = methodIL.IsInitLocals ? CorInfoOptions.CORINFO_OPT_INIT_LOCALS : (CorInfoOptions)0;
 
             if (method.AcquiresInstMethodTableFromThis())
@@ -660,6 +661,24 @@ namespace Internal.JitInterface
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
             Get_CORINFO_SIG_INFO(method, sig: &methodInfo->args, methodIL);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
+
+#if READYTORUN
+            if ((methodInfo->options & CorInfoOptions.CORINFO_GENERICS_CTXT_MASK) != 0)
+            {
+                foreach (var region in exceptionRegions)
+                {
+                    if (region.Kind == ILExceptionRegionKind.Catch)
+                    {
+                        TypeDesc catchType = (TypeDesc)methodIL.GetObject(region.ClassToken);
+                        if (catchType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        {
+                            methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_KEEP_ALIVE;
+                            break;
+                        }
+                    }
+                }
+            }
+#endif
 
             return true;
         }
@@ -2009,7 +2028,7 @@ namespace Internal.JitInterface
             if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
             {
                 // Prevent the JIT from drilling into types outside of the current versioning bubble
-                result |= CorInfoFlag.CORINFO_FLG_DONT_PROMOTE;
+                result |= CorInfoFlag.CORINFO_FLG_DONT_DIG_FIELDS;
                 result &= ~CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
             }
 #endif
@@ -2936,6 +2955,11 @@ namespace Internal.JitInterface
             }
         }
 
+        private uint getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
+        {
+            throw new NotImplementedException("For LoongArch64, would be implemented later");
+        }
+
         private CORINFO_CLASS_STRUCT_* getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args)
         {
             int index = (int)args;
@@ -3720,17 +3744,11 @@ namespace Internal.JitInterface
                 case TargetArchitecture.X64:
                 case TargetArchitecture.X86:
                     Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
-                    if (_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2))
-                    {
-                        flags.Set(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
-                    }
+                    Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2));
                     break;
 
                 case TargetArchitecture.ARM64:
-                    if (_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.ARM64_AdvSimd))
-                    {
-                        flags.Set(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
-                    }
+                    Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.ARM64_AdvSimd));
                     break;
             }
 
@@ -3894,6 +3912,10 @@ namespace Internal.JitInterface
 
         private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
         {
+            InstructionSet_ARM64 asArm64 = (InstructionSet_ARM64)instructionSet;
+            InstructionSet_X64 asX64 = (InstructionSet_X64)instructionSet;
+            InstructionSet_X86 asX86 = (InstructionSet_X86)instructionSet;
+
             if (supportEnabled)
             {
                 _actualInstructionSetSupported.AddInstructionSet(instructionSet);
@@ -3904,6 +3926,10 @@ namespace Internal.JitInterface
                 // set is not a reason to not support usage of it.
                 if (!isMethodDefinedInCoreLib())
                 {
+                    // If a vector instruction set is marked as attempted to be used, but is also explicitly unsupported
+                    // then we need to mark as explicitly unsupported the implied instruction set associated with the vector set. 
+                    instructionSet = InstructionSetFlags.ConvertToImpliedInstructionSetForVectorInstructionSets(_compilation.TypeSystemContext.Target.Architecture, instructionSet);
+
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
                 }
             }

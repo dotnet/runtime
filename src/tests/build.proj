@@ -107,7 +107,6 @@
     <HaveExcludes Condition="'$(__Exclude)' != ''">True</HaveExcludes>
   </PropertyGroup>
 
-
   <Target Name="MonoAotCompileTests" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
     <ItemGroup>
       <AllTestScripts Include="%(TestDirectories.Identity)\**\*.sh" />
@@ -502,7 +501,13 @@
   <Target Name="GenerateLayout"
       DependsOnTargets="CreateTestOverlay"
       AfterTargets="ManagedBuild;RestorePackages"
-      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__SkipGenerateLayout)' != '1' and !$(MonoAot) and !$(MonoFullAot)" />
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__SkipGenerateLayout)' != '1' and !$(MonoAot) and !$(MonoFullAot)">
+
+    <MSBuild
+      Projects="$(MSBuildProjectFile)"
+      Targets="EmitTestExclusionList"
+      Properties="XunitTestBinBase=$(XunitTestBinBase)" />
+  </Target>
 
   <Target Name="BuildTestWrappers"
       DependsOnTargets="CreateAllWrappers"
@@ -583,5 +588,23 @@
     <MSBuild Projects="$(CoreCLRBuildIntegrationDir)/BuildFrameworkNativeObjects.proj"
       Targets="CreateLib"
       Properties="@(CreateLibProperty)" />
+  </Target>
+
+  <Target Name="EmitTestExclusionList">
+    <PropertyGroup>
+      <TestExclusionListPath>$(CORE_ROOT)\TestExclusionList.txt</TestExclusionListPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <FilteredExcludeList
+        Include="$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.FullPath)'))"
+        Condition="'%(ExcludeList.Extension)' == '.dll'" />
+    </ItemGroup>
+
+    <WriteLinesToFile
+        File="$(TestExclusionListPath)"
+        Lines="@(FilteredExcludeList)"
+        Overwrite="true"
+        Encoding="Unicode" />
   </Target>
 </Project>

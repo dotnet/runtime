@@ -24,10 +24,6 @@
 #include "stringarraylist.h"
 #include "configuration.h"
 
-#ifndef IMAGE_FILE_MACHINE_ARM64
-#define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
-#endif
-
 #if !defined(DACCESS_COMPILE)
 #include "defaultassemblybinder.h"
 // Helper function in the VM, invoked by the Binder, to invoke the host assembly resolver

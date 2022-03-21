@@ -44,6 +44,7 @@ namespace System
         public static bool IsAppleMobile => IsMacCatalyst || IsiOS || IstvOS;
         public static bool IsNotAppleMobile => !IsAppleMobile;
         public static bool IsNotNetFramework => !IsNetFramework;
+        public static bool IsBsdLike => IsOSXLike || IsFreeBSD || IsNetBSD;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
@@ -52,6 +53,7 @@ namespace System
         public static bool IsArmOrArm64Process => IsArmProcess || IsArm64Process;
         public static bool IsNotArmNorArm64Process => !IsArmOrArm64Process;
         public static bool IsArmv6Process => (int)RuntimeInformation.ProcessArchitecture == 7; // Architecture.Armv6
+        public static bool IsX64Process => RuntimeInformation.ProcessArchitecture == Architecture.X64;
         public static bool IsX86Process => RuntimeInformation.ProcessArchitecture == Architecture.X86;
         public static bool IsNotX86Process => !IsX86Process;
         public static bool IsArgIteratorSupported => IsMonoRuntime || (IsWindows && IsNotArmProcess && !IsNativeAot);
@@ -92,6 +94,8 @@ namespace System
         public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || IsBrowserDomSupported;
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
         public static bool IsWebSocketSupported => IsEnvironmentVariableTrue("IsWebSocketSupported");
+        public static bool IsNodeJS => IsEnvironmentVariableTrue("IsNodeJS");
+        public static bool IsNotNodeJS => !IsNodeJS;
         public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
         public static bool LocalEchoServerIsAvailable => IsBrowser;
 
@@ -109,7 +113,7 @@ namespace System
         // Drawing is not supported on non windows platforms in .NET 7.0+.
         public static bool IsDrawingSupported => IsWindows && IsNotWindowsNanoServer && IsNotWindowsServerCore;
 
-        public static bool IsAsyncFileIOSupported => !IsBrowser && !(IsWindows && IsMonoRuntime); // https://github.com/dotnet/runtime/issues/34582
+        public static bool IsAsyncFileIOSupported => !IsBrowser;
 
         public static bool IsLineNumbersSupported => !IsNativeAot;
 
@@ -234,11 +238,14 @@ namespace System
         private static Lazy<bool> s_supportsTls11 = new Lazy<bool>(GetTls11Support);
         private static Lazy<bool> s_supportsTls12 = new Lazy<bool>(GetTls12Support);
         private static Lazy<bool> s_supportsTls13 = new Lazy<bool>(GetTls13Support);
+        private static Lazy<bool> s_sendsCAListByDefault = new Lazy<bool>(GetSendsCAListByDefault);
 
         public static bool SupportsTls10 => s_supportsTls10.Value;
         public static bool SupportsTls11 => s_supportsTls11.Value;
         public static bool SupportsTls12 => s_supportsTls12.Value;
         public static bool SupportsTls13 => s_supportsTls13.Value;
+        public static bool SendsCAListByDefault => s_sendsCAListByDefault.Value;
+        public static bool SupportsSendingCustomCANamesInTls => UsesAppleCrypto || IsOpenSslSupported || (PlatformDetection.IsWindows8xOrLater && SendsCAListByDefault);
 
         private static Lazy<bool> s_largeArrayIsNotSupported = new Lazy<bool>(IsLargeArrayNotSupported);
 
@@ -291,7 +298,7 @@ namespace System
 
         public static bool IsInvariantGlobalization => m_isInvariant.Value;
         public static bool IsNotInvariantGlobalization => !IsInvariantGlobalization;
-        public static bool IsIcuGlobalization => ICUVersion > new Version(0,0,0,0);
+        public static bool IsIcuGlobalization => ICUVersion > new Version(0, 0, 0, 0);
         public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization;
 
         public static bool IsSubstAvailable
@@ -356,7 +363,7 @@ namespace System
 
         private static bool GetProtocolSupportFromWindowsRegistry(SslProtocols protocol, bool defaultProtocolSupport)
         {
-            string registryProtocolName = protocol switch 
+            string registryProtocolName = protocol switch
             {
 #pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
                 SslProtocols.Ssl3 => "SSL 3.0",
@@ -406,7 +413,7 @@ namespace System
 #pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Ssl3, ssl3DefaultSupport);
 #pragma warning restore CS0618
-                
+
             }
 
             return (IsOSX || (IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
@@ -433,7 +440,7 @@ namespace System
             if (IsOSXLike || IsAndroid)
             {
                 return true;
-            } 
+            }
             if (IsWindows)
             {
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls, true);
@@ -462,7 +469,7 @@ namespace System
         private static bool GetTls12Support()
         {
             // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
-            bool defaultProtocolSupport =  !IsWindows7;
+            bool defaultProtocolSupport = !IsWindows7;
             return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport);
         }
 
@@ -502,7 +509,23 @@ namespace System
             else if (IsOpenSslSupported)
             {
                 // Covers Linux, FreeBSD, illumos and Solaris
-                return OpenSslVersion >= new Version(1,1,1);
+                return OpenSslVersion >= new Version(1, 1, 1);
+            }
+
+            return false;
+        }
+
+        private static bool GetSendsCAListByDefault()
+        {
+            if (IsWindows)
+            {
+                // Sending TrustedIssuers is conditioned on the registry. Win7 sends trusted issuer list by default,
+                // newer Windows versions don't.
+                object val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL", "SendTrustedIssuerList", IsWindows7 ? 1 : 0);
+                if (val is int i)
+                {
+                    return i == 1;
+                }
             }
 
             return false;

@@ -11,9 +11,10 @@ using System.Runtime.Versioning;
 
 namespace Internal.Runtime.InteropServices
 {
-    public static class ComponentActivator
+    public static partial class ComponentActivator
     {
         private const string TrimIncompatibleWarningMessage = "Native hosting is not trim compatible and this warning will be seen if trimming is enabled.";
+        private const string NativeAOTIncompatibleWarningMessage = "The native code for the method requested might not be available at runtime.";
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
@@ -49,6 +50,7 @@ namespace Internal.Runtime.InteropServices
         /// <param name="delegateTypeNative">Assembly qualified delegate type name</param>
         /// <param name="reserved">Extensibility parameter (currently unused)</param>
         /// <param name="functionHandle">Pointer where to store the function pointer result</param>
+        [RequiresDynamicCode(NativeAOTIncompatibleWarningMessage)]
         [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
@@ -103,6 +105,7 @@ namespace Internal.Runtime.InteropServices
         /// <param name="loadContext">Extensibility parameter (currently unused)</param>
         /// <param name="reserved">Extensibility parameter (currently unused)</param>
         /// <param name="functionHandle">Pointer where to store the function pointer result</param>
+        [RequiresDynamicCode(NativeAOTIncompatibleWarningMessage)]
         [UnmanagedCallersOnly]
         public static unsafe int GetFunctionPointer(IntPtr typeNameNative,
                                                     IntPtr methodNameNative,
@@ -112,7 +115,24 @@ namespace Internal.Runtime.InteropServices
                                                     IntPtr functionHandle)
         {
             if (!IsSupported)
+            {
+#if CORECLR
+                try
+                {
+                    OnDisabledGetFunctionPointerCall(typeNameNative, methodNameNative);
+                }
+                catch (Exception e)
+                {
+                    // The callback can intentionally throw NotSupportedException to provide errors to consumers,
+                    // so we let that one through. Any other exceptions must not be leaked out.
+                    if (e is NotSupportedException)
+                        throw;
+
+                    return e.HResult;
+                }
+#endif
                 return HostFeatureDisabled;
+            }
 
             try
             {
@@ -132,8 +152,10 @@ namespace Internal.Runtime.InteropServices
 
                 ArgumentNullException.ThrowIfNull(functionHandle);
 
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
                 // Create the function pointer.
                 *(IntPtr*)functionHandle = InternalGetFunctionPointer(AssemblyLoadContext.Default, typeName, methodName, delegateTypeNative);
+#pragma warning restore IL2026
             }
             catch (Exception e)
             {
@@ -164,6 +186,7 @@ namespace Internal.Runtime.InteropServices
             return alc;
         }
 
+        [RequiresDynamicCode(NativeAOTIncompatibleWarningMessage)]
         [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
         private static IntPtr InternalGetFunctionPointer(AssemblyLoadContext alc,
                                                          string typeName,

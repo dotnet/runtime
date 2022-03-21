@@ -28,7 +28,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int RuntimeId { get; private init; }
         public bool JustMyCode { get; private set; }
 
-        public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, int runtimeId = 0) : base(loggerFactory)
+        public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "") : base(loggerFactory, loggerId)
         {
             this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
             RuntimeId = runtimeId;
@@ -51,7 +51,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token) => SendCommand(id, "Runtime.evaluate", JObject.FromObject(cmd), token);
 
-        internal void SendLog(SessionId sessionId, string message, CancellationToken token)
+        internal void SendLog(SessionId sessionId, string message, CancellationToken token, string type = "warning")
         {
             if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
                 return;
@@ -68,7 +68,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             SendEvent(id, "Log.entryAdded", o, token);*/
             var o = JObject.FromObject(new
             {
-                type = "warning",
+                type,
                 args = new JArray(JObject.FromObject(new
                                 {
                                     type = "string",
@@ -139,7 +139,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 case "Runtime.executionContextCreated":
                     {
-                        SendEvent(sessionId, method, args, token);
+                        await SendEvent(sessionId, method, args, token);
                         JToken ctx = args?["context"];
                         var aux_data = ctx?["auxData"] as JObject;
                         int id = ctx["id"].Value<int>();
@@ -237,6 +237,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             case var _ when url == "":
                             case var _ when url.StartsWith("wasm://", StringComparison.Ordinal):
+                            case var _ when url.EndsWith(".wasm", StringComparison.Ordinal):
                                 {
                                     Log("verbose", $"ignoring wasm: Debugger.scriptParsed {url}");
                                     return true;
@@ -674,7 +675,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return false;
             }
             Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(RuntimeId, args), token);
-            if (res.IsErr)
+            if (!res.IsOk)
             {
                 SendResponse(id, res, token);
                 return true;
@@ -805,14 +806,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (retValue?["value"]?.Value<bool>() == true)
                         return true;
                 }
-                else if (retValue?["value"]?.Type != JTokenType.Null)
+                else if (retValue?["value"] != null && // null object, missing value
+                         retValue?["value"]?.Type != JTokenType.Null)
+                {
                     return true;
+                }
+            }
+            catch (ReturnAsErrorException raee)
+            {
+                logger.LogDebug($"Unable to evaluate breakpoint condition '{condition}': {raee}");
+                SendLog(sessionId, $"Unable to evaluate breakpoint condition '{condition}': {raee.Message}", token, type: "error");
+                bp.ConditionAlreadyEvaluatedWithError = true;
             }
             catch (Exception e)
             {
-                Log("info", $"Unable evaluate conditional breakpoint: {e} condition:{condition}");
+                Log("info", $"Unable to evaluate breakpoint condition '{condition}': {e}");
                 bp.ConditionAlreadyEvaluatedWithError = true;
-                return false;
             }
             return false;
         }
@@ -968,7 +977,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 string function_name = frame["functionName"]?.Value<string>();
                 string url = frame["url"]?.Value<string>();
                 if (!(function_name.StartsWith("wasm-function", StringComparison.Ordinal) ||
-                        url.StartsWith("wasm://wasm/", StringComparison.Ordinal) || function_name == "_mono_wasm_fire_debugger_agent_message"))
+                        url.StartsWith("wasm://", StringComparison.Ordinal) ||
+                        url.EndsWith(".wasm", StringComparison.Ordinal) ||
+                        function_name == "_mono_wasm_fire_debugger_agent_message"))
                 {
                     callFrames.Add(frame);
                 }
@@ -986,7 +997,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
                 return true;
             }
-            SendEvent(sessionId, "Debugger.paused", o, token);
+            await SendEvent(sessionId, "Debugger.paused", o, token);
 
             return true;
 
@@ -1004,7 +1015,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private async Task<bool> OnReceiveDebuggerAgentEvent(SessionId sessionId, JObject args, CancellationToken token)
         {
             Result res = await SendMonoCommand(sessionId, MonoCommands.GetDebuggerAgentBufferReceived(RuntimeId), token);
-            if (res.IsErr)
+            if (!res.IsOk)
                 return false;
 
             ExecutionContext context = GetContext(sessionId);
@@ -1103,7 +1114,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     foreach (SourceFile source in asm.Sources)
                     {
                         var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
-                        SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
+                        await SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
                     }
                     return asm.GetMethodByToken(method_token);
                 }
@@ -1333,7 +1344,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             JObject scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
             Log("debug", $"sending {source.Url} {context.Id} {sessionId.sessionId}");
-            SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
+            await SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
 
             foreach (var req in context.BreakpointRequests.Values)
             {
@@ -1412,7 +1423,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             DebugStore store = await LoadStore(sessionId, token);
             context.ready.SetResult(store);
-            SendEvent(sessionId, "Mono.runtimeReady", new JObject(), token);
+            await SendEvent(sessionId, "Mono.runtimeReady", new JObject(), token);
             context.SdbAgent.ResetStore(store);
             return store;
         }
@@ -1502,7 +1513,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 };
 
                 if (sendResolvedEvent)
-                    SendEvent(sessionId, "Debugger.breakpointResolved", JObject.FromObject(resolvedLocation), token);
+                    await SendEvent(sessionId, "Debugger.breakpointResolved", JObject.FromObject(resolvedLocation), token);
             }
 
             req.Locations.AddRange(breakpoints);

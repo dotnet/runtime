@@ -32,7 +32,7 @@ namespace System.Text.Json.Serialization.Converters
                 // For simplicity we elide equivalent checks for targets
                 // that are older than net6.0, since they do not include
                 // DateOnly or TimeOnly.
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
                 type == typeof(DateOnly) ||
                 type == typeof(TimeOnly);
 #else

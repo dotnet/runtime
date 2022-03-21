@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
-        [GeneratedDllImport(Libraries.User32, ExactSpelling = true)]
+        [LibraryImport(Libraries.User32)]
         internal static partial IntPtr GetProcessWindowStation();
     }
 }

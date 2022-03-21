@@ -23,7 +23,7 @@ internal static partial class Interop
             public const uint ATTR_CMN_CRTIME = 0x00000200;
         }
 
-        [GeneratedDllImport(Libraries.libc, EntryPoint = "setattrlist", CharSet = CharSet.Ansi, SetLastError = true)]
+        [LibraryImport(Libraries.libc, EntryPoint = "setattrlist", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static unsafe partial int setattrlist(string path, AttrList* attrList, void* attrBuf, nint attrBufSize, CULong options);
 
         internal const uint FSOPT_NOFOLLOW = 0x00000001;

@@ -64,13 +64,15 @@ If all tests have not been previously run, make sure the [test context](#test-co
 
 Tests from a specific test project can be run using [`dotnet test`](https://docs.microsoft.com/dotnet/core/tools/dotnet-test) targeting the built test binary. For example:
 ```
-dotnet test artifacts/bin/HostActivation.Tests/Debug/net5.0/HostActivation.Tests.dll
+dotnet test artifacts/bin/HostActivation.Tests/Debug/net5.0/HostActivation.Tests.dll --filter category!=failing
 ```
 
 To filter to specific tests within the test library, use the [filter options](https://docs.microsoft.com/dotnet/core/tools/dotnet-test#filter-option-details) available for `dotnet test`. For example:
 ```
-dotnet test artifacts/bin/HostActivation.Tests/Debug/net5.0/HostActivation.Tests.dll --filter DependencyResolution
+dotnet test artifacts/bin/HostActivation.Tests/Debug/net5.0/HostActivation.Tests.dll --filter "DependencyResolution&category!=failing"
 ```
+
+The `category!=failing` is to respect the [filtering traits](../libraries/filtering-tests.md) used by the runtime repo.
 
 ### Visual Studio
 
