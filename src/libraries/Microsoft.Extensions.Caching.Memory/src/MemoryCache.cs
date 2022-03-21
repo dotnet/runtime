@@ -279,7 +279,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         public MemoryCacheStatistics GetCurrentStatistics()
         {
-            (int hit, int miss) sumTotal = Sum();
+            (long hit, long miss) sumTotal = Sum();
             return new MemoryCacheStatistics()
             {
                 TotalMisses = sumTotal.miss,
@@ -317,9 +317,9 @@ namespace Microsoft.Extensions.Caching.Memory
         internal readonly List<WeakReference<Stats>?> _allStats = new();
         internal readonly Stats _accumulatedStats;
 
-        private (int, int) Sum()
+        private (long, long) Sum()
         {
-            int hits = 0, misses = 0;
+            long hits = 0, misses = 0;
             lock (_allStats)
             {
                 hits += _accumulatedStats.Hits;
@@ -328,8 +328,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     if (wr is not null && wr.TryGetTarget(out Stats? stats))
                     {
-                        hits += stats.Hits;
-                        misses += stats.Misses;
+                        hits += Interlocked.Read(ref stats.Hits);
+                        misses += Interlocked.Read(ref stats.Misses);
                     }
                 }
             }
@@ -340,20 +340,26 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private void Hit()
         {
-            GetStats().Hits++;
+            if (IntPtr.Size == 4)
+                Interlocked.Increment(ref GetStats().Hits);
+            else
+                GetStats().Hits++;
         }
 
         private void Miss()
         {
-            GetStats().Misses++;
+            if (IntPtr.Size == 4)
+                Interlocked.Increment(ref GetStats().Misses);
+            else
+                GetStats().Misses++;
         }
 
         private Stats GetStats() => _stats!.Value!;
 
         internal sealed class Stats
         {
-            public int Hits;
-            public int Misses;
+            public long Hits;
+            public long Misses;
             private readonly MemoryCache _memoryCache;
             public Stats(MemoryCache memoryCache, bool skipAdd = false)
             {
@@ -379,8 +385,9 @@ namespace Microsoft.Extensions.Caching.Memory
                         break;
                     }
                 }
-                _accumulatedStats.Hits += current.Hits;
-                _accumulatedStats.Misses += current.Misses;
+
+                _accumulatedStats.Hits += Interlocked.Read(ref current.Hits);
+                _accumulatedStats.Misses += Interlocked.Read(ref current.Misses);
             }
         }
 
