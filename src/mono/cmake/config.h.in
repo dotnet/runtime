@@ -351,9 +351,6 @@
 /* Define to 1 if you have the <execinfo.h> header file. */
 #cmakedefine HAVE_EXECINFO_H 1
 
-/* Define to 1 if you have the <sys/auxv.h> header file. */
-#cmakedefine HAVE_SYS_AUXV_H 1
-
 /* Define to 1 if you have the <sys/resource.h> header file. */
 #cmakedefine HAVE_SYS_RESOURCE_H 1
 
@@ -508,6 +505,7 @@
 /* Define to 1 if you have the `pthread_jit_write_protect_np' function. */
 #cmakedefine HAVE_PTHREAD_JIT_WRITE_PROTECT_NP 1
 
+/* Have getauxval */
 #cmakedefine01 HAVE_GETAUXVAL
 
 /* Define to 1 if you have the declaration of `pthread_mutexattr_setprotocol',
