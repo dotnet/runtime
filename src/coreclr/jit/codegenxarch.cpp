@@ -553,34 +553,38 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 //
 void CodeGen::genCodeForBswap(GenTree* tree)
 {
-    // TODO: If we're swapping immediately after a read from memory or immediately before
-    // a write to memory, use the MOVBE instruction instead of the BSWAP instruction if
-    // the platform supports it.
-
     assert(tree->OperIs(GT_BSWAP, GT_BSWAP16));
 
     regNumber targetReg  = tree->GetRegNum();
     var_types targetType = tree->TypeGet();
 
-    GenTree* operand = tree->gtGetOp1();
-    assert(operand->isUsedFromReg());
-    regNumber operandReg = genConsumeReg(operand);
+    GenTree*  operand    = tree->gtGetOp1();
 
-    inst_Mov(targetType, targetReg, operandReg, /* canSkip */ true);
-
-    if (tree->OperIs(GT_BSWAP))
+    if (operand->isUsedFromReg())
     {
-        // 32-bit and 64-bit byte swaps use "bswap reg"
-        inst_RV(INS_bswap, targetReg, targetType);
+        regNumber operandReg = genConsumeReg(operand);
+
+        inst_Mov(targetType, targetReg, operandReg, /* canSkip */ true);
     }
     else
     {
-        // 16-bit byte swaps use "ror reg.16, 8"
-        inst_RV_IV(INS_ror_N, targetReg, 8 /* val */, emitAttr::EA_2BYTE);
+        assert(operand->OperIs(GT_IND));
 
-        if (!genCanOmitNormalizationForBswap16(tree))
+        genConsumeReg(operand->gtGetOp1());
+        GetEmitter()->emitInsBinary(INS_movbe, emitTypeSize(operand), tree, operand);
+    }
+
+    if (operand->isUsedFromReg())
+    {
+        if (tree->OperIs(GT_BSWAP))
         {
-            GetEmitter()->emitIns_Mov(INS_movzx, EA_2BYTE, targetReg, targetReg, /* canSkip */ false);
+            // 32-bit and 64-bit byte swaps use "bswap reg"
+            inst_RV(INS_bswap, targetReg, targetType);
+        }
+        else
+        {
+            // 16-bit byte swaps use "ror reg.16, 8"
+            inst_RV_IV(INS_ror_N, targetReg, 8 /* val */, emitAttr::EA_2BYTE);
         }
     }
 
@@ -5142,7 +5146,10 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         }
         else
         {
-            GetEmitter()->emitInsStoreInd(ins_Store(data->TypeGet()), emitTypeSize(tree), tree);
+            GetEmitter()->emitInsStoreInd(data->OperIs(GT_BSWAP) && data->isContained()
+                                              ? INS_movbe
+                                              : ins_Store(data->TypeGet()),
+                                          emitTypeSize(tree), tree);
         }
     }
 }

@@ -3945,6 +3945,36 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
     return andnNode;
 }
 
+void Lowering::LowerBswapOp(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_BSWAP));
+
+    if (!comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE))
+    {
+        return;
+    }
+
+    GenTree* operand = node->gtGetOp1();
+    if (operand->OperIs(GT_IND))
+    {
+        operand->SetContained();
+
+        return;
+    }
+
+    LIR::Use use;
+    if (!BlockRange().TryGetUse(node, &use))
+    {
+        return;
+    }
+
+    GenTree* user = use.User();
+    if (user->OperIs(GT_STOREIND))
+    {
+        node->SetContained();
+    }
+}
+
 #endif // FEATURE_HW_INTRINSICS
 
 //----------------------------------------------------------------------------------------------

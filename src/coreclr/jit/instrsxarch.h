@@ -65,6 +65,7 @@ INST5(dec_l,            "dec",              IUM_RW, 0x0008FE,     BAD_CODE,     
 // Multi-byte opcodes without modrm are represented in mixed endian fashion.
 // See comment around quarter way through this file for more information.
 INST5(bswap,            "bswap",            IUM_RW, 0x0F00C8,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C80F,    INS_FLAGS_None )
+INST4(movbe,            "movbe",            IUM_WR, 0x380F00F1,   BAD_CODE,     0x380F00F0,   BAD_CODE,                  INS_FLAGS_Has_Wbit )
 
 //    id                nm                  um      mr            mi            rm            a4                         flags
 INST4(add,              "add",              IUM_RW, 0x000000,     0x000080,     0x000002,     0x000004,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF                  | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )

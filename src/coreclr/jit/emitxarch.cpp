@@ -3387,6 +3387,11 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
     }
     else
     {
+        if (data->OperIs(GT_BSWAP) && data->isContained())
+        {
+            data = data->gtGetOp1();
+        }
+
         assert(!data->isContained());
         id = emitNewInstrAmd(attr, offset);
         id->idIns(ins);
@@ -16281,6 +16286,20 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insThroughput = PERFSCORE_THROUGHPUT_140C;
             break;
         }
+
+        case INS_movbe:
+            if (memAccessKind == PERFSCORE_MEMORY_READ)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency += PERFSCORE_THROUGHPUT_2C;
+            }
+            else
+            {
+                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                result.insLatency += PERFSCORE_THROUGHPUT_2C;
+            }
+            break;
 
         default:
             // unhandled instruction insFmt combination

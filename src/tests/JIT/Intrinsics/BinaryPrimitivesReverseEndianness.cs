@@ -20,11 +20,17 @@ namespace BinaryPrimitivesReverseEndianness
         private const uint ConstantUInt32Input = 0x98765432;
         private const uint ConstantUInt32Expected = 0x32547698;
 
+        private const long ConstantInt64Input = 0x1edcba9876543210;
+        private const long ConstantInt64Expected = 0x1032547698badc1e;
+
         private const ulong ConstantUInt64Input = 0xfedcba9876543210;
         private const ulong ConstantUInt64Expected = 0x1032547698badcfe;
 
         private static readonly byte[] s_bufferLE = new byte[] { 0x32, 0x54, 0x76, 0x98 };
         private static readonly byte[] s_bufferBE = new byte[] { 0x98, 0x76, 0x54, 0x32 };
+
+        private static readonly byte[] s_bufferLESigned64 = new byte[] { 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0x1e };
+        private static readonly byte[] s_bufferBESigned64 = new byte[] { 0x1e, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10 };
 
         static int Main(string[] args)
         {
@@ -73,6 +79,14 @@ namespace BinaryPrimitivesReverseEndianness
                 return Fail;
             }
 
+            Span<byte> spanInt64 = BitConverter.IsLittleEndian ? s_bufferLESigned64 : s_bufferBESigned64;
+            long swappedSpanInt64 = BinaryPrimitives.ReverseEndianness(MemoryMarshal.Read<long>(spanInt64));
+            if (swappedSpanInt64 != ConstantInt64Expected)
+            {
+                ReportError("sign-extended Int64", ConstantInt64Input, swappedSpanInt64, ConstantInt64Expected);
+                return Fail;
+            }
+
             /*
              * NON-CONST VALUE TESTS
              */
@@ -101,6 +115,37 @@ namespace BinaryPrimitivesReverseEndianness
             if (nonConstUInt64Output != nonConstUInt64Expected)
             {
                 ReportError("non-const UInt64", nonConstUInt64Input, nonConstUInt64Output, nonConstUInt64Expected);
+                return Fail;
+            }
+
+            /*
+             * WRITE TESTS
+             */
+
+            ushort writeUInt16Output = default;
+            ushort writeUInt16Input = ByteSwapUInt16_Write(ref writeUInt16Output);
+            ushort writeUInt16Expected = ByteSwapUInt16_Control(writeUInt16Input);
+            if (writeUInt16Output != writeUInt16Expected)
+            {
+                ReportError("write UInt16", writeUInt16Input, writeUInt16Output, writeUInt16Expected);
+                return Fail;
+            }
+
+            uint writeUInt32Output = default;
+            uint writeUInt32Input = ByteSwapUInt32_Write(ref writeUInt32Output);
+            uint writeUInt32Expected = ByteSwapUInt32_Control(writeUInt32Input);
+            if (writeUInt32Output != writeUInt32Expected)
+            {
+                ReportError("write UInt32", writeUInt32Input, writeUInt32Output, writeUInt32Expected);
+                return Fail;
+            }
+
+            ulong writeUInt64Output = default;
+            ulong writeUInt64Input = ByteSwapUInt64_Write(ref writeUInt64Output);
+            ulong writeUInt64Expected = ByteSwapUInt64_Control(writeUInt64Input);
+            if (writeUInt64Output != writeUInt64Expected)
+            {
+                ReportError("write UInt64", writeUInt64Input, writeUInt64Output, writeUInt64Expected);
                 return Fail;
             }
 
@@ -141,6 +186,36 @@ namespace BinaryPrimitivesReverseEndianness
             }
 
             return retVal;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ushort ByteSwapUInt16_Write(ref ushort output)
+        {
+            ushort input = (ushort)DateTime.UtcNow.Ticks;
+
+            output = BinaryPrimitives.ReverseEndianness(input);
+
+            return input;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static uint ByteSwapUInt32_Write(ref uint output)
+        {
+            uint input = (uint)DateTime.UtcNow.Ticks;
+
+            output = BinaryPrimitives.ReverseEndianness(input);
+
+            return input;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ulong ByteSwapUInt64_Write(ref ulong output)
+        {
+            ulong input = (ulong)DateTime.UtcNow.Ticks;
+
+            output = BinaryPrimitives.ReverseEndianness(input);
+
+            return input;
         }
 
         private static string GetHexString<T>(T value)

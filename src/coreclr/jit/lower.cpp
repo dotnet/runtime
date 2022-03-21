@@ -418,6 +418,12 @@ GenTree* Lowering::LowerNode(GenTree* node)
         }
         break;
 
+#if defined(TARGET_XARCH)
+        case GT_BSWAP:
+            LowerBswapOp(node->AsOp());
+            break;
+#endif // TARGET_XARCH
+
         default:
             break;
     }
