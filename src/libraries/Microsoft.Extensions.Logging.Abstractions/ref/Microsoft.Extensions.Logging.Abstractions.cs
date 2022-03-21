@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Logging
     }
     public partial interface ILogger
     {
-        System.IDisposable BeginScope<TState>(TState state);
+        System.IDisposable? BeginScope<TState>(TState state) where TState : notnull;
         bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel);
         void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter);
     }
@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Logging
     }
     public static partial class LoggerExtensions
     {
-        public static System.IDisposable BeginScope(this Microsoft.Extensions.Logging.ILogger logger, string messageFormat, params object?[] args) { throw null; }
+        public static System.IDisposable? BeginScope(this Microsoft.Extensions.Logging.ILogger logger, string messageFormat, params object?[] args) { throw null; }
         public static void Log(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, System.Exception? exception, string? message, params object?[] args) { }
         public static void Log(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string? message, params object?[] args) { }
         public static void Log(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.LogLevel logLevel, System.Exception? exception, string? message, params object?[] args) { }
@@ -134,7 +134,7 @@ namespace Microsoft.Extensions.Logging
     public partial class Logger<T> : Microsoft.Extensions.Logging.ILogger, Microsoft.Extensions.Logging.ILogger<T>
     {
         public Logger(Microsoft.Extensions.Logging.ILoggerFactory factory) { }
-        System.IDisposable Microsoft.Extensions.Logging.ILogger.BeginScope<TState>(TState state) { throw null; }
+        System.IDisposable? Microsoft.Extensions.Logging.ILogger.BeginScope<TState>(TState state) { throw null; }
         bool Microsoft.Extensions.Logging.ILogger.IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) { throw null; }
         void Microsoft.Extensions.Logging.ILogger.Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
     }
@@ -168,7 +168,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
     {
         internal NullLogger() { }
         public static Microsoft.Extensions.Logging.Abstractions.NullLogger Instance { get { throw null; } }
-        public System.IDisposable BeginScope<TState>(TState state) { throw null; }
+        public System.IDisposable? BeginScope<TState>(TState state) where TState : notnull { throw null; }
         public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) { throw null; }
         public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
     }
@@ -191,7 +191,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
     {
         public static readonly Microsoft.Extensions.Logging.Abstractions.NullLogger<T> Instance;
         public NullLogger() { }
-        public System.IDisposable BeginScope<TState>(TState state) { throw null; }
+        public System.IDisposable? BeginScope<TState>(TState state) where TState : notnull { throw null; }
         public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) { throw null; }
         public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
     }

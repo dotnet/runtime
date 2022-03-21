@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <inheritdoc />
-        IDisposable ILogger.BeginScope<TState>(TState state)
+        IDisposable? ILogger.BeginScope<TState>(TState state)
         {
             return _logger.BeginScope(state);
         }

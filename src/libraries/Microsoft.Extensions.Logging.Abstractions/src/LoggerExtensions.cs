@@ -402,7 +402,7 @@ namespace Microsoft.Extensions.Logging
         /// {
         /// }
         /// </example>
-        public static IDisposable BeginScope(
+        public static IDisposable? BeginScope(
             this ILogger logger!!,
             string messageFormat,
             params object?[] args)
