@@ -375,11 +375,10 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     if (_allStats[i] is WeakReference<Stats> wr && wr.TryGetTarget(out Stats? stats) && stats == current)
                     {
-                        _allStats[i] = null;
+                        _allStats.RemoveAt(i);
                         break;
                     }
                 }
-                _allStats.RemoveAll(s => s is null);
                 _accumulatedStats.Hits += current.Hits;
                 _accumulatedStats.Misses += current.Misses;
             }
