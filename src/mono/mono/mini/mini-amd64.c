@@ -1818,7 +1818,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		cfg->locals_min_stack_offset = offset;
 		cfg->locals_max_stack_offset = offset + locals_stack_size;
 	} else {
-		cfg->locals_min_stack_offset = - (offset + locals_stack_size);
+		cfg->locals_min_stack_offset = - (offset + (int)locals_stack_size);
 		cfg->locals_max_stack_offset = - offset;
 	}
 
@@ -4445,7 +4445,7 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 	/* Save rbp */
 	amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, rbp), AMD64_RBP, 8);
 	if (cfg->arch.omit_fp && cfa_offset != -1)
-		mono_emit_unwind_op_offset (cfg, code, AMD64_RBP, - (cfa_offset - (lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, rbp))));
+		mono_emit_unwind_op_offset (cfg, code, AMD64_RBP, - (cfa_offset - (lmf_offset + (gint32)MONO_STRUCT_OFFSET (MonoLMF, rbp))));
 
 	/* These can't contain refs */
 	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), SLOT_NOREF);

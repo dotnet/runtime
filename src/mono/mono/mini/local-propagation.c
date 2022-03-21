@@ -66,7 +66,7 @@ compute_magic_unsigned (guint32 divisor) {
 	int p;
 
 	magu.addition = 0;
-	nc = -1 - (-divisor) % divisor;
+	nc = -1 - (-(gint32)divisor) % divisor;
 	p = 31;
 	q1 = 0x80000000 / nc;
 	r1 = 0x80000000 - q1 * nc;
