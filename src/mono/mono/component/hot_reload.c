@@ -509,15 +509,15 @@ hot_reload_close_except_pools_all (MonoImage *base_image)
 	if (!info)
 		return;
 	for (GList *ptr = info->delta_info; ptr; ptr = ptr->next) {
-		DeltaInfo *info = (DeltaInfo *)ptr->data;
-		MonoImage *image = info->delta_image;
+		DeltaInfo *delta_info = (DeltaInfo *)ptr->data;
+		MonoImage *image = delta_info->delta_image;
 		if (image) {
 			table_to_image_lock ();
 			g_hash_table_remove (delta_image_to_info, image);
 			table_to_image_unlock ();
 			/* if for some reason the image has other references, break the link to this delta_info that is going away */
 			if (!mono_image_close_except_pools (image))
-			    info->delta_image = NULL;
+				delta_info->delta_image = NULL;
 		}
 	}
 }
@@ -529,14 +529,14 @@ hot_reload_close_all (MonoImage *base_image)
 	if (!info)
 		return;
 	for (GList *ptr = info->delta_info; ptr; ptr = ptr->next) {
-		DeltaInfo *info = (DeltaInfo *)ptr->data;
-		if (!info)
+		DeltaInfo *delta_info = (DeltaInfo *)ptr->data;
+		if (!delta_info)
 			continue;
-		MonoImage *image = info->delta_image;
+		MonoImage *image = delta_info->delta_image;
 		if (image) {
 			mono_image_close_finish (image);
 		}
-		delta_info_destroy (info);
+		delta_info_destroy (delta_info);
 		ptr->data = NULL;
 	}
 	g_list_free (info->delta_info);
