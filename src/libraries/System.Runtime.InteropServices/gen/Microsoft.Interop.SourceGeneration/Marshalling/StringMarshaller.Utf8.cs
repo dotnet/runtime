@@ -29,30 +29,17 @@ namespace Microsoft.Interop
         private static readonly TypeSyntax s_nativeType = PointerType(PredefinedType(Token(SyntaxKind.ByteKeyword)));
         private static readonly TypeSyntax s_utf8EncodingType = ParseTypeName("System.Text.Encoding.UTF8");
 
-        public override ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
+        public override SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)
         {
-            string identifier = context.GetIdentifiers(info).native;
-            if (info.IsByRef)
-            {
-                return Argument(
-                    PrefixUnaryExpression(
-                        SyntaxKind.AddressOfExpression,
-                        IdentifierName(identifier)));
-            }
+            return info.IsByRef ? SignatureBehavior.PointerToNativeType : SignatureBehavior.NativeType;
+        }
 
-            return Argument(IdentifierName(identifier));
+        public override ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
+        {
+            return info.IsByRef ? ValueBoundaryBehavior.AddressOfNativeIdentifier : ValueBoundaryBehavior.NativeIdentifier;
         }
 
         public override TypeSyntax AsNativeType(TypePositionInfo info) => s_nativeType;
-
-        public override ParameterSyntax AsParameter(TypePositionInfo info)
-        {
-            TypeSyntax type = info.IsByRef
-                ? PointerType(AsNativeType(info))
-                : AsNativeType(info);
-            return Parameter(Identifier(info.InstanceIdentifier))
-                .WithType(type);
-        }
 
         public override IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
         {

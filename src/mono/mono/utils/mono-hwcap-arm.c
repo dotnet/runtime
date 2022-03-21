@@ -22,7 +22,7 @@
 
 #include "mono/utils/mono-hwcap.h"
 
-#if defined(HAVE_SYS_AUXV_H) && !defined(HOST_ANDROID)
+#if HAVE_GETAUXVAL && !defined(HOST_ANDROID)
 #include <sys/auxv.h>
 #elif defined(__APPLE__)
 #include <mach/machine.h>
@@ -38,7 +38,7 @@
 void
 mono_hwcap_arch_init (void)
 {
-#if defined(HAVE_SYS_AUXV_H) && !defined(HOST_ANDROID)
+#if HAVE_GETAUXVAL && !defined(HOST_ANDROID)
 	unsigned long hwcap;
 	unsigned long platform;
 

@@ -345,6 +345,10 @@ sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
         builder.AppendLine("}");
 
         builder.AppendLine("}");
+        builder.AppendLine("else");
+        builder.AppendLine("{");
+        builder.AppendLine(GenerateSkippedTestReporting(test));
+        builder.AppendLine("}");
         return builder.ToString();
     }
 

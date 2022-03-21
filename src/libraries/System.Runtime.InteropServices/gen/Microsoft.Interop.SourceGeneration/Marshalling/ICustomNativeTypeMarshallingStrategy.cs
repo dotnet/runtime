@@ -18,8 +18,6 @@ namespace Microsoft.Interop
     {
         TypeSyntax AsNativeType(TypePositionInfo info);
 
-        ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context);
-
         IEnumerable<ArgumentSyntax> GetNativeTypeConstructorArguments(TypePositionInfo info, StubCodeContext context);
 
         IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context, IEnumerable<ArgumentSyntax> nativeTypeConstructorArguments);
@@ -45,20 +43,6 @@ namespace Microsoft.Interop
         public SimpleCustomNativeTypeMarshalling(TypeSyntax nativeTypeSyntax)
         {
             _nativeTypeSyntax = nativeTypeSyntax;
-        }
-
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
-        {
-            string identifier = context.GetIdentifiers(info).native;
-            if (info.IsByRef)
-            {
-                return Argument(
-                    PrefixUnaryExpression(
-                        SyntaxKind.AddressOfExpression,
-                        IdentifierName(identifier)));
-            }
-
-            return Argument(IdentifierName(identifier));
         }
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
@@ -157,20 +141,6 @@ namespace Microsoft.Interop
         {
             _innerMarshaller = innerMarshaller;
             _nativeValueTypeSyntax = nativeValueTypeSyntax;
-        }
-
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
-        {
-            string identifier = context.GetIdentifiers(info).native;
-            if (info.IsByRef)
-            {
-                return Argument(
-                    PrefixUnaryExpression(
-                        SyntaxKind.AddressOfExpression,
-                        IdentifierName(identifier)));
-            }
-
-            return Argument(IdentifierName(identifier));
         }
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
@@ -290,11 +260,6 @@ namespace Microsoft.Interop
             _bufferSize = bufferSize;
         }
 
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
-        {
-            return _innerMarshaller.AsArgument(info, context);
-        }
-
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
             return _innerMarshaller.AsNativeType(info);
@@ -395,11 +360,6 @@ namespace Microsoft.Interop
             _innerMarshaller = innerMarshaller;
         }
 
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
-        {
-            return _innerMarshaller.AsArgument(info, context);
-        }
-
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
             return _innerMarshaller.AsNativeType(info);
@@ -468,11 +428,6 @@ namespace Microsoft.Interop
         private bool CanPinMarshaller(TypePositionInfo info, StubCodeContext context)
         {
             return context.SingleFrameSpansNativeContext && !info.IsManagedReturnPosition && !info.IsByRef || info.RefKind == RefKind.In;
-        }
-
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
-        {
-            return _innerMarshaller.AsArgument(info, context);
         }
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
@@ -606,11 +561,6 @@ namespace Microsoft.Interop
             _sizeOfElementExpression = sizeOfElementExpression;
         }
 
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
-        {
-            return _innerMarshaller.AsArgument(info, context);
-        }
-
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
             return _innerMarshaller.AsNativeType(info);
@@ -708,11 +658,6 @@ namespace Microsoft.Interop
             _innerMarshaller = innerMarshaller;
             _elementType = elementType;
             _numElementsExpression = numElementsExpression;
-        }
-
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
-        {
-            return _innerMarshaller.AsArgument(info, context);
         }
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
@@ -1025,11 +970,6 @@ namespace Microsoft.Interop
                                     .WithStatement(marshallingStatement);
             }
             return EmptyStatement();
-        }
-
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
-        {
-            return _innerMarshaller.AsArgument(info, context);
         }
 
         public TypeSyntax AsNativeType(TypePositionInfo info)

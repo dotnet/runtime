@@ -1707,6 +1707,13 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     structPromotionInfo.fieldCnt = (unsigned char)fieldCnt;
     DWORD typeFlags              = compHandle->getClassAttribs(typeHnd);
 
+    if (StructHasNoPromotionFlagSet(typeFlags))
+    {
+        // In AOT ReadyToRun compilation, don't try to promote fields of types
+        // outside of the current version bubble.
+        return false;
+    }
+
     bool overlappingFields = StructHasOverlappingFields(typeFlags);
     if (overlappingFields)
     {
@@ -1723,26 +1730,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     // On ARM, we have a requirement on the struct alignment; see below.
     unsigned structAlignment = roundUp(compHandle->getClassAlignmentRequirement(typeHnd), TARGET_POINTER_SIZE);
 #endif // TARGET_ARM
-
-    // If we have "Custom Layout" then we might have an explicit Size attribute
-    // Managed C++ uses this for its structs, such C++ types will not contain GC pointers.
-    //
-    // The current VM implementation also incorrectly sets the CORINFO_FLG_CUSTOMLAYOUT
-    // whenever a managed value class contains any GC pointers.
-    // (See the comment for VMFLAG_NOT_TIGHTLY_PACKED in class.h)
-    //
-    // It is important to struct promote managed value classes that have GC pointers
-    // So we compute the correct value for "CustomLayout" here
-    //
-    if (StructHasCustomLayout(typeFlags) && ((typeFlags & CORINFO_FLG_CONTAINS_GC_PTR) == 0))
-    {
-        structPromotionInfo.customLayout = true;
-    }
-
-    if (StructHasDontDigFieldsFlagSet(typeFlags))
-    {
-        return CanConstructAndPromoteField(&structPromotionInfo);
-    }
 
     unsigned fieldsSize = 0;
 
@@ -1795,6 +1782,21 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     noway_assert((containsGCpointers == false) ||
                  ((typeFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) != 0));
 
+    // If we have "Custom Layout" then we might have an explicit Size attribute
+    // Managed C++ uses this for its structs, such C++ types will not contain GC pointers.
+    //
+    // The current VM implementation also incorrectly sets the CORINFO_FLG_CUSTOMLAYOUT
+    // whenever a managed value class contains any GC pointers.
+    // (See the comment for VMFLAG_NOT_TIGHTLY_PACKED in class.h)
+    //
+    // It is important to struct promote managed value classes that have GC pointers
+    // So we compute the correct value for "CustomLayout" here
+    //
+    if (StructHasCustomLayout(typeFlags) && ((typeFlags & CORINFO_FLG_CONTAINS_GC_PTR) == 0))
+    {
+        structPromotionInfo.customLayout = true;
+    }
+
     // Check if this promoted struct contains any holes.
     assert(!overlappingFields);
     if (fieldsSize != structSize)
@@ -1807,62 +1809,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     // Cool, this struct is promotable.
 
     structPromotionInfo.canPromote = true;
-    return true;
-}
-
-//--------------------------------------------------------------------------------------------
-// CanConstructAndPromoteField - checks if we can construct field types without asking about them directly.
-//
-// Arguments:
-//   structPromotionInfo - struct promotion candidate information.
-//
-// Return value:
-//   true if we can figure out the fields from available knowledge.
-//
-// Notes:
-//   This is needed for AOT R2R compilation when we can't cross compilation bubble borders
-//   so we should not ask about fields that are not directly referenced. If we do VM will have
-//   to emit a type check for this field type but it does not have enough information about it.
-//   As a workaround for perfomance critical corner case: struct with 1 gcref, we try to construct
-//   the field information from indirect observations.
-//
-bool Compiler::StructPromotionHelper::CanConstructAndPromoteField(lvaStructPromotionInfo* structPromotionInfo)
-{
-    const CORINFO_CLASS_HANDLE typeHnd    = structPromotionInfo->typeHnd;
-    const COMP_HANDLE          compHandle = compiler->info.compCompHnd;
-    const DWORD                typeFlags  = compHandle->getClassAttribs(typeHnd);
-    if (structPromotionInfo->fieldCnt != 1)
-    {
-        // Can't find out values for several fields.
-        return false;
-    }
-    if ((typeFlags & CORINFO_FLG_CONTAINS_GC_PTR) == 0)
-    {
-        // Can't find out type of a non-gc field.
-        return false;
-    }
-
-    const unsigned structSize = compHandle->getClassSize(typeHnd);
-    if (structSize != TARGET_POINTER_SIZE)
-    {
-        return false;
-    }
-
-    assert(!structPromotionInfo->containsHoles);
-    assert(!structPromotionInfo->customLayout);
-    lvaStructFieldInfo& fldInfo = structPromotionInfo->fields[0];
-
-    fldInfo.fldHnd = compHandle->getFieldInClass(typeHnd, 0);
-
-    // We should not read it anymore.
-    fldInfo.fldTypeHnd = 0;
-
-    fldInfo.fldOffset  = 0;
-    fldInfo.fldOrdinal = 0;
-    fldInfo.fldSize    = TARGET_POINTER_SIZE;
-    fldInfo.fldType    = TYP_BYREF;
-
-    structPromotionInfo->canPromote = true;
     return true;
 }
 
@@ -2892,7 +2838,7 @@ void Compiler::makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int lev
     assert(structHandle != NO_CLASS_HANDLE);
     (void)typGetObjLayout(structHandle);
     DWORD typeFlags = info.compCompHnd->getClassAttribs(structHandle);
-    if (StructHasDontDigFieldsFlagSet(typeFlags))
+    if (StructHasNoPromotionFlagSet(typeFlags))
     {
         // In AOT ReadyToRun compilation, don't query fields of types
         // outside of the current version bubble.
