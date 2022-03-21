@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [Theory]
         // MLL where global hive has a better match
         [InlineData("5.0.0", "net5.0", true, "5.1.2")]
-        [InlineData("5.0.0", "net5.0", null, "5.1.2")] // MLL is on by default, so same as true
+        [InlineData("5.0.0", "net5.0", null, "5.1.2")] // MLL is on by default before 7.0, so same as true
         [InlineData("5.0.0", "net5.0", false, "5.2.0")] // No global hive allowed
         // MLL (where global hive has better match) with various TFMs
         [InlineData("5.0.0", "netcoreapp3.0", true, "5.1.2")]
@@ -37,11 +37,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [InlineData("5.0.0", "net6.0", true, "5.1.2")]
         [InlineData("5.0.0", "net6.0", null, "5.1.2")]
         [InlineData("5.0.0", "net6.0", false, "5.2.0")]
-        [InlineData("7.0.0", "net7.0", true, "7.1.2")] // MLL disabled by default - setting it doesn't change anything
-        [InlineData("7.0.0", "net7.0", null, "7.1.2")] // MLL disabled by default
+        // MLL is disabled for 7.0+
+        [InlineData("7.0.0", "net7.0", true, "7.1.2")] // MLL disabled for 7.0+ - setting it doesn't change anything
+        [InlineData("7.0.0", "net7.0", null, "7.1.2")]
         [InlineData("7.0.0", "net7.0", false, "7.1.2")]
-        [InlineData("7.0.0", "net8.0", true, "7.1.2")] // MLL disabled by default - setting it doesn't change anything
-        [InlineData("7.0.0", "net8.0", null, "7.1.2")] // MLL disabled by default
+        [InlineData("7.0.0", "net8.0", true, "7.1.2")] // MLL disabled for 7.0+ - setting it doesn't change anything
+        [InlineData("7.0.0", "net8.0", null, "7.1.2")]
         [InlineData("7.0.0", "net8.0", false, "7.1.2")]
         // MLL where main hive has a better match
         [InlineData("6.0.0", "net6.0", true, "6.1.4")] // Global hive with better version (higher patch)
@@ -82,7 +83,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [InlineData("6.1.4", "net6.0", true, "6.1.4", true)]
         [InlineData("6.1.4", "net6.0", null, "6.1.4", true)]
         [InlineData("6.1.4", "net6.0", false, ResolvedFramework.NotFound, false)]
-        [InlineData("6.1.4", "net7.0", true, ResolvedFramework.NotFound, false)]  // MLL disabled for net7.0
+        [InlineData("6.1.4", "net7.0", true, ResolvedFramework.NotFound, false)]  // MLL disabled for 7.0+
         [InlineData("7.1.2", "net6.0", true, "7.1.2", false)]  // 7.1.2 is in both main and global hives - the main should always win with exact match
         [InlineData("7.1.2", "net6.0", null, "7.1.2", false)]
         [InlineData("7.1.2", "net6.0", false, "7.1.2", false)]
@@ -193,6 +194,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [InlineData("net5.0", true, true)]
         [InlineData("net5.0", null, true)]
         [InlineData("net5.0", false, false)]
+        // MLL is disabled for 7.0+
         [InlineData("net7.0", true, false)]
         [InlineData("net7.0", null, false)]
         [InlineData("net7.0", false, false)]
@@ -206,7 +208,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 $"The following frameworks were found:{Environment.NewLine}" +
                 string.Join(string.Empty,
                     GetExpectedFrameworks(effectiveMultiLevelLookup)
-                        .Select(t => $"      {t.Version} at [{Path.Combine(t.Path, "shared", MicrosoftNETCoreApp)}]{Environment.NewLine}"));
+                        .Select(t => $"  {t.Version} at [{Path.Combine(t.Path, "shared", MicrosoftNETCoreApp)}]{Environment.NewLine}"));
 
             RunTest(
                 runtimeConfig => runtimeConfig

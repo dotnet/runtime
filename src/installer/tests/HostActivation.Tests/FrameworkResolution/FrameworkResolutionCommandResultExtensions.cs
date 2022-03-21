@@ -35,7 +35,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         /// <returns>Constraint</returns>
         public static AndConstraint<CommandResultAssertions> ShouldHaveResolvedFrameworkOrFailToFind(this CommandResult result, string resolvedFrameworkName, string resolvedFrameworkVersion, string resolvedFrameworkBasePath = null)
         {
-            if (resolvedFrameworkName == null || resolvedFrameworkVersion == null || 
+            if (resolvedFrameworkName == null || resolvedFrameworkVersion == null ||
                 resolvedFrameworkVersion == FrameworkResolutionBase.ResolvedFramework.NotFound)
             {
                 return result.ShouldFailToFindCompatibleFrameworkVersion();
@@ -48,7 +48,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
         public static AndConstraint<CommandResultAssertions> DidNotFindCompatibleFrameworkVersion(this CommandResultAssertions assertion)
         {
-            return assertion.HaveStdErrContaining("It was not possible to find any compatible framework version");
+            return assertion.HaveStdErrContaining("You must install or update .NET to run this application.");
         }
 
         public static AndConstraint<CommandResultAssertions> ShouldFailToFindCompatibleFrameworkVersion(this CommandResult result)
