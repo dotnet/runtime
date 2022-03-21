@@ -59,6 +59,11 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <remarks>Prior to .NET 7 this feature was always enabled.</remarks>
         public bool TrackLinkedCacheEntries { get; set; }
 
+        /// <summary>
+        /// Gets or sets whether to track memory cache statistics. Disabled by default.
+        /// </summary>
+        public bool TrackStatistics { get; set; }
+
         MemoryCacheOptions IOptions<MemoryCacheOptions>.Value
         {
             get { return this; }

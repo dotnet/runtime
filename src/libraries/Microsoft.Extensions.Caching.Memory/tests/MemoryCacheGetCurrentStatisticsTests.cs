@@ -13,14 +13,21 @@ namespace Microsoft.Extensions.Caching.Memory
 {
     public class MemoryCacheHasStatisticsTests
     {
+        [Fact]
+        public void GetCurrentStatistics_TrackStatisticsFalse_ReturnsNull()
+        {
+            var cache = new MemoryCache(new MemoryCacheOptions { TrackStatistics = false });
+            Assert.Null(cache.GetCurrentStatistics());
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public void GetCurrentStatistics_GetCache_UpdatesStatistics(bool sizeLimitIsSet)
         {
             var cache = sizeLimitIsSet ? 
-                new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 }) :
-                new MemoryCache(new MemoryCacheOptions { });
+                new MemoryCache(new MemoryCacheOptions { TrackStatistics = true, SizeLimit = 10 }) :
+                new MemoryCache(new MemoryCacheOptions { TrackStatistics = true });
 
             cache.Set("key", "value", new MemoryCacheEntryOptions { Size = 2 });
             for (int i = 0; i < 100; i++)
@@ -44,8 +51,8 @@ namespace Microsoft.Extensions.Caching.Memory
         public void GetCurrentStatistics_UpdateExistingCache_UpdatesStatistics(bool sizeLimitIsSet)
         {
             var cache = sizeLimitIsSet ? 
-                new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 }) :
-                new MemoryCache(new MemoryCacheOptions { });
+                new MemoryCache(new MemoryCacheOptions { TrackStatistics = true, SizeLimit = 10 }) :
+                new MemoryCache(new MemoryCacheOptions { TrackStatistics = true });
 
             cache.Set("key", "value", new MemoryCacheEntryOptions { Size = 2 });
             Assert.Equal("value", cache.Get("key"));
@@ -53,7 +60,7 @@ namespace Microsoft.Extensions.Caching.Memory
             cache.Set("key", "updated value", new MemoryCacheEntryOptions { Size = 3 });
             Assert.Equal("updated value", cache.Get("key"));
 
-            MemoryCacheStatistics stats = cache.GetCurrentStatistics();
+            MemoryCacheStatistics stats = cache.GetCurrentStatistics();//
 
             Assert.Equal(1, stats.CurrentEntryCount);
             Assert.Equal(0, stats.TotalMisses);
@@ -69,8 +76,8 @@ namespace Microsoft.Extensions.Caching.Memory
             const string Key = "myKey";
 
             var cache = new MemoryCache(sizeLimitIsSet ?
-                new MemoryCacheOptions { Clock = new SystemClock(), SizeLimit = 10 } :
-                new MemoryCacheOptions { Clock = new SystemClock() }
+                new MemoryCacheOptions { TrackStatistics = true, Clock = new SystemClock(), SizeLimit = 10 } :
+                new MemoryCacheOptions { TrackStatistics = true, Clock = new SystemClock() }
             );
 
             ICacheEntry entry;

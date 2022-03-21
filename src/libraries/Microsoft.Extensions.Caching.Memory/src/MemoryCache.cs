@@ -53,8 +53,13 @@ namespace Microsoft.Extensions.Caching.Memory
                 _options.Clock = new SystemClock();
             }
 
-            _accumulatedStats = new Stats(this, skipAdd: true);
-            _stats = new ThreadLocal<Stats>(() => new Stats(this));
+            if (_options.TrackStatistics)
+            {
+                _allStats = new();
+                _accumulatedStats = new Stats(this, skipAdd: true);
+                _stats = new ThreadLocal<Stats>(() => new Stats(this));
+            }
+
             _lastExpirationScan = _options.Clock.UtcNow;
             TrackLinkedCacheEntries = _options.TrackLinkedCacheEntries; // we store the setting now so it's consistent for entire MemoryCache lifetime
         }
@@ -221,7 +226,6 @@ namespace Microsoft.Extensions.Caching.Memory
                     }
 
                     StartScanForExpiredItemsIfNeeded(utcNow);
-
                     Hit();
                     return true;
                 }
@@ -236,6 +240,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             result = null;
             Miss();
+
             return false;
         }
 
@@ -277,16 +282,21 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// Gets a snapshot of the current statistics for the memory cache.
         /// </summary>
-        public MemoryCacheStatistics GetCurrentStatistics()
+        public MemoryCacheStatistics? GetCurrentStatistics()
         {
-            (long hit, long miss) sumTotal = Sum();
-            return new MemoryCacheStatistics()
+            if (_options.TrackStatistics)
             {
-                TotalMisses = sumTotal.miss,
-                TotalHits = sumTotal.hit,
-                CurrentEntryCount = Count,
-                CurrentEstimatedSize = _options.SizeLimit.HasValue ? Size : null
-            };
+                (long hit, long miss) sumTotal = Sum();
+                return new MemoryCacheStatistics()
+                {
+                    TotalMisses = sumTotal.miss,
+                    TotalHits = sumTotal.hit,
+                    CurrentEntryCount = Count,
+                    CurrentEstimatedSize = _options.SizeLimit.HasValue ? Size : null
+                };
+            }
+
+            return null;
         }
 
         internal void EntryExpired(CacheEntry entry)
@@ -314,17 +324,18 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        internal readonly List<WeakReference<Stats>?> _allStats = new();
-        internal readonly Stats _accumulatedStats;
+        private readonly List<WeakReference<Stats>?>? _allStats;
+        private readonly Stats? _accumulatedStats;
+        private ThreadLocal<Stats>? _stats;
 
         private (long, long) Sum()
         {
             long hits = 0, misses = 0;
-            lock (_allStats)
+            lock (_allStats!)
             {
-                hits += _accumulatedStats.Hits;
-                misses += _accumulatedStats.Misses;
-                foreach (WeakReference<Stats>? wr in _allStats)
+                hits += _accumulatedStats!.Hits;
+                misses += _accumulatedStats!.Misses;
+                foreach (WeakReference<Stats>? wr in _allStats!)
                 {
                     if (wr is not null && wr.TryGetTarget(out Stats? stats))
                     {
@@ -336,22 +347,26 @@ namespace Microsoft.Extensions.Caching.Memory
             return (hits, misses);
         }
 
-        private ThreadLocal<Stats> _stats;
-
         private void Hit()
         {
-            if (IntPtr.Size == 4)
-                Interlocked.Increment(ref GetStats().Hits);
-            else
-                GetStats().Hits++;
+            if (_options.TrackStatistics)
+            {
+                if (IntPtr.Size == 4)
+                    Interlocked.Increment(ref GetStats().Hits);
+                else
+                    GetStats().Hits++;
+            }
         }
 
         private void Miss()
         {
-            if (IntPtr.Size == 4)
-                Interlocked.Increment(ref GetStats().Misses);
-            else
-                GetStats().Misses++;
+            if (_options.TrackStatistics)
+            {
+                if (IntPtr.Size == 4)
+                    Interlocked.Increment(ref GetStats().Misses);
+                else
+                    GetStats().Misses++;
+            }
         }
 
         private Stats GetStats() => _stats!.Value!;
@@ -375,25 +390,25 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private void RemoveFromStats(Stats current)
         {
-            lock (_allStats)
+            lock (_allStats!)
             {
-                for (int i = 0; i < _allStats.Count; i++)
+                for (int i = 0; i < _allStats!.Count; i++)
                 {
-                    if (_allStats[i] is WeakReference<Stats> wr && wr.TryGetTarget(out Stats? stats) && stats == current)
+                    if (_allStats![i] is WeakReference<Stats> wr && wr.TryGetTarget(out Stats? stats) && stats == current)
                     {
-                        _allStats.RemoveAt(i);
+                        _allStats!.RemoveAt(i);
                         break;
                     }
                 }
 
-                _accumulatedStats.Hits += Interlocked.Read(ref current.Hits);
-                _accumulatedStats.Misses += Interlocked.Read(ref current.Misses);
+                _accumulatedStats!.Hits += Interlocked.Read(ref current.Hits);
+                _accumulatedStats!.Misses += Interlocked.Read(ref current.Misses);
             }
         }
 
         private void AddToStats(Stats current)
         {
-            _allStats.Add(new WeakReference<Stats>(current));
+            _allStats!.Add(new WeakReference<Stats>(current));
         }
 
         private static void ScanForExpiredItems(MemoryCache cache)
@@ -570,7 +585,7 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 if (disposing)
                 {
-                    _stats.Dispose();
+                    _stats?.Dispose();
                     GC.SuppressFinalize(this);
                 }
 
