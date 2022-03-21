@@ -3029,6 +3029,76 @@ class Tests
 
 		return 0;
 	}
+
+    struct AStruct {
+        public int i1, i2, i3, i4;
+    }
+
+    // Running finally clauses with the interpreter in llvmonly-interp mode
+    public static int test_0_finally_deopt () {
+        int arg_i = 2;
+        var o = new ExceptionTests ();
+        try {
+            o.finally_deopt (1, 0, ref arg_i, new AStruct () { i1 = 1, i2 = 2, i3 = 3, i4 = 4 });
+        } catch (Exception) {
+        }
+        return finally_deopt_res;
+    }
+
+    static int dummy_static = 5;
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+    static void throw_inner () {
+        // Avoid warnings/errors
+        if (dummy_static == 5)
+            throw new Exception ();
+        // Run with the interpreter
+        try {
+            throw new Exception ();
+        } catch (Exception) {
+        }
+    }
+
+    static int finally_deopt_res;
+
+    void finally_deopt (int arg_i, int unused_arg_i, ref int ref_arg_i, AStruct s) {
+        int i = 3;
+
+        try {
+            try {
+                i = 5;
+                throw_inner ();
+            } finally {
+                // Check that arguments/locals are copied correctly to the interpreter
+                object o = this;
+                if (!(o is ExceptionTests))
+                    finally_deopt_res = 1;
+                if (arg_i != 1)
+                    finally_deopt_res = 2;
+                arg_i ++;
+                if (i != 5)
+                    finally_deopt_res = 3;
+                i ++;
+                if (ref_arg_i != 2)
+                    finally_deopt_res = 4;
+                ref_arg_i ++;
+                if (s.i1 != 1 || s.i2 != 2)
+                    finally_deopt_res = 5;
+                s.i1 ++;
+                s.i2 ++;
+            }
+        } finally {
+            // Check that arguments/locals were copied back after the first call to the interpreter
+            if (arg_i != 2)
+                finally_deopt_res = 10;
+            if (ref_arg_i != 3)
+                finally_deopt_res = 11;
+            if (i != 6)
+                finally_deopt_res = 12;
+            if (s.i1 != 2 || s.i2 != 3)
+                finally_deopt_res = 13;
+        }
+    }
 }
 
 #if !__MOBILE__

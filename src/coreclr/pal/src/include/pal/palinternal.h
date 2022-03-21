@@ -221,6 +221,7 @@ function_name() to call the system's implementation
 #define sqrt DUMMY_sqrt
 #define tan DUMMY_tan
 #define tanh DUMMY_tanh
+#define trunc DUMMY_trunc
 #define ceilf DUMMY_ceilf
 #define cosf DUMMY_cosf
 #define coshf DUMMY_coshf
@@ -233,6 +234,7 @@ function_name() to call the system's implementation
 #define sqrtf DUMMY_sqrtf
 #define tanf DUMMY_tanf
 #define tanhf DUMMY_tanhf
+#define truncf DUMMY_truncf
 
 /* RAND_MAX needed to be renamed to avoid duplicate definition when including
    stdlib.h header files. PAL_RAND_MAX should have the same value as RAND_MAX
@@ -464,6 +466,7 @@ function_name() to call the system's implementation
 #undef sqrt
 #undef tan
 #undef tanh
+#undef trunc
 #undef acosf
 #undef acoshf
 #undef asinf
@@ -492,6 +495,7 @@ function_name() to call the system's implementation
 #undef sqrtf
 #undef tanf
 #undef tanhf
+#undef truncf
 #undef rand
 #undef srand
 #undef errno
@@ -526,8 +530,6 @@ function_name() to call the system's implementation
 #undef wcsstr
 #undef wcscmp
 #undef wcsncpy
-#undef wcstok
-#undef wcscspn
 #undef iswupper
 #undef iswspace
 #undef towlower
@@ -616,8 +618,6 @@ function_name() to call the system's implementation
 
 #undef assert
 #define assert (Use__ASSERTE_instead_of_assert) assert
-
-#define string_countof(a) (sizeof(a) / sizeof(a[0]) - 1)
 
 #ifndef __ANDROID__
 #define TEMP_DIRECTORY_PATH "/tmp/"

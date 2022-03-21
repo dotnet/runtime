@@ -24,7 +24,6 @@
 #include "runtimehandles.h"
 #include "argdestination.h"
 
-#ifndef CROSSGEN_COMPILE
 
 // The Attributes Table
 //  20 bits for built in types and 12 bits for Properties
@@ -540,32 +539,6 @@ void* InvokeUtil::CreateByRef(TypeHandle dstTh,
         return pIncomingObj;
 }
 
-// GetBoxedObject
-// Given an address of a primitve type, this will box that data...
-// <TODO>@TODO: We need to handle all value classes?</TODO>
-OBJECTREF InvokeUtil::GetBoxedObject(TypeHandle th, void* pData) {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(!th.IsNull());
-        PRECONDITION(CheckPointer(pData));
-
-        INJECT_FAULT(COMPlusThrowOM());
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMethTable = th.GetMethodTable();
-    PREFIX_ASSUME(pMethTable != NULL);
-    // Save off the data.  We are going to create and object
-    //  which may cause GC to occur.
-    int size = pMethTable->GetNumInstanceFieldBytes();
-    void *p = _alloca(size);
-    memcpy(p, pData, size);
-    OBJECTREF retO = pMethTable->Box(p);
-    return retO;
-}
-
 //ValidField
 // This method checks that the object can be widened to the proper type
 void InvokeUtil::ValidField(TypeHandle th, OBJECTREF* value)
@@ -822,60 +795,6 @@ OBJECTREF InvokeUtil::CreateTargetExcept(OBJECTREF* except) {
 
     GCPROTECT_END();
     RETURN oRet;
-}
-
-// ChangeType
-// This method will invoke the Binder change type method on the object
-//  binder -- The Binder object
-//  srcObj -- The source object to be changed
-//  th -- The TypeHandel of the target type
-//  locale -- The locale passed to the class.
-OBJECTREF InvokeUtil::ChangeType(OBJECTREF binder, OBJECTREF srcObj, TypeHandle th, OBJECTREF locale) {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(binder != NULL);
-        PRECONDITION(srcObj != NULL);
-
-        INJECT_FAULT(COMPlusThrowOM());
-    }
-    CONTRACTL_END;
-
-    OBJECTREF typeClass = NULL;
-    OBJECTREF o;
-
-    struct _gc {
-        OBJECTREF binder;
-        OBJECTREF srcObj;
-        OBJECTREF locale;
-        OBJECTREF typeClass;
-    } gc;
-
-    gc.binder = binder;
-    gc.srcObj = srcObj;
-    gc.locale = locale;
-    gc.typeClass = NULL;
-
-    GCPROTECT_BEGIN(gc);
-
-    MethodDescCallSite changeType(METHOD__BINDER__CHANGE_TYPE, &gc.binder);
-
-    // Now call this method on this object.
-    typeClass = th.GetManagedClassObject();
-
-    ARG_SLOT pNewArgs[] = {
-            ObjToArgSlot(gc.binder),
-            ObjToArgSlot(gc.srcObj),
-            ObjToArgSlot(gc.typeClass),
-            ObjToArgSlot(gc.locale),
-    };
-
-    o = changeType.Call_RetOBJECTREF(pNewArgs);
-
-    GCPROTECT_END();
-
-    return o;
 }
 
 // Ensure that the field is declared on the type or subtype of the type to which the typed reference refers.
@@ -1319,4 +1238,3 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
 }
 
 
-#endif // CROSSGEN_COMPILE

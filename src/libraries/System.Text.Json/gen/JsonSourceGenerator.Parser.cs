@@ -843,13 +843,13 @@ namespace System.Text.Json.SourceGeneration
                         collectionType = CollectionType.QueueOfT;
                         valueType = actualTypeToConvert.GetGenericArguments()[0];
                     }
-                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseClass(_concurrentStackType, _objectType, sourceGenType: true)) != null)
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseClass(_concurrentStackType, sourceGenType: true)) != null)
                     {
                         classType = ClassType.Enumerable;
                         collectionType = CollectionType.ConcurrentStack;
                         valueType = actualTypeToConvert.GetGenericArguments()[0];
                     }
-                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseClass(_concurrentQueueType, _objectType, sourceGenType: true)) != null)
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseClass(_concurrentQueueType, sourceGenType: true)) != null)
                     {
                         classType = ClassType.Enumerable;
                         collectionType = CollectionType.ConcurrentQueue;
@@ -1103,7 +1103,7 @@ namespace System.Text.Json.SourceGeneration
             }
 
             private Type GetCompatibleGenericBaseClass(Type type, Type baseType)
-                => type.GetCompatibleGenericBaseClass(baseType, _objectType);
+                => type.GetCompatibleGenericBaseClass(baseType);
 
             private void CacheMember(
                 PropertyGenerationSpec propGenSpec,

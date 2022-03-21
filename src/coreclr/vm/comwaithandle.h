@@ -19,10 +19,10 @@ class WaitHandleNative
 {
 public:
     static FCDECL2(INT32, CorWaitOneNative, HANDLE handle, INT32 timeout);
-#ifdef TARGET_UNIX
-    static INT32 QCALLTYPE CorWaitOnePrioritizedNative(HANDLE handle, INT32 timeoutMs);
-#endif
     static FCDECL4(INT32, CorWaitMultipleNative, HANDLE *handleArray, INT32 numHandles, CLR_BOOL waitForAll, INT32 timeout);
     static FCDECL3(INT32, CorSignalAndWaitOneNative, HANDLE waitHandleSignalUNSAFE, HANDLE waitHandleWaitUNSAFE, INT32 timeout);
 };
+#ifdef TARGET_UNIX
+extern "C" INT32 QCALLTYPE WaitHandle_CorWaitOnePrioritizedNative(HANDLE handle, INT32 timeoutMs);
+#endif
 #endif

@@ -1572,5 +1572,5 @@ END:
 }
 
 
-.assembly ldc_add_ovf_u1.exe{}
+.assembly ldc_add_ovf_u1{}
 

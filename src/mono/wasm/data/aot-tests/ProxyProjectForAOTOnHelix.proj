@@ -1,13 +1,14 @@
 <Project DefaultTargets="BundleTestWasmApp">
   <Import Project="Directory.Build.props" />
   <PropertyGroup>
-    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' != ''">$(HELIX_WORKITEM_ROOT)\wasm_build\</TestRootDir>
-    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' == ''">$(MSBuildThisFileDirectory)..\wasm_build\</TestRootDir>
+    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' != ''">$([MSBuild]::NormalizeDirectory($(HELIX_WORKITEM_ROOT), 'wasm_build'))</TestRootDir>
+    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', 'wasm_build'))</TestRootDir>
 
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
     <RunAOTCompilationAfterBuild>true</RunAOTCompilationAfterBuild>
-    <OriginalPublishDir>$(TestRootDir)..\publish\</OriginalPublishDir>
-    <ExtraFilesPath>$(OriginalPublishDir)..\extraFiles\</ExtraFilesPath>
+    <OriginalPublishDir>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'publish'))</OriginalPublishDir>
+    <VFSFilesPath>$([MSBuild]::NormalizeDirectory($(OriginalPublishDir), '..', 'vfsFiles'))</VFSFilesPath>
+    <ExtraFilesPath>$([MSBuild]::NormalizeDirectory($(OriginalPublishDir), '..', 'extraFiles'))</ExtraFilesPath>
     <IntermediateOutputPath>$(TestRootDir)\obj\</IntermediateOutputPath>
 
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
@@ -29,15 +30,18 @@
     <PropertyGroup>
       <WasmAppDir>$(TestRootDir)AppBundle\</WasmAppDir>
       <WasmMainAssemblyFileName>$(OriginalPublishDir)WasmTestRunner.dll</WasmMainAssemblyFileName>
-      <WasmMainJSPath>$(OriginalPublishDir)runtime-test.js</WasmMainJSPath>
+      <WasmMainJSPath>$(OriginalPublishDir)test-main.js</WasmMainJSPath>
       <WasmGenerateRunV8Script Condition="'$(WasmGenerateRunV8Script)' == ''">true</WasmGenerateRunV8Script>
     </PropertyGroup>
 
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(OriginalPublishDir)**\*.dll" />
 
+      <_VFSFiles Include="$(VFSFilesPath)**\*" />
+      <WasmFilesToIncludeInFileSystem Include="@(_VFSFiles)" TargetPath="%(RecursiveDir)%(FileName)%(Extension)" />
+
       <_ExtraFiles Include="$(ExtraFilesPath)**\*" />
-      <WasmFilesToIncludeInFileSystem Include="@(_ExtraFiles)" TargetPath="%(RecursiveDir)%(FileName)%(Extension)" />
+      <WasmExtraFilesToDeploy Include="@(_ExtraFiles)" TargetPath="%(RecursiveDir)%(FileName)%(Extension)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true'">

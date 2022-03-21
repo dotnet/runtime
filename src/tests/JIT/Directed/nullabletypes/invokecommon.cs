@@ -23,7 +23,7 @@ public sealed class TestException : Exception
     }
 }
 
-public static class Test
+public static class Test_nullabletypes
 {
     public static int counter = 0;
 

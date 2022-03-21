@@ -35,7 +35,7 @@ namespace System.Data.Common
         }
 
         // to support oracle types and other INUllable types that have static Null as field
-        internal static object GetStaticNullForUdtType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type) => s_typeToNull.GetOrAdd(type, t => GetStaticNullForUdtTypeCore(type));
+        internal static object GetStaticNullForUdtType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type) => s_typeToNull.GetOrAdd(type, t => GetStaticNullForUdtTypeCore(t));
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "The only callsite is marked with DynamicallyAccessedMembers. Workaround for https://github.com/mono/linker/issues/1981")]

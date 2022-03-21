@@ -154,25 +154,19 @@ ASMCONSTANTS_C_ASSERT(UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedTo
 #endif // FEATURE_COMINTEROP
 
 #define               Thread__m_fPreemptiveGCDisabled   0x08
-#ifndef CROSSGEN_COMPILE
 ASMCONSTANTS_C_ASSERT(Thread__m_fPreemptiveGCDisabled == offsetof(Thread, m_fPreemptiveGCDisabled));
-#endif // CROSSGEN_COMPILE
 #define Thread_m_fPreemptiveGCDisabled Thread__m_fPreemptiveGCDisabled
 
 #define               Thread__m_pFrame                  0x0C
-#ifndef CROSSGEN_COMPILE
 ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
-#endif // CROSSGEN_COMPILE
 #define Thread_m_pFrame Thread__m_pFrame
 
-#ifndef CROSSGEN_COMPILE
 #define               DomainLocalModule__m_pDataBlob                 0x18
 ASMCONSTANTS_C_ASSERT(DomainLocalModule__m_pDataBlob == offsetof(DomainLocalModule, m_pDataBlob));
 
 #define               DomainLocalModule__m_pGCStatics                 0x10
 ASMCONSTANTS_C_ASSERT(DomainLocalModule__m_pGCStatics == offsetof(DomainLocalModule, m_pGCStatics));
 
-#endif
 
 #define ASM__VTABLE_SLOTS_PER_CHUNK 8
 ASMCONSTANTS_C_ASSERT(ASM__VTABLE_SLOTS_PER_CHUNK == VTABLE_SLOTS_PER_CHUNK)
@@ -228,6 +222,30 @@ ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pThread == offsetof(InlinedCallFrame, 
 
 #define               InlinedCallFrame__m_pSPAfterProlog 0x1C
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pSPAfterProlog == offsetof(InlinedCallFrame, m_pSPAfterProlog))
+
+#define FixupPrecodeData__Target 0x00
+ASMCONSTANTS_C_ASSERT(FixupPrecodeData__Target == offsetof(FixupPrecodeData, Target))
+
+#define FixupPrecodeData__MethodDesc 0x04
+ASMCONSTANTS_C_ASSERT(FixupPrecodeData__MethodDesc == offsetof(FixupPrecodeData, MethodDesc))
+
+#define FixupPrecodeData__PrecodeFixupThunk 0x08
+ASMCONSTANTS_C_ASSERT(FixupPrecodeData__PrecodeFixupThunk == offsetof(FixupPrecodeData, PrecodeFixupThunk))
+
+#define StubPrecodeData__MethodDesc 0x00
+ASMCONSTANTS_C_ASSERT(StubPrecodeData__MethodDesc == offsetof(StubPrecodeData, MethodDesc))
+
+#define StubPrecodeData__Target 0x04
+ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target == offsetof(StubPrecodeData, Target))
+
+#define CallCountingStubData__RemainingCallCountCell 0x00
+ASMCONSTANTS_C_ASSERT(CallCountingStubData__RemainingCallCountCell == offsetof(CallCountingStubData, RemainingCallCountCell))
+
+#define CallCountingStubData__TargetForMethod 0x04
+ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForMethod == offsetof(CallCountingStubData, TargetForMethod))
+
+#define CallCountingStubData__TargetForThresholdReached 0x08
+ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offsetof(CallCountingStubData, TargetForThresholdReached))
 
 #undef ASMCONSTANTS_RUNTIME_ASSERT
 #undef ASMCONSTANTS_C_ASSERT

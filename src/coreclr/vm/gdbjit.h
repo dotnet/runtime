@@ -387,7 +387,7 @@ public:
         static count_t Hash(key_t k)
         {
             LIMITED_METHOD_CONTRACT;
-            return k->ComputeHash();
+            return HashTypeKey(k);
         }
 
         static const element_t Null() { LIMITED_METHOD_CONTRACT; return element_t(key_t(),VALUE()); }

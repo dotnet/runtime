@@ -21,7 +21,7 @@
 #include "arraylist.h"
 #include "comreflectioncache.hpp"
 #include "comutilnative.h"
-#include "domainfile.h"
+#include "domainassembly.h"
 #include "fptrstubs.h"
 #include "gcheaputilities.h"
 #include "gchandleutilities.h"
@@ -38,7 +38,6 @@
 class BaseDomain;
 class SystemDomain;
 class AppDomain;
-class CompilationDomain;
 class GlobalStringLiteralMap;
 class StringLiteralMap;
 class MngStdInterfacesInfo;
@@ -202,18 +201,18 @@ struct DomainLocalModule
     static SIZE_T GetOffsetOfDataBlob() { return offsetof(DomainLocalModule, m_pDataBlob); }
     static SIZE_T GetOffsetOfGCStaticPointer() { return offsetof(DomainLocalModule, m_pGCStatics); }
 
-    inline DomainFile* GetDomainFile()
+    inline DomainAssembly* GetDomainAssembly()
     {
         LIMITED_METHOD_CONTRACT
         SUPPORTS_DAC;
-        return m_pDomainFile;
+        return m_pDomainAssembly;
     }
 
 #ifndef DACCESS_COMPILE
-    inline void        SetDomainFile(DomainFile* pDomainFile)
+    inline void        SetDomainAssembly(DomainAssembly* pDomainAssembly)
     {
         LIMITED_METHOD_CONTRACT
-        m_pDomainFile = pDomainFile;
+        m_pDomainAssembly = pDomainAssembly;
     }
 #endif
 
@@ -237,7 +236,7 @@ struct DomainLocalModule
 
         if (pMT->IsDynamicStatics())
         {
-            _ASSERTE(GetDomainFile()->GetModule() == pMT->GetModuleForStatics());
+            _ASSERTE(GetDomainAssembly()->GetModule() == pMT->GetModuleForStatics());
             return GetDynamicEntryGCStaticsBasePointer(pMT->GetModuleDynamicEntryID(), pMT->GetLoaderAllocator());
         }
         else
@@ -253,7 +252,7 @@ struct DomainLocalModule
 
         if (pMT->IsDynamicStatics())
         {
-            _ASSERTE(GetDomainFile()->GetModule() == pMT->GetModuleForStatics());
+            _ASSERTE(GetDomainAssembly()->GetModule() == pMT->GetModuleForStatics());
             return GetDynamicEntryNonGCStaticsBasePointer(pMT->GetModuleDynamicEntryID(), pMT->GetLoaderAllocator());
         }
         else
@@ -404,7 +403,7 @@ struct DomainLocalModule
     FORCEINLINE MethodTable * GetMethodTableFromClassDomainID(DWORD dwClassDomainID)
     {
         DWORD rid = (DWORD)(dwClassDomainID) + 1;
-        TypeHandle th = GetDomainFile()->GetModule()->LookupTypeDef(TokenFromRid(rid, mdtTypeDef));
+        TypeHandle th = GetDomainAssembly()->GetModule()->LookupTypeDef(TokenFromRid(rid, mdtTypeDef));
         _ASSERTE(!th.IsNull());
         MethodTable * pMT = th.AsMethodTable();
         PREFIX_ASSUME(pMT != NULL);
@@ -417,7 +416,7 @@ private:
     void SetClassFlags(MethodTable* pMT, DWORD dwFlags);
     DWORD GetClassFlags(MethodTable* pMT, DWORD iClassIndex);
 
-    PTR_DomainFile           m_pDomainFile;
+    PTR_DomainAssembly           m_pDomainAssembly;
     VolatilePtr<DynamicClassInfo, PTR_DynamicClassInfo> m_pDynamicClassTable;   // used for generics and reflection.emit in memory
     Volatile<SIZE_T>         m_aDynamicEntries;      // number of entries in dynamic table
     VolatilePtr<UMEntryThunk> m_pADThunkTable;
@@ -701,7 +700,7 @@ class PEFileListLock : public ListLock
 {
 public:
 #ifndef DACCESS_COMPILE
-    ListLockEntry *FindFileLock(PEFile *pFile)
+    ListLockEntry *FindFileLock(PEAssembly *pPEAssembly)
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_GC_NOTRIGGER;
@@ -715,7 +714,7 @@ public:
              pEntry != NULL;
              pEntry = pEntry->m_pNext)
         {
-            if (((PEFile *)pEntry->m_data)->Equals(pFile))
+            if (((PEAssembly *)pEntry->m_data)->Equals(pPEAssembly))
             {
                 return pEntry;
             }
@@ -748,7 +747,7 @@ typedef PEFileListLock::Holder PEFileListLockHolder;
 
 // Loading infrastructure:
 //
-// a DomainFile is a file being loaded.  Files are loaded in layers to enable loading in the
+// a DomainAssembly is a file being loaded.  Files are loaded in layers to enable loading in the
 // presence of dependency loops.
 //
 // FileLoadLevel describes the various levels available.  These are implemented slightly
@@ -774,14 +773,14 @@ class FileLoadLock : public ListLockEntry
 {
 private:
     FileLoadLevel           m_level;
-    DomainFile              *m_pDomainFile;
+    DomainAssembly          *m_pDomainAssembly;
     HRESULT                 m_cachedHR;
 
 public:
-    static FileLoadLock *Create(PEFileListLock *pLock, PEFile *pFile, DomainFile *pDomainFile);
+    static FileLoadLock *Create(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainAssembly *pDomainAssembly);
 
     ~FileLoadLock();
-    DomainFile *GetDomainFile();
+    DomainAssembly *GetDomainAssembly();
     FileLoadLevel GetLoadLevel();
 
     // CanAcquire will return FALSE if Acquire will definitely not take the lock due
@@ -808,7 +807,7 @@ public:
 
 private:
 
-    FileLoadLock(PEFileListLock *pLock, PEFile *pFile, DomainFile *pDomainFile);
+    FileLoadLock(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainAssembly *pDomainAssembly);
 
     static void HolderLeave(FileLoadLock *pThis);
 
@@ -998,16 +997,10 @@ public:
     // will be properly serialized)
     OBJECTREF *AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF** ppLazyAllocate = NULL);
 
-#ifdef FEATURE_PREJIT
-    // Ensures that the file for logging profile data is open (we only open it once)
-    // return false on failure
-    static BOOL EnsureNGenLogFileOpen();
-#endif
-
     //****************************************************************************************
     // Handles
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     IGCHandleStore* GetHandleStore()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1101,9 +1094,9 @@ public:
         return ::CreateDependentHandle(m_handleStore, primary, secondary);
     }
 
-#endif // DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // DACCESS_COMPILE
 
-    CLRPrivBinderCoreCLR *GetTPABinderContext() {LIMITED_METHOD_CONTRACT;  return m_pTPABinderContext; }
+    DefaultAssemblyBinder *GetDefaultBinder() {LIMITED_METHOD_CONTRACT;  return m_pDefaultBinder; }
 
     CrstExplicitInit * GetLoaderAllocatorReferencesLock()
     {
@@ -1134,7 +1127,7 @@ protected:
     ListLock         m_ILStubGenLock;
     ListLock         m_NativeTypeLoadLock;
 
-    CLRPrivBinderCoreCLR *m_pTPABinderContext; // Reference to the binding context that holds TPA list details
+    DefaultAssemblyBinder *m_pDefaultBinder; // Reference to the binding context that holds TPA list details
 
     IGCHandleStore* m_handleStore;
 
@@ -1314,7 +1307,7 @@ enum AssemblyIterationFlags
                                         // (all m_level values)
     kIncludeAvailableToProfilers
                           = 0x00000020, // include assemblies available to profilers
-                                        // See comment at code:DomainFile::IsAvailableToProfilers
+                                        // See comment at code:DomainAssembly::IsAvailableToProfilers
 
     // Execution / introspection flags
     kIncludeExecution     = 0x00000004, // include assemblies that are loaded for execution only
@@ -1770,36 +1763,6 @@ public:
         return AssemblyIterator::Create(this, assemblyIterationFlags);
     }
 
-private:
-    struct NativeImageDependenciesEntry
-    {
-        BaseAssemblySpec m_AssemblySpec;
-        GUID m_guidMVID;
-    };
-
-    class NativeImageDependenciesTraits : public DeleteElementsOnDestructSHashTraits<DefaultSHashTraits<NativeImageDependenciesEntry *> >
-    {
-    public:
-        typedef BaseAssemblySpec *key_t;
-        static key_t GetKey(NativeImageDependenciesEntry * e) { return &(e->m_AssemblySpec); }
-
-        static count_t Hash(key_t k)
-        {
-            return k->Hash();
-        }
-
-        static BOOL Equals(key_t lhs, key_t rhs)
-        {
-            return lhs->CompareEx(rhs);
-        }
-    };
-
-    SHash<NativeImageDependenciesTraits> m_NativeImageDependencies;
-
-public:
-    void CheckForMismatchedNativeImages(AssemblySpec * pSpec, const GUID * pGuid);
-    BOOL RemoveNativeImageDependency(AssemblySpec* pSpec);
-
 public:
     class PathIterator
     {
@@ -1834,13 +1797,12 @@ public:
 
     CHECK CheckCanLoadTypes(Assembly *pAssembly);
     CHECK CheckCanExecuteManagedCode(MethodDesc* pMD);
-    CHECK CheckLoading(DomainFile *pFile, FileLoadLevel level);
+    CHECK CheckLoading(DomainAssembly *pFile, FileLoadLevel level);
 
-    FileLoadLevel GetDomainFileLoadLevel(DomainFile *pFile);
-    BOOL IsLoading(DomainFile *pFile, FileLoadLevel level);
+    BOOL IsLoading(DomainAssembly *pFile, FileLoadLevel level);
     static FileLoadLevel GetThreadFileLoadLevel();
 
-    void LoadDomainFile(DomainFile *pFile,
+    void LoadDomainAssembly(DomainAssembly *pFile,
                         FileLoadLevel targetLevel);
 
     enum FindAssemblyOptions
@@ -1849,11 +1811,11 @@ public:
         FindAssemblyOptions_IncludeFailedToLoad     = 0x1
     };
 
-    DomainAssembly * FindAssembly(PEAssembly * pFile, FindAssemblyOptions options = FindAssemblyOptions_None) DAC_EMPTY_RET(NULL);
+    DomainAssembly * FindAssembly(PEAssembly* pPEAssembly, FindAssemblyOptions options = FindAssemblyOptions_None) DAC_EMPTY_RET(NULL);
 
 
     Assembly *LoadAssembly(AssemblySpec* pIdentity,
-                           PEAssembly *pFile,
+                           PEAssembly *pPEAssembly,
                            FileLoadLevel targetLevel);
 
     // this function does not provide caching, you must use LoadDomainAssembly
@@ -1863,11 +1825,11 @@ public:
     // resulting in multiple DomainAssembly objects that share the same PEAssembly for ngen image
     //which is violating our internal assumptions
     DomainAssembly *LoadDomainAssemblyInternal( AssemblySpec* pIdentity,
-                                                PEAssembly *pFile,
+                                                PEAssembly *pPEAssembly,
                                                 FileLoadLevel targetLevel);
 
     DomainAssembly *LoadDomainAssembly( AssemblySpec* pIdentity,
-                                        PEAssembly *pFile,
+                                        PEAssembly *pPEAssembly,
                                         FileLoadLevel targetLevel);
 
 
@@ -1876,10 +1838,10 @@ public:
     // private:
     void LoadSystemAssemblies();
 
-    DomainFile *LoadDomainFile(FileLoadLock *pLock,
+    DomainAssembly *LoadDomainAssembly(FileLoadLock *pLock,
                                FileLoadLevel targetLevel);
 
-    void TryIncrementalLoad(DomainFile *pFile, FileLoadLevel workLevel, FileLoadLockHolder &lockHolder);
+    void TryIncrementalLoad(DomainAssembly *pFile, FileLoadLevel workLevel, FileLoadLockHolder &lockHolder);
 
 #ifndef DACCESS_COMPILE // needs AssemblySpec
 
@@ -1896,8 +1858,8 @@ public:
     BOOL IsCached(AssemblySpec *pSpec);
 #endif // DACCESS_COMPILE
 
-    BOOL AddFileToCache(AssemblySpec* pSpec, PEAssembly *pFile, BOOL fAllowFailure = FALSE);
-    BOOL RemoveFileFromCache(PEAssembly *pFile);
+    BOOL AddFileToCache(AssemblySpec* pSpec, PEAssembly *pPEAssembly, BOOL fAllowFailure = FALSE);
+    BOOL RemoveFileFromCache(PEAssembly *pPEAssembly);
 
     BOOL AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembly);
     BOOL RemoveAssemblyFromCache(DomainAssembly* pAssembly);
@@ -2011,7 +1973,7 @@ public:
         return m_tpIndex;
     }
 
-    CLRPrivBinderCoreCLR *CreateBinderContext();
+    DefaultAssemblyBinder *CreateDefaultBinder();
 
     void SetIgnoreUnhandledExceptions()
     {
@@ -2025,23 +1987,6 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         return (m_dwFlags & IGNORE_UNHANDLED_EXCEPTIONS);
-    }
-
-    void SetCompilationDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_dwFlags |= COMPILATION_DOMAIN;
-    }
-
-    BOOL IsCompilationDomain();
-
-    PTR_CompilationDomain ToCompilationDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(IsCompilationDomain());
-        return dac_cast<PTR_CompilationDomain>(this);
     }
 
     static void ExceptionUnwind(Frame *pFrame);
@@ -2339,7 +2284,7 @@ public:
 
     enum {
         CONTEXT_INITIALIZED =               0x0001,
-        COMPILATION_DOMAIN =                0x0400, // Are we ngenning?
+        // unused =                         0x0400,
         IGNORE_UNHANDLED_EXCEPTIONS =      0x10000, // AppDomain was created using the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag
     };
 
@@ -2412,94 +2357,6 @@ public:
 private:
     TieredCompilationManager m_tieredCompilationManager;
 
-#endif
-
-private:
-    //-----------------------------------------------------------
-    // Static ICLRPrivAssembly -> DomainAssembly mapping functions.
-    // This map does not maintain a reference count to either key or value.
-    // PEFile maintains a reference count on the ICLRPrivAssembly through its code:PEFile::m_pHostAssembly field.
-    // It is removed from this hash table by code:DomainAssembly::~DomainAssembly.
-    struct HostAssemblyHashTraits : public DefaultSHashTraits<PTR_DomainAssembly>
-    {
-    public:
-        typedef PTR_ICLRPrivAssembly key_t;
-
-        static key_t GetKey(element_t const & elem)
-        {
-            STATIC_CONTRACT_WRAPPER;
-            return elem->GetFile()->GetHostAssembly();
-        }
-
-        static BOOL Equals(key_t key1, key_t key2)
-        {
-            LIMITED_METHOD_CONTRACT;
-            return dac_cast<TADDR>(key1) == dac_cast<TADDR>(key2);
-        }
-
-        static count_t Hash(key_t key)
-        {
-            STATIC_CONTRACT_LIMITED_METHOD;
-            //return reinterpret_cast<count_t>(dac_cast<TADDR>(key));
-            return (count_t)(dac_cast<TADDR>(key));
-        }
-
-        static element_t Null() { return NULL; }
-        static element_t Deleted() { return (element_t)(TADDR)-1; }
-        static bool IsNull(const element_t & e) { return e == NULL; }
-        static bool IsDeleted(const element_t & e) { return dac_cast<TADDR>(e) == (TADDR)-1; }
-    };
-
-    struct OriginalFileHostAssemblyHashTraits : public HostAssemblyHashTraits
-    {
-    public:
-        static key_t GetKey(element_t const & elem)
-        {
-            STATIC_CONTRACT_WRAPPER;
-            return elem->GetOriginalFile()->GetHostAssembly();
-        }
-    };
-
-    typedef SHash<HostAssemblyHashTraits> HostAssemblyMap;
-    typedef SHash<OriginalFileHostAssemblyHashTraits> OriginalFileHostAssemblyMap;
-    HostAssemblyMap   m_hostAssemblyMap;
-    OriginalFileHostAssemblyMap   m_hostAssemblyMapForOrigFile;
-    CrstExplicitInit  m_crstHostAssemblyMap;
-    // Lock to serialize all Add operations (in addition to the "read-lock" above)
-    CrstExplicitInit  m_crstHostAssemblyMapAdd;
-
-public:
-    // Returns DomainAssembly.
-    PTR_DomainAssembly FindAssembly(PTR_ICLRPrivAssembly pHostAssembly);
-
-#ifndef DACCESS_COMPILE
-private:
-    friend void DomainAssembly::Allocate();
-    friend DomainAssembly::~DomainAssembly();
-
-    // Called from DomainAssembly::Begin.
-    void PublishHostedAssembly(
-        DomainAssembly* pAssembly);
-
-    // Called from DomainAssembly::UpdatePEFile.
-    void UpdatePublishHostedAssembly(
-        DomainAssembly* pAssembly,
-        PTR_PEFile pFile);
-
-    // Called from DomainAssembly::~DomainAssembly
-    void UnPublishHostedAssembly(
-        DomainAssembly* pAssembly);
-#endif // DACCESS_COMPILE
-
-#ifdef FEATURE_PREJIT
-    friend void DomainFile::InsertIntoDomainFileWithNativeImageList();
-    Volatile<DomainFile *> m_pDomainFileWithNativeImageList;
-public:
-    DomainFile *GetDomainFilesWithNativeImagesList()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pDomainFileWithNativeImageList;
-    }
 #endif
 };  // class AppDomain
 
@@ -2576,12 +2433,12 @@ public:
         return m_pSystemDomain;
     }
 
-    static PEAssembly* SystemFile()
+    static PEAssembly* SystemPEAssembly()
     {
         WRAPPER_NO_CONTRACT;
 
         _ASSERTE(m_pSystemDomain);
-        return System()->m_pSystemFile;
+        return System()->m_pSystemPEAssembly;
     }
 
     static Assembly* SystemAssembly()
@@ -2595,7 +2452,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return SystemAssembly()->GetManifestModule();
+        return SystemAssembly()->GetModule();
     }
 
     static BOOL IsSystemLoaded()
@@ -2626,15 +2483,10 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-#if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT)
     static Thread::ApartmentState GetEntryPointThreadAptState(IMDInternalImport* pScope, mdMethodDef mdMethod);
     static void SetThreadAptState(Thread::ApartmentState state);
 #endif
-
-    //****************************************************************************************
-    //
-    // Use an already exising & inited Application Domain (e.g. a subclass).
-    static void LoadDomain(AppDomain     *pDomain);
 
     //****************************************************************************************
     // Methods used to get the callers module and hence assembly and app domain.
@@ -2725,9 +2577,9 @@ public:
         if (path.EqualsCaseInsensitive(m_BaseLibrary))
             return TRUE;
 
-        // Or, it might be the GAC location of CoreLib
+        // Or, it might be the location of CoreLib
         if (System()->SystemAssembly() != NULL
-            && path.EqualsCaseInsensitive(System()->SystemAssembly()->GetManifestFile()->GetPath()))
+            && path.EqualsCaseInsensitive(System()->SystemAssembly()->GetPEAssembly()->GetPath()))
             return TRUE;
 
         return FALSE;
@@ -2756,10 +2608,6 @@ public:
 
 private:
 
-    //****************************************************************************************
-    // Helper function to add a domain to the global list
-    void AddDomain(AppDomain* pDomain);
-
     void CreatePreallocatedExceptions();
 
     void PreallocateSpecialObjects();
@@ -2781,7 +2629,7 @@ private:
     }
 #endif
 
-    PTR_PEAssembly  m_pSystemFile;      // Single assembly (here for quicker reference);
+    PTR_PEAssembly  m_pSystemPEAssembly;// Single assembly (here for quicker reference);
     PTR_Assembly    m_pSystemAssembly;  // Single assembly (here for quicker reference);
 
     GlobalLoaderAllocator m_GlobalAllocator;
@@ -2805,30 +2653,9 @@ private:
 
     static GlobalStringLiteralMap *m_pGlobalStringLiteralMap;
 
-    static ULONG       s_dNumAppDomains;  // Maintain a count of children app domains.
-
     static DWORD        m_dwLowestFreeIndex;
 #endif // DACCESS_COMPILE
 
-#ifdef FEATURE_PREJIT
-protected:
-
-    // These flags let the correct native image of CoreLib to be loaded.
-    // This is important for hardbinding to it
-
-    SVAL_DECL(BOOL, s_fForceDebug);
-    SVAL_DECL(BOOL, s_fForceProfiling);
-    SVAL_DECL(BOOL, s_fForceInstrument);
-#endif
-
-public:
-    static void     SetCompilationOverrides(BOOL fForceDebug,
-                                            BOOL fForceProfiling,
-                                            BOOL fForceInstrument);
-
-    static void     GetCompilationOverrides(BOOL * fForceDebug,
-                                            BOOL * fForceProfiling,
-                                            BOOL * fForceInstrument);
 public:
     //****************************************************************************************
     //

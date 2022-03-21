@@ -107,3 +107,15 @@ When validating that Windows PDB matches the debug directory record check that t
 
 > Note that when the debugger (or other tool) searches for the PDB only GUID and Age fields are used to match the PDB, but the timestamp of the CodeView debug directory entry does not need to match the timestamp stored in the PDB. Therefore, to verify byte-for-byte identity of the PDB, the timestamp field should also be checked.
 
+### R2R PerfMap Debug Directory Entry (type 21)
+
+Declares that the image has an associated PerfMap file containing a table mapping symbols to offsets for ready to run compilations.
+
+*Version Major=0x0001, Minor=0x0000* of the entry data format is following:
+
+| Offset | Size | Field             | Description                                                           |
+|:-------|:-----|:------------------|-----------------------------------------------------------------------|
+| 0      | 4    | Magic             | 0x52 0x32 0x52 0x4D (ASCII string: "R2RM")                            |
+| 4      | 16   | Signature         | Byte sequence uniquely identifying the associated PerfMap             |
+| 20     | 4    | Version           | Version number of the PerfMap. Currently only version 1 is supported. |
+| 24     |      | Path              | UTF-8 NUL-terminated path to the associated `.r2rmap` file.           |

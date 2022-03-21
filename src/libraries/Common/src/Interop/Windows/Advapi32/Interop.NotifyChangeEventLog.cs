@@ -8,8 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool NotifyChangeEventLog(SafeEventLogReadHandle hEventLog, SafeWaitHandle hEvent);
+        public static partial bool NotifyChangeEventLog(SafeEventLogReadHandle hEventLog, SafeWaitHandle hEvent);
     }
 }

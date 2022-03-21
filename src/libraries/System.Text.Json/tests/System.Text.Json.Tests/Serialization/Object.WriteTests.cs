@@ -139,12 +139,12 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("{\"name\":\"\u6D4B\u8A6611\"}", result);
         }
 
+        // Regression test for https://github.com/dotnet/runtime/issues/61995
         [Fact]
-        public static void WriteSystemObjectWithNumberHandling()
+        public static void WriteObjectWithNumberHandling()
         {
             var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
-            string result = JsonSerializer.Serialize(new object(), options);
-            Assert.Equal("{}", result);
+            JsonSerializer.Serialize(new object(), options);
         }
     }
 }

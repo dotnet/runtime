@@ -140,8 +140,10 @@ namespace System.Text.Json.Nodes
 
         /// <summary>
         ///   Gets the root <see cref="JsonNode"/>.
-        ///   If the current <see cref="JsonNode"/> is a root, <see langword="null"/> is returned.
         /// </summary>
+        /// <remarks>
+        ///   The current node is returned if it is a root.
+        /// </remarks>
         public JsonNode Root
         {
             get
@@ -164,6 +166,8 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Gets the value for the current <see cref="JsonValue"/>.
         /// </summary>
+        /// <typeparam name="T">The type of the value to obtain from the <see cref="JsonValue"/>.</typeparam>
+        /// <returns>A value converted from the <see cref="JsonValue"/> instance.</returns>
         /// <remarks>
         ///   {T} can be the type or base type of the underlying value.
         ///   If the underlying value is a <see cref="JsonElement"/> then {T} can also be the type of any primitive

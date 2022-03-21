@@ -8,8 +8,9 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "WriteConsoleW")]
-        internal static extern unsafe bool WriteConsole(
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "WriteConsoleW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool WriteConsole(
             IntPtr hConsoleOutput,
             byte* lpBuffer,
             int nNumberOfCharsToWrite,

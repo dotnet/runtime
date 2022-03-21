@@ -166,7 +166,7 @@ public:
     }
 #endif //DACCESS_COMPILE
 
-    TypeKey GetTypeKey()
+    TypeKey& GetTypeKey()
     {
         LIMITED_METHOD_CONTRACT;
         return m_typeKey;

@@ -24,4 +24,4 @@ FAIL:
 	ret
 }
 }
-.assembly popi.exe{}
+.assembly popi{}

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+    <DefineConstants>$(DefineConstants);RESOURCE_KEYS</DefineConstants>
+    
+    <!-- Requires the framework to also be compiled with UseSystemResourceKeys -->
+    <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <IlcArg Include="--feature:System.Resources.UseSystemResourceKeys=true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

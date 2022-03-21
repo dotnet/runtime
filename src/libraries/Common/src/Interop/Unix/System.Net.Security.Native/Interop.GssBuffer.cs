@@ -34,7 +34,7 @@ internal static partial class Interop
                     throw new NetSecurityNative.GssApiException(SR.Format(SR.net_context_buffer_too_small, sourceLength, destinationAvailable));
                 }
 
-                Marshal.Copy(_data, destination, offset, sourceLength);
+                Span.CopyTo(destination.AsSpan(offset, sourceLength));
                 return sourceLength;
             }
 
@@ -47,7 +47,7 @@ internal static partial class Interop
 
                 int destinationLength = Convert.ToInt32(_length);
                 byte[] destination = new byte[destinationLength];
-                Marshal.Copy(_data, destination, 0, destinationLength);
+                Span.CopyTo(destination);
                 return destination;
             }
 
@@ -67,11 +67,11 @@ internal static partial class Interop
             }
 
 #if DEBUG
-            static GssBuffer()
+            static unsafe GssBuffer()
             {
                 // Verify managed size on both 32-bit and 64-bit matches the PAL_GssBuffer
                 // native struct size, which is also padded on 32-bit.
-                Debug.Assert(Marshal.SizeOf<GssBuffer>() == 16);
+                Debug.Assert(sizeof(GssBuffer) == 16);
             }
 #endif
         }

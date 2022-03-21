@@ -4,6 +4,7 @@
 using System.Text;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Diagnostics
 {
@@ -51,7 +52,12 @@ namespace System.Diagnostics
             }
         }
 
+#pragma warning disable IDE0060
         private static bool AppendStackFrameWithoutMethodBase(StringBuilder sb) => false;
+#pragma warning restore IDE0060
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StackFrame_GetMethodDescFromNativeIP")]
+        private static partial RuntimeMethodHandleInternal GetMethodDescFromNativeIP(IntPtr ip);
 
         /// <summary>
         /// Returns the MethodBase instance for the managed code IP address.
@@ -62,7 +68,7 @@ namespace System.Diagnostics
         /// <returns>MethodBase instance for the method or null if IP not found</returns>
         internal static MethodBase? GetMethodFromNativeIP(IntPtr ip)
         {
-            RuntimeMethodHandleInternal method = StackTrace.GetMethodDescFromNativeIP(ip);
+            RuntimeMethodHandleInternal method = GetMethodDescFromNativeIP(ip);
 
             if (method.Value == IntPtr.Zero)
                 return null;

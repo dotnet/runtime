@@ -108,7 +108,7 @@ public class CC4<T> : C4<T>
 
 
 
-public class Test
+public class Test_Class2_ImplicitOverrideVirtual
 {
 
 	public static int counter = 0;

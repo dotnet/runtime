@@ -190,7 +190,6 @@ virtual TADDR GetAmbientSP(PREGDISPLAY     pContext,
 */
 virtual ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo) = 0;
 
-#ifndef CROSSGEN_COMPILE
 /*
     Unwind the current stack frame, i.e. update the virtual register
     set in pContext. This will be similar to the state after the function
@@ -204,7 +203,6 @@ virtual bool UnwindStackFrame(PREGDISPLAY     pContext,
                               unsigned        flags,
                               CodeManState   *pState,
                               StackwalkCacheUnwindInfo  *pUnwindInfo) = 0;
-#endif // CROSSGEN_COMPILE
 
 /*
     Is the function currently at a "GC safe point" ?
@@ -228,7 +226,6 @@ virtual unsigned FindEndOfLastInterruptibleRegion(unsigned curOffset,
                                                   GCInfoToken gcInfoToken) = 0;
 #endif // TARGET_AMD64 && _DEBUG
 
-#ifndef CROSSGEN_COMPILE
 /*
     Enumerate all live object references in that function using
     the virtual register set. Same reference location cannot be enumerated
@@ -242,9 +239,7 @@ virtual bool EnumGcRefs(PREGDISPLAY     pContext,
                         GCEnumCallback  pCallback,
                         LPVOID          hCallBack,
                         DWORD           relOffsetOverride = NO_OVERRIDE_OFFSET) = 0;
-#endif // !CROSSGEN_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 /*
     For a non-static method, "this" pointer is passed in as argument 0.
     However, if there is a "ldarga 0" or "starg 0" in the IL,
@@ -257,22 +252,18 @@ virtual bool EnumGcRefs(PREGDISPLAY     pContext,
 */
 virtual OBJECTREF GetInstance(PREGDISPLAY     pContext,
                               EECodeInfo*     pCodeInfo) = 0;
-#endif // !CROSSGEN_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 /*
     Returns the extra argument passed to to shared generic code if it is still alive.
     Returns NULL in all other cases.
 */
 virtual PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
                                  EECodeInfo *    pCodeInfo) = 0;
-#endif // !CROSSGEN_COMPILE
 
 // Returns the type of the context parameter (this, methodtable, methoddesc, or none)
 virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
                                                     EECodeInfo *    pCodeInfo) = 0;
 
-#ifndef CROSSGEN_COMPILE
 /*
     Returns the offset of the GuardStack cookie if it exists.
     Returns NULL if there is no cookie.
@@ -280,7 +271,6 @@ virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
 virtual void * GetGSCookieAddr(PREGDISPLAY     pContext,
                                EECodeInfo    * pCodeInfo,
                                CodeManState  * pState) = 0;
-#endif
 
 #ifndef USE_GC_INFO_DECODER
 /*
@@ -422,7 +412,6 @@ TADDR GetAmbientSP(PREGDISPLAY     pContext,
 virtual
 ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo);
 
-#ifndef CROSSGEN_COMPILE
 /*
     Unwind the current stack frame, i.e. update the virtual register
     set in pContext. This will be similar to the state after the function
@@ -438,7 +427,6 @@ bool UnwindStackFrame(
                 unsigned        flags,
                 CodeManState   *pState,
                 StackwalkCacheUnwindInfo  *pUnwindInfo);
-#endif // CROSSGEN_COMPILE
 
 #ifdef HAS_QUICKUNWIND
 enum QuickUnwindFlag
@@ -484,7 +472,6 @@ unsigned FindEndOfLastInterruptibleRegion(unsigned curOffset,
                                           GCInfoToken gcInfoToken);
 #endif // TARGET_AMD64 && _DEBUG
 
-#ifndef CROSSGEN_COMPILE
 /*
     Enumerate all live object references in that function using
     the virtual register set. Same reference location cannot be enumerated
@@ -499,7 +486,6 @@ bool EnumGcRefs(PREGDISPLAY     pContext,
                 GCEnumCallback  pCallback,
                 LPVOID          hCallBack,
                 DWORD           relOffsetOverride = NO_OVERRIDE_OFFSET);
-#endif // !CROSSGEN_COMPILE
 
 #ifdef FEATURE_CONSERVATIVE_GC
 // Temporary conservative collection, for testing purposes, until we have
@@ -511,14 +497,11 @@ bool EnumGcRefsConservative(PREGDISPLAY     pRD,
                             LPVOID          hCallBack);
 #endif // FEATURE_CONSERVATIVE_GC
 
-#ifndef CROSSGEN_COMPILE
 virtual
 OBJECTREF GetInstance(
                 PREGDISPLAY     pContext,
                 EECodeInfo *    pCodeInfo);
-#endif // !CROSSGEN_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 /*
     Returns the extra argument passed to to shared generic code if it is still alive.
     Returns NULL in all other cases.
@@ -526,13 +509,12 @@ OBJECTREF GetInstance(
 virtual
 PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
                          EECodeInfo *    pCodeInfo);
-#endif // !CROSSGEN_COMPILE
 
 // Returns the type of the context parameter (this, methodtable, methoddesc, or none)
 virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
                                                     EECodeInfo *    pCodeInfo);
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
 /*
     Returns the generics token.  This is used by GetInstance() and GetParamTypeArg() on WIN64.
 */
@@ -545,9 +527,8 @@ PTR_VOID GetExactGenericsToken(SIZE_T          baseStackSlot,
                                EECodeInfo *    pCodeInfo);
 
 
-#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER && !CROSSGEN_COMPILE
+#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER
 
-#ifndef CROSSGEN_COMPILE
 /*
     Returns the offset of the GuardStack cookie if it exists.
     Returns NULL if there is no cookie.
@@ -556,7 +537,6 @@ virtual
 void * GetGSCookieAddr(PREGDISPLAY     pContext,
                        EECodeInfo    * pCodeInfo,
                        CodeManState  * pState);
-#endif
 
 
 #ifndef USE_GC_INFO_DECODER

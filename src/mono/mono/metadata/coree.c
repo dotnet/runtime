@@ -19,16 +19,16 @@
 #include "utils/w32api.h"
 #include "cil-coff.h"
 #include "metadata-internals.h"
-#include "image.h"
+#include <mono/metadata/image.h>
 #include "image-internals.h"
 #include "assembly-internals.h"
 #include "domain-internals.h"
-#include "appdomain.h"
-#include "object.h"
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/object.h>
 #include "object-internals.h"
-#include "loader.h"
-#include "threads.h"
-#include "environment.h"
+#include <mono/metadata/loader.h>
+#include <mono/metadata/threads.h>
+#include <mono/metadata/environment.h>
 #include "coree.h"
 #include "coree-internals.h"
 #include <mono/utils/w32subset.h>
@@ -121,7 +121,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 		 */
 		if (table_info_get_rows (&image->tables [MONO_TABLE_ASSEMBLY]) && image->image_info->cli_cli_header.ch_vtable_fixups.rva) {
 			MonoAssemblyOpenRequest req;
-			mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, alc);
+			mono_assembly_request_prepare_open (&req, alc);
 			assembly = mono_assembly_request_open (file_name, &req, NULL);
 		}
 
@@ -173,7 +173,7 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 	}
 
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
+	mono_assembly_request_prepare_open (&req, mono_alc_get_default ());
 	assembly = mono_assembly_request_open (file_name, &req, NULL);
 	mono_close_exe_image ();
 	if (!assembly) {
@@ -432,7 +432,7 @@ HMODULE WINAPI MonoLoadImage(LPCWSTR FileName)
 	if (FileHandle == INVALID_HANDLE_VALUE)
 		return NULL;
 
-	FileSize = GetFileSize(FileHandle, NULL); 
+	FileSize = GetFileSize(FileHandle, NULL);
 	if (FileSize == INVALID_FILE_SIZE)
 		goto CloseFile;
 

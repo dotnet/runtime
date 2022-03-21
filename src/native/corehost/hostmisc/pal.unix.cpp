@@ -5,7 +5,6 @@
 #define _WITH_GETLINE
 #endif
 
-#include <getexepath.h>
 #include "pal.h"
 #include "utils.h"
 #include "trace.h"
@@ -20,6 +19,7 @@
 #include <locale>
 #include <pwd.h>
 #include "config.h"
+#include <minipal/getexepath.h>
 
 #if defined(TARGET_OSX)
 #include <mach-o/dyld.h>
@@ -128,7 +128,7 @@ bool pal::getcwd(pal::string_t* recv)
             return false;
         }
 
-        trace::error(_X("getcwd() failed: %s"), strerror(errno));
+        trace::error(_X("getcwd() failed: %s"), strerror(errno).c_str());
         return false;
     }
 
@@ -341,7 +341,41 @@ bool get_extraction_base_parent_directory(pal::string_t& directory)
     // check for the POSIX standard environment variable
     if (pal::getenv(_X("HOME"), &directory))
     {
-        return is_read_write_able_directory(directory);
+        if (is_read_write_able_directory(directory))
+        {
+            return true;
+        }
+        else
+        {
+            trace::error(_X("Default extraction directory [%s] either doesn't exist or is not accessible for read/write."), directory.c_str());
+        }
+    }
+    else
+    {
+        // fallback to the POSIX standard getpwuid() library function
+        struct passwd* pwuid = NULL;
+        errno = 0;
+        do
+        {
+            pwuid = getpwuid(getuid());
+        } while (pwuid == NULL && errno == EINTR);
+
+        if (pwuid != NULL)
+        {
+            directory.assign(pwuid->pw_dir);
+            if (is_read_write_able_directory(directory))
+            {
+                return true;
+            }
+            else
+            {
+                trace::error(_X("Failed to determine default extraction location. Environment variable '$HOME' is not defined and directory reported by getpwuid() [%s] either doesn't exist or is not accessible for read/write."), pwuid->pw_dir);
+            }
+        }
+        else
+        {
+            trace::error(_X("Failed to determine default extraction location. Environment variable '$HOME' is not defined and getpwuid() returned NULL."));
+        }
     }
 
     return false;
@@ -367,6 +401,7 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     }
     else if (errno != EEXIST)
     {
+        trace::error(_X("Failed to create default extraction directory [%s]. %s"), extraction_dir.c_str(), pal::strerror(errno).c_str());
         return false;
     }
 
@@ -443,7 +478,7 @@ bool get_install_location_from_file(const pal::string_t& file_path, bool& file_f
         }
         else
         {
-            trace::error(_X("The install_location file ['%s'] failed to open: %s."), file_path.c_str(), pal::strerror(errno));
+            trace::error(_X("The install_location file ['%s'] failed to open: %s."), file_path.c_str(), pal::strerror(errno).c_str());
         }
     }
 
@@ -505,6 +540,10 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
 
 #if defined(TARGET_OSX)
     recv->assign(_X("/usr/local/share/dotnet"));
+    if (pal::is_emulating_x64())
+    {
+        append_path(recv, _X("x64"));
+    }
 #else
     recv->assign(_X("/usr/share/dotnet"));
 #endif
@@ -680,6 +719,7 @@ pal::string_t normalize_linux_rid(pal::string_t rid)
 {
     pal::string_t rhelPrefix(_X("rhel."));
     pal::string_t alpinePrefix(_X("alpine."));
+    pal::string_t rockyPrefix(_X("rocky."));
     size_t lastVersionSeparatorIndex = std::string::npos;
 
     if (rid.compare(0, rhelPrefix.length(), rhelPrefix) == 0)
@@ -693,6 +733,10 @@ pal::string_t normalize_linux_rid(pal::string_t rid)
         {
             lastVersionSeparatorIndex = rid.find(_X("."), secondVersionSeparatorIndex + 1);
         }
+    }
+    else if (rid.compare(0, rockyPrefix.length(), rockyPrefix) == 0)
+    {
+        lastVersionSeparatorIndex = rid.find(_X("."), rockyPrefix.length());
     }
 
     if (lastVersionSeparatorIndex != std::string::npos)
@@ -793,7 +837,7 @@ pal::string_t pal::get_current_os_rid_platform()
 
 bool pal::get_own_executable_path(pal::string_t* recv)
 {
-    char* path = getexepath();
+    char* path = minipal_getexepath();
     if (!path)
     {
         return false;
@@ -860,7 +904,7 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
 
         if (!skip_error_logging)
         {
-            trace::error(_X("realpath(%s) failed: %s"), path->c_str(), strerror(errno));
+            trace::error(_X("realpath(%s) failed: %s"), path->c_str(), strerror(errno).c_str());
         }
 
         return false;
@@ -977,6 +1021,26 @@ void pal::readdir_onlydirectories(const pal::string_t& path, std::vector<pal::st
 bool pal::is_running_in_wow64()
 {
     return false;
+}
+
+bool pal::is_emulating_x64()
+{
+    int is_translated_process = 0;
+#if defined(TARGET_OSX)
+    size_t size = sizeof(is_translated_process);
+    if (sysctlbyname("sysctl.proc_translated", &is_translated_process, &size, NULL, 0) == -1)
+    {
+        trace::info(_X("Could not determine whether the current process is running under Rosetta."));
+        if (errno != ENOENT)
+        {
+            trace::info(_X("Call to sysctlbyname failed: %s"), strerror(errno).c_str());
+        }
+
+        return false;
+    }
+#endif
+
+    return is_translated_process == 1;
 }
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)

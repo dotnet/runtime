@@ -5,7 +5,7 @@ By Steve Reid <sreid@sea-to-sky.net>
 100% Public Domain
 
 -----------------
-Modified 7/98 
+Modified 7/98
 By James H. Brown <jbrown@burgoyne.com>
 Still 100% Public Domain
 
@@ -27,7 +27,7 @@ Since the file IO in main() reads 16K at a time, any file 8K or larger would
 be guaranteed to generate the wrong hash (e.g. Test Vector #3, a million
 "a"s).
 
-I also changed the declaration of variables i & j in mono_sha1_update to 
+I also changed the declaration of variables i & j in mono_sha1_update to
 unsigned long from unsigned int for the same reason.
 
 These changes should make no difference to any 32 bit implementations since
@@ -54,7 +54,7 @@ Still 100% public domain
 Modified 4/01
 By Saul Kravitz <Saul.Kravitz@celera.com>
 Still 100% PD
-Modified to run on Compaq Alpha hardware.  
+Modified to run on Compaq Alpha hardware.
 
 
 */
@@ -137,7 +137,7 @@ static void SHA1Transform(guint32 state[5], const guchar buffer[64]);
 static void SHAPrintContext(MonoSHA1Context *context, char *msg){
   printf("%s (%d,%d) %x %x %x %x %x\n",
 	 msg,
-	 context->count[0], context->count[1], 
+	 context->count[0], context->count[1],
 	 context->state[0],
 	 context->state[1],
 	 context->state[2],
@@ -287,28 +287,28 @@ unsigned char finalcount[8];
  */
 void
 mono_sha1_get_digest (const guchar *buffer, gint buffer_size, guchar digest [20])
-{	
+{
 	MonoSHA1Context ctx;
 
 	mono_sha1_init (&ctx);
 	mono_sha1_update (&ctx, buffer, buffer_size);
 	mono_sha1_final (&ctx, digest);
-	
+
 }
 
 /**
  * mono_sha1_get_digest_from_file:
  * \param filename file name
  * \param digest 20-byte buffer receiving the hash code.
- * 
- * Get the SHA-1 hash of a file. The result is put in 
+ *
+ * Get the SHA-1 hash of a file. The result is put in
  * the 20-byte buffer \p digest.
- * 
+ *
  * If an IO error happens the value in \p digest is not updated.
  */
 void
 mono_sha1_get_digest_from_file (const gchar *filename, guchar digest [20])
-{	
+{
 	MonoSHA1Context ctx;
 	guchar tmp_buf[1024];
 	gint nb_bytes_read;
@@ -319,10 +319,10 @@ mono_sha1_get_digest_from_file (const gchar *filename, guchar digest [20])
 	if (!fp) {
 		return;
 	}
-	
-	while ((nb_bytes_read = fread (tmp_buf, sizeof (guchar), 1024, fp)) > 0)
+
+	while ((nb_bytes_read = (gint)fread (tmp_buf, sizeof (guchar), 1024, fp)) > 0)
 		mono_sha1_update (&ctx, tmp_buf, nb_bytes_read);
-	
+
 	if (ferror(fp)) {
 		fclose(fp);
 		return;
@@ -339,7 +339,7 @@ mono_sha1_get_digest_from_file (const gchar *filename, guchar digest [20])
  * Get the public token from public key data.
  * \p token must point to at least 8 bytes of storage.
  */
-void 
+void
 mono_digest_get_public_token (guchar* token, const guchar *pubkey, guint32 len)
 {
 	guchar digest [20];

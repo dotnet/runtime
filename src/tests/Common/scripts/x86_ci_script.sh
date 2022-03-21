@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #Parse command line arguments
 __buildConfig=
@@ -17,7 +17,7 @@ do
 done
 
 #Check if there are any uncommited changes in the source directory as git adds and removes patches
-if [[ $(git status -s) != "" ]]; then
+if [[ -n $(git status -s) ]]; then
    echo 'ERROR: There are some uncommited changes. To avoid losing these changes commit them and try again.'
    echo ''
    git status

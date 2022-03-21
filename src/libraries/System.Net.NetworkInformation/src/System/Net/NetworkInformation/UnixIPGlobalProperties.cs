@@ -13,6 +13,7 @@ namespace System.Net.NetworkInformation
     internal abstract class UnixIPGlobalProperties : IPGlobalProperties
     {
         [UnsupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("osx")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
@@ -26,6 +27,7 @@ namespace System.Net.NetworkInformation
         public override string HostName { get { return HostInformation.HostName; } }
 
         [UnsupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("osx")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]

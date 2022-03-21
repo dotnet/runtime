@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.DependencyModel
             Path = path;
         }
 
-        public AssemblyName Name => new AssemblyName(_assemblyName);
+        public AssemblyName Name => new(_assemblyName);
 
         public string Path { get; }
 

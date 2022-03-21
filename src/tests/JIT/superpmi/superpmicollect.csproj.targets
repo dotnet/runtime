@@ -1,7 +1,0 @@
-<Project>
-  <!-- This target builds the executables and test running scripts for the _SpmiTestProjects
-       to the output directory of the current project. -->
-  <Target Name="_BuildSpmiTestProjectScripts" BeforeTargets="CreateExecuteScript">
-    <MSBuild Projects="@(_SpmiTestProjects)" Targets="CreateExecuteScript" />
-  </Target>
-</Project>

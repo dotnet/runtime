@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent);net48-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="AssemblyAttributes.cs" />
     <Compile Include="ByteTypeTests.cs" />
     <Compile Include="CharTypeTests.cs" />

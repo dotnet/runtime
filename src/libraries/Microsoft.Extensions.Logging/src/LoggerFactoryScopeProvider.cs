@@ -15,14 +15,14 @@ namespace Microsoft.Extensions.Logging
     /// </summary>
     internal sealed class LoggerFactoryScopeProvider : IExternalScopeProvider
     {
-        private readonly AsyncLocal<Scope> _currentScope = new AsyncLocal<Scope>();
+        private readonly AsyncLocal<Scope?> _currentScope = new AsyncLocal<Scope?>();
         private readonly ActivityTrackingOptions _activityTrackingOption;
 
         public LoggerFactoryScopeProvider(ActivityTrackingOptions activityTrackingOption) => _activityTrackingOption = activityTrackingOption;
 
-        public void ForEachScope<TState>(Action<object, TState> callback, TState state)
+        public void ForEachScope<TState>(Action<object?, TState> callback, TState state)
         {
-            void Report(Scope current)
+            void Report(Scope? current)
             {
                 if (current == null)
                 {
@@ -34,12 +34,12 @@ namespace Microsoft.Extensions.Logging
 
             if (_activityTrackingOption != ActivityTrackingOptions.None)
             {
-                Activity activity = Activity.Current;
+                Activity? activity = Activity.Current;
                 if (activity != null)
                 {
                     const string propertyKey = "__ActivityLogScope__";
 
-                    ActivityLogScope activityLogScope = activity.GetCustomProperty(propertyKey) as ActivityLogScope;
+                    ActivityLogScope? activityLogScope = activity.GetCustomProperty(propertyKey) as ActivityLogScope;
                     if (activityLogScope == null)
                     {
                         activityLogScope = new ActivityLogScope(activity, _activityTrackingOption);
@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.Logging
                     {
                         // As TagObjects is a IEnumerable<KeyValuePair<string, object?>> this can be used directly as a scope.
                         // We do this to safe the allocation of a wrapper object.
-                         callback(activity.TagObjects, state);
+                        callback(activity.TagObjects, state);
                     }
 
                     if ((_activityTrackingOption & ActivityTrackingOptions.Baggage) != 0)
@@ -88,9 +88,9 @@ namespace Microsoft.Extensions.Logging
             return activityBaggageLogScopeWrapper;
         }
 
-        public IDisposable Push(object state)
+        public IDisposable Push(object? state)
         {
-            Scope parent = _currentScope.Value;
+            Scope? parent = _currentScope.Value;
             var newScope = new Scope(this, state, parent);
             _currentScope.Value = newScope;
 
@@ -102,18 +102,18 @@ namespace Microsoft.Extensions.Logging
             private readonly LoggerFactoryScopeProvider _provider;
             private bool _isDisposed;
 
-            internal Scope(LoggerFactoryScopeProvider provider, object state, Scope parent)
+            internal Scope(LoggerFactoryScopeProvider provider, object? state, Scope? parent)
             {
                 _provider = provider;
                 State = state;
                 Parent = parent;
             }
 
-            public Scope Parent { get; }
+            public Scope? Parent { get; }
 
-            public object State { get; }
+            public object? State { get; }
 
-            public override string ToString()
+            public override string? ToString()
             {
                 return State?.ToString();
             }
@@ -128,11 +128,11 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private sealed class ActivityLogScope : IReadOnlyList<KeyValuePair<string, object>>
+        private sealed class ActivityLogScope : IReadOnlyList<KeyValuePair<string, object?>>
         {
-            private string _cachedToString;
+            private string? _cachedToString;
             private const int MaxItems = 5;
-            private KeyValuePair<string, object> [] _items = new KeyValuePair<string, object>[MaxItems];
+            private KeyValuePair<string, object?>[] _items = new KeyValuePair<string, object?>[MaxItems];
 
             public ActivityLogScope(Activity activity, ActivityTrackingOptions activityTrackingOption)
             {
@@ -142,27 +142,27 @@ namespace Microsoft.Extensions.Logging
                 int count = 0;
                 if ((activityTrackingOption & ActivityTrackingOptions.SpanId) != 0)
                 {
-                    _items[count++] = new KeyValuePair<string, object>("SpanId", activity.GetSpanId());
+                    _items[count++] = new KeyValuePair<string, object?>("SpanId", activity.GetSpanId());
                 }
 
                 if ((activityTrackingOption & ActivityTrackingOptions.TraceId) != 0)
                 {
-                    _items[count++] = new KeyValuePair<string, object>("TraceId", activity.GetTraceId());
+                    _items[count++] = new KeyValuePair<string, object?>("TraceId", activity.GetTraceId());
                 }
 
                 if ((activityTrackingOption & ActivityTrackingOptions.ParentId) != 0)
                 {
-                    _items[count++] = new KeyValuePair<string, object>("ParentId", activity.GetParentId());
+                    _items[count++] = new KeyValuePair<string, object?>("ParentId", activity.GetParentId());
                 }
 
                 if ((activityTrackingOption & ActivityTrackingOptions.TraceState) != 0)
                 {
-                    _items[count++] = new KeyValuePair<string, object>("TraceState", activity.TraceStateString);
+                    _items[count++] = new KeyValuePair<string, object?>("TraceState", activity.TraceStateString);
                 }
 
                 if ((activityTrackingOption & ActivityTrackingOptions.TraceFlags) != 0)
                 {
-                    _items[count++] = new KeyValuePair<string, object>("TraceFlags", activity.ActivityTraceFlags);
+                    _items[count++] = new KeyValuePair<string, object?>("TraceFlags", activity.ActivityTraceFlags);
                 }
 
                 Count = count;
@@ -170,7 +170,7 @@ namespace Microsoft.Extensions.Logging
 
             public int Count { get; }
 
-            public KeyValuePair<string, object> this[int index]
+            public KeyValuePair<string, object?> this[int index]
             {
                 get
                 {
@@ -206,7 +206,7 @@ namespace Microsoft.Extensions.Logging
                 return _cachedToString;
             }
 
-            public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+            public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
             {
                 for (int i = 0; i < Count; ++i)
                 {
@@ -226,7 +226,7 @@ namespace Microsoft.Extensions.Logging
 
             private StringBuilder? _stringBuilder;
 
-            public ActivityBaggageLogScopeWrapper (IEnumerable<KeyValuePair<string, string?>> items)
+            public ActivityBaggageLogScopeWrapper(IEnumerable<KeyValuePair<string, string?>> items)
             {
                 _items = items;
             }

@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.WindowsRuntime;
-using TestLibrary;
+using Xunit;
 
 namespace WinRT
 {

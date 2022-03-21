@@ -675,5 +675,5 @@ END:
 
 
 
-.assembly ldc_conv_ovf_u4_u1.exe{}
+.assembly ldc_conv_ovf_u4_u1{}
 

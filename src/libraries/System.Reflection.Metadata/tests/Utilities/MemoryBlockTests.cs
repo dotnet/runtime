@@ -41,26 +41,6 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
-        public unsafe void EncodingLightUpHasSucceededAndTestsStillPassWithPortableFallbackAsWell()
-        {
-            Assert.True(EncodingHelper.TestOnly_LightUpEnabled); // tests run on .NET Framework only right now.
-
-            try
-            {
-                // Re-run them with forced portable implementation.
-                EncodingHelper.TestOnly_LightUpEnabled = false;
-                DefaultDecodingFallbackMatchesBcl();
-                DecodingSuccessMatchesBcl();
-                DecoderIsUsedCorrectly();
-                LightUpTrickFromDifferentAssemblyWorks();
-            }
-            finally
-            {
-                EncodingHelper.TestOnly_LightUpEnabled = true;
-            }
-        }
-
-        [Fact]
         public unsafe void DefaultDecodingFallbackMatchesBcl()
         {
             byte[] buffer;
@@ -127,23 +107,6 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal(buffer.Length, bytesRead);
 
                 Assert.Equal(str, new MemoryBlock(ptr, buffer.Length).PeekUtf8(0, buffer.Length));
-            }
-        }
-
-        [Fact]
-        public unsafe void LightUpTrickFromDifferentAssemblyWorks()
-        {
-            // This is a trick to use our portable light up outside the reader assembly (that
-            // I will use in Roslyn). Check that it works with encoding other than UTF8 and that it
-            // validates arguments like the real thing.
-            var decoder = new MetadataStringDecoder(Encoding.Unicode);
-            Assert.Throws<ArgumentNullException>(() => decoder.GetString(null, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => decoder.GetString((byte*)1, -1));
-
-            byte[] bytes;
-            fixed (byte* ptr = (bytes = Encoding.Unicode.GetBytes("\u00C7a marche tr\u00E8s bien.")))
-            {
-                Assert.Equal("\u00C7a marche tr\u00E8s bien.", decoder.GetString(ptr, bytes.Length));
             }
         }
 

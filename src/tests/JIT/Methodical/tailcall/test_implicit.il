@@ -6,7 +6,7 @@
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern mscorlib { auto }
 
-.assembly tailcall
+.assembly 'test_implicit'
 {
 
 
@@ -14,7 +14,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module tailcall.exe
+.assembly extern xunit.core {}
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
@@ -26,6 +26,7 @@
 .class public auto ansi beforefieldinit Class1
        extends [mscorlib]System.Object
 {
+  .field private static bool s_failure
   .field private static int32 MaxDepth
   .field private int32 'value'
   .method public hidebysig instance int32
@@ -33,6 +34,9 @@
   {
     .maxstack  5
     .locals init (int32 V_0)
+              ldsfld     bool Class1::s_failure
+              brtrue.s   IL_0003
+
     IL_0000:  ldarg.1
     IL_0001:  brtrue.s   IL_000c
 
@@ -91,6 +95,9 @@ ret
     .maxstack  4
     .locals init (string V_0,
              int32 V_1)
+              ldsfld     bool Class1::s_failure
+              brtrue.s   IL_0003
+
     IL_0000:  ldarg.1
     IL_0001:  brtrue.s   IL_000c
 
@@ -122,8 +129,10 @@ ret
     IL_0039:  call       void [System.Console]System.Console::WriteLine(string)
     IL_003e:  ldstr      "Test Failed"
     IL_0043:  call       void [System.Console]System.Console::WriteLine(string)
-    IL_0048:  ldc.i4.0
-    IL_0049:  call       void [System.Runtime.Extensions]System.Environment::Exit(int32)
+    IL_0048:  ldc.i4.1
+              stsfld     bool Class1::s_failure
+              br.s       IL_0003
+
     IL_004e:  call       void [mscorlib]System.GC::Collect()
     IL_0053:  ldarg.0
     IL_0054:  dup
@@ -155,6 +164,9 @@ ret
   {
     .maxstack  5
     .locals init (int32 V_0)
+              ldsfld     bool Class1::s_failure
+              brtrue.s   IL_0003
+
     IL_0000:  ldarg.1
     IL_0001:  brtrue.s   IL_000c
 
@@ -209,6 +221,9 @@ ret
     .maxstack  4
     .locals init (string V_0,
              int32 V_1)
+              ldsfld     bool Class1::s_failure
+              brtrue.s   IL_0003
+
     IL_0000:  ldarg.1
     IL_0001:  brtrue.s   IL_000c
 
@@ -241,8 +256,10 @@ ret
     IL_0041:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0046:  ldstr      "Test Failed"
     IL_004b:  call       void [System.Console]System.Console::WriteLine(string)
-    IL_0050:  ldc.i4.0
-    IL_0051:  call       void [System.Runtime.Extensions]System.Environment::Exit(int32)
+    IL_0050:  ldc.i4.1
+              stsfld     bool Class1::s_failure
+              br.s       IL_0003
+
     IL_0056:  ldarg.0
     IL_0057:  dup
     IL_0058:  ldfld      int32 Class1::'value'
@@ -270,6 +287,9 @@ ret
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  3
     .locals init (class Class1 V_0,
@@ -284,6 +304,9 @@ ret
     IL_0011:  ldsfld     int32 Class1::MaxDepth
     IL_0016:  callvirt   instance int32 Class1::Recurse1(int32)
     IL_001b:  pop
+              ldsfld     bool Class1::s_failure
+              brtrue.s   IL_0060
+
     IL_001c:  ldc.i4     41963520
     IL_001d:  stloc.1
     IL_001e:  ldloc.0

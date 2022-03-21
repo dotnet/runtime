@@ -79,4 +79,4 @@ END:
 
 
 
-.assembly ret_i4.exe{}
+.assembly ret_i4{}

@@ -24,7 +24,7 @@ class Problem : Base<object>, Interface<object>
     public override B<object> Func() { return new B<object>(); }
 }
 
-class Test
+class Test_dev10_794943
 {
     static int Main()
     {

@@ -157,7 +157,7 @@ namespace ILCompiler
             try
             {
                 // Create stream because CreateFromFile(string, ...) uses FileShare.None which is too strict
-                fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, false);
+                fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
                 mappedFile = MemoryMappedFile.CreateFromFile(
                     fileStream, null, fileStream.Length, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
                 accessor = mappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
@@ -174,12 +174,9 @@ namespace ILCompiler
             }
             finally
             {
-                if (accessor != null)
-                    accessor.Dispose();
-                if (mappedFile != null)
-                    mappedFile.Dispose();
-                if (fileStream != null)
-                    fileStream.Dispose();
+                accessor?.Dispose();
+                mappedFile?.Dispose();
+                fileStream?.Dispose();
             }
         }
 
@@ -193,6 +190,12 @@ namespace ILCompiler
                 if (oldModuleData == null)
                 {
                     peReader = OpenPEFile(filePath, out mappedViewAccessor);
+
+#if !READYTORUN
+                if (peReader.HasMetadata && (peReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == 0)
+                    throw new NotSupportedException($"Error: C++/CLI is not supported: '{filePath}'");
+#endif
+
                     pdbReader = PortablePdbSymbolReader.TryOpenEmbedded(peReader, GetMetadataStringDecoder()) ?? OpenAssociatedSymbolFile(filePath, peReader);
                 }
                 else

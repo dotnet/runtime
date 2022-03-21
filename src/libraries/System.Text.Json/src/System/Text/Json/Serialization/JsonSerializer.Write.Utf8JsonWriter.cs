@@ -12,6 +12,7 @@ namespace System.Text.Json
         /// <summary>
         /// Writes one JSON value (including objects or arrays) to the provided writer.
         /// </summary>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
         /// <param name="writer">The writer to write.</param>
         /// <param name="value">The value to convert and write.</param>
         /// <param name="options">Options to control the behavior.</param>
@@ -24,15 +25,10 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static void Serialize<TValue>(
-            Utf8JsonWriter writer,
+            Utf8JsonWriter writer!!,
             TValue value,
             JsonSerializerOptions? options = null)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
             Type runtimeType = GetRuntimeType(value);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
             WriteUsingSerializer(writer, value, jsonTypeInfo);
@@ -57,16 +53,11 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static void Serialize(
-            Utf8JsonWriter writer,
+            Utf8JsonWriter writer!!,
             object? value,
             Type inputType,
             JsonSerializerOptions? options = null)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
             WriteUsingSerializer(writer, value, jsonTypeInfo);
@@ -75,6 +66,7 @@ namespace System.Text.Json
         /// <summary>
         /// Writes one JSON value (including objects or arrays) to the provided writer.
         /// </summary>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
         /// <param name="writer">The writer to write.</param>
         /// <param name="value">The value to convert and write.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
@@ -85,18 +77,8 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
-        public static void Serialize<TValue>(Utf8JsonWriter writer, TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
+        public static void Serialize<TValue>(Utf8JsonWriter writer!!, TValue value, JsonTypeInfo<TValue> jsonTypeInfo!!)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
             WriteUsingGeneratedSerializer(writer, value, jsonTypeInfo);
         }
 
@@ -121,18 +103,8 @@ namespace System.Text.Json
         /// The <see cref="JsonSerializerContext.GetTypeInfo(Type)"/> method of the provided
         /// <paramref name="context"/> returns <see langword="null"/> for the type to convert.
         /// </exception>
-        public static void Serialize(Utf8JsonWriter writer, object? value, Type inputType, JsonSerializerContext context)
+        public static void Serialize(Utf8JsonWriter writer!!, object? value, Type inputType, JsonSerializerContext context!!)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
             WriteUsingGeneratedSerializer(writer, value, GetTypeInfo(context, runtimeType));
         }

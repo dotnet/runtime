@@ -5,16 +5,9 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-
-#if MS_IO_REDIST
-using Microsoft.IO.Enumeration;
-
-namespace Microsoft.IO
-#else
 using System.IO.Enumeration;
 
 namespace System.IO
-#endif
 {
     public sealed partial class DirectoryInfo : FileSystemInfo
     {
@@ -32,9 +25,9 @@ namespace System.IO
             Init(originalPath, fullPath, fileName, isNormalized);
         }
 
-        private void Init(string originalPath, string? fullPath = null, string? fileName = null, bool isNormalized = false)
+        private void Init(string originalPath!!, string? fullPath = null, string? fileName = null, bool isNormalized = false)
         {
-            OriginalPath = originalPath ?? throw new ArgumentNullException(nameof(originalPath));
+            OriginalPath = originalPath;
 
             fullPath = fullPath ?? originalPath;
             fullPath = isNormalized ? fullPath : Path.GetFullPath(fullPath);
@@ -62,10 +55,8 @@ namespace System.IO
             }
         }
 
-        public DirectoryInfo CreateSubdirectory(string path)
+        public DirectoryInfo CreateSubdirectory(string path!!)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
             if (Path.IsPathRooted(path))
@@ -172,13 +163,11 @@ namespace System.IO
 
         private IEnumerable<FileSystemInfo> InternalEnumerateInfos(
             string path,
-            string searchPattern,
+            string searchPattern!!,
             SearchTarget searchTarget,
             EnumerationOptions options)
         {
             Debug.Assert(path != null);
-            if (searchPattern == null)
-                throw new ArgumentNullException(nameof(searchPattern));
 
             _isNormalized &= FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, options.MatchType);
 
@@ -195,37 +184,14 @@ namespace System.IO
 
         public void MoveTo(string destDirName)
         {
-            if (destDirName == null)
-                throw new ArgumentNullException(nameof(destDirName));
-            if (destDirName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destDirName));
+            ArgumentException.ThrowIfNullOrEmpty(destDirName);
 
             string destination = Path.GetFullPath(destDirName);
-
-            string destinationWithSeparator = PathInternal.EnsureTrailingSeparator(destination);
-            string sourceWithSeparator = PathInternal.EnsureTrailingSeparator(FullPath);
-
-            if (string.Equals(sourceWithSeparator, destinationWithSeparator, PathInternal.StringComparison))
-                throw new IOException(SR.IO_SourceDestMustBeDifferent);
-
-            string? sourceRoot = Path.GetPathRoot(sourceWithSeparator);
-            string? destinationRoot = Path.GetPathRoot(destinationWithSeparator);
-
-            if (!string.Equals(sourceRoot, destinationRoot, PathInternal.StringComparison))
-                throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
-
-            // Windows will throw if the source file/directory doesn't exist, we preemptively check
-            // to make sure our cross platform behavior matches .NET Framework behavior.
-            if (!Exists && !FileSystem.FileExists(FullPath))
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, FullPath));
-
-            if (FileSystem.DirectoryExists(destination))
-                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destinationWithSeparator));
 
             FileSystem.MoveDirectory(FullPath, destination);
 
             Init(originalPath: destDirName,
-                 fullPath: destinationWithSeparator,
+                 fullPath: PathInternal.EnsureTrailingSeparator(destination),
                  fileName: null,
                  isNormalized: true);
 

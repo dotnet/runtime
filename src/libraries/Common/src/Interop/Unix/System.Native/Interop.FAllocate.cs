@@ -11,7 +11,7 @@ internal static partial class Interop
         /// <summary>
         /// Returns -1 on error, 0 on success.
         /// </summary>
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FAllocate", SetLastError = true)]
-        internal static extern int FAllocate(SafeFileHandle fd, long offset, long length);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FAllocate", SetLastError = true)]
+        internal static partial int FAllocate(SafeFileHandle fd, long offset, long length);
     }
 }

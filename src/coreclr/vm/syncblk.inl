@@ -676,7 +676,7 @@ FORCEINLINE AwareLock::LeaveHelperAction AwareLock::LeaveHelper(Thread* pCurThre
     _ASSERTE(m_lockState.VolatileLoadWithoutBarrier().IsLocked());
     _ASSERTE(m_Recursion >= 1);
 
-#if defined(_DEBUG) && defined(TRACK_SYNC) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG) && defined(TRACK_SYNC)
     // The best place to grab this is from the ECall frame
     Frame   *pFrame = pCurThread->GetFrame();
     int      caller = (pFrame && pFrame != FRAME_TOP ? (int) pFrame->GetReturnAddress() : -1);

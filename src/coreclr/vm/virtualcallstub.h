@@ -14,7 +14,6 @@
 #ifndef _VIRTUAL_CALL_STUB_H
 #define _VIRTUAL_CALL_STUB_H
 
-#ifndef CROSSGEN_COMPILE
 
 #define CHAIN_LOOKUP
 
@@ -42,13 +41,6 @@ struct VTableCallHolder;
 /////////////////////////////////////////////////////////////////////////////////////
 // Forward function declarations
 extern "C" void InContextTPQuickDispatchAsmStub();
-
-#ifdef FEATURE_PREJIT
-extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBlock,
-                                                 TADDR siteAddrForRegisterIndirect,
-                                                 DWORD sectionIndex,
-                                                 Module * pModule);
-#endif
 
 extern "C" PCODE STDCALL VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
                                            TADDR siteAddrForRegisterIndirect,
@@ -154,10 +146,6 @@ public:
 
     PCODE           GetReturnAddress() { LIMITED_METHOD_CONTRACT; return m_returnAddr; }
 };
-
-#ifdef FEATURE_PREJIT
-extern "C" void StubDispatchFixupStub();              // for lazy fixup of ngen call sites
-#endif
 
 // These are the assembly language entry points that the stubs use when they want to go into the EE
 
@@ -1691,19 +1679,12 @@ private:
         CONSISTENCY_CHECK(index <= bucketMask()+CALL_STUB_FIRST_INDEX);
         return VolatileLoad(&buckets[index]);
     }
-
-#ifdef _MSC_VER
-#pragma warning(disable: 4267) //work-around for the compiler
-#endif
     inline void Write(size_t index, size_t value)
     {
         LIMITED_METHOD_CONTRACT;
         CONSISTENCY_CHECK(index <= bucketMask()+CALL_STUB_FIRST_INDEX);
         VolatileStore(&buckets[index], value);
     }
-#ifdef _MSC_VER
-#pragma warning(default: 4267)
-#endif
 
     // We store (#buckets-1) in    bucket[CALL_STUB_MASK_INDEX  ==0]
     // We have two unused cells at bucket[CALL_STUB_COUNT_INDEX ==1]
@@ -1714,6 +1695,5 @@ private:
     static FastTable* dead;             //linked list head of to be deleted (abandoned) buckets
 };
 
-#endif // !CROSSGEN_COMPILE
 
 #endif // !_VIRTUAL_CALL_STUB_H

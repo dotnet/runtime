@@ -12,7 +12,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly precise4
+.assembly 'prefldinit4'
 {
   // --- The following custom attribute is added automatically, do not uncomment -------
   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -20,44 +20,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module precise4.exe
-// MVID: {623817A9-BEA6-4892-A378-D2135E123200}
-.imagebase 0x00400000
-.subsystem 0x00000003
-.file alignment 512
-.corflags 0x00000001
-// Image base: 0x076c0000
-//
-// ============== CLASS STRUCTURE DECLARATION ==================
-//
-.class private auto ansi beforefieldinit measure
-       extends [mscorlib]System.Object
-{
-} // end of class measure
-
-.class private auto ansi test
-       extends [mscorlib]System.Object
-{
-} // end of class test
-
-.class private auto ansi beforefieldinit Driver
-       extends [mscorlib]System.Object
-{
-} // end of class Driver
-
-
-// =============================================================
-
-
-// =============== GLOBAL FIELDS AND METHODS ===================
-
-
-// =============================================================
-
-
-// =============== CLASS MEMBERS DECLARATION ===================
-//   note that class flags, 'extends' and 'implements' clauses
-//          are provided here for information only
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit measure
        extends [mscorlib]System.Object
@@ -85,7 +48,7 @@
 
 } // end of class measure
 
-.class private auto ansi beforefieldinit test
+.class private auto ansi test
        extends [mscorlib]System.Object
 {
   .field public static unsigned int8 b
@@ -194,6 +157,9 @@
       IL_0062:  beq.s      IL_0086
 
       IL_0064:  ldstr      "in Main() after f(ref b), measure.a is {0}"
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       IL_0069:  ldsfld     int32 measure::a
       IL_006e:  box        [mscorlib]System.Int32
       IL_0073:  call       void [System.Console]System.Console::WriteLine(string,

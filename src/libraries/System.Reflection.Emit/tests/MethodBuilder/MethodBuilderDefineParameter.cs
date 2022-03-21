@@ -10,7 +10,7 @@ namespace System.Reflection.Emit.Tests
     {
         private const MethodAttributes TestMethodAttributes = MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DefineParameter_TwoParameters()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);

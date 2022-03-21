@@ -11,13 +11,13 @@ namespace System.Text.Json.Serialization.Metadata
     /// <summary>
     /// Provides JSON serialization-related metadata about a property or field.
     /// </summary>
-    [DebuggerDisplay("MemberInfo={MemberInfo}")]
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public abstract class JsonPropertyInfo
     {
         internal static readonly JsonPropertyInfo s_missingProperty = GetPropertyPlaceholder();
 
-        private JsonTypeInfo? _runtimeTypeInfo;
+        private JsonTypeInfo? _jsonTypeInfo;
 
         internal ConverterStrategy ConverterStrategy;
 
@@ -52,7 +52,7 @@ namespace System.Text.Json.Serialization.Metadata
             jsonPropertyInfo.Options = options;
             jsonPropertyInfo.MemberInfo = memberInfo;
             jsonPropertyInfo.IsIgnored = true;
-            jsonPropertyInfo.DeclaredPropertyType = memberType;
+            jsonPropertyInfo.PropertyType = memberType;
             jsonPropertyInfo.IsVirtual = isVirtual;
             jsonPropertyInfo.DeterminePropertyName();
 
@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization.Metadata
             return jsonPropertyInfo;
         }
 
-        internal Type DeclaredPropertyType { get; set; } = null!;
+        internal Type PropertyType { get; set; } = null!;
 
         internal virtual void GetPolicies(JsonIgnoreCondition? ignoreCondition, JsonNumberHandling? declaringTypeNumberHandling)
         {
@@ -273,7 +273,7 @@ namespace System.Text.Json.Serialization.Metadata
             if (!ConverterBase.IsInternalConverter ||
                 ((ConverterStrategy.Enumerable | ConverterStrategy.Dictionary) & ConverterStrategy) == 0)
             {
-                potentialNumberType = DeclaredPropertyType;
+                potentialNumberType = PropertyType;
             }
             else
             {
@@ -313,8 +313,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal virtual void Initialize(
             Type parentClassType,
             Type declaredPropertyType,
-            Type? runtimePropertyType,
-            ConverterStrategy runtimeClassType,
+            ConverterStrategy converterStrategy,
             MemberInfo? memberInfo,
             bool isVirtual,
             JsonConverter converter,
@@ -325,9 +324,8 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(converter != null);
 
             DeclaringType = parentClassType;
-            DeclaredPropertyType = declaredPropertyType;
-            RuntimePropertyType = runtimePropertyType;
-            ConverterStrategy = runtimeClassType;
+            PropertyType = declaredPropertyType;
+            ConverterStrategy = converterStrategy;
             MemberInfo = memberInfo;
             IsVirtual = isVirtual;
             ConverterBase = converter;
@@ -418,7 +416,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonConverter GetDictionaryValueConverter(Type dictionaryValueType)
             {
                 JsonConverter converter;
-                JsonTypeInfo? dictionaryValueInfo = RuntimeTypeInfo.ElementTypeInfo;
+                JsonTypeInfo? dictionaryValueInfo = JsonTypeInfo.ElementTypeInfo;
                 if (dictionaryValueInfo != null)
                 {
                     // Fast path when there is a generic type such as Dictionary<,>.
@@ -445,7 +443,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(this == state.Current.JsonTypeInfo.DataExtensionProperty);
 
-            if (RuntimeTypeInfo.ElementType == JsonTypeInfo.ObjectType && reader.TokenType == JsonTokenType.Null)
+            if (JsonTypeInfo.ElementType == JsonTypeInfo.ObjectType && reader.TokenType == JsonTokenType.Null)
             {
                 value = null;
                 return true;
@@ -467,26 +465,19 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal MemberInfo? MemberInfo { get; private set; }
 
-        internal JsonTypeInfo RuntimeTypeInfo
+        internal JsonTypeInfo JsonTypeInfo
         {
             get
             {
-                if (_runtimeTypeInfo == null)
-                {
-                    _runtimeTypeInfo = Options.GetOrAddClass(RuntimePropertyType!);
-                }
-
-                return _runtimeTypeInfo;
+                return _jsonTypeInfo ??= Options.GetOrAddJsonTypeInfo(PropertyType);
             }
             set
             {
                 // Used by JsonMetadataServices.
-                Debug.Assert(_runtimeTypeInfo == null);
-                _runtimeTypeInfo = value;
+                Debug.Assert(_jsonTypeInfo == null);
+                _jsonTypeInfo = value;
             }
         }
-
-        internal Type? RuntimePropertyType { get; set; }
 
         internal abstract void SetExtensionDictionaryAsObject(object obj, object? extensionDict);
 
@@ -528,5 +519,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// Default value used for parameterized ctor invocation.
         /// </summary>
         internal abstract object? DefaultValue { get; }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private string DebuggerDisplay => $"MemberInfo={MemberInfo}";
     }
 }

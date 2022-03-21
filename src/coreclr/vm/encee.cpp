@@ -35,8 +35,8 @@ static int g_BreakOnEnCResolveField = -1;
 // The constructor phase initializes just enough so that Destruct() can be safely called.
 // It cannot throw or fail.
 //
-EditAndContinueModule::EditAndContinueModule(Assembly *pAssembly, mdToken moduleRef, PEFile *file)
-  : Module(pAssembly, moduleRef, file)
+EditAndContinueModule::EditAndContinueModule(Assembly *pAssembly, mdToken moduleRef, PEAssembly *pPEAssembly)
+  : Module(pAssembly, moduleRef, pPEAssembly)
 {
     CONTRACTL
     {
@@ -175,7 +175,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     {
         // ConvertMDInternalToReadWrite should only ever be called on EnC capable files.
         _ASSERTE(IsEditAndContinueCapable()); // this also checks that the file is EnC capable
-        GetFile()->ConvertMDInternalToReadWrite();
+        GetPEAssembly()->ConvertMDInternalToReadWrite();
     }
     EX_CATCH_HRESULT(hr);
 
@@ -667,7 +667,9 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     if( newFrameSize > oldFrameSize)
     {
         DWORD frameIncrement = newFrameSize - oldFrameSize;
-        (void)alloca(frameIncrement);
+        // alloca() has __attribute__((warn_unused_result)) in glibc, for which gcc 11+ issue `-Wunused-result` even with `(void)alloca(..)`,
+        // so we use additional NOT(!) operator to force unused-result suppression.
+        (void)!alloca(frameIncrement);
     }
 
     // Ask the EECodeManager to actually fill in the context and stack for the new frame so that

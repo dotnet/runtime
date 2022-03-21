@@ -147,8 +147,6 @@ namespace System.Text.Json.Serialization.Converters
                 onDeserialized.OnDeserialized();
             }
 
-            EndRead(ref state);
-
             // Unbox
             Debug.Assert(obj != null);
             value = (T)obj;
@@ -366,7 +364,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Returning false below will cause the read-ahead functionality to finish the read.
                 state.Current.PropertyState = StackFramePropertyState.ReadValue;
 
-                if (!SingleValueReadWithReadAhead(jsonParameterInfo.ConverterBase.ConverterStrategy, ref reader, ref state))
+                if (!SingleValueReadWithReadAhead(jsonParameterInfo.ConverterBase.RequiresReadAhead, ref reader, ref state))
                 {
                     return false;
                 }
@@ -477,8 +475,6 @@ namespace System.Text.Json.Serialization.Converters
 
             InitializeConstructorArgumentCaches(ref state, options);
         }
-
-        protected virtual void EndRead(ref ReadStack state) { }
 
         /// <summary>
         /// Lookup the constructor parameter given its name in the reader.

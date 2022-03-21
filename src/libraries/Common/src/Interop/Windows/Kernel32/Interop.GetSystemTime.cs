@@ -7,8 +7,8 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32)]
+        [LibraryImport(Libraries.Kernel32)]
         [SuppressGCTransition]
-        internal static extern unsafe void GetSystemTime(Interop.Kernel32.SYSTEMTIME* lpSystemTime);
+        internal static unsafe partial void GetSystemTime(Interop.Kernel32.SYSTEMTIME* lpSystemTime);
     }
 }

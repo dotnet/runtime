@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Runtime.Versioning;
 
+#pragma warning disable CA1066 // Implement IEquatable when overriding Object.Equals
+
 namespace System
 {
     // Because we have special type system support that says a boxed Nullable<T>
@@ -95,13 +97,8 @@ namespace System
 
         // If the type provided is not a Nullable Type, return null.
         // Otherwise, returns the underlying type of the Nullable type
-        public static Type? GetUnderlyingType(Type nullableType)
+        public static Type? GetUnderlyingType(Type nullableType!!)
         {
-            if (nullableType is null)
-            {
-                throw new ArgumentNullException(nameof(nullableType));
-            }
-
 #if CORERT
             // This is necessary to handle types without reflection metadata
             if (nullableType.TryGetEEType(out EETypePtr nullableEEType))
@@ -127,6 +124,23 @@ namespace System
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Retrieves a readonly reference to the location in the <see cref="Nullable{T}"/> instance where the value is stored.
+        /// </summary>
+        /// <typeparam name="T">The underlying value type of the <see cref="Nullable{T}"/> generic type.</typeparam>
+        /// <param name="nullable">The readonly reference to the input <see cref="Nullable{T}"/> value.</param>
+        /// <returns>A readonly reference to the location where the instance's <typeparamref name="T"/> value is stored. If the instance's <see cref="Nullable{T}.HasValue"/> is false, the current value at that location may be the default value.</returns>
+        /// <remarks>
+        /// As the returned readonly reference refers to data that is stored in the input <paramref name="nullable"/> value, this method should only ever be
+        /// called when the input reference points to a value with an actual location and not an "rvalue" (an expression that may appear on the right side but not left side of an assignment). That is, if this API is called and the input reference
+        /// points to a value that is produced by the compiler as a defensive copy or a temporary copy, the behavior might not match the desired one.
+        /// </remarks>
+        public static ref readonly T GetValueRefOrDefaultRef<T>(in T? nullable)
+            where T : struct
+        {
+            return ref nullable.value;
         }
     }
 }

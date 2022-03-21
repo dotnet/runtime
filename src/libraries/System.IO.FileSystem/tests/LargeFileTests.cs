@@ -9,7 +9,7 @@ namespace System.IO.FileSystem.Tests
 {
     [OuterLoop]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
-    [Collection(nameof(NoParallelTests))] // don't create multiple large files at the same time
+    [Collection(nameof(DisableParallelization))] // don't create multiple large files at the same time
     public class LargeFileTests : FileSystemTest
     {
         [Fact]
@@ -17,7 +17,7 @@ namespace System.IO.FileSystem.Tests
         {
             using FileStream fs = new (GetTestFilePath(), FileMode.Create, FileAccess.Write, FileShare.Read, 4096, FileOptions.DeleteOnClose);
 
-            foreach (long lengthOverLimit in new long[] { int.MaxValue + 1L })
+            foreach (long lengthOverLimit in new long[] { Array.MaxLength + 1L, int.MaxValue + 1L })
             {
                 fs.SetLength(lengthOverLimit);
 
@@ -58,7 +58,4 @@ namespace System.IO.FileSystem.Tests
             }
         }
     }
-
-    [CollectionDefinition(nameof(NoParallelTests), DisableParallelization = true)]
-    public partial class NoParallelTests { }
 }

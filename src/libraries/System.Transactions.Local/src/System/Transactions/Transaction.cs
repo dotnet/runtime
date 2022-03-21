@@ -81,7 +81,6 @@ namespace System.Transactions
         internal static Transaction? FastGetTransaction(TransactionScope? currentScope, ContextData contextData, out Transaction? contextTransaction)
         {
             Transaction? current = null;
-            contextTransaction = null;
 
             contextTransaction = contextData.CurrentTransaction;
 
@@ -159,7 +158,7 @@ namespace System.Transactions
                     etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "Transaction.get_Current");
                 }
 
-                GetCurrentTransactionAndScope(TxLookup.Default, out Transaction? current, out TransactionScope? currentScope, out Transaction? contextValue);
+                GetCurrentTransactionAndScope(TxLookup.Default, out Transaction? current, out TransactionScope? currentScope, out _);
 
                 if (currentScope != null)
                 {
@@ -287,11 +286,7 @@ namespace System.Transactions
         internal Transaction(IsolationLevel isoLevel, ISimpleTransactionSuperior superior)
         {
             TransactionManager.ValidateIsolationLevel(isoLevel);
-
-            if (superior == null)
-            {
-                throw new ArgumentNullException(nameof(superior));
-            }
+            ArgumentNullException.ThrowIfNull(superior);
 
             _isoLevel = isoLevel;
 
@@ -505,10 +500,7 @@ namespace System.Transactions
                 throw new ArgumentException(SR.BadResourceManagerId, nameof(resourceManagerIdentifier));
             }
 
-            if (enlistmentNotification == null)
-            {
-                throw new ArgumentNullException(nameof(enlistmentNotification));
-            }
+            ArgumentNullException.ThrowIfNull(enlistmentNotification);
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
@@ -559,10 +551,7 @@ namespace System.Transactions
                 throw new ArgumentException(SR.BadResourceManagerId, nameof(resourceManagerIdentifier));
             }
 
-            if (singlePhaseNotification == null)
-            {
-                throw new ArgumentNullException(nameof(singlePhaseNotification));
-            }
+            ArgumentNullException.ThrowIfNull(singlePhaseNotification);
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
@@ -658,10 +647,7 @@ namespace System.Transactions
                 throw new ObjectDisposedException(nameof(Transaction));
             }
 
-            if (enlistmentNotification == null)
-            {
-                throw new ArgumentNullException(nameof(enlistmentNotification));
-            }
+            ArgumentNullException.ThrowIfNull(enlistmentNotification);
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
@@ -703,10 +689,7 @@ namespace System.Transactions
                 throw new ObjectDisposedException(nameof(Transaction));
             }
 
-            if (singlePhaseNotification == null)
-            {
-                throw new ArgumentNullException(nameof(singlePhaseNotification));
-            }
+            ArgumentNullException.ThrowIfNull(singlePhaseNotification);
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
@@ -991,10 +974,7 @@ namespace System.Transactions
                 throw new ObjectDisposedException(nameof(Transaction));
             }
 
-            if (promotableSinglePhaseNotification == null)
-            {
-                throw new ArgumentNullException(nameof(promotableSinglePhaseNotification));
-            }
+            ArgumentNullException.ThrowIfNull(promotableSinglePhaseNotification);
 
             if (promoterType == Guid.Empty)
             {
@@ -1043,15 +1023,8 @@ namespace System.Transactions
                 throw new ArgumentException(SR.BadResourceManagerId, nameof(resourceManagerIdentifier));
             }
 
-            if (promotableNotification == null)
-            {
-                throw new ArgumentNullException(nameof(promotableNotification));
-            }
-
-            if (enlistmentNotification == null)
-            {
-                throw new ArgumentNullException(nameof(enlistmentNotification));
-            }
+            ArgumentNullException.ThrowIfNull(promotableNotification);
+            ArgumentNullException.ThrowIfNull(enlistmentNotification);
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
@@ -1092,10 +1065,7 @@ namespace System.Transactions
                 throw new ObjectDisposedException(nameof(Transaction));
             }
 
-            if (promotableNotification == null)
-            {
-                throw new ArgumentNullException(nameof(promotableNotification));
-            }
+            ArgumentNullException.ThrowIfNull(promotableNotification);
 
             if (distributedTransactionIdentifier == Guid.Empty)
             {
@@ -1150,7 +1120,7 @@ namespace System.Transactions
     //  The TxLookup enum is used internally to detect where the ambient context needs to be stored or looked up.
     //  Default                  - Used internally when looking up Transaction.Current.
     //  DefaultCallContext - Used when TransactionScope with async flow option is enabled. Internally we will use CallContext to store the ambient transaction.
-    //  Default TLS            - Used for legacy/syncronous TransactionScope. Internally we will use TLS to store the ambient transaction.
+    //  Default TLS            - Used for legacy/synchronous TransactionScope. Internally we will use TLS to store the ambient transaction.
     //
     internal enum TxLookup
     {
@@ -1277,7 +1247,7 @@ namespace System.Transactions
 
         internal static ContextData LookupContextData(TxLookup defaultLookup)
         {
-            ContextData? currentData = null;
+            ContextData? currentData;
             if (CallContextCurrentData.TryGetCurrentData(out currentData))
             {
                 if (currentData.CurrentScope == null && currentData.CurrentTransaction == null && defaultLookup != TxLookup.DefaultCallContext)

@@ -50,7 +50,7 @@ class Test
         }
     }
 
-    static int Main(String[] args)
+    static int Main()
     {
         //Start recording
         testLog.StartRecording();

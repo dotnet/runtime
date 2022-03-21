@@ -79,5 +79,5 @@ end:
 }
 
 
-.assembly bne_s.exe {}
+.assembly bne_s {}
 

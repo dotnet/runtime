@@ -24,21 +24,23 @@ internal static partial class Interop
             CRYPT_X931_FORMAT = 0x00000004,  // Not supported
         }
 
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptSignHashW")]
-        public static extern bool CryptSignHash(
+        [LibraryImport(Libraries.Advapi32, EntryPoint = "CryptSignHashW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool CryptSignHash(
             SafeHashHandle hHash,
             KeySpec dwKeySpec,
             string? szDescription,
             CryptSignAndVerifyHashFlags dwFlags,
-            [Out] byte[]? pbSignature,
-            [In, Out] ref int pdwSigLen);
+            byte[]? pbSignature,
+            ref int pdwSigLen);
 
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptVerifySignatureW")]
-        public static extern bool CryptVerifySignature(
+        [LibraryImport(Libraries.Advapi32, EntryPoint = "CryptVerifySignatureW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool CryptVerifySignature(
             SafeHashHandle hHash,
             byte[] pbSignature,
             int dwSigLen,
-            SafeKeyHandle hPubKey,
+            SafeCapiKeyHandle hPubKey,
             string? szDescription,
             CryptSignAndVerifyHashFlags dwFlags);
     }

@@ -105,7 +105,7 @@ mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty, LLVMValueRef Arr
 	auto sz = unwrap (ArraySize);
 	auto b = unwrap (builder);
 	auto ins = alignment > 0
-		? b->Insert (new AllocaInst (ty, 0, sz, to_align (alignment), Name))
+		? b->Insert (new AllocaInst (ty, 0, sz, to_align (alignment)), Name)
 		: b->CreateAlloca (ty, 0, sz, Name);
 	return wrap (ins);
 }
@@ -575,14 +575,9 @@ mono_llvm_di_create_function (void *di_builder, void *cu, LLVMValueRef func, con
 	// FIXME: Share DIFile
 	di_file = builder->createFile (file, dir);
 	type = builder->createSubroutineType (builder->getOrCreateTypeArray (ArrayRef<Metadata*> ()));
-#if LLVM_API_VERSION >= 900
 	di_func = builder->createFunction (
 		di_file, name, mangled_name, di_file, line, type, 0,
 		DINode::FlagZero, DISubprogram::SPFlagDefinition | DISubprogram::SPFlagLocalToUnit);
-#else
-	di_func = builder->createFunction (di_file, name, mangled_name, di_file, line, type, true, true, 0);
-#endif
-
 	unwrap<Function>(func)->setMetadata ("dbg", di_func);
 
 	return di_func;
@@ -627,23 +622,8 @@ mono_llvm_di_builder_finalize (void *di_builder)
 LLVMValueRef
 mono_llvm_get_or_insert_gc_safepoint_poll (LLVMModuleRef module)
 {
-#if LLVM_API_VERSION >= 900
-
 	llvm::FunctionCallee callee = unwrap(module)->getOrInsertFunction("gc.safepoint_poll", FunctionType::get(unwrap(LLVMVoidType()), false));
 	return wrap (dyn_cast<llvm::Function> (callee.getCallee ()));
-#else
-	llvm::Function *SafepointPoll;
-	llvm::Constant *SafepointPollConstant;
-
-	SafepointPollConstant = unwrap(module)->getOrInsertFunction("gc.safepoint_poll", FunctionType::get(unwrap(LLVMVoidType()), false));
-	g_assert (SafepointPollConstant);
-
-	SafepointPoll = dyn_cast<llvm::Function>(SafepointPollConstant);
-	g_assert (SafepointPoll);
-	g_assert (SafepointPoll->empty());
-
-	return wrap(SafepointPoll);
-#endif
 }
 
 gboolean
@@ -774,4 +754,27 @@ mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, L
 unsigned int
 mono_llvm_get_prim_size_bits (LLVMTypeRef type) {
 	return unwrap (type)->getPrimitiveSizeInBits ();
+}
+
+/*
+ * Inserts a call to a fragment of inline assembly.
+ *
+ * Return values correspond to output constraints. Parameter values correspond
+ * to input constraints. Example of use:
+ * mono_llvm_inline_asm (builder, void_func_t, "int $$0x3", "", LLVM_ASM_SIDE_EFFECT, NULL, 0, "");
+ */
+LLVMValueRef
+mono_llvm_inline_asm (LLVMBuilderRef builder, LLVMTypeRef type,
+	const char *asmstr, const char *constraints,
+	MonoLLVMAsmFlags flags, LLVMValueRef *args, unsigned num_args,
+	const char *name)
+{
+	const auto asmstr_len = strlen (asmstr);
+	const auto constraints_len = strlen (constraints);
+	const auto asmval = LLVMGetInlineAsm (type,
+		const_cast<char *>(asmstr), asmstr_len,
+		const_cast<char *>(constraints), constraints_len,
+		(flags & LLVM_ASM_SIDE_EFFECT) != 0, (flags & LLVM_ASM_ALIGN_STACK) != 0,
+		LLVMInlineAsmDialectATT);
+	return LLVMBuildCall2 (builder, type, asmval, args, num_args, name);
 }

@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly switch.exe{}
+.assembly 'switch'{}
 
 .class public _switch {
 

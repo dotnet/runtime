@@ -3,27 +3,21 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 #
-##
 # Title               : superpmi_replay_setup.py
 #
 # Notes:
 #
 # Script to setup directory structure required to perform SuperPMI replay in CI.
-#  It creates `correlation_payload_directory` that contains clrjit*_x64.dll and clrjit*_x86.dll
+# It creates `correlation_payload_directory` that contains clrjit*_x64.dll and clrjit*_x86.dll
+#
 ################################################################################
 ################################################################################
 
 import argparse
-from os import path, walk
 import os
-import shutil
-import stat
-import subprocess
-import tempfile
 
-from os.path import isfile, join
 from coreclr_arguments import *
-from superpmi_setup import copy_directory, copy_files, set_pipeline_variable, run_command
+from jitutil import copy_directory, copy_files, set_pipeline_variable
 
 parser = argparse.ArgumentParser(description="description")
 
@@ -63,38 +57,10 @@ def setup_args(args):
     return coreclr_args
 
 
-def partition_mch(mch_directory, dst_directory):
-    from os import listdir
-
-    print("Inside partition_mch")
-    mch_zip_files = []
-    for file_path, dirs, files in walk(mch_directory, topdown=True):
-        for name in files:
-            curr_file_path = path.join(file_path, name)
-
-            if not isfile(curr_file_path):
-                continue
-            if not name.endswith(".mch.zip"):
-                continue
-
-            mch_zip_files.append(curr_file_path)
-
-    index = 1
-    for mch_file in mch_zip_files:
-        print("Processing {}".format(mch_file))
-        file_names = []
-        file_names += [mch_file]
-        file_names += [mch_file.replace(".mch.zip", ".mch.mct.zip")]
-        curr_dst_path = path.join(dst_directory, "partitions", str(index))
-        copy_files(mch_directory, curr_dst_path, file_names)
-        index += 1
-
-
 def match_correlation_files(full_path):
     file_name = os.path.basename(full_path)
 
-    if file_name.startswith("clrjit_") and file_name.endswith(".dll") and file_name.find(
-        "osx") == -1 and file_name.find("armel") == -1:
+    if file_name.startswith("clrjit_") and file_name.endswith(".dll") and file_name.find("osx") == -1:
         return True
 
     if file_name == "superpmi.exe" or file_name == "mcs.exe":
@@ -116,29 +82,26 @@ def main(main_args):
     product_directory = coreclr_args.product_directory
 
     # CorrelationPayload directories
-    correlation_payload_directory = path.join(coreclr_args.source_directory, "payload")
-    superpmi_src_directory = path.join(source_directory, 'src', 'coreclr', 'scripts')
+    correlation_payload_directory = os.path.join(source_directory, "payload")
+    superpmi_src_directory = os.path.join(source_directory, 'src', 'coreclr', 'scripts')
 
     helix_source_prefix = "official"
     creator = ""
-    ci = True
-    helix_queue = "Windows.10.Amd64.X86"
 
     # Copy *.py to CorrelationPayload
     print('Copying {} -> {}'.format(superpmi_src_directory, correlation_payload_directory))
-    copy_directory(superpmi_src_directory, correlation_payload_directory,
+    copy_directory(superpmi_src_directory, correlation_payload_directory, verbose_output=True,
                    match_func=lambda path: any(path.endswith(extension) for extension in [".py"]))
 
     # Copy clrjit*_arch.dll binaries to CorrelationPayload
-    print('Copying binaries {} -> {}'.format(arch, product_directory, correlation_payload_directory))
-    copy_directory(product_directory, correlation_payload_directory, match_func=match_correlation_files)
+    print('Copying binaries {} -> {}'.format(product_directory, correlation_payload_directory))
+    copy_directory(product_directory, correlation_payload_directory, verbose_output=True, match_func=match_correlation_files)
 
     # Set variables
     print('Setting pipeline variables:')
     set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
     set_pipeline_variable("Architecture", arch)
     set_pipeline_variable("Creator", creator)
-    set_pipeline_variable("Queue", helix_queue)
     set_pipeline_variable("HelixSourcePrefix", helix_source_prefix)
 
 

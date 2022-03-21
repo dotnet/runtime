@@ -21,15 +21,10 @@
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/w32api.h>
 #include <mono/metadata/assembly.h>
-#include <mono/metadata/w32file.h>
 #include <mono/metadata/w32event.h>
-#include <mono/metadata/environment-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <runtime_version.h>
 #include <mono/metadata/profiler.h>
-
-#undef EP_ARRAY_SIZE
-#define EP_ARRAY_SIZE(expr) G_N_ELEMENTS(expr)
 
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT MONO_INFINITE_WAIT
@@ -155,11 +150,11 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 #define EP_RT_DEFINE_ARRAY_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, alloc) (array_type *ep_array) { \
 		EP_ASSERT (ep_array != NULL); \
-		ep_array->array = g_array_new (FALSE, FALSE, sizeof (item_type)); \
+		ep_array->array = g_array_new (FALSE, FALSE, (guint)sizeof (item_type)); \
 	} \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, alloc_capacity) (array_type *ep_array, size_t capacity) { \
 		EP_ASSERT (ep_array != NULL); \
-		ep_array->array = g_array_sized_new (FALSE, FALSE, sizeof (item_type), capacity); \
+		ep_array->array = g_array_sized_new (FALSE, FALSE, (guint)sizeof (item_type), (guint)capacity); \
 	} \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, free) (array_type *ep_array) { \
 		EP_ASSERT (ep_array != NULL); \
@@ -191,11 +186,11 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 #define EP_RT_DEFINE_LOCAL_ARRAY_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, init) (array_type *ep_array) { \
 		EP_ASSERT (ep_array != NULL); \
-		ep_array->array = g_array_new (FALSE, FALSE, sizeof (item_type)); \
+		ep_array->array = g_array_new (FALSE, FALSE, (guint)sizeof (item_type)); \
 	} \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, init_capacity) (array_type *ep_array, size_t capacity) { \
 		EP_ASSERT (ep_array != NULL); \
-		ep_array->array = g_array_sized_new (FALSE, FALSE, sizeof (item_type), capacity); \
+		ep_array->array = g_array_sized_new (FALSE, FALSE, (guint)sizeof (item_type), (guint)capacity); \
 	} \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, fini) (array_type *ep_array) { \
 		EP_ASSERT (ep_array != NULL); \
@@ -352,12 +347,45 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 #define EP_RT_DEFINE_HASH_MAP_ITERATOR(hash_map_name, hash_map_type, iterator_type, key_type, value_type) \
 	EP_RT_DEFINE_HASH_MAP_ITERATOR_PREFIX(ep, hash_map_name, hash_map_type, iterator_type, key_type, value_type)
 
+extern char *_ep_rt_mono_os_cmd_line;
+extern mono_lazy_init_t _ep_rt_mono_os_cmd_line_init;
+extern char *_ep_rt_mono_managed_cmd_line;
+extern mono_lazy_init_t _ep_rt_mono_managed_cmd_line_init;
+extern ep_rt_spin_lock_handle_t _ep_rt_mono_config_lock;
+extern char * ep_rt_mono_get_managed_cmd_line (void);
+extern char * ep_rt_mono_get_os_cmd_line (void);
+extern ep_rt_file_handle_t ep_rt_mono_file_open_write (const ep_char8_t *path);
+extern bool ep_rt_mono_file_close (ep_rt_file_handle_t handle);
+extern bool ep_rt_mono_file_write (ep_rt_file_handle_t handle, const uint8_t *buffer, uint32_t numbytes, uint32_t *byteswritten);
+extern void * ep_rt_mono_thread_attach (bool background_thread);
+extern void * ep_rt_mono_thread_attach_2 (bool background_thread, EventPipeThreadType thread_type);
+extern void ep_rt_mono_thread_detach (void);
+extern void ep_rt_mono_init (void);
+extern void ep_rt_mono_init_finish (void);
+extern void ep_rt_mono_fini (void);
+extern bool ep_rt_mono_walk_managed_stack_for_thread (ep_rt_thread_handle_t thread, EventPipeStackContents *stack_contents);
+extern bool ep_rt_mono_method_get_simple_assembly_name (ep_rt_method_desc_t *method, ep_char8_t *name, size_t name_len);
+extern bool ep_rt_mono_method_get_full_name (ep_rt_method_desc_t *method, ep_char8_t *name, size_t name_len);
+extern void ep_rt_mono_provider_config_init (EventPipeProviderConfiguration *provider_config);
+extern void ep_rt_mono_init_providers_and_events (void);
+extern bool ep_rt_mono_providers_validate_all_disabled (void);
+extern bool ep_rt_mono_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sampling_thread, EventPipeEvent *sampling_event);
+extern bool ep_rt_mono_rand_try_get_bytes (uint8_t *buffer,size_t buffer_size);
+extern void ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints);
+extern int64_t ep_rt_mono_perf_counter_query (void);
+extern int64_t ep_rt_mono_perf_frequency_query (void);
+extern void ep_rt_mono_system_time_get (EventPipeSystemTime *system_time);
+extern int64_t ep_rt_mono_system_timestamp_get (void);
+extern void ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array);
+extern MonoNativeTlsKey _ep_rt_mono_thread_holder_tls_id;
+extern EventPipeThread * ep_rt_mono_thread_get_or_create (void);
+
 static
 inline
 char *
 os_command_line_get (void)
 {
-	return mono_get_os_cmd_line ();
+	return ep_rt_mono_get_os_cmd_line ();
 }
 
 static
@@ -365,7 +393,6 @@ inline
 char **
 os_command_line_get_ref (void)
 {
-	extern char *_ep_rt_mono_os_cmd_line;
 	return &_ep_rt_mono_os_cmd_line;
 }
 
@@ -374,7 +401,6 @@ inline
 mono_lazy_init_t *
 os_command_line_get_init (void)
 {
-	extern mono_lazy_init_t _ep_rt_mono_os_cmd_line_init;
 	return &_ep_rt_mono_os_cmd_line_init;
 }
 
@@ -401,7 +427,7 @@ inline
 char *
 managed_command_line_get (void)
 {
-	return mono_runtime_get_managed_cmd_line ();
+	return ep_rt_mono_get_managed_cmd_line ();
 }
 
 static
@@ -409,7 +435,6 @@ inline
 char **
 managed_command_line_get_ref (void)
 {
-	extern char *_ep_rt_mono_managed_cmd_line;
 	return &_ep_rt_mono_managed_cmd_line;
 }
 
@@ -418,7 +443,6 @@ inline
 mono_lazy_init_t *
 managed_command_line_get_init (void)
 {
-	extern mono_lazy_init_t _ep_rt_mono_managed_cmd_line_init;
 	return &_ep_rt_mono_managed_cmd_line_init;
 }
 
@@ -445,7 +469,6 @@ inline
 ep_rt_spin_lock_handle_t *
 ep_rt_mono_config_lock_get (void)
 {
-	extern ep_rt_spin_lock_handle_t _ep_rt_mono_config_lock;
 	return &_ep_rt_mono_config_lock;
 }
 
@@ -493,37 +516,9 @@ ep_rt_mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId i
 
 static
 inline
-gpointer
-ep_rt_mono_w32file_create (const gunichar2 *name, guint32 fileaccess, guint32 sharemode, guint32 createmode, guint32 attrs)
-{
-	//TODO, replace with low level PAL implementation.
-	return mono_w32file_create (name, fileaccess, sharemode, createmode, attrs);
-}
-
-static
-inline
-gboolean
-ep_rt_mono_w32file_write (gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten, gint32 *win32error)
-{
-	//TODO, replace with low level PAL implementation.
-	return mono_w32file_write (handle, buffer, numbytes, byteswritten, win32error);
-}
-
-static
-inline
-gboolean
-ep_rt_mono_w32file_close (gpointer handle)
-{
-	//TODO, replace with low level PAL implementation.
-	return mono_w32file_close (handle);
-}
-
-static
-inline
 void
 ep_rt_mono_thread_setup (bool background_thread)
 {
-	extern void * ep_rt_mono_thread_attach (bool background_thread);
 	ep_rt_mono_thread_attach (background_thread);
 }
 
@@ -532,7 +527,6 @@ inline
 void
 ep_rt_mono_thread_setup_2 (bool background_thread, EventPipeThreadType thread_type)
 {
-	extern void * ep_rt_mono_thread_attach_2 (bool background_thread, EventPipeThreadType thread_type);
 	ep_rt_mono_thread_attach_2 (background_thread, thread_type);
 }
 
@@ -541,7 +535,6 @@ inline
 void
 ep_rt_mono_thread_teardown (void)
 {
-	extern void ep_rt_mono_thread_detach (void);
 	ep_rt_mono_thread_detach ();
 }
 
@@ -624,7 +617,6 @@ inline
 void
 ep_rt_init (void)
 {
-	extern void ep_rt_mono_init (void);
 	ep_rt_mono_init ();
 
 	ep_rt_spin_lock_alloc (ep_rt_mono_config_lock_get ());
@@ -635,7 +627,6 @@ inline
 void
 ep_rt_init_finish (void)
 {
-	extern void ep_rt_mono_init_finish (void);
 	ep_rt_mono_init_finish ();
 }
 
@@ -649,7 +640,6 @@ ep_rt_shutdown (void)
 
 	ep_rt_spin_lock_free (ep_rt_mono_config_lock_get ());
 
-	extern void ep_rt_mono_fini (void);
 	ep_rt_mono_fini ();
 }
 
@@ -694,7 +684,6 @@ ep_rt_walk_managed_stack_for_thread (
 	ep_rt_thread_handle_t thread,
 	EventPipeStackContents *stack_contents)
 {
-	extern bool ep_rt_mono_walk_managed_stack_for_thread (ep_rt_thread_handle_t thread, EventPipeStackContents *stack_contents);
 	return ep_rt_mono_walk_managed_stack_for_thread (thread, stack_contents);
 }
 
@@ -706,7 +695,6 @@ ep_rt_method_get_simple_assembly_name (
 	ep_char8_t *name,
 	size_t name_len)
 {
-	extern bool ep_rt_mono_method_get_simple_assembly_name (ep_rt_method_desc_t *method, ep_char8_t *name, size_t name_len);
 	return ep_rt_mono_method_get_simple_assembly_name (method, name, name_len);
 }
 
@@ -718,7 +706,6 @@ ep_rt_method_get_full_name (
 	ep_char8_t *name,
 	size_t name_len)
 {
-	extern bool ep_rt_mono_method_get_full_name (ep_rt_method_desc_t *method, ep_char8_t *name, size_t name_len);
 	return ep_rt_mono_method_get_full_name (method, name, name_len);
 }
 
@@ -727,7 +714,6 @@ inline
 void
 ep_rt_provider_config_init (EventPipeProviderConfiguration *provider_config)
 {
-	extern void ep_rt_mono_provider_config_init (EventPipeProviderConfiguration *provider_config);
 	ep_rt_mono_provider_config_init (provider_config);
 }
 
@@ -736,7 +722,6 @@ inline
 void
 ep_rt_init_providers_and_events (void)
 {
-	extern void ep_rt_mono_init_providers_and_events (void);
 	ep_rt_mono_init_providers_and_events ();
 }
 
@@ -745,7 +730,6 @@ inline
 bool
 ep_rt_providers_validate_all_disabled (void)
 {
-	extern bool ep_rt_mono_providers_validate_all_disabled (void);
 	return ep_rt_mono_providers_validate_all_disabled ();
 }
 
@@ -956,7 +940,6 @@ static
 void
 ep_rt_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sampling_thread, EventPipeEvent *sampling_event)
 {
-	extern bool ep_rt_mono_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sampling_thread, EventPipeEvent *sampling_event);
 	ep_rt_mono_sample_profiler_write_sampling_event_for_threads (sampling_thread, sampling_event);
 }
 
@@ -1169,7 +1152,6 @@ ep_rt_create_activity_id (
 	EP_ASSERT (activity_id != NULL);
 	EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
 
-	extern bool ep_rt_mono_rand_try_get_bytes (uint8_t *buffer,size_t buffer_size);
 	ep_rt_mono_rand_try_get_bytes ((guchar *)activity_id, EP_ACTIVITY_ID_SIZE);
 
 	const uint16_t version_mask = 0xF000;
@@ -1212,7 +1194,6 @@ ep_rt_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints
 	if (ep_rt_config_value_get_rundown () > 0) {
 		// Ask the runtime to emit rundown events.
 		if (/*is_running &&*/ !ep_rt_process_shutdown ()) {
-			extern void ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints);
 			ep_rt_mono_execute_rundown (execution_checkpoints);
 		}
 	}
@@ -1303,7 +1284,7 @@ ep_rt_thread_sleep (uint64_t ns)
 		mono_thread_info_yield ();
 	} else {
 		MONO_ENTER_GC_SAFE;
-		g_usleep (ns / 1000);
+		g_usleep ((gulong)(ns / 1000));
 		MONO_EXIT_GC_SAFE;
 	}
 }
@@ -1345,7 +1326,6 @@ inline
 int64_t
 ep_rt_perf_counter_query (void)
 {
-	extern int64_t ep_rt_mono_perf_counter_query (void);
 	return ep_rt_mono_perf_counter_query ();
 }
 
@@ -1354,7 +1334,6 @@ inline
 int64_t
 ep_rt_perf_frequency_query (void)
 {
-	extern int64_t ep_rt_mono_perf_frequency_query (void);
 	return ep_rt_mono_perf_frequency_query ();
 }
 
@@ -1363,7 +1342,6 @@ inline
 void
 ep_rt_system_time_get (EventPipeSystemTime *system_time)
 {
-	extern void ep_rt_mono_system_time_get (EventPipeSystemTime *system_time);
 	ep_rt_mono_system_time_get (system_time);
 }
 
@@ -1372,7 +1350,6 @@ inline
 int64_t
 ep_rt_system_timestamp_get (void)
 {
-	extern int64_t ep_rt_mono_system_timestamp_get (void);
 	return ep_rt_mono_system_timestamp_get ();
 }
 
@@ -1406,13 +1383,9 @@ inline
 ep_rt_file_handle_t
 ep_rt_file_open_write (const ep_char8_t *path)
 {
-	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16_string (path, -1);
-	ep_return_null_if_nok (path_utf16 != NULL);
+	ep_rt_file_handle_t res = ep_rt_mono_file_open_write (path);
 
-	gpointer file_handle = ep_rt_mono_w32file_create ((gunichar2 *)path_utf16, GENERIC_WRITE, FILE_SHARE_READ, CREATE_ALWAYS, FileAttributes_Normal);
-	ep_rt_utf16_string_free (path_utf16);
-
-	return file_handle;
+	return (res != INVALID_HANDLE_VALUE) ? res : NULL;
 }
 
 static
@@ -1421,7 +1394,7 @@ bool
 ep_rt_file_close (ep_rt_file_handle_t file_handle)
 {
 	ep_return_false_if_nok (file_handle != NULL);
-	return ep_rt_mono_w32file_close (file_handle);
+	return ep_rt_mono_file_close (file_handle);
 }
 
 static
@@ -1436,8 +1409,7 @@ ep_rt_file_write (
 	ep_return_false_if_nok (file_handle != NULL);
 	EP_ASSERT (buffer != NULL);
 
-	gint32 win32_error;
-	bool result = ep_rt_mono_w32file_write (file_handle, buffer, bytes_to_write, bytes_written, &win32_error);
+	bool result = ep_rt_mono_file_write (file_handle, buffer, bytes_to_write, bytes_written);
 	if (result)
 		*bytes_written = bytes_to_write;
 
@@ -1503,7 +1475,6 @@ inline
 void
 ep_rt_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
 {
-	extern void ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array);
 	ep_rt_mono_os_environment_get_utf16 (env_array);
 }
 
@@ -1753,7 +1724,7 @@ ep_rt_utf8_string_replace (
 	if (strFound != NULL)
 	{
 		size_t strSearchLen = strlen(strSearch);
-		size_t newStrSize = strlen(*str) + strlen(strReplacement) - strSearchLen + 1; 
+		size_t newStrSize = strlen(*str) + strlen(strReplacement) - strSearchLen + 1;
 		ep_char8_t *newStr =  g_new(ep_char8_t, newStrSize);
 		if (newStr == NULL)
 		{
@@ -1775,7 +1746,7 @@ ep_rt_utf8_to_utf16_string (
 	const ep_char8_t *str,
 	size_t len)
 {
-	return (ep_char16_t *)(g_utf8_to_utf16 ((const gchar *)str, len, NULL, NULL, NULL));
+	return (ep_char16_t *)(g_utf8_to_utf16 ((const gchar *)str, (glong)len, NULL, NULL, NULL));
 }
 
 static
@@ -1813,7 +1784,7 @@ ep_rt_utf16_to_utf8_string (
 	const ep_char16_t *str,
 	size_t len)
 {
-	return g_utf16_to_utf8 ((const gunichar2 *)str, len, NULL, NULL, NULL);
+	return g_utf16_to_utf8 ((const gunichar2 *)str, (glong)len, NULL, NULL, NULL);
 }
 
 static
@@ -1847,6 +1818,7 @@ ep_rt_diagnostics_command_line_get (void)
 {
 	const ep_char8_t * cmd_line = ep_rt_managed_command_line_get ();
 
+	// if the managed command line isn't available yet (e.g. because we're during runtime startup) then fallback to the OS command line.
 	// Checkout https://github.com/dotnet/coreclr/pull/24433 for more information about this fall back.
 	if (cmd_line == NULL)
 		cmd_line = ep_rt_os_command_line_get ();
@@ -1863,7 +1835,7 @@ ep_rt_entrypoint_assembly_name_get_utf8 (void)
 	if (!main_assembly || !main_assembly->image)
 		return "";
 
-	const char *assembly_name = m_image_get_assembly_name (main_assembly->image);
+	const char *assembly_name = m_image_get_assembly_name (mono_assembly_get_main ()->image);
 	if (!assembly_name)
 		return "";
 
@@ -1894,7 +1866,6 @@ inline
 EventPipeThread *
 ep_rt_thread_get (void)
 {
-	extern MonoNativeTlsKey _ep_rt_mono_thread_holder_tls_id;
 	EventPipeThreadHolder *thread_holder = (EventPipeThreadHolder *)mono_native_tls_get_value (_ep_rt_mono_thread_holder_tls_id);
 	return thread_holder ? ep_thread_holder_get_thread (thread_holder) : NULL;
 }
@@ -1906,7 +1877,6 @@ ep_rt_thread_get_or_create (void)
 {
 	EventPipeThread *thread = ep_rt_thread_get ();
 	if (!thread) {
-		extern EventPipeThread * ep_rt_mono_thread_get_or_create (void);
 		thread = ep_rt_mono_thread_get_or_create ();
 	}
 	return thread;

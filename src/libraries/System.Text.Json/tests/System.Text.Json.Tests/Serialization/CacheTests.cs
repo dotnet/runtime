@@ -1,12 +1,15 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Text.Encodings.Web;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
+using Microsoft.DotNet.RemoteExecutor;
 
 namespace System.Text.Json.Serialization.Tests
 {
@@ -205,36 +208,218 @@ namespace System.Text.Json.Serialization.Tests
             await Task.WhenAll(tasks);
         }
 
-        [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public static async Task JsonSerializerOptionsUpdateHandler_ClearingDoesntPreventSerialization()
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void JsonSerializerOptionsUpdateHandler_ClearingDoesntPreventSerialization()
         {
             // This test uses reflection to:
-            // - Access JsonSerializerOptions._classes
+            // - Access JsonSerializerOptions._cachingContext.Count
             // - Access JsonSerializerOptionsUpdateHandler.ClearCache
             //
             // If either of them changes, this test will need to be kept in sync.
 
-            var options = new JsonSerializerOptions();
+            RemoteExecutor.Invoke(static () =>
+                {
+                    var options = new JsonSerializerOptions();
 
-            FieldInfo classesField = options.GetType().GetField("_classes", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(classesField);
-            IDictionary classes = (IDictionary)classesField.GetValue(options);
-            Assert.Equal(0, classes.Count);
+                    Func<JsonSerializerOptions, int> getCount = CreateCacheCountAccessor();
 
-            SimpleTestClass testObj = new SimpleTestClass();
-            testObj.Initialize();
-            await JsonSerializer.SerializeAsync<SimpleTestClass>(new MemoryStream(), testObj, options);
-            Assert.NotEqual(0, classes.Count);
+                    Assert.Equal(0, getCount(options));
 
-            Type updateHandler = typeof(JsonSerializerOptions).Assembly.GetType("System.Text.Json.JsonSerializerOptionsUpdateHandler", throwOnError: true, ignoreCase: false);
-            MethodInfo clearCache = updateHandler.GetMethod("ClearCache");
-            Assert.NotNull(clearCache);
-            clearCache.Invoke(null, new object[] { null });
-            Assert.Equal(0, classes.Count);
+                    SimpleTestClass testObj = new SimpleTestClass();
+                    testObj.Initialize();
+                    JsonSerializer.Serialize<SimpleTestClass>(testObj, options);
+                    Assert.NotEqual(0, getCount(options));
 
-            await JsonSerializer.SerializeAsync<SimpleTestClass>(new MemoryStream(), testObj, options);
-            Assert.NotEqual(0, classes.Count);
+                    Type updateHandler = typeof(JsonSerializerOptions).Assembly.GetType("System.Text.Json.JsonSerializerOptionsUpdateHandler", throwOnError: true, ignoreCase: false);
+                    MethodInfo clearCache = updateHandler.GetMethod("ClearCache");
+                    Assert.NotNull(clearCache);
+                    clearCache.Invoke(null, new object[] { null });
+                    Assert.Equal(0, getCount(options));
+
+                    JsonSerializer.Serialize<SimpleTestClass>(testObj, options);
+                    Assert.NotEqual(0, getCount(options));
+                }).Dispose();
+
+            static Func<JsonSerializerOptions, int> CreateCacheCountAccessor()
+            {
+                FieldInfo cacheField = typeof(JsonSerializerOptions).GetField("_cachingContext", BindingFlags.NonPublic | BindingFlags.Instance);
+                Assert.NotNull(cacheField);
+                PropertyInfo countProperty = cacheField.FieldType.GetProperty("Count", BindingFlags.Public | BindingFlags.Instance);
+                Assert.NotNull(countProperty);
+                return options =>
+                {
+                    object? cache = cacheField.GetValue(options);
+                    return cache is null ? 0 : (int)countProperty.GetValue(cache);
+                };
+            }
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/66232", TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(GetJsonSerializerOptions))]
+        public static void JsonSerializerOptions_ReuseConverterCaches()
+        {
+            // This test uses reflection to:
+            // - Access JsonSerializerOptions._cachingContext._options
+            // - Access JsonSerializerOptions.EqualityComparer.AreEquivalent
+            //
+            // If either of them changes, this test will need to be kept in sync.
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                Func<JsonSerializerOptions, JsonSerializerOptions?> getCacheOptions = CreateCacheOptionsAccessor();
+                IEqualityComparer<JsonSerializerOptions> equalityComparer = CreateEqualityComparerAccessor();
+
+                foreach (var args in GetJsonSerializerOptions())
+                {
+                    var options = (JsonSerializerOptions)args[0];
+                    Assert.Null(getCacheOptions(options));
+
+                    JsonSerializer.Serialize(42, options);
+
+                    JsonSerializerOptions originalCacheOptions = getCacheOptions(options);
+                    Assert.NotNull(originalCacheOptions);
+                    Assert.True(equalityComparer.Equals(options, originalCacheOptions));
+                    Assert.Equal(equalityComparer.GetHashCode(options), equalityComparer.GetHashCode(originalCacheOptions));
+
+                    for (int i = 0; i < 5; i++)
+                    {
+                        var options2 = new JsonSerializerOptions(options);
+                        Assert.Null(getCacheOptions(options2));
+
+                        JsonSerializer.Serialize(42, options2);
+
+                        Assert.True(equalityComparer.Equals(options2, originalCacheOptions));
+                        Assert.Equal(equalityComparer.GetHashCode(options2), equalityComparer.GetHashCode(originalCacheOptions));
+                        Assert.Same(originalCacheOptions, getCacheOptions(options2));
+                    }
+                }
+            }).Dispose();
+
+            static Func<JsonSerializerOptions, JsonSerializerOptions?> CreateCacheOptionsAccessor()
+            {
+                FieldInfo cacheField = typeof(JsonSerializerOptions).GetField("_cachingContext", BindingFlags.NonPublic | BindingFlags.Instance);
+                Assert.NotNull(cacheField);
+                PropertyInfo optionsField = cacheField.FieldType.GetProperty("Options", BindingFlags.Public | BindingFlags.Instance);
+                Assert.NotNull(optionsField);
+                return options =>
+                {
+                    object? cache = cacheField.GetValue(options);
+                    return cache is null ? null : (JsonSerializerOptions)optionsField.GetValue(cache);
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> GetJsonSerializerOptions()
+        {
+            yield return new[] { new JsonSerializerOptions() };
+            yield return new[] { new JsonSerializerOptions(JsonSerializerDefaults.Web) };
+            yield return new[] { new JsonSerializerOptions { WriteIndented = true } };
+            yield return new[] { new JsonSerializerOptions { Converters = { new JsonStringEnumConverter() } } };
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_EqualityComparer_ChangingAnySettingShouldReturnFalse()
+        {
+            // This test uses reflection to:
+            // - Access JsonSerializerOptions.EqualityComparer.AreEquivalent
+            // - All public setters in JsonSerializerOptions
+            //
+            // If either of them changes, this test will need to be kept in sync.
+            IEqualityComparer<JsonSerializerOptions> equalityComparer = CreateEqualityComparerAccessor();
+
+            (PropertyInfo prop, object value)[] propertySettersAndValues = GetPropertiesWithSettersAndNonDefaultValues().ToArray();
+
+            // Ensure we're testing equality for all JsonSerializerOptions settings
+            foreach (PropertyInfo prop in GetAllPublicPropertiesWithSetters().Except(propertySettersAndValues.Select(x => x.prop)))
+            {
+                Assert.Fail($"{nameof(GetPropertiesWithSettersAndNonDefaultValues)} missing property declaration for {prop.Name}, please update the method.");
+            }
+
+            Assert.True(equalityComparer.Equals(JsonSerializerOptions.Default, JsonSerializerOptions.Default));
+            Assert.Equal(equalityComparer.GetHashCode(JsonSerializerOptions.Default), equalityComparer.GetHashCode(JsonSerializerOptions.Default));
+
+            foreach ((PropertyInfo prop, object? value) in propertySettersAndValues)
+            {
+                var options = new JsonSerializerOptions();
+                prop.SetValue(options, value);
+
+                Assert.True(equalityComparer.Equals(options, options));
+                Assert.Equal(equalityComparer.GetHashCode(options), equalityComparer.GetHashCode(options));
+
+                Assert.False(equalityComparer.Equals(JsonSerializerOptions.Default, options));
+                Assert.NotEqual(equalityComparer.GetHashCode(JsonSerializerOptions.Default), equalityComparer.GetHashCode(options));
+            }
+
+            static IEnumerable<(PropertyInfo, object)> GetPropertiesWithSettersAndNonDefaultValues()
+            {
+                yield return (GetProp(nameof(JsonSerializerOptions.AllowTrailingCommas)), true);
+                yield return (GetProp(nameof(JsonSerializerOptions.DefaultBufferSize)), 42);
+                yield return (GetProp(nameof(JsonSerializerOptions.Encoder)), JavaScriptEncoder.UnsafeRelaxedJsonEscaping);
+                yield return (GetProp(nameof(JsonSerializerOptions.DictionaryKeyPolicy)), JsonNamingPolicy.CamelCase);
+                yield return (GetProp(nameof(JsonSerializerOptions.IgnoreNullValues)), true);
+                yield return (GetProp(nameof(JsonSerializerOptions.DefaultIgnoreCondition)), JsonIgnoreCondition.WhenWritingDefault);
+                yield return (GetProp(nameof(JsonSerializerOptions.NumberHandling)), JsonNumberHandling.AllowReadingFromString);
+                yield return (GetProp(nameof(JsonSerializerOptions.IgnoreReadOnlyProperties)), true);
+                yield return (GetProp(nameof(JsonSerializerOptions.IgnoreReadOnlyFields)), true);
+                yield return (GetProp(nameof(JsonSerializerOptions.IncludeFields)), true);
+                yield return (GetProp(nameof(JsonSerializerOptions.MaxDepth)), 11);
+                yield return (GetProp(nameof(JsonSerializerOptions.PropertyNamingPolicy)), JsonNamingPolicy.CamelCase);
+                yield return (GetProp(nameof(JsonSerializerOptions.PropertyNameCaseInsensitive)), true);
+                yield return (GetProp(nameof(JsonSerializerOptions.ReadCommentHandling)), JsonCommentHandling.Skip);
+                yield return (GetProp(nameof(JsonSerializerOptions.UnknownTypeHandling)), JsonUnknownTypeHandling.JsonNode);
+                yield return (GetProp(nameof(JsonSerializerOptions.WriteIndented)), true);
+                yield return (GetProp(nameof(JsonSerializerOptions.ReferenceHandler)), ReferenceHandler.Preserve);
+
+                static PropertyInfo GetProp(string name)
+                {
+                    PropertyInfo property = typeof(JsonSerializerOptions).GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
+                    Assert.True(property.CanWrite);
+                    return property;
+                }
+            }
+
+            static IEnumerable<PropertyInfo> GetAllPublicPropertiesWithSetters()
+                => typeof(JsonSerializerOptions)
+                    .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(p => p.CanWrite);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_EqualityComparer_ApplyingJsonSerializerContextShouldReturnFalse()
+        {
+            // This test uses reflection to:
+            // - Access JsonSerializerOptions.EqualityComparer
+            //
+            // If either of them changes, this test will need to be kept in sync.
+
+            IEqualityComparer<JsonSerializerOptions> equalityComparer = CreateEqualityComparerAccessor();
+            var options1 = new JsonSerializerOptions { WriteIndented = true };
+            var options2 = new JsonSerializerOptions { WriteIndented = true };
+
+            Assert.True(equalityComparer.Equals(options1, options2));
+            Assert.Equal(equalityComparer.GetHashCode(options1), equalityComparer.GetHashCode(options2));
+
+            _ = new MyJsonContext(options1); // Associate copy with a JsonSerializerContext
+            Assert.False(equalityComparer.Equals(options1, options2));
+            Assert.NotEqual(equalityComparer.GetHashCode(options1), equalityComparer.GetHashCode(options2));
+        }
+
+        private class MyJsonContext : JsonSerializerContext
+        {
+            public MyJsonContext(JsonSerializerOptions options) : base(options) { }
+
+            public override JsonTypeInfo? GetTypeInfo(Type _) => null;
+
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => Options;
+        }
+
+        public static IEqualityComparer<JsonSerializerOptions> CreateEqualityComparerAccessor()
+        {
+            Type equalityComparerType = typeof(JsonSerializerOptions).GetNestedType("EqualityComparer", BindingFlags.NonPublic);
+            Assert.NotNull(equalityComparerType);
+            return (IEqualityComparer<JsonSerializerOptions>)Activator.CreateInstance(equalityComparerType, nonPublic: true);
         }
 
         public static IEnumerable<object[]> WriteSuccessCases

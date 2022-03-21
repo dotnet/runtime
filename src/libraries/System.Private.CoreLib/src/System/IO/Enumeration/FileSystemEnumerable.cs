@@ -6,11 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 
-#if MS_IO_REDIST
-namespace Microsoft.IO.Enumeration
-#else
 namespace System.IO.Enumeration
-#endif
 {
     /// <summary>
     /// Enumerable that allows utilizing custom filter predicates and tranform delegates.
@@ -27,10 +23,10 @@ namespace System.IO.Enumeration
         {
         }
 
-        internal FileSystemEnumerable(string directory, FindTransform transform, EnumerationOptions? options, bool isNormalized)
+        internal FileSystemEnumerable(string directory!!, FindTransform transform!!, EnumerationOptions? options, bool isNormalized)
         {
-            _directory = directory ?? throw new ArgumentNullException(nameof(directory));
-            _transform = transform ?? throw new ArgumentNullException(nameof(transform));
+            _directory = directory;
+            _transform = transform;
             _options = options ?? EnumerationOptions.Default;
 
             // We need to create the enumerator up front to ensure that we throw I/O exceptions for

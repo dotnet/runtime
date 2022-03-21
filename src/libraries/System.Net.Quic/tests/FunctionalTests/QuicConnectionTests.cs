@@ -19,21 +19,22 @@ namespace System.Net.Quic.Tests
         public async Task TestConnect()
         {
             using QuicListener listener = CreateQuicListener();
-            IPEndPoint listenEndPoint = listener.ListenEndPoint;
 
-            using QuicConnection clientConnection = CreateQuicConnection(listenEndPoint);
+            using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
 
             Assert.False(clientConnection.Connected);
-            Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
+            Assert.Equal(listener.ListenEndPoint, clientConnection.RemoteEndPoint);
 
             ValueTask connectTask = clientConnection.ConnectAsync();
-            QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-            await connectTask;
+            ValueTask<QuicConnection> acceptTask = listener.AcceptConnectionAsync();
+
+            await new Task[] { connectTask.AsTask(), acceptTask.AsTask()}.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+            QuicConnection serverConnection = acceptTask.Result;
 
             Assert.True(clientConnection.Connected);
             Assert.True(serverConnection.Connected);
-            Assert.Equal(listenEndPoint, serverConnection.LocalEndPoint);
-            Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
+            Assert.Equal(listener.ListenEndPoint, serverConnection.LocalEndPoint);
+            Assert.Equal(listener.ListenEndPoint, clientConnection.RemoteEndPoint);
             Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
             Assert.Equal(ApplicationProtocol.ToString(), clientConnection.NegotiatedApplicationProtocol.ToString());
             Assert.Equal(ApplicationProtocol.ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
@@ -214,7 +215,7 @@ namespace System.Net.Quic.Tests
                     using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
                     await DoWrites(clientStream, writesBeforeClose);
 
-                    // Wait for peer to receive data 
+                    // Wait for peer to receive data
                     await sync.WaitAsync();
 
                     await clientConnection.CloseAsync(ExpectedErrorCode);
@@ -261,7 +262,7 @@ namespace System.Net.Quic.Tests
                     using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
                     await DoWrites(clientStream, writesBeforeClose);
 
-                    // Wait for peer to receive data 
+                    // Wait for peer to receive data
                     await sync.WaitAsync();
 
                     clientConnection.Dispose();
@@ -278,8 +279,8 @@ namespace System.Net.Quic.Tests
 
                     // The client has done an abortive shutdown of the connection, which means we are not notified that the connection has closed.
                     // But the connection idle timeout should kick in and eventually we will get exceptions.
-                    await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await serverStream.ReadAsync(new byte[1]));
-                    await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await serverStream.WriteAsync(new byte[1]));
+                    await Assert.ThrowsAsync<QuicConnectionAbortedException>(async () => await serverStream.ReadAsync(new byte[1]));
+                    await Assert.ThrowsAsync<QuicConnectionAbortedException>(async () => await serverStream.WriteAsync(new byte[1]));
                 }, listenerOptions: listenerOptions);
         }
     }

@@ -30,15 +30,15 @@ struct LineCodeDescr
     ULONG_PTR FileToken;
 };
 
-void printLine(void* GUICookie, __in __nullterminated const char* string);
-void printLineW(void* GUICookie, __in __nullterminated const WCHAR* string);
-void printError(void* GUICookie, __in __nullterminated const char* string);
+void printLine(void* GUICookie, _In_ __nullterminated const char* string);
+void printLineW(void* GUICookie, _In_ __nullterminated const WCHAR* string);
+void printError(void* GUICookie, _In_ __nullterminated const char* string);
 
-char* AnsiToUtf(__in __nullterminated const char* sz);
-char* UnicodeToAnsi(__in __nullterminated const WCHAR* wz);
-char* UnicodeToUtf(__in __nullterminated const WCHAR* wz);
-WCHAR* UtfToUnicode(__in __nullterminated const char* sz);
-WCHAR* AnsiToUnicode(__in __nullterminated const char* sz);
+char* AnsiToUtf(_In_ __nullterminated const char* sz);
+char* UnicodeToAnsi(_In_ __nullterminated const WCHAR* wz);
+char* UnicodeToUtf(_In_ __nullterminated const WCHAR* wz);
+WCHAR* UtfToUnicode(_In_ __nullterminated const char* sz);
+WCHAR* AnsiToUnicode(_In_ __nullterminated const char* sz);
 void GetInputFileFullPath();
 
 char* RstrUTF(unsigned id);
@@ -63,7 +63,7 @@ void PrettyPrintToken(__inout __nullterminated char* szString, mdToken tk, IMDIn
 void DumpPermissions(mdToken tkOwner, void* GUICookie);
 void DumpHeader(IMAGE_COR20_HEADER *CORHeader, void* GUICookie);
 void DumpHeaderDetails(IMAGE_COR20_HEADER *CORHeader, void* GUICookie);
-void DumpMetaInfo(__in __nullterminated const WCHAR* pszFileName, __in_opt __nullterminated const char* pszObjFileName, void* GUICookie);
+void DumpMetaInfo(_In_ __nullterminated const WCHAR* pszFileName, _In_opt_z_ const char* pszObjFileName, void* GUICookie);
 void DumpStatistics(IMAGE_COR20_HEADER *CORHeader, void* GUICookie);
 BOOL DumpFile();
 void Cleanup();
@@ -71,13 +71,13 @@ void CreateProgressBar(LONG lRange);
 BOOL ProgressStep();
 void DestroyProgressBar();
 char * DumpQString(void* GUICookie,
-                   __in __nullterminated const char* szToDump,
-                   __in __nullterminated const char* szPrefix,
+                   _In_ __nullterminated const char* szToDump,
+                   _In_ __nullterminated const char* szPrefix,
                    unsigned uMaxLen);
 void DumpVtable(void* GUICookie);
 char* DumpUnicodeString(void* GUICookie,
                         __inout __nullterminated char* szString,
-                        __in_ecount(cbString) WCHAR* pszString,
+                        _In_reads_(cbString) WCHAR* pszString,
                         ULONG cbString,
                         bool SwapString = false);
 
@@ -141,7 +141,7 @@ extern WCHAR   wzUniBuf[]; // defined in dis.cpp
 #define SZSTRING_SIZE 131072
 extern char   szString[]; // defined in dis.cpp
 
-char *DumpGenericPars(__inout_ecount(SZSTRING_SIZE) char* szString,
+char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString,
                       mdToken tok,
                       void* GUICookie=NULL,
                       BOOL fSplit=FALSE);

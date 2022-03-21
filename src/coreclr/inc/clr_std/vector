@@ -373,6 +373,11 @@ namespace std
                 m_size -= elements;
                 return iterator(m_pelements + (position - begin()));
             }
+            
+            T* data()
+            {
+                return m_pelements;
+            }
 
             const T* data() const
             {

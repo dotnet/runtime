@@ -11,7 +11,7 @@ namespace System.Net.Sockets.Tests
     // When running in parallel with other tests, there is some chance that Accept() calls in LocalEndPointTest will
     // accept a connection request from another, DualMode client living in a parallel test
     // that is intended to connect to a server of opposite AddressFamily in the parallel test.
-    [Collection(nameof(NoParallelTests))]
+    [Collection(nameof(DisableParallelization))]
     public abstract class LocalEndPointTest<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
         protected abstract bool IPv6 { get; }

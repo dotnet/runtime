@@ -68,13 +68,8 @@ namespace System.Reflection.Metadata
         /// The caller is responsible for keeping the memory alive and unmodified throughout the lifetime of the <see cref="MetadataReaderProvider"/>.
         /// The content of the blob is not read during the construction of the <see cref="MetadataReaderProvider"/>
         /// </remarks>
-        public static unsafe MetadataReaderProvider FromMetadataImage(byte* start, int size)
+        public static unsafe MetadataReaderProvider FromMetadataImage(byte* start!!, int size)
         {
-            if (start == null)
-            {
-                throw new ArgumentNullException(nameof(start));
-            }
-
             if (size < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(size));
@@ -160,13 +155,8 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentException"><paramref name="stream"/> doesn't support read and seek operations.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end of the stream.</exception>
         /// <exception cref="IOException">Error reading from the stream (only when <see cref="MetadataStreamOptions.PrefetchMetadata"/> is specified).</exception>
-        public static MetadataReaderProvider FromMetadataStream(Stream stream, MetadataStreamOptions options = MetadataStreamOptions.Default, int size = 0)
+        public static MetadataReaderProvider FromMetadataStream(Stream stream!!, MetadataStreamOptions options = MetadataStreamOptions.Default, int size = 0)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
             if (!stream.CanRead || !stream.CanSeek)
             {
                 throw new ArgumentException(SR.StreamMustSupportReadAndSeek, nameof(stream));
@@ -184,17 +174,15 @@ namespace System.Reflection.Metadata
             bool closeStream = true;
             try
             {
-                bool isFileStream = FileStreamReadLightUp.IsFileStream(stream);
-
                 if ((options & MetadataStreamOptions.PrefetchMetadata) == 0)
                 {
-                    result = new MetadataReaderProvider(new StreamMemoryBlockProvider(stream, start, actualSize, isFileStream, (options & MetadataStreamOptions.LeaveOpen) != 0));
+                    result = new MetadataReaderProvider(new StreamMemoryBlockProvider(stream, start, actualSize, (options & MetadataStreamOptions.LeaveOpen) != 0));
                     closeStream = false;
                 }
                 else
                 {
                     // Read in the entire image or metadata blob:
-                    result = new MetadataReaderProvider(StreamMemoryBlockProvider.ReadMemoryBlockNoLock(stream, isFileStream, start, actualSize));
+                    result = new MetadataReaderProvider(StreamMemoryBlockProvider.ReadMemoryBlockNoLock(stream, start, actualSize));
 
                     // We read all we need, the stream is going to be closed.
                 }

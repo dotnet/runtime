@@ -12,7 +12,7 @@
 
 using System;
 
-public class Test {
+public class Test_TrackResurrection {
     public static int Main() {
         int[] array = new int[50];
         Object obj = new Object();

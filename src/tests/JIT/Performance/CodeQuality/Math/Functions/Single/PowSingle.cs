@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Xunit.Performance;
 
 namespace Functions
 {
@@ -13,21 +12,6 @@ namespace Functions
         private const float powSingleDeltaX = -0.0004f;
         private const float powSingleDeltaY = 0.0004f;
         private const float powSingleExpectedResult = 4659.30762f;
-
-        [Benchmark(InnerIterationCount = PowSingleIterations)]
-        public static void PowSingleBenchmark()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        PowSingleTest();
-                    }
-                }
-            }
-        }
 
         public static void PowSingleTest()
         {

@@ -612,8 +612,7 @@ namespace System.Globalization
         public override DayOfWeek GetDayOfWeek(DateTime time)
         {
             // If we calculate back, the Hebrew day of week for Gregorian 0001/1/1 is Monday (1).
-            // Therfore, the fomula is:
-            return (DayOfWeek)((int)(time.Ticks / TicksPerDay + 1) % 7);
+            return time.DayOfWeek;
         }
 
         internal static int GetHebrewYearType(int year, int era)

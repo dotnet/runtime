@@ -128,9 +128,6 @@
   <data name="ADP_CollectionIsNotParent" xml:space="preserve">
     <value>The {0} is already contained by another {1}.</value>
   </data>
-  <data name="ADP_CollectionIsParent" xml:space="preserve">
-    <value>The {0} with is already contained by this {1}.</value>
-  </data>
   <data name="ADP_CollectionNullValue" xml:space="preserve">
     <value>The {0} only accepts non-null {1} type objects.</value>
   </data>
@@ -376,9 +373,6 @@
   </data>
   <data name="ADP_TransactionZombied" xml:space="preserve">
     <value>This {0} has completed; it is no longer usable.</value>
-  </data>
-  <data name="ADP_DbRecordReadOnly" xml:space="preserve">
-    <value>'{0}' cannot be called when the record is read only.</value>
   </data>
   <data name="ADP_NonSeqByteAccess" xml:space="preserve">
     <value>Invalid {2} attempt at dataIndex '{0}'.  With CommandBehavior.SequentialAccess, you may only read from dataIndex '{1}' or greater.</value>

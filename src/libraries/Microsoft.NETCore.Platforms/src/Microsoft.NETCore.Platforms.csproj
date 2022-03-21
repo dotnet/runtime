@@ -1,25 +1,30 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
+    <EnableBinPlacing>false</EnableBinPlacing>
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
-    <PackageId>$(MSBuildProjectName)</PackageId>
-    <AvoidRestoreCycleOnSelfReference>true</AvoidRestoreCycleOnSelfReference>
+    <!-- Use targeting pack references instead of granular ones in the project file. -->
+    <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
     <AssemblyName>Microsoft.NETCore.Platforms.BuildTasks</AssemblyName>
-
-    <IsSourceProject>false</IsSourceProject>
-    <IsPackable>true</IsPackable>
-    <!-- TODO: Enable after AvoidRestoreCycleOnSelfReference hack is removed. -->
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeSymbols>false</IncludeSymbols>
+
+    <IsPackable>true</IsPackable>
+    <PackageId>$(MSBuildProjectName)</PackageId>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
-    <NoWarn>$(NoWarn);NU5128</NoWarn> <!-- No Dependencies-->
     <PackageDescription>Provides runtime information required to resolve target framework, platform, and runtime specific implementations of .NETCore packages.</PackageDescription>
+    <NoWarn>$(NoWarn);NU5128</NoWarn> <!-- No Dependencies-->
+    <AvoidRestoreCycleOnSelfReference>true</AvoidRestoreCycleOnSelfReference>
+    <!-- TODO: Remove with AvoidRestoreCycleOnSelfReference hack. -->
+    <PackageValidationBaselineName>$(MSBuildProjectName)</PackageValidationBaselineName>
+    <BeforePack>GenerateRuntimeJson;UpdateRuntimeJson;$(BeforePack)</BeforePack>
     
+    <_generateRuntimeGraphTargetFramework Condition="'$(MSBuildRuntimeType)' == 'core'">$(NetCoreAppToolCurrent)</_generateRuntimeGraphTargetFramework>
+    <_generateRuntimeGraphTargetFramework Condition="'$(MSBuildRuntimeType)' != 'core'">net472</_generateRuntimeGraphTargetFramework>
+    <_generateRuntimeGraphTask>$([MSBuild]::NormalizePath('$(BaseOutputPath)', $(Configuration), '$(_generateRuntimeGraphTargetFramework)', '$(AssemblyName).dll'))</_generateRuntimeGraphTask>
     <!-- When building from source, ensure the RID we're building for is part of the RID graph -->
     <AdditionalRuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalRuntimeIdentifiers);$(OutputRID)</AdditionalRuntimeIdentifiers>
-    <ServicingVersion>1</ServicingVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
@@ -47,9 +52,14 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
     <PackageReference Include="NuGet.ProjectModel" Version="$(NugetProjectModelVersion)" />
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
   </ItemGroup>
+  
+  <Import Project="runtimeGroups.props" />
+  
+  <UsingTask TaskName="GenerateRuntimeGraph" AssemblyFile="$(_generateRuntimeGraphTask)"/>
 
-  <Target Name="GenerateRuntimeJson" Condition="'$(AdditionalRuntimeIdentifiers)' != ''" BeforeTargets="GenerateNuspec">
+  <Target Name="GenerateRuntimeJson" Condition="'$(AdditionalRuntimeIdentifiers)' != ''">
     <MakeDir Directories="$(IntermediateOutputPath)" />
     <GenerateRuntimeGraph RuntimeGroups="@(RuntimeGroupWithQualifiers)"
                           AdditionalRuntimeIdentifiers="$(AdditionalRuntimeIdentifiers)"
@@ -57,6 +67,17 @@
                           RuntimeJson="$(IntermediateOutputPath)runtime.json"
                           UpdateRuntimeFiles="True" />
   </Target>
-  
-  <Import Project="runtimeGroups.props" />
+
+  <Target Name="UpdateRuntimeJson">
+    <!-- Generates a Runtime graph using RuntimeGroups and diffs it with the graph described by runtime.json and runtime.compatibility.json
+         Specifying UpdateRuntimeFiles=true skips the diff and updates those files.
+         The graph can be visualized using the generated dmgl -->
+    <MakeDir Directories="$(OutputPath)" />
+    <GenerateRuntimeGraph RuntimeGroups="@(RuntimeGroupWithQualifiers)"
+                          RuntimeJson="runtime.json"
+                          CompatibilityMap="runtime.compatibility.json"
+                          RuntimeDirectedGraph="$(OutputPath)runtime.json.dgml"
+                          UpdateRuntimeFiles="$(UpdateRuntimeFiles)" />
+  </Target>
+
 </Project>

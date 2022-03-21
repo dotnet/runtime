@@ -9,9 +9,12 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-mmap.h>
 
+#include <glib.h>
+
+#ifdef HOST_BROWSER
+
 #include <emscripten.h>
 #include <emscripten/stack.h>
-#include <glib.h>
 
 #define round_down(addr, val) ((void*)((addr) & ~((val) - 1)))
 
@@ -28,6 +31,28 @@ wasm_get_stack_size (void)
 {
 	return (guint8*)emscripten_stack_get_base () - (guint8*)emscripten_stack_get_end ();
 }
+
+#else /* WASI */
+
+static int
+wasm_get_stack_base (void)
+{
+	// TODO: For WASI, we need to ensure the stack location makes sense and won't interfere with the heap.
+	// Currently these hardcoded values are sufficient for a working prototype. It's an arbitrary nonzero
+	// value that aligns to 32 bits.
+	return 4;
+}
+
+static int
+wasm_get_stack_size (void)
+{
+	// TODO: For WASI, we need to ensure the stack location makes sense and won't interfere with the heap.
+	// Currently these hardcoded values are sufficient for a working prototype. It's an arbitrary nonzero
+	// value that aligns to 32 bits.
+	return 4;
+}
+
+#endif
 
 int
 mono_thread_info_get_system_max_stack_size (void)
@@ -180,8 +205,13 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	*stsize = wasm_get_stack_size ();
 #endif
 
+#ifdef HOST_WASI
+	// TODO: For WASI, we need to ensure the stack is positioned correctly and reintroduce these assertions.
+	// Currently it works anyway in prototypes (except these checks would fail)
+#else
 	g_assert ((guint8*)&tmp > *staddr);
 	g_assert ((guint8*)&tmp < (guint8*)*staddr + *stsize);
+#endif
 }
 
 gboolean
@@ -252,6 +282,8 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 		g_error ("%s: pthread_attr_destroy failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
 
 	return TRUE;
+#elif defined(HOST_WASI)
+	return TRUE;
 #else
 	g_assert_not_reached ();
 #endif
@@ -276,6 +308,13 @@ mono_threads_platform_in_critical_region (THREAD_INFO_TYPE *info)
 {
 	return FALSE;
 }
+
+void
+mono_memory_barrier_process_wide (void)
+{
+}
+
+#ifdef HOST_BROWSER
 
 G_EXTERN_C
 extern void schedule_background_exec (void);
@@ -310,10 +349,7 @@ mono_background_exec (void)
 	g_slist_free (j);
 }
 
-void
-mono_memory_barrier_process_wide (void)
-{
-}
+#endif /* HOST_BROWSER */
 
 #else
 

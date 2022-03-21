@@ -11,15 +11,9 @@ namespace System.IO.Strategies
         /// <summary>Caches whether Serialization Guard has been disabled for file writes</summary>
         private static int s_cachedSerializationSwitch;
 
-        internal static bool UseNet5CompatStrategy { get; } = AppContextConfigHelper.GetBooleanConfig("System.IO.UseNet5CompatFileStream", "DOTNET_SYSTEM_IO_USENET5COMPATFILESTREAM");
-
         internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
-            // The .NET 5 Compat strategy does not support bufferSize == 0.
-            // To minimize the risk of introducing bugs to it, we just pass 1 to disable the buffering.
-
-            FileStreamStrategy strategy = UseNet5CompatStrategy ?
-                new Net5CompatFileStreamStrategy(handle, access, bufferSize == 0 ? 1 : bufferSize, isAsync) :
+            FileStreamStrategy strategy =
                 EnableBufferingIfNeeded(ChooseStrategyCore(handle, access, isAsync), bufferSize);
 
             return WrapIfDerivedType(fileStream, strategy);
@@ -27,8 +21,7 @@ namespace System.IO.Strategies
 
         internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
         {
-            FileStreamStrategy strategy = UseNet5CompatStrategy ?
-                new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize == 0 ? 1 : bufferSize, options, preallocationSize) :
+            FileStreamStrategy strategy =
                 EnableBufferingIfNeeded(ChooseStrategyCore(path, mode, access, share, options, preallocationSize), bufferSize);
 
             return WrapIfDerivedType(fileStream, strategy);
@@ -60,14 +53,7 @@ namespace System.IO.Strategies
 
         internal static void ValidateArguments(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
         {
-            if (path == null)
-            {
-                throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
-            }
-            else if (path.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             // don't include inheritable in our bounds check for share
             FileShare tempshare = share & ~FileShare.Inheritable;

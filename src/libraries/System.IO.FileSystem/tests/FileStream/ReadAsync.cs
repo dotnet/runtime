@@ -101,7 +101,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsNet5CompatFileStreamDisabled))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(FileShare.None, FileOptions.Asynchronous)] // FileShare.None: exclusive access
         [InlineData(FileShare.ReadWrite, FileOptions.Asynchronous)] // FileShare.ReadWrite: others can write to the file, the length can't be cached
         [InlineData(FileShare.None, FileOptions.None)]
@@ -134,14 +134,12 @@ namespace System.IO.Tests
         }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileStream_ReadAsync_AsyncReads : FileStream_AsyncReads
     {
         protected override Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             stream.ReadAsync(buffer, offset, count, cancellationToken);
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileStream_BeginEndRead_AsyncReads : FileStream_AsyncReads
     {
         protected override Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>

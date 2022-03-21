@@ -136,13 +136,13 @@ static inline int
 dwarf_readu8 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
               uint8_t *valp, void *arg)
 {
-  unw_word_t val, aligned_addr = *addr & -sizeof (unw_word_t);
+  unw_word_t val, aligned_addr = UNW_ALIGN(*addr, sizeof (unw_word_t));
   unw_word_t off = *addr - aligned_addr;
   int ret;
 
   *addr += 1;
   ret = (*a->access_mem) (as, aligned_addr, &val, 0, arg);
-#if __BYTE_ORDER == __LITTLE_ENDIAN
+#if UNW_BYTE_ORDER == UNW_LITTLE_ENDIAN
   val >>= 8*off;
 #else
   val >>= 8*(sizeof (unw_word_t) - 1 - off);

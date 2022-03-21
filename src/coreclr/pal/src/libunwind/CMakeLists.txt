@@ -19,6 +19,7 @@ add_definitions(-D_GNU_SOURCE)
 add_definitions(-DPACKAGE_STRING="")
 add_definitions(-DPACKAGE_BUGREPORT="")
 
+
 if(CLR_CMAKE_HOST_UNIX)
     if (CLR_CMAKE_HOST_ARCH_AMD64)
       set(arch x86_64)
@@ -26,10 +27,14 @@ if(CLR_CMAKE_HOST_UNIX)
       set(arch aarch64)
     elseif(CLR_CMAKE_HOST_ARCH_ARM)
       set(arch arm)
+    elseif(CLR_CMAKE_HOST_ARCH_ARMV6)
+      set(arch arm)
     elseif(CLR_CMAKE_HOST_ARCH_I386)
         set(arch x86)
     elseif(CLR_CMAKE_HOST_ARCH_S390X)
       set(arch s390x)
+    elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
+      set(arch loongarch64)
     endif ()
 
     # Disable warning due to incorrect format specifier in debugging printf via the Debug macro
@@ -45,7 +50,7 @@ if(CLR_CMAKE_HOST_UNIX)
       add_compile_options(-Wno-incompatible-pointer-types)
     endif()
 
-    if(CLR_CMAKE_HOST_ARCH_ARM)
+    if(CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARMV6)
         # Ensure that the remote and local unwind code can reside in the same binary without name clashing
         add_definitions("-Darm_search_unwind_table=UNW_OBJ(arm_search_unwind_table)")
         if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -67,9 +72,13 @@ if(CLR_CMAKE_HOST_UNIX)
         endif()
         # We compile code with -std=c99 and the asm keyword is not recognized as it is a gnu extension
         add_definitions(-Dasm=__asm__)
+        # Disable warning for a bug in the libunwind source src/aarch64/Ginit.c, but not in code that we exercise
+        add_compile_options(-Wno-incompatible-pointer-types)
     elseif(CLR_CMAKE_HOST_ARCH_I386)
         # Disable warning for a bug in the libunwind source src/x86/Gos-linux.c, but not in code that we exercise
         add_compile_options(-Wno-incompatible-pointer-types)
+    elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
+        ###TODO: maybe add options for LOONGARCH64
     endif()
 
     if (CLR_CMAKE_HOST_OSX)
@@ -107,6 +116,10 @@ if(CLR_CMAKE_HOST_WIN32)
       set(TARGET_ARM 1)
       set(arch arm)
       add_definitions(-D__arm__)
+    elseif(CLR_CMAKE_TARGET_ARCH_ARMV6)
+      set(TARGET_ARM 1)
+      set(arch arm)
+      add_definitions(-D__arm__)
     elseif(CLR_CMAKE_TARGET_ARCH_S390X)
       set(TARGET_S390X 1)
       set(arch s390x)
@@ -140,11 +153,11 @@ if(CLR_CMAKE_HOST_WIN32)
     # files for cross os compilation
     include_directories(include/win)
 
+    add_definitions(-D_CRT_DECLARE_NONSTDC_NAMES)
+
     # Warnings in release builds
     add_compile_options(-wd4068) # ignore unknown pragma warnings (gcc pragmas)
-    add_compile_options(-wd4146) # minus operator applied to unsigned
     add_compile_options(-wd4244) # possible loss of data
-    add_compile_options(-wd4267) # possible loss of data
     add_compile_options(-wd4334) # 32-bit shift implicitly converted to 64 bits
 
     # Disable warning due to incorrect format specifier in debugging printf via the Debug macro
@@ -153,7 +166,7 @@ if(CLR_CMAKE_HOST_WIN32)
     add_compile_options(-wd4477) # fprintf argument type
 endif (CLR_CMAKE_HOST_WIN32)
 
-if(CLR_CMAKE_TARGET_ARCH_ARM)
+if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARMV6)
     # The arm sources include ex_tables.h from include/tdep-arm without going through a redirection
     # in include/tdep like it works for similar files on other architectures. So we need to add
     # the include/tdep-arm to include directories

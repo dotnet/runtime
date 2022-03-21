@@ -17,6 +17,7 @@
 .assembly Runtime_41073
 {
 }
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit Runtime_41073
        extends [System.Runtime]System.Object
@@ -38,6 +39,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       27 (0x1b)
     .maxstack  1

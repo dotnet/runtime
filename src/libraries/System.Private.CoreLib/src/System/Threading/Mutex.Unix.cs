@@ -29,6 +29,8 @@ namespace System.Threading
 
         private static OpenExistingResult OpenExistingWorker(string name, out Mutex? result)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
             OpenExistingResult status = WaitSubsystem.OpenNamedMutex(name, out SafeWaitHandle? safeWaitHandle);
             result = status == OpenExistingResult.Success ? new Mutex(safeWaitHandle!) : null;
             return status;

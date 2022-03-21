@@ -32,7 +32,7 @@ public struct A
 }
 
 
-public class Test
+public class Test_CctorZeroVal02
 {
 	public static int Main()
 	{

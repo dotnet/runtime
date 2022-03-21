@@ -37,7 +37,7 @@ namespace System.Text.Json.Serialization.Tests
             return myDynamic;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void DynamicKeyword()
         {
             dynamic myDynamic = GetExpandoObject();
@@ -100,7 +100,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void ExpandoObject()
         {
             ExpandoObject expando = JsonSerializer.Deserialize<ExpandoObject>(Json);

@@ -21,4 +21,4 @@ PASS:
 }
 }
 
-.assembly brfalse_s.exe {}
+.assembly brfalse_s {}

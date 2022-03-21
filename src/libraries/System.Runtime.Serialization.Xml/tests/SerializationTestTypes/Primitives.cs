@@ -925,13 +925,13 @@ namespace SerializationTestTypes
     }
 
     [DataContract]
-    public class list
+    public class List
     {
         [DataMember]
         public int value;
 
         [DataMember]
-        public list next;
+        public List next;
     }
 
     [DataContract]

@@ -85,6 +85,11 @@ namespace System.Runtime.InteropServices.JavaScript
             return tcs.Task;
         }
 
+        public static object TaskFromResult(object? obj)
+        {
+            return Task.FromResult(obj);
+        }
+
         public static void SetupJSContinuation(Task task, JSObject continuationObj)
         {
             if (task.IsCompleted)

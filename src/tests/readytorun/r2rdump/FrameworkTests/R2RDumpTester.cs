@@ -6,13 +6,13 @@ using Xunit;
 
 namespace R2RDumpTests
 {
-    public class R2RDumpTester : XunitBase
+    public class R2RDumpTester
     {
         private const string CoreRoot = "CORE_ROOT";
         private const string R2RDumpRelativePath = "R2RDump";
         private const string R2RDumpFile = "R2RDump.dll";
         private const string CoreRunFileName = "corerun";
-        
+
         public static string FindExePath(string exe)
         {
             if (OperatingSystem.IsWindows())
@@ -37,7 +37,8 @@ namespace R2RDumpTests
         }
 
         [Fact]
-        public void DumpCoreLib()
+        [SkipOnMono("Ready-To-Run is a CoreCLR-only feature", TestPlatforms.Any)]
+        public static void DumpCoreLib()
         {
             string CoreRootVar = Environment.GetEnvironmentVariable(CoreRoot);
             bool IsUnix = !OperatingSystem.IsWindows();
@@ -72,11 +73,6 @@ namespace R2RDumpTests
                 Console.WriteLine(outputContent);
                 Assert.True(!failed);
             }
-        }
-
-        public static int Main(string[] args)
-        {
-            return new R2RDumpTester().RunTests();
         }
     }
 }

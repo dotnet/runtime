@@ -20,7 +20,7 @@ BOOL Cleanup_CreateFileA_test1(void)
 
     // loop through all accesses, modes, dispositions and flags
     for (i=0; i<4*8*4*5; ++i) {
-        sprintf_s(FileName, _countof(FileName), "test%03d.txt", i);
+        sprintf_s(FileName, ARRAY_SIZE(FileName), "test%03d.txt", i);
 	if (DeleteFileA(FileName) == FALSE) {
 	    if (GetLastError() != ERROR_FILE_NOT_FOUND) {
 		bRet = FALSE;
@@ -97,7 +97,7 @@ PALTEST(file_io_CreateFileA_test1_paltest_createfilea_test1, "file_io/CreateFile
                 // creation disp loop
                 for (l = 0; l < 5; l++)
                 {
-                    sprintf_s(lpFileName, _countof(lpFileName), "test%03d.txt", nCounter);
+                    sprintf_s(lpFileName, ARRAY_SIZE(lpFileName), "test%03d.txt", nCounter);
                     hFile = CreateFile(lpFileName,
                         dwDesiredAccess[i],
                         dwShareMode[j],

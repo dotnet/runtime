@@ -11,13 +11,13 @@
 
 #ifdef FEATURE_TYPEEQUIVALENCE
 
-#include "ngenhash.h"
+#include "dacenumerablehash.h"
 
 // The type of each entry in the hash.
 typedef DPTR(struct TypeEquivalenceEntry) PTR_TypeEquivalenceEntry;
 struct TypeEquivalenceEntry
 {
-    static NgenHashValue HashTypeHandles(TypeHandle thA, TypeHandle thB)
+    static DacEnumerableHashValue HashTypeHandles(TypeHandle thA, TypeHandle thB)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -57,16 +57,11 @@ private:
     bool       m_fEquivalent;
 };
 
-// The hash type itself. All common logic is provided by the NgenHashTable templated base class. See
-// NgenHash.h for details.
+// The hash type itself. All common logic is provided by the DacEnumerableHashTable templated base class. See
+// DacEnumerableHash.h for details.
 typedef DPTR(class TypeEquivalenceHashTable) PTR_TypeEquivalenceHashTable;
-class TypeEquivalenceHashTable : public NgenHashTable<TypeEquivalenceHashTable, TypeEquivalenceEntry, 4>
+class TypeEquivalenceHashTable : public DacEnumerableHashTable<TypeEquivalenceHashTable, TypeEquivalenceEntry, 4>
 {
-    friend class NgenHashTable<TypeEquivalenceHashTable, TypeEquivalenceEntry, 4>;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
-
 public:
     enum EquivalenceMatch
     {
@@ -77,7 +72,7 @@ public:
 
     // The LookupContext type we export to track GetValue/FindNextNestedClass enumerations is simply a rename
     // of the base classes' hash value enumerator.
-    typedef NgenHashTable<TypeEquivalenceHashTable, TypeEquivalenceEntry, 4>::LookupContext LookupContext;
+    typedef DacEnumerableHashTable<TypeEquivalenceHashTable, TypeEquivalenceEntry, 4>::LookupContext LookupContext;
 
 #ifndef DACCESS_COMPILE
     static TypeEquivalenceHashTable *Create(AppDomain *pDomain, DWORD dwNumBuckets, CrstExplicitInit *pCrst);
@@ -85,23 +80,10 @@ public:
 #endif
     EquivalenceMatch CheckEquivalence(TypeHandle thA, TypeHandle thB);
 
-#ifdef DACCESS_COMPILE
-    void EnumMemoryRegionsForEntry(TypeEquivalenceEntry *pEntry, CLRDataEnumMemoryFlags flags) { return; }
-#endif
-
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-private:
-    // Override operations from NgenHashTable - see ngenhash.h
-    bool ShouldSave(DataImage *pImage, TypeEquivalenceEntry *pEntry) { return false; }
-    bool IsHotEntry(TypeEquivalenceEntry *pEntry, CorProfileData *pProfileData) { return false; }
-    bool SaveEntry(DataImage *pImage, CorProfileData *pProfileData, TypeEquivalenceEntry *pOldEntry, TypeEquivalenceEntry *pNewEntry, EntryMappingTable *pMap) { return true; }
-    void FixupEntry(DataImage *pImage, TypeEquivalenceEntry *pEntry, void *pFixupBase, DWORD cbFixupOffset) { return; }
-#endif // FEATURE_PREJIT && !DACCESS_COMPILE
-
 private:
 #ifndef DACCESS_COMPILE
     TypeEquivalenceHashTable(LoaderHeap *pHeap, DWORD cInitialBuckets, CrstExplicitInit *pCrst)
-        : NgenHashTable<TypeEquivalenceHashTable, TypeEquivalenceEntry, 4>(NULL, pHeap, cInitialBuckets)
+        : DacEnumerableHashTable<TypeEquivalenceHashTable, TypeEquivalenceEntry, 4>(NULL, pHeap, cInitialBuckets)
         , m_pHashTableCrst(pCrst)
     {
     }

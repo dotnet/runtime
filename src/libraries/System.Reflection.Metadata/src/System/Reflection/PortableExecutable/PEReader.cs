@@ -69,13 +69,8 @@ namespace System.Reflection.PortableExecutable
         /// The caller is responsible for keeping the memory alive and unmodified throughout the lifetime of the <see cref="PEReader"/>.
         /// The content of the image is not read during the construction of the <see cref="PEReader"/>
         /// </remarks>
-        public unsafe PEReader(byte* peImage, int size, bool isLoadedImage)
+        public unsafe PEReader(byte* peImage!!, int size, bool isLoadedImage)
         {
-            if (peImage == null)
-            {
-                throw new ArgumentNullException(nameof(peImage));
-            }
-
             if (size < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(size));
@@ -150,13 +145,8 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end of the stream.</exception>
         /// <exception cref="IOException">Error reading from the stream (only when prefetching data).</exception>
         /// <exception cref="BadImageFormatException"><see cref="PEStreamOptions.PrefetchMetadata"/> is specified and the PE headers of the image are invalid.</exception>
-        public unsafe PEReader(Stream peStream, PEStreamOptions options, int size)
+        public unsafe PEReader(Stream peStream!!, PEStreamOptions options, int size)
         {
-            if (peStream == null)
-            {
-                throw new ArgumentNullException(nameof(peStream));
-            }
-
             if (!peStream.CanRead || !peStream.CanSeek)
             {
                 throw new ArgumentException(SR.StreamMustSupportReadAndSeek, nameof(peStream));
@@ -175,11 +165,9 @@ namespace System.Reflection.PortableExecutable
             bool closeStream = true;
             try
             {
-                bool isFileStream = FileStreamReadLightUp.IsFileStream(peStream);
-
                 if ((options & (PEStreamOptions.PrefetchMetadata | PEStreamOptions.PrefetchEntireImage)) == 0)
                 {
-                    _peImage = new StreamMemoryBlockProvider(peStream, start, actualSize, isFileStream, (options & PEStreamOptions.LeaveOpen) != 0);
+                    _peImage = new StreamMemoryBlockProvider(peStream, start, actualSize, (options & PEStreamOptions.LeaveOpen) != 0);
                     closeStream = false;
                 }
                 else
@@ -187,7 +175,7 @@ namespace System.Reflection.PortableExecutable
                     // Read in the entire image or metadata blob:
                     if ((options & PEStreamOptions.PrefetchEntireImage) != 0)
                     {
-                        var imageBlock = StreamMemoryBlockProvider.ReadMemoryBlockNoLock(peStream, isFileStream, start, actualSize);
+                        var imageBlock = StreamMemoryBlockProvider.ReadMemoryBlockNoLock(peStream, start, actualSize);
                         _lazyImageBlock = imageBlock;
                         _peImage = new ExternalMemoryBlockProvider(imageBlock.Pointer, imageBlock.Size);
 
@@ -201,7 +189,7 @@ namespace System.Reflection.PortableExecutable
                     {
                         // The peImage is left null, but the lazyMetadataBlock is initialized up front.
                         _lazyPEHeaders = new PEHeaders(peStream);
-                        _lazyMetadataBlock = StreamMemoryBlockProvider.ReadMemoryBlockNoLock(peStream, isFileStream, _lazyPEHeaders.MetadataStartOffset, _lazyPEHeaders.MetadataSize);
+                        _lazyMetadataBlock = StreamMemoryBlockProvider.ReadMemoryBlockNoLock(peStream, _lazyPEHeaders.MetadataStartOffset, _lazyPEHeaders.MetadataSize);
                     }
                     // We read all we need, the stream is going to be closed.
                 }
@@ -502,13 +490,8 @@ namespace System.Reflection.PortableExecutable
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="sectionName"/> is null.</exception>
         /// <exception cref="InvalidOperationException">PE image not available.</exception>
-        public PEMemoryBlock GetSectionData(string sectionName)
+        public PEMemoryBlock GetSectionData(string sectionName!!)
         {
-            if (sectionName == null)
-            {
-                Throw.ArgumentNull(nameof(sectionName));
-            }
-
             int sectionIndex = PEHeaders.IndexOfSection(sectionName);
             if (sectionIndex < 0)
             {
@@ -699,18 +682,8 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="InvalidOperationException">The stream returned from <paramref name="pdbFileStreamProvider"/> doesn't support read and seek operations.</exception>
         /// <exception cref="BadImageFormatException">No matching PDB file is found due to an error: The PE image or the PDB is invalid.</exception>
         /// <exception cref="IOException">No matching PDB file is found due to an error: An IO error occurred while reading the PE image or the PDB.</exception>
-        public bool TryOpenAssociatedPortablePdb(string peImagePath, Func<string, Stream?> pdbFileStreamProvider, out MetadataReaderProvider? pdbReaderProvider, out string? pdbPath)
+        public bool TryOpenAssociatedPortablePdb(string peImagePath!!, Func<string, Stream?> pdbFileStreamProvider!!, out MetadataReaderProvider? pdbReaderProvider, out string? pdbPath)
         {
-            if (peImagePath == null)
-            {
-                Throw.ArgumentNull(nameof(peImagePath));
-            }
-
-            if (pdbFileStreamProvider == null)
-            {
-                Throw.ArgumentNull(nameof(pdbFileStreamProvider));
-            }
-
             pdbReaderProvider = null;
             pdbPath = null;
 

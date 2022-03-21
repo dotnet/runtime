@@ -309,15 +309,13 @@ MethodDesc* AsMethodDesc(size_t addr)
 
             if (isMemoryReadable((TADDR)chunk, sizeof(MethodDescChunk)))
             {
-                RelativeFixupPointer<PTR_MethodTable> * ppMT = chunk->GetMethodTablePtr();
+                PTR_MethodTable * ppMT = chunk->GetMethodTablePtr();
 
-                // The MethodTable is stored as a RelativeFixupPointer which does an
-                // extra indirection if the address is tagged (the low bit is set).
-                // That could AV if we don't check it first.
+                // Access to the MethodTable could AV if we don't check it first.
 
-                if (!ppMT->IsTagged((TADDR)ppMT) || isMemoryReadable((TADDR)ppMT->GetValuePtr(), sizeof(MethodTable*)))
+                if (isMemoryReadable((TADDR)ppMT, sizeof(MethodTable*)))
                 {
-                    if (AsMethodTable((size_t)RelativeFixupPointer<PTR_MethodTable>::GetValueAtPtr((TADDR)ppMT)) != 0)
+                    if (*ppMT != NULL)
                     {
                         pValidMD = pMD;
                     }
@@ -339,7 +337,7 @@ MethodDesc* AsMethodDesc(size_t addr)
 /*******************************************************************/
 
 WCHAR* formatMethodTable(MethodTable* pMT,
-                           __out_z __inout_ecount(bufSize) WCHAR* buff,
+                           _Inout_updates_z_(bufSize) WCHAR* buff,
                            DWORD bufSize)
 {
     CONTRACTL
@@ -379,7 +377,7 @@ WCHAR* formatMethodTable(MethodTable* pMT,
 /*******************************************************************/
 
 WCHAR* formatMethodDesc(MethodDesc* pMD,
-                          __out_z __inout_ecount(bufSize) WCHAR* buff,
+                          _Inout_updates_z_(bufSize) WCHAR* buff,
                           DWORD bufSize)
 {
     CONTRACTL
@@ -1017,7 +1015,7 @@ void printfToDbgOut(const char* fmt, ...)
     va_start(args, fmt);
 
     char buffer[4096];
-    _vsnprintf_s(buffer, COUNTOF(buffer), _TRUNCATE, fmt, args);
+    _vsnprintf_s(buffer, ARRAY_SIZE(buffer), _TRUNCATE, fmt, args);
 
     va_end(args);
     OutputDebugStringA( buffer );

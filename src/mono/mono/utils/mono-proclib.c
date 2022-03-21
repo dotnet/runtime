@@ -69,7 +69,7 @@
 #    define kinfo_name_member p_comm
 #elif defined(__OpenBSD__)
 // Can not figure out how to get the proc's start time on OpenBSD
-#    undef kinfo_starttime_member 
+#    undef kinfo_starttime_member
 #    define kinfo_pid_member p_pid
 #    define kinfo_name_member p_comm
 #else
@@ -81,7 +81,7 @@
 #endif
 
 #ifdef HAVE_SCHED_GETAFFINITY
-#  ifndef GLIBC_HAS_CPU_COUNT
+#  ifndef HAVE_GNU_CPU_COUNT
 static int
 CPU_COUNT(cpu_set_t *set)
 {
@@ -430,7 +430,7 @@ mono_process_get_times (gpointer pid, gint64 *start_time, gint64 *user_time, gin
 
 /*
  * /proc/pid/stat format:
- * pid (cmdname) S 
+ * pid (cmdname) S
  * 	[0] ppid pgid sid tty_nr tty_pgrp flags min_flt cmin_flt maj_flt cmaj_flt
  * 	[10] utime stime cutime cstime prio nice threads 0 start_time vsize
  * 	[20] rss rsslim start_code end_code start_stack esp eip pending blocked sigign
@@ -445,7 +445,7 @@ mono_process_get_times (gpointer pid, gint64 *start_time, gint64 *user_time, gin
 static gint64
 get_process_stat_item (int pid, int pos, int sum, MonoProcessError *error)
 {
-#if defined(__APPLE__) 
+#if defined(__APPLE__)
 	double process_user_time = 0, process_system_time = 0;//, process_percent = 0;
 	task_t task;
 	struct task_basic_info t_info;
@@ -479,16 +479,16 @@ get_process_stat_item (int pid, int pos, int sum, MonoProcessError *error)
 	do {
 		ret = task_threads (task, &th_array, &th_count);
 	} while (ret == KERN_ABORTED);
-	
+
 	if (ret  != KERN_SUCCESS) {
 		if (pid != getpid ())
 			mach_port_deallocate (mach_task_self (), task);
 		RET_ERROR (MONO_PROCESS_ERROR_OTHER);
 	}
-		
+
 	for (i = 0; i < th_count; i++) {
 		double thread_user_time, thread_system_time;//, thread_percent;
-		
+
 		struct thread_basic_info th_info;
 		mach_msg_type_number_t th_info_count = THREAD_BASIC_INFO_COUNT;
 		do {
@@ -499,13 +499,13 @@ get_process_stat_item (int pid, int pos, int sum, MonoProcessError *error)
 			thread_user_time = th_info.user_time.seconds + th_info.user_time.microseconds / 1e6;
 			thread_system_time = th_info.system_time.seconds + th_info.system_time.microseconds / 1e6;
 			//thread_percent = (double)th_info.cpu_usage / TH_USAGE_SCALE;
-			
+
 			process_user_time += thread_user_time;
 			process_system_time += thread_system_time;
 			//process_percent += th_percent;
 		}
 	}
-	
+
 	for (i = 0; i < th_count; i++)
 		mach_port_deallocate(task, th_array[i]);
 
@@ -514,14 +514,14 @@ get_process_stat_item (int pid, int pos, int sum, MonoProcessError *error)
 
 	process_user_time += t_info.user_time.seconds + t_info.user_time.microseconds / 1e6;
 	process_system_time += t_info.system_time.seconds + t_info.system_time.microseconds / 1e6;
-    
+
 	if (pos == 10 && sum == TRUE)
 		return (gint64)((process_user_time + process_system_time) * 10000000);
 	else if (pos == 10)
 		return (gint64)(process_user_time * 10000000);
 	else if (pos == 11)
 		return (gint64)(process_system_time * 10000000);
-		
+
 	return 0;
 #else
 	char buf [512];
@@ -604,7 +604,7 @@ get_pid_status_item (int pid, const char *item, MonoProcessError *error, int mul
 {
 #if defined(__APPLE__)
 	// ignore the multiplier
-	
+
 	gint64 ret;
 	task_t task;
 	task_vm_info_data_t t_info;
@@ -661,7 +661,7 @@ get_pid_status_item (int pid, const char *item, MonoProcessError *error, int mul
 
 	if (pid != getpid ())
 		mach_port_deallocate (mach_task_self (), task);
-	
+
 	return ret;
 #else
 	char buf [64];
@@ -742,8 +742,10 @@ mono_process_get_data (gpointer pid, MonoProcessData data)
 int
 mono_process_current_pid ()
 {
-#if defined(HAVE_UNISTD_H)
+#if defined(HAVE_GETPID)
 	return (int) getpid ();
+#elif defined(HOST_WASI)
+	return 0;
 #else
 #error getpid
 #endif
@@ -903,7 +905,7 @@ get_cpu_times (int cpu_id, gint64 *user, gint64 *systemt, gint64 *irq, gint64 *s
 		} else {
 			continue;
 		}
-		
+
 		user_ticks = strtoull (data, &data, 10);
 		nice_ticks = strtoull (data, &data, 10);
 		system_ticks = strtoull (data, &data, 10);
@@ -974,116 +976,6 @@ mono_atexit (void (*func)(void))
 	return atexit (func);
 #endif
 }
-
-#ifndef HOST_WIN32
-
-gboolean
-mono_pe_file_time_date_stamp (const gunichar2 *filename, guint32 *out)
-{
-	void *map_handle;
-	guint32 map_size;
-	gpointer file_map = mono_pe_file_map (filename, &map_size, &map_handle);
-	if (!file_map)
-		return FALSE;
-
-	/* Figure this out when we support 64bit PE files */
-	if (1) {
-		IMAGE_DOS_HEADER *dos_header = (IMAGE_DOS_HEADER *)file_map;
-		if (dos_header->e_magic != IMAGE_DOS_SIGNATURE) {
-			mono_pe_file_unmap (file_map, map_handle);
-			return FALSE;
-		}
-
-		IMAGE_NT_HEADERS32 *nt_headers = (IMAGE_NT_HEADERS32 *)((guint8 *)file_map + GUINT32_FROM_LE (dos_header->e_lfanew));
-		if (nt_headers->Signature != IMAGE_NT_SIGNATURE) {
-			mono_pe_file_unmap (file_map, map_handle);
-			return FALSE;
-		}
-
-		*out = nt_headers->FileHeader.TimeDateStamp;
-	} else {
-		g_assert_not_reached ();
-	}
-
-	mono_pe_file_unmap (file_map, map_handle);
-	return TRUE;
-}
-
-gpointer
-mono_pe_file_map (const gunichar2 *filename, guint32 *map_size, void **handle)
-{
-	gchar *filename_ext = NULL;
-	gchar *located_filename = NULL;
-	guint64 fsize = 0;
-	gpointer file_map = NULL;
-	ERROR_DECL (error);
-	MonoFileMap *filed = NULL;
-
-	/* According to the MSDN docs, a search path is applied to
-	 * filename.  FIXME: implement this, for now just pass it
-	 * straight to open
-	 */
-
-	filename_ext = mono_unicode_to_external_checked (filename, error);
-	// This block was added to diagnose https://github.com/mono/mono/issues/14730, remove after resolved
-	if (G_UNLIKELY (filename_ext == NULL)) {
-		GString *raw_bytes = g_string_new (NULL);
-		const gunichar2 *p = filename;
-		while (*p)
-			g_string_append_printf (raw_bytes, "%04X ", *p++);
-		g_assertf (filename_ext != NULL, "%s: unicode conversion returned NULL; %s; input was: %s", __func__, mono_error_get_message (error), raw_bytes->str);
-		g_string_free (raw_bytes, TRUE);
-	}
-	if (filename_ext == NULL) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unicode conversion returned NULL; %s", __func__, mono_error_get_message (error));
-		mono_error_cleanup (error);
-		goto exit;
-	}
-
-	if ((filed = mono_file_map_open (filename_ext)) == NULL) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error opening file %s (3): %s", __func__, filename_ext, strerror (errno));
-		goto exit;
-	}
-
-	fsize = mono_file_map_size (filed);
-	if (fsize == 0) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error stat()ing file %s: %s", __func__, filename_ext, strerror (errno));
-		goto exit;
-	}
-	g_assert (fsize <= G_MAXUINT32);
-	*map_size = fsize;
-
-	/* Check basic file size */
-	if (fsize < sizeof(IMAGE_DOS_HEADER)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: File %s is too small: %" PRId64, __func__, filename_ext, fsize);
-
-		goto exit;
-	}
-
-	file_map = mono_file_map (fsize, MONO_MMAP_READ | MONO_MMAP_PRIVATE, mono_file_map_fd (filed), 0, handle);
-	if (file_map == NULL) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error mmap()int file %s: %s", __func__, filename_ext, strerror (errno));
-		goto exit;
-	}
-exit:
-	if (filed)
-		mono_file_map_close (filed);
-	g_free (located_filename);
-	g_free (filename_ext);
-	return file_map;
-}
-
-void
-mono_pe_file_unmap (gpointer file_map, void *handle)
-{
-	gint res;
-
-	res = mono_file_unmap (file_map, handle);
-	if (G_UNLIKELY (res != 0))
-		g_error ("%s: mono_file_unmap failed, error: \"%s\" (%d)", __func__, g_strerror (errno), errno);
-}
-
-#endif /* HOST_WIN32 */
 
 /*
  * This function returns the cpu usage in percentage,

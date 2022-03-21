@@ -116,19 +116,9 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="reloadOnChange">Whether the configuration should be reloaded if the file changes.</param>
         /// <exception cref="InvalidOperationException">Thrown when <paramref name="optional"/> is false and <paramref name="assembly"/> does not have a valid <see cref="UserSecretsIdAttribute"/>.</exception>
         /// <returns>The configuration builder.</returns>
-        public static IConfigurationBuilder AddUserSecrets(this IConfigurationBuilder configuration, Assembly assembly, bool optional, bool reloadOnChange)
+        public static IConfigurationBuilder AddUserSecrets(this IConfigurationBuilder configuration!!, Assembly assembly!!, bool optional, bool reloadOnChange)
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
-            if (assembly == null)
-            {
-                throw new ArgumentNullException(nameof(assembly));
-            }
-
-            UserSecretsIdAttribute attribute = assembly.GetCustomAttribute<UserSecretsIdAttribute>();
+            UserSecretsIdAttribute? attribute = assembly.GetCustomAttribute<UserSecretsIdAttribute>();
             if (attribute != null)
             {
                 return AddUserSecretsInternal(configuration, attribute.UserSecretsId, optional, reloadOnChange);
@@ -171,25 +161,15 @@ namespace Microsoft.Extensions.Configuration
         public static IConfigurationBuilder AddUserSecrets(this IConfigurationBuilder configuration, string userSecretsId, bool reloadOnChange)
             => AddUserSecretsInternal(configuration, userSecretsId, true, reloadOnChange);
 
-        private static IConfigurationBuilder AddUserSecretsInternal(IConfigurationBuilder configuration, string userSecretsId, bool optional, bool reloadOnChange)
+        private static IConfigurationBuilder AddUserSecretsInternal(IConfigurationBuilder configuration!!, string userSecretsId!!, bool optional, bool reloadOnChange)
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
-            if (userSecretsId == null)
-            {
-                throw new ArgumentNullException(nameof(userSecretsId));
-            }
-
             return AddSecretsFile(configuration, PathHelper.GetSecretsPathFromSecretsId(userSecretsId), optional, reloadOnChange);
         }
 
         private static IConfigurationBuilder AddSecretsFile(IConfigurationBuilder configuration, string secretPath, bool optional, bool reloadOnChange)
         {
-            string directoryPath = Path.GetDirectoryName(secretPath);
-            PhysicalFileProvider fileProvider = Directory.Exists(directoryPath)
+            string? directoryPath = Path.GetDirectoryName(secretPath);
+            PhysicalFileProvider? fileProvider = Directory.Exists(directoryPath)
                 ? new PhysicalFileProvider(directoryPath)
                 : null;
             return configuration.AddJsonFile(fileProvider, PathHelper.SecretsFileName, optional, reloadOnChange);

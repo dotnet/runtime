@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 namespace Microsoft.Extensions.DependencyModel
 {
     internal sealed class FileWrapper: IFile
     {
-        public bool Exists(string path)
+        public bool Exists([NotNullWhen(true)] string? path)
         {
             return File.Exists(path);
         }

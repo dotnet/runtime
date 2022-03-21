@@ -8,12 +8,16 @@
   .ver 4:0:0:0
 }
 .assembly b118260 {}
+.assembly extern xunit.core {}
 .namespace Test
 {
   .class public auto ansi Test extends [mscorlib]System.Object
   {
     .method public static int32 Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
 
       LoadStr:

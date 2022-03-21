@@ -11,6 +11,7 @@
 .assembly extern System.Console { auto }
 
 .assembly DevDiv_545500 { }
+.assembly extern xunit.core {}
 
 .class public auto ansi beforefieldinit DevDiv_545500
        extends [System.Runtime]System.Object
@@ -130,6 +131,9 @@ L1:     ldarg.s      0x1
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init ([0] int32 retVal, [1] int32 testResult)
 

@@ -21,7 +21,7 @@ Imports System.Diagnostics.CodeAnalysis
 Namespace Microsoft.VisualBasic.CompilerServices
 
     ' Implements VB method overloading semantics.
-    Friend Class OverloadResolution
+    Friend NotInheritable Class OverloadResolution
         ' Prevent creation.
         Private Sub New()
         End Sub

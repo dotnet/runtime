@@ -19,6 +19,7 @@ namespace System.Diagnostics
         public virtual int GetFileLineNumber() { throw null; }
         public virtual string? GetFileName() { throw null; }
         public virtual int GetILOffset() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Metadata for the method might be incomplete or removed")]
         public virtual System.Reflection.MethodBase? GetMethod() { throw null; }
         public virtual int GetNativeOffset() { throw null; }
         public override string ToString() { throw null; }
@@ -169,7 +170,7 @@ namespace System.Diagnostics.SymbolStore
         BitField = 9,
         NativeSectionOffset = 10,
     }
-    public readonly partial struct SymbolToken
+    public readonly partial struct SymbolToken : System.IEquatable<System.Diagnostics.SymbolStore.SymbolToken>
     {
         private readonly int _dummyPrimitive;
         public SymbolToken(int val) { throw null; }

@@ -10,7 +10,7 @@ namespace System.Reflection
     public sealed class AmbiguousMatchException : SystemException
     {
         public AmbiguousMatchException()
-            : base(SR.RFLCT_Ambiguous)
+            : base(SR.Arg_AmbiguousMatchException)
         {
             HResult = HResults.COR_E_AMBIGUOUSMATCH;
         }

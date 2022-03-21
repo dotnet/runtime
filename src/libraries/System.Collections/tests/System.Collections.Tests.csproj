@@ -1,9 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
   </PropertyGroup>
+  <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
   <ItemGroup>
     <!-- Common Collections tests -->
     <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs"
@@ -34,6 +37,8 @@
              Link="Common\System\Collections\TestBase.Generic.Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\DebugView.Tests.cs"
              Link="Common\System\Collections\DebugView.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\DictionaryEntry.Tests.cs"
+             Link="Common\System\Collections\DictionaryEntry.Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\TestingTypes.cs"
              Link="Common\System\Collections\TestingTypes.cs" />
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs"

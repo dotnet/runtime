@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using Internal.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Globalization
@@ -74,7 +74,7 @@ namespace System.Globalization
 
             // Ask OS for data, note that we presume it returns success, so we have to know that
             // sWindowsName is valid before calling.
-            Debug.Assert(_sRealName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sRealName to be populated already");
+            Debug.Assert(_sRealName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sRealName to be populated by already");
             return GetLocaleInfoExInt(_sRealName, lctype);
         }
 

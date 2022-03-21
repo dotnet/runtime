@@ -9,8 +9,8 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false, EntryPoint = "CreateNamedPipeW")]
-        internal static extern SafePipeHandle CreateNamedPipe(
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateNamedPipeW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial SafePipeHandle CreateNamedPipe(
             string pipeName,
             int openMode,
             int pipeMode,

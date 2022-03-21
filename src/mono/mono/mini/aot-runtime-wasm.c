@@ -8,7 +8,7 @@
 #include <sys/types.h>
 
 #include "mini.h"
-#include "mono-private-unstable.h"
+#include <mono/jit/mono-private-unstable.h>
 #include "interp/interp.h"
 
 #ifdef TARGET_WASM
@@ -16,7 +16,7 @@
 static char
 type_to_c (MonoType *t)
 {
-	if (t->byref)
+	if (m_type_is_byref (t))
 		return 'I';
 
 handle_enum:

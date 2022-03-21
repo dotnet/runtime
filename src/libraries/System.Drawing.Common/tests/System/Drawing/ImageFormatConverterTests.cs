@@ -5,6 +5,7 @@ using System.Collections;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
+using System.Tests;
 using Xunit;
 
 namespace System.ComponentModel.TypeConverterTests
@@ -132,6 +133,12 @@ namespace System.ComponentModel.TypeConverterTests
 
             Assert.Equal(_imageFmtStr, (string)_imgFmtConvFrmTD.ConvertTo(null, CultureInfo.InvariantCulture, _imageFmt, typeof(string)));
             Assert.Equal(_imageFmtStr, (string)_imgFmtConvFrmTD.ConvertTo(_imageFmt, typeof(string)));
+
+            Assert.Equal(string.Empty, (string)_imgFmtConv.ConvertTo(null, typeof(string)));
+            Assert.Equal(string.Empty, (string)_imgFmtConv.ConvertTo(null, CultureInfo.CreateSpecificCulture("ru-RU"), null, typeof(string)));
+
+            Assert.Equal(string.Empty, (string)_imgFmtConvFrmTD.ConvertTo(null, typeof(string)));
+            Assert.Equal(string.Empty, (string)_imgFmtConvFrmTD.ConvertTo(null, CultureInfo.CreateSpecificCulture("de-DE"), null, typeof(string)));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]

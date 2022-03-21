@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System.Collections.Generic;
 using System.Globalization;
 
@@ -117,7 +116,7 @@ namespace System
         ///       independent identifier.
         ///    </para>
         /// </devdoc>
-        public static bool IsValidLanguageIndependentIdentifier(string value)
+        public static bool IsValidLanguageIndependentIdentifier(string? value)
         {
             return IsValidTypeNameOrIdentifier(value, false);
         }
@@ -139,7 +138,7 @@ namespace System
             }
         }
 
-        internal static bool IsValidTypeNameOrIdentifier(string value, bool isTypeName)
+        internal static bool IsValidTypeNameOrIdentifier(string? value, bool isTypeName)
         {
             bool nextMustBeStartChar = true;
 

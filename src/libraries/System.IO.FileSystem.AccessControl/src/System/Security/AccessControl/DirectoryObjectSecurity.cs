@@ -17,13 +17,9 @@ namespace System.Security.AccessControl
             return;
         }
 
-        protected DirectoryObjectSecurity(CommonSecurityDescriptor securityDescriptor)
+        protected DirectoryObjectSecurity(CommonSecurityDescriptor securityDescriptor!!)
             : base(securityDescriptor)
         {
-            if (securityDescriptor == null)
-            {
-                throw new ArgumentNullException(nameof(securityDescriptor));
-            }
         }
 
         #region Private Methods
@@ -520,19 +516,13 @@ namespace System.Security.AccessControl
 
 #region Public Methods
 
-        protected void AddAccessRule(ObjectAccessRule rule)
+        protected void AddAccessRule(ObjectAccessRule rule!!)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
-
             WriteLock();
 
             try
             {
-                bool modified;
-                ModifyAccess(AccessControlModification.Add, rule, out modified);
+                ModifyAccess(AccessControlModification.Add, rule, out _);
             }
             finally
             {
@@ -542,19 +532,13 @@ namespace System.Security.AccessControl
             return;
         }
 
-        protected void SetAccessRule(ObjectAccessRule rule)
+        protected void SetAccessRule(ObjectAccessRule rule!!)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
-
             WriteLock();
 
             try
             {
-                bool modified;
-                ModifyAccess(AccessControlModification.Set, rule, out modified);
+                ModifyAccess(AccessControlModification.Set, rule, out _);
             }
             finally
             {
@@ -562,19 +546,13 @@ namespace System.Security.AccessControl
             }
         }
 
-        protected void ResetAccessRule(ObjectAccessRule rule)
+        protected void ResetAccessRule(ObjectAccessRule rule!!)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
-
             WriteLock();
 
             try
             {
-                bool modified;
-                ModifyAccess(AccessControlModification.Reset, rule, out modified);
+                ModifyAccess(AccessControlModification.Reset, rule, out _);
             }
             finally
             {
@@ -582,13 +560,8 @@ namespace System.Security.AccessControl
             }
         }
 
-        protected bool RemoveAccessRule(ObjectAccessRule rule)
+        protected bool RemoveAccessRule(ObjectAccessRule rule!!)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
-
             WriteLock();
 
             try
@@ -598,8 +571,7 @@ namespace System.Security.AccessControl
                     return true;
                 }
 
-                bool modified;
-                return ModifyAccess(AccessControlModification.Remove, rule, out modified);
+                return ModifyAccess(AccessControlModification.Remove, rule, out _);
             }
             finally
             {
@@ -607,13 +579,8 @@ namespace System.Security.AccessControl
             }
         }
 
-        protected void RemoveAccessRuleAll(ObjectAccessRule rule)
+        protected void RemoveAccessRuleAll(ObjectAccessRule rule!!)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
-
             WriteLock();
 
             try
@@ -623,8 +590,7 @@ namespace System.Security.AccessControl
                     return;
                 }
 
-                bool modified;
-                ModifyAccess(AccessControlModification.RemoveAll, rule, out modified);
+                ModifyAccess(AccessControlModification.RemoveAll, rule, out _);
             }
             finally
             {
@@ -632,13 +598,8 @@ namespace System.Security.AccessControl
             }
         }
 
-        protected void RemoveAccessRuleSpecific(ObjectAccessRule rule)
+        protected void RemoveAccessRuleSpecific(ObjectAccessRule rule!!)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
-
             if (SecurityDescriptor == null)
             {
                 return;
@@ -648,8 +609,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                bool modified;
-                ModifyAccess(AccessControlModification.RemoveSpecific, rule, out modified);
+                ModifyAccess(AccessControlModification.RemoveSpecific, rule, out _);
             }
             finally
             {
@@ -657,19 +617,13 @@ namespace System.Security.AccessControl
             }
         }
 
-        protected void AddAuditRule(ObjectAuditRule rule)
+        protected void AddAuditRule(ObjectAuditRule rule!!)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
-
             WriteLock();
 
             try
             {
-                bool modified;
-                ModifyAudit(AccessControlModification.Add, rule, out modified);
+                ModifyAudit(AccessControlModification.Add, rule, out _);
             }
             finally
             {
@@ -677,19 +631,13 @@ namespace System.Security.AccessControl
             }
         }
 
-        protected void SetAuditRule(ObjectAuditRule rule)
+        protected void SetAuditRule(ObjectAuditRule rule!!)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
-
             WriteLock();
 
             try
             {
-                bool modified;
-                ModifyAudit(AccessControlModification.Set, rule, out modified);
+                ModifyAudit(AccessControlModification.Set, rule, out _);
             }
             finally
             {
@@ -697,19 +645,13 @@ namespace System.Security.AccessControl
             }
         }
 
-        protected bool RemoveAuditRule(ObjectAuditRule rule)
+        protected bool RemoveAuditRule(ObjectAuditRule rule!!)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
-
             WriteLock();
 
             try
             {
-                bool modified;
-                return ModifyAudit(AccessControlModification.Remove, rule, out modified);
+                return ModifyAudit(AccessControlModification.Remove, rule, out _);
             }
             finally
             {
@@ -717,19 +659,13 @@ namespace System.Security.AccessControl
             }
         }
 
-        protected void RemoveAuditRuleAll(ObjectAuditRule rule)
+        protected void RemoveAuditRuleAll(ObjectAuditRule rule!!)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
-
             WriteLock();
 
             try
             {
-                bool modified;
-                ModifyAudit(AccessControlModification.RemoveAll, rule, out modified);
+                ModifyAudit(AccessControlModification.RemoveAll, rule, out _);
             }
             finally
             {
@@ -737,19 +673,13 @@ namespace System.Security.AccessControl
             }
         }
 
-        protected void RemoveAuditRuleSpecific(ObjectAuditRule rule)
+        protected void RemoveAuditRuleSpecific(ObjectAuditRule rule!!)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
-
             WriteLock();
 
             try
             {
-                bool modified;
-                ModifyAudit(AccessControlModification.RemoveSpecific, rule, out modified);
+                ModifyAudit(AccessControlModification.RemoveSpecific, rule, out _);
             }
             finally
             {

@@ -21,7 +21,7 @@
 static char *
 convert_name (const char *str)
 {
-	int i, j, len = strlen (str);
+	size_t i, j, len = strlen (str);
 	char *res = (char *)g_malloc (len * 2);
 
 	j = 0;
@@ -52,7 +52,7 @@ dtree_emit_one_loop_level (MonoCompile *cfg, FILE *fp, MonoBasicBlock *h)
 		level = h->nesting;
 		fprintf (fp, "subgraph cluster_%d {\n", h->block_num);
 		fprintf (fp, "label=\"loop_%d\"\n", h->block_num);
-	} 
+	}
 
 	for (i = 1; i < cfg->num_bblocks; ++i) {
 		bb = cfg->bblocks [i];
@@ -61,14 +61,14 @@ dtree_emit_one_loop_level (MonoCompile *cfg, FILE *fp, MonoBasicBlock *h)
 			if (bb->nesting == level) {
 				fprintf (fp, "BB%d -> BB%d;\n", bb->idom->block_num, bb->block_num);
 			}
-		
+
 			if (bb->nesting == (level + 1) && bb->loop_blocks) {
 				fprintf (fp, "BB%d -> BB%d;\n", bb->idom->block_num, bb->block_num);
 				dtree_emit_one_loop_level (cfg, fp, bb);
 			}
 		}
 	}
-	
+
 	if (h) {
 		fprintf (fp, "}\n");
 	}
@@ -84,7 +84,7 @@ cfg_emit_one_loop_level (MonoCompile *cfg, FILE *fp, MonoBasicBlock *h)
 		level = h->nesting;
 		fprintf (fp, "subgraph cluster_%d {\n", h->block_num);
 		fprintf (fp, "label=\"loop_%d\"\n", h->block_num);
-	} 
+	}
 
 	for (bb = cfg->bb_entry->next_bb; bb; bb = bb->next_bb) {
 		if (bb->region != -1) {
@@ -107,18 +107,18 @@ cfg_emit_one_loop_level (MonoCompile *cfg, FILE *fp, MonoBasicBlock *h)
 		if (!h || (g_list_find (h->loop_blocks, bb) && bb != h)) {
 
 			if (bb->nesting == level) {
-				for (j = 0; j < bb->in_count; j++) 
+				for (j = 0; j < bb->in_count; j++)
 					fprintf (fp, "BB%d -> BB%d;\n", bb->in_bb [j]->block_num, bb->block_num);
 			}
-		
+
 			if (bb->nesting == (level + 1) && bb->loop_blocks) {
-				for (j = 0; j < bb->in_count; j++) 
+				for (j = 0; j < bb->in_count; j++)
 					fprintf (fp, "BB%d -> BB%d;\n", bb->in_bb [j]->block_num, bb->block_num);
 				cfg_emit_one_loop_level (cfg, fp, bb);
 			}
 		}
 	}
-	
+
 	if (h) {
 		fprintf (fp, "}\n");
 	}
@@ -160,7 +160,7 @@ static void
 mono_draw_code_cfg (MonoCompile *cfg, FILE *fp)
 {
 	MonoBasicBlock *bb;
-		
+
 	fprintf (fp, "digraph %s {\n", convert_name (cfg->method->name));
 	fprintf (fp, "node [fontsize=12.0]\nedge [len=1,color=red]\n");
 	fprintf (fp, "label=\"CFG for %s\";\n", mono_method_full_name (cfg->method, TRUE));
@@ -181,13 +181,13 @@ mono_draw_code_cfg (MonoCompile *cfg, FILE *fp)
 			color = "";
 
 		fprintf (fp, "BB%d [%sshape=record,labeljust=l,label=\"{BB%d|", bb->block_num, color, bb->block_num);
-			
+
 		MONO_BB_FOR_EACH_INS (bb, inst) {
 			//mono_print_label (fp, inst);
-			fprintf (fp, "\\n");			
+			fprintf (fp, "\\n");
 		}
 
-		fprintf (fp, "}\"];\n");			
+		fprintf (fp, "}\"];\n");
 	}
 
 	cfg_emit_one_loop_level (cfg, fp, NULL);

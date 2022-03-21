@@ -53,13 +53,15 @@ namespace System
 
         internal const string NewLineConst = "\r\n";
 
-        public static int SystemPageSize
+        private static int GetSystemPageSize()
         {
-            get
+            Interop.Kernel32.SYSTEM_INFO info;
+            unsafe
             {
-                Interop.Kernel32.GetSystemInfo(out Interop.Kernel32.SYSTEM_INFO info);
-                return info.dwPageSize;
+                Interop.Kernel32.GetSystemInfo(&info);
             }
+
+            return info.dwPageSize;
         }
 
         private static string ExpandEnvironmentVariablesCore(string name)

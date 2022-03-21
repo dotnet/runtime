@@ -243,8 +243,8 @@ struct insGroup
     insGroup* igSelf; // for consistency checking
 #endif
 #if defined(DEBUG) || defined(LATE_DISASM)
-    BasicBlock::weight_t igWeight;    // the block weight used for this insGroup
-    double               igPerfScore; // The PerfScore for this insGroup
+    weight_t igWeight;    // the block weight used for this insGroup
+    double   igPerfScore; // The PerfScore for this insGroup
 #endif
 
 #ifdef DEBUG
@@ -275,8 +275,8 @@ struct insGroup
 #define IGF_PLACEHOLDER 0x0100    // this is a placeholder group, to be filled in later
 #define IGF_EXTEND 0x0200         // this block is conceptually an extension of the previous block
                                   // and the emitter should continue to track GC info as if there was no new block.
-#define IGF_LOOP_ALIGN 0x0400     // this group contains alignment instruction(s) at the end; the next IG is the
-                                  // head of a loop that needs alignment.
+#define IGF_HAS_ALIGN 0x0400      // this group contains an alignment instruction(s) at the end to align either the next
+                                  // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -349,9 +349,9 @@ struct insGroup
         return *(unsigned*)ptr;
     }
 
-    bool isLoopAlign()
+    bool endsWithAlignInstr() const
     {
-        return (igFlags & IGF_LOOP_ALIGN) != 0;
+        return (igFlags & IGF_HAS_ALIGN) != 0;
     }
 
 }; // end of struct insGroup
@@ -524,6 +524,8 @@ protected:
         IF_COUNT
     };
 
+#ifdef TARGET_XARCH
+
 #define AM_DISP_BITS ((sizeof(unsigned) * 8) - 2 * (REGNUM_BITS + 1) - 2)
 #define AM_DISP_BIG_VAL (-(1 << (AM_DISP_BITS - 1)))
 #define AM_DISP_MIN (-((1 << (AM_DISP_BITS - 1)) - 1))
@@ -536,6 +538,8 @@ protected:
         emitter::opSize amScale : 2;
         int             amDisp : AM_DISP_BITS;
     };
+
+#endif // TARGET_XARCH
 
 #ifdef DEBUG // This information is used in DEBUG builds to display the method name for call instructions
 
@@ -583,6 +587,7 @@ protected:
         instruction _idIns : 10;
 #define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
+#define INSTR_ENCODED_SIZE 4
         static_assert_no_msg(INS_count <= 512);
         instruction _idIns : 9;
 #else  // !(defined(TARGET_XARCH) || defined(TARGET_ARM64))
@@ -608,6 +613,15 @@ protected:
         {
             assert((ins != INS_invalid) && (ins < INS_count));
             _idIns = ins;
+        }
+        bool idInsIs(instruction ins) const
+        {
+            return idIns() == ins;
+        }
+        template <typename... T>
+        bool idInsIs(instruction ins, T... rest) const
+        {
+            return idInsIs(ins) || idInsIs(rest...);
         }
 
         insFormat idInsFmt() const
@@ -812,10 +826,12 @@ protected:
 #ifndef TARGET_ARM64
             emitLclVarAddr iiaLclVar;
 #endif
-            BasicBlock*  iiaBBlabel;
-            insGroup*    iiaIGlabel;
-            BYTE*        iiaAddr;
+            BasicBlock* iiaBBlabel;
+            insGroup*   iiaIGlabel;
+            BYTE*       iiaAddr;
+#ifdef TARGET_XARCH
             emitAddrMode iiaAddrMode;
+#endif // TARGET_XARCH
 
             CORINFO_FIELD_HANDLE iiaFieldHnd; // iiaFieldHandle is also used to encode
                                               // an offset into the JIT data constant area
@@ -890,6 +906,12 @@ protected:
         }
 
 #elif defined(TARGET_ARM64)
+
+        inline bool idIsEmptyAlign() const
+        {
+            return (idIns() == INS_align) && (idInsOpt() == INS_OPTS_NONE);
+        }
+
         unsigned idCodeSize() const
         {
             int size = 4;
@@ -911,6 +933,12 @@ protected:
                     {
                         // adrp + ldr
                         size = 8;
+                    }
+                    break;
+                case IF_SN_0A:
+                    if (idIsEmptyAlign())
+                    {
+                        size = 0;
                     }
                     break;
                 default:
@@ -1128,15 +1156,6 @@ protected:
             _idCallRegPtr = 1;
         }
 
-        bool idIsCallAddr() const
-        {
-            return _idCallAddr != 0;
-        }
-        void idSetIsCallAddr()
-        {
-            _idCallAddr = 1;
-        }
-
         // Only call instructions that call helper functions may be marked as "IsNoGC", indicating
         // that a thread executing such a call cannot be stopped for GC.  Thus, in partially-interruptible
         // code, it is not necessary to generate GC info for a call so labeled.
@@ -1236,21 +1255,22 @@ protected:
 
 #define PERFSCORE_THROUGHPUT_1C 1.0f // Single Issue
 
-#define PERFSCORE_THROUGHPUT_2C 2.0f   // slower - 2 cycles
-#define PERFSCORE_THROUGHPUT_3C 3.0f   // slower - 3 cycles
-#define PERFSCORE_THROUGHPUT_4C 4.0f   // slower - 4 cycles
-#define PERFSCORE_THROUGHPUT_5C 5.0f   // slower - 5 cycles
-#define PERFSCORE_THROUGHPUT_6C 6.0f   // slower - 6 cycles
-#define PERFSCORE_THROUGHPUT_7C 7.0f   // slower - 7 cycles
-#define PERFSCORE_THROUGHPUT_8C 8.0f   // slower - 8 cycles
-#define PERFSCORE_THROUGHPUT_9C 9.0f   // slower - 9 cycles
-#define PERFSCORE_THROUGHPUT_10C 10.0f // slower - 10 cycles
-#define PERFSCORE_THROUGHPUT_13C 13.0f // slower - 13 cycles
-#define PERFSCORE_THROUGHPUT_19C 19.0f // slower - 19 cycles
-#define PERFSCORE_THROUGHPUT_25C 25.0f // slower - 25 cycles
-#define PERFSCORE_THROUGHPUT_33C 33.0f // slower - 33 cycles
-#define PERFSCORE_THROUGHPUT_52C 52.0f // slower - 52 cycles
-#define PERFSCORE_THROUGHPUT_57C 57.0f // slower - 57 cycles
+#define PERFSCORE_THROUGHPUT_2C 2.0f     // slower - 2 cycles
+#define PERFSCORE_THROUGHPUT_3C 3.0f     // slower - 3 cycles
+#define PERFSCORE_THROUGHPUT_4C 4.0f     // slower - 4 cycles
+#define PERFSCORE_THROUGHPUT_5C 5.0f     // slower - 5 cycles
+#define PERFSCORE_THROUGHPUT_6C 6.0f     // slower - 6 cycles
+#define PERFSCORE_THROUGHPUT_7C 7.0f     // slower - 7 cycles
+#define PERFSCORE_THROUGHPUT_8C 8.0f     // slower - 8 cycles
+#define PERFSCORE_THROUGHPUT_9C 9.0f     // slower - 9 cycles
+#define PERFSCORE_THROUGHPUT_10C 10.0f   // slower - 10 cycles
+#define PERFSCORE_THROUGHPUT_13C 13.0f   // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_19C 19.0f   // slower - 19 cycles
+#define PERFSCORE_THROUGHPUT_25C 25.0f   // slower - 25 cycles
+#define PERFSCORE_THROUGHPUT_33C 33.0f   // slower - 33 cycles
+#define PERFSCORE_THROUGHPUT_52C 52.0f   // slower - 52 cycles
+#define PERFSCORE_THROUGHPUT_57C 57.0f   // slower - 57 cycles
+#define PERFSCORE_THROUGHPUT_140C 140.0f // slower - 140 cycles
 
 #define PERFSCORE_LATENCY_ILLEGAL -1024.0f
 
@@ -1277,6 +1297,7 @@ protected:
 #define PERFSCORE_LATENCY_26C 26.0f
 #define PERFSCORE_LATENCY_62C 62.0f
 #define PERFSCORE_LATENCY_69C 69.0f
+#define PERFSCORE_LATENCY_140C 140.0f
 #define PERFSCORE_LATENCY_400C 400.0f // Intel microcode issue with these instuctions
 
 #define PERFSCORE_LATENCY_BRANCH_DIRECT 1.0f   // cost of an unconditional branch
@@ -1348,7 +1369,7 @@ protected:
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
-    BasicBlock::weight_t getCurrentBlockWeight();
+    weight_t getCurrentBlockWeight();
 
     void dispIns(instrDesc* id);
 
@@ -1377,10 +1398,30 @@ protected:
 #if FEATURE_LOOP_ALIGN
     struct instrDescAlign : instrDesc
     {
-        instrDescAlign* idaNext; // next align in the group/method
-        insGroup*       idaIG;   // containing group
-    };
+        instrDescAlign* idaNext;           // next align in the group/method
+        insGroup*       idaIG;             // containing group
+        insGroup*       idaLoopHeadPredIG; // The IG before the loop IG.
+                                           // If no 'jmp' instructions were found until idaLoopHeadPredIG,
+                                           // then idaLoopHeadPredIG == idaIG.
+#ifdef DEBUG
+        bool isPlacedAfterJmp; // Is the 'align' instruction placed after jmp. Used to decide
+                               // if the instruction cost should be included in PerfScore
+                               // calculation or not.
 #endif
+
+        inline insGroup* loopHeadIG()
+        {
+            assert(idaLoopHeadPredIG);
+            return idaLoopHeadPredIG->igNext;
+        }
+
+        void removeAlignFlags()
+        {
+            idaIG->igFlags &= ~IGF_HAS_ALIGN;
+        }
+    };
+    void emitCheckAlignFitInCurIG(unsigned nAlignInstr);
+#endif // FEATURE_LOOP_ALIGN
 
 #if !defined(TARGET_ARM64) // This shouldn't be needed for ARM32, either, but I don't want to touch the ARM32 JIT.
     struct instrDescLbl : instrDescJmp
@@ -1482,6 +1523,10 @@ protected:
     ssize_t emitGetInsCIdisp(instrDesc* id);
     unsigned emitGetInsCIargs(instrDesc* id);
 
+#ifdef DEBUG
+    inline static emitAttr emitGetMemOpSize(instrDesc* id);
+#endif // DEBUG
+
     // Return the argument count for a direct call "id".
     int emitGetInsCDinfo(instrDesc* id);
 
@@ -1518,6 +1563,7 @@ protected:
     regPtrDsc* debugPrevRegPtrDsc;
     regMaskTP  debugPrevGCrefRegs;
     regMaskTP  debugPrevByrefRegs;
+    void       emitDispInsIndent();
     void emitDispGCDeltaTitle(const char* title);
     void emitDispGCRegDelta(const char* title, regMaskTP prevRegs, regMaskTP curRegs);
     void emitDispGCVarDelta();
@@ -1533,6 +1579,14 @@ protected:
     void emitDispInsAddr(BYTE* code);
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
+    void emitDispIns(instrDesc* id,
+                     bool       isNew,
+                     bool       doffs,
+                     bool       asmfm,
+                     unsigned   offs  = 0,
+                     BYTE*      pCode = nullptr,
+                     size_t     sz    = 0,
+                     insGroup*  ig    = nullptr);
 
 #else // !DEBUG
 #define emitVarRefOffs 0
@@ -1731,19 +1785,50 @@ private:
     void emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt, instruction ins);
     void spillIntArgRegsToShadowSlots();
 
-/************************************************************************/
-/*      The logic that creates and keeps track of instruction groups    */
-/************************************************************************/
+    /************************************************************************/
+    /*      The logic that creates and keeps track of instruction groups    */
+    /************************************************************************/
+
+    // SC_IG_BUFFER_SIZE defines the size, in bytes, of the single, global instruction group buffer.
+    // When a label is reached, or the buffer is filled, the precise amount of the buffer that was
+    // used is copied to a newly allocated, precisely sized buffer, and the global buffer is reset
+    // for use with the next set of instructions (see emitSavIG). If the buffer was filled before
+    // reaching a label, the next instruction group will be an "overflow", or "extension" group
+    // (marked with IGF_EXTEND). Thus, the size of the global buffer shouldn't matter (as long as it
+    // can hold at least one of the largest instruction descriptor forms), since we can always overflow
+    // to subsequent instruction groups.
+    //
+    // The only place where this fixed instruction group size is a problem is in the main function prolog,
+    // where we only support a single instruction group, and no extension groups. We should really fix that.
+    // Thus, the buffer size needs to be large enough to hold the maximum number of instructions that
+    // can possibly be generated into the prolog instruction group. That is difficult to statically determine.
+    //
+    // If we do generate an overflow prolog group, we will hit a NOWAY assert and fall back to MinOpts.
+    // This should reduce the number of instructions generated into the prolog.
+    //
+    // Note that OSR prologs require additional code not seen in normal prologs.
+    //
+    // Also, note that DEBUG and non-DEBUG builds have different instrDesc sizes, and there are multiple
+    // sizes of instruction descriptors, so the number of instructions that will fit in the largest
+    // instruction group depends on the instruction mix as well as DEBUG/non-DEBUG build type. See the
+    // EMITTER_STATS output for various statistics related to this.
+    //
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_ARMARCH
-// The only place where this limited instruction group size is a problem is
-// in the prolog, where we only support a single instruction group. We should really fix that.
 // ARM32 and ARM64 both can require a bigger prolog instruction group. One scenario is where
 // a function uses all the incoming integer and single-precision floating-point arguments,
 // and must store them all to the frame on entry. If the frame is very large, we generate
-// ugly code like "movw r10, 0x488; add r10, sp; vstr s0, [r10]" for each store, which
-// eats up our insGroup buffer.
-#define SC_IG_BUFFER_SIZE (100 * sizeof(emitter::instrDesc) + 14 * SMALL_IDSC_SIZE)
+// ugly code like:
+//     movw r10, 0x488
+//     add r10, sp
+//     vstr s0, [r10]
+// for each store, or, to load arguments into registers:
+//     movz    xip1, #0x6cd0
+//     movk    xip1, #2 LSL #16
+//     ldr     w8, [fp, xip1]        // [V10 arg10]
+// which eats up our insGroup buffer.
+#define SC_IG_BUFFER_SIZE (200 * sizeof(emitter::instrDesc))
 #else // !TARGET_ARMARCH
 #define SC_IG_BUFFER_SIZE (50 * sizeof(emitter::instrDesc) + 14 * SMALL_IDSC_SIZE)
 #endif // !TARGET_ARMARCH
@@ -1765,15 +1850,26 @@ private:
     unsigned        emitLastLoopStart;    // Start IG of last inner loop
     unsigned        emitLastLoopEnd;      // End IG of last inner loop
     unsigned        emitLastAlignedIgNum; // last IG that has align instruction
-    instrDescAlign* emitAlignList;        // list of local align instructions in method
+    instrDescAlign* emitAlignList;        // list of all align instructions in method
     instrDescAlign* emitAlignLast;        // last align instruction in method
+
+    // Points to the most recent added align instruction. If there are multiple align instructions like in arm64 or
+    // non-adaptive alignment on xarch, this points to the first align instruction of the series of align instructions.
+    instrDescAlign* emitAlignLastGroup;
+
     unsigned getLoopSize(insGroup* igLoopHeader,
                          unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted)); // Get the smallest loop size
-    void emitLoopAlignment();
+    void emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp));
     bool emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
     void emitSetLoopBackEdge(BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
     unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool isAlignAdjusted));
+
+    void emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(bool isPlacedBehindJmp));
+    void emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlacedBehindJmp));
+    instrDescAlign* emitAlignInNextIG(instrDescAlign* alignInstr);
+    void emitConnectAlignInstrWithCurIG();
+
 #endif
 
     void emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG); // Check for illegal branches between funclets
@@ -1888,6 +1984,10 @@ private:
     }
 
     instrDesc* emitLastIns;
+
+#ifdef TARGET_ARMARCH
+    instrDesc* emitLastMemBarrier;
+#endif
 
 #ifdef DEBUG
     void emitCheckIGoffsets();
@@ -2570,6 +2670,11 @@ inline emitter::instrDescAlign* emitter::emitNewInstrAlign()
 {
     instrDescAlign* newInstr = emitAllocInstrAlign();
     newInstr->idIns(INS_align);
+
+#ifdef TARGET_ARM64
+    newInstr->idInsFmt(IF_SN_0A);
+    newInstr->idInsOpt(INS_OPTS_ALIGN);
+#endif
     return newInstr;
 }
 #endif
@@ -2792,6 +2897,176 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
         return (unsigned)cns;
     }
 }
+
+#ifdef DEBUG
+//-----------------------------------------------------------------------------
+// emitGetMemOpSize: Get the memory operand size of instrDesc.
+//
+// Note: vextractf128 has a 128-bit output (register or memory) but a 256-bit input (register).
+// vinsertf128 is the inverse with a 256-bit output (register), a 256-bit input(register),
+// and a 128-bit input (register or memory).
+// This method is mainly used for such instructions to return the appropriate memory operand
+// size, otherwise returns the regular operand size of the instruction.
+
+//  Arguments:
+//       id - Instruction descriptor
+//
+/* static */ emitAttr emitter::emitGetMemOpSize(instrDesc* id)
+{
+    emitAttr defaultSize = id->idOpSize();
+
+    switch (id->idIns())
+    {
+        case INS_pextrb:
+        case INS_pinsrb:
+        case INS_vpbroadcastb:
+        {
+            return EA_1BYTE;
+        }
+
+        case INS_pextrw:
+        case INS_pextrw_sse41:
+        case INS_pinsrw:
+        case INS_pmovsxbq:
+        case INS_pmovzxbq:
+        case INS_vpbroadcastw:
+        {
+            return EA_2BYTE;
+        }
+
+        case INS_addss:
+        case INS_cmpss:
+        case INS_comiss:
+        case INS_cvtss2sd:
+        case INS_cvtss2si:
+        case INS_cvttss2si:
+        case INS_divss:
+        case INS_extractps:
+        case INS_insertps:
+        case INS_maxss:
+        case INS_minss:
+        case INS_movss:
+        case INS_mulss:
+        case INS_pextrd:
+        case INS_pinsrd:
+        case INS_pmovsxbd:
+        case INS_pmovsxwq:
+        case INS_pmovzxbd:
+        case INS_pmovzxwq:
+        case INS_rcpss:
+        case INS_roundss:
+        case INS_rsqrtss:
+        case INS_sqrtss:
+        case INS_subss:
+        case INS_ucomiss:
+        case INS_vbroadcastss:
+        case INS_vfmadd132ss:
+        case INS_vfmadd213ss:
+        case INS_vfmadd231ss:
+        case INS_vfmsub132ss:
+        case INS_vfmsub213ss:
+        case INS_vfmsub231ss:
+        case INS_vfnmadd132ss:
+        case INS_vfnmadd213ss:
+        case INS_vfnmadd231ss:
+        case INS_vfnmsub132ss:
+        case INS_vfnmsub213ss:
+        case INS_vfnmsub231ss:
+        case INS_vpbroadcastd:
+        {
+            return EA_4BYTE;
+        }
+
+        case INS_addsd:
+        case INS_cmpsd:
+        case INS_comisd:
+        case INS_cvtsd2si:
+        case INS_cvtsd2ss:
+        case INS_cvttsd2si:
+        case INS_divsd:
+        case INS_maxsd:
+        case INS_minsd:
+        case INS_movhpd:
+        case INS_movhps:
+        case INS_movlpd:
+        case INS_movlps:
+        case INS_movq:
+        case INS_movsd:
+        case INS_mulsd:
+        case INS_pextrq:
+        case INS_pinsrq:
+        case INS_pmovsxbw:
+        case INS_pmovsxdq:
+        case INS_pmovsxwd:
+        case INS_pmovzxbw:
+        case INS_pmovzxdq:
+        case INS_pmovzxwd:
+        case INS_roundsd:
+        case INS_sqrtsd:
+        case INS_subsd:
+        case INS_ucomisd:
+        case INS_vbroadcastsd:
+        case INS_vfmadd132sd:
+        case INS_vfmadd213sd:
+        case INS_vfmadd231sd:
+        case INS_vfmsub132sd:
+        case INS_vfmsub213sd:
+        case INS_vfmsub231sd:
+        case INS_vfnmadd132sd:
+        case INS_vfnmadd213sd:
+        case INS_vfnmadd231sd:
+        case INS_vfnmsub132sd:
+        case INS_vfnmsub213sd:
+        case INS_vfnmsub231sd:
+        case INS_vpbroadcastq:
+        {
+            return EA_8BYTE;
+        }
+
+        case INS_cvtdq2pd:
+        case INS_cvtps2pd:
+        {
+            if (defaultSize == 32)
+            {
+                return EA_16BYTE;
+            }
+            else
+            {
+                assert(defaultSize == 16);
+                return EA_8BYTE;
+            }
+        }
+
+        case INS_vbroadcastf128:
+        case INS_vbroadcasti128:
+        case INS_vextractf128:
+        case INS_vextracti128:
+        case INS_vinsertf128:
+        case INS_vinserti128:
+        {
+            return EA_16BYTE;
+        }
+
+        case INS_movddup:
+        {
+            if (defaultSize == 32)
+            {
+                return EA_32BYTE;
+            }
+            else
+            {
+                assert(defaultSize == 16);
+                return EA_8BYTE;
+            }
+        }
+
+        default:
+        {
+            return defaultSize;
+        }
+    }
+}
+#endif // DEBUG
 
 #endif // TARGET_XARCH
 

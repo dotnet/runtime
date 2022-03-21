@@ -509,7 +509,7 @@ namespace System.Linq.Parallel
         //     - The grouping itself. The grouping consists of elements and the grouping key.
         //
 
-        protected class GroupKeyData
+        protected sealed class GroupKeyData
         {
             internal TOrderKey _orderKey;
             internal OrderedGroupByGrouping<TGroupKey, TOrderKey, TElement> _grouping;

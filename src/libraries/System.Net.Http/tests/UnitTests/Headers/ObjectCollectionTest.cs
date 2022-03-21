@@ -13,7 +13,7 @@ namespace System.Net.Http.Tests
         public void Ctor_ExecuteBothOverloads_MatchExpectation()
         {
             // Use default validator
-            ObjectCollection<string> c = new ObjectCollection<string>();
+            ObjectCollection<string> c = new UnvalidatedObjectCollection<string>();
 
             c.Add("value1");
             c.Add("value2");
@@ -25,13 +25,7 @@ namespace System.Net.Http.Tests
             Assert.True(c.Contains("value1"));
 
             // Use custom validator
-            c = new ObjectCollection<string>(item =>
-            {
-                if (item == null)
-                {
-                    throw new InvalidOperationException("custom");
-                }
-            });
+            c = new StringlyItemCollection();
 
             c.Add("value1");
 
@@ -41,7 +35,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void ContainsAndRemove_UsesEqualitySemantics()
         {
-            ObjectCollection<string> c = new ObjectCollection<string>();
+            var c = new UnvalidatedObjectCollection<string>();
 
             string val1 = "value1";
             string val1DifferentReference = "value" + 1;
@@ -104,6 +98,17 @@ namespace System.Net.Http.Tests
             Assert.False(c.Remove(val2));
             Assert.False(c.Remove(val3));
             Assert.Equal(0, c.Count);
+        }
+
+        private sealed class StringlyItemCollection : ObjectCollection<string>
+        {
+            public override void Validate(string item)
+            {
+                if (item == null)
+                {
+                    throw new InvalidOperationException("custom");
+                }
+            }
         }
     }
 }

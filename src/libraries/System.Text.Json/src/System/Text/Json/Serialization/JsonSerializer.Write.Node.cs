@@ -14,6 +14,7 @@ namespace System.Text.Json
         /// <summary>
         /// Converts the provided value into a <see cref="JsonNode"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
         /// <returns>A <see cref="JsonNode"/> representation of the JSON value.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
@@ -57,6 +58,7 @@ namespace System.Text.Json
         /// <summary>
         /// Converts the provided value into a <see cref="JsonNode"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
         /// <returns>A <see cref="JsonNode"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
@@ -67,13 +69,8 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
         /// </exception>
-        public static JsonNode? SerializeToNode<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
+        public static JsonNode? SerializeToNode<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo!!)
         {
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
             return WriteNodeUsingGeneratedSerializer(value, jsonTypeInfo);
         }
 
@@ -95,13 +92,8 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// <paramref name="inputType"/> or <paramref name="context"/> is <see langword="null"/>.
         /// </exception>
-        public static JsonNode? SerializeToNode(object? value, Type inputType, JsonSerializerContext context)
+        public static JsonNode? SerializeToNode(object? value, Type inputType, JsonSerializerContext context!!)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, runtimeType);
             return WriteNodeUsingGeneratedSerializer(value, jsonTypeInfo);

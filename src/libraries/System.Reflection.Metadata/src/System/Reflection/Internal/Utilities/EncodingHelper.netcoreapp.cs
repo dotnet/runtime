@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace System.Reflection.Internal
 {
@@ -57,13 +55,6 @@ namespace System.Reflection.Internal
 
             ArrayPool<byte>.Shared.Return(buffer);
             return result;
-        }
-
-        // Test hook to force portable implementation and ensure light is functioning.
-        internal static bool TestOnly_LightUpEnabled
-        {
-            get { return true; }
-            set { }
         }
     }
 }

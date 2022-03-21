@@ -172,7 +172,7 @@ typedef struct _DebuggerTlsData DebuggerTlsData;
 
 typedef struct MonoComponentDebugger {
 	MonoComponent component;
-	void (*init) (MonoDefaults *mono_defaults);
+	void (*init) (void);
 	void (*user_break) (void);
 	void (*parse_options) (char *options);
 	void (*breakpoint_hit) (void *sigctx);
@@ -187,7 +187,6 @@ typedef struct MonoComponentDebugger {
 	void (*end_exception_filter) (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx);
 	void (*debug_log) (int level, MonoString *category, MonoString *message);
 	gboolean (*debug_log_is_enabled) (void);
-	void (*send_crash) (char *json_dump, MonoStackHash *hashes, int pause);
 	gboolean (*transport_handshake) (void);
 
 	//wasm
@@ -199,8 +198,6 @@ typedef struct MonoComponentDebugger {
 
 } MonoComponentDebugger;
 
-
-extern MonoDefaults *mdbg_mono_defaults;
 
 #define DE_ERR_NONE 0
 // WARNING WARNING WARNING

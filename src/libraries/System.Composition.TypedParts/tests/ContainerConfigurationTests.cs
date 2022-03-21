@@ -255,6 +255,42 @@ namespace System.Composition.Hosting.Tests
         }
 
         [Fact]
+        public void WithExport_Base_Success()
+        {
+            var instance = new Base();
+
+            var configuration = new ContainerConfiguration();
+            Assert.Same(configuration, configuration.WithExport<Base>(instance));
+
+            CompositionHost container = configuration.CreateContainer();
+            Assert.Same(instance, container.GetExport<Base>());
+        }
+
+        [Fact]
+        public void WithExport_Derived_Success()
+        {
+            var instance = new Derived();
+
+            var configuration = new ContainerConfiguration();
+            Assert.Same(configuration, configuration.WithExport<Base>(instance));
+
+            CompositionHost container = configuration.CreateContainer();
+            Assert.Same(instance, container.GetExport<Base>());
+        }
+
+        [Fact]
+        public void WithExport_ContractName_Success()
+        {
+            var instance = new Base();
+
+            var configuration = new ContainerConfiguration();
+            Assert.Same(configuration, configuration.WithExport<Base>(instance, "Contract"));
+
+            CompositionHost container = configuration.CreateContainer();
+            Assert.Same(instance, container.GetExport<Base>("Contract"));
+        }
+
+        [Fact]
         public void CreateContainer_ExportedSubClass_Success()
         {
             CompositionHost container = new ContainerConfiguration()
@@ -303,7 +339,7 @@ namespace System.Composition.Hosting.Tests
             public T Fetch() => default(T);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void CreateContainer_ImportConventionsWithInheritedProperties_Success()
         {
             var conventions = new ConventionBuilder();
@@ -351,7 +387,7 @@ namespace System.Composition.Hosting.Tests
 
         public class DerivedFromBaseWithExport : BaseWithExport { }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void CreateContainer_ExportsToInheritedProperties_DontInterfereWithBase()
         {
             var conventions = new ConventionBuilder();

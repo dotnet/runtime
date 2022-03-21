@@ -823,15 +823,11 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentOutOfRangeException">If FileAccess enumeration [packageAccess] does not have one of the valid values</exception>
         /// <exception cref="ArgumentOutOfRangeException">If FileMode enumeration [packageMode] does not have one of the valid values</exception>
         public static Package Open(
-            string path,
+            string path!!,
             FileMode packageMode,
             FileAccess packageAccess,
             FileShare packageShare)
         {
-            Package? package = null;
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             ThrowIfFileModeInvalid(packageMode);
             ThrowIfFileAccessInvalid(packageAccess);
 
@@ -854,6 +850,7 @@ namespace System.IO.Packaging
             //Verify if this is valid for filenames
             FileInfo packageFileInfo = new FileInfo(path);
 
+            Package? package = null;
             try
             {
                 package = new ZipPackage(packageFileInfo.FullName, packageMode, packageAccess, packageShare);
@@ -870,10 +867,7 @@ namespace System.IO.Packaging
             }
             catch
             {
-                if (package != null)
-                {
-                    package.Close();
-                }
+                package?.Close();
 
                 throw;
             }
@@ -891,12 +885,9 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentOutOfRangeException">If FileAccess enumeration [packageAccess] does not have one of the valid values</exception>
         /// <exception cref="IOException">If package to be created should have readwrite/read access and underlying stream is write only</exception>
         /// <exception cref="IOException">If package to be created should have readwrite/write access and underlying stream is read only</exception>
-        public static Package Open(Stream stream, FileMode packageMode, FileAccess packageAccess)
+        public static Package Open(Stream stream!!, FileMode packageMode, FileAccess packageAccess)
         {
             Package? package = null;
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
             try
             {
                 // Today the Open(Stream) method is purely used for streams of Zip file format as
@@ -915,10 +906,7 @@ namespace System.IO.Packaging
             }
             catch
             {
-                if (package != null)
-                {
-                    package.Close();
-                }
+                package?.Close();
 
                 throw;
             }

@@ -18,7 +18,7 @@ public class MyClass<T> : MyBase<string, T>, I<T>
     { return "MyClass.Method()"; }
 }
 
-class Test
+class Test_dev10_630250
 {
     public static int Main() 
     {

@@ -103,7 +103,7 @@ HeapTableIndex(DPTR(unused_gc_heap**) heaps, size_t index)
         DacEnumMemoryRegion(p_##field_name.GetAddr(), sizeof(field_type) * array_length);    \
     }
 
-inline bool IsRegion()
+inline bool IsRegionGCEnabled()
 {
     return (g_gcDacGlobals->minor_version_number & 1) != 0;
 }

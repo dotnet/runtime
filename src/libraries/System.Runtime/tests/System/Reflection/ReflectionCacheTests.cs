@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Reflection.Tests
 {
-    [Collection(nameof(NoParallelTests))]
+    [Collection(nameof(DisableParallelization))]
     public class ReflectionCacheTests
     {
         [Fact]
@@ -22,7 +22,7 @@ namespace System.Reflection.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50978", TestRuntimes.Mono)]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataUpdateSupported))]
         public void InvokeClearCache_NoExceptions()
         {
             Action<Type[]> clearCache = GetClearCacheMethod();
@@ -33,7 +33,7 @@ namespace System.Reflection.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50978", TestRuntimes.Mono)]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataUpdateSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void GetMethod_MultipleCalls_ClearCache_DifferentObjects(bool justSpecificType)

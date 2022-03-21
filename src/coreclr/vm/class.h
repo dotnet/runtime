@@ -80,7 +80,6 @@ class   MethodDesc;
 class   MethodDescChunk;
 class   MethodTable;
 class   Module;
-struct  ModuleCtorInfo;
 class   Object;
 class   Stub;
 class   Substitution;
@@ -285,9 +284,6 @@ public:
 class SparseVTableMap
 {
 public:
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     SparseVTableMap();
     ~SparseVTableMap();
@@ -310,12 +306,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return (void*)m_MapList;
     }
-
-#ifdef FEATURE_PREJIT
-    // Methods to persist structure
-    void Save(DataImage *image);
-    void Fixup(DataImage *image);
-#endif // FEATURE_PREJIT
 
 private:
 
@@ -365,9 +355,6 @@ class EEClassLayoutInfo
     friend class ClassLoader;
     friend class EEClass;
     friend class MethodTableBuilder;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
         UINT32      m_cbManagedSize;
 
     public:
@@ -376,19 +363,21 @@ class EEClassLayoutInfo
     private:
         enum {
             // TRUE if the GC layout of the class is bit-for-bit identical
-            // to its unmanaged counterpart (i.e. no internal reference fields,
-            // no ansi-unicode char conversions required, etc.) Used to
-            // optimize marshaling.
-            e_BLITTABLE                 = 0x01,
-            // Post V1.0 addition: Is this type also sequential in managed memory?
-            e_MANAGED_SEQUENTIAL        = 0x02,
+            // to its unmanaged counterpart with the runtime marshalling system
+            // (i.e. no internal reference fields, no ansi-unicode char conversions required, etc.)
+            // Used to optimize marshaling.
+            e_BLITTABLE                       = 0x01,
+            // Is this type also sequential in managed memory?
+            e_MANAGED_SEQUENTIAL              = 0x02,
             // When a sequential/explicit type has no fields, it is conceptually
             // zero-sized, but actually is 1 byte in length. This holds onto this
             // fact and allows us to revert the 1 byte of padding when another
             // explicit type inherits from this type.
-            e_ZERO_SIZED                =   0x04,
+            e_ZERO_SIZED                      = 0x04,
             // The size of the struct is explicitly specified in the meta-data.
-            e_HAS_EXPLICIT_SIZE         = 0x08
+            e_HAS_EXPLICIT_SIZE               = 0x08,
+            // The type recursively has a field that is LayoutKind.Auto and not an enum.
+            e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT = 0x10
         };
 
         BYTE        m_bFlags;
@@ -432,6 +421,12 @@ class EEClassLayoutInfo
             return (m_bFlags & e_HAS_EXPLICIT_SIZE) == e_HAS_EXPLICIT_SIZE;
         }
 
+        BOOL HasAutoLayoutField() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (m_bFlags & e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT) == e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT;
+        }
+
         BYTE GetPackingSize() const
         {
             LIMITED_METHOD_CONTRACT;
@@ -465,6 +460,13 @@ class EEClassLayoutInfo
             LIMITED_METHOD_CONTRACT;
             m_bFlags = hasExplicitSize ? (m_bFlags | e_HAS_EXPLICIT_SIZE)
                                        : (m_bFlags & ~e_HAS_EXPLICIT_SIZE);
+        }
+
+        void SetHasAutoLayoutField(BOOL hasAutoLayoutField)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_bFlags = hasAutoLayoutField ? (m_bFlags | e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT)
+                                       : (m_bFlags & ~e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT);
         }
 };
 
@@ -542,9 +544,6 @@ class EEClassOptionalFields
     // for MethodTableBuilder and NativeImageDumper, which need raw field-level access.
     friend class EEClass;
     friend class MethodTableBuilder;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     //
     // GENERICS RELATED FIELDS.
@@ -556,7 +555,7 @@ class EEClassOptionalFields
 
     // Variance info for each type parameter (gpNonVariant, gpCovariant, or gpContravariant)
     // If NULL, this type has no type parameters that are co/contravariant
-    RelativePointer<PTR_BYTE> m_pVarianceInfo;
+    PTR_BYTE m_pVarianceInfo;
 
     //
     // COM RELATED FIELDS.
@@ -590,6 +589,9 @@ class EEClassOptionalFields
     unsigned int m_eightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
 #endif // UNIX_AMD64_ABI
 
+    // Required alignment for this fields of this type (only set in auto-layout structures when different from pointer alignment)
+    BYTE m_requiredFieldAlignment;
+
     // Set default values for optional fields.
     inline void Init();
 
@@ -597,7 +599,7 @@ class EEClassOptionalFields
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return ReadPointerMaybeNull(this, &EEClassOptionalFields::m_pVarianceInfo);
+        return m_pVarianceInfo;
     }
 };
 typedef DPTR(EEClassOptionalFields) PTR_EEClassOptionalFields;
@@ -705,9 +707,6 @@ class EEClass // DO NOT CREATE A NEW EEClass USING NEW!
     friend class FieldDesc;
     friend class CheckAsmOffsets;
     friend class ClrDataAccess;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     /************************************
      *  PUBLIC INSTANCE METHODS
@@ -780,13 +779,6 @@ public:
         return IsTdImport(m_dwAttrClass);
     }
 
-#ifdef FEATURE_PREJIT
-    DWORD GetSize();
-
-    void Save(DataImage *image, MethodTable *pMT);
-    void Fixup(DataImage *image, MethodTable *pMT);
-#endif // FEATURE_PREJIT
-
     EEClassLayoutInfo *GetLayoutInfo();
     PTR_EEClassNativeLayoutInfo GetNativeLayoutInfo();
 
@@ -855,7 +847,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        return ReadPointerMaybeNull(this, &EEClass::m_pMethodTable);
+        return m_pMethodTable;
     }
 
     // DO NOT ADD ANY ASSERTS TO THIS METHOD.
@@ -872,14 +864,14 @@ public:
         CANNOT_HAVE_CONTRACT;
         SUPPORTS_DAC;
 
-        return ReadPointerMaybeNull(this, &EEClass::m_pMethodTable);
+        return m_pMethodTable;
     }
 
 #ifndef DACCESS_COMPILE
     inline void SetMethodTable(MethodTable*  pMT)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pMethodTable.SetValueMaybeNull(pMT);
+        m_pMethodTable = pMT;
     }
 #endif // !DACCESS_COMPILE
 
@@ -1083,16 +1075,12 @@ public:
      * There are (m_wNumInstanceFields - GetParentClass()->m_wNumInstanceFields + m_wNumStaticFields) entries
      * in this array
      */
-#ifdef FEATURE_PREJIT
-    static DWORD FieldDescListSize(MethodTable * pMT);
-#endif
-
     inline PTR_FieldDesc GetFieldDescList()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         // Careful about using this method. If it's possible that fields may have been added via EnC, then
         // must use the FieldDescIterator as any fields added via EnC won't be in the raw list
-        return m_pFieldDescList.GetValueMaybeNull(PTR_HOST_MEMBER_TADDR(EEClass, this, m_pFieldDescList));
+        return m_pFieldDescList;
     }
 
     PTR_FieldDesc GetFieldDescByIndex(DWORD fieldIndex);
@@ -1101,7 +1089,7 @@ public:
     inline void SetFieldDescList (FieldDesc* pFieldDescList)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pFieldDescList.SetValue(pFieldDescList);
+        m_pFieldDescList = pFieldDescList;
     }
 #endif // !DACCESS_COMPILE
 
@@ -1224,6 +1212,16 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= VMFLAG_PREFER_ALIGN8;
+    }
+    inline BOOL HasCustomFieldAlignment()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_VMFlags & VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT);
+    }
+    inline void SetHasCustomFieldAlignment()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_VMFlags |= VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT;
     }
 #ifdef _DEBUG
     inline void SetDestroyed()
@@ -1412,6 +1410,8 @@ public:
 
     BOOL HasExplicitSize();
 
+    BOOL IsAutoLayoutOrHasAutoLayoutField();
+
     static void GetBestFitMapping(MethodTable * pMT, BOOL *pfBestFitMapping, BOOL *pfThrowOnUnmappableChar);
 
     /*
@@ -1441,7 +1441,7 @@ public:
     inline void SetChunks (MethodDescChunk* pChunks)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pChunks.SetValueMaybeNull(pChunks);
+        m_pChunks = pChunks;
     }
 #endif // !DACCESS_COMPILE
     void AddChunk (MethodDescChunk* pNewChunk);
@@ -1452,14 +1452,14 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return ReadPointerMaybeNull(this, &EEClass::m_pGuidInfo);
+        return m_pGuidInfo;
     }
 
     inline void SetGuidInfo(GuidInfo* pGuidInfo)
     {
         WRAPPER_NO_CONTRACT;
         #ifndef DACCESS_COMPILE
-        m_pGuidInfo.SetValueMaybeNull(pGuidInfo);
+        m_pGuidInfo = pGuidInfo;
         #endif // DACCESS_COMPILE
     }
 
@@ -1508,6 +1508,13 @@ public:
 #else // !FEATURE_HFA
     bool CheckForHFA();
 #endif // FEATURE_HFA
+
+    inline int GetOverriddenFieldAlignmentRequirement()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(HasOptionalFields());
+        return GetOptionalFields()->m_requiredFieldAlignment;
+    }
 
 #ifdef FEATURE_COMINTEROP
     inline TypeHandle GetCoClassForInterface()
@@ -1617,7 +1624,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasOptionalFields());
-        GetOptionalFields()->m_pVarianceInfo.SetValueMaybeNull(pVarianceInfo);
+        GetOptionalFields()->m_pVarianceInfo = pVarianceInfo;
     }
 #endif // !DACCESS_COMPILE
 
@@ -1702,7 +1709,7 @@ public:
         // unused                              = 0x00010000,
         VMFLAG_NO_GUID                         = 0x00020000,
         VMFLAG_HASNONPUBLICFIELDS              = 0x00040000,
-        // unused                              = 0x00080000,
+        VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT      = 0x00080000,
         VMFLAG_CONTAINS_STACK_PTR              = 0x00100000,
         VMFLAG_PREFER_ALIGN8                   = 0x00200000, // Would like to have 8-byte alignment
         VMFLAG_ONLY_ABSTRACT_METHODS           = 0x00400000, // Type only contains abstract methods
@@ -1739,7 +1746,7 @@ public:
     // C_ASSERTs in Jitinterface.cpp need this to be public to check the offset.
     // Put it first so the offset rarely changes, which just reduces the number of times we have to fiddle
     // with the offset.
-    RelativePointer<PTR_GuidInfo> m_pGuidInfo;  // The cached guid information for interfaces.
+    PTR_GuidInfo m_pGuidInfo;  // The cached guid information for interfaces.
 
 #ifdef _DEBUG
 public:
@@ -1750,13 +1757,13 @@ public:
 private:
     // Layout rest of fields below from largest to smallest to lessen the chance of wasting bytes with
     // compiler injected padding (especially with the difference between pointers and DWORDs on 64-bit).
-    RelativePointer<PTR_EEClassOptionalFields> m_rpOptionalFields;
+    PTR_EEClassOptionalFields m_rpOptionalFields;
 
     // TODO: Remove this field. It is only used by SOS and object validation for stress.
-    RelativePointer<PTR_MethodTable> m_pMethodTable;
+    PTR_MethodTable m_pMethodTable;
 
-    RelativePointer<PTR_FieldDesc> m_pFieldDescList;
-    RelativePointer<PTR_MethodDescChunk> m_pChunks;
+    PTR_FieldDesc m_pFieldDescList;
+    PTR_MethodDescChunk m_pChunks;
 
 #ifdef FEATURE_COMINTEROP
     union
@@ -1801,22 +1808,22 @@ public:
     void AttachOptionalFields(EEClassOptionalFields *pFields)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_rpOptionalFields.IsNull());
+        _ASSERTE(m_rpOptionalFields == NULL);
 
-        m_rpOptionalFields.SetValue(pFields);
+        m_rpOptionalFields = pFields;
     }
 #endif // !DACCESS_COMPILE
 
     bool HasOptionalFields()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return !m_rpOptionalFields.IsNull();
+        return m_rpOptionalFields != NULL;
     }
 
     PTR_EEClassOptionalFields GetOptionalFields()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_rpOptionalFields.GetValueMaybeNull(PTR_HOST_MEMBER_TADDR(EEClass, this, m_rpOptionalFields));
+        return m_rpOptionalFields;
     }
 
 private:
@@ -1947,38 +1954,31 @@ public:
     DAC_ALIGNAS(EEClass) // Align the first member to the alignment of the base class
     PTR_Stub                         m_pStaticCallStub;
     PTR_Stub                         m_pInstRetBuffCallStub;
-    RelativePointer<PTR_MethodDesc>  m_pInvokeMethod;
+    PTR_MethodDesc                   m_pInvokeMethod;
     PTR_Stub                         m_pMultiCastInvokeStub;
     PTR_Stub                         m_pWrapperDelegateInvokeStub;
     UMThunkMarshInfo*                m_pUMThunkMarshInfo;
-    RelativePointer<PTR_MethodDesc>  m_pBeginInvokeMethod;
-    RelativePointer<PTR_MethodDesc>  m_pEndInvokeMethod;
+    PTR_MethodDesc                   m_pBeginInvokeMethod;
+    PTR_MethodDesc                   m_pEndInvokeMethod;
     Volatile<PCODE>                  m_pMarshalStub;
 
 #ifdef FEATURE_COMINTEROP
     ComPlusCallInfo *m_pComPlusCallInfo;
 #endif // FEATURE_COMINTEROP
 
-    //
-    // Ngened IL stub MethodDescs. Fixed up, wrapped with code:Stub, and installed to
-    // m_pMarshalStub (forward) or m_pUMThunkMarshInfo (reverse) when first needed.
-    //
-    MethodDesc*         m_pForwardStubMD; // marshaling stub for calls to unmanaged code
-    MethodDesc*         m_pReverseStubMD; // marshaling stub for calls from unmanaged code
-
     PTR_MethodDesc GetInvokeMethod()
     {
-        return ReadPointer(this, &DelegateEEClass::m_pInvokeMethod);
+        return m_pInvokeMethod;
     }
 
     PTR_MethodDesc GetBeginInvokeMethod()
     {
-        return ReadPointer(this, &DelegateEEClass::m_pBeginInvokeMethod);
+        return m_pBeginInvokeMethod;
     }
 
     PTR_MethodDesc GetEndInvokeMethod()
     {
-        return ReadPointer(this, &DelegateEEClass::m_pEndInvokeMethod);
+        return m_pEndInvokeMethod;
     }
 
 #ifndef DACCESS_COMPILE
@@ -2001,10 +2001,6 @@ typedef DPTR(ArrayClass) PTR_ArrayClass;
 // Dynamically generated array class structure
 class ArrayClass : public EEClass
 {
-#ifdef FEATURE_PREJIT
-    friend void EEClass::Fixup(DataImage *image, MethodTable *pMethodTable);
-#endif
-
     friend MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementType arrayKind, unsigned Rank, AllocMemTracker *pamTracker);
 
 #ifndef DACCESS_COMPILE
@@ -2101,6 +2097,13 @@ inline BOOL EEClass::HasExplicitSize()
 {
     LIMITED_METHOD_CONTRACT;
     return HasLayout() && GetLayoutInfo()->HasExplicitSize();
+}
+
+inline BOOL EEClass::IsAutoLayoutOrHasAutoLayoutField()
+{
+    LIMITED_METHOD_CONTRACT;
+    // If this type is not auto
+    return !HasLayout() || GetLayoutInfo()->HasAutoLayoutField();
 }
 
 //==========================================================================

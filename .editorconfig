@@ -12,11 +12,8 @@ indent_style = space
 indent_size = 4
 trim_trailing_whitespace = true
 
-[project.json]
-indent_size = 2
-
 # Generated code
-[*{_AssemblyInfo.cs,.notsupported.cs}]
+[*{_AssemblyInfo.cs,.notsupported.cs,AsmOffsets.cs}]
 generated_code = true
 
 # C# files
@@ -190,3 +187,4 @@ indent_size = 2
 end_of_line = lf
 [*.{cmd,bat}]
 end_of_line = crlf
+

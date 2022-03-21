@@ -22,6 +22,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60334", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void Test_GetCurrentMethod_Inlineable()
         {
             // Verify that the result is not affected by inlining optimizations
@@ -49,7 +50,7 @@ namespace System.Reflection.Tests
             Assert.NotEqual(expected, mb1 != mb2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
         public static void TestMethodBody()
         {
             MethodBase mbase = typeof(MethodBaseTests).GetMethod("MyOtherMethod", BindingFlags.Static | BindingFlags.Public);

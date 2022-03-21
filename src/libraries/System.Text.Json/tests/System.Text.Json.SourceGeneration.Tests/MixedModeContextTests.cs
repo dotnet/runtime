@@ -40,6 +40,9 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverterFactoryProperty), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(PersonStruct?), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(TypeWithValidationAttributes), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(TypeWithDerivedAttribute), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     internal partial class MixedModeContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization;
@@ -85,6 +88,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MixedModeContext.Default.StructWithCustomConverterFactoryProperty.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MixedModeContext.Default.ClassWithBadCustomConverter.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MixedModeContext.Default.StructWithBadCustomConverter.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.NullablePersonStruct.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.PersonStruct.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.TypeWithValidationAttributes.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.TypeWithDerivedAttribute.SerializeHandler);
         }
 
         [Fact]

@@ -394,6 +394,11 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
 
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+    ExecutableAllocator::DumpHolderUsage();
+    ExecutionManager::DumpExecutionManagerUsage();
+#endif
+
 ErrExit:
 
     return hr;
@@ -612,8 +617,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     if (dwFlags & APPDOMAIN_FORCE_TRIVIAL_WAIT_OPERATIONS)
         pDomain->SetForceTrivialWaitOperations();
 
-    pDomain->CreateBinderContext();
-
     {
         GCX_COOP();
 
@@ -631,7 +634,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     LPCWSTR pwzTrustedPlatformAssemblies = NULL;
     LPCWSTR pwzPlatformResourceRoots = NULL;
     LPCWSTR pwzAppPaths = NULL;
-    LPCWSTR pwzAppNiPaths = NULL;
 
     for (int i = 0; i < nProperties; i++)
     {
@@ -655,11 +657,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
             pwzAppPaths = pPropertyValues[i];
         }
         else
-        if (wcscmp(pPropertyNames[i], W("APP_NI_PATHS")) == 0)
-        {
-            pwzAppNiPaths = pPropertyValues[i];
-        }
-        else
         if (wcscmp(pPropertyNames[i], W("DEFAULT_STACK_SIZE")) == 0)
         {
             extern void ParseDefaultStackSize(LPCWSTR value);
@@ -679,15 +676,13 @@ HRESULT CorHost2::CreateAppDomainWithManager(
         SString sTrustedPlatformAssemblies(pwzTrustedPlatformAssemblies);
         SString sPlatformResourceRoots(pwzPlatformResourceRoots);
         SString sAppPaths(pwzAppPaths);
-        SString sAppNiPaths(pwzAppNiPaths);
 
-        CLRPrivBinderCoreCLR *pBinder = pDomain->GetTPABinderContext();
+        DefaultAssemblyBinder *pBinder = pDomain->GetDefaultBinder();
         _ASSERTE(pBinder != NULL);
         IfFailThrow(pBinder->SetupBindingPaths(
             sTrustedPlatformAssemblies,
             sPlatformResourceRoots,
-            sAppPaths,
-            sAppNiPaths));
+            sAppPaths));
     }
 
     *pAppDomainID=DefaultADID;

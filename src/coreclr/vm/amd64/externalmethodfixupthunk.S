@@ -5,26 +5,6 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
-//============================================================================================
-// EXTERN_C VOID __stdcall ExternalMethodFixupStub()
-
-NESTED_ENTRY ExternalMethodFixupStub, _TEXT, NoHandler
-
-        PROLOG_WITH_TRANSITION_BLOCK 0, 8, rsi, 0, 0
-
-        lea             rdi, [rsp + __PWTB_TransitionBlock] // pTransitionBlock
-        sub             rsi, 5                              // pThunk
-        mov             rdx, 0                              // sectionIndex
-        mov             rcx, 0                              // pModule
-
-        call            C_FUNC(ExternalMethodFixupWorker)
-
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-PATCH_LABEL ExternalMethodFixupPatchLabel
-        TAILJMP_RAX
-
-NESTED_END ExternalMethodFixupStub, _TEXT
-
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall, _TEXT, NoHandler
@@ -38,8 +18,8 @@ NESTED_ENTRY DelayLoad_MethodCall, _TEXT, NoHandler
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 
-        // Share the patch label
-        jmp C_FUNC(ExternalMethodFixupPatchLabel)
+PATCH_LABEL ExternalMethodFixupPatchLabel
+        TAILJMP_RAX
 
 NESTED_END DelayLoad_MethodCall, _TEXT
 
@@ -79,21 +59,3 @@ DYNAMICHELPER (DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_Objec
 
 #endif // FEATURE_READYTORUN
 
-#ifdef FEATURE_PREJIT
-//============================================================================================
-// EXTERN_C VOID __stdcall VirtualMethodFixupStub()
-
-NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
-
-        PROLOG_WITH_TRANSITION_BLOCK 0, 8, rsi, 0, 0
-
-        lea             rdi, [rsp + __PWTB_TransitionBlock] // pTransitionBlock
-        sub             rsi, 5                              // pThunk
-        call            C_FUNC(VirtualMethodFixupWorker)
-
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-PATCH_LABEL VirtualMethodFixupPatchLabel
-        TAILJMP_RAX
-
-NESTED_END VirtualMethodFixupStub, _TEXT
-#endif // FEATURE_PREJIT

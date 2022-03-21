@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -228,8 +227,6 @@ namespace System.IO.Pipelines.Tests
             invalidOperationException = await Assert.ThrowsAsync<InvalidOperationException>(async () => await _pipe.Reader.ReadAsync());
             Assert.Equal("Writer exception", invalidOperationException.Message);
             Assert.Contains(nameof(ThrowTestException), invalidOperationException.StackTrace);
-
-            Assert.Single(Regex.Matches(invalidOperationException.StackTrace, "Pipe.GetReadResult"));
         }
 
         [Fact]

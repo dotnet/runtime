@@ -332,7 +332,6 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_Code(nullptr)
     , m_ILSize(0)
     , m_ImportedILSize(0)
-    , m_Offset(BAD_IL_OFFSET)
     , m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL)
     , m_CodeSizeEstimate(0)
     , m_Success(true)
@@ -344,7 +343,11 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_Callee(nullptr)
     , m_TreeID(0)
     , m_Ordinal(0)
+    , m_ActualCallOffset(BAD_IL_OFFSET)
 #endif // defined(DEBUG) || defined(INLINE_DATA)
+#ifdef DEBUG
+    , m_ILInstsSet(nullptr)
+#endif
 {
     // Empty
 }
@@ -356,13 +359,14 @@ InlineContext::InlineContext(InlineStrategy* strategy)
 //
 // Arguments:
 //    indent   - indentation level for this node
+//    verbose  - more verbose output if true
 
-void InlineContext::Dump(unsigned indent)
+void InlineContext::Dump(bool verbose, unsigned indent)
 {
     // Handle fact that siblings are in reverse order.
     if (m_Sibling != nullptr)
     {
-        m_Sibling->Dump(indent);
+        m_Sibling->Dump(verbose, indent);
     }
 
     // We may not know callee name in some of the failing cases
@@ -391,34 +395,63 @@ void InlineContext::Dump(unsigned indent)
     {
         // Root method
         InlinePolicy* policy = InlinePolicy::GetPolicy(compiler, true);
-        printf("Inlines into %08X [via %s] %s\n", calleeToken, policy->GetName(), calleeName);
+
+        if (verbose)
+        {
+            printf("\nInlines into %08X [via %s] %s:\n", calleeToken, policy->GetName(), calleeName);
+        }
+        else
+        {
+            printf("\nInlines into %s:\n", calleeName);
+        }
     }
     else
     {
         // Inline attempt.
+        const char* inlineTarget  = InlGetTargetString(m_Observation);
         const char* inlineReason  = InlGetObservationString(m_Observation);
-        const char* inlineResult  = m_Success ? "" : "FAILED: ";
-        const char* devirtualized = m_Devirtualized ? " devirt" : "";
-        const char* guarded       = m_Guarded ? " guarded" : "";
-        const char* unboxed       = m_Unboxed ? " unboxed" : "";
+        const char* inlineResult  = m_Success ? "INLINED: " : "FAILED: ";
+        const char* devirtualized = m_Devirtualized ? " DEVIRT" : "";
+        const char* guarded       = m_Guarded ? " GUARDED" : "";
+        const char* unboxed       = m_Unboxed ? " UNBOXED" : "";
 
-        if (m_Offset == BAD_IL_OFFSET)
+        IL_OFFSET offs = BAD_IL_OFFSET;
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+        offs = m_ActualCallOffset;
+#endif
+
+        if (offs == BAD_IL_OFFSET && m_Location.IsValid())
         {
-            printf("%*s[%u IL=???? TR=%06u %08X] [%s%s%s%s%s] %s\n", indent, "", m_Ordinal, m_TreeID, calleeToken,
-                   inlineResult, inlineReason, guarded, devirtualized, unboxed, calleeName);
+            offs = m_Location.GetOffset();
+        }
+
+        if (verbose)
+        {
+            if (offs == BAD_IL_OFFSET)
+            {
+                printf("%*s[" FMT_INL_CTX " IL=???? TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal,
+                       m_TreeID, calleeToken, inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed,
+                       calleeName);
+            }
+            else
+            {
+                printf("%*s[" FMT_INL_CTX " IL=%04d TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal, offs,
+                       m_TreeID, calleeToken, inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed,
+                       calleeName);
+            }
         }
         else
         {
-            IL_OFFSET offset = jitGetILoffs(m_Offset);
-            printf("%*s[%u IL=%04d TR=%06u %08X] [%s%s%s%s%s] %s\n", indent, "", m_Ordinal, offset, m_TreeID,
-                   calleeToken, inlineResult, inlineReason, guarded, devirtualized, unboxed, calleeName);
+            printf("%*s[%s%s%s%s%s] %s\n", indent, "", inlineResult, inlineReason, guarded, devirtualized, unboxed,
+                   calleeName);
         }
     }
 
     // Recurse to first child
     if (m_Child != nullptr)
     {
-        m_Child->Dump(indent + 2);
+        m_Child->Dump(verbose, indent + 2);
     }
 }
 
@@ -454,7 +487,7 @@ void InlineContext::DumpData(unsigned indent)
     else if (m_Success)
     {
         const char* inlineReason = InlGetObservationString(m_Observation);
-        printf("%*s%u,\"%s\",\"%s\",", indent, "", m_Ordinal, inlineReason, calleeName);
+        printf("%*s%u,\"%s\",\"%s\",", indent, "", GetOrdinal(), inlineReason, calleeName);
         m_Policy->DumpData(jitstdout);
         printf("\n");
     }
@@ -536,11 +569,7 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
         buf[sizeof(buf) - 1] = 0;
         EscapeNameForXml(buf);
 
-        int offset = -1;
-        if (m_Offset != BAD_IL_OFFSET)
-        {
-            offset = (int)jitGetILoffs(m_Offset);
-        }
+        int offset = m_Location.IsValid() ? m_Location.GetOffset() : -1;
 
         fprintf(file, "%*s<%s>\n", indent, "", inlineType);
         fprintf(file, "%*s<Token>%08x</Token>\n", indent + 2, "", calleeToken);
@@ -635,13 +664,13 @@ InlineResult::InlineResult(Compiler* compiler, GenTreeCall* call, Statement* stm
     // Pass along some optional information to the policy.
     if (stmt != nullptr)
     {
-        m_InlineContext = stmt->GetInlineContext();
+        m_InlineContext = stmt->GetDebugInfo().GetInlineContext();
         m_Policy->NoteContext(m_InlineContext);
 
 #if defined(DEBUG) || defined(INLINE_DATA)
         m_Policy->NoteOffset(call->gtRawILOffset);
 #else
-        m_Policy->NoteOffset(stmt->GetILOffsetX());
+        m_Policy->NoteOffset(stmt->GetDebugInfo().GetLocation().GetOffset());
 #endif // defined(DEBUG) || defined(INLINE_DATA)
     }
 
@@ -762,21 +791,7 @@ void InlineResult::Report()
 
         if ((m_Callee != nullptr) && (obs != InlineObservation::CALLEE_IS_NOINLINE))
         {
-
-#ifdef DEBUG
-
-            const char* obsString = InlGetObservationString(obs);
-
-            if (VERBOSE)
-            {
-                JITDUMP("\nINLINER: Marking %s as NOINLINE because of %s\n", callee, obsString);
-            }
-            else if (m_RootCompiler->fgPrintInlinedMethods)
-            {
-                printf("Marking %s as NOINLINE because of %s\n", callee, obsString);
-            }
-
-#endif // DEBUG
+            JITDUMP("\nINLINER: Marking %s as NOINLINE because of %s\n", callee, InlGetObservationString(obs));
 
             COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
             comp->setMethodAttribs(m_Callee, CORINFO_FLG_BAD_INLINEE);
@@ -1236,137 +1251,101 @@ InlineContext* InlineStrategy::NewRoot()
     return rootContext;
 }
 
-//------------------------------------------------------------------------
-// NewSuccess: construct an InlineContext for a successful inline
-// and link it into the context tree
-//
-// Arguments:
-//    inlineInfo - information about this inline
-//
-// Return Value:
-//    A new InlineContext for statements brought into the method by
-//    this inline.
-
-InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
+InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statement* stmt, GenTreeCall* call)
 {
-    InlineContext* calleeContext = new (m_Compiler, CMK_Inlining) InlineContext(this);
-    Statement*     stmt          = inlineInfo->iciStmt;
-    BYTE*          calleeIL      = inlineInfo->inlineCandidateInfo->methInfo.ILCode;
-    unsigned       calleeILSize  = inlineInfo->inlineCandidateInfo->methInfo.ILCodeSize;
-    InlineContext* parentContext = stmt->GetInlineContext();
-    GenTreeCall*   originalCall  = inlineInfo->inlineResult->GetCall();
+    InlineContext* context = new (m_Compiler, CMK_Inlining) InlineContext(this);
 
-    noway_assert(parentContext != nullptr);
+    context->m_InlineStrategy = this;
+    context->m_Parent         = parentContext;
+    context->m_Sibling        = parentContext->m_Child;
+    parentContext->m_Child    = context;
 
-    calleeContext->m_Code   = calleeIL;
-    calleeContext->m_ILSize = calleeILSize;
-    calleeContext->m_Parent = parentContext;
-    // Push on front here will put siblings in reverse lexical
-    // order which we undo in the dumper
-    calleeContext->m_Sibling        = parentContext->m_Child;
-    parentContext->m_Child          = calleeContext;
-    calleeContext->m_Child          = nullptr;
-    calleeContext->m_Offset         = stmt->GetILOffsetX();
-    calleeContext->m_Observation    = inlineInfo->inlineResult->GetObservation();
-    calleeContext->m_Success        = true;
-    calleeContext->m_Devirtualized  = originalCall->IsDevirtualized();
-    calleeContext->m_Guarded        = originalCall->IsGuarded();
-    calleeContext->m_Unboxed        = originalCall->IsUnboxed();
-    calleeContext->m_ImportedILSize = inlineInfo->inlineResult->GetImportedILSize();
+    // In debug builds we record inline contexts in all produced calls to be
+    // able to show all failed inlines in the inline tree, even non-candidates.
+    // These should always match the parent context we are seeing here.
+    assert(parentContext == call->gtInlineContext);
+
+    if (call->IsInlineCandidate())
+    {
+        InlineCandidateInfo* info = call->gtInlineCandidateInfo;
+        context->m_Code           = info->methInfo.ILCode;
+        context->m_ILSize         = info->methInfo.ILCodeSize;
+
+#ifdef DEBUG
+        // All inline candidates should get their own statements that have
+        // appropriate debug info (or no debug info).
+        InlineContext* diInlineContext = stmt->GetDebugInfo().GetInlineContext();
+        assert(diInlineContext == nullptr || diInlineContext == parentContext);
+#endif
+    }
+
+    // TODO-DEBUGINFO: Currently, to keep the same behavior as before, we use
+    // the location of the statement containing the call being inlined. This is
+    // not always the exact IL offset of the call instruction, consider e.g.
+    // ldarg.0
+    // call <foo>
+    // which becomes a single statement where the IL location points to the
+    // ldarg instruction. For SPGO purposes we should consider always storing
+    // the exact offset of the call instruction which will be more precise. We
+    // may consider storing the statement itself as well.
+    context->m_Location      = stmt->GetDebugInfo().GetLocation();
+    context->m_Devirtualized = call->IsDevirtualized();
+    context->m_Guarded       = call->IsGuarded();
+    context->m_Unboxed       = call->IsUnboxed();
 
 #if defined(DEBUG) || defined(INLINE_DATA)
+    context->m_TreeID           = call->gtTreeID;
+    context->m_Callee           = call->gtCallType == CT_INDIRECT ? nullptr : call->gtCallMethHnd;
+    context->m_ActualCallOffset = call->gtRawILOffset;
+#endif
 
-    InlinePolicy* policy = inlineInfo->inlineResult->GetPolicy();
+    return context;
+}
 
-    calleeContext->m_Policy           = policy;
-    calleeContext->m_CodeSizeEstimate = policy->CodeSizeEstimate();
-    calleeContext->m_Callee           = inlineInfo->fncHandle;
-    // +1 here since we set this before calling NoteOutcome.
-    calleeContext->m_Ordinal = m_InlineCount + 1;
-    // Update offset with more accurate info
-    calleeContext->m_Offset = originalCall->gtRawILOffset;
+void InlineContext::SetSucceeded(const InlineInfo* info)
+{
+    assert(InlIsValidObservation(info->inlineResult->GetObservation()));
+    m_Observation    = info->inlineResult->GetObservation();
+    m_ImportedILSize = info->inlineResult->GetImportedILSize();
+    m_Success        = true;
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG) || defined(INLINE_DATA)
+    m_Policy           = info->inlineResult->GetPolicy();
+    m_CodeSizeEstimate = m_Policy->CodeSizeEstimate();
+    m_Ordinal          = m_InlineStrategy->m_InlineCount + 1;
+#endif
 
-#if defined(DEBUG)
+    m_InlineStrategy->NoteOutcome(this);
+}
 
-    calleeContext->m_TreeID = originalCall->gtTreeID;
+void InlineContext::SetFailed(const InlineResult* result)
+{
+    assert(InlIsValidObservation(result->GetObservation()));
+    m_Observation    = result->GetObservation();
+    m_ImportedILSize = result->GetImportedILSize();
+    m_Success        = false;
 
-#endif // defined(DEBUG)
+#if defined(DEBUG) || defined(INLINE_DATA)
+    m_Policy           = result->GetPolicy();
+    m_CodeSizeEstimate = m_Policy->CodeSizeEstimate();
+#endif
 
-    NoteOutcome(calleeContext);
-
-    return calleeContext;
+    m_InlineStrategy->NoteOutcome(this);
 }
 
 #if defined(DEBUG) || defined(INLINE_DATA)
-
-//------------------------------------------------------------------------
-// NewFailure: construct an InlineContext for a failing inline
-// and link it into the context tree
-//
-// Arguments:
-//    stmt         - statement containing the attempted inline
-//    inlineResult - inlineResult for the attempt
-//
-// Return Value:
-//    A new InlineContext for diagnostic purposes
-
-InlineContext* InlineStrategy::NewFailure(Statement* stmt, InlineResult* inlineResult)
-{
-    // Check for a parent context first. We should now have a parent
-    // context for all statements.
-    InlineContext* parentContext = stmt->GetInlineContext();
-    assert(parentContext != nullptr);
-    InlineContext* failedContext = new (m_Compiler, CMK_Inlining) InlineContext(this);
-    GenTreeCall*   originalCall  = inlineResult->GetCall();
-
-    // Pushing the new context on the front of the parent child list
-    // will put siblings in reverse lexical order which we undo in the
-    // dumper.
-    failedContext->m_Parent        = parentContext;
-    failedContext->m_Sibling       = parentContext->m_Child;
-    parentContext->m_Child         = failedContext;
-    failedContext->m_Child         = nullptr;
-    failedContext->m_Offset        = stmt->GetILOffsetX();
-    failedContext->m_Observation   = inlineResult->GetObservation();
-    failedContext->m_Callee        = inlineResult->GetCallee();
-    failedContext->m_Success       = false;
-    failedContext->m_Devirtualized = originalCall->IsDevirtualized();
-    failedContext->m_Guarded       = originalCall->IsGuarded();
-    failedContext->m_Unboxed       = originalCall->IsUnboxed();
-
-    assert(InlIsValidObservation(failedContext->m_Observation));
-
-#if defined(DEBUG) || defined(INLINE_DATA)
-
-    // Update offset with more accurate info
-    failedContext->m_Offset = originalCall->gtRawILOffset;
-
-#endif // #if defined(DEBUG) || defined(INLINE_DATA)
-
-#if defined(DEBUG)
-
-    failedContext->m_TreeID = originalCall->gtTreeID;
-
-#endif // defined(DEBUG)
-
-    NoteOutcome(failedContext);
-
-    return failedContext;
-}
 
 //------------------------------------------------------------------------
 // Dump: dump description of inline behavior
 //
 // Arguments:
-//   showBudget - also dump final budget values
+//   verbose - print more details such as final budget values and IL offsets
 
-void InlineStrategy::Dump(bool showBudget)
+void InlineStrategy::Dump(bool verbose)
 {
-    m_RootContext->Dump();
+    m_RootContext->Dump(verbose);
 
-    if (!showBudget)
+    if (!verbose)
     {
         return;
     }

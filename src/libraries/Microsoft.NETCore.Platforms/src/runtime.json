@@ -138,6 +138,29 @@
         "alpine.3.13-x64"
       ]
     },
+    "alpine.3.15": {
+      "#import": [
+        "alpine.3.14"
+      ]
+    },
+    "alpine.3.15-arm": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-arm"
+      ]
+    },
+    "alpine.3.15-arm64": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-arm64"
+      ]
+    },
+    "alpine.3.15-x64": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-x64"
+      ]
+    },
     "alpine.3.6": {
       "#import": [
         "alpine"
@@ -576,6 +599,35 @@
       "#import": [
         "android.31",
         "android.30-x86"
+      ]
+    },
+    "android.32": {
+      "#import": [
+        "android.31"
+      ]
+    },
+    "android.32-arm": {
+      "#import": [
+        "android.32",
+        "android.31-arm"
+      ]
+    },
+    "android.32-arm64": {
+      "#import": [
+        "android.32",
+        "android.31-arm64"
+      ]
+    },
+    "android.32-x64": {
+      "#import": [
+        "android.32",
+        "android.31-x64"
+      ]
+    },
+    "android.32-x86": {
+      "#import": [
+        "android.32",
+        "android.31-x86"
       ]
     },
     "any": {
@@ -1134,26 +1186,15 @@
         "unix-x64"
       ]
     },
-    "freebsd.11": {
-      "#import": [
-        "freebsd"
-      ]
-    },
-    "freebsd.11-x64": {
-      "#import": [
-        "freebsd.11",
-        "freebsd-x64"
-      ]
-    },
     "freebsd.12": {
       "#import": [
-        "freebsd.11"
+        "freebsd"
       ]
     },
     "freebsd.12-x64": {
       "#import": [
         "freebsd.12",
-        "freebsd.11-x64"
+        "freebsd-x64"
       ]
     },
     "freebsd.13": {
@@ -1486,6 +1527,18 @@
         "unix-armel"
       ]
     },
+    "linux-armv6": {
+      "#import": [
+        "linux",
+        "unix-armv6"
+      ]
+    },
+    "linux-loongarch64": {
+      "#import": [
+        "linux",
+        "unix-loongarch64"
+      ]
+    },
     "linux-mips64": {
       "#import": [
         "linux",
@@ -1750,6 +1803,54 @@
       "#import": [
         "maccatalyst.15",
         "maccatalyst.14-x64"
+      ]
+    },
+    "manjaro": {
+      "#import": [
+        "arch"
+      ]
+    },
+    "manjaro-x64": {
+      "#import": [
+        "manjaro",
+        "arch-x64"
+      ]
+    },
+    "miraclelinux": {
+      "#import": [
+        "rhel"
+      ]
+    },
+    "miraclelinux-x64": {
+      "#import": [
+        "miraclelinux",
+        "rhel-x64"
+      ]
+    },
+    "miraclelinux.8": {
+      "#import": [
+        "miraclelinux",
+        "rhel.8"
+      ]
+    },
+    "miraclelinux.8-x64": {
+      "#import": [
+        "miraclelinux.8",
+        "miraclelinux-x64",
+        "rhel.8-x64"
+      ]
+    },
+    "miraclelinux.9": {
+      "#import": [
+        "miraclelinux",
+        "rhel.9"
+      ]
+    },
+    "miraclelinux.9-x64": {
+      "#import": [
+        "miraclelinux.9",
+        "miraclelinux-x64",
+        "rhel.9-x64"
       ]
     },
     "ol": {
@@ -2357,6 +2458,63 @@
         "rhel-x64"
       ]
     },
+    "rocky": {
+      "#import": [
+        "rhel"
+      ]
+    },
+    "rocky-arm64": {
+      "#import": [
+        "rocky",
+        "rhel-arm64"
+      ]
+    },
+    "rocky-x64": {
+      "#import": [
+        "rocky",
+        "rhel-x64"
+      ]
+    },
+    "rocky.8": {
+      "#import": [
+        "rocky",
+        "rhel.8"
+      ]
+    },
+    "rocky.8-arm64": {
+      "#import": [
+        "rocky.8",
+        "rocky-arm64",
+        "rhel.8-arm64"
+      ]
+    },
+    "rocky.8-x64": {
+      "#import": [
+        "rocky.8",
+        "rocky-x64",
+        "rhel.8-x64"
+      ]
+    },
+    "rocky.9": {
+      "#import": [
+        "rocky",
+        "rhel.9"
+      ]
+    },
+    "rocky.9-arm64": {
+      "#import": [
+        "rocky.9",
+        "rocky-arm64",
+        "rhel.9-arm64"
+      ]
+    },
+    "rocky.9-x64": {
+      "#import": [
+        "rocky.9",
+        "rocky-x64",
+        "rhel.9-x64"
+      ]
+    },
     "sles": {
       "#import": [
         "linux"
@@ -2613,6 +2771,29 @@
       "#import": [
         "tizen.6.0.0",
         "tizen.5.5.0-x86"
+      ]
+    },
+    "tizen.6.5.0": {
+      "#import": [
+        "tizen.6.0.0"
+      ]
+    },
+    "tizen.6.5.0-arm64": {
+      "#import": [
+        "tizen.6.5.0",
+        "tizen.6.0.0-arm64"
+      ]
+    },
+    "tizen.6.5.0-armel": {
+      "#import": [
+        "tizen.6.5.0",
+        "tizen.6.0.0-armel"
+      ]
+    },
+    "tizen.6.5.0-x86": {
+      "#import": [
+        "tizen.6.5.0",
+        "tizen.6.0.0-x86"
       ]
     },
     "tvos": {
@@ -3322,6 +3503,35 @@
         "ubuntu-x86"
       ]
     },
+    "ubuntu.22.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.22.04-arm": {
+      "#import": [
+        "ubuntu.22.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.22.04-arm64": {
+      "#import": [
+        "ubuntu.22.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.22.04-x64": {
+      "#import": [
+        "ubuntu.22.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.22.04-x86": {
+      "#import": [
+        "ubuntu.22.04",
+        "ubuntu-x86"
+      ]
+    },
     "unix": {
       "#import": [
         "any"
@@ -3338,6 +3548,16 @@
       ]
     },
     "unix-armel": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-armv6": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-loongarch64": {
       "#import": [
         "unix"
       ]

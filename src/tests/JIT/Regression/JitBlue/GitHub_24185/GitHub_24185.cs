@@ -5,7 +5,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-// The test shows recursive assertion propogation in one statement.
+// The test shows recursive assertion propagation in one statement.
 
 namespace GitHub_24185
 {
@@ -20,9 +20,9 @@ namespace GitHub_24185
             catch (Exception e)
             {
                 // Each expression in this condition checks that `e` is not null and checks its type.
-                // This information should be calculated once and propogated by assertion propogation.
-                if (!(e is AggregateException) ||                    
-                    !((((AggregateException)e).InnerExceptions[0] is ArgumentException) 
+                // This information should be calculated once and propagated by assertion propagation.
+                if (!(e is AggregateException) ||
+                    !((((AggregateException)e).InnerExceptions[0] is ArgumentException)
                     || ((AggregateException)e).InnerExceptions[0] is AggregateException))
                 {
                     return 100;

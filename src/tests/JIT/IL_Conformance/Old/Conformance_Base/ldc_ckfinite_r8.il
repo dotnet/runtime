@@ -422,5 +422,5 @@ END:
 //---- EOF ------------------
 }
 
-.assembly ldc_ckfinite_r8.exe{}
+.assembly ldc_ckfinite_r8{}
 

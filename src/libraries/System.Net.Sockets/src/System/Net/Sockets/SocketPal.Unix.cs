@@ -1180,7 +1180,7 @@ namespace System.Net.Sockets
 
             if (!handle.IsNonBlocking)
             {
-                return handle.AsyncContext.SendFile(fileHandle, offset, length, handle.SendTimeout, out bytesTransferred);
+                return handle.AsyncContext.SendFile(fileHandle, offset, length, handle.SendTimeout, out _);
             }
 
             SocketError errorCode;
@@ -1224,7 +1224,7 @@ namespace System.Net.Sockets
             else
             {
                 int socketAddressLen = 0;
-                if (!TryCompleteReceiveFrom(handle, buffers, socketFlags, null, ref socketAddressLen, out bytesTransferred, out socketFlags, out errorCode))
+                if (!TryCompleteReceiveFrom(handle, buffers, socketFlags, null, ref socketAddressLen, out bytesTransferred, out _, out errorCode))
                 {
                     errorCode = SocketError.WouldBlock;
                 }
@@ -2007,6 +2007,32 @@ namespace System.Net.Sockets
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, res);
             return res;
+        }
+
+        internal static bool HasNonBlockingConnectCompleted(SafeSocketHandle handle, out bool success)
+        {
+            Interop.Error err = Interop.Sys.Poll(handle, Interop.PollEvents.POLLOUT, timeout: 0, out Interop.PollEvents outEvents);
+            if (err != Interop.Error.SUCCESS)
+            {
+                throw new SocketException((int)GetSocketErrorForErrorCode(err));
+            }
+
+            // When connect completes the socket is writable.
+            if ((outEvents & Interop.PollEvents.POLLOUT) == 0)
+            {
+                success = false;
+                return false;
+            }
+
+            // Get the connect result from SocketOptionName.Error.
+            SocketError errorCode = GetSockOpt(handle, SocketOptionLevel.Socket, SocketOptionName.Error, out int optionValue);
+            if (errorCode != SocketError.Success)
+            {
+                throw new SocketException((int)errorCode);
+            }
+
+            success = (SocketError)optionValue == SocketError.Success;
+            return true;
         }
     }
 }

@@ -22,7 +22,7 @@ if [ "$1" = "Linux" ]; then
     if [ "$?" != "0" ]; then
         exit 1;
     fi
-elif [ "$1" = "MacCatalyst" ] || [ "$1" = "OSX" ] || [ "$1" = "tvOS" ] || [ "$1" = "iOS" ]; then
+elif [[ "$1" == "MacCatalyst" || "$1" == "OSX" || "$1" == "tvOS" || "$1" == "iOS" ]]; then
     engdir=$(dirname "${BASH_SOURCE[0]}")
 
     echo "Installed xcode version: `xcode-select -p`"

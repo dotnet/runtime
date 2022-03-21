@@ -31,7 +31,6 @@ class Object;
 #include "eeconfig.h"
 #include "comdelegate.h"
 #include "comcache.h"
-#include "notifyexternals.h"
 #include "../md/compiler/custattr.h"
 #include "olevariant.h"
 #include "interopconverter.h"
@@ -51,7 +50,6 @@ SLIST_HEADER RCW::s_RCWStandbyList;
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 #include "interoplibinterface.h"
 
-#ifndef CROSSGEN_COMPILE
 
 void ComClassFactory::ThrowHRMsg(HRESULT hr, DWORD dwMsgResID)
 {
@@ -583,11 +581,10 @@ OBJECTREF ComClassFactory::CreateInstance(MethodTable* pMTClass, BOOL ForManaged
 
     return RetObj;
 }
-#endif //#ifndef CROSSGEN_COMPILE
 
 //--------------------------------------------------------------
 // Init the ComClassFactory.
-void ComClassFactory::Init(__in_opt PCWSTR wszServer, MethodTable* pClassMT)
+void ComClassFactory::Init(_In_opt_ PCWSTR wszServer, MethodTable* pClassMT)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -617,7 +614,6 @@ void ComClassFactory::Cleanup()
 
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
-#ifndef CROSSGEN_COMPILE
 //---------------------------------------------------------------------
 // RCW cache, act as the manager for the RCWs
 // uses a hash table to map IUnknown to the corresponding wrappers
@@ -2097,9 +2093,7 @@ HRESULT RCW::SafeQueryInterfaceRemoteAware(REFIID iid, IUnknown** ppResUnk)
     return hr;
 }
 
-#endif //#ifndef CROSSGEN_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 // Performs QI for the given interface, optionally instantiating it with the given generic args.
 HRESULT RCW::CallQueryInterface(MethodTable *pMT, Instantiation inst, IID *piid, IUnknown **ppUnk)
 {
@@ -2808,5 +2802,4 @@ IUnknown *ComObject::GetComIPFromRCWThrowing(OBJECTREF *pObj, MethodTable* pIntf
 }
 #endif // #ifndef DACCESS_COMPILE
 
-#endif //#ifndef CROSSGEN_COMPILE
 

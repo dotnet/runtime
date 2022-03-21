@@ -181,5 +181,5 @@ END:
 //---- EOF ------------------
 }
 
-.assembly ldc_neg_i8.exe{}
+.assembly ldc_neg_i8{}
 

@@ -408,7 +408,7 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 		*tid = thread_id;
 
 	if (stack_size) {
-		// TOOD: Use VirtualQuery to get correct value 
+		// TOOD: Use VirtualQuery to get correct value
 		// http://stackoverflow.com/questions/2480095/thread-stack-size-on-windows-visual-c
 		*stack_size = set_stack_size;
 	}
@@ -583,7 +583,7 @@ mono_threads_platform_yield (void)
 void
 mono_threads_platform_exit (gsize exit_code)
 {
-	ExitThread (exit_code);
+	ExitThread ((DWORD)exit_code);
 }
 
 int

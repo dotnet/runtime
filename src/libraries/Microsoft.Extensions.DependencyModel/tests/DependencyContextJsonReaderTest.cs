@@ -792,5 +792,48 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             context.CompilationOptions.PublicSign.Should().Be(true);
             context.CompilationOptions.WarningsAsErrors.Should().Be(true);
         }
+
+        [Fact]
+        public void FailsToReadNullLibraryType()
+        {
+            Assert.Throws<FormatException>(() => Read(
+@"{
+    ""libraries"":{
+        ""System.Banana/1.0.0"": {
+            ""type"": null,
+            ""serviceable"": false,
+            ""sha512"": ""HASH-System.Banana""
+        }
+    }
+}
+"));
+        }
+
+        [Fact]
+        public void FailsToReadEmptyTargetName()
+        {
+            Assert.Throws<FormatException>(() => Read(
+@"{
+     ""targets"": {
+        """": {}
+    }
+ }"));
+        }
+
+        [Fact]
+        public void FailsToReadEmptyLibraryType()
+        {
+            Assert.Throws<FormatException>(() => Read(
+@"{
+    ""libraries"":{
+        ""System.Banana/1.0.0"": {
+            ""type"": """",
+            ""serviceable"": false,
+            ""sha512"": ""HASH-System.Banana""
+        }
+    }
+}
+"));
+        }
     }
 }

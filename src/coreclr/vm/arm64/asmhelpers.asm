@@ -10,10 +10,6 @@
 #include "asmconstants.h"
 #include "asmmacros.h"
 
-#ifdef FEATURE_PREJIT
-    IMPORT VirtualMethodFixupWorker
-    IMPORT StubDispatchFixupWorker
-#endif
     IMPORT ExternalMethodFixupWorker
     IMPORT PreStubWorker
     IMPORT NDirectImportWorker
@@ -213,27 +209,6 @@ Done
 
         NESTED_END
 
-; ------------------------------------------------------------------
-; The call in fixup precode initally points to this function.
-; The pupose of this function is to load the MethodDesc and forward the call to prestub.
-        NESTED_ENTRY PrecodeFixupThunk
-
-        ; x12 = FixupPrecode *
-        ; On Exit
-        ; x12 = MethodDesc*
-        ; x13, x14 Trashed
-        ; Inline computation done by FixupPrecode::GetMethodDesc()
-        ldrb    w13, [x12, #Offset_PrecodeChunkIndex]              ; m_PrecodeChunkIndex
-        ldrb    w14, [x12, #Offset_MethodDescChunkIndex]           ; m_MethodDescChunkIndex
-
-        add     x12,x12,w13,uxtw #FixupPrecode_ALIGNMENT_SHIFT_1
-        add     x13,x12,w13,uxtw #FixupPrecode_ALIGNMENT_SHIFT_2
-        ldr     x13, [x13,#SIZEOF__FixupPrecode]
-        add     x12,x13,w14,uxtw #MethodDesc_ALIGNMENT_SHIFT
-
-        b ThePreStub
-
-        NESTED_END
 ; ------------------------------------------------------------------
 
         NESTED_ENTRY ThePreStub
@@ -553,91 +528,6 @@ Exit
     LEAF_ENTRY JIT_PatchedCodeLast
         ret      lr
     LEAF_END
-
-#ifdef FEATURE_PREJIT
-;------------------------------------------------
-; VirtualMethodFixupStub
-;
-; In NGEN images, virtual slots inherited from cross-module dependencies
-; point to a jump thunk that calls into the following function that will
-; call into a VM helper. The VM helper is responsible for patching up
-; thunk, upon executing the precode, so that all subsequent calls go directly
-; to the actual method body.
-;
-; This is done lazily for performance reasons.
-;
-; On entry:
-;
-; x0 = "this" pointer
-; x12 = Address of thunk
-
-    NESTED_ENTRY VirtualMethodFixupStub
-
-    ; Save arguments and return address
-    PROLOG_SAVE_REG_PAIR           fp, lr, #-224!
-    SAVE_ARGUMENT_REGISTERS        sp, 16
-    SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 96
-
-    ; Refer to ZapImportVirtualThunk::Save
-    ; for details on this.
-    ;
-    ; Move the thunk start address in x1
-    mov         x1, x12
-
-    ; Call the helper in the VM to perform the actual fixup
-    ; and tell us where to tail call. x0 already contains
-    ; the this pointer.
-    bl VirtualMethodFixupWorker
-    ; On return, x0 contains the target to tailcall to
-    mov         x12, x0
-
-    ; pop the stack and restore original register state
-    RESTORE_ARGUMENT_REGISTERS        sp, 16
-    RESTORE_FLOAT_ARGUMENT_REGISTERS  sp, 96
-    EPILOG_RESTORE_REG_PAIR           fp, lr, #224!
-
-    PATCH_LABEL VirtualMethodFixupPatchLabel
-
-    ; and tailcall to the actual method
-    EPILOG_BRANCH_REG x12
-
-    NESTED_END
-#endif // FEATURE_PREJIT
-
-;------------------------------------------------
-; ExternalMethodFixupStub
-;
-; In NGEN images, calls to cross-module external methods initially
-; point to a jump thunk that calls into the following function that will
-; call into a VM helper. The VM helper is responsible for patching up the
-; thunk, upon executing the precode, so that all subsequent calls go directly
-; to the actual method body.
-;
-; This is done lazily for performance reasons.
-;
-; On entry:
-;
-; x12 = Address of thunk
-
-    NESTED_ENTRY ExternalMethodFixupStub
-
-    PROLOG_WITH_TRANSITION_BLOCK
-
-    add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
-    mov         x1, x12                         ; pThunk
-    mov         x2, #0                          ; sectionIndex
-    mov         x3, #0                          ; pModule
-
-    bl          ExternalMethodFixupWorker
-
-    ; mov the address we patched to in x12 so that we can tail call to it
-    mov         x12, x0
-
-    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL ExternalMethodFixupPatchLabel
-    EPILOG_BRANCH_REG   x12
-
-    NESTED_END
 
 ; void SinglecastDelegateInvokeStub(Delegate *pThis)
     LEAF_ENTRY SinglecastDelegateInvokeStub
@@ -1271,8 +1161,9 @@ Fail
     mov x12, x0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    ; Share patch label
-    b ExternalMethodFixupPatchLabel
+    PATCH_LABEL ExternalMethodFixupPatchLabel
+    EPILOG_BRANCH_REG   x12
+
     NESTED_END
 
     MACRO
@@ -1302,29 +1193,6 @@ Fail
     DynamicHelper DynamicHelperFrameFlags_ObjectArg, _Obj
     DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_ObjectArg2, _ObjObj
 #endif // FEATURE_READYTORUN
-
-#ifdef FEATURE_PREJIT
-;; ------------------------------------------------------------------
-;; void StubDispatchFixupStub(args in regs x0-x7 & stack and possibly retbuff arg in x8, x11:IndirectionCellAndFlags)
-;;
-;; The stub dispatch thunk which transfers control to StubDispatchFixupWorker.
-        NESTED_ENTRY StubDispatchFixupStub
-
-        PROLOG_WITH_TRANSITION_BLOCK
-
-        add x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
-        and x1, x11, #-4 ; Indirection cell
-        mov x2, #0 ; sectionIndex
-        mov x3, #0 ; pModule
-        bl StubDispatchFixupWorker
-        mov x12, x0
-
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-        PATCH_LABEL StubDispatchFixupPatchLabel
-        EPILOG_BRANCH_REG  x12
-
-        NESTED_END
-#endif
 
 #ifdef FEATURE_COMINTEROP
 ; ------------------------------------------------------------------
@@ -1443,7 +1311,7 @@ CallHelper2
  #define PROFILE_ENTER    1
  #define PROFILE_LEAVE    2
  #define PROFILE_TAILCALL 4
- #define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 272
+ #define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 320
 
 ; ------------------------------------------------------------------
     MACRO
@@ -1502,7 +1370,7 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
         PROLOG_WITH_TRANSITION_BLOCK
 
         add     x0, sp, #__PWTB_TransitionBlock ; TransitionBlock *
-        mov     x1, x10 ; stub-identifying token
+        mov     x1, x9 ; stub-identifying token
         bl      OnCallCountThresholdReached
         mov     x9, x0
 
@@ -1511,6 +1379,14 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
     NESTED_END
 
 #endif ; FEATURE_TIERED_COMPILATION
+
+    LEAF_ENTRY  JIT_ValidateIndirectCall
+        ret lr
+    LEAF_END
+
+    LEAF_ENTRY  JIT_DispatchIndirectCall
+        br x9
+    LEAF_END
 
 ; Must be at very end of file
     END

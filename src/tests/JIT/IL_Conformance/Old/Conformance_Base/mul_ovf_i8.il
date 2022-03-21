@@ -360,4 +360,4 @@ END:
 }
 }
 
-.assembly mul_ovf_i8.exe{}
+.assembly mul_ovf_i8{}

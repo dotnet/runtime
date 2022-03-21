@@ -33,7 +33,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module hijacking.exe
+.assembly extern xunit.core {}
 // MVID: {7A6D7819-76F7-4311-967C-7CC804775914}
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x0000000000400000
@@ -232,6 +232,9 @@
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       300 (0x12c)
     .maxstack  5

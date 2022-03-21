@@ -234,10 +234,7 @@ namespace System.Globalization
             return GetDatePart(time.Ticks, DatePartDay);
         }
 
-        public override DayOfWeek GetDayOfWeek(DateTime time)
-        {
-            return (DayOfWeek)((int)(time.Ticks / TicksPerDay + 1) % 7);
-        }
+        public override DayOfWeek GetDayOfWeek(DateTime time) => time.DayOfWeek;
 
         public override int GetDayOfYear(DateTime time)
         {

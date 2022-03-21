@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
-    <SetIsTrimmable>false</SetIsTrimmable>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
     <IsPackable>true</IsPackable>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <PackageDescription>Provides Managed Extensibility Framework types that are useful to developers of extensible applications, or hosts.
@@ -52,7 +52,7 @@ System.Composition.Hosting.CompositionHost</PackageDescription>
     <Reference Include="System.Threading" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.ComponentModel.Composition" />
   </ItemGroup>
 </Project>

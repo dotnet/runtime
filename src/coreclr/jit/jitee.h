@@ -17,7 +17,7 @@ public:
         JIT_FLAG_DEBUG_EnC               = 3, // We are in Edit-n-Continue mode
         JIT_FLAG_DEBUG_INFO              = 4, // generate line and local-var info
         JIT_FLAG_MIN_OPT                 = 5, // disable all jit optimizations (not necesarily debuggable code)
-        JIT_FLAG_UNUSED1                 = 6,
+        JIT_FLAG_ENABLE_CFG              = 6, // generate CFG enabled code
         JIT_FLAG_MCJIT_BACKGROUND        = 7, // Calling from multicore JIT background thread, do not call JitComplete
 
     #if defined(TARGET_X86)
@@ -174,6 +174,7 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_EnC, JIT_FLAG_DEBUG_EnC);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO, JIT_FLAG_DEBUG_INFO);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT, JIT_FLAG_MIN_OPT);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ENABLE_CFG, JIT_FLAG_ENABLE_CFG);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND, JIT_FLAG_MCJIT_BACKGROUND);
 
 #if defined(TARGET_X86)
@@ -186,13 +187,6 @@ public:
 #endif
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT, JIT_FLAG_ALT_JIT);
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
-
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD, JIT_FLAG_FEATURE_SIMD);
-
-#endif
-
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE, JIT_FLAG_MAKEFINALCODE);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_READYTORUN, JIT_FLAG_READYTORUN);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE, JIT_FLAG_PROF_ENTERLEAVE);

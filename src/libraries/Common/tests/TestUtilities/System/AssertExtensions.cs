@@ -209,7 +209,7 @@ namespace System
                 if (exceptionTypes.Any(t => t.Equals(exceptionType)))
                     return;
 
-                throw new XunitException($"Expected one of: ({string.Join<Type>(", ", exceptionTypes)}) -> Actual: ({exceptionType})");
+                throw new XunitException($"Expected one of: ({string.Join<Type>(", ", exceptionTypes)}) -> Actual: ({exceptionType}): {e}"); // Log message and callstack to help diagnosis
             }
 
             throw new XunitException($"Expected one of: ({string.Join<Type>(", ", exceptionTypes)}) -> Actual: No exception thrown");
@@ -483,7 +483,7 @@ namespace System
             {
                 if (!comparer.Equals(expected, actual[i]))
                 {
-                    throw new XunitException($"Expected {expected?.ToString() ?? "null"} at position {i}");
+                    throw new XunitException($"Expected {expected?.ToString() ?? "null"} at position {i}; actual {actual[i]?.ToString() ?? "null"}");
                 }
             }
         }

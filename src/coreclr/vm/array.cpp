@@ -58,24 +58,6 @@ DWORD ArrayMethodDesc::GetAttrs()
     return (GetArrayFuncIndex() >= ARRAY_FUNC_CTOR) ? (mdPublic | mdRTSpecialName) : mdPublic;
 }
 
-/*****************************************************************************************/
-CorInfoIntrinsics ArrayMethodDesc::GetIntrinsicID()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    switch (GetArrayFuncIndex())
-    {
-    case ARRAY_FUNC_GET:
-        return CORINFO_INTRINSIC_Array_Get;
-    case ARRAY_FUNC_SET:
-        return CORINFO_INTRINSIC_Array_Set;
-    case ARRAY_FUNC_ADDRESS:
-        return CORINFO_INTRINSIC_Array_Address;
-    default:
-        return CORINFO_INTRINSIC_Illegal;
-    }
-}
-
 #ifndef DACCESS_COMPILE
 
 /*****************************************************************************************/
@@ -230,7 +212,7 @@ void ArrayClass::InitArrayMethodDesc(
     _ASSERTE(pNewMD->GetMethodName() && GetDebugClassName());
     pNewMD->m_pszDebugMethodName = pNewMD->GetMethodName();
     pNewMD->m_pszDebugClassName  = GetDebugClassName();
-    pNewMD->m_pDebugMethodTable.SetValue(pNewMD->GetMethodTable());
+    pNewMD->m_pDebugMethodTable = pNewMD->GetMethodTable();
 #endif // _DEBUG
 }
 
@@ -330,12 +312,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     // Inherit top level class's interface map
     cbMT += pParentClass->GetNumInterfaces() * sizeof(InterfaceInfo_t);
 
-#ifdef FEATURE_PREJIT
-    Module* pComputedPZM = Module::ComputePreferredZapModule(NULL, Instantiation(&elemTypeHnd, 1));
-    BOOL canShareVtableChunks = MethodTable::CanShareVtableChunksFrom(pParentClass, this, pComputedPZM);
-#else
     BOOL canShareVtableChunks = MethodTable::CanShareVtableChunksFrom(pParentClass, this);
-#endif // FEATURE_PREJIT
 
     size_t offsetOfUnsharedVtableChunks = cbMT;
 
@@ -505,7 +482,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
             if (canShareVtableChunks)
             {
                 // Share the parent chunk
-                it.SetIndirectionSlot(pParentClass->GetVtableIndirections()[it.GetIndex()].GetValueMaybeNull());
+                it.SetIndirectionSlot(pParentClass->GetVtableIndirections()[it.GetIndex()]);
             }
             else
             {
@@ -665,7 +642,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
                 }
                 else if (index == 0)
                 {
-                    skip = pElemMT->GetAlignedNumInstanceFieldBytes() - numPtrsInBytes;
+                    skip = pElemMT->GetNumInstanceFieldBytes() - numPtrsInBytes;
                 }
                 else
                 {
@@ -712,14 +689,9 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     // an array whose base type is not a value class was created and was larger then 0xffff (a word)
     _ASSERTE(dwComponentSize == pMT->GetComponentSize());
 
-#ifdef FEATURE_PREJIT
-    _ASSERTE(pComputedPZM == Module::GetPreferredZapModuleForMethodTable(pMT));
-#endif
-
     return(pMT);
 } // Module::CreateArrayMethodTable
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef FEATURE_ARRAYSTUB_AS_IL
 
@@ -1009,7 +981,7 @@ Stub *GenerateArrayOpStub(ArrayMethodDesc* pMD)
 
     static const ILStubTypes stubTypes[3] = { ILSTUB_ARRAYOP_GET, ILSTUB_ARRAYOP_SET, ILSTUB_ARRAYOP_ADDRESS };
 
-    _ASSERTE(pMD->GetArrayFuncIndex() <= COUNTOF(stubTypes));
+    _ASSERTE(pMD->GetArrayFuncIndex() <= ARRAY_SIZE(stubTypes));
     NDirectStubFlags arrayOpStubFlag = (NDirectStubFlags)stubTypes[pMD->GetArrayFuncIndex()];
 
     MethodDesc * pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(pMD->GetLoaderAllocator(),
@@ -1247,7 +1219,6 @@ UINT ArrayStubCache::Length(const BYTE *pRawStub)
 
 #endif // FEATURE_ARRAYSTUB_AS_IL
 
-#endif // CROSSGEN_COMPILE
 
 //---------------------------------------------------------------------
 // This method returns TRUE if pInterfaceMT could be one of the interfaces
@@ -1308,7 +1279,7 @@ MethodDesc* GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(Met
 
     // Subtract one for the non-generic IEnumerable that the generic enumerable inherits from
     unsigned int inheritanceDepth = pItfcMeth->GetMethodTable()->GetNumInterfaces() - 1;
-    PREFIX_ASSUME(0 <= inheritanceDepth && inheritanceDepth < NumItems(startingMethod));
+    PREFIX_ASSUME(0 <= inheritanceDepth && inheritanceDepth < ARRAY_SIZE(startingMethod));
 
     MethodDesc *pGenericImplementor = CoreLibBinder::GetMethod((BinderMethodID)(startingMethod[inheritanceDepth] + slot));
 

@@ -11,6 +11,7 @@
 #include "corhlpr.h"
 #include "utilcode.h"
 #include "pedecoder.h" // for IMAGE_FILE_MACHINE_NATIVE
+#include <minipal/utils.h>
 
 //This is a workaround. We need to work with the debugger team to figure
 //out how the module handle of the CLR can be found in a SxS safe way.
@@ -102,8 +103,6 @@ PVOID UserContext
 //
 //--- Macros ------------------------------------------------------------------
 //
-
-#define COUNT_OF(x)    (sizeof(x) / sizeof(x[0]))
 
 //
 // Types and Constants --------------------------------------------------------
@@ -295,9 +294,9 @@ LPSTR FillSymbolSearchPathThrows(CQuickBytes &qb)
         rcBuff.Append(W(';'));
 
     // Copy the defacto NT symbol path as well.
-    size_t sympathLength = chTotal + NumItems(DEFAULT_SYM_PATH) + 1;
+    size_t sympathLength = chTotal + ARRAY_SIZE(DEFAULT_SYM_PATH) + 1;
 		// integer overflow occurred
-	if (sympathLength < (size_t)chTotal || sympathLength < NumItems(DEFAULT_SYM_PATH))
+	if (sympathLength < (size_t)chTotal || sympathLength < ARRAY_SIZE(DEFAULT_SYM_PATH))
 	{
 		return NULL;
 	}
@@ -342,7 +341,7 @@ LPSTR FillSymbolSearchPathThrows(CQuickBytes &qb)
 
     if (ch != 0 && (pathLocationLength < MAX_SYM_PATH))
     {
-        chTotal = chTotal + ch - NumItems(STR_ENGINE_NAME);
+        chTotal = chTotal + ch - ARRAY_SIZE(STR_ENGINE_NAME);
         rcBuff.Append(W(';'));
     }
 #endif
@@ -363,7 +362,7 @@ LPSTR FillSymbolSearchPath(CQuickBytes &qb)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     SCAN_IGNORE_FAULT; // Faults from Wsz funcs are handled.
-    LPSTR retval;
+    LPSTR retval = NULL;
     HRESULT hr = S_OK;
 
     EX_TRY
@@ -432,7 +431,7 @@ void MagicInit()
     //
     // Try to get the API entrypoints in imagehlp.dll
     //
-    for (int i = 0; i < COUNT_OF(ailFuncList); i++)
+    for (int i = 0; i < ARRAY_SIZE(ailFuncList); i++)
     {
         *(ailFuncList[i].ppvfn) = GetProcAddress(
                 g_hinstImageHlp,
@@ -509,12 +508,12 @@ DWORD_PTR dwAddr
 
     if (!_SymGetModuleInfo(g_hProcess, dwAddr, &mi))
     {
-        strcpy_s(psi->achModule, _countof(psi->achModule), "<no module>");
+        strcpy_s(psi->achModule, ARRAY_SIZE(psi->achModule), "<no module>");
     }
     else
     {
-        strcpy_s(psi->achModule, _countof(psi->achModule), mi.ModuleName);
-        _strupr_s(psi->achModule, _countof(psi->achModule));
+        strcpy_s(psi->achModule, ARRAY_SIZE(psi->achModule), mi.ModuleName);
+        _strupr_s(psi->achModule, ARRAY_SIZE(psi->achModule));
     }
 
     CHAR rgchUndec[256];
@@ -538,7 +537,7 @@ DWORD_PTR dwAddr
         {
             pszSymbol = sym.Name;
 
-            if (_SymUnDName(&sym, rgchUndec, COUNT_OF(rgchUndec)-1))
+            if (_SymUnDName(&sym, rgchUndec, STRING_LENGTH(rgchUndec)))
             {
                 pszSymbol = rgchUndec;
             }
@@ -554,7 +553,7 @@ DWORD_PTR dwAddr
         psi->dwOffset = dwAddr - mi.BaseOfImage;
     }
 
-    strcpy_s(psi->achSymbol, _countof(psi->achSymbol), pszSymbol);
+    strcpy_s(psi->achSymbol, ARRAY_SIZE(psi->achSymbol), pszSymbol);
 }
 
 /****************************************************************************
@@ -906,7 +905,7 @@ CONTEXT * pContext  // @parm Context to start the stack trace at; null for curre
 void GetStringFromAddr
 (
 DWORD_PTR dwAddr,
-__out_ecount(cchMaxAssertStackLevelStringLen) LPSTR szString // Place to put string.
+_Out_writes_(cchMaxAssertStackLevelStringLen) LPSTR szString // Place to put string.
                 // Buffer must hold at least cchMaxAssertStackLevelStringLen.
 )
 {
@@ -957,7 +956,7 @@ void MagicDeinit(void)
 *       support this, so we need it for CoreCLR 4, if we require Win2K support
 ****************************************************************************/
 extern "C" __declspec(naked) void __stdcall
-ClrCaptureContext(__out PCONTEXT ctx)
+ClrCaptureContext(_Out_ PCONTEXT ctx)
 {
     __asm {
         push ebx;

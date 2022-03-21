@@ -1326,7 +1326,7 @@ namespace System.Xml
             {
                 localName = prefix;
                 attrPrefix = _xmlns;
-                name = reader.NameTable.Add(string.Concat(_xmlns, ":", prefix));
+                name = reader.NameTable.Add($"{_xmlns}:{prefix}");
             }
 
             if (_nsAttributes[index] == null)
@@ -1580,12 +1580,8 @@ namespace System.Xml
             }
         }
 
-        private void CheckBuffer(Array buffer, int index, int count)
+        private void CheckBuffer(Array buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));

@@ -57,4 +57,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldarga_i4.exe{}
+.assembly ldarga_i4{}

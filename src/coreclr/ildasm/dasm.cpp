@@ -29,10 +29,6 @@
 #pragma warning(disable : 4640)
 #endif
 
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-#include <corcompile.h>
-#endif
-
 #ifdef TARGET_UNIX
 #include "resourcestring.h"
 #define NATIVE_STRING_RESOURCE_NAME dasm_rc
@@ -98,9 +94,6 @@ BOOL                    g_fThisIsInstanceMethod;
 BOOL                    g_fTryInCode = TRUE;
 
 BOOL                    g_fLimitedVisibility = FALSE;
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-BOOL                    g_fNGenNativeMetadata = FALSE;
-#endif
 BOOL                    g_fHidePub = TRUE;
 BOOL                    g_fHidePriv = TRUE;
 BOOL                    g_fHideFam = TRUE;
@@ -156,14 +149,14 @@ ULONG                   g_ulMetaInfoFilter = MDInfo::dumpDefault;
 // Validator module type.
 DWORD g_ValModuleType = ValidatorModuleTypeInvalid;
 IMetaDataDispenserEx *g_pDisp = NULL;
-void DisplayFile(__in __nullterminated WCHAR* szFile,
+void DisplayFile(_In_ __nullterminated WCHAR* szFile,
                  BOOL isFile,
                  ULONG DumpFilter,
-                 __in_opt __nullterminated WCHAR* szObjFile,
+                 _In_opt_z_ WCHAR* szObjFile,
                  strPassBackFn pDisplayString);
 extern mdMethodDef      g_tkEntryPoint; // integration with MetaInfo
 
-DWORD   DumpResourceToFile(__in __nullterminated WCHAR*   wzFileName); // see DRES.CPP
+DWORD   DumpResourceToFile(_In_ __nullterminated WCHAR*   wzFileName); // see DRES.CPP
 
 struct VTableRef
 {
@@ -190,7 +183,7 @@ void DumpCustomAttributeProps(mdToken tkCA, mdToken tkType, mdToken tkOwner, BYT
 WCHAR* RstrW(unsigned id)
 {
     static WCHAR buffer[1024];
-    DWORD cchBuff = (DWORD)COUNTOF(buffer);
+    DWORD cchBuff = (DWORD)ARRAY_SIZE(buffer);
     WCHAR* buff = (WCHAR*)buffer;
     memset(buffer,0,sizeof(buffer));
     switch(id)
@@ -228,7 +221,7 @@ WCHAR* RstrW(unsigned id)
         case IDS_E_CANTACCESSW32RES:
         case IDS_E_CANTOPENW32RES:
         case IDS_ERRORREOPENINGFILE:
-            wcscpy_s(buffer,COUNTOF(buffer),W("// "));
+            wcscpy_s(buffer,ARRAY_SIZE(buffer),W("// "));
             buff +=3;
             cchBuff -= 3;
             break;
@@ -239,12 +232,12 @@ WCHAR* RstrW(unsigned id)
         case IDS_E_CODESIZE:
         case IDS_W_CREATEDMRES:
         case IDS_E_READINGMRES:
-            wcscpy_s(buffer,COUNTOF(buffer),W("%s// "));
+            wcscpy_s(buffer,ARRAY_SIZE(buffer),W("%s// "));
             buff +=5;
             cchBuff -= 5;
             break;
         case IDS_E_NORVA:
-            wcscpy_s(buffer,COUNTOF(buffer),W("/* "));
+            wcscpy_s(buffer,ARRAY_SIZE(buffer),W("/* "));
             buff += 3;
             cchBuff -= 3;
             break;
@@ -1350,7 +1343,7 @@ mdToken ResolveTypeDefReflectionNotation(IMDInternalImport *pIMDI,
 }
 
 mdToken ResolveTypeRefReflectionNotation(IMDInternalImport *pIMDI,
-                                         __in __nullterminated const char* szNamespace,
+                                         _In_ __nullterminated const char* szNamespace,
                                          __inout __nullterminated char* szName,
                                          mdToken tkResScope)
 {
@@ -2851,7 +2844,7 @@ void DumpPermissions(mdToken tkOwner, void* GUICookie)
 }
 
 void PrettyPrintMethodSig(__inout __nullterminated char* szString, unsigned* puStringLen, CQuickBytes* pqbMemberSig, PCCOR_SIGNATURE pComSig, ULONG cComSig,
-                          __inout __nullterminated char* buff, __in_opt __nullterminated char* szArgPrefix, void* GUICookie)
+                          __inout __nullterminated char* buff, _In_opt_z_ char* szArgPrefix, void* GUICookie)
 {
     unsigned uMaxWidth = 40;
     if(g_fDumpHTML || g_fDumpRTF) uMaxWidth = 240;
@@ -3037,7 +3030,7 @@ BOOL PrettyPrintGP(                     // prints name of generic param, or retu
 }
 
 // Pretty-print formal type parameters for a class or method
-char *DumpGenericPars(__inout_ecount(SZSTRING_SIZE) char* szString, mdToken tok, void* GUICookie/*=NULL*/, BOOL fSplit/*=FALSE*/)
+char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok, void* GUICookie/*=NULL*/, BOOL fSplit/*=FALSE*/)
 {
     WCHAR *wzArgName = wzUniBuf;
     ULONG chName;
@@ -3340,8 +3333,8 @@ void PrettyPrintOverrideDecl(ULONG i, __inout __nullterminated char* szString, v
         // In that case the full "method" syntax must be used
         if ((TypeFromToken(tkOverrider) == mdtMethodDef) && !needsFullTokenPrint)
         {
-            PCCOR_SIGNATURE pComSigDecl;
-            ULONG cComSigDecl;
+            PCCOR_SIGNATURE pComSigDecl = NULL;
+            ULONG cComSigDecl = 0;
             mdToken tkDeclSigTok = tkDecl;
             bool successfullyGotDeclSig = false;
             bool successfullyGotBodySig = false;
@@ -3702,7 +3695,7 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
                 if (FAILED(g_pImport->GetParamDefProps(tkArg, &wSequence, &dwAttr, &szName)))
                 {
                     char sz[256];
-                    sprintf_s(sz, COUNTOF(sz), RstrUTF(IDS_E_INVALIDRECORD), tkArg);
+                    sprintf_s(sz, ARRAY_SIZE(sz), RstrUTF(IDS_E_INVALIDRECORD), tkArg);
                     printError(GUICookie, sz);
                     continue;
                 }
@@ -3882,7 +3875,7 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
             szString[0] = 0;
             if (dwTargetRVA != 0)
             {
-                void* newTarget;
+                void* newTarget = NULL;
                 if(g_pPELoader->getVAforRVA(dwTargetRVA,&newTarget))
                 {
                     DisassembleWrapper(g_pImport, (unsigned char*)newTarget, GUICookie, FuncToken,pszArgname, ulArgs);
@@ -5156,7 +5149,7 @@ void DumpCodeManager(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
         WCHAR        rcguid[128];
         GUID         Guid = *pcm;
         SwapGuid(&Guid);
-        StringFromGUID2(Guid, rcguid, NumItems(rcguid));
+        StringFromGUID2(Guid, rcguid, ARRAY_SIZE(rcguid));
         sprintf_s(szString,SZSTRING_SIZE,"//   [0x%08x]    %S", i, rcguid);
         printLine(GUICookie,szStr);
         pcm++;
@@ -6063,7 +6056,7 @@ void DumpStatistics(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
         {
             ++methodBodies;
 
-            COR_ILMETHOD_FAT *pMethod;
+            COR_ILMETHOD_FAT *pMethod = NULL;
             g_pPELoader->getVAforRVA(rva, (void **) &pMethod);
             if (pMethod->IsFat())
             {
@@ -6653,8 +6646,8 @@ void DumpEATEntries(void* GUICookie,
 #endif
                     if(pExpTable->dwNumATEntries && pExpTable->dwAddrTableRVA)
                     {
-                        DWORD* pExpAddr;
-                        BYTE *pCont;
+                        DWORD* pExpAddr = NULL;
+                        BYTE *pCont = NULL;
                         DWORD dwTokRVA;
                         mdToken* pTok;
                         g_pPELoader->getVAforRVA(VAL32(pExpTable->dwAddrTableRVA), (void **) &pExpAddr);
@@ -6702,9 +6695,9 @@ void DumpEATEntries(void* GUICookie,
                     }
                     if(pExpTable->dwNumNamePtrs && pExpTable->dwNamePtrRVA && pExpTable->dwOrdTableRVA)
                     {
-                        DWORD *pNamePtr;
-                        WORD    *pOrd;
-                        char*   szName;
+                        DWORD*  pNamePtr = NULL;
+                        WORD*   pOrd     = NULL;
+                        char*   szName   = NULL;
                         g_pPELoader->getVAforRVA(VAL32(pExpTable->dwNamePtrRVA), (void **) &pNamePtr);
                         g_pPELoader->getVAforRVA(VAL32(pExpTable->dwOrdTableRVA), (void **) &pOrd);
 #ifdef _DEBUG
@@ -6930,7 +6923,7 @@ void DumpVtable(void* GUICookie)
     }
 }
 // MetaInfo integration:
-void DumpMI(__in __nullterminated const char *str)
+void DumpMI(_In_ __nullterminated const char *str)
 {
     static BOOL fInit = TRUE;
     static char* szStr = &szString[0];
@@ -6962,7 +6955,7 @@ void DumpMI(__in __nullterminated const char *str)
     }
 }
 
-void DumpMetaInfo(__in __nullterminated const WCHAR* pwzFileName, __in_opt __nullterminated const char* pszObjFileName, void* GUICookie)
+void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ const char* pszObjFileName, void* GUICookie)
 {
     const WCHAR* pch = wcsrchr(pwzFileName,L'.');
 
@@ -7341,7 +7334,7 @@ void CloseNamespace(__inout __nullterminated char* szString)
     }
 }
 
-FILE* OpenOutput(__in __nullterminated const WCHAR* wzFileName)
+FILE* OpenOutput(_In_ __nullterminated const WCHAR* wzFileName)
 {
     FILE*   pfile = NULL;
         if(g_uCodePage == 0xFFFFFFFF) _wfopen_s(&pfile,wzFileName,W("wb"));
@@ -7355,7 +7348,7 @@ FILE* OpenOutput(__in __nullterminated const WCHAR* wzFileName)
     return pfile;
 }
 
-FILE* OpenOutput(__in __nullterminated const char* szFileName)
+FILE* OpenOutput(_In_ __nullterminated const char* szFileName)
 {
     return OpenOutput(UtfToUnicode(szFileName));
 }
@@ -7447,29 +7440,6 @@ BOOL DumpFile()
     g_tkEntryPoint = VAL32(IMAGE_COR20_HEADER_FIELD(*g_CORHeader, EntryPointToken)); // integration with MetaInfo
 
 
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-    if (g_fNGenNativeMetadata)
-    {
-        //if this is an ngen image, use the native metadata.
-        if( !g_CORHeader->ManagedNativeHeader.Size )
-        {
-            printError( g_pFile, "/native only works on NGen images." );
-            goto exit;
-        }
-        CORCOMPILE_HEADER * pNativeHeader;
-        g_pPELoader->getVAforRVA(VAL32(g_CORHeader->ManagedNativeHeader.VirtualAddress), (void**)&pNativeHeader);
-
-        if (pNativeHeader->Signature != CORCOMPILE_SIGNATURE)
-        {
-            printError( g_pFile, "/native only works on NGen images." );
-            goto exit;
-        }
-
-        g_pPELoader->getVAforRVA(VAL32(pNativeHeader->ManifestMetaData.VirtualAddress), &g_pMetaData);
-        g_cbMetaData = VAL32(pNativeHeader->ManifestMetaData.Size);
-    }
-    else
-#endif
     {
     if (g_pPELoader->getVAforRVA(VAL32(g_CORHeader->MetaData.VirtualAddress),&g_pMetaData) == FALSE)
     {

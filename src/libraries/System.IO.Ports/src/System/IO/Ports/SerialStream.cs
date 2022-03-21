@@ -88,10 +88,8 @@ namespace System.IO.Ports
             Dispose(false);
         }
 
-        private void CheckArrayArguments(byte[] array, int offset, int count)
+        private void CheckArrayArguments(byte[] array!!, int offset, int count)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             if (count < 0)

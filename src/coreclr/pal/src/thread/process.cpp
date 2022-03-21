@@ -3,8 +3,6 @@
 
 /*++
 
-
-
 Module Name:
 
     process.cpp
@@ -12,8 +10,6 @@ Module Name:
 Abstract:
 
     Implementation of process object and functions related to processes.
-
-
 
 --*/
 
@@ -36,6 +32,8 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include "pal/virtual.h"
 #include "pal/stackstring.hpp"
 #include "pal/signal.hpp"
+
+#include <clrconfignocache.h>
 
 #include <errno.h>
 #if HAVE_POLL
@@ -75,7 +73,9 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #   define __NR_membarrier  389
 #  elif defined(__aarch64__)
 #   define __NR_membarrier  283
-#  elif
+#  elif defined(__loongarch64)
+#   define __NR_membarrier  283
+#  else
 #   error Unknown architecture
 #  endif
 # endif
@@ -96,7 +96,7 @@ extern "C"
         if (machret != KERN_SUCCESS)                                        \
         {                                                                   \
             char _szError[1024];                                            \
-            snprintf(_szError, _countof(_szError), "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
+            snprintf(_szError, ARRAY_SIZE(_szError), "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
             mach_error(_szError, machret);                                  \
             abort();                                                        \
         }                                                                   \
@@ -109,6 +109,11 @@ extern "C"
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <kvm.h>
+#endif
+
+#ifdef __FreeBSD__
+#include <sys/sysctl.h>
+#include <sys/user.h>
 #endif
 
 extern char *g_szCoreCLRPath;
@@ -2043,7 +2048,7 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
 
     *disambiguationKey = 0;
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__FreeBSD__)
 
     // On OS X, we return the process start time expressed in Unix time (the number of seconds
     // since the start of the Unix epoch).
@@ -2054,7 +2059,11 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
 
     if (ret == 0)
     {
+#if defined(__APPLE__)
         timeval procStartTime = info.kp_proc.p_starttime;
+#else // __FreeBSD__
+        timeval procStartTime = info.ki_start;
+#endif
         long secondsSinceEpoch = procStartTime.tv_sec;
 
         *disambiguationKey = secondsSinceEpoch;
@@ -2135,7 +2144,7 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
 
     // All the format specifiers for the fields in the stat file are provided by 'man proc'.
     int sscanfRet = sscanf_s(scanStartPosition,
-        "%*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %*ld %*ld %llu \n",
+        "%*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %*u %*u %*d %*d %*d %*d %*d %*d %llu \n",
          &starttime);
 
     if (sscanfRet != 1)
@@ -2980,7 +2989,7 @@ CreateProcessModules(
         int devHi, devLo, inode;
         char moduleName[PATH_MAX];
 
-        if (sscanf_s(line, "%p-%p %*[-rwxsp] %p %x:%x %d %s\n", &startAddress, &endAddress, &offset, &devHi, &devLo, &inode, moduleName, _countof(moduleName)) == 7)
+        if (sscanf_s(line, "%p-%p %*[-rwxsp] %p %x:%x %d %s\n", &startAddress, &endAddress, &offset, &devHi, &devLo, &inode, moduleName, ARRAY_SIZE(moduleName)) == 7)
         {
             if (inode != 0)
             {
@@ -3106,6 +3115,8 @@ PROCFormatInt(ULONG32 value)
     return buffer;
 }
 
+static const INT UndefinedDumpType = 0;
+
 /*++
 Function
   PROCBuildCreateDumpCommandLine
@@ -3123,7 +3134,7 @@ PROCBuildCreateDumpCommandLine(
     char** pprogram,
     char** ppidarg,
     const char* dumpName,
-    const char* dumpType,
+    INT dumpType,
     ULONG32 flags)
 {
     if (g_szCoreCLRPath == nullptr)
@@ -3167,24 +3178,19 @@ PROCBuildCreateDumpCommandLine(
         argv.push_back(dumpName);
     }
 
-    if (dumpType != nullptr)
+    switch (dumpType)
     {
-        if (strcmp(dumpType, "1") == 0)
-        {
-            argv.push_back("--normal");
-        }
-        else if (strcmp(dumpType, "2") == 0)
-        {
-            argv.push_back("--withheap");
-        }
-        else if (strcmp(dumpType, "3") == 0)
-        {
-            argv.push_back("--triage");
-        }
-        else if (strcmp(dumpType, "4") == 0)
-        {
-            argv.push_back("--full");
-        }
+        case 1: argv.push_back("--normal");
+            break;
+        case 2: argv.push_back("--withheap");
+            break;
+        case 3: argv.push_back("--triage");
+            break;
+        case 4: argv.push_back("--full");
+            break;
+        case UndefinedDumpType:
+        default:
+            break;
     }
 
     if (flags & GenerateDumpFlagsLoggingEnabled)
@@ -3279,27 +3285,42 @@ Return
 BOOL
 PROCAbortInitialize()
 {
-    char* enabled = getenv("COMPlus_DbgEnableMiniDump");
-    if (enabled != nullptr && _stricmp(enabled, "1") == 0)
+    CLRConfigNoCache enabledCfg= CLRConfigNoCache::Get("DbgEnableMiniDump", /*noprefix*/ false, &getenv);
+
+    DWORD enabled = 0;
+    if (enabledCfg.IsSet()
+        && enabledCfg.TryAsInteger(10, enabled)
+        && enabled)
     {
-        char* dumpName = getenv("COMPlus_DbgMiniDumpName");
-        char* dumpType = getenv("COMPlus_DbgMiniDumpType");
-        char* diagStr = getenv("COMPlus_CreateDumpDiagnostics");
-        BOOL diag = diagStr != nullptr && strcmp(diagStr, "1") == 0;
-        char* crashReportStr = getenv("COMPlus_EnableCrashReport");
-        BOOL crashReport = crashReportStr != nullptr && strcmp(crashReportStr, "1") == 0;
+        CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName", /*noprefix*/ false, &getenv);
+
+        CLRConfigNoCache dmpTypeCfg = CLRConfigNoCache::Get("DbgMiniDumpType", /*noprefix*/ false, &getenv);
+        DWORD dumpType = UndefinedDumpType;
+        if (dmpTypeCfg.IsSet())
+        {
+            (void)dmpTypeCfg.TryAsInteger(10, dumpType);
+            if (dumpType < 1 || dumpType > 4)
+            {
+                dumpType = UndefinedDumpType;
+            }
+        }
+
         ULONG32 flags = GenerateDumpFlagsNone;
-        if (diag)
+        CLRConfigNoCache createDumpCfg = CLRConfigNoCache::Get("CreateDumpDiagnostics", /*noprefix*/ false, &getenv);
+        DWORD val = 0;
+        if (createDumpCfg.IsSet() && createDumpCfg.TryAsInteger(10, val) && val == 1)
         {
             flags |= GenerateDumpFlagsLoggingEnabled;
         }
-        if (crashReport)
+        CLRConfigNoCache enabldReportCfg = CLRConfigNoCache::Get("EnableCrashReport", /*noprefix*/ false, &getenv);
+        val = 0;
+        if (enabldReportCfg.IsSet() && enabldReportCfg.TryAsInteger(10, val) && val == 1)
         {
             flags |= GenerateDumpFlagsCrashReportEnabled;
         }
         char* program = nullptr;
         char* pidarg = nullptr;
-        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, &pidarg, dumpName, dumpType, flags))
+        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, &pidarg, dmpNameCfg.AsString(), dumpType, flags))
         {
             return FALSE;
         }
@@ -3335,13 +3356,8 @@ PAL_GenerateCoreDump(
     ULONG32 flags)
 {
     std::vector<const char*> argvCreateDump;
-    char dumpTypeStr[16];
 
     if (dumpType < 1 || dumpType > 4)
-    {
-        return FALSE;
-    }
-    if (_itoa_s(dumpType, dumpTypeStr, sizeof(dumpTypeStr), 10) != 0)
     {
         return FALSE;
     }
@@ -3351,7 +3367,7 @@ PAL_GenerateCoreDump(
     }
     char* program = nullptr;
     char* pidarg = nullptr;
-    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, dumpTypeStr, flags);
+    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, dumpType, flags);
     if (result)
     {
         result = PROCCreateCrashDump(argvCreateDump);

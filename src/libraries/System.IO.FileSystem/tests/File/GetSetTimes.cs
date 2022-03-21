@@ -30,6 +30,8 @@ namespace System.IO.Tests
             return path;
         }
 
+        protected override string CreateSymlink(string path, string pathToTarget) => File.CreateSymbolicLink(path, pathToTarget).FullName;
+
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void BirthTimeIsNotNewerThanLowestOfAccessModifiedTimes()
@@ -156,7 +158,8 @@ namespace System.IO.Tests
             Assert.Equal(ticks, dateTime.Ticks);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/43166", TestPlatforms.Linux)]
+        // Linux kernels no longer have long max date time support. Discussed in https://github.com/dotnet/runtime/issues/43166.
+        [PlatformSpecific(~TestPlatforms.Linux)]
         [ConditionalFact(nameof(SupportsLongMaxDateTime))]
         public void SetDateTimeMax()
         {

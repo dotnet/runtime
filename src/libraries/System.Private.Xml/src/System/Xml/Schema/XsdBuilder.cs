@@ -970,7 +970,7 @@ namespace System.Xml.Schema
                     container = _redefine!;
                     break;
                 default:
-                    Debug.Fail("State is " + state);
+                    Debug.Fail($"State is {state}");
                     break;
             }
             return container;
@@ -1095,7 +1095,7 @@ namespace System.Xml.Schema
                     _redefine = (XmlSchemaRedefine)container;
                     break;
                 default:
-                    Debug.Fail("State is " + state);
+                    Debug.Fail($"State is {state}");
                     break;
             }
         }

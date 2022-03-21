@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern IntPtr LoadLibrary(string libFilename);
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "LoadLibraryW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        public static partial IntPtr LoadLibrary(string libFilename);
     }
 }

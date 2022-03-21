@@ -1,7 +1,7 @@
 /**
  * \file
  * stdlib replacement functions.
- * 
+ *
  * Authors:
  * 	Gonzalo Paniagua Javier (gonzalo@novell.com)
  *
@@ -32,7 +32,7 @@ mono_mkstemp (char *templ)
 	int ret;
 	int count = 27; /* Windows doc. */
 	char *t;
-	int len;
+	size_t len;
 
 	len = strlen (templ);
 	do {

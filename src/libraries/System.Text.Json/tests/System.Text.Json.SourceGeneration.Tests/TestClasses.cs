@@ -152,4 +152,32 @@ namespace System.Text.Json.SourceGeneration.Tests
     }
 
     internal struct MyStruct { }
+
+    public struct PersonStruct
+    {
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+    }
+
+    public class TypeWithValidationAttributes
+    {
+        [ComponentModel.DataAnnotations.Required(ErrorMessage = "Name is required")]
+        [ComponentModel.DataAnnotations.StringLength(100, ErrorMessage = "Name must not be longer than 100 characters")]
+        public string Name { get; set; }
+
+        [ComponentModel.DataAnnotations.Required]
+        public string Email { get; set; }
+    }
+
+    public class BaseAttribute : Attribute
+    {
+        public string TestProperty { get; set; }
+    }
+
+    public class DerivedAttribute : BaseAttribute
+    { }
+
+    [Derived(TestProperty = "Test")]
+    public class TypeWithDerivedAttribute
+    { }
 }

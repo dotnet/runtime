@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Xunit.Performance;
 
 namespace Functions
 {
@@ -12,21 +11,6 @@ namespace Functions
 
         private const float sinSingleDelta = 0.000628318531f;
         private const float sinSingleExpectedResult = 1.03592682f;
-
-        [Benchmark(InnerIterationCount = SinSingleIterations)]
-        public static void SinSingleBenchmark()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        SinSingleTest();
-                    }
-                }
-            }
-        }
 
         public static void SinSingleTest()
         {

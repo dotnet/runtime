@@ -3,6 +3,9 @@
     <_MicrosoftNetCoreAppRefDir>$(AppRefDir)\</_MicrosoftNetCoreAppRefDir>
     <LocalFrameworkOverrideName>Microsoft.NETCore.App</LocalFrameworkOverrideName>
   </PropertyGroup>
+  <ItemGroup>
+      <EmscriptenEnvVars Include="FROZEN_CACHE=" Condition="'$(OS)' == 'Windows_NT'" />
+  </ItemGroup>
 
   <Target Name="PrintRuntimePackPath" BeforeTargets="Publish">
     <Message Text="** MicrosoftNetCoreAppRuntimePackDir : %(ResolvedRuntimePack.PackageDirectory)" Importance="High" />

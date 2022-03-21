@@ -3,13 +3,21 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
 
 internal static partial class Interop
 {
     internal static partial class Ole32
     {
-        [DllImport(Libraries.Ole32)]
-        internal static extern int CoGetObjectContext([MarshalAs(UnmanagedType.LPStruct)] Guid riid, out IntPtr ppv);
+        internal static unsafe int CoGetObjectContext(in Guid riid, out IntPtr ppv)
+        {
+            fixed (Guid* riidPtr = &riid)
+            fixed (IntPtr* ppvPtr = &ppv)
+            {
+                return CoGetObjectContext(riidPtr, ppvPtr);
+            }
+        }
+
+        [LibraryImport(Libraries.Ole32)]
+        internal static unsafe partial int CoGetObjectContext(Guid* riid, IntPtr* ppv);
     }
 }

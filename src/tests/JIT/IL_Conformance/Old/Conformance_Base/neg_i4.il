@@ -81,4 +81,4 @@ END:
 
 
 
-.assembly neg_i4.exe{}
+.assembly neg_i4{}

@@ -18,7 +18,7 @@ namespace System
                     return true;
 
                 Type? underlyingType = UnderlyingSystemType;
-                if (underlyingType.IsRuntimeImplemented())
+                if (underlyingType is RuntimeType)
                 {
                     do
                     {
@@ -115,11 +115,8 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        public virtual Type[] FindInterfaces(TypeFilter filter, object? filterCriteria)
+        public virtual Type[] FindInterfaces(TypeFilter filter!!, object? filterCriteria)
         {
-            if (filter == null)
-                throw new ArgumentNullException(nameof(filter));
-
             Type?[] c = GetInterfaces();
             int cnt = 0;
             for (int i = 0; i < c.Length; i++)
@@ -345,7 +342,7 @@ namespace System
             // For backward-compatibility, we need to special case for the types
             // whose UnderlyingSystemType are runtime implemented.
             Type toType = this.UnderlyingSystemType;
-            if (toType?.IsRuntimeImplemented() == true)
+            if (toType is RuntimeType)
                 return toType.IsAssignableFrom(c);
 
             // If c is a subclass of this class, then c can be cast to this type.

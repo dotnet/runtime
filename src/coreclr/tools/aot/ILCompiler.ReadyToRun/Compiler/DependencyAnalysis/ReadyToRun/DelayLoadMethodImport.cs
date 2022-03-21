@@ -12,14 +12,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     public class DelayLoadMethodImport : DelayLoadHelperImport, IMethodNode
     {
         private readonly MethodWithGCInfo _localMethod;
-        private readonly MethodWithToken _method;
 
         public DelayLoadMethodImport(
             NodeFactory factory,
             ReadyToRunFixupKind fixupKind,
             MethodWithToken method,
             MethodWithGCInfo localMethod,
-            bool isInstantiatingStub)
+            bool isInstantiatingStub,
+            bool isJump)
             : base(
                   factory,
                   factory.MethodImports,
@@ -27,13 +27,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                   factory.MethodSignature(
                       fixupKind,
                       method,
-                      isInstantiatingStub))
+                      isInstantiatingStub),
+                  useJumpableStub: isJump)
         {
             _localMethod = localMethod;
-            _method = method;
+            MethodWithToken = method;
         }
 
-        public MethodDesc Method => _method.Method;
+        public MethodWithToken MethodWithToken { get; }
+        public MethodDesc Method => MethodWithToken.Method;
         public MethodWithGCInfo MethodCodeNode => _localMethod;
 
         public override int ClassCode => 459923351;

@@ -101,9 +101,9 @@ namespace System.Xml
 
             set
             {
-                string? tempVersion = null;
-                string? tempEncoding = null;
-                string? tempStandalone = null;
+                string? tempVersion;
+                string? tempEncoding;
+                string? tempStandalone;
                 string orgEncoding = this.Encoding;
                 string orgStandalone = this.Standalone;
                 string? orgVersion = this.Version;

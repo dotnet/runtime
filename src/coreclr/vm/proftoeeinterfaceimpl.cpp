@@ -763,7 +763,7 @@ void GenerationTable::AddRecord(int generation, BYTE* rangeStart, BYTE* rangeEnd
 
     // Because the segment/region are added to the heap before they are reported to the profiler,
     // it is possible that the region is added to the heap, a racing GenerationTable refresh happened,
-    // that refresh would contain the new region, and then it get reported again here. 
+    // that refresh would contain the new region, and then it get reported again here.
     // This check will make sure we never add duplicated record to the table.
     for (ULONG i = 0; i < count; i++)
     {
@@ -889,14 +889,14 @@ void GenerationTable::Refresh()
 {
     // fill in the values by calling back into the gc, which will report
     // the ranges by calling GenWalkFunc for each one
-    CrstHolder holder(&mutex);    
+    CrstHolder holder(&mutex);
     IGCHeap *hp = GCHeapUtilities::GetGCHeap();
     this->count = 0;
     hp->DiagDescrGenerations(GenWalkFunc, this);
 }
 
 // This is the table of generation bounds updated by the gc
-// and read by the profiler. 
+// and read by the profiler.
 static GenerationTable *s_currentGenerationTable;
 
 // This is just so we can assert there's a single writer
@@ -944,7 +944,7 @@ void __stdcall UpdateGenerationBounds()
         {
             RETURN;
         }
-        s_currentGenerationTable->Refresh();        
+        s_currentGenerationTable->Refresh();
     }
 #endif // PROFILING_SUPPORTED
     RETURN;
@@ -1274,7 +1274,7 @@ bool AllocByClassHelper(Object * pBO, void * pv)
     _ASSERTE(pv != NULL);
 
     {
-        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAllocations());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC());
         // Pass along the call
         g_profControlBlock.AllocByClass(
             (ObjectID) pBO,
@@ -2131,7 +2131,7 @@ HRESULT ProfToEEInterfaceImpl::GetTokenAndMetaDataFromFunction(
         // Yay!
         EE_THREAD_NOT_REQUIRED;
 
-        // PEFile::GetRWImporter and GetReadablePublicMetaDataInterface take locks
+        // PEAssembly::GetRWImporter and GetReadablePublicMetaDataInterface take locks
         CAN_TAKE_LOCK;
 
     }
@@ -2151,10 +2151,6 @@ HRESULT ProfToEEInterfaceImpl::GetTokenAndMetaDataFromFunction(
     HRESULT     hr = S_OK;
 
     MethodDesc *pMD = FunctionIdToMethodDesc(functionId);
-
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMD->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
 
     if (pToken)
     {
@@ -2199,10 +2195,6 @@ HRESULT ValidateParametersForGetCodeInfo(
     {
         return E_INVALIDARG;
     }
-
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethodDesc->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
 
     if (pMethodDesc->HasClassOrMethodInstantiation() && pMethodDesc->IsTypicalMethodDefinition())
     {
@@ -2428,7 +2420,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo(FunctionID functionId, LPCBYTE * pSta
 
     HRESULT hr = GetCodeInfoFromCodeStart(
         pMethodDesc->GetNativeCode(),
-        _countof(codeInfos),
+        ARRAY_SIZE(codeInfos),
         &cCodeInfos,
         codeInfos);
 
@@ -2828,8 +2820,8 @@ HRESULT ProfToEEInterfaceImpl::GetArrayObjectInfo(ObjectID objectId,
 
 HRESULT ProfToEEInterfaceImpl::GetArrayObjectInfoHelper(Object * pObj,
                     ULONG32 cDimensionSizes,
-                    __out_ecount(cDimensionSizes) ULONG32 pDimensionSizes[],
-                    __out_ecount(cDimensionSizes) int pDimensionLowerBounds[],
+                    _Out_writes_(cDimensionSizes) ULONG32 pDimensionSizes[],
+                    _Out_writes_(cDimensionSizes) int pDimensionLowerBounds[],
                     BYTE    **ppData)
 {
     CONTRACTL
@@ -3915,7 +3907,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo(ModuleID     moduleId,
     LPCBYTE *    ppBaseLoadAddress,
     ULONG        cchName,
     ULONG *      pcchName,
-    __out_ecount_part_opt(cchName, *pcchName) WCHAR wszName[],
+    _Out_writes_to_opt_(cchName, *pcchName) WCHAR wszName[],
     AssemblyID * pAssemblyId)
 {
     CONTRACTL
@@ -3985,49 +3977,36 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     }
     CONTRACTL_END;
 
-    PEFile * pPEFile = pModule->GetFile();
-    if (pPEFile == NULL)
+    PEAssembly * pPEAssembly = pModule->GetPEAssembly();
+    if (pPEAssembly == NULL)
     {
         // Hopefully this should never happen; but just in case, don't try to determine the
-        // flags without a PEFile.
+        // flags without a PEAssembly.
         return 0;
     }
 
     DWORD dwRet = 0;
 
     // First, set the flags that are dependent on which PEImage / layout we look at
-    // inside the Module (disk/ngen/flat)
-
-    if (pModule->HasNativeImage())
-    {
-        // NGEN
-        dwRet |= (COR_PRF_MODULE_DISK | COR_PRF_MODULE_NGEN);
-
-        // Intentionally not checking for flat, since NGEN PEImages never have flat
-        // layouts.
-    }
-    else
-    {
+    // inside the Module (disk/flat)
 #ifdef FEATURE_READYTORUN
-        // pModule->HasNativeImage() returns false for ReadyToRun images
-        if (pModule->IsReadyToRun())
-        {
-            // Ready To Run
-            dwRet |= (COR_PRF_MODULE_DISK | COR_PRF_MODULE_NGEN);
-        }
+    if (pModule->IsReadyToRun())
+    {
+        // Ready To Run
+        dwRet |= (COR_PRF_MODULE_DISK | COR_PRF_MODULE_NGEN);
+    }
 #endif
-        // Not NGEN or ReadyToRun.
-        if (pPEFile->HasOpenedILimage())
+    // Not Dynamic.
+    if (pPEAssembly->HasPEImage())
+    {
+        PEImage * pILImage = pPEAssembly->GetPEImage();
+        if (pILImage->IsFile())
         {
-            PEImage * pILImage = pPEFile->GetOpenedILimage();
-            if (pILImage->IsFile())
-            {
-                dwRet |= COR_PRF_MODULE_DISK;
-            }
-            if (pPEFile->GetLoadedIL()->IsFlat())
-            {
-                dwRet |= COR_PRF_MODULE_FLAT_LAYOUT;
-            }
+            dwRet |= COR_PRF_MODULE_DISK;
+        }
+        if (pPEAssembly->GetLoadedLayout()->IsFlat())
+        {
+            dwRet |= COR_PRF_MODULE_FLAT_LAYOUT;
         }
     }
 
@@ -4041,11 +4020,6 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
         dwRet |= COR_PRF_MODULE_COLLECTIBLE;
     }
 
-    if (pModule->IsResource())
-    {
-        dwRet |= COR_PRF_MODULE_RESOURCE;
-    }
-
     return dwRet;
 }
 
@@ -4053,7 +4027,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
     LPCBYTE *    ppBaseLoadAddress,
     ULONG        cchName,
     ULONG *      pcchName,
-    __out_ecount_part_opt(cchName, *pcchName) WCHAR wszName[],
+    _Out_writes_to_opt_(cchName, *pcchName) WCHAR wszName[],
     AssemblyID * pAssemblyId,
     DWORD *      pdwModuleFlags)
 {
@@ -4107,7 +4081,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
     EX_TRY
     {
 
-        PEFile * pFile = pModule->GetFile();
+        PEAssembly * pFile = pModule->GetPEAssembly();
 
         // Pick some safe defaults to begin with.
         if (ppBaseLoadAddress != NULL)
@@ -4230,7 +4204,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleMetaData(ModuleID    moduleId,
         // but we might be able to lift that restriction and make this be
         // EE_THREAD_NOT_REQUIRED.
 
-        // PEFile::GetRWImporter & PEFile::GetEmitter &
+        // PEAssembly::GetRWImporter & PEAssembly::GetEmitter &
         // GetReadablePublicMetaDataInterface take locks
         CAN_TAKE_LOCK;
 
@@ -4265,14 +4239,6 @@ HRESULT ProfToEEInterfaceImpl::GetModuleMetaData(ModuleID    moduleId,
         return CORPROF_E_DATAINCOMPLETE;
     }
 
-    // Make sure we can get the importer first
-    if (pModule->IsResource())
-    {
-        if (ppOut)
-            *ppOut = NULL;
-        return S_FALSE;
-    }
-
     // Decide which type of open mode we are in to see which you require.
     if ((dwOpenFlags & ofWrite) == 0)
     {
@@ -4284,7 +4250,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleMetaData(ModuleID    moduleId,
     IUnknown *pObj = NULL;
     EX_TRY
     {
-        pObj = pModule->GetValidatedEmitter();
+        pObj = pModule->GetEmitter();
     }
     EX_CATCH_HRESULT_NO_ERRORINFO(hr);
 
@@ -4320,7 +4286,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
         // Yay!
         MODE_ANY;
 
-        // PEFile::CheckLoaded & Module::GetDynamicIL both take a lock
+        // Module::GetDynamicIL both take a lock
         CAN_TAKE_LOCK;
 
     }
@@ -4358,9 +4324,9 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
     IMDInternalImport *pImport = pModule->GetMDImport();
     _ASSERTE(pImport);
 
-    PEFile *pFile = pModule->GetFile();
+    PEAssembly *pPEAssembly = pModule->GetPEAssembly();
 
-    if (!pFile->CheckLoaded())
+    if (!pPEAssembly->HasLoadedPEImage())
         return (CORPROF_E_DATAINCOMPLETE);
 
     LPCBYTE pbMethod = NULL;
@@ -4375,7 +4341,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
         IfFailRet(pImport->GetMethodImplProps(methodId, &RVA, &dwImplFlags));
 
         // Check to see if the method has associated IL
-        if ((RVA == 0 && !pFile->IsDynamic()) || !(IsMiIL(dwImplFlags) || IsMiOPTIL(dwImplFlags) || IsMiInternalCall(dwImplFlags)))
+        if ((RVA == 0 && !pPEAssembly->IsDynamic()) || !(IsMiIL(dwImplFlags) || IsMiOPTIL(dwImplFlags) || IsMiInternalCall(dwImplFlags)))
         {
             return (CORPROF_E_FUNCTION_NOT_IL);
         }
@@ -4470,7 +4436,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBodyAllocator(ModuleID         modul
     Module * pModule = (Module *) moduleId;
 
     if (pModule->IsBeingUnloaded() ||
-        !pModule->GetFile()->CheckLoaded())
+        !pModule->GetPEAssembly()->HasLoadedPEImage())
     {
         return (CORPROF_E_DATAINCOMPLETE);
     }
@@ -4493,7 +4459,7 @@ HRESULT ProfToEEInterfaceImpl::SetILFunctionBody(ModuleID    moduleId,
 {
     CONTRACTL
     {
-        // PEFile::GetEmitter, Module::SetDynamicIL all throw
+        // PEAssembly::GetEmitter, Module::SetDynamicIL all throw
         THROWS;
 
         // Locks are taken (see CAN_TAKE_LOCK below), which may cause mode switch to
@@ -4503,7 +4469,7 @@ HRESULT ProfToEEInterfaceImpl::SetILFunctionBody(ModuleID    moduleId,
         // Yay!
         MODE_ANY;
 
-        // Module::SetDynamicIL & PEFile::CheckLoaded & PEFile::GetEmitter take locks
+        // Module::SetDynamicIL & PEAssembly::GetEmitter take locks
         CAN_TAKE_LOCK;
 
     }
@@ -4606,12 +4572,6 @@ HRESULT ProfToEEInterfaceImpl::SetILInstrumentedCodeMap(FunctionID functionId,
 
 #ifdef DEBUGGING_SUPPORTED
 
-    MethodDesc *pMethodDesc = FunctionIdToMethodDesc(functionId);
-
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethodDesc ->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
     if (g_pDebugInterface == NULL)
     {
         return CORPROF_E_DEBUGGING_DISABLED;
@@ -4624,6 +4584,7 @@ HRESULT ProfToEEInterfaceImpl::SetILInstrumentedCodeMap(FunctionID functionId,
 
     memcpy_s(rgNewILMapEntries, sizeof(COR_IL_MAP) * cILMapEntries, rgILMapEntries, sizeof(COR_IL_MAP) * cILMapEntries);
 
+    MethodDesc *pMethodDesc = FunctionIdToMethodDesc(functionId);
     return g_pDebugInterface->SetILInstrumentedCodeMap(pMethodDesc,
                                                        fStartJit,
                                                        cILMapEntries,
@@ -4911,11 +4872,6 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo(FunctionID functionId,
     }
 
     MethodDesc *pMDesc = (MethodDesc *) functionId;
-    if (!pMDesc->IsRestored())
-    {
-        return CORPROF_E_DATAINCOMPLETE;
-    }
-
     MethodTable *pMT = pMDesc->GetMethodTable();
     if (!pMT->IsRestored())
     {
@@ -5528,7 +5484,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromTokenAndTypeArgs(ModuleID moduleID
     MethodTable* pMethodTable = typeHandle.GetMethodTable();
 
     if (pMethodTable == NULL || !pMethodTable->IsRestored() ||
-        pMethodDesc == NULL || !pMethodDesc->IsRestored())
+        pMethodDesc == NULL)
     {
         return CORPROF_E_DATAINCOMPLETE;
     }
@@ -5576,7 +5532,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromTokenAndTypeArgs(ModuleID moduleID
 HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
     ULONG       cchName,
     ULONG       *pcchName,
-    __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[],
+    _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[],
     ProcessID   *pProcessId)
 {
     CONTRACTL
@@ -5684,7 +5640,7 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
 HRESULT ProfToEEInterfaceImpl::GetAssemblyInfo(AssemblyID    assemblyId,
     ULONG       cchName,
     ULONG       *pcchName,
-    __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[],
+    _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[],
     AppDomainID *pAppDomainId,
     ModuleID    *pModuleId)
 {
@@ -5754,7 +5710,7 @@ HRESULT ProfToEEInterfaceImpl::GetAssemblyInfo(AssemblyID    assemblyId,
     // Find the module the manifest lives in.
     if (pModuleId)
     {
-        *pModuleId = (ModuleID) pAssembly->GetManifestModule();
+        *pModuleId = (ModuleID) pAssembly->GetModule();
 
         // This is the case where the profiler has called GetAssemblyInfo
         // on an assembly that has been completely created yet.
@@ -6129,10 +6085,6 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo2(FunctionID funcId,
         return E_INVALIDARG;
     }
 
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethDesc ->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
     //
     // Find the exact instantiation of this function.
     //
@@ -6337,10 +6289,6 @@ HRESULT ProfToEEInterfaceImpl::IsFunctionDynamic(FunctionID functionId, BOOL *is
         return E_INVALIDARG;
     }
 
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethDesc->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
     //
     // Fill in the pHasNoMetadata, if desired.
     //
@@ -6443,7 +6391,7 @@ HRESULT ProfToEEInterfaceImpl::GetDynamicFunctionInfo(FunctionID functionId,
                                                       ULONG* pbSig,
                                                       ULONG cchName,
                                                       ULONG *pcchName,
-            __out_ecount_part_opt(cchName, *pcchName) WCHAR wszName[])
+            _Out_writes_to_opt_(cchName, *pcchName) WCHAR wszName[])
 {
     CONTRACTL
     {
@@ -6495,11 +6443,6 @@ HRESULT ProfToEEInterfaceImpl::GetDynamicFunctionInfo(FunctionID functionId,
     {
         return E_INVALIDARG;
     }
-
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethDesc->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
 
     if (!pMethDesc->IsNoMetadata())
         return E_INVALIDARG;
@@ -7049,7 +6992,7 @@ HRESULT ProfToEEInterfaceImpl::GetEnvironmentVariable(
     const WCHAR *szName,
     ULONG       cchValue,
     ULONG       *pcchValue,
-    __out_ecount_part_opt(cchValue, *pcchValue) WCHAR szValue[])
+    _Out_writes_to_opt_(cchValue, *pcchValue) WCHAR szValue[])
 {
     CONTRACTL
     {
@@ -7761,16 +7704,6 @@ HRESULT ProfToEEInterfaceImpl::GetClassLayout(ClassID classID,
     // If this class is not fully restored, that is all the information we can get at this time.
     //
     if (!typeHandle.IsRestored())
-    {
-        return CORPROF_E_DATAINCOMPLETE;
-    }
-
-    // Types can be pre-restored, but they still aren't expected to handle queries before
-    // eager fixups have run. This is a targetted band-aid for a bug intellitrace was
-    // running into - attempting to get the class layout for all types at module load time.
-    // If we don't detect this the runtime will AV during the field iteration below. Feel
-    // free to eliminate this check when a more complete solution is available.
-    if (MethodTable::IsParentMethodTableTagged(typeHandle.AsMethodTable()))
     {
         return CORPROF_E_DATAINCOMPLETE;
     }
@@ -9072,7 +9005,7 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
                                        "**PROF: GetObjectGeneration 0x%p.\n",
                                        objectId));
 
-    
+
     _ASSERTE((GetThreadNULLOk() == NULL) || (GetThreadNULLOk()->PreemptiveGCDisabled()));
 
     IGCHeap *hp = GCHeapUtilities::GetGCHeap();
@@ -9475,7 +9408,7 @@ HRESULT ProfToEEInterfaceImpl::GetRuntimeInformation(USHORT * pClrInstanceId,
                                                      USHORT * pQFEVersion,
                                                      ULONG  cchVersionString,
                                                      ULONG  * pcchVersionString,
-                                                     __out_ecount_part_opt(cchVersionString, *pcchVersionString) WCHAR  szVersionString[])
+                                                     _Out_writes_to_opt_(cchVersionString, *pcchVersionString) WCHAR  szVersionString[])
 {
     CONTRACTL
     {
@@ -10258,7 +10191,7 @@ HRESULT ProfToEEInterfaceImpl::EnumNgenModuleMethodsInliningThisMethod(
         return CORPROF_E_DATAINCOMPLETE;
     }
 
-    if (!inlinersModule->HasNativeOrReadyToRunInlineTrackingMap())
+    if (!inlinersModule->HasReadyToRunInlineTrackingMap())
     {
         return CORPROF_E_DATAINCOMPLETE;
     }
@@ -10271,14 +10204,14 @@ HRESULT ProfToEEInterfaceImpl::EnumNgenModuleMethodsInliningThisMethod(
     EX_TRY
     {
         // Trying to use static buffer
-        COUNT_T methodsAvailable = inlinersModule->GetNativeOrReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, staticBufferSize, staticBuffer, incompleteData);
+        COUNT_T methodsAvailable = inlinersModule->GetReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, staticBufferSize, staticBuffer, incompleteData);
 
         // If static buffer is not enough, allocate an array.
         if (methodsAvailable > staticBufferSize)
         {
             DWORD dynamicBufferSize = methodsAvailable;
             dynamicBuffer = methodsBuffer = new MethodInModule[dynamicBufferSize];
-            methodsAvailable = inlinersModule->GetNativeOrReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, dynamicBufferSize, dynamicBuffer, incompleteData);
+            methodsAvailable = inlinersModule->GetReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, dynamicBufferSize, dynamicBuffer, incompleteData);
             if (methodsAvailable > dynamicBufferSize)
             {
                 _ASSERTE(!"Ngen image inlining info changed, this shouldn't be possible.");

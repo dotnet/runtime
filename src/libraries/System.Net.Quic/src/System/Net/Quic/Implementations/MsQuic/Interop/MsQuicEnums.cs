@@ -203,7 +203,11 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         IDEAL_SEND_BUFFER_SIZE = 8,
     }
 
+#if SOCKADDR_HAS_LENGTH
+    internal enum QUIC_ADDRESS_FAMILY : byte
+#else
     internal enum QUIC_ADDRESS_FAMILY : ushort
+#endif
     {
         UNSPEC = 0,
         INET = 2,

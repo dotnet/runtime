@@ -62,7 +62,6 @@
 #define NULL_AREA_SIZE   GetOsPageSize()
 #endif // !TARGET_UNIX
 
-#ifndef CROSSGEN_COMPILE
 
 BOOL IsIPInEE(void *ip);
 
@@ -191,7 +190,7 @@ BOOL ExceptionIsOfRightType(TypeHandle clauseType, TypeHandle thrownType)
 // Gets the message text from an exception
 //===========================================================================
 ULONG GetExceptionMessage(OBJECTREF throwable,
-                          __inout_ecount(bufferLength) LPWSTR buffer,
+                          _Inout_updates_(bufferLength) LPWSTR buffer,
                           ULONG bufferLength)
 {
     CONTRACTL
@@ -501,7 +500,7 @@ OBJECTREF PossiblyUnwrapThrowable(OBJECTREF throwable, Assembly *pAssembly)
     // Check if we are required to compute the RuntimeWrapExceptions status.
     BOOL fIsRuntimeWrappedException = ((throwable != NULL) && (throwable->GetMethodTable() == pMT_RuntimeWrappedException));
     BOOL fRequiresComputingRuntimeWrapExceptionsStatus = (fIsRuntimeWrappedException &&
-                                                          (!(pAssembly->GetManifestModule()->IsRuntimeWrapExceptionsStatusComputed())));
+                                                          (!(pAssembly->GetModule()->IsRuntimeWrapExceptionsStatusComputed())));
 
     CONTRACTL
     {
@@ -514,7 +513,7 @@ OBJECTREF PossiblyUnwrapThrowable(OBJECTREF throwable, Assembly *pAssembly)
     }
     CONTRACTL_END;
 
-    if (fIsRuntimeWrappedException && (!pAssembly->GetManifestModule()->IsRuntimeWrapExceptions()))
+    if (fIsRuntimeWrappedException && (!pAssembly->GetModule()->IsRuntimeWrapExceptions()))
     {
         // We already created the instance, fetched the field.  We know it is
         // not marshal by ref, or any of the other cases that might trigger GC.
@@ -2677,7 +2676,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 
 #ifdef STRESS_LOG
     // Any object could have been thrown, but System.Exception objects have useful information for the stress log
-    if (!NingenEnabled() && throwable == CLRException::GetPreallocatedStackOverflowException())
+    if (throwable == CLRException::GetPreallocatedStackOverflowException())
     {
         // if are handling an SO, don't try to get all that other goop.  It isn't there anyway,
         // and it could cause us to take another SO.
@@ -2750,7 +2749,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
         // Note: we use SafeSetLastThrownObject, which will try to set the throwable and if there are any problems,
         // it will set the throwable to something appropiate (like OOM exception) and return the new
         // exception. Thus, the user's exception object can be replaced here.
-        pParam->throwable = NingenEnabled() ? NULL : pParam->pThread->SafeSetLastThrownObject(pParam->throwable);
+        pParam->throwable = pParam->pThread->SafeSetLastThrownObject(pParam->throwable);
 
         if (!pParam->isRethrown ||
 #ifdef FEATURE_INTERPRETER
@@ -2759,7 +2758,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
              pParam->pExState->IsComPlusException() ||
             (pParam->pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW))
         {
-            ULONG_PTR hr = NingenEnabled() ? E_FAIL : GetHRFromThrowable(pParam->throwable);
+            ULONG_PTR hr = GetHRFromThrowable(pParam->throwable);
 
             args = pParam->exceptionArgs;
             argCount = MarkAsThrownByUs(args, hr);
@@ -3000,7 +2999,7 @@ void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedTh
     // Initialize
     *pProtectedThrowable = NULL;
 
-#if defined(FEATURE_COMINTEROP) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_COMINTEROP)
     if (pErrInfo != NULL)
     {
         // If this represents a managed object...
@@ -3034,7 +3033,7 @@ void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedTh
             (*pProtectedThrowable) = ex.GetThrowable();
         }
     }
-#endif // defined(FEATURE_COMINTEROP) && !defined(CROSSGEN_COMPILE)
+#endif // defined(FEATURE_COMINTEROP)
 
     // If we made it here and we don't have an exception object, we didn't have a valid IErrorInfo
     // so we'll create an exception based solely on the hresult.
@@ -3057,10 +3056,8 @@ void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
 
     // Get an IErrorInfo if one is available.
     IErrorInfo *pErrInfo = NULL;
-#ifndef CROSSGEN_COMPILE
     if (SafeGetErrorInfo(&pErrInfo) != S_OK)
         pErrInfo = NULL;
-#endif
 
     GetExceptionForHR(hr, pErrInfo, pProtectedThrowable);
 }
@@ -4084,7 +4081,7 @@ BuildCreateDumpCommandLine(
     }
 }
 
-static DWORD 
+static DWORD
 LaunchCreateDump(LPCWSTR lpCommandLine)
 {
     DWORD fSuccess = false;
@@ -5165,7 +5162,7 @@ static SString GetExceptionMessageWrapper(Thread* pThread, OBJECTREF throwable)
 void STDMETHODCALLTYPE
 DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
                                           OBJECTREF throwable,
-                                          __inout_ecount(buf_size) WCHAR *buf,
+                                          _Inout_updates_(buf_size) WCHAR *buf,
                                           const int buf_size,
                                           BOOL sendWindowsEventLog)
 {
@@ -5785,7 +5782,7 @@ static BOOL GetManagedFormatStringForResourceID(CCompRC::ResourceCategory eCateg
 //==========================================================================
 // Private helper for TypeLoadException.
 //==========================================================================
-void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
@@ -5804,7 +5801,7 @@ void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnSt
 // Private helper for FileLoadException and FileNotFoundException.
 //==========================================================================
 
-void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
@@ -5820,7 +5817,7 @@ void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack
 //==========================================================================
 // Private helper for FileLoadException and FileNotFoundException.
 //==========================================================================
-void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
@@ -7615,17 +7612,7 @@ BOOL IsIPInEE(void *ip)
 {
     WRAPPER_NO_CONTRACT;
 
-#if defined(FEATURE_PREJIT) && !defined(TARGET_UNIX)
-    if ((TADDR)ip > g_runtimeLoadedBaseAddress &&
-        (TADDR)ip < g_runtimeLoadedBaseAddress + g_runtimeVirtualSize)
-    {
-        return TRUE;
-    }
-    else
-#endif // FEATURE_PREJIT && !TARGET_UNIX
-    {
-        return FALSE;
-    }
+    return FALSE;
 }
 
 #if defined(FEATURE_HIJACK) && (!defined(TARGET_X86) || defined(TARGET_UNIX))
@@ -8181,14 +8168,13 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
     pThread->SetFrame(pEntryFrame);
 
 #ifdef _DEBUG
-    if (!NingenEnabled())
     {
         CONTRACT_VIOLATION(ThrowsViolation);
-    // Call CLRException::GetThrowableFromException to force us to retrieve the THROWABLE
-    // while we are still within the context of the catch block. This will help diagnose
-    // cases where the last thrown object is NULL.
-    OBJECTREF orThrowable = CLRException::GetThrowableFromException(pException);
-    CONSISTENCY_CHECK(orThrowable != NULL);
+        // Call CLRException::GetThrowableFromException to force us to retrieve the THROWABLE
+        // while we are still within the context of the catch block. This will help diagnose
+        // cases where the last thrown object is NULL.
+        OBJECTREF orThrowable = CLRException::GetThrowableFromException(pException);
+        CONSISTENCY_CHECK(orThrowable != NULL);
     }
 #endif
 }
@@ -8207,7 +8193,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
 
     LOG((LF_EH, LL_INFO1000, "UNWIND_AND_CONTINUE caught and will rethrow\n"));
 
-    OBJECTREF orThrowable = NingenEnabled() ? NULL : CLRException::GetThrowableFromException(pException);
+    OBJECTREF orThrowable = CLRException::GetThrowableFromException(pException);
     LOG((LF_EH, LL_INFO1000, "UNWIND_AND_CONTINUE got throwable %p\n",
         OBJECTREFToObject(orThrowable)));
 
@@ -11475,7 +11461,6 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
 }
 #endif // !DACCESS_COMPILE
 
-#endif // !CROSSGEN_COMPILE
 
 //---------------------------------------------------------------------------------
 //
@@ -11491,7 +11476,7 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
 // Note: The "cond" argument is there to tide us over during the transition from
 //  BAD_FORMAT_ASSERT to THROW_BAD_FORMAT. It will go away soon.
 //---------------------------------------------------------------------------------
-VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(__in_z const char *cond))
+VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const char *cond))
 {
     CONTRACTL
     {
@@ -11726,7 +11711,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exce
     //_ASSERTE((hr != COR_E_EXECUTIONENGINE) ||
     //         !"ExecutionEngineException shouldn't be thrown. Use EEPolicy to failfast or a better exception. The caller of this function should modify their code.");
 
-#ifndef CROSSGEN_COMPILE
 #ifdef FEATURE_COMINTEROP
     // check for complus created IErrorInfo pointers
     if (pErrInfo != NULL)
@@ -11755,7 +11739,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exce
         }
     }
     else
-#endif // CROSSGEN_COMPILE
     {
         if (pInnerException == NULL)
         {
@@ -11803,10 +11786,8 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
     // Get an IErrorInfo if one is available.
     IErrorInfo *pErrInfo = NULL;
 
-#ifndef CROSSGEN_COMPILE
     if (SafeGetErrorInfo(&pErrInfo) != S_OK)
         pErrInfo = NULL;
-#endif
 
     // Throw the exception.
     RealCOMPlusThrowHR(hr, pErrInfo);
@@ -11925,8 +11906,8 @@ VOID DECLSPEC_NORETURN ThrowFieldLayoutError(mdTypeDef cl,                // cl 
     }
 
     CHAR offsetBuf[16];
-    sprintf_s(offsetBuf, COUNTOF(offsetBuf), "%d", dwOffset);
-    offsetBuf[COUNTOF(offsetBuf) - 1] = '\0';
+    sprintf_s(offsetBuf, ARRAY_SIZE(offsetBuf), "%d", dwOffset);
+    offsetBuf[ARRAY_SIZE(offsetBuf) - 1] = '\0';
 
     pModule->GetAssembly()->ThrowTypeLoadException(pszNamespace,
                                                    pszName,
@@ -12059,7 +12040,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind  reKind, UINT resID
 }
 
 #ifdef FEATURE_COMINTEROP
-#ifndef CROSSGEN_COMPILE
 //==========================================================================
 // Throw a runtime exception based on an HResult, check for error info
 //==========================================================================
@@ -12097,7 +12077,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(EXCEPINFO *pExcepInfo)
 
     EX_THROW(EECOMException, (pExcepInfo));
 }
-#endif //CROSSGEN_COMPILE
 
 #endif // FEATURE_COMINTEROP
 
@@ -12157,8 +12136,8 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
          _ASSERTE(pAssemblyTypeFrom != NULL);
          _ASSERTE(pAssemblyTypeTo != NULL);
 
-         PEAssembly *pPEAssemblyTypeFrom = pAssemblyTypeFrom->GetManifestFile();
-         PEAssembly *pPEAssemblyTypeTo = pAssemblyTypeTo->GetManifestFile();
+         PEAssembly *pPEAssemblyTypeFrom = pAssemblyTypeFrom->GetPEAssembly();
+         PEAssembly *pPEAssemblyTypeTo = pAssemblyTypeTo->GetPEAssembly();
 
          _ASSERTE(pPEAssemblyTypeFrom != NULL);
          _ASSERTE(pPEAssemblyTypeTo != NULL);
@@ -12224,7 +12203,6 @@ VOID RealCOMPlusThrowInvalidCastException(TypeHandle thCastFrom, TypeHandle thCa
     }
 }
 
-#ifndef CROSSGEN_COMPILE
 VOID RealCOMPlusThrowInvalidCastException(OBJECTREF *pObj, TypeHandle thCastTo)
 {
      CONTRACTL {
@@ -12245,11 +12223,9 @@ VOID RealCOMPlusThrowInvalidCastException(OBJECTREF *pObj, TypeHandle thCastTo)
 #endif
     COMPlusThrowInvalidCastException(thCastFrom, thCastTo);
 }
-#endif // CROSSGEN_COMPILE
 
 #endif // DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE // ???
 #ifdef FEATURE_COMINTEROP
 #include "comtoclrcall.h"
 #endif // FEATURE_COMINTEROP
@@ -12312,4 +12288,3 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
 #endif // FEATURE_COMINTEROP
     return pUserMD;
 }
-#endif //CROSSGEN_COMPILE

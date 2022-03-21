@@ -47,7 +47,7 @@
 //
 class CastCache
 {
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
     static const int VERSION_NUM_SIZE = 29;
     static const int VERSION_NUM_MASK = (1 << VERSION_NUM_SIZE) - 1;
@@ -321,7 +321,7 @@ private:
     static TypeHandle::CastResult TryGet(TADDR source, TADDR target);
     static void TrySet(TADDR source, TADDR target, BOOL result);
 
-#else // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#else // !DACCESS_COMPILE
 public:
     FORCEINLINE static void TryAddToCache(TypeHandle source, TypeHandle target, BOOL result)
     {
@@ -340,7 +340,7 @@ public:
     {
     }
 
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 };
 
 #endif

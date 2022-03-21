@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Net.Http.Functional.Tests;
 using Xunit;
+using System.Threading;
 
 namespace System.Net.Test.Common
 {
@@ -36,7 +37,11 @@ namespace System.Net.Test.Common
 
         // This is specifically request streams, not control streams
         private readonly Dictionary<int, Http3LoopbackStream> _openStreams = new Dictionary<int, Http3LoopbackStream>();
+
         private Http3LoopbackStream _currentStream;
+        // We can't retrieve the stream ID after the stream is disposed, so store it separately
+        // Initialize it to -4 so that the firstInvalidStreamId calculation will work even if we never process a request
+        private long _currentStreamId = -4;
 
         private Http3LoopbackStream _inboundControlStream;      // Inbound control stream from client
         private Http3LoopbackStream _outboundControlStream;     // Our outbound control stream
@@ -111,6 +116,7 @@ namespace System.Net.Test.Common
             {
                 _openStreams.Add(checked((int)quicStream.StreamId), stream);
                 _currentStream = stream;
+                _currentStreamId = quicStream.StreamId;
             }
 
             return stream;
@@ -195,24 +201,24 @@ namespace System.Net.Test.Common
             return await stream.ReadRequestDataAsync(readBody).ConfigureAwait(false);
         }
 
-        public override Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0)
+        public override Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true)
         {
-            return GetOpenRequest(requestId).SendResponseAsync(statusCode, headers, content, isFinal);
+            return GetOpenRequest().SendResponseAsync(statusCode, headers, content, isFinal);
         }
 
-        public override Task SendResponseBodyAsync(byte[] content, bool isFinal = true, int requestId = 0)
+        public override Task SendResponseBodyAsync(byte[] content, bool isFinal = true)
         {
-            return GetOpenRequest(requestId).SendResponseBodyAsync(content, isFinal);
+            return GetOpenRequest().SendResponseBodyAsync(content, isFinal);
         }
 
-        public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+        public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
         {
-            return GetOpenRequest(requestId).SendResponseHeadersAsync(statusCode, headers);
+            return GetOpenRequest().SendResponseHeadersAsync(statusCode, headers);
         }
 
-        public override Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+        public override Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
         {
-            return GetOpenRequest(requestId).SendPartialResponseHeadersAsync(statusCode, headers);
+            return GetOpenRequest().SendPartialResponseHeadersAsync(statusCode, headers);
         }
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
@@ -223,6 +229,8 @@ namespace System.Net.Test.Common
 
             // We are about to close the connection, after we send the response.
             // So, send a GOAWAY frame now so the client won't inadvertantly try to reuse the connection.
+            // Note that in HTTP3 (unlike HTTP2) there is no strict ordering between the GOAWAY and the response below;
+            // so the client may race in processing them and we need to handle this.
             await _outboundControlStream.SendGoAwayFrameAsync(stream.StreamId + 4);
 
             await stream.SendResponseAsync(statusCode, headers, content).ConfigureAwait(false);
@@ -230,6 +238,34 @@ namespace System.Net.Test.Common
             await WaitForClientDisconnectAsync();
 
             return request;
+        }
+
+        public async Task ShutdownAsync()
+        {
+            try
+            {
+                long firstInvalidStreamId = _currentStreamId + 4;
+                await _outboundControlStream.SendGoAwayFrameAsync(firstInvalidStreamId);
+            }
+            catch (QuicConnectionAbortedException abortException) when (abortException.ErrorCode == H3_NO_ERROR)
+            {
+                // Client must have closed the connection already because the HttpClientHandler instance was disposed.
+                // So nothing to do.
+                return;
+            }
+            catch (OperationCanceledException)
+            {
+                // If the client is closing the connection at the same time we are trying to send the GOAWAY above,
+                // this can result in OperationCanceledException from QuicStream.WriteAsync.
+                // See https://github.com/dotnet/runtime/issues/58078
+                // I saw this consistently with GetAsync_EmptyResponseHeader_Success.
+                // To work around this, just eat the exception for now.
+                // Also, be aware of this issue as it will do weird things with OperationCanceledException and can
+                // make debugging this very confusing: https://github.com/dotnet/runtime/issues/58081
+                return;
+            }
+
+            await WaitForClientDisconnectAsync();
         }
 
         // Wait for the client to close the connection, e.g. after we send a GOAWAY, or after the HttpClient is disposed.
@@ -266,9 +302,14 @@ namespace System.Net.Test.Common
             await CloseAsync(H3_NO_ERROR);
         }
 
-        public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0)
+        public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true)
         {
-            await GetOpenRequest(requestId).WaitForCancellationAsync(ignoreIncomingData).ConfigureAwait(false);
+            await GetOpenRequest().WaitForCancellationAsync(ignoreIncomingData).ConfigureAwait(false);
+        }
+
+        public override Task WaitForCloseAsync(CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
     }
 

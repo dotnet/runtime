@@ -96,7 +96,7 @@ public struct InlinedVal<T>
 }
 
 
-public class Test
+public class Test_GenTypeInlined
 {
 	public static int Main()
 	{

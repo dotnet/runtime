@@ -6,6 +6,7 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Speech.Synthesis;
+using System.Tests;
 using System.Text;
 using System.Xml;
 using Xunit;
@@ -21,19 +22,28 @@ namespace SampleSynthesisTests
             string SsmlStartOutTag = "<peml:prompt_output xmlns:peml=" + SsmlNs + ">";
             string SsmlEndOutTag = "</peml:prompt_output>";
 
-            PromptBuilder builder = new PromptBuilder();
-            builder.AppendText("test");
-            builder.AppendTextWithPronunciation("foo", "bar");
-            builder.AppendSsmlMarkup(SsmlStartOutTag);
-            builder.AppendSsmlMarkup("hello");
-            builder.AppendSsmlMarkup(SsmlEndOutTag);
+            PromptBuilder builder;
+            using (new ThreadCultureChange(null, CultureInfo.CreateSpecificCulture("ru-RU")))
+            {
+                builder = new PromptBuilder();
+                Assert.Equal(CultureInfo.CurrentUICulture, builder.Culture);
+            }
+            using (new ThreadCultureChange(null, CultureInfo.CreateSpecificCulture("en-US")))
+            {
+                builder = new PromptBuilder();
+                builder.AppendText("test");
+                builder.AppendTextWithPronunciation("foo", "bar");
+                builder.AppendSsmlMarkup(SsmlStartOutTag);
+                builder.AppendSsmlMarkup("hello");
+                builder.AppendSsmlMarkup(SsmlEndOutTag);
 
-            Assert.Contains("hello", builder.ToXml());
-            Assert.Equal(CultureInfo.CurrentCulture, builder.Culture);
-            Assert.False(builder.IsEmpty);
+                Assert.Contains("hello", builder.ToXml());
+                Assert.Equal(CultureInfo.CurrentUICulture, builder.Culture);
+                Assert.False(builder.IsEmpty);
 
-            string ssml = builder.ToXml();
-            builder.AppendSsml(XmlTextReader.Create(new StringReader(ssml)));
+                string ssml = builder.ToXml();
+                builder.AppendSsml(XmlTextReader.Create(new StringReader(ssml)));
+            }
         }
 
         // Add this to a test to log the installed voices on a machine

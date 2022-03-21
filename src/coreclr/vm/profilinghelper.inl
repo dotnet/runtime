@@ -111,7 +111,7 @@ inline void ProfilingAPIUtility::LogNoInterfaceError(REFIID iidRequested, LPCWST
     CONTRACTL_END;
 
     WCHAR wszIidRequested[39];
-    if (StringFromGUID2(iidRequested, wszIidRequested, lengthof(wszIidRequested)) == 0)
+    if (StringFromGUID2(iidRequested, wszIidRequested, ARRAY_SIZE(wszIidRequested)) == 0)
     {
         // This is a little super-paranoid; but just use an empty string if GUIDs
         // get bigger than we expect.
@@ -183,7 +183,7 @@ inline HRESULT ProfilingAPIUtility::LoadProfilerForAttach(
 
     // Need string version of CLSID for event log messages
     WCHAR wszClsid[40];
-    if (StringFromGUID2(*pClsid, wszClsid, _countof(wszClsid)) == 0)
+    if (StringFromGUID2(*pClsid, wszClsid, ARRAY_SIZE(wszClsid)) == 0)
     {
         _ASSERTE(!"StringFromGUID2 failed!");
         return E_UNEXPECTED;

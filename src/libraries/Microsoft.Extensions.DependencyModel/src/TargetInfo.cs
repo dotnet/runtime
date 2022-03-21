@@ -7,8 +7,8 @@ namespace Microsoft.Extensions.DependencyModel
     public class TargetInfo
     {
         public TargetInfo(string framework,
-            string runtime,
-            string runtimeSignature,
+            string? runtime,
+            string? runtimeSignature,
             bool isPortable)
         {
             if (string.IsNullOrEmpty(framework))
@@ -24,9 +24,9 @@ namespace Microsoft.Extensions.DependencyModel
 
         public string Framework { get; }
 
-        public string Runtime { get; }
+        public string? Runtime { get; }
 
-        public string RuntimeSignature { get; }
+        public string? RuntimeSignature { get; }
 
         public bool IsPortable { get; }
 

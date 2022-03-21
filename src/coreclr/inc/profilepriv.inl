@@ -193,7 +193,7 @@ inline ProfilerInfo *ProfControlBlock::FindNextFreeProfilerInfoSlot()
 {
     for (SIZE_T i = 0; i < MAX_NOTIFICATION_PROFILERS; ++i)
     {
-        if (InterlockedCompareExchange((LONG *)notificationOnlyProfilers[i].inUse.GetPointer(), TRUE, FALSE) == FALSE) 
+        if (InterlockedCompareExchange((LONG *)notificationOnlyProfilers[i].inUse.GetPointer(), TRUE, FALSE) == FALSE)
         {
             InterlockedIncrement(notificationProfilerCount.GetPointer());
             return &(notificationOnlyProfilers[i]);
@@ -232,7 +232,7 @@ inline void ProfControlBlock::UpdateGlobalEventMask()
                               *pEventMask |= pProfilerInfo->eventMask.m_eventMask;
                           },
                           &qwEventMask);
-        
+
         // We are relying on the memory barrier introduced by InterlockedCompareExchange64 to observer any
         // change to the global event mask.
         if ((UINT64)InterlockedCompareExchange64((LONG64 *)&(globalEventMask.m_eventMask), (LONG64)qwEventMask, (LONG64)originalEventMask) == originalEventMask)
@@ -2108,7 +2108,7 @@ FORCEINLINE BOOL CORProfilerTrackEventPipe()
     return (&g_profControlBlock)->globalEventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_EVENT_PIPE);
 }
 
-#if defined(PROFILING_SUPPORTED) && !defined(CROSSGEN_COMPILE)
+#if defined(PROFILING_SUPPORTED)
 
 //---------------------------------------------------------------------------------------
 // These macros must be placed around any callbacks to g_profControlBlock by
@@ -2152,14 +2152,14 @@ FORCEINLINE BOOL CORProfilerTrackEventPipe()
 
 #define END_PROFILER_CALLBACK()  }
 
-#else // PROFILING_SUPPORTED && !CROSSGEN_COMPILE
+#else // PROFILING_SUPPORTED
 
 // Profiling feature not supported
 
 #define BEGIN_PROFILER_CALLBACK(condition)       if (false) {
 #define END_PROFILER_CALLBACK()                  }
 
-#endif // PROFILING_SUPPORTED && !CROSSGEN_COMPILE
+#endif // PROFILING_SUPPORTED
 
 #endif // _ProfilePriv_inl_
 

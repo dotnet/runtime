@@ -11,8 +11,8 @@ internal static partial class Interop
 {
     internal static partial class CoreFoundation
     {
-        [DllImport(Libraries.CoreFoundationLibrary)]
-        private static extern SafeCreateHandle CFURLCreateWithString(
+        [LibraryImport(Libraries.CoreFoundationLibrary)]
+        private static partial SafeCreateHandle CFURLCreateWithString(
             IntPtr allocator,
             SafeCreateHandle str,
             IntPtr baseUrl);

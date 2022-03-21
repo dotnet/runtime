@@ -11,13 +11,8 @@ namespace System.Xml.Xsl.XsltOld
         private XmlWriter _writer;
         private readonly Processor _processor;
 
-        internal WriterOutput(Processor processor, XmlWriter writer)
+        internal WriterOutput(Processor processor, XmlWriter writer!!)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
             _writer = writer;
             _processor = processor;
         }
@@ -75,7 +70,7 @@ namespace System.Xml.Xsl.XsltOld
                 case XmlNodeType.EndEntity:
                     break;
                 default:
-                    Debug.Fail("Invalid NodeType on output: " + mainNode.NodeType);
+                    Debug.Fail($"Invalid NodeType on output: {mainNode.NodeType}");
                     break;
             }
 

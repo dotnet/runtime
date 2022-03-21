@@ -64,7 +64,7 @@ g_usleep (gulong microseconds)
 	}
 
 	do {
-		ret = clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &target, NULL);
+		ret = g_clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &target, NULL);
 		if (ret != 0 && ret != EINTR)
 			g_error ("%s: clock_nanosleep () returned %d", __func__, ret);
 	} while (ret == EINTR);

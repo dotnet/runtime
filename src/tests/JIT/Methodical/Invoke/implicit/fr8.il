@@ -11,7 +11,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'fr4'// as "fr4"
+.assembly 'fr8'// as "fr4"
 {
 
   //  .custom instance void ['mscorlib']System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -19,7 +19,7 @@
   
   
 }
-.module 'fr4.exe'
+.assembly extern xunit.core {}
 // MVID: {B1A03CB5-0762-4E9F-BA39-E5C10C9A69AE}
 .namespace JitTest
 {
@@ -59,6 +59,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       58 (0x3a)
       .maxstack  4

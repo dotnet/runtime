@@ -2911,6 +2911,59 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(2048)]
+        [InlineData(1024 * 1024)]
+        public static void CustomMaxDepth_DepthWithinLimit_ShouldSucceed(int maxDepth)
+        {
+            var options = new JsonWriterOptions { MaxDepth = maxDepth };
+            int effectiveMaxDepth = maxDepth == 0 ? 1000 : maxDepth;
+
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+
+            for (int i = 0; i < effectiveMaxDepth; i++)
+            {
+                writer.WriteStartArray();
+            }
+
+            Assert.Equal(effectiveMaxDepth, writer.CurrentDepth);
+
+            for (int i = 0; i < effectiveMaxDepth; i++)
+            {
+                writer.WriteEndArray();
+            }
+
+            Assert.Equal(0, writer.CurrentDepth);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(2048)]
+        [InlineData(1024 * 1024)]
+        public static void CustomMaxDepth_DepthExceedingLimit_ShouldFail(int maxDepth)
+        {
+            var options = new JsonWriterOptions { MaxDepth = maxDepth };
+            int effectiveMaxDepth = maxDepth == 0 ? 1000 : maxDepth;
+
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+
+            for (int i = 0; i < effectiveMaxDepth; i++)
+            {
+                writer.WriteStartArray();
+            }
+
+            Assert.Equal(effectiveMaxDepth, writer.CurrentDepth);
+
+            Assert.Throws<InvalidOperationException>(() => writer.WriteStartArray());
+        }
+
         // NOTE: WritingTooLargeProperty test is constrained to run on Windows and MacOSX because it causes
         //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
@@ -3143,7 +3196,7 @@ namespace System.Text.Json.Tests
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(false, false)]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
         public void Writing3MBBase64Bytes(bool formatted, bool skipValidation)
         {
             byte[] value = new byte[3 * 1024 * 1024];
@@ -6142,7 +6195,7 @@ namespace System.Text.Json.Tests
                 var output = new ArrayBufferWriter<byte>(1024);
                 using var jsonUtf8 = new Utf8JsonWriter(output, options);
                 jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(key, DateTime.Now));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(key, DateTimeTestHelpers.FixedDateTimeValue));
                 Assert.Equal(0, output.WrittenCount);
             }
 
@@ -6251,7 +6304,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public void WriteDateTime_TrimsFractionCorrectly_SerializerRoundtrip()
         {
-            DateTime utcNow = DateTime.UtcNow;
+            DateTime utcNow = DateTimeTestHelpers.FixedDateTimeValue;
             Assert.Equal(utcNow, JsonSerializer.Deserialize(JsonSerializer.SerializeToUtf8Bytes(utcNow), typeof(DateTime)));
         }
 

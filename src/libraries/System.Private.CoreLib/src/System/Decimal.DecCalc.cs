@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
+
 using X86 = System.Runtime.Intrinsics.X86;
 
 namespace System
@@ -18,8 +18,6 @@ namespace System
         internal uint Mid => (uint)(_lo64 >> 32);
 
         internal bool IsNegative => _flags < 0;
-
-        internal int Scale => (byte)(_flags >> ScaleShift);
 
         private ulong Low64 => _lo64;
 

@@ -37,9 +37,10 @@ namespace System.Runtime.Caching
         private Counters _perfCounters;
         private readonly bool _configLess;
         private bool _useMemoryCacheManager = true;
+        private bool _throwOnDisposed;
         private EventHandler _onAppDomainUnload;
         private UnhandledExceptionEventHandler _onUnhandledException;
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
         [UnsupportedOSPlatformGuard("browser")]
         private static bool _countersSupported => !OperatingSystem.IsBrowser();
 #else
@@ -347,12 +348,8 @@ namespace System.Runtime.Caching
             Init(null);
         }
 
-        public MemoryCache(string name, NameValueCollection config = null)
+        public MemoryCache(string name!!, NameValueCollection config = null)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Empty_string_invalid, nameof(name));
@@ -367,12 +364,8 @@ namespace System.Runtime.Caching
 
         // ignoreConfigSection is used when redirecting ASP.NET cache into the MemoryCache.  This avoids infinite recursion
         // due to the fact that the (ASP.NET) config system uses the cache, and the cache uses the config system.
-        public MemoryCache(string name, NameValueCollection config, bool ignoreConfigSection)
+        public MemoryCache(string name!!, NameValueCollection config, bool ignoreConfigSection)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Empty_string_invalid, nameof(name));
@@ -393,16 +386,13 @@ namespace System.Runtime.Caching
             if (config != null)
             {
                 _useMemoryCacheManager = ConfigUtil.GetBooleanValue(config, ConfigUtil.UseMemoryCacheManager, true);
+                _throwOnDisposed = ConfigUtil.GetBooleanValue(config, ConfigUtil.ThrowOnDisposed, false);
             }
             InitDisposableMembers(config);
         }
 
-        private object AddOrGetExistingInternal(string key, object value, CacheItemPolicy policy)
+        private object AddOrGetExistingInternal(string key!!, object value, CacheItemPolicy policy)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
             DateTimeOffset absExp = ObjectCache.InfiniteAbsoluteExpiration;
             TimeSpan slidingExp = ObjectCache.NoSlidingExpiration;
             CacheItemPriority priority = CacheItemPriority.Default;
@@ -433,6 +423,9 @@ namespace System.Runtime.Caching
                         }
                     }
                 }
+
+                IsDisposedOrThrow();
+
                 return null;
             }
             MemoryCacheKey cacheKey = new MemoryCacheKey(key);
@@ -529,7 +522,7 @@ namespace System.Runtime.Caching
 
         internal MemoryCacheEntry GetEntry(string key)
         {
-            if (IsDisposed)
+            if (IsDisposedOrThrow())
             {
                 return null;
             }
@@ -541,7 +534,8 @@ namespace System.Runtime.Caching
         IEnumerator IEnumerable.GetEnumerator()
         {
             Hashtable h = new Hashtable();
-            if (!IsDisposed)
+
+            if (!IsDisposedOrThrow())
             {
                 foreach (var storeRef in _storeRefs)
                 {
@@ -554,7 +548,8 @@ namespace System.Runtime.Caching
         protected override IEnumerator<KeyValuePair<string, object>> GetEnumerator()
         {
             Dictionary<string, object> h = new Dictionary<string, object>();
-            if (!IsDisposed)
+
+            if (!IsDisposedOrThrow())
             {
                 foreach (var storeRef in _storeRefs)
                 {
@@ -573,12 +568,13 @@ namespace System.Runtime.Caching
 
         public long Trim(int percent)
         {
+            long trimmed = 0;
             if (percent > 100)
             {
                 percent = 100;
             }
-            long trimmed = 0;
-            if (_disposed == 0)
+
+            if (!IsDisposedOrThrow())
             {
                 foreach (var storeRef in _storeRefs)
                 {
@@ -624,12 +620,8 @@ namespace System.Runtime.Caching
             return AddOrGetExistingInternal(key, value, policy);
         }
 
-        public override CacheItem AddOrGetExisting(CacheItem item, CacheItemPolicy policy)
+        public override CacheItem AddOrGetExisting(CacheItem item!!, CacheItemPolicy policy)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
             return new CacheItem(item.Key, AddOrGetExistingInternal(item.Key, item.Value, policy));
         }
 
@@ -664,12 +656,8 @@ namespace System.Runtime.Caching
             Set(key, value, policy);
         }
 
-        public override void Set(CacheItem item, CacheItemPolicy policy)
+        public override void Set(CacheItem item!!, CacheItemPolicy policy)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
             Set(item.Key, item.Value, policy);
         }
 
@@ -714,6 +702,9 @@ namespace System.Runtime.Caching
                         }
                     }
                 }
+
+                IsDisposedOrThrow();
+
                 return;
             }
             MemoryCacheKey cacheKey = new MemoryCacheKey(key);
@@ -721,17 +712,13 @@ namespace System.Runtime.Caching
             store.Set(cacheKey, new MemoryCacheEntry(key, value, absExp, slidingExp, priority, changeMonitors, removedCallback, this));
         }
 
-        internal void Set(string key,
+        internal void Set(string key!!,
                           object value,
                           Collection<ChangeMonitor> changeMonitors,
                           DateTimeOffset absoluteExpiration,
                           TimeSpan slidingExpiration,
                           CacheEntryUpdateCallback onUpdateCallback)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
             if (changeMonitors == null
                 && absoluteExpiration == ObjectCache.InfiniteAbsoluteExpiration
                 && slidingExpiration == ObjectCache.NoSlidingExpiration)
@@ -754,6 +741,9 @@ namespace System.Runtime.Caching
                         }
                     }
                 }
+
+                IsDisposedOrThrow();
+
                 return;
             }
             // Insert updatable cache entry
@@ -808,7 +798,7 @@ namespace System.Runtime.Caching
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            if (IsDisposed)
+            if (IsDisposedOrThrow())
             {
                 return null;
             }
@@ -822,8 +812,10 @@ namespace System.Runtime.Caching
             {
                 throw new NotSupportedException(SR.RegionName_not_supported);
             }
+
             long count = 0;
-            if (!IsDisposed)
+
+            if (!IsDisposedOrThrow())
             {
                 foreach (var storeRef in _storeRefs)
                 {
@@ -853,8 +845,10 @@ namespace System.Runtime.Caching
             {
                 throw new ArgumentNullException(nameof(keys));
             }
+
             Dictionary<string, object> values = null;
-            if (!IsDisposed)
+
+            if (!IsDisposedOrThrow())
             {
                 foreach (string key in keys)
                 {
@@ -879,16 +873,26 @@ namespace System.Runtime.Caching
         // used when redirecting ASP.NET cache into the MemoryCache.  This avoids infinite recursion
         // due to the fact that the (ASP.NET) config system uses the cache, and the cache uses the
         // config system.
-        internal void UpdateConfig(NameValueCollection config)
+        internal void UpdateConfig(NameValueCollection config!!)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
             if (!IsDisposed)
             {
                 _stats.UpdateConfig(config);
             }
+        }
+
+        private bool IsDisposedOrThrow()
+        {
+            if (!IsDisposed)
+                return false;
+
+            if (_throwOnDisposed)
+            {
+                string cacheName = $"{this.GetType().FullName}({_name})";
+                throw new ObjectDisposedException(cacheName);
+            }
+
+            return true;
         }
     }
 }

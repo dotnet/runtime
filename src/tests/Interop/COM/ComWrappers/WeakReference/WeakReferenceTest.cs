@@ -8,7 +8,7 @@ namespace ComWrappersTests
     using System.Collections.Generic;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
-    using TestLibrary;
+    using Xunit;
 
     static class WeakReferenceNative
     {
@@ -125,10 +125,10 @@ namespace ComWrappersTests
         {
             WeakReferenceableWrapper target;
             bool isAlive = wr.TryGetTarget(out target);
-            Assert.AreEqual(expectedIsAlive, isAlive);
+            Assert.Equal(expectedIsAlive, isAlive);
 
             if (isAlive && sourceWrappers != null)
-                Assert.AreEqual(sourceWrappers.Registration, target.Registration);
+                Assert.Equal(sourceWrappers.Registration, target.Registration);
         }
 
         private static (WeakReference<WeakReferenceableWrapper>, IntPtr) GetWeakReference(TestComWrappers cw)
@@ -237,8 +237,8 @@ namespace ComWrappersTests
 
             // A weak reference to an RCW wrapping an IWeakReference created throguh the built-in system
             // should stay alive even after the RCW dies
-            Assert.IsFalse(weakRef.IsAlive);
-            Assert.IsTrue(HasTarget(weakRef));
+            Assert.False(weakRef.IsAlive);
+            Assert.True(HasTarget(weakRef));
 
             // Release the last native reference.
             Marshal.Release(nativeRef);
@@ -246,7 +246,27 @@ namespace ComWrappersTests
             GC.WaitForPendingFinalizers();
 
             // After all native references die and the RCW is collected, the weak reference should be dead and stay dead.
-            Assert.IsNull(weakRef.Target);
+            Assert.Null(weakRef.Target);
+        }
+
+        static void ValidateAggregatedWeakReference()
+        {
+            Console.WriteLine("Validate weak reference with aggregation.");
+            var (handle, weakRef) = GetWeakReference();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            Assert.Null(handle.Target);
+            Assert.False(weakRef.TryGetTarget(out _));
+
+            static (GCHandle handle, WeakReference<DerivedObject>) GetWeakReference()
+            {
+                DerivedObject obj = new DerivedObject(TestComWrappers.TrackerSupportInstance);
+                // We use an explicit weak GC handle here to enable us to validate that we are using "weak" GCHandle
+                // semantics with the weak reference.
+                return (GCHandle.Alloc(obj, GCHandleType.Weak), new WeakReference<DerivedObject>(obj));
+            }
         }
 
         static void ValidateAggregatedWeakReference()

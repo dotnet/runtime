@@ -21,6 +21,7 @@ namespace System.Text.Json
         /// Reads the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// The Stream will be read to completion.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
         /// <param name="options">Options to control the behavior during reading.</param>
@@ -41,15 +42,10 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static ValueTask<TValue?> DeserializeAsync<TValue>(
-            Stream utf8Json,
+            Stream utf8Json!!,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
             return ReadAllAsync<TValue>(utf8Json, jsonTypeInfo, cancellationToken);
         }
@@ -58,6 +54,7 @@ namespace System.Text.Json
         /// Reads the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// The Stream will be read to completion.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
         /// <param name="options">Options to control the behavior during reading.</param>
@@ -75,14 +72,9 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static TValue? Deserialize<TValue>(
-            Stream utf8Json,
+            Stream utf8Json!!,
             JsonSerializerOptions? options = null)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
             return ReadAllUsingOptions<TValue>(utf8Json, typeof(TValue), options);
         }
 
@@ -111,21 +103,11 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static ValueTask<object?> DeserializeAsync(
-            Stream utf8Json,
-            Type returnType,
+            Stream utf8Json!!,
+            Type returnType!!,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            if (returnType == null)
-            {
-                throw new ArgumentNullException(nameof(returnType));
-            }
-
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             return ReadAllAsync<object?>(utf8Json, jsonTypeInfo, cancellationToken);
         }
@@ -152,20 +134,10 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static object? Deserialize(
-            Stream utf8Json,
-            Type returnType,
+            Stream utf8Json!!,
+            Type returnType!!,
             JsonSerializerOptions? options = null)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            if (returnType == null)
-            {
-                throw new ArgumentNullException(nameof(returnType));
-            }
-
             return ReadAllUsingOptions<object>(utf8Json, returnType, options);
         }
 
@@ -173,6 +145,7 @@ namespace System.Text.Json
         /// Reads the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// The Stream will be read to completion.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
@@ -192,20 +165,10 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         public static ValueTask<TValue?> DeserializeAsync<TValue>(
-            Stream utf8Json,
-            JsonTypeInfo<TValue> jsonTypeInfo,
+            Stream utf8Json!!,
+            JsonTypeInfo<TValue> jsonTypeInfo!!,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
             return ReadAllAsync<TValue>(utf8Json, jsonTypeInfo, cancellationToken);
         }
 
@@ -213,6 +176,7 @@ namespace System.Text.Json
         /// Reads the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// The Stream will be read to completion.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
@@ -229,19 +193,9 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         public static TValue? Deserialize<TValue>(
-            Stream utf8Json,
-            JsonTypeInfo<TValue> jsonTypeInfo)
+            Stream utf8Json!!,
+            JsonTypeInfo<TValue> jsonTypeInfo!!)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
             return ReadAll<TValue>(utf8Json, jsonTypeInfo);
         }
 
@@ -273,26 +227,11 @@ namespace System.Text.Json
         /// did not return a compatible <see cref="JsonTypeInfo"/> for <paramref name="returnType"/>.
         /// </exception>
         public static ValueTask<object?> DeserializeAsync(
-            Stream utf8Json,
-            Type returnType,
-            JsonSerializerContext context,
+            Stream utf8Json!!,
+            Type returnType!!,
+            JsonSerializerContext context!!,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            if (returnType == null)
-            {
-                throw new ArgumentNullException(nameof(returnType));
-            }
-
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             return ReadAllAsync<object>(utf8Json, GetTypeInfo(context, returnType), cancellationToken);
         }
 
@@ -321,25 +260,10 @@ namespace System.Text.Json
         /// did not return a compatible <see cref="JsonTypeInfo"/> for <paramref name="returnType"/>.
         /// </exception>
         public static object? Deserialize(
-            Stream utf8Json,
-            Type returnType,
-            JsonSerializerContext context)
+            Stream utf8Json!!,
+            Type returnType!!,
+            JsonSerializerContext context!!)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            if (returnType == null)
-            {
-                throw new ArgumentNullException(nameof(returnType));
-            }
-
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             return ReadAll<object>(utf8Json, GetTypeInfo(context, returnType));
         }
 
@@ -347,6 +271,7 @@ namespace System.Text.Json
         /// Wraps the UTF-8 encoded text into an <see cref="IAsyncEnumerable{TValue}" />
         /// that can be used to deserialize root-level JSON arrays in a streaming manner.
         /// </summary>
+        /// <typeparam name="TValue">The element type to deserialize asynchronously.</typeparam>
         /// <returns>An <see cref="IAsyncEnumerable{TValue}" /> representation of the provided JSON array.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
         /// <param name="options">Options to control the behavior during reading.</param>
@@ -357,16 +282,11 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static IAsyncEnumerable<TValue?> DeserializeAsyncEnumerable<TValue>(
-            Stream utf8Json,
+            Stream utf8Json!!,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            options ??= JsonSerializerOptions.s_defaultOptions;
+            options ??= JsonSerializerOptions.Default;
             if (!options.IsInitializedForReflectionSerializer)
             {
                 options.InitializeForReflectionSerializer();
@@ -414,7 +334,7 @@ namespace System.Text.Json
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "Workaround for https://github.com/mono/linker/issues/1416. All usages are marked as unsafe.")]
         private static JsonTypeInfo CreateQueueJsonTypeInfo<TValue>(JsonConverter queueConverter, JsonSerializerOptions queueOptions) =>
-                new JsonTypeInfo(typeof(Queue<TValue>), queueConverter, typeof(Queue<TValue>), queueOptions);
+                new JsonTypeInfo(typeof(Queue<TValue>), queueConverter, queueOptions);
 
         internal static async ValueTask<TValue?> ReadAllAsync<TValue>(
             Stream utf8Json,

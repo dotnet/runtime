@@ -65,8 +65,8 @@ namespace System.Text.Json
         /// <remarks>
         /// The property name is escaped before writing.
         /// </remarks>
-        public void WritePropertyName(string propertyName)
-            => WritePropertyName((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan());
+        public void WritePropertyName(string propertyName!!)
+            => WritePropertyName(propertyName.AsSpan());
 
         /// <summary>
         /// Writes the property name (as a JSON string) as the first part of a name/value pair of a JSON object.
@@ -183,7 +183,7 @@ namespace System.Text.Json
         private void WriteStringIndentedPropertyName(ReadOnlySpan<char> escapedPropertyName)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(escapedPropertyName.Length <= JsonConstants.MaxEscapedTokenSize);
             Debug.Assert(escapedPropertyName.Length < (int.MaxValue - 5 - indent - s_newLineLength) / JsonConstants.MaxExpansionFactorWhileTranscoding);
@@ -374,7 +374,7 @@ namespace System.Text.Json
         private void WriteStringIndentedPropertyName(ReadOnlySpan<byte> escapedPropertyName)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(escapedPropertyName.Length <= JsonConstants.MaxEscapedTokenSize);
             Debug.Assert(escapedPropertyName.Length < int.MaxValue - indent - 5 - s_newLineLength);
@@ -452,8 +452,8 @@ namespace System.Text.Json
         /// <remarks>
         /// The property name is escaped before writing.
         /// </remarks>
-        public void WriteString(string propertyName, JsonEncodedText value)
-            => WriteString((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), value);
+        public void WriteString(string propertyName!!, JsonEncodedText value)
+            => WriteString(propertyName.AsSpan(), value);
 
         /// <summary>
         /// Writes the property name and string text value (as a JSON string) as part of a name/value pair of a JSON object.
@@ -478,13 +478,8 @@ namespace System.Text.Json
         /// as if <see cref="WriteNull(System.ReadOnlySpan{byte})"/> were called.
         /// </para>
         /// </remarks>
-        public void WriteString(string propertyName, string? value)
+        public void WriteString(string propertyName!!, string? value)
         {
-            if (propertyName == null)
-            {
-                throw new ArgumentNullException(nameof(propertyName));
-            }
-
             if (value == null)
             {
                 WriteNull(propertyName.AsSpan());
@@ -632,8 +627,8 @@ namespace System.Text.Json
         /// <remarks>
         /// The property name and value is escaped before writing.
         /// </remarks>
-        public void WriteString(string propertyName, ReadOnlySpan<char> value)
-            => WriteString((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), value);
+        public void WriteString(string propertyName!!, ReadOnlySpan<char> value)
+            => WriteString(propertyName.AsSpan(), value);
 
         /// <summary>
         /// Writes the UTF-8 property name and text value (as a JSON string) as part of a name/value pair of a JSON object.
@@ -716,8 +711,8 @@ namespace System.Text.Json
         /// <remarks>
         /// The property name and value is escaped before writing.
         /// </remarks>
-        public void WriteString(string propertyName, ReadOnlySpan<byte> utf8Value)
-            => WriteString((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), utf8Value);
+        public void WriteString(string propertyName!!, ReadOnlySpan<byte> utf8Value)
+            => WriteString(propertyName.AsSpan(), utf8Value);
 
         /// <summary>
         /// Writes the property name and UTF-8 text value (as a JSON string) as part of a name/value pair of a JSON object.
@@ -1530,7 +1525,7 @@ namespace System.Text.Json
         private void WriteStringIndented(ReadOnlySpan<char> escapedPropertyName, ReadOnlySpan<char> escapedValue)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(escapedValue.Length <= JsonConstants.MaxEscapedTokenSize);
             Debug.Assert(escapedPropertyName.Length < ((int.MaxValue - 7 - indent - s_newLineLength) / JsonConstants.MaxExpansionFactorWhileTranscoding) - escapedValue.Length);
@@ -1580,7 +1575,7 @@ namespace System.Text.Json
         private void WriteStringIndented(ReadOnlySpan<byte> escapedPropertyName, ReadOnlySpan<byte> escapedValue)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(escapedValue.Length <= JsonConstants.MaxEscapedTokenSize);
             Debug.Assert(escapedPropertyName.Length < int.MaxValue - indent - escapedValue.Length - 7 - s_newLineLength);
@@ -1631,7 +1626,7 @@ namespace System.Text.Json
         private void WriteStringIndented(ReadOnlySpan<char> escapedPropertyName, ReadOnlySpan<byte> escapedValue)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(escapedValue.Length <= JsonConstants.MaxEscapedTokenSize);
             Debug.Assert(escapedPropertyName.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - escapedValue.Length - 7 - indent - s_newLineLength);
@@ -1682,7 +1677,7 @@ namespace System.Text.Json
         private void WriteStringIndented(ReadOnlySpan<byte> escapedPropertyName, ReadOnlySpan<char> escapedValue)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(escapedValue.Length <= JsonConstants.MaxEscapedTokenSize);
             Debug.Assert(escapedPropertyName.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - escapedValue.Length - 7 - indent - s_newLineLength);

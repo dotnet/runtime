@@ -37,7 +37,7 @@ namespace System.Runtime.Caching
         private CacheMemoryMonitor _cacheMemoryMonitor;
         private readonly MemoryCache _memoryCache;
         private readonly PhysicalMemoryMonitor _physicalMemoryMonitor;
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
         [UnsupportedOSPlatformGuard("browser")]
         private static bool _configSupported => !OperatingSystem.IsBrowser();
 #else
@@ -153,7 +153,7 @@ namespace System.Runtime.Caching
                 _configCacheMemoryLimitMegabytes = ConfigUtil.GetIntValue(config, ConfigUtil.CacheMemoryLimitMegabytes, _configCacheMemoryLimitMegabytes, true, int.MaxValue);
                 _configPhysicalMemoryLimitPercentage = ConfigUtil.GetIntValue(config, ConfigUtil.PhysicalMemoryLimitPercentage, _configPhysicalMemoryLimitPercentage, true, 100);
             }
-#if !NETCOREAPP3_1_OR_GREATER
+#if !NETCOREAPP
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && _configPhysicalMemoryLimitPercentage > 0)
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_PhysicalMemoryLimitPercentage);
@@ -318,6 +318,12 @@ namespace System.Runtime.Caching
                                                     + ", Milliseconds=" + sw.ElapsedMilliseconds + Environment.NewLine);
 #endif
                 return trimmedOrExpired;
+            }
+            catch (ObjectDisposedException)
+            {
+                // There is a small window for _memoryCache to be disposed after we check our own
+                // disposed bit. No big deal.
+                return 0;
             }
             finally
             {

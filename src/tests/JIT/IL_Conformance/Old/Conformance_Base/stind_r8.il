@@ -79,4 +79,4 @@ FAIL:
 }
 }
 
-.assembly stind_r8.exe{}
+.assembly stind_r8{}

@@ -63,9 +63,6 @@ extern char*                    g_pszObjFileName;
 extern FILE*                    g_pFile;
 
 extern BOOL                 g_fLimitedVisibility;
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-extern BOOL                 g_fNGenNativeMetadata;
-#endif
 extern BOOL                 g_fHidePub;
 extern BOOL                 g_fHidePriv;
 extern BOOL                 g_fHideFam;
@@ -91,8 +88,8 @@ HANDLE                      hConsoleErr=NULL;
 BOOL Init();
 void Uninit();
 void Cleanup();
-void DumpMetaInfo(__in __nullterminated const WCHAR* pszFileName, __in __nullterminated const char* pszObjFileName, void* GUICookie);
-FILE* OpenOutput(__in __nullterminated const char* szFileName);
+void DumpMetaInfo(_In_ __nullterminated const WCHAR* pszFileName, _In_ __nullterminated const char* pszObjFileName, void* GUICookie);
+FILE* OpenOutput(_In_ __nullterminated const char* szFileName);
 
 void PrintLogo()
 {
@@ -127,7 +124,7 @@ char* CheckForDQuotes(__inout __nullterminated char* sz)
     return ret;
 }
 
-char* EqualOrColon(__in __nullterminated char* szArg)
+char* EqualOrColon(_In_ __nullterminated char* szArg)
 {
     char* pchE = strchr(szArg,'=');
     char* pchC = strchr(szArg,':');
@@ -153,7 +150,7 @@ void GetInputFileFullPath()
     VDELETE(wzArg);
 }
 
-int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileName)
+int ProcessOneArg(_In_ __nullterminated char* szArg, _Out_ char** ppszObjFileName)
 {
     char        szOpt[128];
     if(strlen(szArg) == 0) return 0;
@@ -248,12 +245,6 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
             g_fLimitedVisibility = TRUE;
             g_fHidePub = FALSE;
         }
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-        else if (_stricmp(szOpt, "nat") == 0)
-        {
-            g_fNGenNativeMetadata = TRUE;
-        }
-#endif
         else if (_stricmp(szOpt, "pre") == 0)
         {
             //g_fPrettyPrint = TRUE;
@@ -427,7 +418,7 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
     return 0;
 }
 
-char* UTF8toANSI(__in __nullterminated char* szUTF)
+char* UTF8toANSI(_In_ __nullterminated char* szUTF)
 {
     ULONG32 L = (ULONG32) strlen(szUTF)+16;
     WCHAR* wzUnicode = new WCHAR[L];
@@ -440,7 +431,7 @@ char* UTF8toANSI(__in __nullterminated char* szUTF)
     VDELETE(wzUnicode);
     return szANSI;
 }
-char* ANSItoUTF8(__in __nullterminated char* szANSI)
+char* ANSItoUTF8(_In_ __nullterminated char* szANSI)
 {
     ULONG32 L = (ULONG32) strlen(szANSI)+16;
     WCHAR* wzUnicode = new WCHAR[L];
@@ -454,7 +445,7 @@ char* ANSItoUTF8(__in __nullterminated char* szANSI)
     return szUTF;
 }
 
-int ParseCmdLineW(__in __nullterminated WCHAR* wzCmdLine, __out char** ppszObjFileName)
+int ParseCmdLineW(_In_ __nullterminated WCHAR* wzCmdLine, _Out_ char** ppszObjFileName)
 {
     int     argc,ret=0;
     LPWSTR* argv= SegmentCommandLine(wzCmdLine, (DWORD*)&argc);
@@ -469,7 +460,7 @@ int ParseCmdLineW(__in __nullterminated WCHAR* wzCmdLine, __out char** ppszObjFi
     return ret;
 }
 
-int ParseCmdLineA(__in __nullterminated char* szCmdLine, __out char** ppszObjFileName)
+int ParseCmdLineA(_In_ __nullterminated char* szCmdLine, _Out_ char** ppszObjFileName)
 {
     if((szCmdLine == NULL)||(*szCmdLine == 0)) return 0;
 

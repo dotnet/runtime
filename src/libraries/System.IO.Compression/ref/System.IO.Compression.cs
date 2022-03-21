@@ -49,6 +49,7 @@ namespace System.IO.Compression
         public override void SetLength(long value) { }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
+        public override void WriteByte(byte value) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
@@ -83,6 +84,7 @@ namespace System.IO.Compression
         public override void SetLength(long value) { }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
+        public override void WriteByte(byte value) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
@@ -92,6 +94,8 @@ namespace System.IO.Compression
         public ZipArchive(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode) { }
         public ZipArchive(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode, bool leaveOpen) { }
         public ZipArchive(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode, bool leaveOpen, System.Text.Encoding? entryNameEncoding) { }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
+        public string Comment { get { throw null; } set { } }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.IO.Compression.ZipArchiveEntry> Entries { get { throw null; } }
         public System.IO.Compression.ZipArchiveMode Mode { get { throw null; } }
         public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName) { throw null; }
@@ -104,6 +108,8 @@ namespace System.IO.Compression
     {
         internal ZipArchiveEntry() { }
         public System.IO.Compression.ZipArchive Archive { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
+        public string Comment { get { throw null; } set { } }
         public long CompressedLength { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public uint Crc32 { get { throw null; } }

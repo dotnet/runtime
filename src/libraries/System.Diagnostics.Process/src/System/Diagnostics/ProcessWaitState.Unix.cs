@@ -307,8 +307,7 @@ namespace System.Diagnostics
         {
             get
             {
-                int? ignored;
-                return GetExited(out ignored, refresh: true);
+                return GetExited(out _, refresh: true);
             }
         }
 
@@ -426,7 +425,7 @@ namespace System.Diagnostics
                     // We're in a polling loop... determine how much time remains
                     int remainingTimeout = millisecondsTimeout == Timeout.Infinite ?
                         Timeout.Infinite :
-                        (int)Math.Max(millisecondsTimeout - ((Stopwatch.GetTimestamp() - startTime) / (double)Stopwatch.Frequency * 1000), 0);
+                        (int)Math.Max(millisecondsTimeout - Stopwatch.GetElapsedTime(startTime).TotalMilliseconds, 0);
 
                     lock (_gate)
                     {
@@ -679,8 +678,7 @@ namespace System.Diagnostics
                 {
                     do
                     {
-                        int exitCode;
-                        pid = Interop.Sys.WaitPidExitedNoHang(-1, out exitCode);
+                        pid = Interop.Sys.WaitPidExitedNoHang(-1, out _);
                     } while (pid > 0);
                 }
             }

@@ -1,12 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
+
   <ItemGroup>
-    <Compile Condition="'$(TargetFramework)' != 'net461'" Include="System.CodeDom.cs" />
-    <Compile Condition="'$(TargetFramework)' == 'net461'" Include="System.CodeDom.net461.cs" />
+    <Compile Include="System.CodeDom.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" />
+    <Compile Include="System.CodeDom.netframework.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'net461'">
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\ref\System.Security.Permissions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
+    <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

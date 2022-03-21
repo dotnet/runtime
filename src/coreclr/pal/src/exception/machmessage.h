@@ -21,7 +21,7 @@ using namespace CorUnix;
 
 #if HAVE_MACH_EXCEPTIONS
 
-#if defined(HOST_AMD64)
+#if defined(HOST_64BIT)
 #define MACH_EH_TYPE(x) mach_##x
 #else
 #define MACH_EH_TYPE(x) x
@@ -35,7 +35,7 @@ using namespace CorUnix;
         if (machret != KERN_SUCCESS)                                        \
         {                                                                   \
             char _szError[1024];                                            \
-            snprintf(_szError, _countof(_szError), "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
+            snprintf(_szError, ARRAY_SIZE(_szError), "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
             mach_error(_szError, machret);                                  \
             abort();                                                        \
         }                                                                   \

@@ -176,9 +176,7 @@
 #include "stacksampler.h"
 #endif
 
-#ifndef CROSSGEN_COMPILE
 #include "win32threadpool.h"
-#endif
 
 #include <shlwapi.h>
 
@@ -187,7 +185,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
-#include "notifyexternals.h"
 #include "mngstdinterfaces.h"
 #include "interoplibinterface.h"
 #endif // FEATURE_COMINTEROP
@@ -223,16 +220,13 @@
 
 #include "genanalysis.h"
 
-#ifndef CROSSGEN_COMPILE
-static int GetThreadUICultureId(__out LocaleIDValue* pLocale);  // TODO: This shouldn't use the LCID.  We should rely on name instead
+static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale);  // TODO: This shouldn't use the LCID.  We should rely on name instead
 
 static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames);
-#endif // !CROSSGEN_COMPILE
 
 HRESULT EEStartup();
 
 
-#ifndef CROSSGEN_COMPILE
 static void InitializeGarbageCollector();
 
 #ifdef DEBUGGING_SUPPORTED
@@ -240,7 +234,6 @@ static void InitializeDebugger(void);
 static void TerminateDebugger(void);
 extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface);
 #endif // DEBUGGING_SUPPORTED
-#endif // !CROSSGEN_COMPILE
 
 // g_coreclr_embedded indicates that coreclr is linked directly into the program
 // g_hostpolicy_embedded indicates that the hostpolicy library is linked directly into the executable
@@ -376,7 +369,6 @@ HRESULT EnsureEEStarted()
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 #ifndef TARGET_UNIX
 // This is our Ctrl-C, Ctrl-Break, etc. handler.
@@ -435,7 +427,6 @@ void InitializeStartupFlags()
     g_heap_type = ((flags & STARTUP_SERVER_GC) && GetCurrentProcessCpuCount() > 1) ? GC_HEAP_SVR : GC_HEAP_WKS;
     g_IGCHoardVM = (flags & STARTUP_HOARD_GC_VM) == 0 ? 0 : 1;
 }
-#endif // CROSSGEN_COMPILE
 
 
 // BBSweepStartFunction is the first function to execute in the BBT sweeper thread.
@@ -578,7 +569,6 @@ do { \
 #endif
 
 
-#ifndef CROSSGEN_COMPILE
 #ifdef TARGET_UNIX
 void EESocketCleanupHelper(bool isExecutingOnAltStack)
 {
@@ -605,7 +595,6 @@ void EESocketCleanupHelper(bool isExecutingOnAltStack)
 #endif // FEATURE_PERFTRACING
 }
 #endif // TARGET_UNIX
-#endif // CROSSGEN_COMPILE
 
 void FatalErrorHandler(UINT errorCode, LPCWSTR pszMessage)
 {
@@ -634,7 +623,6 @@ void EEStartupHelper()
     {
         g_fEEInit = true;
 
-#ifndef CROSSGEN_COMPILE
 
         // We cache the SystemInfo for anyone to use throughout the life of the EE.
         GetSystemInfo(&g_SystemInfo);
@@ -649,7 +637,6 @@ void EEStartupHelper()
         ::SetConsoleCtrlHandler(DbgCtrlCHandler, TRUE/*add*/);
 #endif
 
-#endif // CROSSGEN_COMPILE
 
         // SString initialization
         // This needs to be done before config because config uses SString::Empty()
@@ -657,7 +644,6 @@ void EEStartupHelper()
 
         IfFailGo(EEConfig::Setup());
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef HOST_WINDOWS
         InitializeCrashDump();
@@ -685,6 +671,19 @@ void EEStartupHelper()
         TieredCompilationManager::StaticInitialize();
         CallCountingManager::StaticInitialize();
         OnStackReplacementManager::StaticInitialize();
+
+#ifdef TARGET_UNIX
+        ExecutableAllocator::InitPreferredRange();
+#else
+        {
+            // Record coreclr.dll geometry
+            PEDecoder pe(GetClrModuleBase());
+
+            g_runtimeLoadedBaseAddress = (SIZE_T)pe.GetBase();
+            g_runtimeVirtualSize = (SIZE_T)pe.GetVirtualSize();
+            ExecutableAllocator::InitLazyPreferredRange(g_runtimeLoadedBaseAddress, g_runtimeVirtualSize, GetRandomInt(64));
+        }
+#endif // !TARGET_UNIX
 
         InitThreadManager();
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "Returned successfully from InitThreadManager");
@@ -733,7 +732,6 @@ void EEStartupHelper()
 
         Frame::Init();
 
-#endif // CROSSGEN_COMPILE
 
 
 
@@ -751,12 +749,10 @@ void EEStartupHelper()
 
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "===================EEStartup Starting===================");
 
-#ifndef CROSSGEN_COMPILE
 #ifndef TARGET_UNIX
         IfFailGoLog(EnsureRtlFunctions());
 #endif // !TARGET_UNIX
         InitEventStore();
-#endif
 
         if (g_pConfig != NULL)
         {
@@ -799,7 +795,6 @@ void EEStartupHelper()
         // Cache the (potentially user-overridden) values now so they are accessible from asm routines
         InitializeSpinConstants();
 
-#ifndef CROSSGEN_COMPILE
 
         // Cross-process named objects are not supported in PAL
         // (see CorUnix::InternalCreateEvent - src/pal/src/synchobj/event.cpp)
@@ -825,19 +820,6 @@ void EEStartupHelper()
 
         StubManager::InitializeStubManagers();
 
-#ifndef TARGET_UNIX
-        {
-            // Record mscorwks geometry
-            PEDecoder pe(GetClrModuleBase());
-
-            g_runtimeLoadedBaseAddress = (SIZE_T)pe.GetBase();
-            g_runtimeVirtualSize = (SIZE_T)pe.GetVirtualSize();
-            ExecutableAllocator::InitCodeAllocHint(g_runtimeLoadedBaseAddress, g_runtimeVirtualSize, GetRandomInt(64));
-        }
-#endif // !TARGET_UNIX
-
-#endif // CROSSGEN_COMPILE
-
         // Set up the cor handle map. This map is used to load assemblies in
         // memory instead of using the normal system load
         PEImage::Startup();
@@ -848,8 +830,8 @@ void EEStartupHelper()
 
         Stub::Init();
         StubLinkerCPU::Init();
-
-#ifndef CROSSGEN_COMPILE
+        StubPrecode::StaticInitialize();
+        FixupPrecode::StaticInitialize();
 
         InitializeGarbageCollector();
 
@@ -863,12 +845,10 @@ void EEStartupHelper()
 
         VirtualCallStubManager::InitStatic();
 
-#endif // CROSSGEN_COMPILE
 
         // Setup the domains. Threads are started in a default domain.
 
         // Static initialization
-        PEAssembly::Attach();
         BaseDomain::Attach();
         SystemDomain::Attach();
 
@@ -881,7 +861,6 @@ void EEStartupHelper()
 
         JitHost::Init();
 
-#ifndef CROSSGEN_COMPILE
 
 #ifndef TARGET_UNIX
         if (!RegisterOutOfProcessWatsonCallbacks())
@@ -891,13 +870,10 @@ void EEStartupHelper()
 #endif // !TARGET_UNIX
 
 #ifdef DEBUGGING_SUPPORTED
-        if(!NingenEnabled())
-        {
-            // Initialize the debugging services. This must be done before any
-            // EE thread objects are created, and before any classes or
-            // modules are loaded.
-            InitializeDebugger(); // throws on error
-        }
+        // Initialize the debugging services. This must be done before any
+        // EE thread objects are created, and before any classes or
+        // modules are loaded.
+        InitializeDebugger(); // throws on error
 #endif // DEBUGGING_SUPPORTED
 
 #ifdef PROFILING_SUPPORTED
@@ -972,7 +948,7 @@ void EEStartupHelper()
 #ifdef DEBUGGING_SUPPORTED
         // Make a call to publish the DefaultDomain for the debugger
         // This should be done before assemblies/modules are loaded into it (i.e. SystemDomain::Init)
-        // and after its OK to switch GC modes and syncronize for sending events to the debugger.
+        // and after its OK to switch GC modes and synchronize for sending events to the debugger.
         // @dbgtodo  synchronization: this can probably be simplified in V3
         LOG((LF_CORDB | LF_SYNC | LF_STARTUP, LL_INFO1000, "EEStartup: adding default domain 0x%x\n",
              SystemDomain::System()->DefaultDomain()));
@@ -983,7 +959,6 @@ void EEStartupHelper()
         MethodDesc::Init();
 #endif
 
-#endif // CROSSGEN_COMPILE
 
         Assembly::Initialize();
 
@@ -1008,12 +983,8 @@ void EEStartupHelper()
         StackSampler::Init();
 #endif
 
-#ifndef CROSSGEN_COMPILE
-        if (!NingenEnabled())
-        {
-            // Perform any once-only SafeHandle initialization.
-            SafeHandle::Init();
-        }
+        // Perform any once-only SafeHandle initialization.
+        SafeHandle::Init();
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
@@ -1028,14 +999,12 @@ void EEStartupHelper()
                                                 g_MiniMetaDataBuffMaxSize, MEM_COMMIT, PAGE_READWRITE);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
-#endif // !CROSSGEN_COMPILE
 
         g_fEEStarted = TRUE;
         g_EEStartupStatus = S_OK;
         hr = S_OK;
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "===================EEStartup Completed===================");
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef _DEBUG
 
@@ -1056,20 +1025,11 @@ void EEStartupHelper()
         g_CoreLib.CheckExtended();
 #endif // _DEBUG
 
-#endif // !CROSSGEN_COMPILE
 
 ErrExit: ;
     }
     EX_CATCH
     {
-#ifdef CROSSGEN_COMPILE
-        // for minimal impact we won't update hr for regular builds
-        hr = GET_EXCEPTION()->GetHR();
-        _ASSERTE(FAILED(hr));
-        StackSString exceptionMessage;
-        GET_EXCEPTION()->GetMessage(exceptionMessage);
-        fprintf(stderr, "%S\n", exceptionMessage.GetUnicode());
-#endif // CROSSGEN_COMPILE
     }
     EX_END_CATCH(RethrowTerminalExceptionsWithInitCheck)
 
@@ -1142,13 +1102,11 @@ HRESULT EEStartup()
 
     PAL_TRY(PVOID, p, NULL)
     {
-#ifndef CROSSGEN_COMPILE
         InitializeClrNotifications();
 #ifdef TARGET_UNIX
         InitializeJITNotificationTable();
         DacGlobals::Initialize();
 #endif
-#endif // CROSSGEN_COMPILE
 
         EEStartupHelper();
     }
@@ -1163,7 +1121,6 @@ HRESULT EEStartup()
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 // ---------------------------------------------------------------------------
 // %%Function: ForceEEShutdown()
@@ -1878,41 +1835,53 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 
 struct TlsDestructionMonitor
 {
+    bool m_activated = false;
+
+    void Activate()
+    {
+        m_activated = true;
+    }
+
     ~TlsDestructionMonitor()
     {
-        // Don't destroy threads here if we're in shutdown (shutdown will
-        // clean up for us instead).
-
-        Thread* thread = GetThreadNULLOk();
-        if (thread)
+        if (m_activated)
         {
-#ifdef FEATURE_COMINTEROP
-            // reset the CoInitialize state
-            // so we don't call CoUninitialize during thread detach
-            thread->ResetCoInitialized();
-#endif // FEATURE_COMINTEROP
-            // For case where thread calls ExitThread directly, we need to reset the
-            // frame pointer. Otherwise stackwalk would AV. We need to do it in cooperative mode.
-            // We need to set m_GCOnTransitionsOK so this thread won't trigger GC when toggle GC mode
-            if (thread->m_pFrame != FRAME_TOP)
+            Thread* thread = GetThreadNULLOk();
+            if (thread)
             {
+#ifdef FEATURE_COMINTEROP
+                // reset the CoInitialize state
+                // so we don't call CoUninitialize during thread detach
+                thread->ResetCoInitialized();
+#endif // FEATURE_COMINTEROP
+                // For case where thread calls ExitThread directly, we need to reset the
+                // frame pointer. Otherwise stackwalk would AV. We need to do it in cooperative mode.
+                // We need to set m_GCOnTransitionsOK so this thread won't trigger GC when toggle GC mode
+                if (thread->m_pFrame != FRAME_TOP)
+                {
 #ifdef _DEBUG
-                thread->m_GCOnTransitionsOK = FALSE;
+                    thread->m_GCOnTransitionsOK = FALSE;
 #endif
-                GCX_COOP_NO_DTOR();
-                thread->m_pFrame = FRAME_TOP;
-                GCX_COOP_NO_DTOR_END();
+                    GCX_COOP_NO_DTOR();
+                    thread->m_pFrame = FRAME_TOP;
+                    GCX_COOP_NO_DTOR_END();
+                }
+                thread->DetachThread(TRUE);
             }
-            thread->DetachThread(TRUE);
-        }
 
-        ThreadDetaching();
+            ThreadDetaching();
+        }
     }
 };
 
 // This thread local object is used to detect thread shutdown. Its destructor
 // is called when a thread is being shut down.
 thread_local TlsDestructionMonitor tls_destructionMonitor;
+
+void EnsureTlsDestructionMonitor()
+{
+    tls_destructionMonitor.Activate();
+}
 
 #ifdef DEBUGGING_SUPPORTED
 //
@@ -2178,7 +2147,7 @@ INT32 GetLatchedExitCode (void)
 // Impl for UtilLoadStringRC Callback: In VM, we let the thread decide culture
 // Return an int uniquely describing which language this thread is using for ui.
 // ---------------------------------------------------------------------------
-static int GetThreadUICultureId(__out LocaleIDValue* pLocale)
+static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale)
 {
     CONTRACTL{
         NOTHROW;
@@ -2346,4 +2315,3 @@ void ContractRegressionCheck()
 
 #endif // ENABLE_CONTRACTS_IMPL
 
-#endif // CROSSGEN_COMPILE

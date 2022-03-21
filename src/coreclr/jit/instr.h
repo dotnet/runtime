@@ -131,6 +131,10 @@ enum insFlags : uint32_t
     // Avx
     INS_Flags_IsDstDstSrcAVXInstruction = 1 << 25,
     INS_Flags_IsDstSrcSrcAVXInstruction = 1 << 26,
+    
+    // w and s bits
+    INS_FLAGS_Has_Wbit = 1 << 27,
+    INS_FLAGS_Has_Sbit = 1 << 28,
 
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00,
@@ -160,6 +164,10 @@ enum insOpts: unsigned
     INS_OPTS_LSR,
     INS_OPTS_ASR,
     INS_OPTS_ROR
+};
+enum insBarrier : unsigned
+{
+    INS_BARRIER_SY = 15
 };
 #elif defined(TARGET_ARM64)
 enum insOpts : unsigned
@@ -215,7 +223,11 @@ enum insOpts : unsigned
     INS_OPTS_H_TO_D,      // Half to Double
 
     INS_OPTS_S_TO_H,      // Single to Half
-    INS_OPTS_D_TO_H,      // Double to Half
+    INS_OPTS_D_TO_H       // Double to Half
+
+#if FEATURE_LOOP_ALIGN
+    , INS_OPTS_ALIGN      // Align instruction
+#endif
 };
 
 enum insCond : unsigned
@@ -306,15 +318,15 @@ enum emitAttr : unsigned
                 EA_GCREF         = EA_GCREF_FLG |  EA_PTRSIZE,       /* size == -1 */
                 EA_BYREF_FLG     = 0x100,
                 EA_BYREF         = EA_BYREF_FLG |  EA_PTRSIZE,       /* size == -2 */
-                EA_DSP_RELOC_FLG = 0x200,
-                EA_CNS_RELOC_FLG = 0x400,
+                EA_DSP_RELOC_FLG = 0x200, // Is the displacement of the instruction relocatable?
+                EA_CNS_RELOC_FLG = 0x400, // Is the immediate of the instruction relocatable?
 };
 
 #define EA_ATTR(x)                  ((emitAttr)(x))
 #define EA_SIZE(x)                  ((emitAttr)(((unsigned)(x)) &  EA_SIZE_MASK))
 #define EA_SIZE_IN_BYTES(x)         ((UNATIVE_OFFSET)(EA_SIZE(x)))
-#define EA_SET_SIZE(x, sz)          ((emitAttr)((((unsigned)(x)) & ~EA_SIZE_MASK) | (sz)))
 #define EA_SET_FLG(x, flg)          ((emitAttr)(((unsigned)(x)) | (flg)))
+#define EA_REMOVE_FLG(x, flg)       ((emitAttr)(((unsigned)(x)) & ~(flg)))
 #define EA_4BYTE_DSP_RELOC          (EA_SET_FLG(EA_4BYTE, EA_DSP_RELOC_FLG))
 #define EA_PTR_DSP_RELOC            (EA_SET_FLG(EA_PTRSIZE, EA_DSP_RELOC_FLG))
 #define EA_HANDLE_CNS_RELOC         (EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG))
@@ -326,8 +338,6 @@ enum emitAttr : unsigned
 #define EA_IS_CNS_RELOC(x)          ((((unsigned)(x)) & ((unsigned)EA_CNS_RELOC_FLG)) != 0)
 #define EA_IS_RELOC(x)              (EA_IS_DSP_RELOC(x) || EA_IS_CNS_RELOC(x))
 #define EA_TYPE(x)                  ((emitAttr)(((unsigned)(x)) & ~(EA_OFFSET_FLG | EA_DSP_RELOC_FLG | EA_CNS_RELOC_FLG)))
-
-#define EmitSize(x)                 (EA_ATTR(genTypeSize(TypeGet(x))))
 
 // clang-format on
 

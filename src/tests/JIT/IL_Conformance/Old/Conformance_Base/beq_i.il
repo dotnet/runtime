@@ -43,4 +43,4 @@ FAIL:
 	ret
 }
 }
-.assembly beq_i.exe{}
+.assembly beq_i{}

@@ -7,6 +7,7 @@
 // Metadata version: v4.0.30319
 .assembly extern System.Runtime { auto }
 .assembly DevDiv_578214 {}
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit DevDiv_578214.Program
        extends [System.Runtime]System.Object
@@ -109,6 +110,9 @@
 .method private hidebysig static int32 
   Main(string[] args) cil managed
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	// Code size       34 (0x22)
 	.maxstack  7

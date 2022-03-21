@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;net48</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;net48</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetsMobile)' == 'true'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
@@ -118,7 +118,7 @@
     <ProjectReference Include="..\src\System.Drawing.Common.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.SystemEvents\src\Microsoft.Win32.SystemEvents.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="GraphicsTests.Core.cs" />
     <Compile Include="Graphics_GetContextTests.Core.cs" />
     <Compile Include="Drawing2D\MatrixTests.Core.cs" />

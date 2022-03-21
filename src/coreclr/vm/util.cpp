@@ -20,15 +20,6 @@
 
 #ifndef DACCESS_COMPILE
 
-#ifdef CROSSGEN_COMPILE
-void ClrFlsSetThreadType(TlsThreadTypeFlag flag)
-{
-}
-
-void ClrFlsClearThreadType(TlsThreadTypeFlag flag)
-{
-}
-#else // CROSSGEN_COMPILE
 
 thread_local size_t t_ThreadType;
 
@@ -53,7 +44,6 @@ void ClrFlsClearThreadType(TlsThreadTypeFlag flag)
     LIMITED_METHOD_CONTRACT;
     t_ThreadType &= ~flag;
 }
-#endif // CROSSGEN_COMPILE
 
 thread_local size_t t_CantStopCount;
 
@@ -339,22 +329,6 @@ void NPrintToHandleA(HANDLE Handle, const char *pszString, size_t BytesToWrite)
 
     while (BytesToWrite > 0) {
         DWORD dwChunkToWrite = (DWORD) min(BytesToWrite, maxWriteFileSize);
-        // No CharNextExA on CoreSystem, we just assume no multi-byte characters (this code path shouldn't be
-        // used in the production codepath for currently supported CoreSystem based products anyway).
-#ifndef FEATURE_CORESYSTEM
-        if (dwChunkToWrite < BytesToWrite) {
-            break;
-            // must go by char to find biggest string that will fit, taking DBCS chars into account
-            //dwChunkToWrite = 0;
-            //const char *charNext = pszString;
-            //while (dwChunkToWrite < maxWriteFileSize-2 && charNext) {
-            //    charNext = CharNextExA(0, pszString+dwChunkToWrite, 0);
-            //    dwChunkToWrite = (DWORD)(charNext - pszString);
-            //}
-            //if (dwChunkToWrite == 0)
-            //    break;
-        }
-#endif // !FEATURE_CORESYSTEM
 
         // Try to write to handle.  If this is not a CUI app, then this is probably
         // not going to work unless the dev took special pains to set their own console
@@ -1216,7 +1190,6 @@ CLRUnmapViewOfFile(
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
 {
@@ -1303,7 +1276,6 @@ BOOL CLRFreeLibrary(HMODULE hModule)
     return FreeLibrary(hModule);
 }
 
-#endif // CROSSGEN_COMPILE
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -1868,7 +1840,7 @@ void DACNotify::DoJITPitchingNotification(MethodDesc *MethodDescPtr)
     }
     CONTRACTL_END;
 
-#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
     NotifyGdb::MethodPitched(MethodDescPtr);
 #endif
     TADDR Args[2] = { JIT_PITCHING_NOTIFICATION, (TADDR) MethodDescPtr };
@@ -2096,12 +2068,10 @@ static CLRRandom g_random;
 
 int GetRandomInt(int maxVal)
 {
-#ifndef CROSSGEN_COMPILE
     // Use the thread-local Random instance if possible
     Thread* pThread = GetThreadNULLOk();
     if (pThread)
         return pThread->GetRandom()->Next(maxVal);
-#endif
 
     // No Thread object - need to fall back to the global generator.
     // In DAC builds we don't need the lock (DAC is single-threaded) and can't get it anyway (DNHSL isn't supported)
@@ -2273,5 +2243,23 @@ HRESULT GetFileVersion(                     // S_OK or error
 #endif // !TARGET_UNIX
 
 Volatile<double> NormalizedTimer::s_frequency = -1.0;
+
+void FillStubCodePage(BYTE* pageBase, const void* code, int codeSize, int pageSize)
+{
+    int totalCodeSize = (pageSize / codeSize) * codeSize;
+
+    memcpy(pageBase, code, codeSize);
+
+    int i;
+    for (i = codeSize; i < pageSize / 2; i *= 2)
+    {
+        memcpy(pageBase + i, pageBase, i);
+    }
+
+    if (i != totalCodeSize)
+    {
+        memcpy(pageBase + i, pageBase, totalCodeSize - i);
+    }
+}
 
 #endif // !DACCESS_COMPILE

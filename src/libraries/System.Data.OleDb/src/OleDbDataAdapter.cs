@@ -250,17 +250,15 @@ namespace System.Data.OleDb
                     {
                         value[0] = DBNull.Value;
 
-                        object recordsAffected;
                         object nextresult;
-                        OleDbHResult hr = ((UnsafeNativeMethods.Recordset15)adodb).NextRecordset(out recordsAffected, out nextresult);
+                        OleDbHResult hr = ((UnsafeNativeMethods.Recordset15)adodb).NextRecordset(out _, out nextresult);
 
                         if (0 > hr)
                         {
                             // Current provider does not support returning multiple recordsets from a single execution.
                             if (ODB.ADODB_NextResultError != (int)hr)
                             {
-                                UnsafeNativeMethods.IErrorInfo? errorInfo = null;
-                                UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);
+                                SafeNativeMethods.Wrapper.ClearErrorInfo();
 
                                 string message = string.Empty;
                                 throw new COMException(message, (int)hr);
@@ -311,7 +309,7 @@ namespace System.Data.OleDb
             incrementResultCount = false;
 
             IntPtr chapter; /*ODB.DB_NULL_HCHAPTER*/
-            object? result = null;
+            object? result;
             try
             {
                 result = recordset.get_Rowset();
@@ -369,7 +367,7 @@ namespace System.Data.OleDb
 
         private int FillFromRecord(object data, UnsafeNativeMethods.ADORecordConstruction record, string srcTable)
         {
-            object? result = null;
+            object? result;
             try
             {
                 result = record.get_Row();
@@ -430,8 +428,7 @@ namespace System.Data.OleDb
             }
             if ((0 < (int)hr) && (ODB.ADODB_AlreadyClosedError != (int)hr))
             {
-                UnsafeNativeMethods.IErrorInfo? errorInfo = null;
-                UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);
+                SafeNativeMethods.Wrapper.ClearErrorInfo();
                 string message = string.Empty;
                 throw new COMException(message, (int)hr);
             }

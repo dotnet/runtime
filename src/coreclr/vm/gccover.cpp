@@ -67,6 +67,29 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
         return MethodDesc::GetMethodDescFromStubAddr(target, TRUE);
     }
 
+    if (PrecodeStubManager::g_pManager->GetStubPrecodeRangeList()->IsInRange(target))
+    {
+        return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(target))->GetMethodDesc();
+    }
+
+    if (PrecodeStubManager::g_pManager->GetFixupPrecodeRangeList()->IsInRange(target))
+    {
+        if (!FixupPrecode::IsFixupPrecodeByASM(target))
+        {
+            // If the target slot points to the fixup part of the stub, the actual
+            // stub starts FixupPrecode::FixupCodeOffset bytes below the target,
+            // so we need to compensate for it.
+            target -= FixupPrecode::FixupCodeOffset;
+            if (!FixupPrecode::IsFixupPrecodeByASM(target))
+            {
+                _ASSERTE(!"Invalid FixupPrecode address"); // We should never get other precode type here
+                return nullptr;
+            }
+        }
+
+        return (MethodDesc*)((FixupPrecode*)PCODEToPINSTR(target))->GetMethodDesc();
+    }
+
     return nullptr;
 }
 
@@ -229,79 +252,6 @@ void SetupGcCoverage(NativeCodeVersion nativeCodeVersion, BYTE* methodStartPtr)
     PCODE codeStart = (PCODE) methodStartPtr;
     SetupAndSprinkleBreakpointsForJittedMethod(nativeCodeVersion, codeStart);
 }
-
-#ifdef FEATURE_PREJIT
-
-void SetupGcCoverageForNativeMethod(NativeCodeVersion nativeCodeVersion,
-                                    PCODE codeStart,
-                                     IJitManager::MethodRegionInfo& methodRegionInfo
-                                   )
-{
-    _ASSERTE(!nativeCodeVersion.IsNull());
-
-    EECodeInfo codeInfo(codeStart);
-    _ASSERTE(codeInfo.IsValid());
-    _ASSERTE(codeInfo.GetRelOffset() == 0);
-
-    _ASSERTE(PCODEToPINSTR(codeStart) == methodRegionInfo.hotStartAddress);
-
-    SetupAndSprinkleBreakpoints(nativeCodeVersion,
-                                &codeInfo,
-                                methodRegionInfo,
-                                TRUE
-                               );
-}
-
-void SetupGcCoverageForNativeImage(Module* module)
-{
-    // Disable IBC logging here because of NGen image is not fully initialized yet. Eager bound
-    // indirection cells are not initialized yet and so IBC logging would crash while attempting to dereference them.
-    IBCLoggingDisabler disableLogging;
-
-#if 0
-    // Debug code
-    LPWSTR wszSetupGcCoverage = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_SetupGcCoverage);
-
-    if (!wszSetupGcCoverage)
-    {
-        printf("wszSetupGcCoverage is NULL. Will not SetupGcCoverage for any module.\n");
-        return;
-    }
-    else
-    {
-        if ((wcscmp(W("*"), wszSetupGcCoverage) == 0) ||  // "*" means will gcstress all modules
-            (wcsstr(module->GetDebugName(), wszSetupGcCoverage) != NULL))
-        {
-            printf("[%ws] matched %ws\n", wszSetupGcCoverage, module->GetDebugName());
-            // Fall through
-        }
-        else
-        {
-            printf("[%ws] NOT match %ws\n", wszSetupGcCoverage, module->GetDebugName());
-            return;
-        }
-    }
-#endif
-
-#ifdef _DEBUG
-    if (g_pConfig->SkipGCCoverage(module->GetSimpleName()))
-        return;
-#endif
-
-    MethodIterator mi(module);
-    while (mi.Next())
-    {
-        PTR_MethodDesc pMD = mi.GetMethodDesc();
-        PCODE pMethodStart = mi.GetMethodStartAddress();
-
-        IJitManager::MethodRegionInfo methodRegionInfo;
-        mi.GetMethodRegionInfo(&methodRegionInfo);
-
-        SetupGcCoverageForNativeMethod(NativeCodeVersion(pMD), pMethodStart, methodRegionInfo);
-    }
-}
-#endif
-
 
 void ReplaceInstrAfterCall(PBYTE instrToReplace, MethodDesc* callMD)
 {
@@ -491,7 +441,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
 #if (defined(TARGET_X86) || defined(TARGET_AMD64)) && USE_DISASSEMBLER
 
     BYTE * codeStart = (BYTE *)pCode;
-    ExecutableWriterHolder<BYTE> codeWriterHolder;
+    ExecutableWriterHolderNoLog<BYTE> codeWriterHolder;
     size_t writeableOffset;
 
     memcpy(saveAddr, codeStart, codeSize);
@@ -505,7 +455,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
     }
     else
     {
-        codeWriterHolder = ExecutableWriterHolder<BYTE>(codeStart, codeSize);
+        codeWriterHolder.AssignExecutableWriterHolder(codeStart, codeSize);
         writeableOffset = codeWriterHolder.GetRW() - codeStart;
     }
 

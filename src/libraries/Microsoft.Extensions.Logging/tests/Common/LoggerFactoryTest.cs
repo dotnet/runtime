@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Logging.Test
 {
     public class LoggerFactoryTest
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void AddProvider_ThrowsAfterDisposed()
         {
             var factory = new LoggerFactory();
@@ -52,7 +52,8 @@ namespace Microsoft.Extensions.Logging.Test
             factory.Dispose();
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Dispose_ProvidersAreDisposed()
         {
             // Arrange
@@ -81,8 +82,8 @@ namespace Microsoft.Extensions.Logging.Test
             return disposableProvider.Object;
         }
 
-
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Dispose_ThrowException_SwallowsException()
         {
             // Arrange
@@ -493,7 +494,8 @@ namespace Microsoft.Extensions.Logging.Test
                 });
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void CreateDisposeDisposesInnerServiceProvider()
         {
             var disposed = false;

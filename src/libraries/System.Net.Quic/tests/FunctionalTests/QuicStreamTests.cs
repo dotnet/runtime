@@ -191,20 +191,19 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task GetStreamIdWithoutStartWorks()
         {
-            using QuicListener listener = CreateQuicListener();
-            using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
 
-            ValueTask clientTask = clientConnection.ConnectAsync();
-            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-            await clientTask;
+            using (clientConnection)
+            using (serverConnection)
+            {
+                using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                Assert.Equal(0, clientStream.StreamId);
 
-            using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
-            Assert.Equal(0, clientStream.StreamId);
-
-            // TODO: stream that is opened by client but left unaccepted by server may cause AccessViolationException in its Finalizer
-            // explicitly closing the connections seems to help, but the problem should still be investigated, we should have a meaningful
-            // exception instead of AccessViolationException
-            await clientConnection.CloseAsync(0);
+                // TODO: stream that is opened by client but left unaccepted by server may cause AccessViolationException in its Finalizer
+                // explicitly closing the connections seems to help, but the problem should still be investigated, we should have a meaningful
+                // exception instead of AccessViolationException
+                await clientConnection.CloseAsync(0);
+            }
         }
 
         [Fact]
@@ -257,28 +256,22 @@ namespace System.Net.Quic.Tests
         public async Task TestStreams()
         {
             using QuicListener listener = CreateQuicListener();
-            IPEndPoint listenEndPoint = listener.ListenEndPoint;
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(listener);
+            using (clientConnection)
+            using (serverConnection)
+            {
+                Assert.True(clientConnection.Connected);
+                Assert.True(serverConnection.Connected);
+                Assert.Equal(listener.ListenEndPoint, serverConnection.LocalEndPoint);
+                Assert.Equal(listener.ListenEndPoint, clientConnection.RemoteEndPoint);
+                Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
 
-            using QuicConnection clientConnection = CreateQuicConnection(listenEndPoint);
-
-            Assert.False(clientConnection.Connected);
-            Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
-
-            ValueTask connectTask = clientConnection.ConnectAsync();
-            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-            await connectTask;
-
-            Assert.True(clientConnection.Connected);
-            Assert.True(serverConnection.Connected);
-            Assert.Equal(listenEndPoint, serverConnection.LocalEndPoint);
-            Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
-            Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
-
-            await CreateAndTestBidirectionalStream(clientConnection, serverConnection);
-            await CreateAndTestBidirectionalStream(serverConnection, clientConnection);
-            await CreateAndTestUnidirectionalStream(serverConnection, clientConnection);
-            await CreateAndTestUnidirectionalStream(clientConnection, serverConnection);
-            await clientConnection.CloseAsync(errorCode: 0);
+                await CreateAndTestBidirectionalStream(clientConnection, serverConnection);
+                await CreateAndTestBidirectionalStream(serverConnection, clientConnection);
+                await CreateAndTestUnidirectionalStream(serverConnection, clientConnection);
+                await CreateAndTestUnidirectionalStream(clientConnection, serverConnection);
+                await clientConnection.CloseAsync(errorCode: 0);
+            }
         }
 
         private static async Task CreateAndTestBidirectionalStream(QuicConnection c1, QuicConnection c2)
@@ -413,8 +406,8 @@ namespace System.Net.Quic.Tests
 
                     while (true) // TODO: if you don't read until 0-byte read, ShutdownCompleted sometimes may not trigger - why?
                     {
-                        Memory<byte> recieveChunkBuffer = receiveBuffer.AsMemory(totalBytesRead, Math.Min(receiveBuffer.Length - totalBytesRead, readSize));
-                        int bytesRead = await serverStream.ReadAsync(recieveChunkBuffer);
+                        Memory<byte> receiveChunkBuffer = receiveBuffer.AsMemory(totalBytesRead, Math.Min(receiveBuffer.Length - totalBytesRead, readSize));
+                        int bytesRead = await serverStream.ReadAsync(receiveChunkBuffer);
                         if (bytesRead == 0)
                         {
                             break;
@@ -1001,13 +994,9 @@ namespace System.Net.Quic.Tests
     }
 
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
-    [Collection("NoParallelTests")]
+    [Collection(nameof(DisableParallelization))]
     public sealed class QuicStreamTests_MsQuicProvider : QuicStreamTests<MsQuicProviderFactory>
     {
         public QuicStreamTests_MsQuicProvider(ITestOutputHelper output) : base(output) { }
     }
-
-    // Define test collection for tests to avoid all other tests.
-    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
-    public partial class NoParallelTests { }
 }

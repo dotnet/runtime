@@ -37,12 +37,9 @@
 
 // The code has been adapted for use as a benchmark by Microsoft.
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace V8.Crypto
 {
@@ -81,23 +78,6 @@ namespace V8.Crypto
             return (result ? 100 : -1);
         }
 
-        [Benchmark]
-        public static void Bench()
-        {
-            const int Iterations = 10;
-            const int n = 8;
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Iterations; i++)
-                    {
-                        Measure(n, false);
-                    }
-                }
-            }
-        }
-
         public static void Measure(int n, bool verbose)
         {
             DateTime start = DateTime.Now;
@@ -117,18 +97,18 @@ namespace V8.Crypto
         }
 
         private static RSAKey s_RSA;
-        private static String s_TEXT;
+        private static string s_TEXT;
 
         private static void Setup()
         {
-            String nValue = "a5261939975948bb7a58dffe5ff54e65f0498f9175f5a09288810b8975871e99af3b5dd94057b0fc07535f5f97444504fa35169d461d0d30cf0192e307727c065168c788771c561a9400fb49175e9e6aa4e23fe11af69e9412dd23b0cb6684c4c2429bce139e848ab26d0829073351f4acd36074eafd036a5eb83359d2a698d3";
-            String eValue = "10001";
-            String dValue = "8e9912f6d3645894e8d38cb58c0db81ff516cf4c7e5a14c7f1eddb1459d2cded4d8d293fc97aee6aefb861859c8b6a3d1dfe710463e1f9ddc72048c09751971c4a580aa51eb523357a3cc48d31cfad1d4a165066ed92d4748fb6571211da5cb14bc11b6e2df7c1a559e6d5ac1cd5c94703a22891464fba23d0d965086277a161";
-            String pValue = "d090ce58a92c75233a6486cb0a9209bf3583b64f540c76f5294bb97d285eed33aec220bde14b2417951178ac152ceab6da7090905b478195498b352048f15e7d";
-            String qValue = "cab575dc652bb66df15a0359609d51d1db184750c00c6698b90ef3465c99655103edbf0d54c56aec0ce3c4d22592338092a126a0cc49f65a4a30d222b411e58f";
-            String dmp1Value = "1a24bca8e273df2f0e47c199bbf678604e7df7215480c77c8db39f49b000ce2cf7500038acfff5433b7d582a01f1826e6f4d42e1c57f5e1fef7b12aabc59fd25";
-            String dmq1Value = "3d06982efbbe47339e1f6d36b1216b8a741d410b0c662f54f7118b27b9a4ec9d914337eb39841d8666f3034408cf94f5b62f11c402fc994fe15a05493150d9fd";
-            String coeffValue = "3a3e731acd8960b7ff9eb81a7ff93bd1cfa74cbd56987db58b4594fb09c09084db1734c8143f98b602b981aaa9243ca28deb69b5b280ee8dcee0fd2625e53250";
+            string nValue = "a5261939975948bb7a58dffe5ff54e65f0498f9175f5a09288810b8975871e99af3b5dd94057b0fc07535f5f97444504fa35169d461d0d30cf0192e307727c065168c788771c561a9400fb49175e9e6aa4e23fe11af69e9412dd23b0cb6684c4c2429bce139e848ab26d0829073351f4acd36074eafd036a5eb83359d2a698d3";
+            string eValue = "10001";
+            string dValue = "8e9912f6d3645894e8d38cb58c0db81ff516cf4c7e5a14c7f1eddb1459d2cded4d8d293fc97aee6aefb861859c8b6a3d1dfe710463e1f9ddc72048c09751971c4a580aa51eb523357a3cc48d31cfad1d4a165066ed92d4748fb6571211da5cb14bc11b6e2df7c1a559e6d5ac1cd5c94703a22891464fba23d0d965086277a161";
+            string pValue = "d090ce58a92c75233a6486cb0a9209bf3583b64f540c76f5294bb97d285eed33aec220bde14b2417951178ac152ceab6da7090905b478195498b352048f15e7d";
+            string qValue = "cab575dc652bb66df15a0359609d51d1db184750c00c6698b90ef3465c99655103edbf0d54c56aec0ce3c4d22592338092a126a0cc49f65a4a30d222b411e58f";
+            string dmp1Value = "1a24bca8e273df2f0e47c199bbf678604e7df7215480c77c8db39f49b000ce2cf7500038acfff5433b7d582a01f1826e6f4d42e1c57f5e1fef7b12aabc59fd25";
+            string dmq1Value = "3d06982efbbe47339e1f6d36b1216b8a741d410b0c662f54f7118b27b9a4ec9d914337eb39841d8666f3034408cf94f5b62f11c402fc994fe15a05493150d9fd";
+            string coeffValue = "3a3e731acd8960b7ff9eb81a7ff93bd1cfa74cbd56987db58b4594fb09c09084db1734c8143f98b602b981aaa9243ca28deb69b5b280ee8dcee0fd2625e53250";
 
             BigInteger.setupEngine(new BigInteger.AMSig(BigInteger.am3), 28);
 
@@ -319,7 +299,7 @@ namespace V8.Crypto
 #endif
 
         // Digit conversions
-        private const String BI_RM = "0123456789abcdefghijklmnopqrstuvwxyz";
+        private const string BI_RM = "0123456789abcdefghijklmnopqrstuvwxyz";
         private static int[] s_BI_RC;
 
         // am3/28 is best for SM, Rhino, but am4/26 is best for v8.
@@ -1015,7 +995,7 @@ namespace V8.Crypto
             else return 1;
         }
 
-        private static String s_sdigits = "0123456789abcdefghijklmnopqrstuvwxyz";
+        private static string s_sdigits = "0123456789abcdefghijklmnopqrstuvwxyz";
 
         private static String IntToString(int i, int radix)
         {
@@ -1034,7 +1014,7 @@ namespace V8.Crypto
                 {
                     neg = true; i = -i;
                 }
-                String res = "";
+                string res = "";
                 while (i != 0)
                 {
                     int digit = i % radix;

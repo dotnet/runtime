@@ -13,6 +13,7 @@
 .assembly 'instance'// as "instance"
 {
 }
+.assembly extern xunit.core {}
 .namespace BoxTest
 {
   .class abstract auto ansi BaseTest extends [mscorlib]System.Object
@@ -176,6 +177,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  2
       .locals ([0] class BoxTest.Test test,

@@ -11,15 +11,17 @@
     <ArchiveName>dotnet-crossgen2</ArchiveName>
     <SharedFrameworkHostFileNameOverride>crossgen2</SharedFrameworkHostFileNameOverride>
     <!-- Build this pack for any RID if building from source. Otherwise, only build select RIDs. -->
-    <RuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64;win-arm</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;freebsd-x64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64;win-arm</RuntimeIdentifiers>
     <GenerateInstallers>false</GenerateInstallers>
     <GetSharedFrameworkFilesForReadyToRunDependsOn>
         AddRuntimeFilesToPackage;
         AddFrameworkFilesToPackage
     </GetSharedFrameworkFilesForReadyToRunDependsOn>
     <PublishReadyToRun>true</PublishReadyToRun>
-    <!-- Disable crossgen on FreeBSD, NetBSD, illumos and Solaris for now. This can be revisited when we have full support. -->
-    <PublishReadyToRun Condition="'$(TargetOS)'=='FreeBSD' Or '$(TargetOS)'=='NetBSD' Or '$(TargetOS)'=='illumos' Or '$(TargetOS)'=='Solaris'">false</PublishReadyToRun>
+    <!-- Disable crossgen on NetBSD, illumos and Solaris for now. This can be revisited when we have full support. -->
+    <PublishReadyToRun Condition="'$(TargetOS)'=='NetBSD' Or '$(TargetOS)'=='illumos' Or '$(TargetOS)'=='Solaris'">false</PublishReadyToRun>
+    <!-- Disable crossgen on FreeBSD when cross building from Linux. -->
+    <PublishReadyToRun Condition="'$(TargetOS)'=='FreeBSD' and '$(CrossBuild)'=='true'">false</PublishReadyToRun>
     <HostJsonTargetPath>tools/</HostJsonTargetPath>
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
   </PropertyGroup>
@@ -37,13 +39,10 @@
     <Reference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
     <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)jitinterface_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/" />
     <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)clrjit_win_x86_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
-    <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)clrjit_win_arm_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
-    <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)clrjit_unix_arm_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
+    <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)clrjit_universal_arm_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
     <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)clrjit_win_x64_$(TargetArchitecture)$(LibSuffix)"  TargetPath="tools/" />
-    <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)clrjit_win_arm64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
     <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)clrjit_unix_x64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/" />
-    <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)clrjit_unix_arm64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
-    <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)clrjit_unix_osx_arm64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
+    <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)clrjit_universal_arm64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
     <!-- Include the native hosting layer  -->
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)hostfxr$(LibSuffix)" TargetPath="tools/" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)hostpolicy$(LibSuffix)" TargetPath="tools/" />

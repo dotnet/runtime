@@ -13,10 +13,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'ldc_div'// as "ldc_div"
+.assembly 's_ldc_div'// as "ldc_div"
 {
 }
-.module 'ldc_div.exe'
+.assembly extern xunit.core {}
 // MVID: {907922FB-D56B-4407-A016-0118205F2F38}
 .namespace JitTest
 {
@@ -77,6 +77,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       271 (0x10f)
       .maxstack  4

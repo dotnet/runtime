@@ -18,13 +18,28 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
         Logger _logger;
 
+        [ThreadStatic]
+        private static int s_loadFailuresAreErrors = 0;
+
+        public class LoadFailuresAsErrors : IDisposable
+        {
+            public LoadFailuresAsErrors()
+            {
+                s_loadFailuresAreErrors++;
+            }
+            public void Dispose()
+            {
+                s_loadFailuresAreErrors--;
+            }
+        }
+
         public void LogModuleLoadFailure(string simpleName, string filePath)
         {
             if (_simpleNamesReported.Add(simpleName))
             {
                 string str = $"Failed to load assembly '{simpleName}' from '{filePath}'";
 
-                if (String.Compare("System.Private.CoreLib", simpleName, StringComparison.OrdinalIgnoreCase) == 0)
+                if (s_loadFailuresAreErrors != 0 || String.Compare("System.Private.CoreLib", simpleName, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     _logger.PrintError(str);
                 }
@@ -41,7 +56,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 string str = $"Failed to load assembly '{simpleName}'";
 
-                if (String.Compare("System.Private.CoreLib", simpleName, StringComparison.OrdinalIgnoreCase) == 0)
+                if (s_loadFailuresAreErrors != 0 || String.Compare("System.Private.CoreLib", simpleName, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     _logger.PrintError(str);
                 }

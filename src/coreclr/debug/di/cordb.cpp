@@ -84,16 +84,6 @@
 //*****************************************************************************
 STDAPI CreateCordbObject(int iDebuggerVersion, IUnknown ** ppCordb)
 {
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI) && !defined(FEATURE_CORESYSTEM)
-    // This API should not be called for Windows CoreCLR unless we are doing interop-debugging
-    // (which is only supported internally).  Use code:CoreCLRCreateCordbObject instead.
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgEnableMixedModeDebugging) == 0)
-    {
-        _ASSERTE(!"Deprecated entry point CreateCordbObject() is called on Windows CoreCLR\n");
-        return E_NOTIMPL;
-    }
-#endif // !defined(FEATURE_DBGIPC_TRANSPORT_DI) && !defined(FEATURE_CORESYSTEM)
-
     if (ppCordb == NULL)
     {
         return E_INVALIDARG;
@@ -443,10 +433,10 @@ STDAPI GetRequestedRuntimeInfo(LPCWSTR pExe,
                                LPCWSTR pConfigurationFile,
                                DWORD startupFlags,
                                DWORD runtimeInfoFlags,
-                               __out_ecount_opt(dwDirectory) LPWSTR pDirectory,
+                               _Out_writes_bytes_opt_(dwDirectory) LPWSTR pDirectory,
                                DWORD dwDirectory,
                                DWORD *dwDirectoryLength,
-                               __out_ecount_opt(cchBuffer)   LPWSTR pVersion,
+                               _Out_writes_bytes_opt_(cchBuffer)   LPWSTR pVersion,
                                DWORD cchBuffer,
                                DWORD* dwlength)
 {

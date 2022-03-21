@@ -20,7 +20,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-publib.h>
-#include <mono/mini/jit.h>
+#include <mono/jit/jit.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-threads.h>
@@ -79,6 +79,12 @@ prof_jit_done (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 	if (prof->methods)
 		g_ptr_array_add (prof->methods, method);
 	mono_os_mutex_unlock (&prof->mutex);
+}
+
+static void
+prof_inline_method (MonoProfiler *prof, MonoMethod *method, MonoMethod *inlined_method)
+{
+	prof_jit_done (prof, inlined_method, NULL);
 }
 
 static void
@@ -396,6 +402,7 @@ mono_profiler_init_aot (const char *desc)
 	MonoProfilerHandle handle = mono_profiler_create (&aot_profiler);
 	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized);
 	mono_profiler_set_jit_done_callback (handle, prof_jit_done);
+	mono_profiler_set_inline_method_callback (handle, prof_inline_method);
 }
 
 static void
@@ -438,10 +445,10 @@ emit_int32 (MonoProfiler *prof, gint32 value)
 static void
 emit_string (MonoProfiler *prof, const char *str)
 {
-	int len = strlen (str);
+	size_t len = strlen (str);
 
-	emit_int32 (prof, len);
-	emit_bytes (prof, (guint8*)str, len);
+	emit_int32 (prof, (gint32)len);
+	emit_bytes (prof, (guint8*)str, (int)len);
 }
 
 static void
@@ -633,7 +640,7 @@ prof_save (MonoProfiler *prof, FILE* file)
 
 	gint32 version = (AOT_PROFILER_MAJOR_VERSION << 16) | AOT_PROFILER_MINOR_VERSION;
 	sprintf (magic, AOT_PROFILER_MAGIC);
-	emit_bytes (prof, (guint8*)magic, strlen (magic));
+	emit_bytes (prof, (guint8*)magic, (int)strlen (magic));
 	emit_int32 (prof, version);
 
 	GHashTable *all_methods = g_hash_table_new (NULL, NULL);
@@ -673,7 +680,7 @@ prof_save (MonoProfiler *prof, FILE* file)
 
 		sig = mono_method_signature_checked (send_method, error);
 		mono_error_assert_ok (error);
-		if (sig->param_count != 3 || !sig->params [0]->byref || sig->params [0]->type != MONO_TYPE_U1 || sig->params [1]->type != MONO_TYPE_I4 || sig->params [2]->type != MONO_TYPE_STRING) {
+		if (sig->param_count != 3 || !m_type_is_byref (sig->params [0]) || sig->params [0]->type != MONO_TYPE_U1 || sig->params [1]->type != MONO_TYPE_I4 || sig->params [2]->type != MONO_TYPE_STRING) {
 			mono_profiler_printf_err ("Method '%s' should have signature void (byte&,int,string).", prof->send_to_str);
 			exit (1);
 		}

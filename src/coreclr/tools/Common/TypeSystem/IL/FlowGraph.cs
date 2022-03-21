@@ -88,47 +88,6 @@ namespace Internal.IL
                 yield return BasicBlocks[i];
         }
 
-        internal string Dump(Func<BasicBlock, string> getNodeAnnot, Func<(BasicBlock, BasicBlock), string> getEdgeAnnot)
-        {
-            var sb = new StringBuilder();
-            sb.AppendLine("digraph G {");
-            sb.AppendLine("  forcelabels=true;");
-            sb.AppendLine();
-            Dictionary<long, int> bbToIndex = new Dictionary<long, int>();
-            for (int i = 0; i < BasicBlocks.Count; i++)
-                bbToIndex.Add(BasicBlocks[i].Start, i);
-
-            foreach (BasicBlock bb in BasicBlocks)
-            {
-                string label = $"[{bb.Start:x}..{bb.Start + bb.Size:x})\\n{getNodeAnnot(bb)}";
-                sb.AppendLine($"  BB{bbToIndex[bb.Start]} [label=\"{label}\"];");
-            }
-
-            sb.AppendLine();
-
-            foreach (BasicBlock bb in BasicBlocks)
-            {
-                foreach (BasicBlock tar in bb.Targets)
-                {
-                    string label = getEdgeAnnot((bb, tar));
-                    string postfix = string.IsNullOrEmpty(label) ? "" : $" [label=\"{label}\"]";
-                    sb.AppendLine($"  BB{bbToIndex[bb.Start]} -> BB{bbToIndex[tar.Start]}{postfix};");
-                }
-            }
-
-            // Write ranks with BFS.
-            List<BasicBlock> curRank = new List<BasicBlock> { BasicBlocks.Single(bb => bb.Start == 0) };
-            HashSet<BasicBlock> seen = new HashSet<BasicBlock>(curRank);
-            while (curRank.Count > 0)
-            {
-                sb.AppendLine($"  {{rank = same; {string.Concat(curRank.Select(bb => $"BB{bbToIndex[bb.Start]}; "))}}}");
-                curRank = curRank.SelectMany(bb => bb.Targets).Where(seen.Add).ToList();
-            }
-
-            sb.AppendLine("}");
-            return sb.ToString();
-        }
-
         public static FlowGraph Create(MethodIL il)
         {
             HashSet<int> bbStarts = GetBasicBlockStarts(il);

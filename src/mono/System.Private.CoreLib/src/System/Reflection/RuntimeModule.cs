@@ -207,10 +207,7 @@ namespace System.Reflection
         public override
         Type GetType(string className, bool throwOnError, bool ignoreCase)
         {
-            if (className == null)
-                throw new ArgumentNullException(nameof(className));
-            if (className.Length == 0)
-                throw new ArgumentException("Type name can't be empty");
+            ArgumentException.ThrowIfNullOrEmpty(className);
             return assembly.InternalGetType(this, className, throwOnError, ignoreCase);
         }
 
@@ -312,7 +309,7 @@ namespace System.Reflection
             if (handle == IntPtr.Zero)
                 throw resolve_token_exception(module, metadataToken, error, "Type");
             else
-                return Type.GetTypeFromHandle(new RuntimeTypeHandle(handle));
+                return Type.GetTypeFromHandle(new RuntimeTypeHandle(handle))!;
         }
 
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]

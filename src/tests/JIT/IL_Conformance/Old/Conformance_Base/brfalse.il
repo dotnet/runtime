@@ -137,4 +137,4 @@ FAIL:
 
 }
 }
-.assembly brfalse.exe{}
+.assembly 'brfalse'{}

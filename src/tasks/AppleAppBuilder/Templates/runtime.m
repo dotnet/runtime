@@ -5,9 +5,12 @@
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/class.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/object.h>
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
 #include <TargetConditionals.h>
@@ -19,14 +22,12 @@
 
 static char *bundle_path;
 
-// no-op for iOS and tvOS.
-// watchOS is not supported yet.
-#define MONO_ENTER_GC_UNSAFE
-#define MONO_EXIT_GC_UNSAFE
-
 #define APPLE_RUNTIME_IDENTIFIER "//%APPLE_RUNTIME_IDENTIFIER%"
 
 #define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
+
+// XHarness is looking for this tag in app's output to determine the exit code
+#define EXIT_CODE_TAG "DOTNET.APP_EXIT_CODE"
 
 const char *
 get_bundle_path (void)
@@ -202,7 +203,7 @@ unhandled_exception_handler (MonoObject *exc, void *user_data)
     free (type_name);
 
     os_log_info (OS_LOG_DEFAULT, "%@", msg);
-    os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", 1);
+    os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", 1);
     exit (1);
 }
 
@@ -211,7 +212,7 @@ log_callback (const char *log_domain, const char *log_level, const char *message
 {
     os_log_info (OS_LOG_DEFAULT, "(%{public}s %{public}s) %{public}s", log_domain, log_level, message);
     if (fatal) {
-        os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", 1);
+        os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", 1);
         exit (1);
     }
 }
@@ -335,6 +336,8 @@ mono_ios_runtime_init (void)
     mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP);
 #else
     mono_jit_set_aot_mode (MONO_AOT_MODE_FULL);
+    // it's for PlatformDetection.IsMonoAOT on iOS/tvOS
+    setenv ("MONO_AOT_MODE", "aot", TRUE);
 #endif
 
 #endif
@@ -357,9 +360,7 @@ mono_ios_runtime_init (void)
 
 #if !FORCE_INTERPRETER && (!TARGET_OS_SIMULATOR || FORCE_AOT)
     // device runtimes are configured to use lazy gc thread creation
-    MONO_ENTER_GC_UNSAFE;
     mono_gc_init_finalizer_thread ();
-    MONO_EXIT_GC_UNSAFE;
 #endif
 
     MonoAssembly *assembly = load_assembly (executable, NULL);
@@ -368,7 +369,7 @@ mono_ios_runtime_init (void)
 
     res = mono_jit_exec (mono_domain_get (), assembly, argi, managed_argv);
     // Print this so apps parsing logs can detect when we exited
-    os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", res);
+    os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", res);
 
     mono_jit_cleanup (domain);
 

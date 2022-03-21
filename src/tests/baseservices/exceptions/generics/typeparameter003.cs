@@ -43,17 +43,17 @@ public class Gen<Ex> where Ex : Exception
 		}
 		catch(Ex E)
 		{
-			Test.Eval(Object.ReferenceEquals(e,E));
+			Test_typeparameter003.Eval(Object.ReferenceEquals(e,E));
 		}
 		catch
 		{
 			Console.WriteLine("Caught Wrong Exception");
-			Test.Eval(false);
+			Test_typeparameter003.Eval(false);
 		}
 	}
 }
 
-public class Test
+public class Test_typeparameter003
 {
 	public static int counter = 0;
 	public static bool result = true;

@@ -8,7 +8,7 @@ internal struct Foo
     public int x;
 }
 
-public class Test
+public class Test_ArrayOfStructs
 {
     private static int StructTaker_Inline(Foo FooStruct)
     {

@@ -5,9 +5,6 @@
     greater than the one in the previous release -->
     <MajorVersion>$([MSBuild]::Add($(MajorVersion), 5))</MajorVersion>
     <AssemblyVersion>$(MajorVersion).$(MinorVersion).0.0</AssemblyVersion>
-    <!-- We set the minor version as the major file version is the same as the
-    one in the previous release, so with minor version we make this file version greater -->
-    <MinorVersion>1</MinorVersion>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>

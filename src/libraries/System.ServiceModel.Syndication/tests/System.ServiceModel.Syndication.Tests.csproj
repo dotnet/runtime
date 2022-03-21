@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicScenarioTests.cs" />
@@ -38,7 +38,7 @@
     <Compile Include="System\ServiceModel\Syndication\SyndicationVersionsTests.cs" />
     <Compile Include="System\ServiceModel\Syndication\WorkspaceTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="$(MSBuildThisFileDirectory)netcoreapp\BasicScenarioTests.netcoreapp.cs" />
     <Compile Include="System\ServiceModel\Syndication\SyndicationFeedTests.netcoreapp.cs" />
     <Compile Include="System\ServiceModel\Syndication\SyndicationTextInputTests.cs" />
@@ -61,7 +61,7 @@
   <ItemGroup>
     <ProjectReference Include="..\src\System.ServiceModel.Syndication.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.ServiceModel" />
   </ItemGroup>
 </Project>

@@ -20,7 +20,7 @@ namespace System.Net.Security
             return status.Exception ?? new Win32Exception((int)status.ErrorCode);
         }
 
-        internal const bool StartMutualAuthAsAnonymous = false;
+        internal const bool StartMutualAuthAsAnonymous = true;
 
         // SecureTransport is okay with a 0 byte input, but it produces a 0 byte output.
         // Since ST is not producing the framed empty message just call this false and avoid the
@@ -32,16 +32,18 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal AcceptSecurityContext(
+            SecureChannel secureChannel,
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(secureChannel, credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
         public static SecurityStatusPal InitializeSecurityContext(
+            SecureChannel secureChannel,
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             string? targetName,
@@ -49,10 +51,15 @@ namespace System.Net.Security
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(secureChannel, credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
-        public static SecurityStatusPal Renegotiate(ref SafeFreeCredentials? credentialsHandle, ref SafeDeleteSslContext? context, SslAuthenticationOptions sslAuthenticationOptions, out byte[]? outputBuffer)
+        public static SecurityStatusPal Renegotiate(
+            SecureChannel secureChannel,
+            ref SafeFreeCredentials? credentialsHandle,
+            ref SafeDeleteSslContext? context,
+            SslAuthenticationOptions sslAuthenticationOptions,
+            out byte[]? outputBuffer)
         {
             throw new PlatformNotSupportedException();
         }
@@ -224,6 +231,7 @@ namespace System.Net.Security
         }
 
         private static SecurityStatusPal HandshakeInternal(
+            SecureChannel secureChannel,
             SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
@@ -240,16 +248,6 @@ namespace System.Net.Security
                 {
                     sslContext = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
                     context = sslContext;
-
-                    if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !sslAuthenticationOptions.IsServer)
-                    {
-                        Interop.AppleCrypto.SslSetTargetName(sslContext.SslContext, sslAuthenticationOptions.TargetHost);
-                    }
-
-                    if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.RemoteCertRequired)
-                    {
-                        Interop.AppleCrypto.SslSetAcceptClientCert(sslContext.SslContext);
-                    }
                 }
 
                 if (inputBuffer.Length > 0)
@@ -259,6 +257,18 @@ namespace System.Net.Security
 
                 SafeSslHandle sslHandle = sslContext!.SslContext;
                 SecurityStatusPal status = PerformHandshake(sslHandle);
+                if (status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
+                {
+                    X509Certificate2? clientCertificate = secureChannel.SelectClientCertificate(out _);
+                    if (clientCertificate != null)
+                    {
+                        sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(clientCertificate);
+                        SafeDeleteSslContext.SetCertificate(sslContext.SslContext, sslAuthenticationOptions.CertificateContext);
+                    }
+
+                    // We either got certificate or we can proceed without it. It is up to the server to decide if either is OK.
+                    status = PerformHandshake(sslHandle);
+                }
 
                 outputBuffer = sslContext.ReadPendingWrites();
                 return status;
@@ -290,6 +300,8 @@ namespace System.Net.Security
                         // So, call SslHandshake again to indicate to Secure Transport that we've
                         // accepted this handshake and it should go into the ready state.
                         break;
+                    case PAL_TlsHandshakeState.ClientCertRequested:
+                        return new SecurityStatusPal(SecurityStatusPalErrorCode.CredentialsNeeded);
                     default:
                         return new SecurityStatusPal(
                             SecurityStatusPalErrorCode.InternalError,

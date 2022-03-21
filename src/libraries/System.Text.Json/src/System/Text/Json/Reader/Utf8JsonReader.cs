@@ -304,7 +304,7 @@ namespace System.Text.Json
         {
             if (!_isFinalBlock)
             {
-                throw ThrowHelper.GetInvalidOperationException_CannotSkipOnPartial();
+                ThrowHelper.ThrowInvalidOperationException_CannotSkipOnPartial();
             }
 
             SkipHelper();
@@ -429,8 +429,9 @@ namespace System.Text.Json
         {
             if (!IsTokenTypeString(TokenType))
             {
-                throw ThrowHelper.GetInvalidOperationException_ExpectedStringComparison(TokenType);
+                ThrowHelper.ThrowInvalidOperationException_ExpectedStringComparison(TokenType);
             }
+
             return TextEqualsHelper(utf8Text);
         }
 
@@ -499,7 +500,7 @@ namespace System.Text.Json
         {
             if (!IsTokenTypeString(TokenType))
             {
-                throw ThrowHelper.GetInvalidOperationException_ExpectedStringComparison(TokenType);
+                ThrowHelper.ThrowInvalidOperationException_ExpectedStringComparison(TokenType);
             }
 
             if (MatchNotPossible(text.Length))
@@ -1551,7 +1552,7 @@ namespace System.Text.Json
         {
             Debug.Assert(data[i] == (byte)'0');
             i++;
-            byte nextByte = default;
+            byte nextByte;
             if (i < data.Length)
             {
                 nextByte = data[i];
@@ -2313,7 +2314,7 @@ namespace System.Text.Json
         private bool SkipSingleLineComment(ReadOnlySpan<byte> localBuffer, out int idx)
         {
             idx = FindLineSeparator(localBuffer);
-            int toConsume = 0;
+            int toConsume;
             if (idx != -1)
             {
                 toConsume = idx;

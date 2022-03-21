@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 unsafe partial class GenericsNative
 {
@@ -40,23 +40,23 @@ unsafe partial class GenericsTest
     private static void TestPoint1L()
     {
         GenericsNative.Point1<long> value = GenericsNative.GetPoint1L(1L);
-        Assert.AreEqual(value.e00, 1L);
+        Assert.Equal(value.e00, 1L);
 
         GenericsNative.Point1<long> value2;
         GenericsNative.GetPoint1LOut(1L, &value2);
-        Assert.AreEqual(value2.e00, 1L);
+        Assert.Equal(value2.e00, 1L);
 
         GenericsNative.GetPoint1LOut(1L, out GenericsNative.Point1<long> value3);
-        Assert.AreEqual(value3.e00, 1L);
+        Assert.Equal(value3.e00, 1L);
 
         GenericsNative.Point1<long>* value4 = GenericsNative.GetPoint1LPtr(1L);
-        Assert.AreEqual(value4->e00, 1L);
+        Assert.Equal(value4->e00, 1L);
 
         ref readonly GenericsNative.Point1<long> value5 = ref GenericsNative.GetPoint1LRef(1L);
-        Assert.AreEqual(value5.e00, 1L);
+        Assert.Equal(value5.e00, 1L);
 
         GenericsNative.Point1<long> result = GenericsNative.AddPoint1L(value, value);
-        Assert.AreEqual(result.e00, 2L);
+        Assert.Equal(result.e00, 2L);
 
         GenericsNative.Point1<long>[] values = new GenericsNative.Point1<long>[] {
             value,
@@ -69,13 +69,13 @@ unsafe partial class GenericsTest
         fixed (GenericsNative.Point1<long>* pValues = &values[0])
         {
             GenericsNative.Point1<long> result2 = GenericsNative.AddPoint1Ls(pValues, values.Length);
-            Assert.AreEqual(result2.e00, 5l);
+            Assert.Equal(result2.e00, 5l);
         }
 
         GenericsNative.Point1<long> result3 = GenericsNative.AddPoint1Ls(values, values.Length);
-        Assert.AreEqual(result3.e00, 5l);
+        Assert.Equal(result3.e00, 5l);
 
         GenericsNative.Point1<long> result4 = GenericsNative.AddPoint1Ls(in values[0], values.Length);
-        Assert.AreEqual(result4.e00, 5l);
+        Assert.Equal(result4.e00, 5l);
     }
 }

@@ -10,7 +10,7 @@ namespace System.Text.Json
     /// Keeps both a List and Dictionary in sync to enable determinstic enumeration ordering of List
     /// and performance benefits of Dictionary once a threshold is hit.
     /// </summary>
-    internal partial class JsonPropertyDictionary<T> where T : class
+    internal sealed partial class JsonPropertyDictionary<T> where T : class
     {
         private const int ListToDictionaryThreshold = 9;
 
@@ -83,13 +83,8 @@ namespace System.Text.Json
             _propertyDictionary?.Clear();
         }
 
-        public bool ContainsKey(string propertyName)
+        public bool ContainsKey(string propertyName!!)
         {
-            if (propertyName == null)
-            {
-                throw new ArgumentNullException(nameof(propertyName));
-            }
-
             return ContainsProperty(propertyName);
         }
 
@@ -113,7 +108,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(propertyName));
             }
 
-            return TryRemoveProperty(propertyName, out T? removedValue);
+            return TryRemoveProperty(propertyName, out _);
         }
 
         public bool Contains(KeyValuePair<string, T?> item)
@@ -159,13 +154,8 @@ namespace System.Text.Json
 
         public ICollection<T?> Values => GetValueCollection();
 
-        public bool TryGetValue(string propertyName, out T? value)
+        public bool TryGetValue(string propertyName!!, out T? value)
         {
-            if (propertyName == null)
-            {
-                throw new ArgumentNullException(nameof(propertyName));
-            }
-
             if (_propertyDictionary != null)
             {
                 return _propertyDictionary.TryGetValue(propertyName, out value);

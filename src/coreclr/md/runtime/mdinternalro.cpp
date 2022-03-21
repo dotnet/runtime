@@ -720,8 +720,8 @@ __checkReturn
 HRESULT MDInternalRO::GetCustomAttributeByName( // S_OK or error.
     mdToken     tkObj,                  // [IN] Object with Custom Attribute.
     LPCUTF8     szName,                 // [IN] Name of desired Custom Attribute.
-    __deref_out_bcount(*pcbData) const void  **ppData, // [OUT] Put pointer to data here.
-    __out ULONG *pcbData)               // [OUT] Put size of data here.
+    _Outptr_result_bytebuffer_(*pcbData) const void  **ppData, // [OUT] Put pointer to data here.
+    _Out_ ULONG *pcbData)               // [OUT] Put size of data here.
 {
     return m_LiteWeightStgdb.m_MiniMd.CommonGetCustomAttributeByNameEx(tkObj, szName, NULL, ppData, pcbData);
 } // MDInternalRO::GetCustomAttributeByName

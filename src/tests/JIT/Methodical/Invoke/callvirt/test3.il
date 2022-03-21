@@ -19,7 +19,7 @@
   
   
 }
-.module 'test3.exe'
+.assembly extern xunit.core {}
 // MVID: {D9CB467A-BD94-4D87-BB6B-ABB1D4B12E50}
 .namespace Test
 {
@@ -79,6 +79,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       65 (0x41)
       .maxstack  2

@@ -105,6 +105,23 @@ def main(argv):
 
     my_env = os.environ
 
+    # Download formatting tools
+    repoRoot = os.path.dirname(os.path.dirname(coreclr))
+    formattingScriptFolder = os.path.join(repoRoot, "eng", "formatting")
+    formattingDownloadScriptCommand = []
+    if platform == 'Linux' or platform == 'OSX':
+        formattingDownloadScriptCommand = [os.path.join(formattingScriptFolder, "download-tools.sh")]
+    elif platform == 'windows':
+        formattingDownloadScriptCommand = ["powershell", os.path.join(formattingScriptFolder, "download-tools.ps1")]
+
+    proc = subprocess.Popen(formattingDownloadScriptCommand)
+
+    if proc.wait() != 0:
+        print("Formatting tool download failed")
+        return -1
+
+    my_env["PATH"] = os.path.join(repoRoot, "artifacts", "tools") + os.pathsep + my_env["PATH"]
+
     # Download bootstrap
 
     bootstrapFilename = ""
@@ -182,7 +199,7 @@ def main(argv):
         if platform == 'Linux' or platform == 'OSX':
             jitformat = os.path.join(jitformat, "jit-format")
         elif platform == 'windows':
-            jitformat = os.path.join(jitformat,"jit-format.bat")
+            jitformat = os.path.join(jitformat,"jit-format.exe")
         errorMessage = ""
 
         builds = ["Checked", "Debug", "Release"]

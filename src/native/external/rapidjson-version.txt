@@ -1,0 +1,6 @@
+d87b698d0fcc10a5f632ecbc80a9cb2a8fa094a5
+
+https://github.com/Tencent/rapidjson/commit/d87b698d0fcc10a5f632ecbc80a9cb2a8fa094a5
+
+Note: This library is not using a proper release lifecycle. v1.1.0 was the last version released in 2016.
+      Therefore, we are pointing to a random commit from 2019 rather than a version tag.

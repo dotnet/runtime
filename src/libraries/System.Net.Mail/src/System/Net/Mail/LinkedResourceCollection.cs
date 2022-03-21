@@ -29,51 +29,29 @@ namespace System.Net.Mail
 
         protected override void RemoveItem(int index)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             base.RemoveItem(index);
         }
 
         protected override void ClearItems()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             base.ClearItems();
         }
 
         protected override void SetItem(int index, LinkedResource item)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
-
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
-
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ArgumentNullException.ThrowIfNull(item);
             base.SetItem(index, item);
         }
 
         protected override void InsertItem(int index, LinkedResource item)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
-
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
-
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ArgumentNullException.ThrowIfNull(item);
             base.InsertItem(index, item);
         }
     }

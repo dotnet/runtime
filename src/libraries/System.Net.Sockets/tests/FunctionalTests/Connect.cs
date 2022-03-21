@@ -340,12 +340,31 @@ namespace System.Net.Sockets.Tests
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
             }
         }
+
+        [Fact]
+        public async Task FailedConnect_ConnectedReturnsFalse()
+        {
+            using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            // Connect to port 1 where we expect no server to be listening.
+            SocketException se = await Assert.ThrowsAnyAsync<SocketException>(() => ConnectAsync(socket, new IPEndPoint(IPAddress.Loopback, 1)));
+
+            if (se.SocketErrorCode != SocketError.ConnectionRefused)
+            {
+                Assert.Equal(SocketError.WouldBlock, se.SocketErrorCode);
+
+                // Give the non-blocking connect some time to complete.
+                socket.Poll(5_000_000 /* microSeconds */, SelectMode.SelectWrite);
+            }
+
+            Assert.False(socket.Connected);
+        }
     }
 
     // The test class is declared non-parallel because of possible IPv4/IPv6 port-collision on Unix:
     // When running these tests in parallel with other tests, there is some chance that the DualMode client
     // will connect to an IPv4 server of a parallel test case.
-    [Collection(nameof(NoParallelTests))]
+    [Collection(nameof(DisableParallelization))]
     public abstract class Connect_NonParallel<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
         protected Connect_NonParallel(ITestOutputHelper output) : base(output)

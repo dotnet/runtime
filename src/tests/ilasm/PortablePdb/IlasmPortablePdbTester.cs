@@ -9,7 +9,7 @@ using System.Reflection.Metadata;
 
 namespace IlasmPortablePdbTests
 {
-    public class IlasmPortablePdbTester : XunitBase
+    public class IlasmPortablePdbTester : IDisposable
     {
         private const string CoreRoot = "CORE_ROOT";
         private const string IlasmFileName = "ilasm";
@@ -36,7 +36,7 @@ namespace IlasmPortablePdbTests
         {
             var ilasm = IlasmPortablePdbTesterCommon.GetIlasmFullPath(CoreRootVar, IlasmFile);
             IlasmPortablePdbTesterCommon.Assemble(ilasm, ilSource, TestDir, out string dll, out string pdb);
-            
+
             using (var peStream = new FileStream(dll, FileMode.Open, FileAccess.Read))
             {
                 using (var peReader = new PEReader(peStream))
@@ -102,7 +102,7 @@ namespace IlasmPortablePdbTests
                         var portablePdbMdReader = pdbReaderProvider.GetMetadataReader();
                         Assert.NotNull(portablePdbMdReader);
                         Assert.Equal(expected.Count, portablePdbMdReader.Documents.Count);
-                        
+
                         int i = 0;
                         foreach (var documentHandle in portablePdbMdReader.Documents)
                         {
@@ -246,7 +246,7 @@ namespace IlasmPortablePdbTests
                                 Assert.Equal(expected[i].Length, localScope.Length);
                                 var variableHandles = localScope.GetLocalVariables();
                                 Assert.Equal(expected[i].Variables.Count, variableHandles.Count);
-                                
+
                                 int j = 0;
                                 foreach (var variableHandle in localScope.GetLocalVariables())
                                 {
@@ -255,7 +255,7 @@ namespace IlasmPortablePdbTests
                                     var variableName = portablePdbMdReader.GetString(variable.Name);
                                     Assert.Equal(expected[i].Variables[j].Name, variableName);
                                     Assert.Equal(expected[i].Variables[j].Index, variable.Index);
-                                    Assert.Equal(expected[i].Variables[j].IsDebuggerHidden, 
+                                    Assert.Equal(expected[i].Variables[j].IsDebuggerHidden,
                                         variable.Attributes == LocalVariableAttributes.DebuggerHidden);
                                     j++;
                                 }
@@ -268,10 +268,7 @@ namespace IlasmPortablePdbTests
                 }
             }
         }
-        
-        public static int Main(string[] args)
-        {
-            return new IlasmPortablePdbTester().RunTests();
-        }
+
+        public void Dispose() {}
     }
 }

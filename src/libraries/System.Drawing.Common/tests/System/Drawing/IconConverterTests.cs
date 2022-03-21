@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
+using System.Tests;
 using Xunit;
 
 namespace System.ComponentModel.TypeConverterTests
@@ -171,7 +172,14 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Throws<NotSupportedException>(() => _icoConvFrmTD.ConvertTo(null, CultureInfo.InvariantCulture, _icon, typeof(object)));
             Assert.Throws<NotSupportedException>(() => _icoConvFrmTD.ConvertTo(null, CultureInfo.InvariantCulture, _icon, typeof(int)));
 
-            Assert.Equal("(none)", (string)_icoConv.ConvertTo(null, typeof(string)));
+            using (new ThreadCultureChange(CultureInfo.CreateSpecificCulture("fr-FR"), CultureInfo.InvariantCulture))
+            {
+                Assert.Equal("(none)", (string)_icoConv.ConvertTo(null, typeof(string)));
+                Assert.Equal("(none)", (string)_icoConv.ConvertTo(null, CultureInfo.CreateSpecificCulture("ru-RU"), null, typeof(string)));
+
+                Assert.Equal("(none)", (string)_icoConvFrmTD.ConvertTo(null, typeof(string)));
+                Assert.Equal("(none)", (string)_icoConvFrmTD.ConvertTo(null, CultureInfo.CreateSpecificCulture("de-DE"), null, typeof(string)));
+            }
         }
     }
 }

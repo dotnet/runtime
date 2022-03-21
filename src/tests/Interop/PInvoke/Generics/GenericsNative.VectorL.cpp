@@ -27,7 +27,7 @@ extern "C" DLL_EXPORT VectorL128 STDMETHODCALLTYPE GetVectorL128(int64_t e00, in
     return *reinterpret_cast<VectorL128*>(value);
 }
 
-extern "C" DLL_EXPORT VectorL256 STDMETHODCALLTYPE GetVectorL256(int64_t e00, int64_t e01, int64_t e02, int64_t e03)
+extern "C" DLL_EXPORT VectorL256 STDMETHODCALLTYPE ENABLE_AVX GetVectorL256(int64_t e00, int64_t e01, int64_t e02, int64_t e03)
 {
     int64_t value[4] = { e00, e01, e02, e03 };
     return *reinterpret_cast<VectorL256*>(value);
@@ -38,7 +38,7 @@ extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVectorL128Out(int64_t e00, int64
     *pValue = GetVectorL128(e00, e01);
 }
 
-extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVectorL256Out(int64_t e00, int64_t e01, int64_t e02, int64_t e03, VectorL256* pValue)
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE ENABLE_AVX GetVectorL256Out(int64_t e00, int64_t e01, int64_t e02, int64_t e03, VectorL256* pValue)
 {
     *pValue = GetVectorL256(e00, e01, e02, e03);
 }
@@ -49,7 +49,7 @@ extern "C" DLL_EXPORT const VectorL128* STDMETHODCALLTYPE GetVectorL128Ptr(int64
     return &VectorL128Value;
 }
 
-extern "C" DLL_EXPORT const VectorL256* STDMETHODCALLTYPE GetVectorL256Ptr(int64_t e00, int64_t e01, int64_t e02, int64_t e03)
+extern "C" DLL_EXPORT const VectorL256* STDMETHODCALLTYPE ENABLE_AVX GetVectorL256Ptr(int64_t e00, int64_t e01, int64_t e02, int64_t e03)
 {
     GetVectorL256Out(e00, e01, e02, e03, &VectorL256Value);
     return &VectorL256Value;
@@ -60,7 +60,7 @@ extern "C" DLL_EXPORT VectorL128 STDMETHODCALLTYPE AddVectorL128(VectorL128 lhs,
     throw "P/Invoke for Vector<char> should be unsupported.";
 }
 
-extern "C" DLL_EXPORT VectorL256 STDMETHODCALLTYPE AddVectorL256(VectorL256 lhs, VectorL256 rhs)
+extern "C" DLL_EXPORT VectorL256 STDMETHODCALLTYPE ENABLE_AVX AddVectorL256(VectorL256 lhs, VectorL256 rhs)
 {
     throw "P/Invoke for Vector<char> should be unsupported.";
 }
@@ -70,7 +70,7 @@ extern "C" DLL_EXPORT VectorL128 STDMETHODCALLTYPE AddVectorL128s(const VectorL1
     throw "P/Invoke for Vector<char> should be unsupported.";
 }
 
-extern "C" DLL_EXPORT VectorL256 STDMETHODCALLTYPE AddVectorL256s(const VectorL256* pValues, int64_t count)
+extern "C" DLL_EXPORT VectorL256 STDMETHODCALLTYPE ENABLE_AVX AddVectorL256s(const VectorL256* pValues, int64_t count)
 {
     throw "P/Invoke for Vector<char> should be unsupported.";
 }

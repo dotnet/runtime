@@ -56,18 +56,8 @@ namespace System.IO.Pipes
             PipeOptions options, TokenImpersonationLevel impersonationLevel, HandleInheritability inheritability)
             : base(direction, 0)
         {
-            if (pipeName == null)
-            {
-                throw new ArgumentNullException(nameof(pipeName));
-            }
-            if (serverName == null)
-            {
-                throw new ArgumentNullException(nameof(serverName), SR.ArgumentNull_ServerName);
-            }
-            if (pipeName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_NeedNonemptyPipeName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(pipeName);
+            ArgumentNullException.ThrowIfNull(serverName);
             if (serverName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyServerName);
@@ -97,13 +87,9 @@ namespace System.IO.Pipes
         }
 
         // Create a NamedPipeClientStream from an existing server pipe handle.
-        public NamedPipeClientStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle)
+        public NamedPipeClientStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle!!)
             : base(direction, 0)
         {
-            if (safePipeHandle == null)
-            {
-                throw new ArgumentNullException(nameof(safePipeHandle));
-            }
             if (safePipeHandle.IsInvalid)
             {
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(safePipeHandle));

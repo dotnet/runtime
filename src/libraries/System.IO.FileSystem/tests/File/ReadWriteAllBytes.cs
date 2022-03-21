@@ -162,6 +162,38 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // DOS device paths (\\.\ and \\?\) are a Windows concept
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60427")]
+        public async Task ReadAllBytes_NonSeekableFileStream_InWindows()
+        {
+            string pipeName = GetNamedPipeServerStreamName();
+            string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
+
+            var namedPipeWriterStream = new NamedPipeServerStream(pipeName, PipeDirection.Out);
+            var contentBytes = new byte[] { 1, 2, 3 };
+
+            using (var cts = new CancellationTokenSource())
+            {
+                Task writingServerTask = WaitConnectionAndWritePipeStreamAsync(namedPipeWriterStream, contentBytes, cts.Token);
+                Task<byte[]> readTask = Task.Run(() => File.ReadAllBytes(pipePath), cts.Token);
+                cts.CancelAfter(TimeSpan.FromSeconds(3));
+
+                await writingServerTask;
+                byte[] readBytes = await readTask;
+                Assert.Equal<byte>(contentBytes, readBytes);
+            }
+
+            static async Task WaitConnectionAndWritePipeStreamAsync(NamedPipeServerStream namedPipeWriterStream, byte[] contentBytes, CancellationToken cancellationToken)
+            {
+                await using (namedPipeWriterStream)
+                {
+                    await namedPipeWriterStream.WaitForConnectionAsync(cancellationToken);
+                    await namedPipeWriterStream.WriteAsync(contentBytes, cancellationToken);
+                }
+            }
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
         public async Task ReadAllBytes_NonSeekableFileStream_InUnix()
         {

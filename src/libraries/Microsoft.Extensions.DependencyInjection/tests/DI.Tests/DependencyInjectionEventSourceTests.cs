@@ -216,6 +216,26 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
+        public void EmitsScopeDisposedEvent()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<IFakeService, FakeService>();
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+
+            using (var scope = serviceProvider.CreateScope())
+            {
+                scope.ServiceProvider.GetService<IFakeService>();
+            }
+
+            var scopeDisposedEvent = _listener.EventData.Single(e => e.EventName == "ScopeDisposed");
+
+            Assert.Equal(1, GetProperty<int>(scopeDisposedEvent, "scopedServicesResolved"));
+            Assert.Equal(1, GetProperty<int>(scopeDisposedEvent, "disposableServices"));
+            Assert.Equal(5, scopeDisposedEvent.EventId);
+        }
+
+        [Fact]
         public void EmitsServiceRealizationFailedEvent()
         {
             var exception = new Exception("Test error.");

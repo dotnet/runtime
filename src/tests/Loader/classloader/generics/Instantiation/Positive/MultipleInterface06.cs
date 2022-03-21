@@ -21,7 +21,7 @@ struct Gen<T> : IGenX<T[]>, IGenY<T>
   	}
 }
 
-public class Test
+public class Test_MultipleInterface06
 {
 	public static int counter = 0;
 	public static bool result = true;

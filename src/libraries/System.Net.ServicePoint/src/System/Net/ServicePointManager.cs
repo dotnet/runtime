@@ -113,13 +113,8 @@ namespace System.Net
         public static ServicePoint FindServicePoint(string uriString, IWebProxy? proxy) => FindServicePoint(new Uri(uriString), proxy);
 
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        public static ServicePoint FindServicePoint(Uri address, IWebProxy? proxy)
+        public static ServicePoint FindServicePoint(Uri address!!, IWebProxy? proxy)
         {
-            if (address == null)
-            {
-                throw new ArgumentNullException(nameof(address));
-            }
-
             // If there's a proxy for this address, get the "real" address.
             bool isProxyServicePoint = ProxyAddressIfNecessary(ref address, proxy);
 

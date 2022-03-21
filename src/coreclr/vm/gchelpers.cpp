@@ -205,8 +205,6 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
         MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
     } CONTRACTL_END;
 
-    _ASSERTE(!NingenEnabled() && "You cannot allocate managed objects inside the ngen compilation process.");
-
 #ifdef _DEBUG
     if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
     {

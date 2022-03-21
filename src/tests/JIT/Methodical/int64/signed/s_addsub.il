@@ -13,10 +13,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'addsub'// as "addsub"
+.assembly 's_addsub'// as "addsub"
 {
 }
-.module 'addsub.exe'
+.assembly extern xunit.core {}
 // MVID: {1BE54EA1-760A-4C23-A736-FE6F3A427E3E}
 .namespace JitTest
 {
@@ -178,6 +178,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       5045 (0x13b5)
       .maxstack  2

@@ -13,8 +13,8 @@ internal static partial class Interop
         public const int FORMAT_MESSAGE_FROM_HMODULE = 0x00000800;
         public const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
 
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = true)]
-        public static extern int FormatMessage(
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "FormatMessageW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        public static partial int FormatMessage(
             int dwFlags,
             SafeLibraryHandle lpSource,
             uint dwMessageId,

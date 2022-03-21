@@ -58,4 +58,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldind_u4.exe{}
+.assembly ldind_u4{}

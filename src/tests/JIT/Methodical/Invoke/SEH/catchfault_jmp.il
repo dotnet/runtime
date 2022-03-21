@@ -11,10 +11,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'catchfault_tail'// as "catchfault_tail"
+.assembly 'catchfault_jmp'// as "catchfault_tail"
 {
 }
-.module 'catchfault_tail.exe'
+.assembly extern xunit.core {}
 // MVID: {7D0BA0DB-DCB6-4997-83C9-9F31894A25EF}
 .namespace JitTest
 {
@@ -174,6 +174,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       97 (0x61)
       .maxstack  1

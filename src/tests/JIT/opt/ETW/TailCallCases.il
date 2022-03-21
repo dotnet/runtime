@@ -6,6 +6,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 
 
 
@@ -29,7 +30,6 @@
   .hash algorithm 0x00008004
   .ver 4:0:20225:0
 }
-.module TailCallCases.exe
 // MVID: {E63A46BE-A0B6-41DA-82A6-56B3E895EC8C}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -225,6 +225,9 @@
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       103 (0x67)
     .maxstack  4

@@ -61,7 +61,7 @@ namespace System.Text.Json.Nodes
                 return true;
             }
 
-            if (_value is JsonElement jsonElement)
+            if (_value is JsonElement)
             {
                 return TryConvertJsonElement<T>(out value);
             }
@@ -327,7 +327,7 @@ namespace System.Text.Json.Nodes
 
         [ExcludeFromCodeCoverage] // Justification = "Design-time"
         [DebuggerDisplay("{Json,nq}")]
-        private class DebugView
+        private sealed class DebugView
         {
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
             public JsonValue<TValue> _node;

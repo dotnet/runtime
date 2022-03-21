@@ -28,13 +28,8 @@ namespace System.Collections.Generic
         {
         }
 
-        public SortedDictionary(IDictionary<TKey, TValue> dictionary, IComparer<TKey>? comparer)
+        public SortedDictionary(IDictionary<TKey, TValue> dictionary!!, IComparer<TKey>? comparer)
         {
-            if (dictionary == null)
-            {
-                throw new ArgumentNullException(nameof(dictionary));
-            }
-
             var keyValuePairComparer = new KeyValuePairComparer(comparer);
 
             if (dictionary is SortedDictionary<TKey, TValue> sortedDictionary &&
@@ -209,12 +204,8 @@ namespace System.Collections.Generic
             }
         }
 
-        public void Add(TKey key, TValue value)
+        public void Add(TKey key!!, TValue value)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
             _set.Add(new KeyValuePair<TKey, TValue>(key, value));
         }
 
@@ -223,13 +214,8 @@ namespace System.Collections.Generic
             _set.Clear();
         }
 
-        public bool ContainsKey(TKey key)
+        public bool ContainsKey(TKey key!!)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
             return _set.Contains(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
         }
 
@@ -279,23 +265,13 @@ namespace System.Collections.Generic
             return new Enumerator(this, Enumerator.KeyValuePair);
         }
 
-        public bool Remove(TKey key)
+        public bool Remove(TKey key!!)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
             return _set.Remove(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
         }
 
-        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
+        public bool TryGetValue(TKey key!!, [MaybeNullWhen(false)] out TValue value)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
             TreeSet<KeyValuePair<TKey, TValue>>.Node? node = _set.FindNode(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
             if (node == null)
             {
@@ -375,15 +351,12 @@ namespace System.Collections.Generic
             }
         }
 
-        void IDictionary.Add(object key, object? value)
+        void IDictionary.Add(object key!!, object? value)
         {
-            if (key == null)
+            if (default(TValue) != null)
             {
-                throw new ArgumentNullException(nameof(key));
+                ArgumentNullException.ThrowIfNull(value);
             }
-
-            if (value == null && default(TValue) != null)
-                throw new ArgumentNullException(nameof(value));
 
             try
             {
@@ -413,13 +386,8 @@ namespace System.Collections.Generic
             return false;
         }
 
-        private static bool IsCompatibleKey(object key)
+        private static bool IsCompatibleKey(object key!!)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
             return (key is TKey);
         }
 
@@ -568,12 +536,8 @@ namespace System.Collections.Generic
         {
             private readonly SortedDictionary<TKey, TValue> _dictionary;
 
-            public KeyCollection(SortedDictionary<TKey, TValue> dictionary)
+            public KeyCollection(SortedDictionary<TKey, TValue> dictionary!!)
             {
-                if (dictionary == null)
-                {
-                    throw new ArgumentNullException(nameof(dictionary));
-                }
                 _dictionary = dictionary;
             }
 
@@ -592,13 +556,8 @@ namespace System.Collections.Generic
                 return new Enumerator(_dictionary);
             }
 
-            public void CopyTo(TKey[] array, int index)
+            public void CopyTo(TKey[] array!!, int index)
             {
-                if (array == null)
-                {
-                    throw new ArgumentNullException(nameof(array));
-                }
-
                 if (index < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -612,13 +571,8 @@ namespace System.Collections.Generic
                 _dictionary._set.InOrderTreeWalk(delegate (TreeSet<KeyValuePair<TKey, TValue>>.Node node) { array[index++] = node.Item.Key; return true; });
             }
 
-            void ICollection.CopyTo(Array array, int index)
+            void ICollection.CopyTo(Array array!!, int index)
             {
-                if (array == null)
-                {
-                    throw new ArgumentNullException(nameof(array));
-                }
-
                 if (array.Rank != 1)
                 {
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -750,12 +704,8 @@ namespace System.Collections.Generic
         {
             private readonly SortedDictionary<TKey, TValue> _dictionary;
 
-            public ValueCollection(SortedDictionary<TKey, TValue> dictionary)
+            public ValueCollection(SortedDictionary<TKey, TValue> dictionary!!)
             {
-                if (dictionary == null)
-                {
-                    throw new ArgumentNullException(nameof(dictionary));
-                }
                 _dictionary = dictionary;
             }
 
@@ -774,13 +724,8 @@ namespace System.Collections.Generic
                 return new Enumerator(_dictionary);
             }
 
-            public void CopyTo(TValue[] array, int index)
+            public void CopyTo(TValue[] array!!, int index)
             {
-                if (array == null)
-                {
-                    throw new ArgumentNullException(nameof(array));
-                }
-
                 if (index < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -794,13 +739,8 @@ namespace System.Collections.Generic
                 _dictionary._set.InOrderTreeWalk(delegate (TreeSet<KeyValuePair<TKey, TValue>>.Node node) { array[index++] = node.Item.Value; return true; });
             }
 
-            void ICollection.CopyTo(Array array, int index)
+            void ICollection.CopyTo(Array array!!, int index)
             {
-                if (array == null)
-                {
-                    throw new ArgumentNullException(nameof(array));
-                }
-
                 if (array.Rank != 1)
                 {
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));

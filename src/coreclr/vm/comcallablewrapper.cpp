@@ -3299,7 +3299,7 @@ void ComMethodTable::LayOutClassMethodTable()
 
     if (!m_pMT->HasGenericClassInstantiationInHierarchy())
     {
-        ExecutableWriterHolder<BYTE> methodDescMemoryWriteableHolder;
+        ExecutableWriterHolderNoLog<BYTE> methodDescMemoryWriteableHolder;
         //
         // Allocate method desc's for the rest of the slots.
         //
@@ -3310,7 +3310,7 @@ void ComMethodTable::LayOutClassMethodTable()
             pMDMemoryPtr = m_pMT->GetLoaderAllocator()->GetStubHeap()->AllocMem(S_SIZE_T(cbAlloc + sizeof(UINT_PTR)));
             pMethodDescMemory = pMDMemoryPtr;
 
-            methodDescMemoryWriteableHolder = ExecutableWriterHolder<BYTE>(pMethodDescMemory, cbAlloc + sizeof(UINT_PTR));
+            methodDescMemoryWriteableHolder.AssignExecutableWriterHolder(pMethodDescMemory, cbAlloc + sizeof(UINT_PTR));
             writeableOffset = methodDescMemoryWriteableHolder.GetRW() - pMethodDescMemory;
 
             // initialize the method desc memory to zero
@@ -3715,7 +3715,7 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackCCW());
 #if defined(_DEBUG)
         WCHAR rIID[40]; // {00000000-0000-0000-0000-000000000000}
-        GuidToLPWSTR(m_IID, rIID, lengthof(rIID));
+        GuidToLPWSTR(m_IID, rIID, ARRAY_SIZE(rIID));
         LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%hs, IID:%ls, vTbl:%#08x\n",
              pItfClass->GetDebugClassName(), rIID, pUnkVtable));
 #else
@@ -4771,7 +4771,7 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
 
 #if defined(_DEBUG)
             WCHAR rIID[40]; // {00000000-0000-0000-0000-000000000000}
-            GuidToLPWSTR(IClassXIID, rIID, lengthof(rIID));
+            GuidToLPWSTR(IClassXIID, rIID, ARRAY_SIZE(rIID));
             SString ssName;
             thClass.GetName(ssName);
             LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%ls, IID:%ls, vTbl:%#08x\n",

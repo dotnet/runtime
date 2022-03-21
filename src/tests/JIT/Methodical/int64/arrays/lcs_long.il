@@ -16,7 +16,7 @@
 .assembly 'lcs_long'// as "lcs_long"
 {
 }
-.module 'lcs_long.exe'
+.assembly extern xunit.core {}
 // MVID: {856A09FD-A814-4ED7-B594-E4AFD3850D67}
 .namespace JitTest
 {
@@ -608,6 +608,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       266 (0x10a)
       .maxstack  5

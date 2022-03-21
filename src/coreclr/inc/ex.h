@@ -228,7 +228,7 @@ class Exception
         HandlerState();
 
         void CleanupTry();
-        void SetupCatch(INDEBUG_COMMA(__in_z const char * szFile) int lineNum);
+        void SetupCatch(INDEBUG_COMMA(_In_z_ const char * szFile) int lineNum);
         void SucceedCatch();
 
         BOOL DidCatch() { return (m_dwFlags & Caught); }
@@ -1206,7 +1206,7 @@ inline void Exception::HandlerState::CleanupTry()
     LIMITED_METHOD_DAC_CONTRACT;
 }
 
-inline void Exception::HandlerState::SetupCatch(INDEBUG_COMMA(__in_z const char * szFile) int lineNum)
+inline void Exception::HandlerState::SetupCatch(INDEBUG_COMMA(_In_z_ const char * szFile) int lineNum)
 {
     WRAPPER_NO_CONTRACT;
 

@@ -86,9 +86,6 @@ namespace Microsoft.Extensions.Caching.Memory
         }
     }
 
-    [CollectionDefinition(nameof(DisableParallelization), DisableParallelization = true)]
-    public class DisableParallelization { }
-
     [Collection(nameof(DisableParallelization))]
     public class CompactTestsDisableParallelization
     {

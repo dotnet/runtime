@@ -3,7 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly array_tests.exe{}
+.assembly array_tests{}
 
 .class public value sealed valClass {
 	.field public		int32 Field

@@ -53,14 +53,9 @@ namespace System
             return CustomAttribute.GetCustomAttributes(this, ObjectType, inherit);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
         {
-            if (attributeType is null)
-                throw new ArgumentNullException(nameof(attributeType));
-
-            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
-
-            if (attributeRuntimeType == null)
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
@@ -96,11 +91,8 @@ namespace System
 
         public override Type GetElementType() => RuntimeTypeHandle.GetElementType(this);
 
-        public override string? GetEnumName(object value)
+        public override string? GetEnumName(object value!!)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             Type valueType = value.GetType();
 
             if (!(valueType.IsEnum || IsIntegerType(valueType)))
@@ -122,6 +114,7 @@ namespace System
             return new ReadOnlySpan<string>(ret).ToArray();
         }
 
+        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload instead.")]
         public override Array GetEnumValues()
         {
             if (!IsEnum)
@@ -240,24 +233,16 @@ namespace System
 
         protected override bool IsContextfulImpl() => false;
 
-        public override bool IsDefined(Type attributeType, bool inherit)
+        public override bool IsDefined(Type attributeType!!, bool inherit)
         {
-            if (attributeType is null)
-                throw new ArgumentNullException(nameof(attributeType));
-
-            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
-
-            if (attributeRuntimeType == null)
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
         }
 
-        public override bool IsEnumDefined(object value)
+        public override bool IsEnumDefined(object value!!)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             if (!IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
@@ -373,7 +358,7 @@ namespace System
         [DebuggerHidden]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object? InvokeMember(
-            string name, BindingFlags bindingFlags, Binder? binder, object? target,
+            string name!!, BindingFlags bindingFlags, Binder? binder, object? target,
             object?[]? providedArgs, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParams)
         {
             const BindingFlags MemberBindingMask = (BindingFlags)0x000000FF;
@@ -439,8 +424,7 @@ namespace System
                 if ((bindingFlags & BindingFlags.PutRefDispProperty) != 0 && (bindingFlags & ClassicBindingMask & ~BindingFlags.PutRefDispProperty) != 0)
                     throw new ArgumentException(SR.Arg_COMPropSetPut, nameof(bindingFlags));
 
-                if (name == null)
-                    throw new ArgumentNullException(nameof(name));
+                ArgumentNullException.ThrowIfNull(name);
 
                 bool[]? isByRef = modifiers?[0].IsByRefArray;
 
@@ -463,7 +447,7 @@ namespace System
             }
 #endif // FEATURE_COMINTEROP
 
-            if (namedParams != null && Array.IndexOf(namedParams, null!) != -1)
+            if (namedParams != null && Array.IndexOf(namedParams, null!) >= 0)
                 throw new ArgumentException(SR.Arg_NamedParamNull, nameof(namedParams));
 
             int argCnt = (providedArgs != null) ? providedArgs.Length : 0;
@@ -483,10 +467,6 @@ namespace System
             // PutDispProperty and\or PutRefDispProperty ==> SetProperty.
             if ((bindingFlags & (BindingFlags.PutDispProperty | BindingFlags.PutRefDispProperty)) != 0)
                 bindingFlags |= BindingFlags.SetProperty;
-
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             if (name.Length == 0 || name.Equals("[DISPID=0]"))
             {
                 // in InvokeMember we always pretend there is a default member if none is provided and we make it ToString
@@ -511,8 +491,7 @@ namespace System
                 {
                     Debug.Assert(IsSetField);
 
-                    if (providedArgs == null)
-                        throw new ArgumentNullException(nameof(providedArgs));
+                    ArgumentNullException.ThrowIfNull(providedArgs);
 
                     if ((bindingFlags & BindingFlags.GetProperty) != 0)
                         throw new ArgumentException(SR.Arg_FldSetPropGet, nameof(bindingFlags));
@@ -793,16 +772,11 @@ namespace System
                     SR.Format(SR.Argument_NeverValidGenericArgument, type));
         }
 
-        internal static void SanityCheckGenericArguments(RuntimeType[] genericArguments, RuntimeType[] genericParameters)
+        internal static void SanityCheckGenericArguments(RuntimeType[] genericArguments!!, RuntimeType[] genericParameters)
         {
-            if (genericArguments == null)
-                throw new ArgumentNullException();
-
             for (int i = 0; i < genericArguments.Length; i++)
             {
-                if (genericArguments[i] == null)
-                    throw new ArgumentNullException();
-
+                ArgumentNullException.ThrowIfNull(genericArguments[i], null);
                 ThrowIfTypeNeverValidGenericArgument(genericArguments[i]);
             }
 

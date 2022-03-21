@@ -66,21 +66,6 @@ namespace System.Xml.Serialization
         }
         internal TypeAttributes TypeAttributes { get { return _typeAttributes; } }
 
-        private static readonly Dictionary<string, Regex> s_regexs = new Dictionary<string, Regex>();
-        internal static Regex NewRegex(string pattern)
-        {
-            Regex? regex;
-            lock (s_regexs)
-            {
-                if (!s_regexs.TryGetValue(pattern, out regex))
-                {
-                    regex = new Regex(pattern);
-                    s_regexs.Add(pattern, regex);
-                }
-            }
-            return regex;
-        }
-
         internal MethodBuilder EnsureMethodBuilder(TypeBuilder typeBuilder, string methodName,
             MethodAttributes attributes, Type? returnType, Type[] parameterTypes)
         {
@@ -168,7 +153,7 @@ namespace System.Xml.Serialization
 
             ilg.BeginMethod(
                 typeof(Hashtable),
-                "get_" + publicName,
+                $"get_{publicName}",
                 Type.EmptyTypes,
                 Array.Empty<string>(),
                 CodeGenerator.PublicOverrideMethodAttributes | MethodAttributes.SpecialName);
@@ -325,7 +310,7 @@ namespace System.Xml.Serialization
         internal string GenerateTypedSerializer(string readMethod, string writeMethod, XmlMapping mapping, CodeIdentifiers classes, string baseSerializer, string readerClass, string writerClass)
         {
             string serializerName = CodeIdentifier.MakeValid(Accessor.UnescapeName(mapping.Accessor.Mapping!.TypeDesc!.Name));
-            serializerName = classes.AddUnique(serializerName + "Serializer", mapping);
+            serializerName = classes.AddUnique($"{serializerName}Serializer", mapping);
 
             TypeBuilder typedSerializerTypeBuilder = CodeGenerator.CreateTypeBuilder(
                 _moduleBuilder!,

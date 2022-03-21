@@ -2,22 +2,59 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.IO;
-using System.Text;
 using System.Buffers;
 
-#if MS_IO_REDIST
-namespace Microsoft.IO
-#else
 namespace System.IO
-#endif
 {
     internal static partial class FileSystem
     {
+        public static void Encrypt(string path)
+        {
+            string fullPath = Path.GetFullPath(path);
+
+            if (!Interop.Advapi32.EncryptFile(fullPath))
+            {
+                ThrowExceptionEncryptDecryptFail(fullPath);
+            }
+        }
+
+        public static void Decrypt(string path)
+        {
+            string fullPath = Path.GetFullPath(path);
+
+            if (!Interop.Advapi32.DecryptFile(fullPath))
+            {
+                ThrowExceptionEncryptDecryptFail(fullPath);
+            }
+        }
+
+        private static unsafe void ThrowExceptionEncryptDecryptFail(string fullPath)
+        {
+            int errorCode = Marshal.GetLastWin32Error();
+            if (errorCode == Interop.Errors.ERROR_ACCESS_DENIED)
+            {
+                // Check to see if the file system support the Encrypted File System (EFS)
+                string name = DriveInfoInternal.NormalizeDriveName(Path.GetPathRoot(fullPath)!);
+
+                using (DisableMediaInsertionPrompt.Create())
+                {
+                    if (!Interop.Kernel32.GetVolumeInformation(name, null, 0, null, null, out int fileSystemFlags, null, 0))
+                    {
+                        errorCode = Marshal.GetLastWin32Error();
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
+                    }
+
+                    if ((fileSystemFlags & Interop.Kernel32.FILE_SUPPORTS_ENCRYPTION) == 0)
+                    {
+                        throw new NotSupportedException(SR.PlatformNotSupported_FileEncryption);
+                    }
+                }
+            }
+            throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
+        }
+
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
             int errorCode = Interop.Kernel32.CopyFile(sourceFullPath, destFullPath, !overwrite);
@@ -117,7 +154,7 @@ namespace System.IO
             return data.ftLastWriteTime.ToDateTimeOffset();
         }
 
-        public static void MoveDirectory(string sourceFullPath, string destFullPath)
+        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool sameDirectoryDifferentCase)
         {
             if (!Interop.Kernel32.MoveFile(sourceFullPath, destFullPath, overwrite: false))
             {
@@ -147,10 +184,16 @@ namespace System.IO
 
         private static SafeFileHandle OpenHandleToWriteAttributes(string fullPath, bool asDirectory)
         {
-            if (fullPath.Length == PathInternal.GetRootLength(fullPath.AsSpan()) && fullPath[1] == Path.VolumeSeparatorChar)
+            if (fullPath.Length == PathInternal.GetRootLength(fullPath) && fullPath[1] == Path.VolumeSeparatorChar)
             {
                 // intentionally not fullpath, most upstack public APIs expose this as path.
                 throw new ArgumentException(SR.Arg_PathIsVolume, "path");
+            }
+
+            int dwFlagsAndAttributes = Interop.Kernel32.FileOperations.FILE_FLAG_OPEN_REPARSE_POINT;
+            if (asDirectory)
+            {
+                dwFlagsAndAttributes |= Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS;
             }
 
             SafeFileHandle handle = Interop.Kernel32.CreateFile(
@@ -158,7 +201,7 @@ namespace System.IO
                 Interop.Kernel32.FileOperations.FILE_WRITE_ATTRIBUTES,
                 FileShare.ReadWrite | FileShare.Delete,
                 FileMode.Open,
-                asDirectory ? Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS : 0);
+                dwFlagsAndAttributes);
 
             if (handle.IsInvalid)
             {
@@ -413,7 +456,6 @@ namespace System.IO
 
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
-            string pathToTargetFullPath = PathInternal.GetLinkTargetFullPath(path, pathToTarget);
             Interop.Kernel32.CreateSymbolicLink(path, pathToTarget, isDirectory);
         }
 

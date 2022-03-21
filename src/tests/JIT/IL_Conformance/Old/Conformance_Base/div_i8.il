@@ -356,4 +356,4 @@ FAIL:
 	ret
 }
 }
-.assembly div_i8.exe{}
+.assembly div_i8{}

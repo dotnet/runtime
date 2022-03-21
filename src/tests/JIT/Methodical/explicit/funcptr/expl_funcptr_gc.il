@@ -11,7 +11,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly funcptr_gc
+.assembly 'expl_funcptr_gc'
 {
 
 
@@ -19,7 +19,7 @@
   
   
 }
-.module test.exe
+.assembly extern xunit.core {}
 // MVID: {CF23CD68-3FF2-4D1F-B49B-866DA656D91D}
 
 
@@ -62,6 +62,9 @@
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       31 (0x1f)
     .maxstack  3

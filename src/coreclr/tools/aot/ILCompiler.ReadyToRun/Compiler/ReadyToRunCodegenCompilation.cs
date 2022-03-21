@@ -540,11 +540,6 @@ namespace ILCompiler
             return true;
         }
 
-        public TypeDesc GetTypeOfRuntimeType()
-        {
-            return TypeSystemContext.SystemModule.GetKnownType("System", "RuntimeType");
-        }
-
         // Compilation is broken into phases which interact with dependency analysis
         // Phase 0: All compilations which are driven by our standard heuristics and dependency expansion model
         // Phase 1: A helper phase which works in tandem with the DeferredTillPhaseNode to gather work to be done in phase 2

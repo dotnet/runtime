@@ -376,6 +376,10 @@ void SetThread(Thread* t)
     LIMITED_METHOD_CONTRACT
 
     gCurrentThreadInfo.m_pThread = t;
+    if (t != NULL)
+    {
+        EnsureTlsDestructionMonitor();
+    }
 }
 
 void SetAppDomain(AppDomain* ad)
@@ -1124,8 +1128,12 @@ extern "C" void *JIT_WriteBarrier_Loc;
 
 #ifdef TARGET_ARM64
 extern "C" void (*JIT_WriteBarrier_Table)();
-extern "C" void *JIT_WriteBarrier_Loc = 0;
-extern "C" void *JIT_WriteBarrier_Table_Loc = 0;
+
+extern "C" void *JIT_WriteBarrier_Loc;
+void *JIT_WriteBarrier_Loc = 0;
+
+extern "C" void *JIT_WriteBarrier_Table_Loc;
+void *JIT_WriteBarrier_Table_Loc = 0;
 #endif // TARGET_ARM64
 
 #ifdef TARGET_ARM
@@ -1927,7 +1935,7 @@ BOOL Thread::HasStarted()
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackThreads());
         BOOL gcOnTransition = GC_ON_TRANSITIONS(FALSE);     // disable GCStress 2 to avoid the profiler receiving a RuntimeThreadSuspended notification even before the ThreadCreated notification
-        
+
         {
             GCX_PREEMP();
             (&g_profControlBlock)->ThreadCreated((ThreadID) this);
@@ -2187,7 +2195,7 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
 
     default:
         _ASSERTE(!"Bad stack size bucket");
-        break;
+        FALLTHROUGH;
     case StackSize_Large:
         stackSize = 1024 * 1024;
         break;
@@ -2199,7 +2207,6 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
     HANDLE hThread = CreateThread(NULL, stackSize, start, args, flags, &threadId);
 
     SetThreadName(hThread, pName);
-
 
     if (pThreadId)
         *pThreadId = threadId;
@@ -7931,6 +7938,8 @@ UINT64 Thread::GetTotalThreadPoolCompletionCount()
     }
     CONTRACTL_END;
 
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPoolForIO());
+
     bool usePortableThreadPool = ThreadpoolMgr::UsePortableThreadPool();
 
     // enumerate all threads, summing their local counts.
@@ -8278,7 +8287,7 @@ void dbgOnly_IdentifySpecialEEThread()
 
     LONG  ourCount = FastInterlockIncrement(&cnt_SpecialEEThreads);
 
-    _ASSERTE(ourCount < (LONG) NumItems(SpecialEEThreads));
+    _ASSERTE(ourCount < (LONG) ARRAY_SIZE(SpecialEEThreads));
     SpecialEEThreads[ourCount-1] = ::GetCurrentThreadId();
 }
 
@@ -8526,8 +8535,8 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
         DacEnumCodeForStackwalk(callEnd);
 
         // To stackwalk through funceval frames, we need to be sure to preserve the
-        // DebuggerModule's m_pRuntimeDomainFile.  This is the only case that doesn't use the current
-        // vmDomainFile in code:DacDbiInterfaceImpl::EnumerateInternalFrames.  The following
+        // DebuggerModule's m_pRuntimeDomainAssembly.  This is the only case that doesn't use the current
+        // vmDomainAssembly in code:DacDbiInterfaceImpl::EnumerateInternalFrames.  The following
         // code mimics that function.
         // Allow failure, since we want to continue attempting to walk the stack regardless of the outcome.
         EX_TRY
@@ -8545,18 +8554,6 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
         if (pMD != NULL)
         {
             pMD->EnumMemoryRegions(flags);
-#if defined(FEATURE_EH_FUNCLETS) && defined(FEATURE_PREJIT)
-            // Enumerate unwind info
-            // Note that we don't do this based on the MethodDesc because in theory there isn't a 1:1 correspondence
-            // between MethodDesc and code (and so unwind info, and even debug info).  Eg., EnC creates new versions
-            // of the code, but the MethodDesc always points at the latest version (which isn't necessarily
-            // the one on the stack).  In practice this is unlikely to be a problem since wanting a minidump
-            // and making EnC edits are usually mutually exclusive.
-            if (frameIter.m_crawl.IsFrameless())
-            {
-                frameIter.m_crawl.GetJitManager()->EnumMemoryRegionsForMethodUnwindInfo(flags, frameIter.m_crawl.GetCodeInfo());
-            }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(FEATURE_PREJIT)
         }
 
         previousSP = currentSP;

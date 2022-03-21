@@ -8,7 +8,7 @@ using System.Collections;
 using System.IO;
 using System.Text;
 
-class Test
+class Test_b119294
 {
     public int[,] m_nSourceDestMap;
     public static int m_coSourceLength = 100;
@@ -22,7 +22,7 @@ class Test
             return 100;
         }
 
-        Test t = new Test();
+        Test_b119294 t = new Test_b119294();
 
         t.EstablishIdentityTransform();
 

@@ -15,6 +15,8 @@
 
 #ifndef DACCESS_COMPILE
 
+//#define LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+
 // This class is responsible for allocation of all the executable memory in the runtime.
 class ExecutableAllocator
 {
@@ -49,21 +51,34 @@ class ExecutableAllocator
     };
 
     typedef void (*FatalErrorHandler)(UINT errorCode, LPCWSTR pszMessage);
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+    static int64_t g_mapTimeSum;
+    static int64_t g_mapTimeWithLockSum;
+    static int64_t g_unmapTimeSum;
+    static int64_t g_unmapTimeWithLockSum;
+    static int64_t g_mapFindRXTimeSum;
+    static int64_t g_mapCreateTimeSum;
 
+    static int64_t g_releaseCount;
+    static int64_t g_reserveCount;
+#endif
     // Instance of the allocator
     static ExecutableAllocator* g_instance;
 
     // Callback to the runtime to report fatal errors
     static FatalErrorHandler g_fatalErrorHandler;
 
-#if USE_UPPER_ADDRESS
-    // Preferred region to allocate the code in.
-    static BYTE* g_codeMinAddr;
-    static BYTE* g_codeMaxAddr;
-    static BYTE* g_codeAllocStart;
-    // Next address to try to allocate for code in the preferred region.
-    static BYTE* g_codeAllocHint;
-#endif // USE_UPPER_ADDRESS
+#if USE_LAZY_PREFERRED_RANGE
+    static BYTE* g_lazyPreferredRangeStart;
+    // Next address to try to allocate for code in the lazy preferred region.
+    static BYTE* g_lazyPreferredRangeHint;
+#endif // USE_LAZY_PREFERRED_RANGE
+
+    // For PAL, this region represents the area that is eagerly reserved on
+    // startup where executable memory and static fields are preferrably kept.
+    // For Windows, this is the region that we lazily reserve from.
+    static BYTE* g_preferredRangeMin;
+    static BYTE* g_preferredRangeMax;
 
     // Caches the COMPlus_EnableWXORX setting
     static bool g_isWXorXEnabled;
@@ -139,7 +154,27 @@ class ExecutableAllocator
     // Initialize the allocator instance
     bool Initialize();
 
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+    static CRITSEC_COOKIE s_LoggerCriticalSection;
+
+    struct LogEntry
+    {
+        const char* source;
+        const char* function;
+        int line;
+        int count;
+    };
+
+    static LogEntry s_usageLog[256];
+    static int s_logMaxIndex;
+#endif
+
 public:
+
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+    static void LogUsage(const char* source, int line, const char* function);
+    static void DumpHolderUsage();
+#endif
 
     // Return the ExecuteAllocator singleton instance
     static ExecutableAllocator* Instance();
@@ -154,14 +189,16 @@ public:
     // Return true if W^X is enabled
     static bool IsWXORXEnabled();
 
-    // Use this function to initialize the g_codeAllocHint
-    // during startup. base is runtime .dll base address,
-    // size is runtime .dll virtual size.
-    static void InitCodeAllocHint(size_t base, size_t size, int randomPageOffset);
+    // Use this function to initialize g_lazyPreferredRangeHint during startup.
+    // base is runtime .dll base address, size is runtime .dll virtual size.
+    static void InitLazyPreferredRange(size_t base, size_t size, int randomPageOffset);
 
-    // Use this function to reset the g_codeAllocHint
-    // after unloading an AppDomain
-    static void ResetCodeAllocHint();
+    // Use this function to reset g_lazyPreferredRangeHint after unloading code.
+    static void ResetLazyPreferredRangeHint();
+
+    // Use this function to initialize the preferred range of executable memory
+    // from PAL.
+    static void InitPreferredRange();
 
     // Returns TRUE if p is located in near clr.dll that allows us
     // to use rel32 IP-relative addressing modes.
@@ -195,6 +232,8 @@ public:
     // Unmap the RW mapping at the specified address
     void UnmapRW(void* pRW);
 };
+
+#define ExecutableWriterHolder ExecutableWriterHolderNoLog
 
 // Holder class to map read-execute memory as read-write so that it can be modified without using read-write-execute mapping.
 // At the moment the implementation is dummy, returning the same addresses for both cases and expecting them to be read-write-execute.
@@ -269,6 +308,24 @@ public:
     {
         return m_addressRW;
     }
+
+    void AssignExecutableWriterHolder(T* addressRX, size_t size)
+    {
+        *this = ExecutableWriterHolder(addressRX, size);
+    }
 };
+
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+#undef ExecutableWriterHolder
+#ifdef TARGET_UNIX
+#define ExecutableWriterHolder ExecutableAllocator::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__); ExecutableWriterHolderNoLog
+#define AssignExecutableWriterHolder(addressRX, size) AssignExecutableWriterHolder(addressRX, size); ExecutableAllocator::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__); 
+#else
+#define ExecutableWriterHolder ExecutableAllocator::LogUsage(__FILE__, __LINE__, __FUNCTION__); ExecutableWriterHolderNoLog
+#define AssignExecutableWriterHolder(addressRX, size) AssignExecutableWriterHolder(addressRX, size); ExecutableAllocator::LogUsage(__FILE__, __LINE__, __FUNCTION__); 
+#endif
+#else
+#define ExecutableWriterHolder ExecutableWriterHolderNoLog
+#endif
 
 #endif // !DACCESS_COMPILE

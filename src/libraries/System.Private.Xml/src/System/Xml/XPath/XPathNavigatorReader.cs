@@ -455,10 +455,8 @@ namespace System.Xml.XPath
             return null;
         }
 
-        public override string? GetAttribute(string localName, string? namespaceURI)
+        public override string? GetAttribute(string localName!!, string? namespaceURI)
         {
-            if (null == localName)
-                throw new ArgumentNullException(nameof(localName));
             // reader allows calling GetAttribute, even when positioned inside attributes
             XPathNavigator nav = _nav;
             switch (nav.NodeType)
@@ -554,11 +552,9 @@ namespace System.Xml.XPath
         }
 
 
-        public override bool MoveToAttribute(string localName, string? namespaceName)
+        public override bool MoveToAttribute(string localName!!, string? namespaceName)
         {
-            if (null == localName)
-                throw new ArgumentNullException(nameof(localName));
-            int depth = _depth;
+            int depth;
             XPathNavigator? nav = GetElemNav(out depth);
             if (null != nav)
             {
@@ -711,7 +707,7 @@ namespace System.Xml.XPath
             ValidateNames.SplitQName(name, out prefix, out localname);
 
             // watch for a namespace name
-            bool IsXmlnsNoPrefix = false;
+            bool IsXmlnsNoPrefix;
             if ((IsXmlnsNoPrefix = (0 == prefix.Length && localname == "xmlns"))
                 || (prefix == "xmlns"))
             {
@@ -1024,7 +1020,7 @@ namespace System.Xml.XPath
                     }
                     else if (_depth > 0 && _nav.MoveToParent())
                     {
-                        Debug.Assert(_nav.NodeType == XPathNodeType.Element, _nav.NodeType.ToString() + " == XPathNodeType.Element");
+                        Debug.Assert(_nav.NodeType == XPathNodeType.Element, $"{_nav.NodeType} == XPathNodeType.Element");
                         _nodeType = XmlNodeType.EndElement;
                         _state = State.EndElement;
                         _depth--;

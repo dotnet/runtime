@@ -13,8 +13,6 @@
 #include <formattype.h>
 #include "jitinterface.h"
 #include "sigbuilder.h"
-#include "ngenhash.inl"
-#include "compile.h"
 
 #include "eventtrace.h"
 
@@ -128,6 +126,45 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
 
 }
 
+
+namespace
+{
+    LPCUTF8 GetStubMethodName(DynamicMethodDesc::ILStubType type)
+    {
+        CONTRACTL
+        {
+            MODE_ANY;
+            GC_NOTRIGGER;
+            NOTHROW;
+        }
+        CONTRACTL_END;
+
+        switch (type)
+        {
+            case DynamicMethodDesc::StubCLRToNativeInterop: return "IL_STUB_PInvoke";
+            case DynamicMethodDesc::StubCLRToCOMInterop:    return "IL_STUB_CLRtoCOM";
+            case DynamicMethodDesc::StubNativeToCLRInterop: return "IL_STUB_ReversePInvoke";
+            case DynamicMethodDesc::StubCOMToCLRInterop:    return "IL_STUB_COMtoCLR";
+            case DynamicMethodDesc::StubStructMarshalInterop: return "IL_STUB_StructMarshal";
+#ifdef FEATURE_ARRAYSTUB_AS_IL
+            case DynamicMethodDesc::StubArrayOp:            return "IL_STUB_Array";
+#endif
+#ifdef FEATURE_MULTICASTSTUB_AS_IL
+            case DynamicMethodDesc::StubMulticastDelegate:  return "IL_STUB_MulticastDelegate_Invoke";
+#endif
+#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
+            case DynamicMethodDesc::StubUnboxingIL:         return "IL_STUB_UnboxingStub";
+            case DynamicMethodDesc::StubInstantiating:      return "IL_STUB_InstantiatingStub";
+#endif
+            case DynamicMethodDesc::StubWrapperDelegate:    return "IL_STUB_WrapperDelegate_Invoke";
+            case DynamicMethodDesc::StubTailCallStoreArgs:  return "IL_STUB_StoreTailCallArgs";
+            case DynamicMethodDesc::StubTailCallCallTarget: return "IL_STUB_CallTailCallTarget";
+            default:
+                UNREACHABLE_MSG("Unknown stub type");
+        }
+    }
+}
+
 // static
 MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTable* pMT, DWORD dwStubFlags,
                                              Module* pSigModule, PCCOR_SIGNATURE pSig, DWORD cbSig, SigTypeContext *pTypeContext,
@@ -158,9 +195,8 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     pMD->SetMemberDef(0);
     pMD->SetSlot(MethodTable::NO_SLOT);       // we can't ever use the slot for dynamic methods
     // the no metadata part of the method desc
-    pMD->m_pszMethodName.SetValue((PTR_CUTF8)"IL_STUB");
-    pMD->m_dwExtendedFlags = mdPublic | DynamicMethodDesc::nomdILStub;
-
+    pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB";
+    pMD->InitializeFlags(DynamicMethodDesc::FlagPublic | DynamicMethodDesc::FlagIsILStub);
     pMD->SetTemporaryEntryPoint(pMT->GetLoaderAllocator(), pamTracker);
 
     //
@@ -189,7 +225,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
 
     if (!(callConvInfo & CORINFO_CALLCONV_HASTHIS))
     {
-        pMD->m_dwExtendedFlags |= mdStatic;
+        pMD->SetFlags(DynamicMethodDesc::FlagStatic);
         pMD->SetStatic();
     }
 
@@ -199,50 +235,46 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     memset((void*)pMD->m_pResolver, 0xCC, sizeof(ILStubResolver));
 #endif // _DEBUG
     pMD->m_pResolver = new (pMD->m_pResolver) ILStubResolver();
-    pMD->GetILStubResolver()->SetLoaderHeap(pCreationHeap);
 
 #ifdef FEATURE_ARRAYSTUB_AS_IL
     if (SF_IsArrayOpStub(dwStubFlags))
     {
-        pMD->GetILStubResolver()->SetStubType(ILStubResolver::ArrayOpStub);
+        pMD->SetILStubType(DynamicMethodDesc::StubArrayOp);
     }
     else
 #endif
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
     if (SF_IsMulticastDelegateStub(dwStubFlags))
     {
-        pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdMulticastStub;
-        pMD->GetILStubResolver()->SetStubType(ILStubResolver::MulticastDelegateStub);
+        pMD->SetILStubType(DynamicMethodDesc::StubMulticastDelegate);
     }
     else
 #endif
     if (SF_IsWrapperDelegateStub(dwStubFlags))
     {
-        pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdWrapperDelegateStub;
-        pMD->GetILStubResolver()->SetStubType(ILStubResolver::WrapperDelegateStub);
+        pMD->SetILStubType(DynamicMethodDesc::StubWrapperDelegate);
     }
     else
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
     if (SF_IsUnboxingILStub(dwStubFlags))
     {
-        pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdUnboxingILStub;
-        pMD->GetILStubResolver()->SetStubType(ILStubResolver::UnboxingILStub);
+        pMD->SetILStubType(DynamicMethodDesc::StubUnboxingIL);
     }
     else
     if (SF_IsInstantiatingStub(dwStubFlags))
     {
-        pMD->GetILStubResolver()->SetStubType(ILStubResolver::InstantiatingStub);
+        pMD->SetILStubType(DynamicMethodDesc::StubInstantiating);
     }
     else
 #endif
     if (SF_IsTailCallStoreArgsStub(dwStubFlags))
     {
-        pMD->GetILStubResolver()->SetStubType(ILStubResolver::TailCallStoreArgsStub);
+        pMD->SetILStubType(DynamicMethodDesc::StubTailCallStoreArgs);
     }
     else
     if (SF_IsTailCallCallTargetStub(dwStubFlags))
     {
-        pMD->GetILStubResolver()->SetStubType(ILStubResolver::TailCallCallTargetStub);
+        pMD->SetILStubType(DynamicMethodDesc::StubTailCallCallTarget);
     }
     else
 #ifdef FEATURE_COMINTEROP
@@ -251,43 +283,40 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         // mark certain types of stub MDs with random flags so ILStubManager recognizes them
         if (SF_IsReverseStub(dwStubFlags))
         {
-            pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdReverseStub;
-
-            ILStubResolver::ILStubType type = ILStubResolver::COMToCLRInteropStub;
-            pMD->GetILStubResolver()->SetStubType(type);
+            pMD->SetILStubType(DynamicMethodDesc::StubCOMToCLRInterop);
         }
         else
         {
-            ILStubResolver::ILStubType type =  ILStubResolver::CLRToCOMInteropStub;
-            pMD->GetILStubResolver()->SetStubType(type);
+            pMD->SetILStubType(DynamicMethodDesc::StubCLRToCOMInterop);
         }
     }
     else
 #endif
     if (SF_IsStructMarshalStub(dwStubFlags))
     {
-        pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdStructMarshalStub;
-        pMD->GetILStubResolver()->SetStubType(ILStubResolver::StructMarshalInteropStub);
+        // Struct marshal stub MethodDescs might be directly called from `call` IL instructions
+        // so we want to keep their compile time data alive as long as the LoaderAllocator in case they're used again.
+        pMD->GetILStubResolver()->SetLoaderHeap(pCreationHeap);
+        pMD->SetILStubType(DynamicMethodDesc::StubStructMarshalInterop);
     }
     else
     {
         // mark certain types of stub MDs with random flags so ILStubManager recognizes them
         if (SF_IsReverseStub(dwStubFlags))
         {
-            pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdReverseStub | DynamicMethodDesc::nomdUnmanagedCallersOnlyStub;
-            pMD->GetILStubResolver()->SetStubType(ILStubResolver::NativeToCLRInteropStub);
+            pMD->SetILStubType(DynamicMethodDesc::StubNativeToCLRInterop);
         }
         else
         {
             if (SF_IsDelegateStub(dwStubFlags))
             {
-                pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdDelegateStub;
+                pMD->SetFlags(DynamicMethodDesc::FlagIsDelegate);
             }
             else if (SF_IsCALLIStub(dwStubFlags))
             {
-                pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdCALLIStub;
+                pMD->SetFlags(DynamicMethodDesc::FlagIsCALLI);
             }
-            pMD->GetILStubResolver()->SetStubType(ILStubResolver::CLRToNativeInteropStub);
+            pMD->SetILStubType(DynamicMethodDesc::StubCLRToNativeInterop);
         }
     }
 
@@ -297,11 +326,11 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     {
         switch(dwStubFlags)
         {
-            case ILSTUB_ARRAYOP_GET: pMD->m_pszMethodName.SetValue((PTR_CUTF8)"IL_STUB_Array_Get");
+            case ILSTUB_ARRAYOP_GET: pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB_Array_Get";
                                              break;
-            case ILSTUB_ARRAYOP_SET: pMD->m_pszMethodName.SetValue((PTR_CUTF8)"IL_STUB_Array_Set");
+            case ILSTUB_ARRAYOP_SET: pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB_Array_Set";
                                              break;
-            case ILSTUB_ARRAYOP_ADDRESS: pMD->m_pszMethodName.SetValue((PTR_CUTF8)"IL_STUB_Array_Address");
+            case ILSTUB_ARRAYOP_ADDRESS: pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB_Array_Address";
                                              break;
             default: _ASSERTE(!"Unknown array il stub");
         }
@@ -309,15 +338,15 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     else
 #endif
     {
-        pMD->m_pszMethodName.SetValue(pMD->GetILStubResolver()->GetStubMethodName());
+        pMD->m_pszMethodName = GetStubMethodName(pMD->GetILStubType());
     }
 
 
 #ifdef _DEBUG
-    pMD->m_pszDebugMethodName = RelativePointer<PTR_CUTF8>::GetValueAtPtr(PTR_HOST_MEMBER_TADDR(DynamicMethodDesc, pMD, m_pszMethodName));
+    pMD->m_pszDebugMethodName = pMD->m_pszMethodName;
     pMD->m_pszDebugClassName  = ILStubResolver::GetStubClassName(pMD);  // must be called after type is set
     pMD->m_pszDebugMethodSignature = FormatSig(pMD, pCreationHeap, pamTracker);
-    pMD->m_pDebugMethodTable.SetValue(pMT);
+    pMD->m_pDebugMethodTable = pMT;
 #endif // _DEBUG
 
     RETURN pMD;
@@ -340,7 +369,7 @@ MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
     CONTRACT_END;
 
 #ifdef _DEBUG
-    if (pModule->IsSystem() || pModule->GetDomain()->AsAppDomain()->IsCompilationDomain())
+    if (pModule->IsSystem())
     {
         // in the shared domain and compilation AD we are associated with the module
         CONSISTENCY_CHECK(pModule->GetILStubCache() == this);
@@ -588,198 +617,3 @@ bool ILStubCache::ILStubCacheTraits::Equals(_In_ key_t lhs, _In_ key_t rhs)
     size_t blobDataSize = lhs->m_cbSizeOfBlob - sizeof(ILStubHashBlobBase);
     return memcmp(lhs->m_rgbBlobData, rhs->m_rgbBlobData, blobDataSize) == 0;
 }
-
-#ifdef FEATURE_PREJIT
-
-// ============================================================================
-// Stub method hash entry methods
-// ============================================================================
-PTR_MethodDesc StubMethodHashEntry::GetMethod()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return pMD;
-}
-
-PTR_MethodDesc StubMethodHashEntry::GetStubMethod()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return pStubMD;
-}
-
-#ifndef DACCESS_COMPILE
-
-void StubMethodHashEntry::SetMethodAndStub(MethodDesc *pMD, MethodDesc *pStubMD)
-{
-    LIMITED_METHOD_CONTRACT;
-    this->pMD = pMD;
-    this->pStubMD = pStubMD;
-}
-
-// ============================================================================
-// Stub method hash table methods
-// ============================================================================
-/* static */ StubMethodHashTable *StubMethodHashTable::Create(LoaderAllocator *pAllocator, Module *pModule, DWORD dwNumBuckets, AllocMemTracker *pamTracker)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END
-
-    LoaderHeap *pHeap = pAllocator->GetLowFrequencyHeap();
-    StubMethodHashTable *pThis = (StubMethodHashTable *)pamTracker->Track(pHeap->AllocMem((S_SIZE_T)sizeof(StubMethodHashTable)));
-
-    new (pThis) StubMethodHashTable(pModule, pHeap, dwNumBuckets);
-
-    return pThis;
-}
-
-// Calculate a hash value for a key
-static DWORD Hash(MethodDesc *pMD)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    DWORD dwHash = 0x87654321;
-#define INST_HASH_ADD(_value) dwHash = ((dwHash << 5) + dwHash) ^ (_value)
-
-    INST_HASH_ADD(pMD->GetMemberDef());
-
-    Instantiation inst = pMD->GetClassInstantiation();
-    for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-    {
-        TypeHandle thArg = inst[i];
-
-        if (thArg.GetMethodTable())
-        {
-            INST_HASH_ADD(thArg.GetCl());
-
-            Instantiation sArgInst = thArg.GetInstantiation();
-            for (DWORD j = 0; j < sArgInst.GetNumArgs(); j++)
-            {
-                TypeHandle thSubArg = sArgInst[j];
-                if (thSubArg.GetMethodTable())
-                    INST_HASH_ADD(thSubArg.GetCl());
-                else
-                    INST_HASH_ADD(thSubArg.GetSignatureCorElementType());
-            }
-        }
-        else
-            INST_HASH_ADD(thArg.GetSignatureCorElementType());
-    }
-
-    return dwHash;
-}
-
-MethodDesc *StubMethodHashTable::FindMethodDesc(MethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    MethodDesc *pMDResult = NULL;
-
-    DWORD dwHash = Hash(pMD);
-    StubMethodHashEntry_t* pSearch;
-    LookupContext sContext;
-
-    for (pSearch = BaseFindFirstEntryByHash(dwHash, &sContext);
-         pSearch != NULL;
-         pSearch = BaseFindNextEntryByHash(&sContext))
-    {
-        if (pSearch->GetMethod() == pMD)
-        {
-            pMDResult = pSearch->GetStubMethod();
-            break;
-        }
-    }
-
-    return pMDResult;
-}
-
-// Add method desc to the hash table; must not be present already
-void StubMethodHashTable::InsertMethodDesc(MethodDesc *pMD, MethodDesc *pStubMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(CheckPointer(pStubMD));
-    }
-    CONTRACTL_END
-
-    StubMethodHashEntry_t *pNewEntry = (StubMethodHashEntry_t *)BaseAllocateEntry(NULL);
-    pNewEntry->SetMethodAndStub(pMD, pStubMD);
-
-    DWORD dwHash = Hash(pMD);
-    BaseInsertEntry(dwHash, pNewEntry);
-}
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-// Save the hash table and any method descriptors referenced by it
-void StubMethodHashTable::Save(DataImage *image, CorProfileData *pProfileData)
-{
-    WRAPPER_NO_CONTRACT;
-    BaseSave(image, pProfileData);
-}
-
-void StubMethodHashTable::Fixup(DataImage *image)
-{
-    WRAPPER_NO_CONTRACT;
-    BaseFixup(image);
-}
-
-void StubMethodHashTable::FixupEntry(DataImage *pImage, StubMethodHashEntry_t *pEntry, void *pFixupBase, DWORD cbFixupOffset)
-{
-    WRAPPER_NO_CONTRACT;
-    pImage->FixupField(pFixupBase, cbFixupOffset + offsetof(StubMethodHashEntry_t, pMD), pEntry->GetMethod());
-    pImage->FixupField(pFixupBase, cbFixupOffset + offsetof(StubMethodHashEntry_t, pStubMD), pEntry->GetStubMethod());
-}
-
-bool StubMethodHashTable::ShouldSave(DataImage *pImage, StubMethodHashEntry_t *pEntry)
-{
-    STANDARD_VM_CONTRACT;
-
-    MethodDesc *pMD = pEntry->GetMethod();
-    if (pMD->GetClassification() == mcInstantiated)
-    {
-        // save entries only for "accepted" methods
-        if (!pImage->GetPreloader()->IsMethodInTransitiveClosureOfInstantiations(CORINFO_METHOD_HANDLE(pMD)))
-            return false;
-    }
-
-    // Save the entry only if the native code was successfully generated for the stub
-    if (pImage->GetCodeAddress(pEntry->GetStubMethod()) == NULL)
-        return false;
-
-    return true;
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
-
-#endif // !DACCESS_COMPILE
-
-#ifdef DACCESS_COMPILE
-
-void StubMethodHashTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-    BaseEnumMemoryRegions(flags);
-}
-
-void StubMethodHashTable::EnumMemoryRegionsForEntry(StubMethodHashEntry_t *pEntry, CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-    if (pEntry->GetMethod().IsValid())
-        pEntry->GetMethod()->EnumMemoryRegions(flags);
-}
-
-#endif // DACCESS_COMPILE
-
-#endif // FEATURE_PREJIT

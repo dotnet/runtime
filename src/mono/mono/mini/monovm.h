@@ -2,7 +2,7 @@
 #define _MONO_MINI_MONOVM_H_
 
 #include <mono/utils/mono-publib.h>
-#include <mono/mini/mono-private-unstable.h>
+#include <mono/jit/mono-private-unstable.h>
 
 // MonoVM equivalents of the CoreCLR hosting API and helpers
 // Only functional on netcore builds
@@ -16,5 +16,10 @@ monovm_execute_assembly (int argc, const char **argv, const char *managedAssembl
 
 MONO_API int
 monovm_shutdown (int *latchedExitCode);
+
+int
+monovm_create_delegate (const char *assemblyName, const char *typeName, const char *methodName, void **delegate);
+
+
 
 #endif // _MONO_MINI_MONOVM_H_

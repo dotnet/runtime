@@ -13,7 +13,7 @@ using Microsoft.Build.Utilities;
 
 namespace Microsoft.Workload.Build.Tasks
 {
-    internal class PackageInstaller
+    internal sealed class PackageInstaller
     {
         private readonly string _tempDir;
         private string _nugetConfigContents;

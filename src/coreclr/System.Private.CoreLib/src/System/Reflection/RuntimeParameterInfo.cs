@@ -338,7 +338,7 @@ namespace System.Reflection
             if (!MdToken.IsNullToken(m_tkParamDef))
             {
                 // This will return DBNull.Value if no constant value is defined on m_tkParamDef in the metadata.
-                defaultValue = MdConstant.GetValue(m_scope, m_tkParamDef, ParameterType.GetTypeHandleInternal(), raw);
+                defaultValue = MdConstant.GetValue(m_scope, m_tkParamDef, ParameterType.TypeHandle, raw);
             }
             #endregion
 
@@ -507,33 +507,23 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             if (MdToken.IsNullToken(m_tkParamDef))
-                return Array.Empty<object>();
-
-            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
-
-            if (attributeRuntimeType == null)
-                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+                return CustomAttribute.CreateAttributeArrayHelper(attributeRuntimeType, 0);
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        public override bool IsDefined(Type attributeType, bool inherit)
+        public override bool IsDefined(Type attributeType!!, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (MdToken.IsNullToken(m_tkParamDef))
                 return false;
 
-            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
-
-            if (attributeRuntimeType == null)
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType);

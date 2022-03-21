@@ -444,7 +444,7 @@ HRESULT NativeImageInliningIterator::Reset(Module *pModule, MethodDesc *pInlinee
         BOOL incompleteData;
         Module *inlineeModule = m_pInlinee->GetModule();
         mdMethodDef mdInlinee = m_pInlinee->GetMemberDef();
-        COUNT_T methodsAvailable = m_pModule->GetNativeOrReadyToRunInliners(inlineeModule, mdInlinee, m_dynamicBufferSize, m_dynamicBuffer, &incompleteData);
+        COUNT_T methodsAvailable = m_pModule->GetReadyToRunInliners(inlineeModule, mdInlinee, m_dynamicBufferSize, m_dynamicBuffer, &incompleteData);
 
         // If the existing buffer is not large enough, reallocate.
         if (methodsAvailable > m_dynamicBufferSize)
@@ -453,7 +453,7 @@ HRESULT NativeImageInliningIterator::Reset(Module *pModule, MethodDesc *pInlinee
             m_dynamicBuffer = new MethodInModule[newSize];
             m_dynamicBufferSize = newSize;
 
-            methodsAvailable = m_pModule->GetNativeOrReadyToRunInliners(inlineeModule, mdInlinee, m_dynamicBufferSize, m_dynamicBuffer, &incompleteData);
+            methodsAvailable = m_pModule->GetReadyToRunInliners(inlineeModule, mdInlinee, m_dynamicBufferSize, m_dynamicBuffer, &incompleteData);
             _ASSERTE(methodsAvailable <= m_dynamicBufferSize);
         }
 
@@ -811,35 +811,31 @@ HRESULT ReJitManager::UpdateNativeInlinerActiveILVersions(
         _ASSERTE(pDomainAssembly != NULL);
         _ASSERTE(pDomainAssembly->GetAssembly() != NULL);
 
-        DomainModuleIterator domainModuleIterator = pDomainAssembly->IterateModules(kModIterIncludeLoaded);
-        while (domainModuleIterator.Next())
+        Module * pModule = pDomainAssembly->GetModule();
+        if (pModule->HasReadyToRunInlineTrackingMap())
         {
-            Module * pCurModule = domainModuleIterator.GetModule();
-            if (pCurModule->HasNativeOrReadyToRunInlineTrackingMap())
+            inlinerIter.Reset(pModule, pInlinee);
+
+            MethodDesc *pInliner = NULL;
+            while (inlinerIter.Next())
             {
-                inlinerIter.Reset(pCurModule, pInlinee);
-
-                MethodDesc *pInliner = NULL;
-                while (inlinerIter.Next())
+                pInliner = inlinerIter.GetMethodDesc();
                 {
-                    pInliner = inlinerIter.GetMethodDesc();
+                    CodeVersionManager *pCodeVersionManager = pModule->GetCodeVersionManager();
+                    CodeVersionManager::LockHolder codeVersioningLockHolder;
+                    ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pInliner);
+                    if (!ilVersion.HasDefaultIL())
                     {
-                        CodeVersionManager *pCodeVersionManager = pCurModule->GetCodeVersionManager();
-                        CodeVersionManager::LockHolder codeVersioningLockHolder;
-                        ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pInliner);
-                        if (!ilVersion.HasDefaultIL())
-                        {
-                            // This method has already been ReJITted, no need to request another ReJIT at this point.
-                            // The ReJITted method will be in the JIT inliner check below.
-                            continue;
-                        }
+                        // This method has already been ReJITted, no need to request another ReJIT at this point.
+                        // The ReJITted method will be in the JIT inliner check below.
+                        continue;
                     }
+                }
 
-                    hr = UpdateActiveILVersion(pMgrToCodeActivationBatch, pInliner->GetModule(), pInliner->GetMemberDef(), fIsRevert, flags);
-                    if (FAILED(hr))
-                    {
-                        ReportReJITError(pInliner->GetModule(), pInliner->GetMemberDef(), NULL, hr);
-                    }
+                hr = UpdateActiveILVersion(pMgrToCodeActivationBatch, pInliner->GetModule(), pInliner->GetMemberDef(), fIsRevert, flags);
+                if (FAILED(hr))
+                {
+                    ReportReJITError(pInliner->GetModule(), pInliner->GetMemberDef(), NULL, hr);
                 }
             }
         }

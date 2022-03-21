@@ -24,6 +24,20 @@ namespace Internal.TypeSystem.Ecma
             return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.EcmaModule));
         }
 
+        public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributes(this EcmaType This,
+            string attributeNamespace, string attributeName)
+        {
+            var metadataReader = This.MetadataReader;
+            var attributeHandles = metadataReader.GetTypeDefinition(This.Handle).GetCustomAttributes();
+            foreach (var attributeHandle in attributeHandles)
+            {
+                if (IsEqualCustomAttributeName(attributeHandle, metadataReader, attributeNamespace, attributeName))
+                {
+                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.EcmaModule));
+                }
+            }
+        }
+
         public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this EcmaMethod This,
             string attributeNamespace, string attributeName)
         {
@@ -196,8 +210,8 @@ namespace Internal.TypeSystem.Ecma
 
         public static PInvokeFlags GetDelegatePInvokeFlags(this EcmaType type)
         {
-            PInvokeFlags flags = new PInvokeFlags();
-
+            PInvokeFlags flags = new PInvokeFlags(PInvokeAttributes.PreserveSig);
+            
             if (!type.IsDelegate)
             {
                 return flags;

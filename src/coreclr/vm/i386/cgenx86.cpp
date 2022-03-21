@@ -37,10 +37,6 @@
 #include "olevariant.h"
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #include "stublink.inl"
 
 extern "C" DWORD STDCALL GetSpecificCpuTypeAsm(void);
@@ -293,8 +289,6 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HelperMethodFrame::UpdateRegDisplay cached ip:%p, sp:%p\n", m_MachState.GetRetAddr(), m_MachState.esp()));
 
-    pRD->PCTAddr = dac_cast<TADDR>(m_MachState.pRetAddr());
-
 #ifdef FEATURE_EH_FUNCLETS
 
     pRD->IsCallerContextValid = FALSE;
@@ -310,6 +304,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
         InsureInit(false, pUnwoundState);
 
+        pRD->PCTAddr = dac_cast<TADDR>(pUnwoundState->pRetAddr());
         pRD->pCurrentContext->Eip = pRD->ControlPC = pUnwoundState->GetRetAddr();
         pRD->pCurrentContext->Esp = pRD->SP        = pUnwoundState->esp();
 
@@ -329,6 +324,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     }
 #endif // DACCESS_COMPILE
 
+    pRD->PCTAddr = dac_cast<TADDR>(m_MachState.pRetAddr());
     pRD->pCurrentContext->Eip = pRD->ControlPC = m_MachState.GetRetAddr();
     pRD->pCurrentContext->Esp = pRD->SP = (DWORD) m_MachState.esp();
 
@@ -405,6 +401,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pEbx = (DWORD*) m_MachState.pEbx();
     pRD->pEbp = (DWORD*) m_MachState.pEbp();
 
+    pRD->PCTAddr = dac_cast<TADDR>(m_MachState.pRetAddr());
     pRD->ControlPC = m_MachState.GetRetAddr();
     pRD->SP  = (DWORD) m_MachState.esp();
 
@@ -935,58 +932,6 @@ WORD GetUnpatchedCodeData(LPCBYTE pAddr)
 
 #ifndef DACCESS_COMPILE
 
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-//-------------------------------------------------------------------------
-// One-time creation of special prestub to initialize UMEntryThunks.
-//-------------------------------------------------------------------------
-Stub *GenerateUMThunkPrestub()
-{
-    CONTRACT(Stub*)
-    {
-        STANDARD_VM_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    CPUSTUBLINKER sl;
-    CPUSTUBLINKER *psl = &sl;
-
-    CodeLabel* rgRareLabels[] = { psl->NewCodeLabel(),
-                                  psl->NewCodeLabel(),
-                                  psl->NewCodeLabel()
-                                };
-
-
-    CodeLabel* rgRejoinLabels[] = { psl->NewCodeLabel(),
-                                    psl->NewCodeLabel(),
-                                    psl->NewCodeLabel()
-                                };
-
-    // emit the initial prolog
-    psl->EmitComMethodStubProlog(UMThkCallFrame::GetMethodFrameVPtr(), rgRareLabels, rgRejoinLabels, FALSE /*Don't profile*/);
-
-    // mov ecx, [esi+UMThkCallFrame.pUMEntryThunk]
-    psl->X86EmitIndexRegLoad(kECX, kESI, UMThkCallFrame::GetOffsetOfUMEntryThunk());
-
-    // The call conv is a __stdcall
-    psl->X86EmitPushReg(kECX);
-
-    // call UMEntryThunk::DoRunTimeInit
-    psl->X86EmitCall(psl->NewExternalCodeLabel((LPVOID)UMEntryThunk::DoRunTimeInit), 4);
-
-    // mov ecx, [esi+UMThkCallFrame.pUMEntryThunk]
-    psl->X86EmitIndexRegLoad(kEAX, kESI, UMThkCallFrame::GetOffsetOfUMEntryThunk());
-
-    //    lea eax, [eax + UMEntryThunk.m_code]  // point to fixedup UMEntryThunk
-    psl->X86EmitOp(0x8d, kEAX, kEAX,
-                   UMEntryThunk::GetCodeOffset() + UMEntryThunkCode::GetEntryPointOffset());
-
-    psl->EmitComMethodStubEpilog(UMThkCallFrame::GetMethodFrameVPtr(), rgRareLabels, rgRejoinLabels, FALSE /*Don't profile*/);
-
-    RETURN psl->Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
-}
-#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
-
 Stub *GenerateInitPInvokeFrameHelper()
 {
     CONTRACT(Stub*)
@@ -1241,134 +1186,6 @@ UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
     return *(UMEntryThunk**)( 1 + (BYTE*)pCallback );
 }
 
-BOOL DoesSlotCallPrestub(PCODE pCode)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(pCode != NULL);
-        PRECONDITION(pCode != GetPreStubEntryPoint());
-    } CONTRACTL_END;
-
-    // x86 has the following possible sequences for prestub logic:
-    // 1. slot -> temporary entrypoint -> prestub
-    // 2. slot -> precode -> prestub
-    // 3. slot -> precode -> jumprel32 (NGEN case) -> prestub
-
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    if (MethodDescChunk::GetMethodDescFromCompactEntryPoint(pCode, TRUE) != NULL)
-    {
-        return TRUE;
-    }
-#endif // HAS_COMPACT_ENTRYPOINTS
-
-    if (!IS_ALIGNED(pCode, PRECODE_ALIGNMENT))
-    {
-        return FALSE;
-    }
-
-#ifdef HAS_FIXUP_PRECODE
-    if (*PTR_BYTE(pCode) == X86_INSTR_CALL_REL32)
-    {
-        // Note that call could have been patched to jmp in the meantime
-        pCode = rel32Decode(pCode+1);
-
-        // NGEN case
-        if (*PTR_BYTE(pCode) == X86_INSTR_JMP_REL32) {
-            pCode = rel32Decode(pCode+1);
-        }
-
-        return pCode == (TADDR)PrecodeFixupThunk;
-    }
-#endif
-
-    if (*PTR_BYTE(pCode) != X86_INSTR_MOV_EAX_IMM32 ||
-        *PTR_BYTE(pCode+5) != X86_INSTR_MOV_RM_R ||
-        *PTR_BYTE(pCode+7) != X86_INSTR_JMP_REL32)
-    {
-        return FALSE;
-    }
-    pCode = rel32Decode(pCode+8);
-
-    // NGEN case
-    if (*PTR_BYTE(pCode) == X86_INSTR_JMP_REL32) {
-        pCode = rel32Decode(pCode+1);
-    }
-
-    return pCode == GetPreStubEntryPoint();
-}
-
-#ifdef FEATURE_PREJIT
-//==========================================================================================
-// In NGen image, virtual slots inherited from cross-module dependencies point to jump thunks.
-// These jump thunk initially point to VirtualMethodFixupStub which transfers control here.
-// This method 'VirtualMethodFixupWorker' will patch the jump thunk to point to the actual
-// inherited method body after we have execute the precode and a stable entry point.
-//
-EXTERN_C PVOID STDCALL VirtualMethodFixupWorker(Object * pThisPtr,  CORCOMPILE_VIRTUAL_IMPORT_THUNK *pThunk)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(pThisPtr != NULL);
-    VALIDATEOBJECT(pThisPtr);
-
-    MethodTable * pMT = pThisPtr->GetMethodTable();
-
-    WORD slotNumber = pThunk->slotNum;
-    _ASSERTE(slotNumber != (WORD)-1);
-
-    PCODE pCode = pMT->GetRestoredSlot(slotNumber);
-
-    if (!DoesSlotCallPrestub(pCode))
-    {
-        MethodDesc *pMD = MethodTable::GetMethodDescForSlotAddress(pCode);
-        if (pMD->IsVersionableWithVtableSlotBackpatch())
-        {
-            // The entry point for this method needs to be versionable, so use a FuncPtrStub similarly to what is done in
-            // MethodDesc::GetMultiCallableAddrOfCode()
-            GCX_COOP();
-            pCode = pMD->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pMD);
-        }
-        else
-        {
-            // Skip fixup precode jump for better perf
-            PCODE pDirectTarget = Precode::TryToSkipFixupPrecode(pCode);
-            if (pDirectTarget != NULL)
-                pCode = pDirectTarget;
-        }
-
-        INT64 oldValue = *(INT64*)pThunk;
-        BYTE* pOldValue = (BYTE*)&oldValue;
-
-        if (pOldValue[0] == X86_INSTR_CALL_REL32)
-        {
-            INT64 newValue = oldValue;
-            BYTE* pNewValue = (BYTE*)&newValue;
-            pNewValue[0] = X86_INSTR_JMP_REL32;
-
-            INT_PTR pcRelOffset = (BYTE*)pCode - &pThunk->callJmp[5];
-            *(INT32 *)(&pNewValue[1]) = (INT32) pcRelOffset;
-
-            _ASSERTE(IS_ALIGNED(pThunk, sizeof(INT64)));
-
-            ExecutableWriterHolder<INT64> thunkWriterHolder((INT64*)pThunk, sizeof(INT64));
-            FastInterlockCompareExchangeLong(thunkWriterHolder.GetRW(), newValue, oldValue);
-
-            FlushInstructionCache(GetCurrentProcess(), pThunk, 8);
-        }
-    }
-
-    return PVOID(pCode);
-}
-#endif // FEATURE_PREJIT
-
 #ifdef FEATURE_READYTORUN
 
 //
@@ -1616,8 +1433,6 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator, CORINFO_RUNTIME_LOOKUP * pLookup, DWORD dictionaryIndexAndSlot, Module * pModule)
 {
     STANDARD_VM_CONTRACT;
-
-    _ASSERTE(!MethodTable::IsPerInstInfoRelative());
 
     PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
         GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :

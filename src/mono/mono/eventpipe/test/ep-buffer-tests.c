@@ -141,10 +141,10 @@ load_buffer (
 			event_data_len = strlen (event_data) + 1;
 		}else {
 			event_data = (gchar *)TEST_EVENT_DATA;
-			event_data_len = EP_ARRAY_SIZE (TEST_EVENT_DATA);
+			event_data_len = ARRAY_SIZE (TEST_EVENT_DATA);
 		}
 		if (event_data) {
-			ep_event_payload_init (&payload, (uint8_t *)event_data, event_data_len);
+			ep_event_payload_init (&payload, (uint8_t *)event_data, (uint32_t)event_data_len);
 			result = ep_buffer_write_event (buffer, ep_rt_thread_get_handle (), session, ep_event, &payload, NULL, NULL, NULL);
 			ep_event_payload_fini (&payload);
 

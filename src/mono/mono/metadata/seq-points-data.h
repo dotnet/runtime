@@ -3,7 +3,7 @@
  * Copyright 2015 Xamarin Inc
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
- 
+
 #ifndef __MONO_SEQ_POINTS_DATA_H__
 #define __MONO_SEQ_POINTS_DATA_H__
 
@@ -21,7 +21,7 @@
 #define SEQ_POINT_AOT_EXT ".msym"
 
 /* Native offset used to mark seq points in dead code */
-#define SEQ_POINT_NATIVE_OFFSET_DEAD_CODE -1 
+#define SEQ_POINT_NATIVE_OFFSET_DEAD_CODE -1
 
 typedef struct {
 	int il_offset, native_offset, flags;

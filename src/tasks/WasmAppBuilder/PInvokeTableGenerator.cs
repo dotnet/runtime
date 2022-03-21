@@ -478,7 +478,9 @@ public class PInvokeTableGenerator : Task
     private static void Error (string msg) => throw new LogAsErrorException(msg);
 }
 
-internal class PInvoke : IEquatable<PInvoke>
+#pragma warning disable CA1067
+internal sealed class PInvoke : IEquatable<PInvoke>
+#pragma warning restore CA1067
 {
     public PInvoke(string entryPoint, string module, MethodInfo method)
     {
@@ -501,7 +503,7 @@ internal class PInvoke : IEquatable<PInvoke>
     public override string ToString() => $"{{ EntryPoint: {EntryPoint}, Module: {Module}, Method: {Method}, Skip: {Skip} }}";
 }
 
-internal class PInvokeComparer : IEqualityComparer<PInvoke>
+internal sealed class PInvokeComparer : IEqualityComparer<PInvoke>
 {
     public bool Equals(PInvoke? x, PInvoke? y)
     {
@@ -517,7 +519,7 @@ internal class PInvokeComparer : IEqualityComparer<PInvoke>
         => $"{pinvoke.EntryPoint}{pinvoke.Module}{pinvoke.Method}".GetHashCode();
 }
 
-internal class PInvokeCallback
+internal sealed class PInvokeCallback
 {
     public PInvokeCallback(MethodInfo method)
     {

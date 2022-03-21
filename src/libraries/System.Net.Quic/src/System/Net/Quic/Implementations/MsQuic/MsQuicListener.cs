@@ -18,7 +18,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 {
     internal sealed class MsQuicListener : QuicListenerProvider, IDisposable
     {
-        private static readonly ListenerCallbackDelegate s_listenerDelegate = new ListenerCallbackDelegate(NativeCallbackHandler);
+        private static unsafe readonly ListenerCallbackDelegate s_listenerDelegate = new ListenerCallbackDelegate(NativeCallbackHandler);
 
         private readonly State _state;
         private GCHandle _stateHandle;
@@ -34,6 +34,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public readonly SafeMsQuicConfigurationHandle? ConnectionConfiguration;
             public readonly Channel<MsQuicConnection> AcceptConnectionQueue;
+            // Pending connections are held back until they're ready to be used, which includes TLS negotiation.
+            // If the negotiation succeeds, the connection is put into the accept queue; otherwise, it's discarded.
             public readonly ConcurrentDictionary<IntPtr, MsQuicConnection> PendingConnections;
 
             public QuicOptions ConnectionOptions = new QuicOptions();
@@ -79,10 +81,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal MsQuicListener(QuicListenerOptions options)
         {
-            if (options.ListenEndPoint == null)
-            {
-                throw new ArgumentNullException(nameof(options.ListenEndPoint));
-            }
+            ArgumentNullException.ThrowIfNull(options.ListenEndPoint, nameof(options.ListenEndPoint));
 
             _state = new State(options);
             _stateHandle = GCHandle.Alloc(_state);
@@ -224,13 +223,13 @@ namespace System.Net.Quic.Implementations.MsQuic
         private static unsafe uint NativeCallbackHandler(
             IntPtr listener,
             IntPtr context,
-            ref ListenerEvent evt)
+            ListenerEvent* evt)
         {
             GCHandle gcHandle = GCHandle.FromIntPtr(context);
             Debug.Assert(gcHandle.IsAllocated);
             Debug.Assert(gcHandle.Target is not null);
             var state = (State)gcHandle.Target;
-            if (evt.Type != QUIC_LISTENER_EVENT.NEW_CONNECTION)
+            if (evt->Type != QUIC_LISTENER_EVENT.NEW_CONNECTION)
             {
                 return MsQuicStatusCodes.InternalError;
             }
@@ -239,7 +238,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             MsQuicConnection? msQuicConnection = null;
             try
             {
-                ref NewConnectionInfo connectionInfo = ref *evt.Data.NewConnection.Info;
+                ref NewConnectionInfo connectionInfo = ref *evt->Data.NewConnection.Info;
 
                 IPEndPoint localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref *(SOCKADDR_INET*)connectionInfo.LocalAddress);
                 IPEndPoint remoteEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref *(SOCKADDR_INET*)connectionInfo.RemoteAddress);
@@ -275,7 +274,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     }
                 }
 
-                connectionHandle = new SafeMsQuicConnectionHandle(evt.Data.NewConnection.Connection);
+                connectionHandle = new SafeMsQuicConnectionHandle(evt->Data.NewConnection.Connection);
 
                 uint status = MsQuicApi.Api.ConnectionSetConfigurationDelegate(connectionHandle, connectionConfiguration);
                 if (MsQuicStatusHelper.SuccessfulStatusCode(status))
@@ -297,7 +296,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(state, $"[Listener#{state.GetHashCode()}] Exception occurred during handling {(QUIC_LISTENER_EVENT)evt.Type} connection callback: {ex}");
+                    NetEventSource.Error(state, $"[Listener#{state.GetHashCode()}] Exception occurred during handling {(QUIC_LISTENER_EVENT)evt->Type} connection callback: {ex}");
                 }
             }
 

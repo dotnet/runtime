@@ -8,6 +8,7 @@ namespace System.Text.Json.Serialization.Metadata
     /// <summary>
     /// Provides helpers to create and initialize metadata for JSON-serializable types.
     /// </summary>
+    /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static partial class JsonMetadataServices
     {
@@ -18,18 +19,9 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="options">The <see cref="JsonSerializerOptions"/> to initialize the metadata with.</param>
         /// <param name="propertyInfo">Provides serialization metadata about the property or field.</param>
         /// <returns>A <see cref="JsonPropertyInfo"/> instance intialized with the provided metadata.</returns>
-        public static JsonPropertyInfo CreatePropertyInfo<T>(JsonSerializerOptions options, JsonPropertyInfoValues<T> propertyInfo)
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public static JsonPropertyInfo CreatePropertyInfo<T>(JsonSerializerOptions options!!, JsonPropertyInfoValues<T> propertyInfo!!)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
-            if (propertyInfo == null)
-            {
-                throw new ArgumentNullException(nameof(propertyInfo));
-            }
-
             Type? declaringType = propertyInfo.DeclaringType;
             if (declaringType == null)
             {
@@ -76,20 +68,21 @@ namespace System.Text.Json.Serialization.Metadata
         /// <typeparam name="T">The type of the class or struct.</typeparam>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> or <paramref name="objectInfo"/> is null.</exception>
         /// <returns>A <see cref="JsonTypeInfo{T}"/> instance representing the class or struct.</returns>
-        public static JsonTypeInfo<T> CreateObjectInfo<T>(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo) where T : notnull
-            => new JsonTypeInfoInternal<T>(
-                options ?? throw new ArgumentNullException(nameof(options)),
-                objectInfo ?? throw new ArgumentNullException(nameof(objectInfo)));
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public static JsonTypeInfo<T> CreateObjectInfo<T>(JsonSerializerOptions options!!, JsonObjectInfoValues<T> objectInfo!!) where T : notnull
+            => new JsonTypeInfoInternal<T>(options, objectInfo);
 
         /// <summary>
         /// Creates metadata for a primitive or a type with a custom converter.
         /// </summary>
         /// <typeparam name="T">The generic type definition.</typeparam>
         /// <returns>A <see cref="JsonTypeInfo{T}"/> instance representing the type.</returns>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonTypeInfo<T> CreateValueInfo<T>(JsonSerializerOptions options, JsonConverter converter)
         {
-            JsonTypeInfo<T> info = new JsonTypeInfoInternal<T>(options);
+            JsonTypeInfo<T> info = new JsonTypeInfoInternal<T>(converter, options);
             info.PropertyInfoForTypeInfo = CreateJsonPropertyInfoForClassInfo(typeof(T), info, converter, options);
+            converter.ConfigureJsonTypeInfo(info, options);
             return info;
         }
 

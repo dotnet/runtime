@@ -10,7 +10,7 @@
 */
 using System;
 
-public class Test
+public class Test_DevDiv607
 {	
 	public static int Main()
 	{

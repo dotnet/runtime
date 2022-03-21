@@ -7,54 +7,18 @@ namespace System.Formats.Cbor
 {
     public partial class CborReader
     {
-        /// <summary>Reads the next data item as a half-precision floating point number (major type 7).</summary>
-        /// <returns>The decoded value.</returns>
-        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
-        /// -or-
-        /// The next simple value is not a floating-point number encoding.
-        /// -or-
-        /// The encoded value is a double-precision float.</exception>
-        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
-        /// -or-
-        /// There was an unexpected end of CBOR encoding data.
-        /// -or-
-        /// The next value uses a CBOR encoding that is not valid under the current conformance mode.</exception>
-        public Half ReadHalf()
-        {
-            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
-            ReadOnlySpan<byte> buffer = GetRemainingBytes();
-            Half result;
-
-            switch (header.AdditionalInfo)
-            {
-                case CborAdditionalInfo.Additional16BitData:
-                    EnsureReadCapacity(buffer, 1 + HalfHelpers.SizeOfHalf);
-                    result = HalfHelpers.ReadHalfBigEndian(buffer.Slice(1));
-                    AdvanceBuffer(1 + HalfHelpers.SizeOfHalf);
-                    AdvanceDataItemCounters();
-                    return result;
-
-                case CborAdditionalInfo.Additional32BitData:
-                case CborAdditionalInfo.Additional64BitData:
-                    throw new InvalidOperationException(SR.Cbor_Reader_ReadingAsLowerPrecision);
-
-                default:
-                    throw new InvalidOperationException(SR.Cbor_Reader_NotAFloatEncoding);
-            }
-        }
-
         /// <summary>Reads the next data item as a single-precision floating point number (major type 7).</summary>
         /// <returns>The decoded value.</returns>
-        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
-        /// -or-
-        /// The next simple value is not a floating-point number encoding.
-        /// -or-
-        /// The encoded value is a double-precision float</exception>
-        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
-        /// -or-
-        /// There was an unexpected end of CBOR encoding data.
-        /// -or-
-        /// The next value uses a CBOR encoding that is not valid under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><para>The next data item does not have the correct major type.</para>
+        /// <para>-or-</para>
+        /// <para>The next simple value is not a floating-point number encoding.</para>
+        /// <para>-or-</para>
+        /// <para>The encoded value is a double-precision float.</para></exception>
+        /// <exception cref="CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+        /// <para>-or-</para>
+        /// <para>There was an unexpected end of CBOR encoding data.</para>
+        /// <para>-or-</para>
+        /// <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
         public float ReadSingle()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
@@ -64,15 +28,15 @@ namespace System.Formats.Cbor
             switch (header.AdditionalInfo)
             {
                 case CborAdditionalInfo.Additional16BitData:
-                    EnsureReadCapacity(buffer, 1 + HalfHelpers.SizeOfHalf);
-                    result = (float)HalfHelpers.ReadHalfBigEndian(buffer.Slice(1));
-                    AdvanceBuffer(1 + HalfHelpers.SizeOfHalf);
+                    EnsureReadCapacity(buffer, 1 + sizeof(ushort));
+                    result = HalfHelpers.HalfToFloat(CborHelpers.ReadHalfBigEndian(buffer.Slice(1)));
+                    AdvanceBuffer(1 + sizeof(ushort));
                     AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional32BitData:
                     EnsureReadCapacity(buffer, 1 + sizeof(float));
-                    result = BinaryPrimitives.ReadSingleBigEndian(buffer.Slice(1));
+                    result = CborHelpers.ReadSingleBigEndian(buffer.Slice(1));
                     AdvanceBuffer(1 + sizeof(float));
                     AdvanceDataItemCounters();
                     return result;
@@ -88,14 +52,14 @@ namespace System.Formats.Cbor
 
         /// <summary>Reads the next data item as a double-precision floating point number (major type 7).</summary>
         /// <returns>The decoded <see cref="double" /> value.</returns>
-        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
-        /// -or-
-        /// The next simple value is not a floating-point number encoding</exception>
-        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
-        /// -or-
-        /// There was an unexpected end of CBOR encoding data.
-        /// -or-
-        /// The next value uses a CBOR encoding that is not valid under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><para>The next data item does not have the correct major type.</para>
+        /// <para>-or-</para>
+        /// <para>The next simple value is not a floating-point number encoding.</para></exception>
+        /// <exception cref="CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+        /// <para>-or-</para>
+        /// <para>There was an unexpected end of CBOR encoding data.</para>
+        /// <para>-or-</para>
+        /// <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
         public double ReadDouble()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
@@ -105,22 +69,22 @@ namespace System.Formats.Cbor
             switch (header.AdditionalInfo)
             {
                 case CborAdditionalInfo.Additional16BitData:
-                    EnsureReadCapacity(buffer, 1 + HalfHelpers.SizeOfHalf);
-                    result = (double)HalfHelpers.ReadHalfBigEndian(buffer.Slice(1));
-                    AdvanceBuffer(1 + HalfHelpers.SizeOfHalf);
+                    EnsureReadCapacity(buffer, 1 + sizeof(short));
+                    result = HalfHelpers.HalfToDouble(CborHelpers.ReadHalfBigEndian(buffer.Slice(1)));
+                    AdvanceBuffer(1 + sizeof(short));
                     AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional32BitData:
                     EnsureReadCapacity(buffer, 1 + sizeof(float));
-                    result = BinaryPrimitives.ReadSingleBigEndian(buffer.Slice(1));
+                    result = CborHelpers.ReadSingleBigEndian(buffer.Slice(1));
                     AdvanceBuffer(1 + sizeof(float));
                     AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional64BitData:
                     EnsureReadCapacity(buffer, 1 + sizeof(double));
-                    result = BinaryPrimitives.ReadDoubleBigEndian(buffer.Slice(1));
+                    result = CborHelpers.ReadDoubleBigEndian(buffer.Slice(1));
                     AdvanceBuffer(1 + sizeof(double));
                     AdvanceDataItemCounters();
                     return result;
@@ -132,14 +96,14 @@ namespace System.Formats.Cbor
 
         /// <summary>Reads the next data item as a boolean value (major type 7).</summary>
         /// <returns>The decoded value.</returns>
-        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
-        /// -or-
-        /// The next simple value is not a boolean encoding</exception>
-        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
-        /// -or-
-        /// There was an unexpected end of CBOR encoding data.
-        /// -or-
-        /// The next value uses a CBOR encoding that is not valid under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><para>The next data item does not have the correct major type.</para>
+        /// <para>-or-</para>
+        /// <para>The next simple value is not a boolean encoding.</para></exception>
+        /// <exception cref="CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+        /// <para>-or-</para>
+        /// <para>There was an unexpected end of CBOR encoding data.</para>
+        /// <para>-or-</para>
+        /// <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
         public bool ReadBoolean()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
@@ -157,14 +121,14 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Reads the next data item as a <see langword="null" /> value (major type 7).</summary>
-        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
-        /// -or-
-        /// The next simple value is not a <see langword="null" /> value encoding.</exception>
-        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
-        /// -or-
-        /// There was an unexpected end of CBOR encoding data.
-        /// -or-
-        /// The next value uses a CBOR encoding that is not valid under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><para>The next data item does not have the correct major type.</para>
+        /// <para>-or-</para>
+        /// <para>The next simple value is not a <see langword="null" /> value encoding.</para></exception>
+        /// <exception cref="CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+        /// <para>-or-</para>
+        /// <para>There was an unexpected end of CBOR encoding data.</para>
+        /// <para>-or-</para>
+        /// <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
         public void ReadNull()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
@@ -182,14 +146,14 @@ namespace System.Formats.Cbor
 
         /// <summary>Reads the next data item as a CBOR simple value (major type 7).</summary>
         /// <returns>The decoded CBOR simple value.</returns>
-        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
-        /// -or-
-        /// The next simple value is not a simple value encoding.</exception>
-        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
-        /// -or-
-        /// There was an unexpected end of CBOR encoding data.
-        /// -or-
-        /// The next value uses a CBOR encoding that is not valid under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><para>The next data item does not have the correct major type.</para>
+        /// <para>-or-</para>
+        /// <para>The next simple value is not a simple value encoding.</para></exception>
+        /// <exception cref="CborContentException"><para>The next value has an invalid CBOR encoding.</para>
+        /// <para>-or-</para>
+        /// <para>There was an unexpected end of CBOR encoding data.</para>
+        /// <para>-or-</para>
+        /// <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
         public CborSimpleValue ReadSimpleValue()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);

@@ -17,4 +17,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldnull_i.exe{}
+.assembly ldnull_i{}

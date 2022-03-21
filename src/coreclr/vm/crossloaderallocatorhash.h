@@ -3,7 +3,6 @@
 
 #ifndef CROSSLOADERALLOCATORHASH_H
 #define CROSSLOADERALLOCATORHASH_H
-#ifndef CROSSGEN_COMPILE
 
 #include "gcheaphashtable.h"
 
@@ -193,5 +192,4 @@ public:
     inline static void EnsureTypesLoaded();
 };
 
-#endif // !CROSSGEN_COMPILE
 #endif // CROSSLOADERALLOCATORHASH_H

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Xunit.Performance;
 
 namespace Functions
 {
@@ -12,21 +11,6 @@ namespace Functions
 
         private const double asinDoubleDelta = 0.0004;
         private const double asinDoubleExpectedResult = 1.5707959028763392;
-
-        [Benchmark(InnerIterationCount = AsinDoubleIterations)]
-        public static void AsinDoubleBenchmark()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        AsinDoubleTest();
-                    }
-                }
-            }
-        }
 
         public static void AsinDoubleTest()
         {

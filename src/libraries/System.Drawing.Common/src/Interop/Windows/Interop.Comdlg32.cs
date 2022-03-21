@@ -8,14 +8,16 @@ internal static partial class Interop
 {
     internal static partial class Comdlg32
     {
-        [DllImport(Libraries.Comdlg32, SetLastError = true, CharSet = CharSet.Auto)]
-        internal static extern bool PrintDlg([In, Out] PRINTDLG lppd);
+        [LibraryImport(Libraries.Comdlg32, EntryPoint="PrintDlgW", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool PrintDlg(ref PRINTDLG lppd);
 
-        [DllImport(Libraries.Comdlg32, SetLastError = true, CharSet = CharSet.Auto)]
-        internal static extern bool PrintDlg([In, Out] PRINTDLGX86 lppd);
+        [LibraryImport(Libraries.Comdlg32, EntryPoint="PrintDlgW", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool PrintDlg(ref PRINTDLGX86 lppd);
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        internal sealed class PRINTDLG
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct PRINTDLG
         {
             internal int lStructSize;
             internal IntPtr hwndOwner;
@@ -32,14 +34,14 @@ internal static partial class Interop
             internal IntPtr lCustData;
             internal IntPtr lpfnPrintHook;
             internal IntPtr lpfnSetupHook;
-            internal string? lpPrintTemplateName;
-            internal string? lpSetupTemplateName;
+            internal IntPtr lpPrintTemplateName;
+            internal IntPtr lpSetupTemplateName;
             internal IntPtr hPrintTemplate;
             internal IntPtr hSetupTemplate;
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto, Pack = 1)]
-        internal sealed class PRINTDLGX86
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        internal struct PRINTDLGX86
         {
             internal int lStructSize;
             internal IntPtr hwndOwner;
@@ -56,8 +58,8 @@ internal static partial class Interop
             internal IntPtr lCustData;
             internal IntPtr lpfnPrintHook;
             internal IntPtr lpfnSetupHook;
-            internal string? lpPrintTemplateName;
-            internal string? lpSetupTemplateName;
+            internal IntPtr lpPrintTemplateName;
+            internal IntPtr lpSetupTemplateName;
             internal IntPtr hPrintTemplate;
             internal IntPtr hSetupTemplate;
         }

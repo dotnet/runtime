@@ -8,18 +8,18 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class RuntimeAssetGroup
     {
-        private IReadOnlyList<string> _assetPaths;
-        private IReadOnlyList<RuntimeFile> _runtimeFiles;
+        private IReadOnlyList<string>? _assetPaths;
+        private IReadOnlyList<RuntimeFile>? _runtimeFiles;
 
-        public RuntimeAssetGroup(string runtime, params string[] assetPaths) : this(runtime, (IEnumerable<string>)assetPaths) { }
+        public RuntimeAssetGroup(string? runtime, params string[] assetPaths) : this(runtime, (IEnumerable<string>)assetPaths) { }
 
-        public RuntimeAssetGroup(string runtime, IEnumerable<string> assetPaths)
+        public RuntimeAssetGroup(string? runtime, IEnumerable<string> assetPaths)
         {
             Runtime = runtime;
             _assetPaths = assetPaths.ToArray();
         }
 
-        public RuntimeAssetGroup(string runtime, IEnumerable<RuntimeFile> runtimeFiles)
+        public RuntimeAssetGroup(string? runtime, IEnumerable<RuntimeFile> runtimeFiles)
         {
             Runtime = runtime;
             _runtimeFiles = runtimeFiles.ToArray();
@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.DependencyModel
         /// <summary>
         /// The runtime ID associated with this group (may be empty if the group is runtime-agnostic)
         /// </summary>
-        public string Runtime { get; }
+        public string? Runtime { get; }
 
         /// <summary>
         /// Gets a list of asset paths provided in this runtime group
@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.DependencyModel
                     return _assetPaths;
                 }
 
-                return _runtimeFiles.Select(file => file.Path).ToArray();
+                return _runtimeFiles!.Select(file => file.Path).ToArray();
             }
         }
 
@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.DependencyModel
                     return _runtimeFiles;
                 }
 
-                return _assetPaths.Select(path => new RuntimeFile(path, null, null)).ToArray();
+                return _assetPaths!.Select(path => new RuntimeFile(path, null, null)).ToArray();
             }
         }
     }

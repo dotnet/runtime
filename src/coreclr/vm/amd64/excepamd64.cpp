@@ -367,7 +367,7 @@ RtlVirtualUnwind_Worker (
         // This is a jmp outside of the function, probably a tail call
         // to an import function.
         InEpilogue = TRUE;
-        NextByte += 2;
+        NextByte += 6;
     }
     else if (((TempOpcode & 0xf8) == AMD64_SIZE64_PREFIX)
             && (NextByte[1] == AMD64_JMP_IND_OP)
@@ -382,7 +382,27 @@ RtlVirtualUnwind_Worker (
         // Such an opcode is an unambiguous epilogue indication.
         //
         InEpilogue = TRUE;
+        // Account for displacement/SIB byte
+        int mod = NextByte[2] >> 6;
+        int rm = NextByte[2] & 0b111;
         NextByte += 3;
+        if (mod != 0b11)
+        {
+            // Has addressing mode
+            if (rm == 0b100)
+            {
+                NextByte++; // SIB byte
+            }
+
+            if (mod == 0b01)
+            {
+                NextByte++; // disp8
+            }
+            else if (mod == 0b10 || (mod == 0b00 && rm == 0b101))
+            {
+                NextByte += 4; // disp32
+            }
+        }
     }
 
     if (InEpilogue && HasUnmanagedBreakpoint)

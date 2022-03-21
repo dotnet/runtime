@@ -141,6 +141,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void NameClashSourceGeneration()
         {
             // Without resolution.
@@ -173,6 +174,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void ProgramsThatDontUseGeneratorCompile()
         {
             // No STJ usage.
@@ -215,6 +217,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void WarnOnClassesWithInitOnlyProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithInitOnlyProperties();
@@ -234,6 +237,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void WarnOnClassesWithInaccessibleJsonIncludeProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithInaccessibleJsonIncludeProperties();

@@ -163,6 +163,9 @@
   #define REG_JUMP_THUNK_PARAM     REG_EAX
   #define RBM_JUMP_THUNK_PARAM     RBM_EAX
 
+  #define REG_R2R_INDIRECT_PARAM   REG_EAX // Indirection cell for R2R fast tailcall, not currently used in x86.
+  #define RBM_R2R_INDIRECT_PARAM   RBM_EAX
+
 #if NOGC_WRITE_BARRIERS
   #define REG_WRITE_BARRIER        REG_EDX
   #define RBM_WRITE_BARRIER        RBM_EDX
@@ -178,7 +181,7 @@
   #define RBM_PINVOKE_TARGET_PARAM RBM_EAX
 
   // GenericPInvokeCalliHelper cookie parameter
-  #define REG_PINVOKE_COOKIE_PARAM REG_STK
+  #define REG_PINVOKE_COOKIE_PARAM REG_EBX
 
   // IL stub's secret parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM    REG_EAX
@@ -224,6 +227,9 @@
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper. On x86, this helper has a custom calling
   // convention that takes EDI as argument (but doesn't trash it), trashes EAX, and returns ESI.
   #define RBM_INIT_PINVOKE_FRAME_TRASH  (RBM_PINVOKE_SCRATCH | RBM_PINVOKE_TCB)
+
+  #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~RBM_ECX)
+  #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_ECX
 
   #define REG_FPBASE               REG_EBP
   #define RBM_FPBASE               RBM_EBP

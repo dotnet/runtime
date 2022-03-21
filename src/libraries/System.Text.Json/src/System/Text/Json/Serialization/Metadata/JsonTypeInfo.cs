@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -12,7 +13,9 @@ namespace System.Text.Json.Serialization.Metadata
     /// <summary>
     /// Provides JSON serialization-related metadata about a type.
     /// </summary>
-    [DebuggerDisplay("ConverterStrategy.{ConverterStrategy}, {Type.Name}")]
+    /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public partial class JsonTypeInfo
     {
         internal const string JsonObjectTypeName = "System.Text.Json.Nodes.JsonObject";
@@ -49,7 +52,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 if (_elementTypeInfo == null && ElementType != null)
                 {
-                    _elementTypeInfo = Options.GetOrAddClass(ElementType);
+                    _elementTypeInfo = Options.GetOrAddJsonTypeInfo(ElementType);
                 }
 
                 return _elementTypeInfo;
@@ -82,7 +85,7 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Dictionary);
 
-                    _keyTypeInfo = Options.GetOrAddClass(KeyType);
+                    _keyTypeInfo = Options.GetOrAddJsonTypeInfo(KeyType);
                 }
 
                 return _keyTypeInfo;
@@ -121,19 +124,12 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal bool IsObjectWithParameterizedCtor => PropertyInfoForTypeInfo.ConverterBase.ConstructorIsParameterized;
 
-        private GenericMethodHolder? _genericMethods;
 
         /// <summary>
-        /// Returns a helper class used when generic methods need to be invoked on Type.
+        /// Returns a helper class used for computing the default value.
         /// </summary>
-        internal GenericMethodHolder GenericMethods
-        {
-            get
-            {
-                _genericMethods ??= GenericMethodHolder.CreateHolder(Type);
-                return _genericMethods;
-            }
-        }
+        internal DefaultValueHolder DefaultValueHolder => _defaultValueHolder ??= DefaultValueHolder.CreateHolder(Type);
+        private DefaultValueHolder? _defaultValueHolder;
 
         internal JsonNumberHandling? NumberHandling { get; set; }
 
@@ -142,10 +138,10 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(false, "This constructor should not be called.");
         }
 
-        internal JsonTypeInfo(Type type, JsonSerializerOptions options, bool dummy)
+        internal JsonTypeInfo(Type type, JsonSerializerOptions options!!, bool dummy)
         {
             Type = type;
-            Options = options ?? throw new ArgumentNullException(nameof(options));
+            Options = options;
             // Setting this option is deferred to the initialization methods of the various metadada info types.
             PropertyInfoForTypeInfo = null!;
         }
@@ -158,22 +154,20 @@ namespace System.Text.Json.Serialization.Metadata
                     type,
                     parentClassType: null, // A TypeInfo never has a "parent" class.
                     memberInfo: null, // A TypeInfo never has a "parent" property.
-                    out Type runtimeType,
                     options),
-                runtimeType,
                 options)
         {
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        internal JsonTypeInfo(Type type, JsonConverter converter, Type runtimeType, JsonSerializerOptions options)
+        internal JsonTypeInfo(Type type, JsonConverter converter, JsonSerializerOptions options)
         {
             Type = type;
             Options = options;
 
             JsonNumberHandling? typeNumberHandling = GetNumberHandlingForType(Type);
 
-            PropertyInfoForTypeInfo = CreatePropertyInfoForTypeInfo(Type, runtimeType, converter, typeNumberHandling, Options);
+            PropertyInfoForTypeInfo = CreatePropertyInfoForTypeInfo(Type, converter, typeNumberHandling, Options);
 
             ElementType = converter.ElementType;
 
@@ -293,11 +287,6 @@ namespace System.Text.Json.Serialization.Metadata
 
                         if (converter.ConstructorIsParameterized)
                         {
-                            // Create dynamic accessor to parameterized ctor.
-                            // Only applies to the converter that handles "large ctors",
-                            // since it is the only one shared with the source-gen code-paths.
-                            converter.Initialize(Options, this);
-
                             ParameterInfo[] parameters = converter.ConstructorInfo!.GetParameters();
                             int parameterCount = parameters.Length;
 
@@ -308,23 +297,13 @@ namespace System.Text.Json.Serialization.Metadata
                     break;
                 case ConverterStrategy.Enumerable:
                     {
-                        CreateObject = Options.MemberAccessorStrategy.CreateConstructor(runtimeType);
-
-                        if (converter.RequiresDynamicMemberAccessors)
-                        {
-                            converter.Initialize(Options, this);
-                        }
+                        CreateObject = Options.MemberAccessorStrategy.CreateConstructor(type);
                     }
                     break;
                 case ConverterStrategy.Dictionary:
                     {
                         KeyType = converter.KeyType;
-                        CreateObject = Options.MemberAccessorStrategy.CreateConstructor(runtimeType);
-
-                        if (converter.RequiresDynamicMemberAccessors)
-                        {
-                            converter.Initialize(Options, this);
-                        }
+                        CreateObject = Options.MemberAccessorStrategy.CreateConstructor(type);
                     }
                     break;
                 case ConverterStrategy.Value:
@@ -341,6 +320,11 @@ namespace System.Text.Json.Serialization.Metadata
                     Debug.Fail($"Unexpected class type: {PropertyInfoForTypeInfo.ConverterStrategy}");
                     throw new InvalidOperationException();
             }
+
+            // These two method overrides are expected to perform
+            // orthogonal changes, so we can invoke them both safely.
+            converter.ConfigureJsonTypeInfo(this, options);
+            converter.ConfigureJsonTypeInfoUsingReflection(this, options);
         }
 
         private void CacheMember(
@@ -462,7 +446,7 @@ namespace System.Text.Json.Serialization.Metadata
                 JsonPropertyInfo jsonProperty = kvp.Value!;
                 string propertyName = jsonProperty.ClrName!;
 
-                ParameterLookupKey key = new(propertyName, jsonProperty.DeclaredPropertyType);
+                ParameterLookupKey key = new(propertyName, jsonProperty.PropertyType);
                 ParameterLookupValue value = new(jsonProperty);
 
                 if (!JsonHelpers.TryAdd(nameLookup, key, value))
@@ -542,7 +526,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return false;
             }
 
-            return currentMemberType == ignoredMember.DeclaredPropertyType &&
+            return currentMemberType == ignoredMember.PropertyType &&
                 currentMemberIsVirtual &&
                 ignoredMember.IsVirtual;
         }
@@ -559,7 +543,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private bool IsValidDataExtensionProperty(JsonPropertyInfo jsonPropertyInfo)
         {
-            Type memberType = jsonPropertyInfo.DeclaredPropertyType;
+            Type memberType = jsonPropertyInfo.PropertyType;
 
             bool typeIsValid = typeof(IDictionary<string, object>).IsAssignableFrom(memberType) ||
                 typeof(IDictionary<string, JsonElement>).IsAssignableFrom(memberType) ||
@@ -591,69 +575,22 @@ namespace System.Text.Json.Serialization.Metadata
         // This method gets the runtime information for a given type or property.
         // The runtime information consists of the following:
         // - class type,
-        // - runtime type,
         // - element type (if the type is a collection),
         // - the converter (either native or custom), if one exists.
         private static JsonConverter GetConverter(
             Type type,
             Type? parentClassType,
             MemberInfo? memberInfo,
-            out Type runtimeType,
             JsonSerializerOptions options)
         {
             Debug.Assert(type != null);
             ValidateType(type, parentClassType, memberInfo, options);
-
-            JsonConverter converter = options.DetermineConverter(parentClassType, type, memberInfo);
-
-            // The runtimeType is the actual value being assigned to the property.
-            // There are three types to consider for the runtimeType:
-            // 1) The declared type (the actual property type).
-            // 2) The converter.TypeToConvert (the T value that the converter supports).
-            // 3) The converter.RuntimeType (used with interfaces such as IList).
-
-            Type converterRuntimeType = converter.RuntimeType;
-            if (type == converterRuntimeType)
-            {
-                runtimeType = type;
-            }
-            else
-            {
-                if (type.IsInterface)
-                {
-                    runtimeType = converterRuntimeType;
-                }
-                else if (converterRuntimeType.IsInterface)
-                {
-                    runtimeType = type;
-                }
-                else
-                {
-                    // Use the most derived version from the converter.RuntimeType or converter.TypeToConvert.
-                    if (type.IsAssignableFrom(converterRuntimeType))
-                    {
-                        runtimeType = converterRuntimeType;
-                    }
-                    else if (converterRuntimeType.IsAssignableFrom(type) || converter.TypeToConvert.IsAssignableFrom(type))
-                    {
-                        runtimeType = type;
-                    }
-                    else
-                    {
-                        runtimeType = default!;
-                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(type);
-                    }
-                }
-            }
-
-            Debug.Assert(!IsInvalidForSerialization(runtimeType));
-
-            return converter;
+            return options.GetConverterFromMember(parentClassType, type, memberInfo);
         }
 
         private static void ValidateType(Type type, Type? parentClassType, MemberInfo? memberInfo, JsonSerializerOptions options)
         {
-            if (!options.TypeIsCached(type) && IsInvalidForSerialization(type))
+            if (!options.IsJsonTypeInfoCached(type) && IsInvalidForSerialization(type))
             {
                 ThrowHelper.ThrowInvalidOperationException_CannotSerializeInvalidType(type, parentClassType, memberInfo);
             }
@@ -695,5 +632,8 @@ namespace System.Text.Json.Serialization.Metadata
 
             return numberHandlingAttribute?.Handling;
         }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private string DebuggerDisplay => $"ConverterStrategy.{PropertyInfoForTypeInfo.ConverterStrategy}, {Type.Name}";
     }
 }

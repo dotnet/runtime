@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly b75890 { }
+.assembly extern xunit.core {}
 .class ILGEN_0xc40344d2 {
 .field static	int64[] field_0x0
 .field static	native int field_0x1
@@ -65,6 +66,9 @@ Branch_0x1:
  ret
 }
 .method static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	17
 .try {

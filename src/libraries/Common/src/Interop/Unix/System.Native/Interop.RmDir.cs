@@ -15,7 +15,7 @@ internal static partial class Interop
         /// <returns>
         /// Returns 0 on success; otherwise, returns -1
         /// </returns>
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_RmDir", SetLastError = true)]
-        internal static extern int RmDir(string path);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_RmDir", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        internal static partial int RmDir(string path);
     }
 }

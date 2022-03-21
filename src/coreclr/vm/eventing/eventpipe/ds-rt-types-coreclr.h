@@ -2,7 +2,7 @@
 #ifndef __DIAGNOSTICS_RT_TYPES_CORECLR_H__
 #define __DIAGNOSTICS_RT_TYPES_CORECLR_H__
 
-#include "ds-rt-config.h"
+#include <eventpipe/ds-rt-config.h>
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-types-coreclr.h"

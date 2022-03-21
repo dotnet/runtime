@@ -10,6 +10,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ICustomMarshaler.cs" />
-    <Compile Include="..\..\..\Common\XunitBase.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

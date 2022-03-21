@@ -4,7 +4,6 @@
 #include "common.h"
 #include "yieldprocessornormalized.h"
 
-#ifndef CROSSGEN_COMPILE
 
 #include "finalizerthread.h"
 
@@ -206,7 +205,6 @@ void YieldProcessorNormalization::PerformMeasurement()
     s_isMeasurementScheduled = false;
 }
 
-#endif // !CROSSGEN_COMPILE
 
 void YieldProcessorNormalization::ScheduleMeasurementIfNecessary()
 {
@@ -218,7 +216,6 @@ void YieldProcessorNormalization::ScheduleMeasurementIfNecessary()
     }
     CONTRACTL_END;
 
-#ifndef CROSSGEN_COMPILE
     NormalizationState normalizationState = VolatileLoadWithoutBarrier(&s_normalizationState);
     if (normalizationState == NormalizationState::Initialized)
     {
@@ -244,10 +241,8 @@ void YieldProcessorNormalization::ScheduleMeasurementIfNecessary()
 
     s_isMeasurementScheduled = true;
     FinalizerThread::EnableFinalization();
-#endif // !CROSSGEN_COMPILE
 }
 
-#ifndef CROSSGEN_COMPILE
 
 void YieldProcessorNormalization::FireMeasurementEvents()
 {
@@ -305,4 +300,3 @@ void YieldProcessorNormalization::AtomicStore(double *valueRef, double value)
 #endif
 }
 
-#endif // !CROSSGEN_COMPILE

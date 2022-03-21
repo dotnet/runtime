@@ -14,6 +14,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
     public class TypeWrapperTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void MetadataLoadFilePathHandle()
         {
             // Create a MetadataReference from new code.
@@ -79,6 +80,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void CanGetAttributes()
         {
             string source = @"

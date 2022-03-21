@@ -24,4 +24,12 @@ CannotMakeMemberAbstract : Member 'public System.Boolean System.IO.FileSystemInf
 CannotMakeMemberAbstract : Member 'public System.String System.IO.FileSystemInfo.Name.get()' is abstract in the reference but is not abstract in the implementation.
 # C# generates backing fields for fixed buffers as public.
 TypesMustExist : Type 'System.IO.Enumeration.FileSystemEntry.<_fileNameBuffer>e__FixedBuffer' does not exist in the reference but it does exist in the implementation.
-
+MembersMustExist : Member 'public void System.ModuleHandle..ctor(System.Reflection.Module)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.String System.String System.Type.DefaultTypeNameWhenMissingMetadata' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.String System.Type.FormatTypeNameForReflection()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.String System.Type.InternalGetNameIfAvailable(System.Type)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.String System.Type.InternalNameIfAvailable.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.Boolean System.TypedReference.IsNull.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.Reflection.ParameterInfo[] System.Reflection.MethodBase.GetParametersNoCopy()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.Reflection.MethodBase System.Reflection.MethodBase.MetadataDefinitionMethod.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.Int32 System.Reflection.MethodInfo.GenericParameterCount.get()' does not exist in the reference but it does exist in the implementation.

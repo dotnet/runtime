@@ -36,7 +36,7 @@ namespace System.ServiceProcess.Tests
             this._serverStream = new NamedPipeServerStream(serviceName);
             _waitClientConnect = this._serverStream.WaitForConnectionAsync();
             _waitClientConnect = _waitClientConnect.ContinueWith(_ => DebugTrace("TestService " + ServiceName + ": Connected"));
-            _waitClientConnect.ContinueWith(t => WriteStreamAsync(PipeMessageByteCode.Connected));
+            _waitClientConnect = _waitClientConnect.ContinueWith(t => WriteStreamAsync(PipeMessageByteCode.Connected, waitForConnect: false));
             DebugTrace("TestService " + ServiceName + ": Ctor completed");
         }
 
@@ -99,19 +99,19 @@ namespace System.ServiceProcess.Tests
         {
             DebugTrace("TestService " + ServiceName + ": OnStop");
             base.OnStop();
-            WriteStreamAsync(PipeMessageByteCode.Stop).Wait();
+            // We may be  stopping because the test has completed and we're cleaning up the test service so there's no client at all, so don't waitForConnect.
+            // Tests that verify "Stop" itself should ensure the client connection has completed before calling stop, by waiting on some other message from the pipe first.
+            WriteStreamAsync(PipeMessageByteCode.Stop, waitForConnect:false).Wait();
         }
 
-        public async Task WriteStreamAsync(PipeMessageByteCode code, int command = 0)
+        public async Task WriteStreamAsync(PipeMessageByteCode code, int command = 0, bool waitForConnect = true)
         {
             DebugTrace("TestService " + ServiceName + ": WriteStreamAsync writing " + code.ToString());
 
             var toWrite = (code == PipeMessageByteCode.OnCustomCommand) ? new byte[] { (byte)command } : new byte[] { (byte)code };
 
             // Wait for the client connection before writing to the pipe.
-            // Exception: if it's a Stop message, it may be because the test has completed and we're cleaning up the test service so there's no client at all.
-            // Tests that verify "Stop" itself should ensure the client connection has completed before calling stop, by waiting on some other message from the pipe first.
-            if (code != PipeMessageByteCode.Stop)
+            if (waitForConnect)
             {
                 await _waitClientConnect;
             }

@@ -3,15 +3,12 @@
 
 using Microsoft.DotNet.XUnitExtensions;
 using System.Diagnostics;
-using System.Diagnostics.Eventing.Reader;
 using System.Security;
-using System.ServiceProcess;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public partial class EncryptDecrypt : FileSystemTest
     {
         private readonly ITestOutputHelper _output;
@@ -58,12 +55,10 @@ namespace System.IO.Tests
                     File.Encrypt(tmpFileName);
                 }
                 catch (IOException e) when (e.HResult == unchecked((int)0x80070490) ||
-                                            e.HResult == unchecked((int)0x80071776) ||
-                                            e.HResult == unchecked((int)0x800701AE))
+                                           (e.HResult == unchecked((int)0x80071776)))
                 {
                     // Ignore ERROR_NOT_FOUND 1168 (0x490). It is reported when EFS is disabled by domain policy.
                     // Ignore ERROR_NO_USER_KEYS (0x1776). This occurs when no user key exists to encrypt with.
-                    // Ignore ERROR_ENCRYPTION_DISABLED (0x1AE). This occurs when EFS is disabled by group policy on the volume.
                     throw new SkipTestException($"Encrypt not available. Error 0x{e.HResult:X}");
                 }
                 catch (IOException e)

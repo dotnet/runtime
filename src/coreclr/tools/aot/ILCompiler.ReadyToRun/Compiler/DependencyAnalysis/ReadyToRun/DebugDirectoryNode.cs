@@ -107,50 +107,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Reuse the module's PDB entry
             DebugDirectoryEntry pdbEntry = entries.Where(s => s.Type == DebugDirectoryEntryType.CodeView).FirstOrDefault();
 
-            // First, write the native debug directory entry
-            if (_nativeEntry is not null)
-            {
-                var entry = _nativeEntry;
+            // NI PDB entry
+            _nativeEntry?.EmitHeader(ref builder, pdbEntry.Stamp, pdbEntry.MajorVersion);
 
-                builder.EmitUInt(0 /* Characteristics */);
-                builder.EmitUInt(pdbEntry.Stamp);
-                builder.EmitUShort(pdbEntry.MajorVersion);
-                // Make sure the "is portable pdb" indicator (MinorVersion == 0x504d) is clear
-                // for the NGen debug directory entry since this debug directory can be copied
-                // from an existing entry which could be a portable pdb.
-                builder.EmitUShort(0 /* MinorVersion */);
-                builder.EmitInt((int)DebugDirectoryEntryType.CodeView);
-                builder.EmitInt(entry.Size);
-                builder.EmitReloc(entry, RelocType.IMAGE_REL_BASED_ADDR32NB);
-                builder.EmitReloc(entry, RelocType.IMAGE_REL_FILE_ABSOLUTE);
-            }
-
-            // Second emit a record for the perfmap
-            if (_perfMapEntry is not null)
-            {
-                var entry = _perfMapEntry;
-
-                builder.EmitUInt(0);        /* Characteristics */
-                builder.EmitUInt(0);        /* Stamp */
-                builder.EmitUShort(1);      /* Major */
-                builder.EmitUShort(0);      /* Minor */
-                builder.EmitInt((int)PerfMapDebugDirectoryEntryNode.PerfMapEntryType);
-                builder.EmitInt(entry.Size);
-                builder.EmitReloc(entry, RelocType.IMAGE_REL_BASED_ADDR32NB);
-                builder.EmitReloc(entry, RelocType.IMAGE_REL_FILE_ABSOLUTE);
-            }
+            _perfMapEntry?.EmitHeader(ref builder);
 
             // If generating a composite image, emit the deterministic marker
             if (_insertDeterministicEntry)
             {
-                builder.EmitUInt(0 /* Characteristics */);
-                builder.EmitUInt(0);
-                builder.EmitUShort(0);
-                builder.EmitUShort(0);
-                builder.EmitInt((int)DebugDirectoryEntryType.Reproducible);
-                builder.EmitInt(0);
-                builder.EmitUInt(0);
-                builder.EmitUInt(0);
+                DeterministicDebugDirectoryEntry.EmitHeader(ref builder);
             }
 
             // Second, copy existing entries from input module

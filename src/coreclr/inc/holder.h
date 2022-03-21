@@ -934,15 +934,25 @@ using NonVMComHolder = SpecializedWrapper<_TYPE, DoTheRelease<_TYPE>>;
 //  } // foo->DecRef() on out of scope
 //
 //-----------------------------------------------------------------------------
-template<typename _TYPE>
-class ExecutableWriterHolder;
 
-template <typename TYPE>
+template<typename _TYPE>
+class ExecutableWriterHolderNoLog;
+
+class ExecutableAllocator;
+
+template <typename TYPE, typename LOGGER=ExecutableAllocator>
 FORCEINLINE void StubRelease(TYPE* value)
 {
     if (value)
     {
-        ExecutableWriterHolder<TYPE> stubWriterHolder(value, sizeof(TYPE));
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+#ifdef TARGET_UNIX
+        LOGGER::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__);
+#else
+        LOGGER::LogUsage(__FILE__, __LINE__, __FUNCTION__);
+#endif
+#endif // LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+        ExecutableWriterHolderNoLog<TYPE> stubWriterHolder(value, sizeof(TYPE));
         stubWriterHolder.GetRW()->DecRef();
     }
 }
@@ -1152,7 +1162,14 @@ FORCEINLINE void HolderFreeLibrary(HMODULE h) { FreeLibrary(h); }
 typedef Wrapper<HMODULE, DoNothing<HMODULE>, HolderFreeLibrary, NULL> HModuleHolder;
 
 template <typename T> FORCEINLINE
-void DoLocalFree(T* pMem) { (LocalFree)((HLOCAL)pMem); }
+void DoLocalFree(T* pMem)
+{
+#ifdef HOST_WINDOWS
+    (LocalFree)((void*)pMem);
+#else
+    (free)((void*)pMem);
+#endif
+}
 
 template<typename _TYPE>
 using LocalAllocHolder = SpecializedWrapper<_TYPE, DoLocalFree<_TYPE>>;

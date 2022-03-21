@@ -139,7 +139,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 	int aindex, i;
 	gboolean var_ret = FALSE;
 	CallInfo *cinfo, *gcinfo;
-	MonoMethodSignature *sig, *gsig;
+	MonoMethodSignature *sig;
 	GPtrArray *map;
 
 	if (gsharedvt_in) {
@@ -163,12 +163,10 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 	/* sig/cinfo describes the normal call, while gsig/gcinfo describes the gsharedvt call */
 	if (gsharedvt_in) {
 		sig = caller_sig;
-		gsig = callee_sig;
 		cinfo = caller_cinfo;
 		gcinfo = callee_cinfo;
 	} else {
 		sig = callee_sig;
-		gsig = caller_sig;
 		cinfo = callee_cinfo;
 		gcinfo = caller_cinfo;
 	}
@@ -345,7 +343,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 	if (var_ret) {
 		switch (cinfo->ret.storage) {
 		case ArgInIReg:
-			if (!gsharedvt_in || sig->ret->byref) {
+			if (!gsharedvt_in || m_type_is_byref (sig->ret)) {
 				info->ret_marshal = GSHAREDVT_RET_I8;
 			} else {
 				MonoType *rtype = mini_get_underlying_type (sig->ret);

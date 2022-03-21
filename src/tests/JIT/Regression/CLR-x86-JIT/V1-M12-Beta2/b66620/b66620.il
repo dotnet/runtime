@@ -12,7 +12,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ctor_merge2 { }
+.assembly 'b66620' { }
+.assembly extern xunit.core {}
 .class public auto ansi beforefieldinit TestClass
        extends [mscorlib]System.Object
 {
@@ -54,6 +55,9 @@
   }
   .method public hidebysig static int32 Main(class System.String[] args) il managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  8
     newobj     instance void TestClass::.ctor()

@@ -13,10 +13,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'ldc_mulovf'// as "ldc_mulovf"
+.assembly 's_ldc_mulovf'// as "ldc_mulovf"
 {
 }
-.module 'ldc_mulovf.exe'
+.assembly extern xunit.core {}
 // MVID: {2BC63DAA-17AC-498E-A6E0-2E0A01266D5E}
 .namespace JitTest
 {
@@ -77,6 +77,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       242 (0xf2)
       .maxstack  4

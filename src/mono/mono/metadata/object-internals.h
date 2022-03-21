@@ -93,7 +93,7 @@ mono_array_new_specific_handle (MonoVTable *vtable, uintptr_t n, MonoError *erro
 MonoArray*
 mono_array_new_specific_checked (MonoVTable *vtable, uintptr_t n, MonoError *error);
 
-/* 
+/*
  * Macros which cache.
  * These should be used instead of the original versions.
  */
@@ -148,17 +148,10 @@ mono_array_new_cached_handle_function (MonoClass *aclass, int size, MonoError *e
 #define mono_array_new_cached_handle(eclass, size, error) \
 	mono_array_new_cached_handle_function (mono_array_class_get_cached (eclass), (size), (error))
 
-#ifdef MONO_BIG_ARRAYS
-typedef uint64_t mono_array_size_t;
-typedef int64_t mono_array_lower_bound_t;
-#define MONO_ARRAY_MAX_INDEX G_MAXINT64
-#define MONO_ARRAY_MAX_SIZE  G_MAXUINT64
-#else
 typedef uint32_t mono_array_size_t;
 typedef int32_t mono_array_lower_bound_t;
 #define MONO_ARRAY_MAX_INDEX ((int32_t) 0x7fffffff)
 #define MONO_ARRAY_MAX_SIZE  ((uint32_t) 0xffffffff)
-#endif
 
 typedef struct {
 	mono_array_size_t length;
@@ -170,10 +163,19 @@ struct _MonoArray {
 	/* bounds is NULL for szarrays */
 	MonoArrayBounds *bounds;
 	/* total number of elements of the array */
-	mono_array_size_t max_length; 
+	mono_array_size_t max_length;
 	/* we use mono_64bitaligned_t to ensure proper alignment on platforms that need it */
 	mono_64bitaligned_t vector [MONO_ZERO_LEN_ARRAY];
 };
+
+/* match the layout of the managed definition of Span<T> */
+#define MONO_DEFINE_SPAN_OF_T(name, type)	\
+	typedef struct {	\
+		type* _pointer;	\
+		uint32_t _length;	\
+	} name;
+
+MONO_DEFINE_SPAN_OF_T (MonoSpanOfObjects, MonoObject*)
 
 #define MONO_SIZEOF_MONO_ARRAY (MONO_STRUCT_OFFSET_CONSTANT (MonoArray, vector))
 
@@ -274,6 +276,32 @@ static inline void
 mono_handle_array_get_bounds_dim (MonoArrayHandle arr, gint32 dim, MonoArrayBounds *bounds)
 {
 	*bounds = MONO_HANDLE_GETVAL (arr, bounds [dim]);
+}
+
+#define mono_span_length(span) (span->_length)
+
+#define mono_span_get(span,type,idx) (type)(!span->_pointer ? (type)0 : span->_pointer[idx])
+
+#define mono_span_addr(span,type,idx) (type*)(span->_pointer + idx)
+
+#define mono_span_setref(span,index,value)	\
+	do {	\
+		void **__p = (void **) mono_span_addr ((span), void*, (index));	\
+		mono_gc_wbarrier_generic_store_internal (__p, (MonoObject*)(value));	\
+		/* *__p = (value);*/	\
+	} while (0)
+
+static inline MonoSpanOfObjects
+mono_span_create_from_object_array (MonoArray *arr) {
+	MonoSpanOfObjects span;
+	if (arr != NULL) {
+		span._length = (int32_t)mono_array_length_internal (arr);
+		span._pointer = mono_array_addr_fast (arr, MonoObject*, 0);
+	} else {
+		span._length = 0;
+		span._pointer = NULL;
+	}
+	return span;
 }
 
 typedef struct {
@@ -416,9 +444,25 @@ struct _MonoReflectionType {
 /* Safely access System.Type from native code */
 TYPED_HANDLE_DECL (MonoReflectionType);
 
+/* This corresponds to System.Runtime.CompilerServices.QCallTypeHandle */
+struct _MonoQCallTypeHandle {
+	gpointer _ptr;
+	MonoType *type;
+};
+
+typedef struct _MonoQCallTypeHandle MonoQCallTypeHandle;
+
+/* This corresponds to System.Runtime.CompilerServices.QCallAssembly */
+struct _MonoQCallAssemblyHandle {
+	gpointer _ptr;
+	MonoAssembly *assembly;
+};
+
+typedef struct _MonoQCallAssemblyHandle MonoQCallAssemblyHandle;
+
 typedef struct {
 	MonoObject  object;
-	MonoReflectionType *class_to_proxy;	
+	MonoReflectionType *class_to_proxy;
 	MonoObject *context;
 	MonoObject *unwrapped_server;
 	gint32      target_domain_id;
@@ -472,7 +516,7 @@ TYPED_HANDLE_DECL (MonoComInteropProxy);
 
 typedef struct {
 	MonoObject	 object;
-	MonoRealProxy	*rp;	
+	MonoRealProxy	*rp;
 	MonoRemoteClass *remote_class;
 	MonoBoolean	 custom_type_info;
 } MonoTransparentProxy;
@@ -483,9 +527,9 @@ TYPED_HANDLE_DECL (MonoTransparentProxy);
 typedef struct {
 	MonoObject obj;
 	MonoReflectionMethod *method;
-	MonoArray  *args;		
-	MonoArray  *names;		
-	MonoArray  *arg_types;	
+	MonoArray  *args;
+	MonoArray  *names;
+	MonoArray  *arg_types;
 	MonoObject *ctx;
 	MonoObject *rval;
 	MonoObject *exc;
@@ -613,7 +657,7 @@ TYPED_HANDLE_DECL (MonoDelegate);
 
 typedef void (*InterpJitInfoFunc) (MonoJitInfo *ji, gpointer user_data);
 
-/* 
+/*
  * Callbacks supplied by the runtime and called by the modules in metadata/
  * This interface is easier to extend than adding a new function type +
  * a new 'install' function for every callback.
@@ -637,7 +681,6 @@ typedef struct {
 	void     (*free_method) (MonoMethod *method);
 	gpointer (*create_delegate_trampoline) (MonoClass *klass);
 	GHashTable *(*get_weak_field_indexes) (MonoImage *image);
-	void     (*install_state_summarizer) (void);
 	gboolean (*is_interpreter_enabled) (void);
 	void (*init_mem_manager)(MonoMemoryManager*);
 	void (*free_mem_manager)(MonoMemoryManager*);
@@ -647,6 +690,7 @@ typedef struct {
 	// Same as compile_method, but returns a MonoFtnDesc in llvmonly mode
 	gpointer (*get_ftnptr)(MonoMethod *method, MonoError *error);
 	void (*interp_jit_info_foreach)(InterpJitInfoFunc func, gpointer user_data);
+	gboolean (*interp_sufficient_stack)(gsize size);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
@@ -664,11 +708,6 @@ typedef struct {
 	gboolean (*mono_above_abort_threshold) (void);
 	void (*mono_clear_abort_threshold) (void);
 	void (*mono_reraise_exception) (MonoException *ex);
-	void (*mono_summarize_managed_stack) (MonoThreadSummary *out);
-	void (*mono_summarize_unmanaged_stack) (MonoThreadSummary *out);
-	void (*mono_summarize_exception) (MonoException *exc, MonoThreadSummary *out);
-	void (*mono_register_native_library) (const char *module_path, const char *module_name);
-	void (*mono_allow_all_native_libraries) (void);
 } MonoRuntimeExceptionHandlingCallbacks;
 
 MONO_COLD void mono_set_pending_exception (MonoException *exc);
@@ -734,9 +773,9 @@ mono_domain_get_tls_offset (void);
 /*
  * Handling System.Type objects:
  *
- *   Fields defined as System.Type in managed code should be defined as MonoObject* 
- * in unmanaged structures, and the monotype_cast () function should be used for 
- * casting them to MonoReflectionType* to avoid crashes/security issues when 
+ *   Fields defined as System.Type in managed code should be defined as MonoObject*
+ * in unmanaged structures, and the monotype_cast () function should be used for
+ * casting them to MonoReflectionType* to avoid crashes/security issues when
  * encountering instances of user defined subclasses of System.Type.
  */
 
@@ -784,8 +823,8 @@ struct _MonoDelegate {
 	gpointer delegate_trampoline;
 	/* Extra argument passed to the target method in llvmonly mode */
 	gpointer extra_arg;
-	/* 
-	 * If non-NULL, this points to a memory location which stores the address of 
+	/*
+	 * If non-NULL, this points to a memory location which stores the address of
 	 * the compiled code of the method, or NULL if it is not yet compiled.
 	 */
 	guint8 **method_code;
@@ -1092,7 +1131,7 @@ typedef struct {
 	MonoArray *modopt;
 } MonoReflectionFieldBuilder;
 
-/* Safely access System.Reflection.Emit.FieldBuilder from native code */ 
+/* Safely access System.Reflection.Emit.FieldBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionFieldBuilder);
 
 typedef struct {
@@ -1176,6 +1215,7 @@ struct _MonoReflectionTypeBuilder {
 	MonoGenericContainer *generic_container;
 	MonoArray *generic_params;
 	MonoReflectionType *created;
+	gint32 is_byreflike_set;
 	gint32 state;
 };
 
@@ -1298,7 +1338,7 @@ typedef struct {
 	MonoArray *refs;
 	GSList *referenced_by;
 	MonoReflectionType *owner;
-} MonoReflectionDynamicMethod;	
+} MonoReflectionDynamicMethod;
 
 /* Safely access System.Reflection.Emit.DynamicMethod from native code */
 TYPED_HANDLE_DECL (MonoReflectionDynamicMethod);
@@ -1376,13 +1416,6 @@ typedef enum {
 	UNLOADING = 1
 } MonoManagedAssemblyLoadContextInternalState;
 
-// Keep in sync with System.Runtime.Loader.AssemblyLoadContext
-typedef struct {
-	MonoObject object;
-	MonoAssemblyLoadContext *native_assembly_load_context;
-} MonoManagedAssemblyLoadContext;
-
-TYPED_HANDLE_DECL (MonoManagedAssemblyLoadContext);
 
 /* All MonoInternalThread instances should be pinned, so it's safe to use the raw ptr.  However
  * for uniformity, icall wrapping will make handles anyway.  So this is the method for getting the payload.
@@ -1627,7 +1660,7 @@ mono_class_set_ref_info (MonoClass *klass, MonoObjectHandle obj);
 void
 mono_class_free_ref_info (MonoClass *klass);
 
-MonoObject *
+MONO_COMPONENT_API MonoObject *
 mono_object_new_pinned (MonoClass *klass, MonoError *error);
 
 MonoObjectHandle
@@ -1639,7 +1672,7 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error);
 ICALL_EXPORT
 MonoObject *
 ves_icall_object_new (MonoClass *klass);
-	
+
 ICALL_EXPORT
 MonoObject *
 ves_icall_object_new_specific (MonoVTable *vtable);
@@ -1844,10 +1877,10 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			       MonoObject **exc, MonoError *error);
 
 MonoObject*
-mono_runtime_invoke_array_checked (MonoMethod *method, void *obj, MonoArray *params,
+mono_runtime_invoke_span_checked (MonoMethod *method, void *obj, MonoSpanOfObjects *params,
 				   MonoError *error);
 
-void* 
+void*
 mono_compile_method_checked (MonoMethod *method, MonoError *error);
 
 MonoObject*
@@ -2065,7 +2098,7 @@ void
 mono_gc_wbarrier_set_field_internal (MonoObject *obj, void* field_ptr, MonoObject* value);
 
 void
-mono_gc_wbarrier_set_arrayref_internal  (MonoArray *arr, void* slot_ptr, MonoObject* value);
+mono_gc_wbarrier_set_arrayref_internal (MonoArray *arr, void* slot_ptr, MonoObject* value);
 
 void
 mono_gc_wbarrier_arrayref_copy_internal (void* dest_ptr, const void* src_ptr, int count);
@@ -2089,12 +2122,12 @@ mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src);
 MONO_COMPONENT_API char *
 mono_runtime_get_managed_cmd_line (void);
 
-char *
-mono_runtime_get_cmd_line (int argc, char **argv);
-
 #ifdef HOST_WASM
 int
 mono_string_instance_is_interned (MonoString *str);
 #endif
+
+gpointer
+mono_method_get_unmanaged_wrapper_ftnptr_internal (MonoMethod *method, gboolean only_unmanaged_callers_only, MonoError *error);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

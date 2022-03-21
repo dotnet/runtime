@@ -24,6 +24,7 @@ namespace System.Text.Json
         /// <summary>
         /// Converts the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
         /// <returns>A task that represents the asynchronous write operation.</returns>
         /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
         /// <param name="value">The value to convert.</param>
@@ -38,16 +39,11 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static Task SerializeAsync<TValue>(
-            Stream utf8Json,
+            Stream utf8Json!!,
             TValue value,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
             Type runtimeType = GetRuntimeType(value);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
             return WriteStreamAsync(utf8Json, value!, jsonTypeInfo, cancellationToken);
@@ -56,6 +52,7 @@ namespace System.Text.Json
         /// <summary>
         /// Converts the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
         /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
         /// <param name="value">The value to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
@@ -68,15 +65,10 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static void Serialize<TValue>(
-            Stream utf8Json,
+            Stream utf8Json!!,
             TValue value,
             JsonSerializerOptions? options = null)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
             Type runtimeType = GetRuntimeType(value);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
             WriteStream(utf8Json, value!, jsonTypeInfo);
@@ -103,17 +95,12 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static Task SerializeAsync(
-            Stream utf8Json,
+            Stream utf8Json!!,
             object? value,
             Type inputType,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
             return WriteStreamAsync(utf8Json, value!, jsonTypeInfo, cancellationToken);
@@ -138,16 +125,11 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static void Serialize(
-            Stream utf8Json,
+            Stream utf8Json!!,
             object? value,
             Type inputType,
             JsonSerializerOptions? options = null)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
             WriteStream(utf8Json, value!, jsonTypeInfo);
@@ -156,6 +138,7 @@ namespace System.Text.Json
         /// <summary>
         /// Converts the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
         /// <returns>A task that represents the asynchronous write operation.</returns>
         /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
         /// <param name="value">The value to convert.</param>
@@ -169,27 +152,18 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         public static Task SerializeAsync<TValue>(
-            Stream utf8Json,
+            Stream utf8Json!!,
             TValue value,
-            JsonTypeInfo<TValue> jsonTypeInfo,
+            JsonTypeInfo<TValue> jsonTypeInfo!!,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
             return WriteStreamAsync(utf8Json, value, jsonTypeInfo, cancellationToken);
         }
 
         /// <summary>
         /// Converts the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
         /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
         /// <param name="value">The value to convert.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
@@ -201,20 +175,10 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         public static void Serialize<TValue>(
-            Stream utf8Json,
+            Stream utf8Json!!,
             TValue value,
-            JsonTypeInfo<TValue> jsonTypeInfo)
+            JsonTypeInfo<TValue> jsonTypeInfo!!)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
             WriteStream(utf8Json, value, jsonTypeInfo);
         }
 
@@ -238,22 +202,12 @@ namespace System.Text.Json
         /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
         public static Task SerializeAsync(
-            Stream utf8Json,
+            Stream utf8Json!!,
             object? value,
             Type inputType,
-            JsonSerializerContext context,
+            JsonSerializerContext context!!,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
             return WriteStreamAsync(
                 utf8Json,
@@ -280,21 +234,11 @@ namespace System.Text.Json
         /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
         public static void Serialize(
-            Stream utf8Json,
+            Stream utf8Json!!,
             object? value,
             Type inputType,
-            JsonSerializerContext context)
+            JsonSerializerContext context!!)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
             WriteStream(utf8Json, value!, GetTypeInfo(context, runtimeType));
         }

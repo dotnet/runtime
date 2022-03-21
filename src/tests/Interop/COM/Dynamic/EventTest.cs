@@ -4,7 +4,7 @@
 namespace Dynamic
 {
     using System;
-    using TestLibrary;
+    using Xunit;
 
     internal class EventTest
     {
@@ -264,14 +264,14 @@ namespace Dynamic
 
             public void Validate(bool called, int id = InvalidId)
             {
-                Assert.AreEqual(called, _eventReceived, $"Event handler should {(called ? "" : "not ")}have been called");
-                Assert.AreEqual(id, _id, "Unexpected event arguments received");
+                Assert.Equal(called, _eventReceived);
+                Assert.Equal(id, _id);
             }
 
             public void ValidateMessage(bool called, string message = "")
             {
-                Assert.AreEqual(called, _eventMessageReceived, $"Event handler should {(called ? "" : "not ")}have been called");
-                Assert.AreEqual(message, _message, "Unexpected event arguments received");
+                Assert.Equal(called, _eventMessageReceived);
+                Assert.Equal(message, _message);
             }
         }
     }

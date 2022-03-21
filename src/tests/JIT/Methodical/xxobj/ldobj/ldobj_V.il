@@ -9,6 +9,7 @@
   .ver 4:0:0:0
 }
 .assembly ldobj_V { }
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class public sequential ansi sealed beforefieldinit ValueClass
@@ -905,6 +906,9 @@
     .method public hidebysig static int32
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  1
 		.locals (valuetype JitTest.ValueClass V)

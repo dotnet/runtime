@@ -17,7 +17,7 @@
   
   
 }
-.module 'rotarg_valref.exe'
+.assembly extern xunit.core {}
 // MVID: {674E1F39-687D-4762-9954-BB9254236385}
 .namespace Rotate
 {
@@ -343,6 +343,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       47 (0x2f)
       .maxstack  3

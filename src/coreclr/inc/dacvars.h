@@ -5,7 +5,7 @@
 // 1. in daccess.h to build the table of DAC globals
 // 2. in enummem.cpp to dump out the related memory of static and globals
 //    in a mini dump or heap dump
-// 3. in DacUpdateDll and toolbox\DacTablenGen\main.cs
+// 3. in DacUpdateDll and tools\DacTablenGen\main.cs
 //
 // To use this functionality for other tools or purposes, define the
 // DEFINE_DACVAR macro & include dacvars.h like so (see enummem.cpp and/or
@@ -76,9 +76,6 @@ DEFINE_DACVAR(ULONG, LONG, ExecutionManager__m_dwReaderCount, ExecutionManager::
 DEFINE_DACVAR(ULONG, LONG, ExecutionManager__m_dwWriterLock, ExecutionManager::m_dwWriterLock)
 
 DEFINE_DACVAR(ULONG, PTR_EEJitManager, ExecutionManager__m_pEEJitManager, ExecutionManager::m_pEEJitManager)
-#ifdef FEATURE_PREJIT
-DEFINE_DACVAR(ULONG, PTR_NativeImageJitManager, ExecutionManager__m_pNativeImageJitManager, ExecutionManager::m_pNativeImageJitManager)
-#endif
 #ifdef FEATURE_READYTORUN
 DEFINE_DACVAR(ULONG, PTR_ReadyToRunJitManager, ExecutionManager__m_pReadyToRunJitManager, ExecutionManager::m_pReadyToRunJitManager)
 #endif
@@ -121,11 +118,6 @@ DEFINE_DACVAR(ULONG, PTR_GcDacVars, dac__g_gcDacGlobals, g_gcDacGlobals)
 
 DEFINE_DACVAR(ULONG, PTR_AppDomain, AppDomain__m_pTheAppDomain, AppDomain::m_pTheAppDomain)
 DEFINE_DACVAR(ULONG, PTR_SystemDomain, SystemDomain__m_pSystemDomain, SystemDomain::m_pSystemDomain)
-#ifdef FEATURE_PREJIT
-DEFINE_DACVAR(ULONG, BOOL, SystemDomain__s_fForceDebug, SystemDomain::s_fForceDebug)
-DEFINE_DACVAR(ULONG, BOOL, SystemDomain__s_fForceProfiling, SystemDomain::s_fForceProfiling)
-DEFINE_DACVAR(ULONG, BOOL, SystemDomain__s_fForceInstrument, SystemDomain::s_fForceInstrument)
-#endif
 
 #ifdef FEATURE_INTEROP_DEBUGGING
 DEFINE_DACVAR(ULONG, DWORD, dac__g_debuggerWordTLSIndex, g_debuggerWordTLSIndex)
@@ -236,10 +228,6 @@ DEFINE_DACVAR(ULONG, HANDLE, dac__g_hContinueStartupEvent, ::g_hContinueStartupE
 DEFINE_DACVAR(ULONG, DWORD, CorHost2__m_dwStartupFlags, CorHost2::m_dwStartupFlags)
 
 DEFINE_DACVAR(ULONG, HRESULT, dac__g_hrFatalError, ::g_hrFatalError)
-
-#if defined(DEBUGGING_SUPPORTED) && defined (FEATURE_PREJIT)
-    DEFINE_DACVAR(ULONG, DWORD, PEFile__s_NGENDebugFlags, PEFile::s_NGENDebugFlags)
-#endif //defined(DEBUGGING_SUPPORTED) && defined (FEATURE_PREJIT)
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 DEFINE_DACVAR(ULONG, DWORD, dac__g_MiniMetaDataBuffMaxSize, ::g_MiniMetaDataBuffMaxSize)

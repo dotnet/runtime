@@ -107,8 +107,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal string? ResolveNamespace(string prefix)
         {
-            bool thisScope;
-            return ResolveNamespace(prefix, out thisScope);
+            return ResolveNamespace(prefix, out _);
         }
 
         internal string? ResolveNamespace(string prefix, out bool thisScope)
@@ -156,7 +155,7 @@ namespace System.Xml.Xsl.XsltOld
                 Debug.Assert(_elementScopesStack[i] is OutputScope);
 
                 OutputScope elementScope = (OutputScope)_elementScopesStack[i];
-                string? pfx = null;
+                string? pfx;
                 if (elementScope.FindPrefix(nspace, out pfx))
                 {
                     string? testNspace = ResolveNamespace(pfx);

@@ -203,7 +203,6 @@ typedef VPTR(class StubManager) PTR_StubManager;
 
 class StubManager
 {
-#ifndef CROSSGEN_COMPILE
     friend class StubManagerIterator;
 
     VPTR_BASE_VTABLE_CLASS(StubManager)
@@ -337,10 +336,8 @@ private:
     PTR_StubManager m_pNextManager;
 
     static CrstStatic s_StubManagerListCrst;
-#endif // !CROSSGEN_COMPILE
 };
 
-#ifndef CROSSGEN_COMPILE
 
 //-----------------------------------------------------------
 // Stub manager for the prestub.  Although there is just one, it has
@@ -401,6 +398,28 @@ class PrecodeStubManager : public StubManager
     PrecodeStubManager() {LIMITED_METHOD_CONTRACT;}
     ~PrecodeStubManager() {WRAPPER_NO_CONTRACT;}
 #endif
+
+  protected:
+    LockedRangeList m_stubPrecodeRangeList;
+    LockedRangeList m_fixupPrecodeRangeList;
+
+  public:
+    // Get dac-ized pointer to rangelist.
+    PTR_RangeList GetStubPrecodeRangeList()
+    {
+        SUPPORTS_DAC;
+
+        TADDR addr = PTR_HOST_MEMBER_TADDR(PrecodeStubManager, this, m_stubPrecodeRangeList);
+        return PTR_RangeList(addr);
+    }
+
+    PTR_RangeList GetFixupPrecodeRangeList()
+    {
+        SUPPORTS_DAC;
+
+        TADDR addr = PTR_HOST_MEMBER_TADDR(PrecodeStubManager, this, m_fixupPrecodeRangeList);
+        return PTR_RangeList(addr);
+    }
 
   public:
     virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
@@ -594,8 +613,6 @@ class RangeSectionStubManager : public StubManager
 
     static StubCodeBlockKind GetStubKind(PCODE stubStartAddress);
 
-    static PCODE GetMethodThunkTarget(PCODE stubStartAddress);
-
   public:
 #ifdef _DEBUG
     virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "RangeSectionStubManager"; }
@@ -665,10 +682,6 @@ class ILStubManager : public StubManager
     virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
 
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_COMINTEROP
-    static PCODE GetCOMTarget(Object *pThis, ComPlusCallInfo *pComPlusCallInfo);
-#endif // FEATURE_COMINTEROP
-
     virtual BOOL TraceManager(Thread *thread,
                               TraceDestination *trace,
                               T_CONTEXT *pContext,
@@ -920,7 +933,6 @@ public:
 #endif
     }
 
-#ifndef CROSSGEN_COMPILE
     static PCODE GetRetAddrFromMulticastILStubFrame(T_CONTEXT * pContext)
     {
         /*
@@ -950,7 +962,6 @@ public:
         return NULL;
 #endif
     }
-#endif // !CROSSGEN_COMPILE
 
     static TADDR GetSecondArg(T_CONTEXT * pContext)
     {
@@ -974,5 +985,4 @@ public:
 
 };
 
-#endif // !CROSSGEN_COMPILE
 #endif // !__stubmgr_h__

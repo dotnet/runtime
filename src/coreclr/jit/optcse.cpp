@@ -106,7 +106,7 @@ bool Compiler::optUnmarkCSE(GenTree* tree)
     }
 
     // make sure it's been initialized
-    noway_assert(optCSEweight <= BB_MAX_WEIGHT);
+    noway_assert(optCSEweight >= 0);
 
     // Is this a CSE use?
     if (IS_CSE_USE(tree->gtCSEnum))
@@ -240,27 +240,6 @@ bool Compiler::optCSE_canSwap(GenTree* op1, GenTree* op2)
     }
 
     return canSwap;
-}
-
-//------------------------------------------------------------------------
-// optCSE_canSwap: Determine if the execution order of a node's operands can be swapped.
-//
-// Arguments:
-//    tree - The node of interest
-//
-// Return Value:
-//    Return true iff it safe to swap the execution order of the operands of 'tree',
-//    considering only the locations of the CSE defs and uses.
-//
-bool Compiler::optCSE_canSwap(GenTree* tree)
-{
-    // We must have a binary treenode with non-null op1 and op2
-    assert((tree->OperKind() & GTK_SMPOP) != 0);
-
-    GenTree* op1 = tree->AsOp()->gtOp1;
-    GenTree* op2 = tree->gtGetOp2();
-
-    return optCSE_canSwap(op1, op2);
 }
 
 /*****************************************************************************
@@ -456,7 +435,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         // If the value number for op2 and tree are different, then some new
         // exceptions were produced by op1. For that case we will NOT use the
         // normal value. This allows us to CSE commas with an op1 that is
-        // an ARR_BOUNDS_CHECK.
+        // an BOUNDS_CHECK.
         //
         if (vnOp2Lib != vnLib)
         {
@@ -655,6 +634,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
                     }
                 }
 
+                hval                           = optCSEKeyToHashIndex(key, newOptCSEhashSize);
                 optCSEhash                     = newOptCSEhash;
                 optCSEhashSize                 = newOptCSEhashSize;
                 optCSEhashMaxCountBeforeResize = optCSEhashMaxCountBeforeResize * s_optCSEhashGrowthFactor;
@@ -828,7 +808,8 @@ bool Compiler::optValnumCSE_Locate()
                     continue;
                 }
 
-                if (ValueNumStore::isReservedVN(tree->GetVN(VNK_Liberal)))
+                ValueNum valueVN = vnStore->VNNormalValue(tree->GetVN(VNK_Liberal));
+                if (ValueNumStore::isReservedVN(valueVN) && (valueVN != ValueNumStore::VNForNull()))
                 {
                     continue;
                 }
@@ -1418,11 +1399,11 @@ void Compiler::optValnumCSE_Availablity()
 
                 if (IS_CSE_INDEX(tree->gtCSEnum))
                 {
-                    unsigned             CSEnum               = GET_CSE_INDEX(tree->gtCSEnum);
-                    unsigned             cseAvailBit          = getCSEAvailBit(CSEnum);
-                    unsigned             cseAvailCrossCallBit = getCSEAvailCrossCallBit(CSEnum);
-                    CSEdsc*              desc                 = optCSEfindDsc(CSEnum);
-                    BasicBlock::weight_t stmw                 = block->getBBWeight(this);
+                    unsigned CSEnum               = GET_CSE_INDEX(tree->gtCSEnum);
+                    unsigned cseAvailBit          = getCSEAvailBit(CSEnum);
+                    unsigned cseAvailCrossCallBit = getCSEAvailCrossCallBit(CSEnum);
+                    CSEdsc*  desc                 = optCSEfindDsc(CSEnum);
+                    weight_t stmw                 = block->getBBWeight(this);
 
                     isUse = BitVecOps::IsMember(cseLivenessTraits, available_cses, cseAvailBit);
                     isDef = !isUse; // If is isn't a CSE use, it is a CSE def
@@ -1719,8 +1700,8 @@ class CSE_Heuristic
     Compiler* m_pCompiler;
     unsigned  m_addCSEcount;
 
-    BasicBlock::weight_t   aggressiveRefCnt;
-    BasicBlock::weight_t   moderateRefCnt;
+    weight_t               aggressiveRefCnt;
+    weight_t               moderateRefCnt;
     unsigned               enregCount; // count of the number of predicted enregistered variables
     bool                   largeFrame;
     bool                   hugeFrame;
@@ -2016,9 +1997,9 @@ public:
                 Compiler::CSEdsc* dsc  = sortTab[cnt];
                 GenTree*          expr = dsc->csdTree;
 
-                BasicBlock::weight_t def;
-                BasicBlock::weight_t use;
-                unsigned             cost;
+                weight_t def;
+                weight_t use;
+                unsigned cost;
 
                 if (CodeOptKind() == Compiler::SMALL_CODE)
                 {
@@ -2065,11 +2046,11 @@ public:
         CSE_Heuristic*    m_context;
         Compiler::CSEdsc* m_CseDsc;
 
-        unsigned             m_cseIndex;
-        BasicBlock::weight_t m_defCount;
-        BasicBlock::weight_t m_useCount;
-        unsigned             m_Cost;
-        unsigned             m_Size;
+        unsigned m_cseIndex;
+        weight_t m_defCount;
+        weight_t m_useCount;
+        unsigned m_Cost;
+        unsigned m_Size;
 
         // When this Candidate is successfully promoted to a CSE we record
         // the following information about what category was used when promoting it.
@@ -2119,11 +2100,11 @@ public:
         {
             return m_cseIndex;
         }
-        BasicBlock::weight_t DefCount()
+        weight_t DefCount()
         {
             return m_defCount;
         }
-        BasicBlock::weight_t UseCount()
+        weight_t UseCount()
         {
             return m_useCount;
         }
@@ -2356,14 +2337,14 @@ public:
         unsigned cse_def_cost;
         unsigned cse_use_cost;
 
-        BasicBlock::weight_t no_cse_cost    = 0;
-        BasicBlock::weight_t yes_cse_cost   = 0;
-        unsigned             extra_yes_cost = 0;
-        unsigned             extra_no_cost  = 0;
+        weight_t no_cse_cost    = 0;
+        weight_t yes_cse_cost   = 0;
+        unsigned extra_yes_cost = 0;
+        unsigned extra_no_cost  = 0;
 
         // The 'cseRefCnt' is the RefCnt that we will have if we promote this CSE into a new LclVar
         // Each CSE Def will contain two Refs and each CSE Use will have one Ref of this new LclVar
-        BasicBlock::weight_t cseRefCnt = (candidate->DefCount() * 2) + candidate->UseCount();
+        weight_t cseRefCnt = (candidate->DefCount() * 2) + candidate->UseCount();
 
         bool     canEnregister = true;
         unsigned slotCount     = 1;
@@ -2597,17 +2578,18 @@ public:
             cse_use_cost *= slotCount;
         }
 
-        // If this CSE is live across a call then we may need to spill an additional caller save register
+        // If this CSE is live across a call then we may have additional costs
         //
         if (candidate->LiveAcrossCall())
         {
-            if (candidate->Expr()->IsCnsFltOrDbl() && (CNT_CALLEE_SAVED_FLOAT == 0) &&
-                (candidate->CseDsc()->csdUseWtCnt <= 4))
+            // If we have a floating-point CSE that is both live across a call and there
+            // are no callee-saved FP registers available, the RA will have to spill at
+            // the def site and reload at the (first) use site, if the variable is a register
+            // candidate. Account for that.
+            if (varTypeIsFloating(candidate->Expr()) && (CNT_CALLEE_SAVED_FLOAT == 0) && !candidate->IsConservative())
             {
-                // Floating point constants are expected to be contained, so unless there are more than 4 uses
-                // we better not to CSE them, especially on platforms without callee-saved registers
-                // for values living across calls
-                return false;
+                cse_def_cost += 1;
+                cse_use_cost += 1;
             }
 
             // If we don't have a lot of variables to enregister or we have a floating point type
@@ -2746,14 +2728,14 @@ public:
     // It will also put cse0 into SSA if there is just one def.
     void PerformCSE(CSE_Candidate* successfulCandidate)
     {
-        BasicBlock::weight_t cseRefCnt = (successfulCandidate->DefCount() * 2) + successfulCandidate->UseCount();
+        weight_t cseRefCnt = (successfulCandidate->DefCount() * 2) + successfulCandidate->UseCount();
 
         if (successfulCandidate->LiveAcrossCall() != 0)
         {
             // As we introduce new LclVars for these CSE we slightly
             // increase the cutoffs for aggressive and moderate CSE's
             //
-            BasicBlock::weight_t incr = BB_UNITY_WEIGHT;
+            weight_t incr = BB_UNITY_WEIGHT;
 
             if (cseRefCnt > aggressiveRefCnt)
             {
@@ -2900,8 +2882,8 @@ public:
                     }
                 }
 
-                BasicBlock*          blk       = lst->tslBlock;
-                BasicBlock::weight_t curWeight = blk->getBBWeight(m_pCompiler);
+                BasicBlock* blk       = lst->tslBlock;
+                weight_t    curWeight = blk->getBBWeight(m_pCompiler);
 
                 if (setRefCnt)
                 {
@@ -3187,8 +3169,6 @@ public:
                 }
 #endif // DEBUG
 
-                exp->gtCSEnum = NO_CSE; // clear the gtCSEnum field
-
                 GenTree* val = exp;
                 if (isSharedConst)
                 {
@@ -3226,6 +3206,14 @@ public:
 
                 // Backpatch the SSA def, if we're putting this CSE temp into ssa.
                 asg->AsOp()->gtOp1->AsLclVar()->SetSsaNum(cseSsaNum);
+
+                // Move the information about the CSE def to the assignment; it
+                // now indicates a completed CSE def instead of just a
+                // candidate. optCSE_canSwap uses this information to reason
+                // about evaluation order in between substitutions of CSE
+                // defs/uses.
+                asg->gtCSEnum = exp->gtCSEnum;
+                exp->gtCSEnum = NO_CSE;
 
                 if (cseSsaNum != SsaConfig::RESERVED_SSA_NUM)
                 {
@@ -3452,6 +3440,7 @@ void Compiler::optOptimizeValnumCSEs()
 #endif
 
     optValnumCSE_phase = true;
+    optCSEweight       = -1.0f;
 
     optValnumCSE_Init();
 
@@ -3513,8 +3502,10 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 
 #if !CSE_CONSTS
     /* Don't bother with constants */
-    if (tree->OperKind() & GTK_CONST)
+    if (tree->OperIsConst())
+    {
         return false;
+    }
 #endif
 
     /* Check for some special cases */
@@ -3634,7 +3625,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         {
             GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
             assert(hwIntrinsicNode != nullptr);
-            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(hwIntrinsicNode->gtHWIntrinsicId);
+            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(hwIntrinsicNode->GetHWIntrinsicId());
 
             switch (category)
             {
@@ -3810,6 +3801,13 @@ bool Compiler::optConfigDisableCSE2()
 
 void Compiler::optOptimizeCSEs()
 {
+    if (optCSEstart != BAD_VAR_NUM)
+    {
+        // CSE being run multiple times so we may need to clean up old
+        // information.
+        optCleanupCSEs();
+    }
+
     optCSECandidateCount = 0;
     optCSEstart          = lvaCount;
 

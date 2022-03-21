@@ -80,6 +80,7 @@ namespace System.Net.Http.Functional.Tests
     {
         protected override Type UnsupportedConcurrentExceptionType => null;
         protected override bool UsableAfterCanceledReads => false;
+        protected override bool BlocksOnZeroByteReads => true;
 
         protected abstract string GetResponseHeaders();
 

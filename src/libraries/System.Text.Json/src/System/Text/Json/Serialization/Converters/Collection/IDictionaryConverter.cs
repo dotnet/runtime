@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -22,38 +23,17 @@ namespace System.Text.Json.Serialization.Converters
             if (IsValueType)
             {
                 state.Current.ReturnValue = collection;
-            };
+            }
         }
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {
-            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
-
-            if (TypeToConvert.IsInterface || TypeToConvert.IsAbstract)
+            base.CreateCollection(ref reader, ref state);
+            TDictionary returnValue = (TDictionary)state.Current.ReturnValue!;
+            if (returnValue.IsReadOnly)
             {
-                if (!TypeToConvert.IsAssignableFrom(RuntimeType))
-                {
-                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
-                }
-
-                // Strings are intentionally used as keys when deserializing non-generic dictionaries.
-                state.Current.ReturnValue = new Dictionary<string, object>();
-            }
-            else
-            {
-                if (typeInfo.CreateObject == null)
-                {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(TypeToConvert, ref reader, ref state);
-                }
-
-                TDictionary returnValue = (TDictionary)typeInfo.CreateObject()!;
-
-                if (returnValue.IsReadOnly)
-                {
-                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
-                }
-
-                state.Current.ReturnValue = returnValue;
+                state.Current.ReturnValue = null; // clear out for more accurate JsonPath reporting.
+                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
             }
         }
 
@@ -115,16 +95,13 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        internal override Type RuntimeType
+        internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
-            get
+            // Deserialize as Dictionary<TKey,TValue> for interface types that support it.
+            if (jsonTypeInfo.CreateObject is null && TypeToConvert.IsAssignableFrom(typeof(Dictionary<string, object?>)))
             {
-                if (TypeToConvert.IsAbstract || TypeToConvert.IsInterface)
-                {
-                    return typeof(Dictionary<string, object>);
-                }
-
-                return TypeToConvert;
+                Debug.Assert(TypeToConvert.IsInterface);
+                jsonTypeInfo.CreateObject = () => new Dictionary<string, object?>();
             }
         }
     }

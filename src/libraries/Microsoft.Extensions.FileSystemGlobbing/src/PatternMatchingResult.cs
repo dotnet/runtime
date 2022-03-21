@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -26,7 +27,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// </summary>
         /// <param name="files">A collection of <see cref="FilePatternMatch" /></param>
         /// <param name="hasMatches">A value that determines if <see cref="PatternMatchingResult"/> has any matches.</param>
-        public PatternMatchingResult(IEnumerable<FilePatternMatch> files, bool hasMatches)
+        public PatternMatchingResult(IEnumerable<FilePatternMatch> files!!, bool hasMatches)
         {
             Files = files;
             HasMatches = hasMatches;

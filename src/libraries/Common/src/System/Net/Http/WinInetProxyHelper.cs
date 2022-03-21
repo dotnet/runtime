@@ -28,7 +28,7 @@ namespace System.Net.Http
                 if (Interop.WinHttp.WinHttpGetIEProxyConfigForCurrentUser(out proxyConfig))
                 {
                     _autoConfigUrl = Marshal.PtrToStringUni(proxyConfig.AutoConfigUrl)!;
-                    _autoDetect = proxyConfig.AutoDetect;
+                    _autoDetect = proxyConfig.AutoDetect != 0;
                     _proxy = Marshal.PtrToStringUni(proxyConfig.Proxy)!;
                     _proxyBypass = Marshal.PtrToStringUni(proxyConfig.ProxyBypass)!;
 

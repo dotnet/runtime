@@ -52,7 +52,7 @@ public struct Gen<T> : Outer<T>.IGen<T>
 	}
 }
 
-public class Test
+public class Test_NestedInterface08
 {
 	public static int counter = 0;
 	public static bool result = true;

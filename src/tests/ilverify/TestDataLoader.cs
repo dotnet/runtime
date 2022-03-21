@@ -18,7 +18,7 @@ using Xunit.Abstractions;
 namespace ILVerification.Tests
 {
     /// <summary>
-    /// Parses the methods in the test assemblies. 
+    /// Parses the methods in the test assemblies.
     /// It loads all assemblies from the test folder defined in <code>TestDataLoader.TestAssemblyPath</code>
     /// This class feeds the xunit Theories
     /// </summary>
@@ -106,8 +106,8 @@ namespace ILVerification.Tests
         /// <summary>
         /// Returns all methods that contain valid IL code based on the following naming convention:
         /// [FriendlyName]_Valid
-        /// The method must contain 1 '_'. The part before the '_' is a friendly name describing what the method does. 
-        /// The word after the '_' has to be 'Valid' (Case sensitive) 
+        /// The method must contain 1 '_'. The part before the '_' is a friendly name describing what the method does.
+        /// The word after the '_' has to be 'Valid' (Case sensitive)
         /// E.g.: 'SimpleAdd_Valid'
         /// </summary>
         public static TheoryData<TestCase> GetMethodsWithValidIL()
@@ -129,9 +129,9 @@ namespace ILVerification.Tests
         /// The method name must contain 2 '_' characters.
         /// 1. part: a friendly name
         /// 2. part: must be the word 'Invalid' (Case sensitive)
-        /// 3. part: the expected VerifierErrors as string separated by '.'.      
+        /// 3. part: the expected VerifierErrors as string separated by '.'.
         /// E.g.: SimpleAdd_Invalid_ExpectedNumericType
-        /// </summary>      
+        /// </summary>
         public static TheoryData<TestCase> GetMethodsWithInvalidIL()
         {
             var methodSelector = new Func<string[], MethodDefinitionHandle, TestCase>((mparams, methodHandle) =>
@@ -176,20 +176,37 @@ namespace ILVerification.Tests
                     var method = (EcmaMethod)testModule.GetMethod(methodHandle);
                     var methodName = method.Name;
 
-                    if (!String.IsNullOrEmpty(methodName) && methodName.Contains("_"))
+                    if (!methodName.Contains('_', StringComparison.Ordinal))
+                        continue;
+
+                    var index = methodName.LastIndexOf("_Valid", StringComparison.Ordinal);
+                    if (index < 0)
+                        index = methodName.LastIndexOf("_Invalid", StringComparison.Ordinal);
+                    if (index < 0)
+                        continue;
+
+                    var substring = methodName.Substring(index + 1);
+                    var split = substring.Split('_');
+                    string[] mparams = new string[split.Length + 1];
+                    split.CopyTo(mparams, 1);
+                    mparams[0] = methodName.Substring(0, index);
+                    // examples of methodName to mparams transformation:
+                    //   * `get_Property` -> [ 'get_Property' ]
+                    //   * `CheckSomething_Valid` -> [ 'CheckSomething', 'Valid' ]
+                    //   * 'WrongMethod_Invalid_BranchOutOfTry' -> [ 'WrongMethod', 'Invalid', 'BranchOutOfTry' ]
+                    //   * 'MoreWrongMethod_Invalid_TypeAccess.InitOnly' -> [ 'MoreWrongMethod', 'Invalid', 'TypeAccess', 'InitOnly' ]
+                    //   * 'special.set_MyProperty.set_MyProperty_Invalid_InitOnly' -> [ 'special.set_MyProperty.set_MyProperty', 'Invalid', 'InitOnly' ]
+
+                    var specialMethodHandle = HandleSpecialTests(mparams, method);
+                    var newItem = methodSelector(mparams, specialMethodHandle);
+
+                    if (newItem != null)
                     {
-                        var mparams = methodName.Split('_');
-                        var specialMethodHandle = HandleSpecialTests(mparams, method);
-                        var newItem = methodSelector(mparams, specialMethodHandle);
+                        newItem.TestName = mparams[0];
+                        newItem.MethodName = methodName;
+                        newItem.ModuleName = testDllName;
 
-                        if (newItem != null)
-                        {
-                            newItem.TestName = mparams[0];
-                            newItem.MethodName = methodName;
-                            newItem.ModuleName = testDllName;
-
-                            retVal.Add(newItem);
-                        }
+                        retVal.Add(newItem);
                     }
                 }
             }
@@ -252,19 +269,34 @@ namespace ILVerification.Tests
             return typeSystemContext.GetModule(resolver.Resolve(new AssemblyName(Path.GetFileNameWithoutExtension(assemblyName)).Name));
         }
 
-        private sealed class TestResolver : ResolverBase
+        private sealed class TestResolver : IResolver
         {
+            Dictionary<string, PEReader> _resolverCache = new Dictionary<string, PEReader>();
             Dictionary<string, string> _simpleNameToPathMap;
+
             public TestResolver(Dictionary<string, string> simpleNameToPathMap)
             {
                 _simpleNameToPathMap = simpleNameToPathMap;
             }
 
-            protected override PEReader ResolveCore(string simpleName)
+            PEReader IResolver.ResolveAssembly(AssemblyName assemblyName)
+                => Resolve(assemblyName.Name);
+
+            PEReader IResolver.ResolveModule(AssemblyName referencingModule, string fileName)
+                => Resolve(Path.GetFileNameWithoutExtension(fileName));
+
+            public PEReader Resolve(string simpleName)
             {
+                if (_resolverCache.TryGetValue(simpleName, out PEReader peReader))
+                {
+                    return peReader;
+                }
+
                 if (_simpleNameToPathMap.TryGetValue(simpleName, out string path))
                 {
-                    return new PEReader(File.OpenRead(path));
+                    var result = new PEReader(File.OpenRead(path));
+                    _resolverCache.Add(simpleName, result);
+                    return result;
                 }
 
                 return null;
@@ -272,7 +304,7 @@ namespace ILVerification.Tests
         }
     }
 
-    abstract class TestCase : IXunitSerializable
+    public abstract class TestCase : IXunitSerializable
     {
         public string TestName { get; set; }
         public string TypeName { get; set; }
@@ -307,12 +339,12 @@ namespace ILVerification.Tests
     /// <summary>
     /// Describes a test case with a method that contains valid IL
     /// </summary>
-    class ValidILTestCase : TestCase { }
+    public class ValidILTestCase : TestCase { }
 
     /// <summary>
     /// Describes a test case with a method that contains invalid IL with the expected VerifierErrors
     /// </summary>
-    class InvalidILTestCase : TestCase
+    public class InvalidILTestCase : TestCase
     {
         public List<VerifierError> ExpectedVerifierErrors { get; set; }
 
@@ -352,9 +384,9 @@ namespace ILVerification.Tests
         }
     }
 
-    class ValidTypeTestCase : TestCase { }
+    public class ValidTypeTestCase : TestCase { }
 
-    class InvalidTypeTestCase : TestCase
+    public class InvalidTypeTestCase : TestCase
     {
         public List<VerifierError> ExpectedVerifierErrors { get; set; }
 

@@ -29,13 +29,8 @@ namespace System.Xml.Schema
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public static XmlSchemaSimpleType? GetBuiltInSimpleType(XmlQualifiedName qualifiedName)
+        public static XmlSchemaSimpleType? GetBuiltInSimpleType(XmlQualifiedName qualifiedName!!)
         {
-            if (qualifiedName == null)
-            {
-                throw new ArgumentNullException(nameof(qualifiedName));
-            }
-
             return DatatypeImplementation.GetSimpleTypeFromXsdType(qualifiedName);
         }
 
@@ -63,13 +58,8 @@ namespace System.Xml.Schema
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public static XmlSchemaComplexType? GetBuiltInComplexType(XmlQualifiedName qualifiedName)
+        public static XmlSchemaComplexType? GetBuiltInComplexType(XmlQualifiedName qualifiedName!!)
         {
-            if (qualifiedName == null)
-            {
-                throw new ArgumentNullException(nameof(qualifiedName));
-            }
-
             if (qualifiedName.Equals(XmlSchemaComplexType.AnyType.QualifiedName))
             {
                 return XmlSchemaComplexType.AnyType;

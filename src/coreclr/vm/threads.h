@@ -132,7 +132,7 @@ class     Frame;
 class     ThreadBaseObject;
 class     AppDomainStack;
 class     LoadLevelLimiter;
-class     DomainFile;
+class     DomainAssembly;
 class     DeadlockAwareLock;
 struct    HelperMethodFrameCallerList;
 class     ThreadLocalIBCInfo;
@@ -252,222 +252,6 @@ struct TailCallArgBuffer
     BYTE Args[1];
 };
 
-#ifdef CROSSGEN_COMPILE
-
-#include "asmconstants.h"
-
-class Thread
-{
-    friend class ThreadStatics;
-
-    ThreadLocalBlock m_ThreadLocalBlock;
-
-public:
-    BOOL IsAddressInStack (PTR_VOID addr) const { return TRUE; }
-    static BOOL IsAddressInCurrentStack (PTR_VOID addr) { return TRUE; }
-
-    StackingAllocator*    m_stackLocalAllocator = NULL;
-    bool CheckCanUseStackAlloc() { return true; }
-
- private:
-    LoadLevelLimiter *m_pLoadLimiter;
-
- public:
-    LoadLevelLimiter *GetLoadLevelLimiter()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pLoadLimiter;
-    }
-
-    void SetLoadLevelLimiter(LoadLevelLimiter *limiter)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pLoadLimiter = limiter;
-    }
-
-    PTR_Frame GetFrame() { return NULL; }
-    void SetFrame(Frame *pFrame) { }
-    DWORD CatchAtSafePoint() { return 0; }
-    DWORD CatchAtSafePointOpportunistic() { return 0; }
-
-    static void ObjectRefProtected(const OBJECTREF* ref) { }
-    static void ObjectRefNew(const OBJECTREF* ref) { }
-
-    void EnablePreemptiveGC() { }
-    void DisablePreemptiveGC() { }
-
-    static LPVOID GetStaticFieldAddress(FieldDesc *pFD) { return NULL; }
-
-    PTR_AppDomain GetDomain() { return ::GetAppDomain(); }
-
-    DWORD GetThreadId() { return 0; }
-
-    inline DWORD GetOverridesCount() { return 0; }
-    inline BOOL CheckThreadWideSpecialFlag(DWORD flags) { return 0; }
-
-    BOOL PreemptiveGCDisabled() { return false; }
-    void PulseGCMode() { }
-
-    OBJECTREF GetThrowable() { return NULL; }
-
-    OBJECTREF LastThrownObject() { return NULL; }
-
-    static BOOL Debug_AllowCallout() { return TRUE; }
-
-    static void IncForbidSuspendThread() { }
-    static void DecForbidSuspendThread() { }
-
-    typedef StateHolder<Thread::IncForbidSuspendThread, Thread::DecForbidSuspendThread> ForbidSuspendThreadHolder;
-
-    static BYTE GetOffsetOfCurrentFrame()
-    {
-        LIMITED_METHOD_CONTRACT;
-        size_t ofs = Thread_m_pFrame;
-        _ASSERTE(FitsInI1(ofs));
-        return (BYTE)ofs;
-    }
-
-    static BYTE GetOffsetOfGCFlag()
-    {
-        LIMITED_METHOD_CONTRACT;
-        size_t ofs = Thread_m_fPreemptiveGCDisabled;
-        _ASSERTE(FitsInI1(ofs));
-        return (BYTE)ofs;
-    }
-
-    enum ThreadState
-    {
-    };
-
-    BOOL HasThreadState(ThreadState ts)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return ((DWORD)m_State & ts);
-    }
-
-    BOOL HasThreadStateOpportunistic(ThreadState ts)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_State.LoadWithoutBarrier() & ts;
-    }
-
-    Volatile<ThreadState> m_State;
-
-    enum ThreadStateNoConcurrency
-    {
-        TSNC_OwnsSpinLock               = 0x00000400, // The thread owns a spinlock.
-
-        TSNC_LoadsTypeViolation         = 0x40000000, // Use by type loader to break deadlocks caused by type load level ordering violations
-    };
-
-    ThreadStateNoConcurrency m_StateNC;
-
-    void SetThreadStateNC(ThreadStateNoConcurrency tsnc)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_StateNC = (ThreadStateNoConcurrency)((DWORD)m_StateNC | tsnc);
-    }
-
-    void ResetThreadStateNC(ThreadStateNoConcurrency tsnc)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_StateNC = (ThreadStateNoConcurrency)((DWORD)m_StateNC & ~tsnc);
-    }
-
-    BOOL HasThreadStateNC(ThreadStateNoConcurrency tsnc)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return ((DWORD)m_StateNC & tsnc);
-    }
-
-    PendingTypeLoadHolder* m_pPendingTypeLoad;
-
-#ifndef DACCESS_COMPILE
-    PendingTypeLoadHolder* GetPendingTypeLoad()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pPendingTypeLoad;
-    }
-
-    void SetPendingTypeLoad(PendingTypeLoadHolder* pPendingTypeLoad)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pPendingTypeLoad = pPendingTypeLoad;
-    }
-#endif
-    void SetProfilerCallbackFullState(DWORD dwFullState)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    DWORD SetProfilerCallbackStateFlags(DWORD dwFlags)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return dwFlags;
-    }
-
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    enum ApartmentState { AS_Unknown };
-#endif
-
-    DWORD       m_dwLastError;
-};
-
-class AVInRuntimeImplOkayHolder
-{
-public:
-    AVInRuntimeImplOkayHolder()
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-    AVInRuntimeImplOkayHolder(Thread * pThread)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-    ~AVInRuntimeImplOkayHolder()
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-};
-
-inline BOOL dbgOnly_IsSpecialEEThread() { return FALSE; }
-
-#define FORBIDGC_LOADER_USE_ENABLED() false
-#define ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE()    ;
-
-#define BEGIN_FORBID_TYPELOAD()
-#define END_FORBID_TYPELOAD()
-#define TRIGGERS_TYPELOAD()
-
-#define TRIGGERSGC() ANNOTATION_GC_TRIGGERS
-
-inline void CommonTripThread() { }
-
-class DeadlockAwareLock
-{
-public:
-    DeadlockAwareLock(const char *description = NULL) { }
-    ~DeadlockAwareLock() { }
-
-    BOOL CanEnterLock() { return TRUE; }
-
-    BOOL TryBeginEnterLock() { return TRUE; }
-    void BeginEnterLock() { }
-
-    void EndEnterLock() { }
-
-    void LeaveLock() { }
-
-public:
-    typedef StateHolder<DoNothing,DoNothing> BlockingLockHolder;
-};
-
-// Do not include threads.inl
-#define _THREADS_INL
-
-typedef Thread::ForbidSuspendThreadHolder ForbidSuspendThreadHolder;
-
-#else // CROSSGEN_COMPILE
 
 #if (defined(TARGET_ARM) && defined(FEATURE_EMULATE_SINGLESTEP))
 #include "armsinglestepper.h"
@@ -496,7 +280,7 @@ typedef Thread::ForbidSuspendThreadHolder ForbidSuspendThreadHolder;
 #define SWITCHED_OUT_FIBER_OSID 0xbaadf00d;
 
 #ifdef _DEBUG
-// A thread doesn't recieve its id until fully constructed.
+// A thread doesn't receive its id until fully constructed.
 #define UNINITIALIZED_THREADID 0xbaadf00d
 #endif //_DEBUG
 
@@ -1834,7 +1618,7 @@ public:
     // Functions used to perform initialization and cleanup on a managed thread
     // that would normally occur if the thread was stated when the runtime was
     // fully initialized and ready to run.
-    // Examples where this applies are the Main and Finalizer threads. 
+    // Examples where this applies are the Main and Finalizer threads.
     static void InitializationForManagedThreadInNative(_In_ Thread* pThread);
     static void CleanUpForManagedThreadInNative(_In_ Thread* pThread);
 
@@ -3035,7 +2819,7 @@ private:
     StackWalkAction MakeStackwalkerCallback(CrawlFrame* pCF, PSTACKWALKFRAMESCALLBACK pCallback, VOID* pData DEBUG_ARG(UINT32 uLoopIteration));
 
 #ifdef _DEBUG
-    void            DebugLogStackWalkInfo(CrawlFrame* pCF, __in_z LPCSTR pszTag, UINT32 uLoopIteration);
+    void            DebugLogStackWalkInfo(CrawlFrame* pCF, _In_z_ LPCSTR pszTag, UINT32 uLoopIteration);
 #endif // _DEBUG
 
 public:
@@ -3291,6 +3075,14 @@ private:
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
     static void __stdcall RedirectedHandledJITCaseForGCStress();
 #endif // defined(HAVE_GCCOVER) && USE_REDIRECT_FOR_GCSTRESS
+
+#ifdef TARGET_X86
+    // RtlRestoreContext is available on x86, but relatively recently.
+    // RestoreContextSimulated uses SEH machinery for a similar result on legacy OS-es.
+    // This function should not be used on new OS-es as the pattern is not
+    // guaranteed to continue working in the future.
+    static void RestoreContextSimulated(Thread* pThread, CONTEXT* pCtx, void* pFrame, DWORD dwLastError);
+#endif
 
     friend void CPFH_AdjustContextForThreadSuspensionRace(T_CONTEXT *pContext, Thread *pThread);
 #endif // FEATURE_HIJACK && !TARGET_UNIX
@@ -3822,7 +3614,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
 #ifdef _DEBUG
-        DWORD newValue = 
+        DWORD newValue =
 #endif // _DEBUG
         ++m_dwProfilerEvacuationCounters[slot];
         _ASSERTE(newValue != 0U);
@@ -3833,7 +3625,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
 #ifdef _DEBUG
-        DWORD newValue = 
+        DWORD newValue =
 #endif // _DEBUG
         --m_dwProfilerEvacuationCounters[slot];
         _ASSERTE(newValue != (DWORD)-1);
@@ -4059,7 +3851,7 @@ private:
     BYTE* m_pOSContextBuffer;
 
 #ifdef _DEBUG
-    // validate that we use only one context per thread. 
+    // validate that we use only one context per thread.
     bool m_RedirectContextInUse;
 #endif
 
@@ -4963,11 +4755,11 @@ private:
     static CONTEXT *s_pOSContext;
 public:
     // Pre-allocate an OS context for possible use by a redirected thread and keep in a static variable.
-    // 
+    //
     // There are two reasons for this pattern:
     // - We can not do any memory allocation after we suspend a thread in order to avoid deadlock situation.
     //   So, when anticipating a need, we must pre-allocate.
-    // 
+    //
     // - Even though we know the thread we are suspending, we do not want to put the context directly on the
     //   thread because the thread only _may_ need the context. Often it does not end up needing it,
     //   then we will keep the context for the next time like this.
@@ -5024,7 +4816,6 @@ typedef StateHolder<TSSuspendHelper::SetTrap, TSSuspendHelper::UnsetTrap> TSSusp
 
 typedef StateHolder<ThreadStore::LockThreadStore,ThreadStore::UnlockThreadStore> ThreadStoreLockHolder;
 
-#endif
 
 // This class dispenses small thread ids for the thin lock mechanism.
 // Recently we started using this class to dispense domain neutral module IDs as well.
@@ -5192,7 +4983,6 @@ public:
 };
 typedef DPTR(IdDispenser) PTR_IdDispenser;
 
-#ifndef CROSSGEN_COMPILE
 
 // Dispenser of small thread ids for thin lock mechanism
 GPTR_DECL(IdDispenser,g_pThinLockThreadIdDispenser);
@@ -6301,7 +6091,6 @@ inline void SetTypeHandleOnThreadForAlloc(TypeHandle th)
     GetThread()->SetTHAllocContextObj(th);
 }
 
-#endif // CROSSGEN_COMPILE
 
 class Compiler;
 // users of OFFSETOF__TLS__tls_CurrentThread macro expect the offset of these variables wrt to _tls_start to be stable.
@@ -6432,7 +6221,7 @@ BYTE* GetWriteBarrierCodeLocation(VOID* barrier);
 BOOL IsIPInWriteBarrierCodeCopy(PCODE controlPc);
 PCODE AdjustWriteBarrierIP(PCODE controlPc);
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 extern thread_local Thread* t_pStackWalkerWalkingThread;
 #define SET_THREAD_TYPE_STACKWALKER(pThread)    t_pStackWalkerWalkingThread = pThread
 #define CLEAR_THREAD_TYPE_STACKWALKER()         t_pStackWalkerWalkingThread = NULL
@@ -6445,7 +6234,7 @@ inline BOOL IsStackWalkerThread()
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     return t_pStackWalkerWalkingThread != NULL;
 #else
     return FALSE;
@@ -6459,7 +6248,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
         m_PreviousValue = t_pStackWalkerWalkingThread;
         t_pStackWalkerWalkingThread = value;
 #endif
@@ -6469,7 +6258,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
         t_pStackWalkerWalkingThread = m_PreviousValue;
 #endif
     }

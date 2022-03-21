@@ -20,14 +20,14 @@
            
   
 }
-.assembly 'test'
+.assembly 'length0'
 {
 
 
   
   
 }
-.module 'test.exe'
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class private auto ansi Test
@@ -95,6 +95,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  4
       .locals (int32[0...] V_0, int32 V_1, int32 V_2)

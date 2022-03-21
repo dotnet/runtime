@@ -29,7 +29,7 @@
 
 #include "mini.h"
 
-/* 
+/*
  * The used assembler dialect
  * TARGET_ASM_APPLE == apple assembler on OSX
  * TARGET_ASM_GAS == GNU assembler
@@ -77,7 +77,7 @@
 #elif defined(TARGET_ASM_GAS) && defined(TARGET_WIN32)
 #define AS_INT16_DIRECTIVE ".word"
 #elif defined(TARGET_ASM_GAS)
-#define AS_INT16_DIRECTIVE ".hword"
+#define AS_INT16_DIRECTIVE ".short"
 #else
 #define AS_INT16_DIRECTIVE ".word"
 #endif
@@ -245,6 +245,9 @@ asm_writer_emit_symbol_type (MonoImageWriter *acfg, const char *name, gboolean f
 static void
 asm_writer_emit_symbol_type (MonoImageWriter *acfg, const char *name, gboolean func, gboolean global)
 {
+#if defined(TARGET_ASM_APPLE)
+	asm_writer_emit_unset_mode (acfg);
+#else
 	const char *stype;
 
 	if (func)
@@ -253,13 +256,11 @@ asm_writer_emit_symbol_type (MonoImageWriter *acfg, const char *name, gboolean f
 		stype = "object";
 
 	asm_writer_emit_unset_mode (acfg);
-
-#if defined(TARGET_ASM_APPLE)
-
-#elif defined(TARGET_ARM)
+#if defined(TARGET_ARM)
 	fprintf (acfg->fp, "\t.type %s,#%s\n", name, stype);
 #else
 	fprintf (acfg->fp, "\t.type %s,@%s\n", name, stype);
+#endif
 #endif
 }
 #endif /* TARGET_WIN32 */
@@ -318,7 +319,7 @@ asm_writer_emit_line (MonoImageWriter *acfg)
 	fprintf (acfg->fp, "\n");
 }
 
-static void 
+static void
 asm_writer_emit_alignment (MonoImageWriter *acfg, int size)
 {
 	asm_writer_emit_unset_mode (acfg);
@@ -336,7 +337,7 @@ asm_writer_emit_alignment (MonoImageWriter *acfg, int size)
 #endif
 }
 
-static void 
+static void
 asm_writer_emit_alignment_fill (MonoImageWriter *acfg, int size, int fill)
 {
 	asm_writer_emit_unset_mode (acfg);
@@ -646,7 +647,7 @@ mono_img_writer_emit_byte (MonoImageWriter *acfg, guint8 val)
 	mono_img_writer_emit_bytes (acfg, &val, 1);
 }
 
-/* 
+/*
  * Emit a relocation entry of type RELOC_TYPE against symbol SYMBOL at the current PC.
  * Do not advance PC.
  */

@@ -90,4 +90,4 @@ END:
 }
 }
 
-.assembly ret_r8.exe{}
+.assembly ret_r8{}

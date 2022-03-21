@@ -19,6 +19,7 @@
 .assembly DevDiv_150586
 {
 }
+.assembly extern xunit.core {}
 
 
 .class private auto ansi beforefieldinit Bug.Program
@@ -66,6 +67,9 @@
   .method private hidebysig static int32 
           Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       39 (0x27)
     .maxstack  1

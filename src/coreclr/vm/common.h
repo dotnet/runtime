@@ -18,7 +18,7 @@
 
 #define USE_COM_CONTEXT_DEF
 
-#if defined(_DEBUG) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG)
 #define DEBUG_REGDISPLAY
 #endif
 
@@ -26,10 +26,7 @@
 
     // These don't seem useful, so turning them off is no big deal
 #pragma warning(disable:4201)   // nameless struct/union
-#pragma warning(disable:4510)   // can't generate default constructor
-//#pragma warning(disable:4511)   // can't generate copy constructor
 #pragma warning(disable:4512)   // can't generate assignment constructor
-#pragma warning(disable:4610)   // user defined constructor required
 #pragma warning(disable:4211)   // nonstandard extention used (char name[0] in structs)
 #pragma warning(disable:4268)   // 'const' static/global data initialized with compiler generated default constructor fills the object with zeros
 #pragma warning(disable:4238)   // nonstandard extension used : class rvalue used as lvalue
@@ -38,8 +35,6 @@
 
     // Depending on the code base, you may want to not disable these
 #pragma warning(disable:4245)   // assigning signed / unsigned
-//#pragma warning(disable:4146)   // unary minus applied to unsigned
-//#pragma warning(disable:4244)   // loss of data int -> char ..
 #pragma warning(disable:4127)   // conditional expression is constant
 #pragma warning(disable:4100)   // unreferenced formal parameter
 
@@ -47,7 +42,6 @@
 
 #ifndef DEBUG
 #pragma warning(disable:4505)   // unreferenced local function has been removed
-//#pragma warning(disable:4702)   // unreachable code
 #pragma warning(disable:4313)   // 'format specifier' in format string conflicts with argument %d of type 'type'
 #endif // !DEBUG
 
@@ -56,9 +50,6 @@
 #pragma warning(disable:4710)   // function not inlined
 #pragma warning(disable:4527)   // user-defined destructor required
 #pragma warning(disable:4513)   // destructor could not be generated
-
-    // <TODO>TODO we really probably need this one put back in!!!</TODO>
-//#pragma warning(disable:4701)   // local variable may be used without being initialized
 #endif // _MSC_VER
 
 #define _CRT_DEPENDENCY_   //this code depends on the crt file functions
@@ -111,18 +102,15 @@ typedef DPTR(class ArrayBase)           PTR_ArrayBase;
 typedef DPTR(class Assembly)            PTR_Assembly;
 typedef DPTR(class AssemblyBaseObject)  PTR_AssemblyBaseObject;
 typedef DPTR(class AssemblyLoadContextBaseObject) PTR_AssemblyLoadContextBaseObject;
-typedef DPTR(class AssemblyLoadContext) PTR_AssemblyLoadContext;
+typedef DPTR(class AssemblyBinder)      PTR_AssemblyBinder;
 typedef DPTR(class AssemblyNameBaseObject) PTR_AssemblyNameBaseObject;
 typedef VPTR(class BaseDomain)          PTR_BaseDomain;
 typedef DPTR(class ClassLoader)         PTR_ClassLoader;
 typedef DPTR(class ComCallMethodDesc)   PTR_ComCallMethodDesc;
-typedef VPTR(class CompilationDomain)   PTR_CompilationDomain;
 typedef DPTR(class ComPlusCallMethodDesc) PTR_ComPlusCallMethodDesc;
 typedef VPTR(class DebugInterface)      PTR_DebugInterface;
 typedef DPTR(class Dictionary)          PTR_Dictionary;
-typedef VPTR(class DomainAssembly)      PTR_DomainAssembly;
-typedef VPTR(class DomainFile)          PTR_DomainFile;
-typedef VPTR(class DomainModule)        PTR_DomainModule;
+typedef DPTR(class DomainAssembly)      PTR_DomainAssembly;
 typedef DPTR(struct FailedAssembly)     PTR_FailedAssembly;
 typedef VPTR(class EditAndContinueModule) PTR_EditAndContinueModule;
 typedef DPTR(class EEClass)             PTR_EEClass;
@@ -237,7 +225,7 @@ FORCEINLINE void* memcpyUnsafe(void *dest, const void *src, size_t len)
 // These can be enabled in non-debug by removing the #ifdef _DEBUG
 // allowing one to log/check_gc a free build.
 //
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
 
     //If memcpy has been defined to PAL_memcpy, we undefine it so that this case
     //can be covered by the if !defined(memcpy) block below
@@ -263,13 +251,13 @@ FORCEINLINE void* memcpyUnsafe(void *dest, const void *src, size_t len)
     extern "C" void *  __cdecl GCSafeMemCpy(void *, const void *, size_t);
     #define memcpy(dest, src, len) GCSafeMemCpy(dest, src, len)
     #endif // !defined(memcpy)
-#else // !_DEBUG && !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#else // !_DEBUG && !DACCESS_COMPILE
     FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len) {
             WRAPPER_NO_CONTRACT;
 
             return memcpy(dest, src, len);
         }
-#endif // !_DEBUG && !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !_DEBUG && !DACCESS_COMPILE
 
 namespace Loader
 {
@@ -281,7 +269,7 @@ namespace Loader
     } LoadFlag;
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
 EXTERN_C void STDCALL ClrRestoreNonvolatileContext(PCONTEXT ContextRecord);
 #elif !(defined(TARGET_WINDOWS) && defined(TARGET_X86)) // !(TARGET_WINDOWS && TARGET_AMD64) && !(TARGET_WINDOWS && TARGET_X86)
@@ -291,13 +279,12 @@ inline void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
     RtlRestoreContext(ContextRecord, NULL);
 }
 #endif // TARGET_WINDOWS && TARGET_AMD64
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
 // src/inc
 #include "utilcode.h"
 #include "log.h"
 #include "loaderheap.h"
-#include "fixuppointer.h"
 #include "stgpool.h"
 
 // src/vm
@@ -347,7 +334,7 @@ inline void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
 #include "specialstatics.h"
 #include "object.h"  // <NICE> We should not really need to put this so early... </NICE>
 #include "gchelpers.h"
-#include "pefile.h"
+#include "peassembly.h"
 #include "clrex.h"
 #include "clsload.hpp"  // <NICE> We should not really need to put this so early... </NICE>
 #include "siginfo.hpp"
@@ -364,7 +351,7 @@ inline void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
 #include "appdomain.hpp"
 #include "appdomain.inl"
 #include "assembly.hpp"
-#include "pefile.inl"
+#include "peassembly.inl"
 #include "excep.h"
 #include "method.hpp"
 #include "field.h"
@@ -421,7 +408,6 @@ extern DummyGlobalContract ___contract;
 
 #endif // defined(_DEBUG)
 
-
 // All files get to see all of these .inl files to make sure all files
 // get the benefit of inlining.
 #include "ceeload.inl"
@@ -431,7 +417,6 @@ extern DummyGlobalContract ___contract;
 #include "typehandle.inl"
 #include "object.inl"
 #include "clsload.inl"
-#include "domainfile.inl"
 #include "method.inl"
 #include "syncblk.inl"
 #include "threads.inl"

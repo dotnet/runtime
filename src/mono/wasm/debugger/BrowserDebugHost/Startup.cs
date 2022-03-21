@@ -139,7 +139,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     Dictionary<string, string>[] tabs = await ProxyGetJsonAsync<Dictionary<string, string>[]>(GetEndpoint(context));
                     Dictionary<string, string>[] alteredTabs = tabs.Select(t => mapFunc(t, context, devToolsHost)).ToArray();
                     context.Response.ContentType = "application/json";
-                    await context.Response.WriteAsync(JsonSerializer.Serialize(alteredTabs));
+                    string text = JsonSerializer.Serialize(alteredTabs);
+                    context.Response.ContentLength = text.Length;
+                    await context.Response.WriteAsync(text);
                 }
 
                 async Task ConnectProxy(HttpContext context)
@@ -151,15 +153,25 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                     var endpoint = new Uri($"ws://{devToolsHost.Authority}{context.Request.Path}");
+                    int runtimeId = 0;
+                    if (context.Request.Query.TryGetValue("RuntimeId", out StringValues runtimeIdValue) &&
+                                            int.TryParse(runtimeIdValue.FirstOrDefault(), out int parsedId))
+                    {
+                        runtimeId = parsedId;
+                    }
                     try
                     {
                         using ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
-                            builder.AddSimpleConsole(options => options.SingleLine = true)
+                            builder.AddSimpleConsole(options =>
+                                    {
+                                        options.SingleLine = true;
+                                        options.TimestampFormat = "[HH:mm:ss] ";
+                                    })
                                    .AddFilter(null, LogLevel.Information)
                         );
 
                         context.Request.Query.TryGetValue("urlSymbolServer", out StringValues urlSymbolServerList);
-                        var proxy = new DebuggerProxy(loggerFactory, urlSymbolServerList.ToList());
+                        var proxy = new DebuggerProxy(loggerFactory, urlSymbolServerList.ToList(), runtimeId);
 
                         System.Net.WebSockets.WebSocket ideSocket = await context.WebSockets.AcceptWebSocketAsync();
 

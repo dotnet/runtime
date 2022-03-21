@@ -568,14 +568,9 @@ namespace System.Net.Http
         }
 
         protected override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request,
+            HttpRequestMessage request!!,
             CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
-
             Uri? requestUri = request.RequestUri;
             if (requestUri is null || !requestUri.IsAbsoluteUri)
             {
@@ -1193,6 +1188,7 @@ namespace System.Net.Http
             }
 #pragma warning restore 0618
 
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             if ((sslProtocols & SslProtocols.Tls) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1;
@@ -1202,6 +1198,7 @@ namespace System.Net.Http
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_1;
             }
+#pragma warning restore SYSLIB0039
 
             if ((sslProtocols & SslProtocols.Tls12) != 0)
             {
@@ -1442,7 +1439,7 @@ namespace System.Net.Http
                 return;
             }
 
-            X509Certificate2? clientCertificate = null;
+            X509Certificate2? clientCertificate;
             if (_clientCertificateOption == ClientCertificateOption.Manual)
             {
                 clientCertificate = CertificateHelper.GetEligibleClientCertificate(ClientCertificates);

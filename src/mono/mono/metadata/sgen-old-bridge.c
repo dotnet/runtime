@@ -313,15 +313,15 @@ dyn_array_int_merge (DynIntArray *dst, DynIntArray *src)
 
 	for (i = j = 0; i < dyn_array_int_size (dst) || j < dyn_array_int_size (src); ) {
 		if (i < dyn_array_int_size (dst) && j < dyn_array_int_size (src)) {
-			int a = dyn_array_int_get (dst, i); 
-			int b = dyn_array_int_get (src, j); 
+			int a = dyn_array_int_get (dst, i);
+			int b = dyn_array_int_get (src, j);
 			if (a < b) {
 				dyn_array_int_add (&merge_array, a);
 				++i;
 			} else if (a == b) {
 				dyn_array_int_add (&merge_array, a);
 				++i;
-				++j;	
+				++j;
 			} else {
 				dyn_array_int_add (&merge_array, b);
 				++j;
@@ -425,12 +425,10 @@ free_data (void)
 {
 	GCObject *obj G_GNUC_UNUSED;
 	HashEntry *entry;
-	int total_srcs = 0;
 	int max_srcs = 0;
 
 	SGEN_HASH_TABLE_FOREACH (&hash_table, GCObject *, obj, HashEntry *, entry) {
 		int entry_size = dyn_array_ptr_size (&entry->srcs);
-		total_srcs += entry_size;
 		if (entry_size > max_srcs)
 			max_srcs = entry_size;
 		dyn_array_ptr_uninit (&entry->srcs);
@@ -439,7 +437,6 @@ free_data (void)
 	sgen_hash_table_clean (&hash_table);
 
 	dyn_array_int_uninit (&merge_array);
-	//g_print ("total srcs %d - max %d\n", total_srcs, max_srcs);
 }
 
 static HashEntry*

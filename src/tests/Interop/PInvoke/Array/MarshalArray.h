@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma once 
+#pragma once
 #include <stdio.h>
 #include <stdlib.h> // required by itoa
 #include <iostream>
@@ -10,11 +10,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // Macro definitions
 //////////////////////////////////////////////////////////////////////////////
-#define ARRAY_SIZE 100
+#define ARRAY_LENGTH 100
 #define ROWS 2
 #define COLUMNS 3
 
-#define COUNTOF(__arr) sizeof(__arr) / sizeof(__arr[0])
 #define ELEM_PER_ROW_2D(__arr) (&(__arr[1][0]) - &(__arr[0][0]))
 #define ROWS_2D(__arr) sizeof(__arr) / (ELEM_PER_ROW_2D(__arr) * sizeof(__arr[0][0]))
 

@@ -389,14 +389,14 @@ namespace System.Xml.Xsl.IlGen
             {
                 s += _constrMeth.ToString();
 
-                s += ", " + _xstatesInitial;
+                s += $", {_xstatesInitial}";
 
                 if (_xstatesBeginLoop != PossibleXmlStates.None)
                 {
-                    s += " => " + _xstatesBeginLoop.ToString() + " => " + _xstatesEndLoop.ToString();
+                    s += $" => {_xstatesBeginLoop} => {_xstatesEndLoop}";
                 }
 
-                s += " => " + _xstatesFinal;
+                s += $" => {_xstatesFinal}";
 
                 if (!MightHaveAttributes)
                     s += ", NoAttrs";

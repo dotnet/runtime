@@ -36,51 +36,39 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-    internal static class MarshallingHelpers
+    internal static unsafe class MarshallingHelpers
     {
         // Copies a Ptr to an array of Points and releases the memory
-        public static void FromUnManagedMemoryToPointI(IntPtr prt, Point[] pts)
+        public static void FromUnManagedMemoryToPointI(IntPtr ptr, Point[] pts)
         {
-            int nPointSize = Marshal.SizeOf(pts[0]);
-            IntPtr pos = prt;
-            for (int i = 0; i < pts.Length; i++, pos = new IntPtr(pos.ToInt64() + nPointSize))
-                pts[i] = (Point)Marshal.PtrToStructure(pos, typeof(Point))!;
-
-            Marshal.FreeHGlobal(prt);
+            var sourceSpan = new Span<Point>((void*)ptr, pts.Length);
+            sourceSpan.CopyTo(new Span<Point>(pts));
+            Marshal.FreeHGlobal(ptr);
         }
 
         // Copies a Ptr to an array of Points and releases the memory
-        public static void FromUnManagedMemoryToPoint(IntPtr prt, PointF[] pts)
+        public static void FromUnManagedMemoryToPoint(IntPtr ptr, PointF[] pts)
         {
-            int nPointSize = Marshal.SizeOf(pts[0]);
-            IntPtr pos = prt;
-            for (int i = 0; i < pts.Length; i++, pos = new IntPtr(pos.ToInt64() + nPointSize))
-                pts[i] = (PointF)Marshal.PtrToStructure(pos, typeof(PointF))!;
-
-            Marshal.FreeHGlobal(prt);
+            var sourceSpan = new Span<PointF>((void*)ptr, pts.Length);
+            sourceSpan.CopyTo(new Span<PointF>(pts));
+            Marshal.FreeHGlobal(ptr);
         }
 
         // Copies an array of Points to unmanaged memory
         public static IntPtr FromPointToUnManagedMemoryI(Point[] pts)
         {
-            int nPointSize = Marshal.SizeOf(pts[0]);
-            IntPtr dest = Marshal.AllocHGlobal(nPointSize * pts.Length);
-            IntPtr pos = dest;
-            for (int i = 0; i < pts.Length; i++, pos = new IntPtr(pos.ToInt64() + nPointSize))
-                Marshal.StructureToPtr(pts[i], pos, false);
-
+            IntPtr dest = Marshal.AllocHGlobal(sizeof(Point) * pts.Length);
+            var destinationSpan = new Span<Point>((void*)dest, pts.Length);
+            pts.CopyTo(destinationSpan);
             return dest;
         }
 
         // Copies an array of Points to unmanaged memory
         public static IntPtr FromPointToUnManagedMemory(PointF[] pts)
         {
-            int nPointSize = Marshal.SizeOf(pts[0]);
-            IntPtr dest = Marshal.AllocHGlobal(nPointSize * pts.Length);
-            IntPtr pos = dest;
-            for (int i = 0; i < pts.Length; i++, pos = new IntPtr(pos.ToInt64() + nPointSize))
-                Marshal.StructureToPtr(pts[i], pos, false);
-
+            IntPtr dest = Marshal.AllocHGlobal(sizeof(PointF) * pts.Length);
+            var destinationSpan = new Span<PointF>((void*)dest, pts.Length);
+            pts.CopyTo(destinationSpan);
             return dest;
         }
     }

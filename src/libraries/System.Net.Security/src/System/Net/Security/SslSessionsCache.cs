@@ -220,8 +220,8 @@ namespace System.Net.Security
 
                     for (int i = 0; i < toRemoveAttempt.Length; ++i)
                     {
-                        SafeCredentialReference? cahced = toRemoveAttempt[i].Value;
-                        SafeFreeCredentials? creds = cahced.Target;
+                        SafeCredentialReference? cached = toRemoveAttempt[i].Value;
+                        SafeFreeCredentials? creds = cached.Target;
 
                         if (creds == null)
                         {
@@ -229,11 +229,11 @@ namespace System.Net.Security
                             continue;
                         }
 
-                        cahced.Dispose();
-                        cahced = SafeCredentialReference.CreateReference(creds);
-                        if (cahced != null)
+                        cached.Dispose();
+                        cached = SafeCredentialReference.CreateReference(creds);
+                        if (cached != null)
                         {
-                            s_cachedCreds[toRemoveAttempt[i].Key] = cahced;
+                            s_cachedCreds[toRemoveAttempt[i].Key] = cached;
                         }
                         else
                         {

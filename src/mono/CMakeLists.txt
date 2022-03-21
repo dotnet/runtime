@@ -5,6 +5,11 @@ if (CMAKE_VERSION VERSION_GREATER 3.15 OR CMAKE_VERSION VERSION_EQUAL 3.15)
 endif()
 
 project(mono)
+
+include(../../eng/native/configurepaths.cmake)
+include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
+
+set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
 set(CMAKE_C_FLAGS_CHECKED "")
 set(CMAKE_CXX_FLAGS_CHECKED "")
 set(CMAKE_EXE_LINKER_FLAGS_CHECKED "")
@@ -61,7 +66,6 @@ if(ENABLE_MINIMAL)
   process_enable_minimal()
 endif()
 
-set(DISABLE_MDB 1)
 set(DISABLE_COM 1)
 set(DISABLE_PERFCOUNTERS 1)
 
@@ -167,6 +171,9 @@ endif()
 message ("CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}")
 message ("CMAKE_SYSTEM_VARIANT=${CMAKE_SYSTEM_VARIANT}")
 
+# TODO: check if we can enable this on more platforms
+# set(MONO_KEYWORD_THREAD "__thread")
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   add_definitions(-D_THREAD_SAFE)
   set(HOST_DARWIN 1)
@@ -195,8 +202,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
   set(DISABLE_EXECUTABLES 1)
-  set(DISABLE_CRASH_REPORTING 1)
-  set(ENABLE_MONOTOUCH 1)
+  set(TARGET_APPLE_MOBILE 1)
   add_definitions("-DSMALL_CONFIG")
   add_definitions("-D_XOPEN_SOURCE")
   add_definitions("-DHAVE_LARGE_FILE_SUPPORT=1")
@@ -217,8 +223,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
   # The normal check fails because it uses --isystem <ndk root>/sysroot/usr/include
   set(HAVE_USR_INCLUDE_MALLOC_H 1)
   set(HOST_ANDROID 1)
-  set(ANDROID_UNIFIED_HEADERS 1)
-  set(ENABLE_MONODROID 1)
   set(DISABLE_EXECUTABLES 1)
   # Force some defines
   set(HAVE_SCHED_GETAFFINITY 0)
@@ -234,10 +238,27 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   # sys/random.h exists, but its not found
   set(HAVE_SYS_RANDOM_H 1)
   set(INTERNAL_ZLIB 1)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "WASI")
+  set(HOST_WASI 1)
+  add_definitions(-D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN)
+  add_definitions(-DNO_GLOBALIZATION_SHIM)
+  add_definitions(-D_THREAD_SAFE)
+  set(DISABLE_SHARED_LIBS 1)
+  set(INTERNAL_ZLIB 1)
+  set(DISABLE_EXECUTABLES 1)
+  set(DISABLE_COMPONENTS 1)
+
+  set(WASI_DRIVER_SOURCES
+    wasi/mono-wasi-driver/driver.c
+    wasi/mono-wasi-driver/stubs.c
+    wasi/mono-wasi-driver/synthetic-pthread.c
+  )
+  add_library(mono-wasi-driver STATIC ${WASI_DRIVER_SOURCES})
+  target_compile_options(mono-wasi-driver PRIVATE -Wno-missing-prototypes -Wno-strict-prototypes)
+  install(TARGETS mono-wasi-driver LIBRARY)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(HOST_WIN32 1)
   set(EXE_SUFFIX ".exe")
-  set(DISABLE_CRASH_REPORTING 1)
   set(HOST_NO_SYMLINKS 1)
   set(MONO_KEYWORD_THREAD "__declspec (thread)")
   set(MONO_ZERO_LEN_ARRAY 1)
@@ -256,12 +277,14 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     add_link_options(/DEBUG)   # enable debugging information
     add_link_options(/OPT:REF) # optimize: remove unreferenced functions & data
     add_link_options(/OPT:ICF) # optimize: enable COMDAT folding
-    # the combination of /Zi compiler flag and /DEBUG /OPT:REF /OPT:ICF 
+    # the combination of /Zi compiler flag and /DEBUG /OPT:REF /OPT:ICF
     # linker flags is needed to create .pdb output on release builds
   endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS")
   set(HOST_SOLARIS 1)
   add_definitions(-DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP -DHOST_SOLARIS -D__EXTENSIONS__ -D_XPG4_2)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  set(HOST_FREEBSD 1)
 else()
   message(FATAL_ERROR "Host '${CMAKE_SYSTEM_NAME}' not supported.")
 endif()
@@ -288,7 +311,7 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "iOS" OR TARGET_SYSTEM_NAME STREQUAL "tvOS")
   if(TARGET_SYSTEM_NAME STREQUAL "tvOS")
     set(TARGET_TVOS 1)
   endif()
-  set(ENABLE_MONOTOUCH 1)
+  set(TARGET_APPLE_MOBILE 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "Linux")
   set(TARGET_LINUX 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "Android")
@@ -298,10 +321,14 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "Emscripten")
   if (CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(-Os)
   endif()
+elseif(TARGET_SYSTEM_NAME STREQUAL "WASI")
+  set(TARGET_WASI 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "Windows")
   set(TARGET_WIN32 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "SunOS")
   set(TARGET_SOLARIS 1)
+elseif(TARGET_SYSTEM_NAME STREQUAL "FreeBSD")
+  set(TARGET_FREEBSD 1)
 else()
   message(FATAL_ERROR "Target '${TARGET_SYSTEM_NAME}' not supported.")
 endif()
@@ -330,7 +357,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "i686" OR CMAKE_SYSTEM_PROCESSOR STREQUAL
   set(CMAKE_SYSTEM_PROCESSOR "x86")
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64")
   set(CMAKE_SYSTEM_PROCESSOR "arm64")
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "x64")
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "amd64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "x64")
   set(CMAKE_SYSTEM_PROCESSOR "x86_64")
 endif()
 
@@ -350,8 +377,8 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "s390x")
   set(HOST_S390X 1)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "ppc64le")
   set(HOST_POWERPC 1)
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "wasm")
-  set(HOST_WASM 1)  
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "wasm" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "wasm32")
+  set(HOST_WASM 1)
 else()
   message(FATAL_ERROR "CMAKE_SYSTEM_PROCESSOR='${CMAKE_SYSTEM_PROCESSOR}' not supported.")
 endif()
@@ -393,15 +420,27 @@ elseif(TARGET_ARCH STREQUAL "arm64")
   set(MONO_ARCHITECTURE "\"arm64\"")
   set(TARGET_SIZEOF_VOID_P 8)
   set(SIZEOF_REGISTER 8)
+  if(TARGET_SYSTEM_NAME STREQUAL "watchOS")
+    set(TARGET_SIZEOF_VOID_P 4)
+    set(MONO_ARCH_ILP32 1)
+  endif()
 elseif(TARGET_ARCH MATCHES "arm")
   set(TARGET_ARM 1)
   set(MONO_ARCHITECTURE "\"arm\"")
-  # FIXME:
-  add_definitions("-DARM_FPU_VFP=1")
+  if(MONO_ARM_FPU STREQUAL "none")
+    add_definitions("-DARM_FPU_NONE=1")
+  elseif(MONO_ARM_FPU STREQUAL "vfp-hard")
+    add_definitions("-DARM_FPU_VFP_HARD=1")
+  else()
+    add_definitions("-DARM_FPU_VFP=1")
+  endif()
   set(TARGET_SIZEOF_VOID_P 4)
   set(SIZEOF_REGISTER 4)
   # fixme: use separate defines for host/target
   set(NO_UNALIGNED_ACCESS 1)
+  set(HAVE_ARMV5 1)
+  set(HAVE_ARMV6 1)
+  #set(HAVE_ARMV7 1) # TODO: figure out if we should set this
 elseif(TARGET_ARCH STREQUAL "s390x")
   set(TARGET_S390X 1)
   set(MONO_ARCHITECTURE "\"s390x\"")
@@ -415,7 +454,7 @@ elseif(TARGET_ARCH STREQUAL "ppc64le")
   set(SIZEOF_REGISTER 8)
   add_definitions("-D__mono_ppc__")
   add_definitions("-D__mono_ppc64__")
-elseif(TARGET_ARCH STREQUAL "wasm")
+elseif(TARGET_ARCH STREQUAL "wasm" OR TARGET_ARCH STREQUAL "wasm32")
   set(TARGET_WASM 1)
   set(MONO_ARCHITECTURE "\"wasm\"")
   set(TARGET_SIZEOF_VOID_P 4)
@@ -425,12 +464,21 @@ else()
 endif()
 
 # arm64 MacCatalyst runtime host or AOT target is more like Apple mobile targets than x64
-if ((HOST_MACCAT AND HOST_ARCH STREQUAL "arm64") OR (TARGET_MACCAT AND TARGET_ARCH STREQUAL "arm64"))
-  set(ENABLE_MONOTOUCH 1)
+if ((HOST_MACCAT AND HOST_ARM64) OR (TARGET_MACCAT AND TARGET_ARM64))
+  set(TARGET_APPLE_MOBILE 1)
 endif()
 
-if(ENABLE_MONOTOUCH)
-  add_definitions(-DMONOTOUCH=1)
+# Decide if we need zlib, and if so whether we want the system zlib or the in-tree copy.
+if(NOT DISABLE_EMBEDDED_PDB OR NOT DISABLE_LOG_PROFILER_GZ)
+  if(INTERNAL_ZLIB)
+    # defines ZLIB_SOURCES
+    include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
+  else()
+    # if we're not on a platform where we use the in-tree zlib, require system zlib
+    include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
+    set(Z_LIBS)
+    append_extra_compression_libs(Z_LIBS)
+  endif()
 endif()
 
 ######################################
@@ -443,26 +491,46 @@ include(configure)
 ######################################
 
 if(GCC)
-  # We require C99 with some GNU extensions, e.g. `linux` macro
-  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+  if(HOST_WASI)
+    # WASI SDK only includes some required definitions if the C version is at least this new
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
+  else()
+    # We require C99 with some GNU extensions, e.g. `linux` macro
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+  endif()
+
+  # Turn off floating point expression contraction because it is considered a value changing
+  # optimization in the IEEE 754 specification and is therefore considered unsafe.
+  add_compile_options(-ffp-contract=off)
+
   # The runtime code does not respect ANSI C strict aliasing rules
   append("-fno-strict-aliasing" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
   # We rely on signed overflow to behave
   append("-fwrapv" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
 
-  set(WARNINGS "-Wall -Wunused -Wmissing-declarations -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch -Wno-switch-enum -Wno-unused-value -Wno-attributes -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wno-format-zero-length -Wno-unused-function")
+  set(WARNINGS "-Wall -Wunused -Wmissing-declarations -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch -Wno-switch-enum -Wno-unused-value -Wno-attributes -Wno-format-zero-length -Wno-unused-function")
+  set(WARNINGS_C "-Wmissing-prototypes -Wstrict-prototypes -Wnested-externs")
 
   if (CMAKE_C_COMPILER_ID MATCHES "Clang")
-    set(WARNINGS "${WARNINGS} -Qunused-arguments -Wno-tautological-compare -Wno-parentheses-equality -Wno-self-assign -Wno-return-stack-address -Wno-constant-logical-operand -Wno-zero-length-array")
+    set(WARNINGS "${WARNINGS} -Qunused-arguments -Wno-tautological-compare -Wno-parentheses-equality -Wno-self-assign -Wno-return-stack-address -Wno-constant-logical-operand -Wno-zero-length-array -Wno-asm-operand-widths")
   endif()
+
+  set(WERROR "-Werror=return-type")
+  set(WERROR_C "-Werror=implicit-function-declaration")
 
   check_c_compiler_flag("-Werror=incompatible-pointer-types" WERROR_INCOMPATIBLE_POINTER_TYPES)
   if(WERROR_INCOMPATIBLE_POINTER_TYPES)
-    set(WERROR "-Werror=incompatible-pointer-types")
+    set(WERROR_C "${WERROR_C} -Werror=incompatible-pointer-types")
   endif()
-  set(WERROR "-Werror=return-type -Werror-implicit-function-declaration")
 
-  append("${WARNINGS} ${WERROR}" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+  if(HOST_WASI)
+    # When building under WASI SDK, it's stricter about discarding 'const' qualifiers, causing some existing
+    # code (e.g., mono-rand.c:315) to be rejected
+    set(WERROR_C "${WERROR_C} -Wno-incompatible-pointer-types-discards-qualifiers")
+  endif()
+
+  append("${WARNINGS} ${WARNINGS_C} ${WERROR} ${WERROR_C}" CMAKE_C_FLAGS)
+  append("${WARNINGS} ${WERROR}" CMAKE_CXX_FLAGS)
 
   set(MONO_ZERO_LEN_ARRAY 0)
 
@@ -476,29 +544,29 @@ endif()
 ######################################
 
 # llvm-config --libs analysis core bitwriter mcjit orcjit
-set(MONO_llvm_core_libs_1100 "-lLLVMOrcJIT" "-lLLVMPasses" "-lLLVMCoroutines" "-lLLVMipo" "-lLLVMInstrumentation" "-lLLVMVectorize" "-lLLVMScalarOpts" "-lLLVMLinker" "-lLLVMIRReader" "-lLLVMAsmParser" "-lLLVMInstCombine" "-lLLVMFrontendOpenMP" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMOrcError" "-lLLVMJITLink" "-lLLVMMCJIT" "-lLLVMExecutionEngine" "-lLLVMTarget" "-lLLVMRuntimeDyld" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMTextAPI" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBitstreamReader" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
+set(MONO_llvm_core_libs_1100 "LLVMOrcJIT" "LLVMPasses" "LLVMCoroutines" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMScalarOpts" "LLVMLinker" "LLVMIRReader" "LLVMAsmParser" "LLVMInstCombine" "LLVMFrontendOpenMP" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMOrcError" "LLVMJITLink" "LLVMMCJIT" "LLVMExecutionEngine" "LLVMTarget" "LLVMRuntimeDyld" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
 
 # llvm-config --libs x86codegen
-set(MONO_llvm_extra_libs_x86codegen_1100 "-lLLVMX86CodeGen" "-lLLVMCFGuard" "-lLLVMGlobalISel" "-lLLVMX86Desc" "-lLLVMX86Info" "-lLLVMMCDisassembler" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMTextAPI" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBitstreamReader" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
+set(MONO_llvm_extra_libs_x86codegen_1100 "LLVMX86CodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMX86Desc" "LLVMX86Info" "LLVMMCDisassembler" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
 
 # llvm-config --libs armcodegen
-set(MONO_llvm_extra_libs_armcodegen_1100 "-lLLVMARMCodeGen" "-lLLVMCFGuard" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMTextAPI" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBitstreamReader" "-lLLVMARMDesc" "-lLLVMMCDisassembler" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMARMUtils" "-lLLVMARMInfo" "-lLLVMSupport" "-lLLVMDemangle")
+set(MONO_llvm_extra_libs_armcodegen_1100 "LLVMARMCodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMARMDesc" "LLVMMCDisassembler" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMARMUtils" "LLVMARMInfo" "LLVMSupport" "LLVMDemangle")
 
 # llvm-config --libs aarch64codegen
-set(MONO_llvm_extra_libs_aarch64codegen_1100 "-lLLVMAArch64CodeGen" "-lLLVMCFGuard" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMTextAPI" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBitstreamReader" "-lLLVMAArch64Desc" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMAArch64Utils" "-lLLVMAArch64Info" "-lLLVMSupport" "-lLLVMDemangle")
+set(MONO_llvm_extra_libs_aarch64codegen_1100 "LLVMAArch64CodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMAArch64Desc" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMAArch64Utils" "LLVMAArch64Info" "LLVMSupport" "LLVMDemangle")
 
 
 # llvm-config --libs analysis core bitwriter mcjit orcjit
-set(MONO_llvm_core_libs_900 "-lLLVMOrcJIT" "-lLLVMJITLink" "-lLLVMMCJIT" "-lLLVMExecutionEngine" "-lLLVMRuntimeDyld" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
+set(MONO_llvm_core_libs_900 "LLVMOrcJIT" "LLVMJITLink" "LLVMMCJIT" "LLVMExecutionEngine" "LLVMRuntimeDyld" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBitReader" "LLVMBitstreamReader" "LLVMCore" "LLVMRemarks" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
 
 # llvm-config --libs x86codegen
-set(MONO_llvm_extra_libs_x86codegen_900 "-lLLVMX86CodeGen" "-lLLVMGlobalISel" "-lLLVMX86Desc" "-lLLVMX86Utils" "-lLLVMX86Info" "-lLLVMMCDisassembler" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
+set(MONO_llvm_extra_libs_x86codegen_900 "LLVMX86CodeGen" "LLVMGlobalISel" "LLVMX86Desc" "LLVMX86Utils" "LLVMX86Info" "LLVMMCDisassembler" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBitReader" "LLVMBitstreamReader" "LLVMCore" "LLVMRemarks" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
 
 # llvm-config --libs armcodegen
-set(MONO_llvm_extra_libs_armcodegen_900 "-lLLVMARMCodeGen" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMARMDesc" "-lLLVMMCDisassembler" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMARMUtils" "-lLLVMARMInfo" "-lLLVMSupport" "-lLLVMDemangle")
+set(MONO_llvm_extra_libs_armcodegen_900 "LLVMARMCodeGen" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMMCParser" "LLVMBitReader" "LLVMBitstreamReader" "LLVMCore" "LLVMRemarks" "LLVMARMDesc" "LLVMMCDisassembler" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMARMUtils" "LLVMARMInfo" "LLVMSupport" "LLVMDemangle")
 
 # llvm-config --libs aarch64codegen
-set(MONO_llvm_extra_libs_aarch64codegen_900 "-lLLVMAArch64CodeGen" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMAArch64Desc" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMAArch64Utils" "-lLLVMAArch64Info" "-lLLVMSupport" "-lLLVMDemangle")
+set(MONO_llvm_extra_libs_aarch64codegen_900 "LLVMAArch64CodeGen" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMMCParser" "LLVMBitReader" "LLVMBitstreamReader" "LLVMCore" "LLVMRemarks" "LLVMAArch64Desc" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMAArch64Utils" "LLVMAArch64Info" "LLVMSupport" "LLVMDemangle")
 
 ######################################
 # LLVM CHECKS
@@ -528,8 +596,9 @@ if(LLVM_PREFIX)
     string(REGEX REPLACE ".*MONO_API_VERSION ([0-9]+)" "\\1" llvm_api_version ${llvm_api_version_line})
 
     # llvm-config --cflags
-    set(llvm_cflags "-I${LLVM_PREFIX}/include")
-    set(llvm_cxxflags "-I${LLVM_PREFIX}/include")
+    set(llvm_cflags "")
+    set(llvm_cxxflags "")
+    set(llvm_includedir "${LLVM_PREFIX}/include")
 
     # llvm-config --system-libs
     set(llvm_system_libs "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
@@ -544,6 +613,8 @@ if(LLVM_PREFIX)
     endif()
 
     set(llvm_libs ${llvm_core_libs} ${llvm_extra})
+    list(TRANSFORM llvm_libs PREPEND "${LLVM_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}")
+    list(TRANSFORM llvm_libs APPEND "${CMAKE_STATIC_LIBRARY_SUFFIX}")
   else()
     set(LLVM_CONFIG ${LLVM_PREFIX}/bin/llvm-config${EXE_SUFFIX})
     if (NOT EXISTS ${LLVM_CONFIG})
@@ -556,8 +627,9 @@ if(LLVM_PREFIX)
     endif()
     execute_process(COMMAND ${LLVM_CONFIG} --cflags OUTPUT_VARIABLE llvm_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
     execute_process(COMMAND ${LLVM_CONFIG} --cxxflags OUTPUT_VARIABLE llvm_cxxflags OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${LLVM_CONFIG} --includedir OUTPUT_VARIABLE llvm_includedir OUTPUT_STRIP_TRAILING_WHITESPACE)
     execute_process(COMMAND ${LLVM_CONFIG} --system-libs OUTPUT_VARIABLE llvm_system_libs_space_separated OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND ${LLVM_CONFIG} --libs analysis core bitwriter mcjit orcjit ${llvm_codegen_libs} OUTPUT_VARIABLE llvm_libs_space_separated OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${LLVM_CONFIG} --libfiles analysis core bitwriter mcjit orcjit ${llvm_codegen_libs} OUTPUT_VARIABLE llvm_libs_space_separated OUTPUT_STRIP_TRAILING_WHITESPACE)
     separate_arguments(llvm_system_libs NATIVE_COMMAND ${llvm_system_libs_space_separated})
     separate_arguments(llvm_libs NATIVE_COMMAND ${llvm_libs_space_separated})
   endif()
@@ -570,6 +642,7 @@ if(LLVM_PREFIX)
   set(ENABLE_LLVM_RUNTIME 1)
   set(LLVM_LIBS ${llvm_libs} ${llvm_system_libs})
   set(LLVM_LIBDIR "${LLVM_PREFIX}/lib")
+  set(LLVM_INCLUDEDIR "${llvm_includedir}")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${llvm_cflags}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fexceptions -fno-rtti")
   add_definitions(-DLLVM_API_VERSION=${llvm_api_version})
@@ -578,7 +651,7 @@ endif()
 ######################################
 # ICU CHECKS
 ######################################
-set(ICU_SHIM_PATH "../../../libraries/Native/Unix/System.Globalization.Native")
+set(ICU_SHIM_PATH "${CLR_SRC_NATIVE_DIR}/libs/System.Globalization.Native")
 if(MONO_CROSS_COMPILE)
 elseif(HOST_OSX AND NOT HOST_MACCAT)
   include(FindPkgConfig)
@@ -605,6 +678,9 @@ elseif(HOST_ANDROID)
   set(HAVE_SYS_ICU 1)
 elseif(HOST_LINUX)
   include(FindPkgConfig)
+  if(CROSS_ROOTFS)
+    set(ENV{PKG_CONFIG_ICU_UC_INCLUDEDIR} "${CROSS_ROOTFS}/usr/include")
+  endif(CROSS_ROOTFS)
   pkg_check_modules(ICU icu-uc)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
   set(HAVE_SYS_ICU 1)
@@ -614,6 +690,12 @@ elseif(HOST_WIN32)
 elseif(HOST_SOLARIS)
   set(ICU_FLAGS "-DPALEXPORT=\"\" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
   set(HAVE_SYS_ICU 1)
+elseif(TARGET_FREEBSD)
+  set(ICU_FLAGS "-DTARGET_UNIX -Wno-deprecated-declarations")
+  set(HAVE_SYS_ICU 1)
+  set(ICU_LIBS icuuc icui18n)
+  set(ICU_INCLUDEDIR "${CROSS_ROOTFS}/usr/local/include")
+  set(ICU_LIBDIR "${CROSS_ROOTFS}/usr/local/lib")
 else()
   message(FATAL_ERROR "Unknown host")
 endif()
@@ -621,6 +703,10 @@ endif()
 ######################################
 # GC CHECKS
 ######################################
+
+if(NOT MONO_GC STREQUAL "sgen" AND NOT MONO_GC STREQUAL "boehm")
+  message(FATAL_ERROR "MONO_GC (set to '${MONO_GC}') must be sgen or boehm")
+endif()
 
 if (GC_SUSPEND STREQUAL "coop")
   set(ENABLE_COOP_SUSPEND 1)
@@ -639,7 +725,7 @@ elseif(GC_SUSPEND STREQUAL "default")
     set(ENABLE_HYBRID_SUSPEND 1)
   endif()
 else()
-  message(FATAL_ERROR "GC_SUSPEND (set to '${GC_SUSPEND}') must be one of coop, hybrid or preemptive")
+  message(FATAL_ERROR "GC_SUSPEND (set to '${GC_SUSPEND}') must be one of coop, hybrid, preemptive or default")
 endif()
 
 ######################################
@@ -674,7 +760,7 @@ else()
   set(EGLIB_SEARCHSEP ":")
   set(EGLIB_OS "UNIX")
   set(EGLIB_PIDTYPE "int")
-  set(EGLIB_GSIZE_FORMAT "\"lu\"")
+  set(EGLIB_GSIZE_FORMAT "\"zu\"")
 endif()
 
 set(EGLIB_GSIZE "size_t")
@@ -732,25 +818,28 @@ endif()
 if(HOST_LINUX AND HAVE_SYS_MMAN_H AND HAVE_ELF_H AND HAVE_SYS_SYSCALL_H)
   set(ENABLE_JIT_DUMP 1)
 endif()
+
+if(ENABLE_SMALL_CONFIG)
+  set(MONO_SMALL_CONFIG 1)
+endif()
+
 ### End of other checks
 
 ######################################
 # EXTRACT VERSION
 ######################################
+include_directories(${CLR_ARTIFACTS_OBJ_DIR})
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-  if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/_version.h")
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/_version.h" "#undef VER_PRODUCTVERSION_STR\n#define VER_PRODUCTVERSION_STR \"42.42.42.42424\"\n")
+  if(NOT EXISTS "${VERSION_HEADER_PATH}")
+    file(WRITE "${VERSION_HEADER_PATH}" "#undef VER_PRODUCTVERSION_STR\n#define VER_PRODUCTVERSION_STR \"42.42.42.42424\"\n")
   endif()
 else()
-  if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/version.c")
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/version.c" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
+  if(NOT EXISTS "${VERSION_FILE_PATH}")
+    file(WRITE "${VERSION_FILE_PATH}" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
   endif()
 endif()
-if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" AND NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/NativeVersion.rc")
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/NativeVersion.rc" "\n")
-endif()
-if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h")
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h"
+if (NOT EXISTS "${RUNTIME_VERSION_HEADER_PATH}")
+  file(WRITE "${RUNTIME_VERSION_HEADER_PATH}"
 "#define RuntimeFileMajorVersion 42\n"
 "#define RuntimeFileMinorVersion 42\n"
 "#define RuntimeFileBuildVersion 42\n"
@@ -762,16 +851,16 @@ if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h")
 endif()
 
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-  file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/_version.h" product_version_string_line REGEX "VER_PRODUCTVERSION_STR ")
+  file(STRINGS "${VERSION_HEADER_PATH}" product_version_string_line REGEX "VER_PRODUCTVERSION_STR ")
   string(REGEX REPLACE ".*VER_PRODUCTVERSION_STR *(.*)" "\\1" product_version_string ${product_version_string_line})
 else()
-  file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/version.c" product_version_string_line REGEX "sccsid")
+  file(STRINGS "${VERSION_FILE_PATH}" product_version_string_line REGEX "sccsid")
   string(REGEX REPLACE ".*Version *(.*)\";" "\"\\1\"" product_version_string ${product_version_string_line})
 endif()
 
-file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h" runtime_version_major_line REGEX "RuntimeProductMajorVersion ")
-file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h" runtime_version_minor_line REGEX "RuntimeProductMinorVersion ")
-file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h" runtime_version_patch_line REGEX "RuntimeProductPatchVersion ")
+file(STRINGS "${RUNTIME_VERSION_HEADER_PATH}" runtime_version_major_line REGEX "RuntimeProductMajorVersion ")
+file(STRINGS "${RUNTIME_VERSION_HEADER_PATH}" runtime_version_minor_line REGEX "RuntimeProductMinorVersion ")
+file(STRINGS "${RUNTIME_VERSION_HEADER_PATH}" runtime_version_patch_line REGEX "RuntimeProductPatchVersion ")
 string(REGEX REPLACE ".*RuntimeProductMajorVersion *([0-9]+)" "\\1" runtime_version_major ${runtime_version_major_line})
 string(REGEX REPLACE ".*RuntimeProductMinorVersion *([0-9]+)" "\\1" runtime_version_minor ${runtime_version_minor_line})
 string(REGEX REPLACE ".*RuntimeProductPatchVersion *([0-9]+)" "\\1" runtime_version_patch ${runtime_version_patch_line})
@@ -794,6 +883,13 @@ if (TARGET_BROWSER)
   unset(HAVE_SYS_ERRNO_H)
 endif()
 ### End of OS specific checks
+
+include_directories("${CLR_SRC_NATIVE_DIR}")
+
+if(NOT DISABLE_LIBS)
+  set(INSTALL_MONO_API 1)
+endif()
+add_subdirectory("${CLR_SRC_NATIVE_DIR}/public" public_apis)
 
 add_subdirectory(mono)
 if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT HOST_MACCAT)

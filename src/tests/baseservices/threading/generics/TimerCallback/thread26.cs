@@ -7,14 +7,14 @@ struct Gen<T>
 {
 	public static void Target(object p)
 	{			
-		if (Test.Xcounter>=Test.nThreads)
+		if (Test_thread26.Xcounter>=Test_thread26.nThreads)
 		{
 			ManualResetEvent evt = (ManualResetEvent) p;	
 			evt.Set();
 		}
 		else
 		{
-			Interlocked.Increment(ref Test.Xcounter);	
+			Interlocked.Increment(ref Test_thread26.Xcounter);	
 		}
 	}
 	
@@ -23,16 +23,16 @@ struct Gen<T>
 		ManualResetEvent evt = new ManualResetEvent(false);		
 
 		TimerCallback tcb = new TimerCallback(Gen<T>.Target);
-		Timer timer = new Timer(tcb,evt,Test.delay,Test.period);
+		Timer timer = new Timer(tcb,evt,Test_thread26.delay,Test_thread26.period);
 	
 		evt.WaitOne();
 		timer.Dispose();
-		Test.Eval(Test.Xcounter>=Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread26.Eval(Test_thread26.Xcounter>=Test_thread26.nThreads);
+		Test_thread26.Xcounter = 0;
 	}
 }
 
-public class Test
+public class Test_thread26
 {
 	public static int delay = 0;
 	public static int period = 2;

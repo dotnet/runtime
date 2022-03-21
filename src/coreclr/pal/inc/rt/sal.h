@@ -2648,12 +2648,6 @@ buffer, use the table in the buffer annotations section.
 -------------------------------------------------------------------------------
 */
 
-// These macros conflict with c++ headers.
-#ifndef PAL_STDCPP_COMPAT
-#define __in                                                     _SAL1_Source_(__in, (), _In_)
-#define __out                                                    _SAL1_Source_(__out, (), _Out_)
-#endif // !PAL_STDCPP_COMPAT
-
 #define __ecount(size)                                           _SAL1_Source_(__ecount, (size), __notnull __elem_writableTo(size))
 #define __bcount(size)                                           _SAL1_Source_(__bcount, (size), __notnull __byte_writableTo(size))
 #define __in_ecount(size)                                        _SAL1_Source_(__in_ecount, (size), _In_reads_(size))
@@ -2867,6 +2861,10 @@ of each annotation, see the advanced annotations section.
 #define __data_entrypoint(category)          __inner_data_entrypoint(category)
 #define __useHeader                          _Use_decl_anno_impl_
 #define __on_failure(annotes)                _On_failure_impl_(annotes _SAL_nop_impl_)
+
+#ifndef __has_cpp_attribute
+#define __has_cpp_attribute(x) (0)
+#endif
 
 #ifndef __fallthrough // [
 #if __has_cpp_attribute(fallthrough)

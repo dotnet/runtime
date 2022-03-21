@@ -11,11 +11,7 @@ using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-#if MS_IO_REDIST
-namespace Microsoft.IO.Enumeration
-#else
 namespace System.IO.Enumeration
-#endif
 {
     /// <summary>Enumerates the file system elements of the provided type that are being searched and filtered by a <see cref="Enumeration.FileSystemEnumerable{T}" />.</summary>
     public unsafe abstract partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>

@@ -56,17 +56,6 @@ Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
 
 Package content can be defined using any of the publicly defined Pack inputs: https://docs.microsoft.com/en-us/nuget/reference/msbuild-targets
 
-### TargetFrameworks
-
-By default all TargetFrameworks listed in your project will be included in the package. You may exclude specific TargetFrameworks by setting `ExcludeFromPackage` on that framework.
-```xml
-  <PropertyGroup>
-    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'net5.0'">true</ExcludeFromPackage>
-  </PropertyGroup>
-```
-
-When excluding TargetFrameworks from a package special care should be taken to ensure that the builds included are equivalent to those excluded. Avoid ifdef'ing the implementation only in an excluded TargetFramework. Doing so will result in testing something different than what we ship, or shipping a nuget package that degrades the shared framework.
-
 ### Build props / targets and other content
 
 Build props and targets may be needed in NuGet packages. To define these, author a build folder in your src project and place the necessary props/targets in this subfolder. You can then add items to include these in the package by defining `Content` items and setting `PackagePath` as follows:
@@ -90,9 +79,16 @@ To include an analyzer in a package, simply add an `AnalyzerReference` item to t
 
 In the analyzer project make sure to do the following. Ensure it only targets `netstandard2.0` since this is a requirement of the compiler. Enable localization by setting `UsingToolXliff`. Set the `AnalyzerLanguage` property to either `cs` or `vb` if the analyzer is specific to that language. By default the analyzer will be packaged as language-agnostic. Avoid any dependencies in Analyzer projects that aren't already provided by the compiler.
 ```xml
-  <PropertyGroup> 
-    <TargetFrameworks>netstandard2.0</TargetFrameworks> 
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <UsingToolXliff>true</UsingToolXliff>
-    <AnalyzerLanguage>cs</AnalyzerLanguage> 
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
+  </PropertyGroup>
+```
+
+In order to mitigate design-time/build-time performance issues with source generators, we generate build logic to allow the end user to disable the source generator from the package. By default, the MSBuild property an end user can set is named `Disable{PackageId}SourceGenerator`. If a package needs a custom property name, this can be overriden by setting the following property in the project that produces the package
+```xml
+  <PropertyGroup>
+    <DisableSourceGeneratorPropertyName>CustomPropertyName</DisableSourceGeneratorPropertyName>
   </PropertyGroup>
 ```

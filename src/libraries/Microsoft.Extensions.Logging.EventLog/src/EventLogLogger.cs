@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Microsoft.Extensions.Logging.EventLog
@@ -28,10 +27,10 @@ namespace Microsoft.Extensions.Logging.EventLog
         /// <param name="name">The name of the logger.</param>
         /// <param name="settings">The <see cref="EventLogSettings"/>.</param>
         /// <param name="externalScopeProvider">The <see cref="IExternalScopeProvider"/>.</param>
-        public EventLogLogger(string name, EventLogSettings settings, IExternalScopeProvider externalScopeProvider)
+        public EventLogLogger(string name!!, EventLogSettings settings!!, IExternalScopeProvider externalScopeProvider)
         {
-            _name = name ?? throw new ArgumentNullException(nameof(name));
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _name = name;
+            _settings = settings;
 
             _externalScopeProvider = externalScopeProvider;
             EventLog = settings.EventLog;
@@ -137,7 +136,11 @@ namespace Microsoft.Extensions.Logging.EventLog
                 // Example: An error occu...
                 if (startIndex == 0)
                 {
+#if NET
+                    messageSegment = string.Concat(message.AsSpan(startIndex, _beginOrEndMessageSegmentSize), ContinuationString);
+#else
                     messageSegment = message.Substring(startIndex, _beginOrEndMessageSegmentSize) + ContinuationString;
+#endif
                     startIndex += _beginOrEndMessageSegmentSize;
                 }
                 else
@@ -146,7 +149,11 @@ namespace Microsoft.Extensions.Logging.EventLog
                     // Example: ...esponse stream
                     if ((message.Length - (startIndex + 1)) <= _beginOrEndMessageSegmentSize)
                     {
+#if NET
+                        messageSegment = string.Concat(ContinuationString, message.AsSpan(startIndex));
+#else
                         messageSegment = ContinuationString + message.Substring(startIndex);
+#endif
                         EventLog.WriteEntry(messageSegment, eventLogEntryType, eventId, category: 0);
                         break;
                     }
@@ -154,9 +161,16 @@ namespace Microsoft.Extensions.Logging.EventLog
                     {
                         // Example: ...rred while writ...
                         messageSegment =
+#if NET
+                            string.Concat(
+                                ContinuationString,
+                                message.AsSpan(startIndex, _intermediateMessageSegmentSize),
+                                ContinuationString);
+#else
                             ContinuationString
                             + message.Substring(startIndex, _intermediateMessageSegmentSize)
                             + ContinuationString;
+#endif
                         startIndex += _intermediateMessageSegmentSize;
                     }
                 }
@@ -167,10 +181,6 @@ namespace Microsoft.Extensions.Logging.EventLog
 
         private EventLogEntryType GetEventLogEntryType(LogLevel level)
         {
-#if NETSTANDARD
-            Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
-#endif
-
             switch (level)
             {
                 case LogLevel.Information:

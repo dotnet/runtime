@@ -1004,51 +1004,51 @@ namespace System.Xml.Xsl.Qil
             Check(node is QilLiteral, node, "Node must be instance of QilLiteral");
 
             Type clrType = ((QilLiteral)node).Value!.GetType();
-            Check(clrTypeValue.IsAssignableFrom(clrType), node, "Literal value must be of type " + clrTypeValue.Name);
+            Check(clrTypeValue.IsAssignableFrom(clrType), node, $"Literal value must be of type {clrTypeValue.Name}");
         }
 
         [Conditional("DEBUG")]
         private void CheckClass(QilNode node, Type clrTypeClass)
         {
-            Check(clrTypeClass.IsAssignableFrom(node.GetType()), node, "Node must be instance of " + clrTypeClass.Name);
+            Check(clrTypeClass.IsAssignableFrom(node.GetType()), node, $"Node must be instance of {clrTypeClass.Name}");
         }
 
         [Conditional("DEBUG")]
         private void CheckClassAndNodeType(QilNode node, Type clrTypeClass, QilNodeType nodeType)
         {
             CheckClass(node, clrTypeClass);
-            Check(node.NodeType == nodeType, node, "Node must have QilNodeType." + nodeType);
+            Check(node.NodeType == nodeType, node, $"Node must have QilNodeType.{nodeType}");
         }
 
         [Conditional("DEBUG")]
         private void CheckXmlType(QilNode node, XmlQueryType xmlType)
         {
-            Check(node.XmlType!.IsSubtypeOf(xmlType), node, "Node's type " + node.XmlType + " is not a subtype of " + xmlType);
+            Check(node.XmlType!.IsSubtypeOf(xmlType), node, $"Node's type {node.XmlType} is not a subtype of {xmlType}");
         }
 
         [Conditional("DEBUG")]
         private void CheckNumericX(QilNode node)
         {
-            Check(node.XmlType!.IsNumeric && node.XmlType.IsSingleton && node.XmlType.IsStrict, node, "Node's type " + node.XmlType + " must be a strict singleton numeric type");
+            Check(node.XmlType!.IsNumeric && node.XmlType.IsSingleton && node.XmlType.IsStrict, node, $"Node's type {node.XmlType} must be a strict singleton numeric type");
         }
 
         [Conditional("DEBUG")]
         private void CheckNumericXS(QilNode node)
         {
-            Check(node.XmlType!.IsNumeric && node.XmlType.IsStrict, node, "Node's type " + node.XmlType + " must be a strict numeric type");
+            Check(node.XmlType!.IsNumeric && node.XmlType.IsStrict, node, $"Node's type {node.XmlType} must be a strict numeric type");
         }
 
         [Conditional("DEBUG")]
         private void CheckAtomicX(QilNode node)
         {
-            Check(node.XmlType!.IsAtomicValue && node.XmlType.IsStrict, node, "Node's type " + node.XmlType + " must be a strict atomic value type");
+            Check(node.XmlType!.IsAtomicValue && node.XmlType.IsStrict, node, $"Node's type {node.XmlType} must be a strict atomic value type");
         }
 
         [Conditional("DEBUG")]
         private void CheckNotDisjoint(QilBinary node)
         {
             Check(node.Left.XmlType!.IsSubtypeOf(node.Right.XmlType!) || node.Right.XmlType!.IsSubtypeOf(node.Left.XmlType), node,
-                  "Node must not have arguments with disjoint types " + node.Left.XmlType + " and " + node.Right.XmlType);
+                  $"Node must not have arguments with disjoint types {node.Left.XmlType} and {node.Right.XmlType}");
         }
 
         private XmlQueryType DistinctType(XmlQueryType type)

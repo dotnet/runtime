@@ -20,7 +20,7 @@ class M
    public virtual U GenericMethod<U>(U x1) {  return x1; }
 }
 
-class Test
+class Test_bug
 {
   
     static int Main()
