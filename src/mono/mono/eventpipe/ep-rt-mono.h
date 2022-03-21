@@ -871,6 +871,7 @@ inline
 bool
 ep_rt_config_value_get_enable (void)
 {
+	/*
 	bool enable = false;
 	gchar *value = g_getenv ("DOTNET_EnableEventPipe");
 	if (!value)
@@ -884,8 +885,8 @@ ep_rt_config_value_get_enable (void)
 	}
 	g_free (value);
 	return enable;
-
-	//return true;
+	*/
+	return true;
 }
 
 static
@@ -1101,9 +1102,11 @@ inline
 bool
 ep_rt_wait_event_set (ep_rt_wait_event_handle_t *wait_event)
 {
+	MONO_ENTER_GC_UNSAFE;
 	//TODO, replace with low level PAL implementation.
 	EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 	mono_w32event_set (wait_event->event);
+	MONO_EXIT_GC_UNSAFE;
 	return true;
 }
 

@@ -24,10 +24,11 @@ namespace Sample
             Thread t = new Thread(new ThreadStart(ThreadFuncTest));
             t.Start();
 
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 5; i++)
             {
                 Console.WriteLine("Main Thread is doing stuff too... " + i.ToString());
-                Thread.Sleep(0);
+                Thread.Sleep(100);
+                GC.Collect();
             }
 
             return 42;
@@ -37,15 +38,12 @@ namespace Sample
         {
             Console.WriteLine("Hello from another thread");
 
-            GC.Collect();
-
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 5; i++)
             {
                 Console.WriteLine("Sleeping from another thread: " + i.ToString());
-                Thread.Sleep(0);
+                Thread.Sleep(100);
+                GC.Collect();
             }
-
-            GC.Collect();
         }
     }
 }
