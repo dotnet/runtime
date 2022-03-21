@@ -366,7 +366,13 @@ namespace System
             return false;
         }
 
+        // IL2085 is produced due to the "this" of the method not being annotated and used in effectively this.GetInterfaces()
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
+            Justification = "The GetInterfaces technically requires all interfaces to be preserved" +
+                "But this method only compares the result against the passed in ifaceType." +
+                "So if ifaceType exists, then trimming should have kept it implemented on any type.")]
+        // IL2075 is produced due to the BaseType not returning annotated value and used in effectively this.BaseType.GetInterfaces()
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "The GetInterfaces technically requires all interfaces to be preserved" +
                 "But this method only compares the result against the passed in ifaceType." +
                 "So if ifaceType exists, then trimming should have kept it implemented on any type.")]
