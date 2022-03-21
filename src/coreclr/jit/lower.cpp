@@ -2925,6 +2925,25 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
         if (op2Value != 0)
         {
+            // Optimizes (X & 1) == 1 to (X & 1)
+            // The compiler requires jumps to have relop operands, so we do not fold that case.
+            LIR::Use cmpUse;
+            if ((op2Value == 1) && cmp->OperIs(GT_EQ))
+            {
+                if (andOp2->IsIntegralConst(1) && (genActualType(op1) == cmp->TypeGet()) &&
+                    BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE))
+                {
+                    GenTree* next = cmp->gtNext;
+
+                    cmpUse.ReplaceWith(op1);
+
+                    BlockRange().Remove(cmp->gtGetOp2());
+                    BlockRange().Remove(cmp);
+
+                    return next;
+                }
+            }
+
             //
             // If we don't have a 0 compare we can get one by transforming ((x AND mask) EQ|NE mask)
             // into ((x AND mask) NE|EQ 0) when mask is a single bit.
