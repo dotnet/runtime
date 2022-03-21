@@ -10867,7 +10867,12 @@ GenTree* Compiler::fgMorphFieldToSimdGetElement(GenTree* tree)
                 unreached();
             }
         }
-#endif // TARGET_XARCH
+#elif defined(TARGET_ARM64)
+        if (!compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
+        {
+            return tree;
+        }
+#endif // !TARGET_XARCH && !TARGET_ARM64
 
         tree = gtNewSimdGetElementNode(simdBaseType, simdStructNode, op2, simdBaseJitType, simdSize,
                                        /* isSimdAsHWIntrinsic */ true);
