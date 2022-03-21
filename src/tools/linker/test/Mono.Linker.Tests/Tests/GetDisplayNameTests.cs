@@ -8,6 +8,7 @@ using NUnit.Framework;
 
 namespace Mono.Linker.Tests
 {
+	[NonParallelizable]
 	[TestFixture]
 	public class GetDisplayNameTests
 	{
