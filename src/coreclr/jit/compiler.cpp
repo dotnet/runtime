@@ -319,7 +319,6 @@ unsigned totalLoopCount;          // counts the total number of natural loops
 unsigned totalUnnatLoopCount;     // counts the total number of (not-necessarily natural) loops
 unsigned totalUnnatLoopOverflows; // # of methods that identified more unnatural loops than we can represent
 unsigned iterLoopCount;           // counts the # of loops with an iterator (for like)
-unsigned simpleTestLoopCount;     // counts the # of loops with an iterator and a simple loop condition (iter < const)
 unsigned constIterLoopCount;      // counts the # of loops with a constant iterator (for like)
 bool     hasMethodLoops;          // flag to keep track if we already counted a method as having loops
 unsigned loopsThisMethod;         // counts the number of loops in the current method
@@ -1556,7 +1555,6 @@ void Compiler::compShutdown()
     fprintf(fout, "Total number of 'unnatural' loops is %5u\n", totalUnnatLoopCount);
     fprintf(fout, "# of methods overflowing unnat loop limit is %5u\n", totalUnnatLoopOverflows);
     fprintf(fout, "Total number of loops with an         iterator is %5u\n", iterLoopCount);
-    fprintf(fout, "Total number of loops with a simple   iterator is %5u\n", simpleTestLoopCount);
     fprintf(fout, "Total number of loops with a constant iterator is %5u\n", constIterLoopCount);
 
     fprintf(fout, "--------------------------------------------------\n");
