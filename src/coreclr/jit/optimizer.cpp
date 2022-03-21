@@ -803,14 +803,14 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenT
     GenTree* lhs = init->AsOp()->gtOp1;
     GenTree* rhs = init->AsOp()->gtOp2;
     // LHS has to be local and should equal iterVar.
-    if (lhs->gtOper != GT_LCL_VAR || lhs->AsLclVarCommon()->GetLclNum() != iterVar)
+    if ((lhs->gtOper != GT_LCL_VAR) || (lhs->AsLclVarCommon()->GetLclNum() != iterVar))
     {
         return false;
     }
 
     // RHS can be constant or local var.
     // TODO-CQ: CLONE: Add arr length for descending loops.
-    if (rhs->gtOper != GT_CNS_INT || rhs->TypeGet() != TYP_INT)
+    if ((rhs->gtOper != GT_CNS_INT) || (rhs->TypeGet() != TYP_INT))
     {
         return false;
     }

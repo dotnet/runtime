@@ -165,8 +165,8 @@ exception occurs.
 
     8. Constant initializations and constant limits must be non-negative. This is because the
        iterator variable will be used as an array index, and array indices must be non-negative.
-       For `i = v` variable initialization, we add a dynamic check that `v >= 0`. Constant initializations
-       can be checked statically.
+       For non-constant (or not found) iterator variable `i` initialization, we add a dynamic check that
+       `i >= 0`. Constant initializations can be checked statically.
 
     9. The cloned loop (the slow path) is not added to the loop table, meaning certain
        downstream optimization passes do not see them. See
