@@ -3781,12 +3781,9 @@ void Compiler::fgDebugCheckLoopTable()
         }
 
         // Check the flags.
-        // Note that the various init/limit flags are only used when LPFLG_ITER is set, but they are set first,
+        // Note that the various limit flags are only used when LPFLG_ITER is set, but they are set first,
         // separately, and only if everything works out is LPFLG_ITER set. If LPFLG_ITER is NOT set, the
         // individual flags are not un-set (arguably, they should be).
-
-        // Only one of the `init` flags can be set.
-        assert(genCountBits((unsigned)(loop.lpFlags & (LPFLG_VAR_INIT | LPFLG_CONST_INIT))) <= 1);
 
         // Only one of the `limit` flags can be set. (Note that LPFLG_SIMD_LIMIT is a "sub-flag" that can be
         // set when LPFLG_CONST_LIMIT is set.)
@@ -3799,14 +3796,9 @@ void Compiler::fgDebugCheckLoopTable()
             assert(loop.lpFlags & LPFLG_CONST_LIMIT);
         }
 
-        if (loop.lpFlags & (LPFLG_CONST_INIT | LPFLG_VAR_INIT))
+        if (loop.lpFlags & LPFLG_CONST_INIT)
         {
             assert(loop.lpInitBlock != nullptr);
-
-            if (loop.lpFlags & LPFLG_VAR_INIT)
-            {
-                assert(loop.lpVarInit < lvaCount);
-            }
         }
 
         if (loop.lpFlags & LPFLG_ITER)

@@ -1,6 +1,3 @@
-# This is a custom file written for .NET Core's build system
-
-
 include(CheckCSourceCompiles)
 include(CheckIncludeFiles)
 
@@ -13,13 +10,13 @@ if(CLR_CMAKE_HOST_WIN32)
     # Fake it until support is added
     check_include_files(stdalign.h HAVE_STDALIGN_H)
     if (NOT HAVE_STDALIGN_H)
-        configure_file(include/win/fakestdalign.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdalign.h COPYONLY)
+        configure_file(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/win/fakestdalign.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdalign.h COPYONLY)
     endif (NOT HAVE_STDALIGN_H)
 
     # MSVC compiler is currently missing C11 stdatomic.h header
     check_c_source_compiles("#include <stdatomic.h> void main() { _Atomic int a; }" HAVE_STDATOMIC_H)
     if (NOT HAVE_STDATOMIC_H)
-        configure_file(include/win/fakestdatomic.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdatomic.h COPYONLY)
+        configure_file(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/win/fakestdatomic.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdatomic.h COPYONLY)
     endif (NOT HAVE_STDATOMIC_H)
 
     # MSVC compiler is currently missing C11 _Thread_local
@@ -71,6 +68,6 @@ int main(void)
 configure_file(${CMAKE_CURRENT_LIST_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/config.h)
 add_definitions(-DHAVE_CONFIG_H=1)
 
-configure_file(include/libunwind-common.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/libunwind-common.h)
-configure_file(include/libunwind.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/libunwind.h)
-configure_file(include/tdep/libunwind_i.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/tdep/libunwind_i.h)
+configure_file(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/libunwind-common.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/libunwind-common.h)
+configure_file(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/libunwind.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/libunwind.h)
+configure_file(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep/libunwind_i.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/tdep/libunwind_i.h)

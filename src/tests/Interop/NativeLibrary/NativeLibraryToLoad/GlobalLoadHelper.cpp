@@ -6,7 +6,12 @@
 #include <dlfcn.h>
 #endif
 
-extern "C" DLL_EXPORT int NativeSum(int a, int b)
+extern "C" DLL_EXPORT void* LoadLibraryGlobally(const char* name)
 {
-    return a + b;
+#ifdef TARGET_WINDOWS
+    // Windows doesn't support global symbol loading.
+    return NULL;
+#else
+    return dlopen(name, RTLD_GLOBAL | RTLD_LAZY);
+#endif
 }

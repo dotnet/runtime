@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -230,6 +231,27 @@ namespace System.Runtime.InteropServices
             }
 
             return resolver(libraryName, assembly, hasDllImportSearchPathFlags ? (DllImportSearchPath?)dllImportSearchPathFlags : null);
+        }
+
+        /// <summary>
+        /// Get a handle that can be used with <see cref="GetExport" /> or <see cref="TryGetExport" /> to resolve exports from the entry point module.
+        /// </summary>
+        /// <returns> The handle that can be used to resolve exports from the entry point module.</returns>
+        public static IntPtr GetMainProgramHandle()
+        {
+            IntPtr result = IntPtr.Zero;
+#if TARGET_WINDOWS
+            result = Interop.Kernel32.GetModuleHandle(null);
+#else
+            result = Interop.Sys.GetDefaultSearchOrderPseudoHandle();
+#endif
+            // I don't know when a failure case can occur here, but checking for it and throwing an exception
+            // if we encounter it.
+            if (result == IntPtr.Zero)
+            {
+                throw new Win32Exception(Marshal.GetLastPInvokeError());
+            }
+            return result;
         }
     }
 }
