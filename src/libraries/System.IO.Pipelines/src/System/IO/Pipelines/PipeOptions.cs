@@ -44,7 +44,7 @@ namespace System.IO.Pipelines
             // With a default minimum segment size of 4 this maps to 60K
             InitialSegmentPoolSize = 4;
 
-            // With a default minimum segment size of 4K this maps to 1MB. If the pipe has large segments this will be bigger than 1MB...
+            // With a default minimum segment size of 4K this maps to ~250MB.
             MaxSegmentPoolSize = 256;
 
             // By default, we'll throttle the writer at 64K of buffered data

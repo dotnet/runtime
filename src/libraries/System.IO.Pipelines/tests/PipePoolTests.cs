@@ -101,7 +101,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public async Task RentsMinimumSegmentSize()
+        public async Task DoublesMinimumSegmentSize()
         {
             var pool = new DisposeTrackingBufferPool();
             var writeSize = 512;
@@ -118,7 +118,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Reader.Complete();
             pipe.Writer.Complete();
 
-            Assert.Equal(2020, ensuredSize);
+            Assert.Equal(4040, ensuredSize);
             Assert.Equal(2020, allocatedSize);
         }
 
