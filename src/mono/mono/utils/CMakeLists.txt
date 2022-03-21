@@ -151,7 +151,6 @@ set(utils_common_sources
     mono-tls.c
     mono-utils-debug.c
     mono-utils-debug.h
-    linux_magic.h
     mono-memory-model.h
     atomic.h
     atomic.c
