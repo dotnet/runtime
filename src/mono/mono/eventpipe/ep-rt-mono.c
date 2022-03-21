@@ -2936,6 +2936,7 @@ ep_rt_mono_write_event_method_il_to_native_map (
 
 		MonoDebugMethodJitInfo *debug_info = method ? mono_debug_find_method (method, root_domain) : NULL;
 		if (debug_info) {
+			offset_entries = debug_info->num_line_numbers;
 			if (offset_entries != 0) {
 				offset_entries = debug_info->num_line_numbers;
 				size_t needed_size = (offset_entries * sizeof (uint32_t) * 2);
