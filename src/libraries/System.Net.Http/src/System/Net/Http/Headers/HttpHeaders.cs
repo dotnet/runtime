@@ -606,7 +606,7 @@ namespace System.Net.Http.Headers
             }
             else
             {
-                // Now clone and add parsed values (if any).
+                // We have a parser, so we also have to clone invalid values and parsed values.
                 if (sourceInfo.ParsedAndInvalidValues != null)
                 {
                     List<object>? sourceValues = sourceInfo.ParsedAndInvalidValues as List<object>;
@@ -630,7 +630,7 @@ namespace System.Net.Http.Headers
         private static void CloneAndAddValue(HeaderStoreItemInfo destinationInfo, object source)
         {
             // We only have one value. Clone it and assign it to the store.
-            if (source is ICloneable cloneableValue)
+            if (source is not InvalidValue && source is ICloneable cloneableValue)
             {
                 AddParsedValue(destinationInfo, cloneableValue.Clone());
             }
