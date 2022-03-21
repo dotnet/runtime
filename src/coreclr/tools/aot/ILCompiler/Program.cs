@@ -742,7 +742,8 @@ namespace ILCompiler
                     .UseCompilationRoots(compilationRoots)
                     .UseMetadataManager(metadataManager)
                     .UseParallelism(_parallelism)
-                    .UseInteropStubManager(interopStubManager);
+                    .UseInteropStubManager(interopStubManager)
+                    .UseLogger(logger);
 
                 if (_scanDgmlLogFileName != null)
                     scannerBuilder.UseDependencyTracking(_generateFullScanDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
