@@ -1753,15 +1753,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             return ret;
 
         }
-        public JObject CreateJObjectForBoolean(bool value)
-        {
-            return CreateJObject<bool>(value, "boolean", value.ToString().ToLower(), true, "System.Boolean");
-        }
+        public JObject CreateJObjectForBoolean(bool value) => CreateJObject(value, type: "boolean", description: value ? "true" : "false", writable: true, className: "System.Boolean");
 
-        public JObject CreateJObjectForNumber<T>(T value)
-        {
-            return CreateJObject<T>(value, "number", Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture), true);
-        }
+        public JObject CreateJObjectForNumber<T>(T value) => CreateJObject(value, type: "number", description: Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture), writable: true);
 
         public JObject CreateJObjectForChar(int value)
         {
@@ -1798,10 +1792,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return CreateJObject<string>(value, type, value, false, className, $"dotnet:pointer:{pointerId}", "pointer");
         }
 
-        public JObject CreateJObjectForString(string value)
-        {
-            return CreateJObject(value, "string", value, false);
-        }
+        public JObject CreateJObjectForString(string value) => CreateJObject(value, type: "string", description: value, writable: false);
 
         public async Task<JObject> CreateJObjectForArray(MonoBinaryReader retDebuggerCmdReader, CancellationToken token)
         {
@@ -1816,10 +1807,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             return CreateJObject<string>(null, "object", description : arrayType, writable : false, className.ToString(), "dotnet:array:" + objectId, null, subtype : length.Rank == 1 ? "array" : null);
         }
 
-        public JObject CreateJObjectForObject(string className, string description, int? objectId = null)
-        {
-            return CreateJObject<string>(null, "object", description, false, className, objectId == null ? null : $"dotnet:object:{objectId}");
-        }
+        public JObject CreateJObjectForObject(string className, string description, int? objectId = null) =>
+            CreateJObject<string>(value: null, type: "object", description, writable: false, className, objectId == null ? null : $"dotnet:object:{objectId}");
 
         public async Task<JObject> CreateJObjectForObject(MonoBinaryReader retDebuggerCmdReader, int typeIdFromAttribute, bool forDebuggerDisplayAttribute, CancellationToken token)
         {
@@ -1899,9 +1888,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         public JObject CreateJObjectForNull(string className)
-        {
-            return CreateJObject<string>(null, "object", className, false, className, null, null, "null");
-        }
+           => CreateJObject<string>(value: null,
+                                    type: "object",
+                                    description: className,
+                                    writable: false,
+                                    className: className,
+                                    objectId: null,
+                                    __custom_type: null,
+                                    subtype: "null");
 
         public async Task<JObject> CreateJObjectForVariableValue(MonoBinaryReader retDebuggerCmdReader, string name, bool isOwn, int typeIdFromAttribute, bool forDebuggerDisplayAttribute, CancellationToken token)
         {
@@ -1925,7 +1919,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case ElementType.Boolean:
                 {
                     var value = retDebuggerCmdReader.ReadInt32();
-                    ret = CreateJObjectForBoolean(value == 1);
+                    ret = CreateJObjectForBoolean(value != 0);
                     break;
                 }
                 case ElementType.I1:
