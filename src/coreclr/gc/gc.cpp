@@ -1998,7 +1998,12 @@ void stomp_write_barrier_resize(bool is_runtime_suspended, bool requires_upper_b
     GCToEEInterface::StompWriteBarrier(&args);
 }
 
-void stomp_write_barrier_ephemeral(uint8_t* ephemeral_low, uint8_t* ephemeral_high)
+void stomp_write_barrier_ephemeral (uint8_t* ephemeral_low, uint8_t* ephemeral_high
+#ifdef USE_REGIONS
+                                   , uint8_t* map_region_to_generation_skewed
+                                   , uint8_t region_shr
+#endif //USE_REGIONS
+                                   )
 {
     initGCShadow();
 
@@ -2007,6 +2012,10 @@ void stomp_write_barrier_ephemeral(uint8_t* ephemeral_low, uint8_t* ephemeral_hi
     args.is_runtime_suspended = true;
     args.ephemeral_low = ephemeral_low;
     args.ephemeral_high = ephemeral_high;
+#ifdef USE_REGIONS
+    args.region_to_generation_table = map_region_to_generation_skewed;
+    args.region_shr = region_shr;
+#endif //USE_REGIONS
     GCToEEInterface::StompWriteBarrier(&args);
 }
 
@@ -11284,10 +11293,44 @@ void gc_heap::set_region_gen_num (heap_segment* region, int gen_num)
 
     size_t region_index_start = ((size_t)region_start) >> min_segment_size_shr;
     size_t region_index_end = ((size_t)region_end) >> min_segment_size_shr;
+    uint8_t entry = (uint8_t)((gen_num << 4) | gen_num);
     for (size_t region_index = region_index_start; region_index < region_index_end; region_index++)
     {
         assert (gen_num <= max_generation);
-        map_region_to_generation_skewed[region_index] = (uint8_t)gen_num;
+        map_region_to_generation_skewed[region_index] = entry;
+    }
+    if (gen_num <= soh_gen1)
+    {
+        bool success_low = false;
+        bool success_high = false;
+        bool ephemeral_change = false;
+        while (!(success_low && success_high))
+        {
+            uint8_t* current_ephemeral_low = ephemeral_low;
+            if (current_ephemeral_low <= region_start)
+                success_low = true;
+            else
+            {
+                success_low = (Interlocked::CompareExchangePointer (&ephemeral_low, region_start, current_ephemeral_low) == current_ephemeral_low);
+                if (success_low)
+                    ephemeral_change = true;
+            }
+
+            uint8_t* current_ephemeral_high = ephemeral_high;
+            if (current_ephemeral_high >= region_end)
+                success_high = true;
+            else
+            {
+                success_high = (Interlocked::CompareExchangePointer (&ephemeral_high, region_end, current_ephemeral_high) == current_ephemeral_high);
+                if (success_high)
+                    ephemeral_change = true;
+            }
+        }
+        if (ephemeral_change)
+        {
+            stomp_write_barrier_ephemeral (ephemeral_low, ephemeral_high,
+                                           map_region_to_generation_skewed, (uint8_t)min_segment_size_shr);
+        }
     }
 }
 
@@ -30016,6 +30059,36 @@ void gc_heap::plan_phase (int condemned_gen_number)
             }
 #endif //!USE_REGIONS
 
+#ifdef USE_REGIONS
+        memset (map_region_to_generation, 0x22, region_count*sizeof(map_region_to_generation[0]));
+        ephemeral_low = MAX_PTR;
+        ephemeral_high = nullptr;
+        for (int gen_number = soh_gen0; gen_number <= soh_gen1; gen_number++)
+        {
+            uint8_t table_entry = (uint8_t)((gen_number << 4) | gen_number);
+#ifdef MULTIPLE_HEAPS
+            for (int i = 0; i < n_heaps; i++)
+            {
+                gc_heap* hp = g_heaps[i];
+#else //MULTIPLE_HEAPS
+            {
+                gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+                generation *gen = hp->generation_of (gen_number);
+                for (heap_segment *region = generation_start_segment (gen); region != nullptr; region = heap_segment_next (region))
+                {
+                    uint8_t* addr = heap_segment_mem (region);
+                    size_t index = (size_t)addr >> gc_heap::min_segment_size_shr;
+                    map_region_to_generation_skewed[index] = table_entry;
+                    ephemeral_low = min (ephemeral_low, addr);
+                    ephemeral_high = max (ephemeral_high, heap_segment_reserved (region));
+                }
+            }
+        }
+        stomp_write_barrier_ephemeral (ephemeral_low, ephemeral_high,
+                                       map_region_to_generation_skewed, (uint8_t)min_segment_size_shr);
+#endif //USE_REGIONS
+
 #ifdef MULTIPLE_HEAPS
             //join all threads to make sure they are synchronized
             dprintf(3, ("Restarting after Promotion granted"));
@@ -44136,6 +44209,12 @@ HRESULT GCHeap::Initialize()
 #endif // FEATURE_REDHAWK
 
     initGCShadow();         // If we are debugging write barriers, initialize heap shadow
+
+#ifdef USE_REGIONS
+    gc_heap::ephemeral_low = MAX_PTR;
+
+    gc_heap::ephemeral_high = nullptr;
+#endif //!USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
 

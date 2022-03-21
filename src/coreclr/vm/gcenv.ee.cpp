@@ -1002,6 +1002,8 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         assert(args->ephemeral_high != nullptr);
         g_ephemeral_low = args->ephemeral_low;
         g_ephemeral_high = args->ephemeral_high;
+        g_region_to_generation_table = args->region_to_generation_table;
+        g_region_shr = args->region_shr;
         stompWBCompleteActions |= ::StompWriteBarrierEphemeral(args->is_runtime_suspended);
         break;
     case WriteBarrierOp::Initialize:
