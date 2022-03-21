@@ -1822,7 +1822,7 @@ mono_jit_parse_options (int argc, char * argv[])
 			mini_verbose_level++;
 		} else if (strcmp (argv [i], "--breakonex") == 0) {
 			MonoDebugOptions *debug_opt = mini_get_debug_options ();
-			debug_opt ->break_on_exc = TRUE;
+			debug_opt->break_on_exc = TRUE;
 		} else if (strcmp (argv [i], "--stats") == 0) {
 			enable_runtime_stats ();
 		} else if (strncmp (argv [i], "--stats=", 8) == 0) {

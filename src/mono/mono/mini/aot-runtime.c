@@ -2683,10 +2683,10 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 		//gsize prev = 0;
 
 		// FIXME: This depends on emscripten allocating ftnptr ids sequentially
-		for (int i = 0; i < amodule->info.nmethods; ++i) {
+		for (guint32 i = 0; i < amodule->info.nmethods; ++i) {
 			void *addr = NULL;
 
-			addr = get_method (i);
+			addr = get_method ((int)i);
 			gsize val = (gsize)addr;
 			if (val) {
 				//g_assert (val > prev);
@@ -4409,7 +4409,7 @@ add_module_cb (gpointer key, gpointer value, gpointer user_data)
 static gboolean
 inst_is_private (MonoGenericInst *inst)
 {
-	for (int i = 0; i < inst->type_argc; ++i) {
+	for (guint i = 0; i < inst->type_argc; ++i) {
 		MonoType *t = inst->type_argv [i];
 		if ((t->type == MONO_TYPE_CLASS || t->type == MONO_TYPE_VALUETYPE)) {
 			int access_level = mono_class_get_flags (t->data.klass) & TYPE_ATTRIBUTE_VISIBILITY_MASK;

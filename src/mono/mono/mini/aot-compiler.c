@@ -5376,7 +5376,7 @@ add_types_from_method_header (MonoAotCompile *acfg, MonoMethod *method);
 static gboolean
 inst_has_vtypes (MonoGenericInst *inst)
 {
-	for (int i = 0; i < inst->type_argc; ++i) {
+	for (guint i = 0; i < inst->type_argc; ++i) {
 		MonoType *t = inst->type_argv [i];
 		if (MONO_TYPE_ISSTRUCT (t))
 			return TRUE;
@@ -5730,7 +5730,7 @@ add_generic_instances (MonoAotCompile *acfg)
 			/* Check that the context doesn't contain open constructed types */
 			if (context->class_inst) {
 				inst = context->class_inst;
-				for (int j = 0; j < inst->type_argc; ++j) {
+				for (guint j = 0; j < inst->type_argc; ++j) {
 					if (MONO_TYPE_IS_REFERENCE (inst->type_argv [j]) || inst->type_argv [j]->type == MONO_TYPE_VAR || inst->type_argv [j]->type == MONO_TYPE_MVAR)
 						continue;
 					if (mono_class_is_open_constructed_type (inst->type_argv [j]))
@@ -5739,7 +5739,7 @@ add_generic_instances (MonoAotCompile *acfg)
 			}
 			if (context->method_inst) {
 				inst = context->method_inst;
-				for (int j = 0; j < inst->type_argc; ++j) {
+				for (guint j = 0; j < inst->type_argc; ++j) {
 					if (MONO_TYPE_IS_REFERENCE (inst->type_argv [j]) || inst->type_argv [j]->type == MONO_TYPE_VAR || inst->type_argv [j]->type == MONO_TYPE_MVAR)
 						continue;
 					if (mono_class_is_open_constructed_type (inst->type_argv [j]))
@@ -5755,7 +5755,7 @@ add_generic_instances (MonoAotCompile *acfg)
 			inst = context->class_inst;
 			if (inst) {
 				type_argv = g_new0 (MonoType*, inst->type_argc);
-				for (int j = 0; j < inst->type_argc; ++j) {
+				for (guint j = 0; j < inst->type_argc; ++j) {
 					if (MONO_TYPE_IS_REFERENCE (inst->type_argv [j]) || inst->type_argv [j]->type == MONO_TYPE_VAR || inst->type_argv [j]->type == MONO_TYPE_MVAR)
 						type_argv [j] = mono_get_object_type ();
 					else
@@ -5769,7 +5769,7 @@ add_generic_instances (MonoAotCompile *acfg)
 			inst = context->method_inst;
 			if (inst) {
 				type_argv = g_new0 (MonoType*, inst->type_argc);
-				for (int j = 0; j < inst->type_argc; ++j) {
+				for (guint j = 0; j < inst->type_argc; ++j) {
 					if (MONO_TYPE_IS_REFERENCE (inst->type_argv [j]) || inst->type_argv [j]->type == MONO_TYPE_VAR || inst->type_argv [j]->type == MONO_TYPE_MVAR)
 						type_argv [j] = mono_get_object_type ();
 					else
@@ -5820,7 +5820,7 @@ add_generic_instances (MonoAotCompile *acfg)
 	}
 
 	/* Add types of args/locals */
-	for (int i = 0; i < acfg->methods->len; ++i) {
+	for (guint i = 0; i < acfg->methods->len; ++i) {
 		method = (MonoMethod *)g_ptr_array_index (acfg->methods, i);
 		add_types_from_method_header (acfg, method);
 	}
@@ -5869,7 +5869,7 @@ add_generic_instances (MonoAotCompile *acfg)
 			const char *enum_names [] = { "I8Enum", "I16Enum", "I32Enum", "I64Enum", "UI8Enum", "UI16Enum", "UI32Enum", "UI64Enum" };
 
 			enum_ninsts = 0;
-			for (int i = 0; i < G_N_ELEMENTS (enum_names); ++i) {
+			for (size_t i = 0; i < G_N_ELEMENTS (enum_names); ++i) {
 				k = mono_class_try_load_from_name (acfg->image, "Mono", enum_names [i]);
 				g_assert (k);
 				enum_insts [enum_ninsts ++] = m_class_get_byval_arg (k);
@@ -8389,7 +8389,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 	GPtrArray* args;
 
 	args = mono_aot_split_options (aot_options ? aot_options : "");
-	for (int i = 0; i < args->len; ++i) {
+	for (guint i = 0; i < args->len; ++i) {
 		const char *arg = (const char *)g_ptr_array_index (args, i);
 
 		if (str_begins_with (arg, "outfile=")) {
@@ -9679,7 +9679,7 @@ sanitize_mangled_string (const char *input)
 {
 	GString *s = g_string_new ("");
 
-	for (int i=0; input [i] != '\0'; i++) {
+	for (size_t i = 0; input [i] != '\0'; i++) {
 		char c = input [i];
 		switch (c) {
 		case '.':
@@ -13820,7 +13820,7 @@ mono_setup_dedup_state (MonoAotCompile *acfg, MonoAotState **global_aot_state, M
 		gchar *asm_file = NULL;
 
 		// Get the last part of the path, the filename
-		for (int i=0; asm_path [i] != NULL; i++)
+		for (size_t i = 0; asm_path [i] != NULL; i++)
 			asm_file = asm_path [i];
 
 		if (!strcmp (acfg->aot_opts.dedup_include, asm_file)) {
@@ -14243,10 +14243,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 		add_method (acfg, wrapper);
 
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
-		for (int i = 0; i < G_N_ELEMENTS (interp_in_static_sigs); i++)
+		for (size_t i = 0; i < G_N_ELEMENTS (interp_in_static_sigs); i++)
 			add_interp_in_wrapper_for_sig (acfg, *interp_in_static_sigs [i]);
 #else
-		for (int i = 0; i < G_N_ELEMENTS (interp_in_static_common_sigs); i++)
+		for (size_t i = 0; i < G_N_ELEMENTS (interp_in_static_common_sigs); i++)
 			add_interp_in_wrapper_for_sig (acfg, *interp_in_static_common_sigs [i]);
 #endif
 
@@ -14359,7 +14359,7 @@ create_depfile (MonoAotCompile *acfg)
 	targets [0] = acfg->aot_opts.llvm_outfile;
 	for (int tindex = 0; tindex < ntargets; ++tindex) {
 		fprintf (depfile, "%s: ", targets [tindex]);
-		for (int i = 0; i < acfg->image_table->len; i++) {
+		for (guint i = 0; i < acfg->image_table->len; i++) {
 			MonoImage *image = (MonoImage*)g_ptr_array_index (acfg->image_table, i);
 			fprintf (depfile, " %s", image->filename);
 		}

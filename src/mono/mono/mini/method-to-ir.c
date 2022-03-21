@@ -6010,7 +6010,7 @@ emit_llvmonly_interp_entry (MonoCompile *cfg, MonoMethodHeader *header)
 		MONO_ADD_INS (cfg->cbb, ins);
 		args_ins = ins;
 
-		for (int i = 0; i < sig->hasthis + sig->param_count; ++i) {
+		for (unsigned int i = 0; i < sig->hasthis + sig->param_count; ++i) {
 			MonoInst *arg_addr_ins;
 			EMIT_NEW_VARLOADA ((cfg), arg_addr_ins, cfg->args [i], cfg->arg_types [i]);
 			EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args_ins->dreg, i * sizeof (target_mgreg_t), arg_addr_ins->dreg);
@@ -6041,7 +6041,7 @@ emit_llvmonly_interp_entry (MonoCompile *cfg, MonoMethodHeader *header)
 
 		/* Call it */
 		iargs = g_newa (MonoInst*, sig->param_count + 1);
-		for (int i = 0; i < sig->param_count + sig->hasthis; ++i)
+		for (unsigned int i = 0; i < sig->param_count + sig->hasthis; ++i)
 			EMIT_NEW_ARGLOAD (cfg, iargs [i], i);
 
 		ins = mini_emit_llvmonly_calli (cfg, sig, iargs, ftndesc);
@@ -6398,7 +6398,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		cfg->clause_is_dead = mono_mempool_alloc0 (cfg->mempool, sizeof (gboolean) * header->num_clauses);
 
 		/* handle exception clauses */
-		for (int i = 0; i < header->num_clauses; ++i) {
+		for (unsigned int i = 0; i < header->num_clauses; ++i) {
 			MonoBasicBlock *try_bb;
 			MonoExceptionClause *clause = &header->clauses [i];
 			GET_BBLOCK (cfg, try_bb, ip + clause->try_offset);
@@ -6793,7 +6793,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			cfg->cbb->next_bb = tblock;
 			cfg->cbb = tblock;
 			start_new_bblock = 0;
-			for (guint16 i = 0; i < cfg->cbb->in_scount; ++i) {
+			for (int i = 0; i < cfg->cbb->in_scount; ++i) {
 				if (cfg->verbose_level > 3)
 					printf ("loading %d from temp %d\n", i, (int)cfg->cbb->in_stack [i]->inst_c0);
 				EMIT_NEW_TEMPLOAD (cfg, ins, cfg->cbb->in_stack [i]->inst_c0);
@@ -6813,7 +6813,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 				cfg->cbb->next_bb = tblock;
 				cfg->cbb = tblock;
-				for (guint16 i = 0; i < cfg->cbb->in_scount; ++i) {
+				for (int i = 0; i < cfg->cbb->in_scount; ++i) {
 					if (cfg->verbose_level > 3)
 						printf ("loading %d from temp %d\n", i, (int)cfg->cbb->in_stack [i]->inst_c0);
 					EMIT_NEW_TEMPLOAD (cfg, ins, cfg->cbb->in_stack [i]->inst_c0);
@@ -7616,7 +7616,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					goto call_end;
 			}
 
-			for (guint16 i = 0; i < fsig->param_count; ++i)
+			for (int i = 0; i < fsig->param_count; ++i)
 				sp [i + fsig->hasthis] = convert_value (cfg, fsig->params [i], sp [i + fsig->hasthis]);
 
 			if (check_call_signature (cfg, fsig, sp)) {
@@ -10652,7 +10652,7 @@ field_access_end:
 			 * We avoid doing this in runtime invoke wrappers, since those are called
 			 * by native code which excepts the wrapper to catch all exceptions.
 			 */
-			for (int i = 0; i < header->num_clauses; ++i) {
+			for (unsigned int i = 0; i < header->num_clauses; ++i) {
 				MonoExceptionClause *clause = &header->clauses [i];
 
 				/*
@@ -11635,7 +11635,7 @@ mono_ldptr:
 			MonoInst *load;
 			int handler_offset = -1;
 
-			for (int i = 0; i < header->num_clauses; ++i) {
+			for (unsigned int i = 0; i < header->num_clauses; ++i) {
 				MonoExceptionClause *clause = &header->clauses [i];
 				if (MONO_OFFSET_IN_HANDLER (clause, ip - header->code) && !(clause->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
 					handler_offset = clause->handler_offset;
@@ -11839,7 +11839,7 @@ mono_ldptr:
 	 * the code they refer to was dead (#11880).
 	 */
 	if (sym_seq_points) {
-		for (int i = 0; i < header->code_size; ++i) {
+		for (guint32 i = 0; i < header->code_size; ++i) {
 			if (mono_bitset_test_fast (seq_point_locs, i) && !mono_bitset_test_fast (seq_point_set_locs, i)) {
 				MonoInst *seq_point_ins;
 

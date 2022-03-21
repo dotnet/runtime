@@ -1585,7 +1585,7 @@ mono_ssa_loop_invariant_code_motion (MonoCompile *cfg)
 	}
 
 	cfg->comp_done &=  ~MONO_COMP_SSA_DEF_USE;
-	for (int i = 0; i < cfg->num_varinfo; i++) {
+	for (guint i = 0; i < cfg->num_varinfo; i++) {
 		MonoMethodVar *info = MONO_VARINFO (cfg, i);
 		info->def = NULL;
 		info->uses = NULL;

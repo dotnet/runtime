@@ -3352,7 +3352,7 @@ mono_generic_context_is_sharable (MonoGenericContext *context, gboolean allow_ty
 static gboolean
 is_primitive_inst (MonoGenericInst *inst)
 {
-	for (int i = 0; i < inst->type_argc; ++i) {
+	for (guint i = 0; i < inst->type_argc; ++i) {
 		if (!MONO_TYPE_IS_PRIMITIVE (inst->type_argv [i]))
 			return FALSE;
 	}
@@ -3408,7 +3408,7 @@ gparam_can_be_enum (MonoGenericParam *gparam)
 	 * If a constraint is an interface which is not implemented by Enum, then the gparam can't be
 	 * instantiated with an enum.
 	 */
-	for (int cindex = 0; gparam->info.constraints [cindex]; cindex ++) {
+	for (size_t cindex = 0; gparam->info.constraints [cindex]; cindex ++) {
 		MonoClass *k = gparam->info.constraints [cindex];
 		if (MONO_CLASS_IS_INTERFACE_INTERNAL (k)) {
 			MonoClass **enum_ifaces = m_class_get_interfaces (mono_defaults.enum_class);
@@ -4055,7 +4055,7 @@ get_shared_gparam_name (MonoTypeEnum constraint, const char *name)
 		t.type = constraint;
 		tname = mono_type_full_name (&t);
 		size_t len = strlen (tname);
-		for (int i = 0; i < len; ++i)
+		for (size_t i = 0; i < len; ++i)
 			tname [i] = toupper (tname [i]);
 		res = g_strdup_printf ("%s_%s", name, tname);
 		g_free (tname);

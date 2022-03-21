@@ -1469,7 +1469,7 @@ eventpipe_fire_method_events (
 				il_offsets = (uint32_t*)events_data->buffer;
 				native_offsets = il_offsets + offset_entries;
 
-				for (int offset_count = 0; offset_count < offset_entries; ++offset_count) {
+				for (int32_t offset_count = 0; offset_count < offset_entries; ++offset_count) {
 					il_offsets [offset_count] = debug_info->line_numbers [offset_count].il_offset;
 					native_offsets [offset_count] = debug_info->line_numbers [offset_count].native_offset;
 				}
@@ -1637,7 +1637,7 @@ eventpipe_execute_rundown (
 		// Iterate all assemblies in domain.
 		GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
 		if (assemblies) {
-			for (int i = 0; i < assemblies->len; ++i) {
+			for (uint32_t i = 0; i < assemblies->len; ++i) {
 				MonoAssembly *assembly = (MonoAssembly *)g_ptr_array_index (assemblies, i);
 				if (assembly)
 					eventpipe_fire_assembly_events (root_domain, assembly, assembly_events_func);
@@ -2772,7 +2772,7 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 			// TODO: An async frame can contain wrapper methods (no way to check during stackwalk), we could skip writing profile event
 			// for this specific stackwalk or we could cleanup stack_frames before writing profile event.
 			if (data->stack_walk_data.async_frame) {
-				for (int frame_count = 0; frame_count < data->stack_contents.next_available_frame; ++frame_count)
+				for (uint32_t frame_count = 0; frame_count < data->stack_contents.next_available_frame; ++frame_count)
 					mono_jit_info_table_find_internal ((gpointer)data->stack_contents.stack_frames [frame_count], TRUE, FALSE);
 			}
 			mono_thread_info_set_tid (&adapter, ep_rt_uint64_t_to_thread_id_t (data->thread_id));
@@ -2947,7 +2947,7 @@ ep_rt_mono_write_event_method_il_to_native_map (
 				}
 				if (il_offsets) {
 					native_offsets = il_offsets + offset_entries;
-					for (int offset_count = 0; offset_count < offset_entries; ++offset_count) {
+					for (int32_t offset_count = 0; offset_count < offset_entries; ++offset_count) {
 						il_offsets [offset_count] = debug_info->line_numbers [offset_count].il_offset;
 						native_offsets [offset_count] = debug_info->line_numbers [offset_count].native_offset;
 					}
@@ -4945,7 +4945,7 @@ mono_profiler_fire_buffered_gc_event_heap_dump_object_reference (
 
 		// Serialize directly as memory stream expected by FireEtwMonoProfilerGCHeapDumpObjectReference.
 		uintptr_t last_offset = 0;
-		for (int i = 0; i < object_ref_count; i++) {
+		for (uintptr_t i = 0; i < object_ref_count; i++) {
 			// GCEvent.Values[].ReferencesOffset
 			object_ref_offset = offsets [i] - last_offset;
 			memcpy (buffer, &object_ref_offset, sizeof (object_ref_offset));

@@ -3312,7 +3312,7 @@ mono_marshal_set_callconv_from_unmanaged_callconv_attribute (MonoMethod *method,
 		return;
 	}
 
-	int i;
+	mono_array_size_t i;
 	MonoCustomAttrEntry *attr = NULL;
 	for (i = 0; i < cinfo->num_attrs; ++i) {
 		MonoClass *ctor_class = cinfo->attrs [i].ctor->klass;
@@ -3336,7 +3336,7 @@ mono_marshal_set_callconv_from_unmanaged_callconv_attribute (MonoMethod *method,
 
 				/* CallConvs is an array of types */
 				MonoArray *callconv_array = mono_array_get_internal(named_args, MonoArray *, i);
-				for (int j = 0; j < mono_array_length_internal(callconv_array); ++j) {
+				for (mono_array_size_t j = 0; j < mono_array_length_internal(callconv_array); ++j) {
 					MonoReflectionType *callconv_type = mono_array_get_internal(callconv_array, MonoReflectionType *, j);
 					mono_marshal_set_callconv_for_type(callconv_type->type, csig, skip_gc_trans);
 				}

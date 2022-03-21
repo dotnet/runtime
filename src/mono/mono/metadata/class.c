@@ -1265,9 +1265,9 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 		}
 
 		/* Check that the method is not instantiated with any invalid types */
-		for (int i = 0; i < method_inst->type_argc; i++) {
+		for (guint i = 0; i < method_inst->type_argc; i++) {
 			if (!mono_type_is_valid_generic_argument (method_inst->type_argv [i])) {
-				mono_error_set_bad_image (error, mono_method_get_image (method), "MVAR %d cannot be expanded with type 0x%x",
+				mono_error_set_bad_image (error, mono_method_get_image (method), "MVAR %u cannot be expanded with type 0x%x",
 							  i, method_inst->type_argv [i]->type);
 				goto fail;
 			}

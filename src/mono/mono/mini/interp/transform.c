@@ -3585,7 +3585,7 @@ recursively_make_pred_seq_points (TransformData *td, InterpBasicBlock *bb)
 			recursively_make_pred_seq_points (td, in_bb);
 
 		// Union sequence points with incoming bb's
-		for (int j=0; j < in_bb->num_pred_seq_points; j++) {
+		for (guint j = 0; j < in_bb->num_pred_seq_points; j++) {
 			if (!g_hash_table_lookup (seen, in_bb->pred_seq_points [j])) {
 				g_array_append_val (predecessors, in_bb->pred_seq_points [j]);
 				g_hash_table_insert (seen, in_bb->pred_seq_points [j], (gpointer)&MONO_SEQ_SEEN_LOOP);
@@ -3600,7 +3600,7 @@ recursively_make_pred_seq_points (TransformData *td, InterpBasicBlock *bb)
 		bb->pred_seq_points = (SeqPoint**)mono_mempool_alloc0 (td->mempool, sizeof (SeqPoint *) * predecessors->len);
 		bb->num_pred_seq_points = predecessors->len;
 
-		for (int newer = 0; newer < bb->num_pred_seq_points; newer++) {
+		for (guint newer = 0; newer < bb->num_pred_seq_points; newer++) {
 			bb->pred_seq_points [newer] = (SeqPoint*)g_array_index (predecessors, gpointer, newer);
 		}
 	}
@@ -3615,7 +3615,7 @@ collect_pred_seq_points (TransformData *td, InterpBasicBlock *bb, SeqPoint *seqp
 	if (bb->pred_seq_points == NULL && bb != td->entry_bb)
 		recursively_make_pred_seq_points (td, bb);
 
-	for (int i = 0; i < bb->num_pred_seq_points; i++)
+	for (guint i = 0; i < bb->num_pred_seq_points; i++)
 		insert_pred_seq_point (bb->pred_seq_points [i], seqp, next);
 
 	return;
@@ -4070,7 +4070,7 @@ initialize_clause_bblocks (TransformData *td)
 		MonoExceptionClause *c = header->clauses + i;
 		InterpBasicBlock *bb;
 
-		for (int j = c->handler_offset; j < c->handler_offset + c->handler_len; j++) {
+		for (uint32_t j = c->handler_offset; j < c->handler_offset + c->handler_len; j++) {
 			if (td->clause_indexes [j] == -1)
 				td->clause_indexes [j] = i;
 		}
@@ -4176,7 +4176,7 @@ handle_stelem (TransformData *td, int op)
 static gboolean
 is_ip_protected (MonoMethodHeader *header, int offset)
 {
-	for (int i = 0; i < header->num_clauses; i++) {
+	for (unsigned int i = 0; i < header->num_clauses; i++) {
 		MonoExceptionClause *clause = &header->clauses [i];
 		if (clause->try_offset <= offset && offset < (clause->try_offset + clause->try_len))
 			return TRUE;
@@ -4943,7 +4943,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			--td->sp;
 			interp_ins_set_sreg (td->last_ins, td->sp [0].local);
 			InterpBasicBlock **target_bb_table = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * n);
-			for (int i = 0; i < n; i++) {
+			for (guint32 i = 0; i < n; i++) {
 				int offset = read32 (td->ip);
 				target = next_ip - td->il_code + offset;
 				InterpBasicBlock *target_bb = td->offset_to_bb [target];
@@ -6706,7 +6706,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 			td->sp = td->stack;
 
-			for (int i = 0; i < header->num_clauses; ++i) {
+			for (unsigned int i = 0; i < header->num_clauses; ++i) {
 				MonoExceptionClause *clause = &header->clauses [i];
 				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
 					continue;
@@ -7416,7 +7416,7 @@ static void
 handle_relocations (TransformData *td)
 {
 	// Handle relocations
-	for (int i = 0; i < td->relocs->len; ++i) {
+	for (guint i = 0; i < td->relocs->len; ++i) {
 		Reloc *reloc = (Reloc*)g_ptr_array_index (td->relocs, i);
 		int offset = reloc->target_bb->native_offset - reloc->offset;
 
@@ -7765,7 +7765,7 @@ interp_local_deadce (TransformData *td)
 	gboolean needs_dce = FALSE;
 	gboolean needs_cprop = FALSE;
 
-	for (int i = 0; i < td->locals_size; i++) {
+	for (unsigned int i = 0; i < td->locals_size; i++) {
 		g_assert (local_ref_count [i] >= 0);
 		g_assert (td->locals [i].indirects >= 0);
 		if (!local_ref_count [i] &&
@@ -9332,7 +9332,7 @@ interp_alloc_offsets (TransformData *td)
 	// Iterate over all call args locals, update their final offset (aka add td->total_locals_size to them)
 	// then also update td->total_locals_size to account for this space.
 	td->param_area_offset = final_total_locals_size;
-	for (int i = 0; i < td->locals_size; i++) {
+	for (unsigned int i = 0; i < td->locals_size; i++) {
 		// These are allocated separately at the end of the stack
 		if (td->locals [i].flags & INTERP_LOCAL_FLAG_CALL_ARGS) {
 			td->locals [i].offset += td->param_area_offset;

@@ -902,7 +902,7 @@ processing_build_callback_data (int generation)
 			HashEntryWithAccounting *entry_acc = (HashEntryWithAccounting*)all_entries [i];
 			if (entry_acc->entry.is_bridge) {
 				MonoObject *instance = sgen_hash_table_key_for_value_pointer (entry_acc);
-				MonoClass *klass = SGEN_LOAD_VTABLE (obj)->klass;
+				MonoClass *klass = SGEN_LOAD_VTABLE (instance)->klass;
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "OBJECT %s::%s (%p) weight %f", m_class_get_name_space (klass), m_class_get_name (klass), instance, entry_acc->weight);
 			}
 		}

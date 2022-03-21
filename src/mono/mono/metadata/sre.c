@@ -897,8 +897,8 @@ mono_image_get_array_token (MonoDynamicImage *assembly, MonoReflectionArrayMetho
 	mtype = mono_reflection_type_handle_mono_type (parent, error);
 	goto_if_nok (error, fail);
 
-	for (int i = 0; i < nparams; ++i) {
-		sig->params [i] = mono_type_array_get_and_resolve (parameters, i, error);
+	for (guint32 i = 0; i < nparams; ++i) {
+		sig->params [i] = mono_type_array_get_and_resolve (parameters, (int)i, error);
 		goto_if_nok (error, fail);
 	}
 
@@ -1234,7 +1234,7 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 	} else
 		assembly->assembly.aname.culture = g_strdup ("");
 
-        if (assemblyb->version) {
+		if (assemblyb->version) {
 			char *vstr = mono_string_to_utf8_checked_internal (assemblyb->version, error);
 			if (mono_error_set_pending_exception (error))
 				return;
@@ -1247,15 +1247,15 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 
 			g_strfreev (version);
 			g_free (vstr);
-        } else {
+		} else {
 			assembly->assembly.aname.major = 0;
 			assembly->assembly.aname.minor = 0;
 			assembly->assembly.aname.build = 0;
 			assembly->assembly.aname.revision = 0;
-        }
+		}
 
 	if (assemblyb->public_key_token) {
-		for (int i = 0; i < 8 && i < mono_array_length_internal (assemblyb->public_key_token); i++) {
+		for (mono_array_size_t i = 0; i < 8 && i < mono_array_length_internal (assemblyb->public_key_token); i++) {
 			guint8 byte = mono_array_get_internal (assemblyb->public_key_token, guint8, i);
 			sprintf ((char*)(assembly->assembly.aname.public_key_token + 2 * i), "%02x", byte);
 		}
@@ -3010,7 +3010,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		 * This is a valid SRE case, but the resulting method signature must be encoded using the proper
 		 * generic parameters.
 		 */
-		for (guint16 i = 0; i < m->signature->param_count; ++i) {
+		for (gint32 i = 0; i < m->signature->param_count; ++i) {
 			MonoType *t = m->signature->params [i];
 			if (t->type == MONO_TYPE_MVAR) {
 				MonoGenericParam *gparam =  t->data.generic_param;
@@ -3048,7 +3048,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		if (!method_aux)
 			method_aux = image_g_new0 (image, MonoReflectionMethodAux, 1);
 		method_aux->param_names = image_g_new0 (image, char *, mono_method_signature_internal (m)->param_count + 1);
-		for (guint16 i = 0; i <= m->signature->param_count; ++i) {
+		for (gint32 i = 0; i <= m->signature->param_count; ++i) {
 			MonoReflectionParamBuilder *pb;
 			if ((pb = mono_array_get_internal (rmb->pinfo, MonoReflectionParamBuilder*, i))) {
 				if ((i > 0) && (pb->attrs)) {
