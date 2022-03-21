@@ -44,7 +44,7 @@ stages:
   #
   # Localization build
   #
-  - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+  - ${{ if and(eq(variables.isOfficialBuild, true), eq(variables['Build.SourceBranch'], 'refs/heads/main')) }}:
     - template: /eng/common/templates/job/onelocbuild.yml
       parameters:
         MirrorRepo: runtime
