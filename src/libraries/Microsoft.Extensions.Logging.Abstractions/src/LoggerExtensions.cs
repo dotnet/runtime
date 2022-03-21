@@ -21,13 +21,118 @@ namespace Microsoft.Extensions.Logging
         /// <param name="eventId">The event id associated with the log.</param>
         /// <param name="exception">The exception to log.</param>
         /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogDebug(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogDebug<T0>(this ILogger logger, EventId eventId, Exception? exception, string? message, T0 arg0)
+        {
+            if(logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.Log(LogLevel.Debug, eventId, exception, message, arg0);
+            }
+        }
+        
+        /// <summary>
+        /// Formats and writes a debug log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogDebug(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogDebug<T0, T1>(this ILogger logger, EventId eventId, Exception? exception, string? message, T0 arg0, T1 arg1)
+        {
+            if(logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.Log(LogLevel.Debug, eventId, exception, message, arg0, arg1);
+            }
+        }
+        
+        /// <summary>
+        /// Formats and writes a debug log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogDebug(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogDebug<T0, T1, T2>(this ILogger logger, EventId eventId, Exception? exception, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if(logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.Log(LogLevel.Debug, eventId, exception, message, arg0, arg1, arg2);
+            }
+        }
+        
+        /// <summary>
+        /// Formats and writes a debug log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
         /// <param name="args">An object array that contains zero or more objects to format.</param>
         /// <example>logger.LogDebug(0, exception, "Error while processing request from {Address}", address)</example>
         public static void LogDebug(this ILogger logger, EventId eventId, Exception? exception, string? message, params object?[] args)
         {
-            if (logger.IsEnabled(LogLevel.Debug))
+            if(logger.IsEnabled(LogLevel.Debug))
             {
                 logger.Log(LogLevel.Debug, eventId, exception, message, args);
+            }
+        }
+        
+        /// <summary>
+        /// Formats and writes a debug log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogDebug(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogDebug<T0>(this ILogger logger, EventId eventId, string? message, T0 arg0)
+        {
+            if(logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.Log(LogLevel.Debug, eventId, message, arg0);
+            }
+        }
+        
+        /// <summary>
+        /// Formats and writes a debug log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogDebug(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogDebug<T0, T1>(this ILogger logger, EventId eventId, string? message, T0 arg0, T1 arg1)
+        {
+            if(logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.Log(LogLevel.Debug, eventId, message, arg0, arg1);
+            }
+        }
+        
+        /// <summary>
+        /// Formats and writes a debug log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogDebug(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogDebug<T0, T1, T2>(this ILogger logger, EventId eventId, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if(logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.Log(LogLevel.Debug, eventId, message, arg0, arg1, arg2);
             }
         }
 
@@ -53,6 +158,57 @@ namespace Microsoft.Extensions.Logging
         /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
         /// <param name="exception">The exception to log.</param>
         /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogDebug(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogDebug<T0>(this ILogger logger, Exception? exception, string? message, T0 arg0)
+        {
+            if(logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.Log(LogLevel.Debug, exception, message, arg0);
+            }
+        }
+        
+        /// <summary>
+        /// Formats and writes a debug log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogDebug(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogDebug<T0, T1>(this ILogger logger, Exception? exception, string? message, T0 arg0, T1 arg1)
+        {
+            if(logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.Log(LogLevel.Debug, exception, message, arg0, arg1);
+            }
+        }
+        
+        /// <summary>
+        /// Formats and writes a debug log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogDebug(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogDebug<T0, T1, T2>(this ILogger logger, Exception? exception, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if(logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.Log(LogLevel.Debug, exception, message, arg0, arg1, arg2);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a debug log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
         /// <param name="args">An object array that contains zero or more objects to format.</param>
         /// <example>logger.LogDebug(exception, "Error while processing request from {Address}", address)</example>
         public static void LogDebug(this ILogger logger, Exception? exception, string? message, params object?[] args)
@@ -60,6 +216,54 @@ namespace Microsoft.Extensions.Logging
             if (logger.IsEnabled(LogLevel.Debug))
             {
                 logger.Log(LogLevel.Debug, exception, message, args);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a debug log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogDebug(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogDebug<T0>(this ILogger logger, string? message, T0 arg0)
+        {
+            if(logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.Log(LogLevel.Debug, message, arg0);
+            }
+        }
+        
+        /// <summary>
+        /// Formats and writes a debug log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogDebug(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogDebug<T0, T1>(this ILogger logger, string? message, T0 arg0, T1 arg1)
+        {
+            if(logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.Log(LogLevel.Debug, message, arg0, arg1);
+            }
+        }
+        
+        /// <summary>
+        /// Formats and writes a debug log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogDebug(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogDebug<T0, T1, T2>(this ILogger logger, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if(logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.Log(LogLevel.Debug, message, arg0, arg1, arg2);
             }
         }
 
@@ -87,6 +291,60 @@ namespace Microsoft.Extensions.Logging
         /// <param name="eventId">The event id associated with the log.</param>
         /// <param name="exception">The exception to log.</param>
         /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogTrace(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogTrace<T0>(this ILogger logger, EventId eventId, Exception? exception, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.Log(LogLevel.Trace, eventId, exception, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a trace log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogTrace(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogTrace<T0, T1>(this ILogger logger, EventId eventId, Exception? exception, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.Log(LogLevel.Trace, eventId, exception, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a trace log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogTrace(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogTrace<T0, T1, T2>(this ILogger logger, EventId eventId, Exception? exception, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.Log(LogLevel.Trace, eventId, exception, message, arg0, arg1, arg2);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a trace log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
         /// <param name="args">An object array that contains zero or more objects to format.</param>
         /// <example>logger.LogTrace(0, exception, "Error while processing request from {Address}", address)</example>
         public static void LogTrace(this ILogger logger, EventId eventId, Exception? exception, string? message, params object?[] args)
@@ -94,6 +352,57 @@ namespace Microsoft.Extensions.Logging
             if (logger.IsEnabled(LogLevel.Trace))
             {
                 logger.Log(LogLevel.Trace, eventId, exception, message, args);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a trace log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogTrace(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogTrace<T0>(this ILogger logger, EventId eventId, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.Log(LogLevel.Trace, eventId, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a trace log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogTrace(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogTrace<T0, T1>(this ILogger logger, EventId eventId, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.Log(LogLevel.Trace, eventId, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a trace log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogTrace(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogTrace<T0, T1, T2>(this ILogger logger, EventId eventId, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.Log(LogLevel.Trace, eventId, message, arg0, arg1, arg2);
             }
         }
 
@@ -119,6 +428,57 @@ namespace Microsoft.Extensions.Logging
         /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
         /// <param name="exception">The exception to log.</param>
         /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogTrace(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogTrace<T0>(this ILogger logger, Exception? exception, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.Log(LogLevel.Trace, exception, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a trace log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogTrace(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogTrace<T0, T1>(this ILogger logger, Exception? exception, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.Log(LogLevel.Trace, exception, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a trace log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogTrace(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogTrace<T0, T1, T2>(this ILogger logger, Exception? exception, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.Log(LogLevel.Trace, exception, message, arg0, arg1, arg2);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a trace log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
         /// <param name="args">An object array that contains zero or more objects to format.</param>
         /// <example>logger.LogTrace(exception, "Error while processing request from {Address}", address)</example>
         public static void LogTrace(this ILogger logger, Exception? exception, string? message, params object?[] args)
@@ -126,6 +486,54 @@ namespace Microsoft.Extensions.Logging
             if (logger.IsEnabled(LogLevel.Trace))
             {
                 logger.Log(LogLevel.Trace, exception, message, args);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a trace log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogTrace(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogTrace<T0>(this ILogger logger, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.Log(LogLevel.Trace, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a trace log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogTrace(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogTrace<T0, T1>(this ILogger logger, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.Log(LogLevel.Trace, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a trace log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogTrace(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogTrace<T0, T1, T2>(this ILogger logger, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.Log(LogLevel.Trace, message, arg0, arg1, arg2);
             }
         }
 
@@ -147,7 +555,61 @@ namespace Microsoft.Extensions.Logging
         //------------------------------------------INFORMATION------------------------------------------//
 
         /// <summary>
-        /// Formats and writes an informational log message.
+        /// Formats and writes a informational log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogInformation(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogInformation<T0>(this ILogger logger, EventId eventId, Exception? exception, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.Log(LogLevel.Information, eventId, exception, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a informational log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogInformation(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogInformation<T0, T1>(this ILogger logger, EventId eventId, Exception? exception, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.Log(LogLevel.Information, eventId, exception, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a informational log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogInformation(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogInformation<T0, T1, T2>(this ILogger logger, EventId eventId, Exception? exception, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.Log(LogLevel.Information, eventId, exception, message, arg0, arg1, arg2);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a informational log message.
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
         /// <param name="eventId">The event id associated with the log.</param>
@@ -164,7 +626,58 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Formats and writes an informational log message.
+        /// Formats and writes a informational log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogInformation(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogInformation<T0>(this ILogger logger, EventId eventId, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.Log(LogLevel.Information, eventId, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a informational log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogInformation(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogInformation<T0, T1>(this ILogger logger, EventId eventId, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.Log(LogLevel.Information, eventId, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a informational log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogInformation(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogInformation<T0, T1, T2>(this ILogger logger, EventId eventId, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.Log(LogLevel.Information, eventId, message, arg0, arg1, arg2);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a informational log message.
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
         /// <param name="eventId">The event id associated with the log.</param>
@@ -180,7 +693,58 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Formats and writes an informational log message.
+        /// Formats and writes a informational log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogInformation(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogInformation<T0>(this ILogger logger, Exception? exception, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.Log(LogLevel.Information, exception, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a informational log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogInformation(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogInformation<T0, T1>(this ILogger logger, Exception? exception, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.Log(LogLevel.Information, exception, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a informational log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogInformation(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogInformation<T0, T1, T2>(this ILogger logger, Exception? exception, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.Log(LogLevel.Information, exception, message, arg0, arg1, arg2);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a informational log message.
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
         /// <param name="exception">The exception to log.</param>
@@ -196,7 +760,55 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Formats and writes an informational log message.
+        /// Formats and writes a informational log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogInformation(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogInformation<T0>(this ILogger logger, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.Log(LogLevel.Information, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a informational log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogInformation(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogInformation<T0, T1>(this ILogger logger, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.Log(LogLevel.Information, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a informational log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogInformation(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogInformation<T0, T1, T2>(this ILogger logger, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.Log(LogLevel.Information, message, arg0, arg1, arg2);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a informational log message.
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
         /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
@@ -219,6 +831,60 @@ namespace Microsoft.Extensions.Logging
         /// <param name="eventId">The event id associated with the log.</param>
         /// <param name="exception">The exception to log.</param>
         /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogWarning(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogWarning<T0>(this ILogger logger, EventId eventId, Exception? exception, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.Log(LogLevel.Warning, eventId, exception, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a warning log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogWarning(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogWarning<T0, T1>(this ILogger logger, EventId eventId, Exception? exception, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.Log(LogLevel.Warning, eventId, exception, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a warning log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogWarning(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogWarning<T0, T1, T2>(this ILogger logger, EventId eventId, Exception? exception, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.Log(LogLevel.Warning, eventId, exception, message, arg0, arg1, arg2);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a warning log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
         /// <param name="args">An object array that contains zero or more objects to format.</param>
         /// <example>logger.LogWarning(0, exception, "Error while processing request from {Address}", address)</example>
         public static void LogWarning(this ILogger logger, EventId eventId, Exception? exception, string? message, params object?[] args)
@@ -226,6 +892,57 @@ namespace Microsoft.Extensions.Logging
             if (logger.IsEnabled(LogLevel.Warning))
             {
                 logger.Log(LogLevel.Warning, eventId, exception, message, args);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a warning log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogWarning(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogWarning<T0>(this ILogger logger, EventId eventId, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.Log(LogLevel.Warning, eventId, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a warning log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogWarning(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogWarning<T0, T1>(this ILogger logger, EventId eventId, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.Log(LogLevel.Warning, eventId, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a warning log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogWarning(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogWarning<T0, T1, T2>(this ILogger logger, EventId eventId, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.Log(LogLevel.Warning, eventId, message, arg0, arg1, arg2);
             }
         }
 
@@ -251,6 +968,57 @@ namespace Microsoft.Extensions.Logging
         /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
         /// <param name="exception">The exception to log.</param>
         /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogWarning(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogWarning<T0>(this ILogger logger, Exception? exception, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.Log(LogLevel.Warning, exception, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a warning log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogWarning(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogWarning<T0, T1>(this ILogger logger, Exception? exception, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.Log(LogLevel.Warning, exception, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a warning log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogWarning(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogWarning<T0, T1, T2>(this ILogger logger, Exception? exception, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.Log(LogLevel.Warning, exception, message, arg0, arg1, arg2);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a warning log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
         /// <param name="args">An object array that contains zero or more objects to format.</param>
         /// <example>logger.LogWarning(exception, "Error while processing request from {Address}", address)</example>
         public static void LogWarning(this ILogger logger, Exception? exception, string? message, params object?[] args)
@@ -258,6 +1026,54 @@ namespace Microsoft.Extensions.Logging
             if (logger.IsEnabled(LogLevel.Warning))
             {
                 logger.Log(LogLevel.Warning, exception, message, args);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a warning log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogWarning(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogWarning<T0>(this ILogger logger, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.Log(LogLevel.Warning, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a warning log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogWarning(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogWarning<T0, T1>(this ILogger logger, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.Log(LogLevel.Warning, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a warning log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogWarning(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogWarning<T0, T1, T2>(this ILogger logger, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.Log(LogLevel.Warning, message, arg0, arg1, arg2);
             }
         }
 
@@ -279,7 +1095,61 @@ namespace Microsoft.Extensions.Logging
         //------------------------------------------ERROR------------------------------------------//
 
         /// <summary>
-        /// Formats and writes an error log message.
+        /// Formats and writes a error log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogError(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogError<T0>(this ILogger logger, EventId eventId, Exception? exception, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.Log(LogLevel.Error, eventId, exception, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a error log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogError(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogError<T0, T1>(this ILogger logger, EventId eventId, Exception? exception, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.Log(LogLevel.Error, eventId, exception, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a error log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogError(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogError<T0, T1, T2>(this ILogger logger, EventId eventId, Exception? exception, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.Log(LogLevel.Error, eventId, exception, message, arg0, arg1, arg2);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a error log message.
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
         /// <param name="eventId">The event id associated with the log.</param>
@@ -296,7 +1166,58 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Formats and writes an error log message.
+        /// Formats and writes a error log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogError(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogError<T0>(this ILogger logger, EventId eventId, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.Log(LogLevel.Error, eventId, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a error log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogError(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogError<T0, T1>(this ILogger logger, EventId eventId, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.Log(LogLevel.Error, eventId, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a error log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogError(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogError<T0, T1, T2>(this ILogger logger, EventId eventId, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.Log(LogLevel.Error, eventId, message, arg0, arg1, arg2);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a error log message.
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
         /// <param name="eventId">The event id associated with the log.</param>
@@ -312,7 +1233,58 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Formats and writes an error log message.
+        /// Formats and writes a error log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogError(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogError<T0>(this ILogger logger, Exception? exception, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.Log(LogLevel.Error, exception, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a error log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogError(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogError<T0, T1>(this ILogger logger, Exception? exception, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.Log(LogLevel.Error, exception, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a error log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogError(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogError<T0, T1, T2>(this ILogger logger, Exception? exception, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.Log(LogLevel.Error, exception, message, arg0, arg1, arg2);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a error log message.
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
         /// <param name="exception">The exception to log.</param>
@@ -328,7 +1300,55 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Formats and writes an error log message.
+        /// Formats and writes a error log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogError(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogError<T0>(this ILogger logger, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.Log(LogLevel.Error, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a error log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogError(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogError<T0, T1>(this ILogger logger, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.Log(LogLevel.Error, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a error log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogError(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogError<T0, T1, T2>(this ILogger logger, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.Log(LogLevel.Error, message, arg0, arg1, arg2);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a error log message.
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
         /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
@@ -344,6 +1364,60 @@ namespace Microsoft.Extensions.Logging
 
         //------------------------------------------CRITICAL------------------------------------------//
 
+        // <summary>
+        /// Formats and writes a critical log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogCritical(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogCritical<T0>(this ILogger logger, EventId eventId, Exception? exception, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.Log(LogLevel.Critical, eventId, exception, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a critical log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogCritical(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogCritical<T0, T1>(this ILogger logger, EventId eventId, Exception? exception, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.Log(LogLevel.Critical, eventId, exception, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a critical log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogCritical(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogCritical<T0, T1, T2>(this ILogger logger, EventId eventId, Exception? exception, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.Log(LogLevel.Critical, eventId, exception, message, arg0, arg1, arg2);
+            }
+        }
+
         /// <summary>
         /// Formats and writes a critical log message.
         /// </summary>
@@ -358,6 +1432,57 @@ namespace Microsoft.Extensions.Logging
             if (logger.IsEnabled(LogLevel.Critical))
             {
                 logger.Log(LogLevel.Critical, eventId, exception, message, args);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a critical log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogCritical(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogCritical<T0>(this ILogger logger, EventId eventId, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.Log(LogLevel.Critical, eventId, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a critical log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogCritical(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogCritical<T0, T1>(this ILogger logger, EventId eventId, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.Log(LogLevel.Critical, eventId, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a critical log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="eventId">The event id associated with the log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogCritical(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogCritical<T0, T1, T2>(this ILogger logger, EventId eventId, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.Log(LogLevel.Critical, eventId, message, arg0, arg1, arg2);
             }
         }
 
@@ -383,6 +1508,57 @@ namespace Microsoft.Extensions.Logging
         /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
         /// <param name="exception">The exception to log.</param>
         /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogCritical(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogCritical<T0>(this ILogger logger, Exception? exception, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.Log(LogLevel.Critical, exception, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a critical log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogCritical(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogCritical<T0, T1>(this ILogger logger, Exception? exception, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.Log(LogLevel.Critical, exception, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a critical log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogCritical(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogCritical<T0, T1, T2>(this ILogger logger, Exception? exception, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.Log(LogLevel.Critical, exception, message, arg0, arg1, arg2);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a critical log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="exception">The exception to log.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
         /// <param name="args">An object array that contains zero or more objects to format.</param>
         /// <example>logger.LogCritical(exception, "Error while processing request from {Address}", address)</example>
         public static void LogCritical(this ILogger logger, Exception? exception, string? message, params object?[] args)
@@ -390,6 +1566,54 @@ namespace Microsoft.Extensions.Logging
             if (logger.IsEnabled(LogLevel.Critical))
             {
                 logger.Log(LogLevel.Critical, exception, message, args);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a critical log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogCritical(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogCritical<T0>(this ILogger logger, string? message, T0 arg0)
+        {
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.Log(LogLevel.Critical, message, arg0);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a critical log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogCritical(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogCritical<T0, T1>(this ILogger logger, string? message, T0 arg0, T1 arg1)
+        {
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.Log(LogLevel.Critical, message, arg0, arg1);
+            }
+        }
+
+        /// <summary>
+        /// Formats and writes a critical log message.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to write to.</param>
+        /// <param name="message">Format string of the log message in message template format. Example: <c>"User {User} logged in from {Address}"</c></param>
+        /// <param name="arg0">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg1">A generic type that contains the value to format for the message.</param>
+        /// <param name="arg2">A generic type that contains the value to format for the message.</param>
+        /// <example>logger.LogCritical(0, exception, "Error while processing request from {Address}", address)</example>
+        public static void LogCritical<T0, T1, T2>(this ILogger logger, string? message, T0 arg0, T1 arg1, T2 arg2)
+        {
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.Log(LogLevel.Critical, message, arg0, arg1, arg2);
             }
         }
 
