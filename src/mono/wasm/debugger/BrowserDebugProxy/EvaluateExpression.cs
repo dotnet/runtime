@@ -404,7 +404,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     string.Join("\n", findVarNMethodCall.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
 
                 var state = await newScript.RunAsync(cancellationToken: token);
-                return JObject.FromObject(ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue?.GetType(), context));
+                return JObject.FromObject(ConvertCLRToJSType(state.ReturnValue, context));
             }
             catch (CompilationErrorException cee)
             {
@@ -416,29 +416,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        private static readonly HashSet<Type> NumericTypes = new HashSet<Type>
+        private static JObject ConvertCLRToJSType(object v, ExecutionContext context)
         {
-            typeof(decimal), typeof(byte), typeof(sbyte),
-            typeof(short), typeof(ushort),
-            typeof(int), typeof(uint),
-            typeof(float), typeof(double)
-        };
+            if (v is JObject jobj)
+                return jobj;
 
-        private static object ConvertCSharpToJSType(object v, Type type, ExecutionContext context)
-        {
-            if (v == null)
-                return context.SdbAgent.CreateJObjectForNull(type?.ToString())?["value"];
-            if (v is string s)
-                return context.SdbAgent.CreateJObjectForString(s)?["value"];
-            if (v is char c)
-                return context.SdbAgent.CreateJObjectForChar(Convert.ToInt32(c))?["value"];
-            if (NumericTypes.Contains(type))
-                return context.SdbAgent.CreateJObjectForNumber(v)?["value"];
-            if (v is JObject)
-                return v;
-            if (v is bool b)
-                return context.SdbAgent.CreateJObjectForBoolean(b)?["value"];
-            return context.SdbAgent.CreateJObjectForObject(type.ToString(), v.ToString())?["value"];
+            if (v is null)
+                return context.SdbAgent.ValueCreator.CreateNull("<unknown>")?["value"] as JObject;
+
+            string typeName = v.GetType().ToString();
+            jobj = context.SdbAgent.ValueCreator.CreateFromPrimitiveType(v);
+            return jobj is not null
+                ? jobj["value"] as JObject
+                : context.SdbAgent.ValueCreator.Create<object>(value: null,
+                                                                type: "object",
+                                                                description: v.ToString(),
+                                                                className: typeName)?["value"] as JObject;
         }
     }
 
