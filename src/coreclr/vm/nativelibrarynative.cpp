@@ -70,4 +70,3 @@ extern "C" INT_PTR QCALLTYPE NativeLibrary_GetSymbol(INT_PTR handle, LPCWSTR sym
 
     return address;
 }
-
