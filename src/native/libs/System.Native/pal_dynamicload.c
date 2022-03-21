@@ -57,7 +57,7 @@ void* SystemNative_GetDefaultSearchOrderPseudoHandle(void)
     return (void*)RTLD_DEFAULT;
 }
 #else
-static volatile void* g_defaultSearchOrderPseudoHandle = NULL;
+static void* volatile g_defaultSearchOrderPseudoHandle = NULL;
 void* SystemNative_GetDefaultSearchOrderPseudoHandle(void)
 {
     // Read the value once from the volatile static to avoid reading from memory twice.
