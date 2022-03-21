@@ -1269,7 +1269,7 @@ start_wrapper (gpointer data)
 }
 
 static void
-throw_thread_start_exception (guint32 error_code, MonoError *error)
+throw_thread_start_exception (const char *msg, MonoError *error)
 {
 	ERROR_DECL (method_error);
 
@@ -1281,9 +1281,7 @@ throw_thread_start_exception (guint32 error_code, MonoError *error)
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, throw_method)
 	g_assert (throw_method);
 
-	char *msg = g_strdup_printf ("0x%x", error_code);
 	MonoException *ex = mono_get_exception_execution_engine (msg);
-	g_free (msg);
 
 	gpointer args [1];
 	args [0] = ex;
@@ -1365,10 +1363,11 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoThreadStart
 		mono_threads_unlock ();
 
 #if HOST_WIN32
-		throw_thread_start_exception (GetLastError (), error);
+		char *err_msg = g_strdup_printf ("0x%x", GetLastError ());
+		throw_thread_start_exception (err_msg, error);
+		g_free (err_msg);
 #else
-		// we don't have a specific error code here, hardcode to 1
-		throw_thread_start_exception (1, error);
+		throw_thread_start_exception ("mono_thread_platform_create_thread() failed", error);
 #endif
 
 		/* ref is not going to be decremented in start_wrapper_internal */
