@@ -138,9 +138,8 @@
     <optimizationPGOCoreCLRVersion>1.0.0-prerelease.22121.2</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
     <MicrosoftDiaSymReaderNativeVersion>16.9.0-beta1.21055.5</MicrosoftDiaSymReaderNativeVersion>
-    <SystemCommandLineVersion>2.0.0-beta1.20253.1</SystemCommandLineVersion>
+    <SystemCommandLineVersion>2.0.0-beta3.22114.1</SystemCommandLineVersion>
     <TraceEventVersion>2.0.65</TraceEventVersion>
-    <CommandLineParserVersion>2.2.0</CommandLineParserVersion>
     <NETStandardLibraryRefVersion>2.1.0</NETStandardLibraryRefVersion>
     <NetStandardLibraryVersion>2.0.3</NetStandardLibraryVersion>
     <MicrosoftDiagnosticsToolsRuntimeClientVersion>1.0.4-preview6.19326.1</MicrosoftDiagnosticsToolsRuntimeClientVersion>
@@ -150,7 +149,7 @@
     <NugetProjectModelVersion>5.8.0</NugetProjectModelVersion>
     <NugetPackagingVersion>5.8.0</NugetPackagingVersion>
     <!-- Testing -->
-    <MicrosoftNETCoreCoreDisToolsVersion>1.0.1-prerelease-00006</MicrosoftNETCoreCoreDisToolsVersion>
+    <MicrosoftNETCoreCoreDisToolsVersion>1.1.0</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>16.9.0-preview-20201201-01</MicrosoftNETTestSdkVersion>
     <MicrosoftDotNetXHarnessTestRunnersCommonVersion>1.0.0-prerelease.22164.2</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
     <MicrosoftDotNetXHarnessTestRunnersXunitVersion>1.0.0-prerelease.22164.2</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
@@ -167,9 +166,9 @@
     <SdkVersionForWorkloadTesting>7.0.100-preview.3.22151.18</SdkVersionForWorkloadTesting>
     <CompilerPlatformTestingVersion>1.1.2-beta1.22122.4</CompilerPlatformTestingVersion>
     <!-- Docs -->
-    <MicrosoftPrivateIntellisenseVersion>6.0.0-preview-20220104.1</MicrosoftPrivateIntellisenseVersion>
+    <MicrosoftPrivateIntellisenseVersion>7.0.0-preview-20220316.2</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>7.0.100-1.22160.1</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>7.0.100-1.22168.6</MicrosoftNETILLinkTasksVersion>
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>7.0.0-preview.4.22172.1</MicrosoftNETCoreRuntimeICUTransportVersion>

@@ -48,6 +48,10 @@
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>f17917e8d6a2e3ba069cddeab873554706d502a5</Sha>
     </Dependency>
+    <Dependency Name="System.CommandLine" Version="2.0.0-beta3.22151.2">
+      <Uri>https://github.com/dotnet/command-line-api</Uri>
+      <Sha>021ec68a4cb510c2cc125c6ebb78b9cfd4e3847a</Sha>
+    </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="7.0.0-beta.22171.2">
@@ -230,9 +234,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>eb51b02b158c3ff71a1ec7eac8a211d1d464c1a5</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.22160.1">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.22168.6">
       <Uri>https://github.com/dotnet/linker</Uri>
-      <Sha>5baeb5e08b4a5fd6995e6247c7cb41b673c5ecdc</Sha>
+      <Sha>5929598c16cd5d791eb33d4b5978f3140a136262</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="1.0.0-prerelease.22164.2">
       <Uri>https://github.com/dotnet/xharness</Uri>

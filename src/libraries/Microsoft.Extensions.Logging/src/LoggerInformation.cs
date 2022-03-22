@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 
 namespace Microsoft.Extensions.Logging
 {
     internal readonly struct MessageLogger
     {
-        public MessageLogger(ILogger logger, string category, string providerTypeFullName, LogLevel? minLevel, Func<string, string, LogLevel, bool> filter)
+        public MessageLogger(ILogger logger, string? category, string? providerTypeFullName, LogLevel? minLevel, Func<string?, string?, LogLevel, bool>? filter)
         {
             Logger = logger;
             Category = category;
@@ -18,13 +19,13 @@ namespace Microsoft.Extensions.Logging
 
         public ILogger Logger { get; }
 
-        public string Category { get; }
+        public string? Category { get; }
 
-        private string ProviderTypeFullName { get; }
+        private string? ProviderTypeFullName { get; }
 
         public LogLevel? MinLevel { get; }
 
-        public Func<string, string, LogLevel, bool> Filter { get; }
+        public Func<string?, string?, LogLevel, bool>? Filter { get; }
 
         public bool IsEnabled(LogLevel level)
         {
@@ -44,15 +45,17 @@ namespace Microsoft.Extensions.Logging
 
     internal readonly struct ScopeLogger
     {
-        public ScopeLogger(ILogger logger, IExternalScopeProvider externalScopeProvider)
+        public ScopeLogger(ILogger? logger, IExternalScopeProvider? externalScopeProvider)
         {
+            Debug.Assert(logger != null || externalScopeProvider != null, "Logger can't be null when there isn't an ExternalScopeProvider");
+
             Logger = logger;
             ExternalScopeProvider = externalScopeProvider;
         }
 
-        public ILogger Logger { get; }
+        public ILogger? Logger { get; }
 
-        public IExternalScopeProvider ExternalScopeProvider { get; }
+        public IExternalScopeProvider? ExternalScopeProvider { get; }
 
         public IDisposable CreateScope<TState>(TState state)
         {
@@ -60,6 +63,8 @@ namespace Microsoft.Extensions.Logging
             {
                 return ExternalScopeProvider.Push(state);
             }
+
+            Debug.Assert(Logger != null);
             return Logger.BeginScope<TState>(state);
         }
     }

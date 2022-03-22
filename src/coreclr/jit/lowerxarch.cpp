@@ -3789,6 +3789,13 @@ GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
         return nullptr;
     }
 
+    // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
+    if (((addOp2->gtFlags & GTF_SET_FLAGS) != 0) || ((op2->gtFlags & GTF_SET_FLAGS) != 0) ||
+        ((andNode->gtFlags & GTF_SET_FLAGS) != 0))
+    {
+        return nullptr;
+    }
+
     NamedIntrinsic intrinsic;
     if (op1->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64))
     {
@@ -3868,6 +3875,12 @@ GenTree* Lowering::TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode)
         return nullptr;
     }
 
+    // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
+    if (((opNode->gtFlags & GTF_SET_FLAGS) != 0) || ((negNode->gtFlags & GTF_SET_FLAGS) != 0))
+    {
+        return nullptr;
+    }
+
     NamedIntrinsic intrinsic;
     if (andNode->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64))
     {
@@ -3943,6 +3956,12 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
     // We want to avoid using "andn" when one of the operands is both a source and the destination and is also coming
     // from memory. In this scenario, we will get smaller and likely faster code by using the RMW encoding of `and`
     if (IsBinOpInRMWStoreInd(andNode))
+    {
+        return nullptr;
+    }
+
+    // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
+    if (((andNode->gtFlags & GTF_SET_FLAGS) != 0) || ((notNode->gtFlags & GTF_SET_FLAGS) != 0))
     {
         return nullptr;
     }

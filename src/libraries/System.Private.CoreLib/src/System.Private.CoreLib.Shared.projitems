@@ -1827,6 +1827,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.USEROBJECTFLAGS.cs">
       <Link>Common\Interop\Windows\User32\Interop.USEROBJECTFLAGS.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\IO\FileSystem.Attributes.Windows.cs">
       <Link>Common\System\IO\FileSystem.Attributes.Windows.cs</Link>
     </Compile>
@@ -1968,6 +1971,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.CopyFile.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.CopyFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.DynamicLoad.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.DynamicLoad.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ErrNo.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.ErrNo.cs</Link>

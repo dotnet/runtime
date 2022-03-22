@@ -908,9 +908,9 @@ shift_op(TransformData *td, int mint_op)
 static int
 can_store (int st_value, int vt_value)
 {
-	if (st_value == STACK_TYPE_O || st_value == STACK_TYPE_MP)
+	if (st_value == STACK_TYPE_O || st_value == STACK_TYPE_MP || st_value == STACK_TYPE_F)
 		st_value = STACK_TYPE_I;
-	if (vt_value == STACK_TYPE_O || vt_value == STACK_TYPE_MP)
+	if (vt_value == STACK_TYPE_O || vt_value == STACK_TYPE_MP || vt_value == STACK_TYPE_F)
 		vt_value = STACK_TYPE_I;
 	return st_value == vt_value;
 }
@@ -1031,11 +1031,19 @@ store_local (TransformData *td, int local)
 	int mt = td->locals [local].mt;
 	CHECK_STACK (td, 1);
 #if SIZEOF_VOID_P == 8
+	// nint and int32 can be used interchangeably. Add implicit conversions.
 	if (td->sp [-1].type == STACK_TYPE_I4 && stack_type [mt] == STACK_TYPE_I8)
 		interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_I8_I4);
+	else if (td->sp [-1].type == STACK_TYPE_I8 && stack_type [mt] == STACK_TYPE_I4)
+		interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_MOV_8);
 #endif
+	if (td->sp [-1].type == STACK_TYPE_R4 && stack_type [mt] == STACK_TYPE_R8)
+		interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R8, MINT_CONV_R8_R4);
+	else if (td->sp [-1].type == STACK_TYPE_R8 && stack_type [mt] == STACK_TYPE_R4)
+		interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R4, MINT_CONV_R4_R8);
+
 	if (!can_store(td->sp [-1].type, stack_type [mt])) {
-		g_warning("%s.%s: Store local stack type mismatch %d %d",
+		g_error ("%s.%s: Store local stack type mismatch %d %d",
 			m_class_get_name (td->method->klass), td->method->name,
 			stack_type [mt], td->sp [-1].type);
 	}
@@ -6341,15 +6349,22 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			}
 			td->ip += 4;
 			break;
-		case CEE_CKFINITE:
+		case CEE_CKFINITE: {
 			CHECK_STACK (td, 1);
-			interp_add_ins (td, MINT_CKFINITE);
+			int stack_type = td->sp [-1].type;
+			switch (stack_type) {
+				case STACK_TYPE_R4: interp_add_ins (td, MINT_CKFINITE_R4); break;
+				case STACK_TYPE_R8: interp_add_ins (td, MINT_CKFINITE_R8); break;
+				default:
+					g_error ("Invalid stack type");
+			}
 			td->sp--;
 			interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-			push_simple_type (td, STACK_TYPE_R8);
+			push_simple_type (td, stack_type);
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 			++td->ip;
 			break;
+		}
 		case CEE_MKREFANY:
 			CHECK_STACK (td, 1);
 

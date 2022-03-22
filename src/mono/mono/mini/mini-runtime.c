@@ -4011,12 +4011,11 @@ mini_parse_debug_option (const char *option)
 		mini_debug_options.suspend_on_exception = TRUE;
 	else if (!strcmp (option, "suspend-on-unhandled"))
 		mini_debug_options.suspend_on_unhandled = TRUE;
-	else if (!strcmp (option, "dont-free-domains"))
-		mono_dont_free_domains = TRUE;
 	else if (!strcmp (option, "dyn-runtime-invoke"))
 		mini_debug_options.dyn_runtime_invoke = TRUE;
-	else if (!strcmp (option, "gdb"))
-		fprintf (stderr, "MONO_DEBUG=gdb is deprecated.");
+	else if (!strcmp (option, "dont-free-domains") || !strcmp (option, "gdb") ||
+			 !strcmp (option, "gen-compact-seq-points") || !strcmp (option, "debug-domain-unload"))
+		fprintf (stderr, "MONO_DEBUG=%s is deprecated.", option);
 	else if (!strcmp (option, "lldb"))
 		mini_debug_options.lldb = TRUE;
 	else if (!strcmp (option, "llvm-disable-inlining"))
@@ -4027,8 +4026,6 @@ mini_parse_debug_option (const char *option)
 		mini_debug_options.explicit_null_checks = TRUE;
 	else if (!strcmp (option, "gen-seq-points"))
 		mini_debug_options.gen_sdb_seq_points = TRUE;
-	else if (!strcmp (option, "gen-compact-seq-points"))
-		fprintf (stderr, "Mono Warning: option gen-compact-seq-points is deprecated.\n");
 	else if (!strcmp (option, "no-compact-seq-points"))
 		mini_debug_options.no_seq_points_compact_data = TRUE;
 	else if (!strcmp (option, "single-imm-size"))
@@ -4043,8 +4040,6 @@ mini_parse_debug_option (const char *option)
 		mini_debug_options.check_pinvoke_callconv = TRUE;
 	else if (!strcmp (option, "use-fallback-tls"))
 		mini_debug_options.use_fallback_tls = TRUE;
-	else if (!strcmp (option, "debug-domain-unload"))
-		g_error ("MONO_DEBUG option debug-domain-unload is deprecated.");
 	else if (!strcmp (option, "partial-sharing"))
 		mono_set_partial_sharing_supported (TRUE);
 	else if (!strcmp (option, "align-small-structs"))
@@ -4508,10 +4503,8 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_unwind_init ();
 
-	if (mini_debug_options.lldb || g_hasenv ("MONO_LLDB")) {
+	if (mini_debug_options.lldb || g_hasenv ("MONO_LLDB"))
 		mono_lldb_init ("");
-		mono_dont_free_domains = TRUE;
-	}
 
 #ifdef ENABLE_LLVM
 	if (mono_use_llvm)

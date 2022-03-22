@@ -418,7 +418,7 @@ namespace System.Diagnostics
 
             foreach (MethodInfo candidateMethod in methods)
             {
-                IEnumerable<StateMachineAttribute>? attributes = candidateMethod.GetCustomAttributes<StateMachineAttribute>(inherit: false);
+                StateMachineAttribute[]? attributes = (StateMachineAttribute[])Attribute.GetCustomAttributes(candidateMethod, typeof(StateMachineAttribute), inherit: false);
                 if (attributes == null)
                 {
                     continue;
