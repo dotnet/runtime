@@ -472,7 +472,7 @@ namespace System.Net.Http
         {
             Debug.Assert(HasSyncObjLock);
 
-            if (!_http11RequestQueue.TryPeekUncancelledRequest(this, out HttpRequestMessage? request))
+            if (!_http11RequestQueue.TryPeekUncanceledRequest(this, out HttpRequestMessage? request))
             {
                 return;
             }
@@ -694,7 +694,7 @@ namespace System.Net.Http
         {
             Debug.Assert(HasSyncObjLock);
 
-            if (!_http2RequestQueue.TryPeekUncancelledRequest(this, out HttpRequestMessage? request))
+            if (!_http2RequestQueue.TryPeekUncanceledRequest(this, out HttpRequestMessage? request))
             {
                 return;
             }
@@ -2272,7 +2272,7 @@ namespace System.Net.Http
                 return false;
             }
 
-            public bool TryPeekUncancelledRequest(HttpConnectionPool pool, [MaybeNullWhen(false)] out HttpRequestMessage request)
+            public bool TryPeekUncanceledRequest(HttpConnectionPool pool, [MaybeNullWhen(false)] out HttpRequestMessage request)
             {
                 if (_queue is not null)
                 {

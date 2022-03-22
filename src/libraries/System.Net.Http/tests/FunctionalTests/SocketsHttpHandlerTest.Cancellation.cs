@@ -197,7 +197,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public async Task RequestsCancelled_NoConnectionAttemptForCancelledRequests()
+        public async Task RequestsCanceled_NoConnectionAttemptForCanceledRequests()
         {
             if (UseVersion == HttpVersion.Version30)
             {
