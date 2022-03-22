@@ -6584,10 +6584,10 @@ mono_profiler_add_provider_param (const EventFilterDescriptor *key)
 		if (param_ptr) {
 			param = ep_event_filter_desc_alloc (param_ptr, key->size, key->type);
 			if (param) {
-				memcpy ((uint8_t*)param->ptr,(const uint8_t*)key->ptr, key->size);
+				memcpy ((uint8_t*)(uintptr_t)param->ptr,(const uint8_t*)(uintptr_t)key->ptr, key->size);
 				_ep_rt_mono_profiler_provider_params = g_slist_append (_ep_rt_mono_profiler_provider_params, param);
 			} else {
-				g_free ((void *)param_ptr);
+				g_free ((void *)(uintptr_t)param_ptr);
 			}
 		}
 	}
@@ -6607,8 +6607,8 @@ mono_profiler_remove_provider_param (const EventFilterDescriptor *key)
 		while (list) {
 			param = (EventFilterDescriptor *)(list->data);
 			if (param && param->ptr && param->type == key->type && param->size == key->size &&
-				memcmp ((const void *)param->ptr, (const void *)key->ptr, param->size) == 0) {
-					g_free ((void *)param->ptr);
+				memcmp ((const void *)(uintptr_t)param->ptr, (const void *)(uintptr_t)key->ptr, param->size) == 0) {
+					g_free ((void *)(uintptr_t)param->ptr);
 					ep_event_filter_desc_free (param);
 					_ep_rt_mono_profiler_provider_params = g_slist_delete_link (_ep_rt_mono_profiler_provider_params, list);
 					removed = true;
@@ -6629,7 +6629,7 @@ mono_profiler_free_provider_params (void)
 	for (GSList *list = _ep_rt_mono_profiler_provider_params; list; list = list->next) {
 		EventFilterDescriptor *param = (EventFilterDescriptor *)(list->data);
 		if (param) {
-			g_free ((void *)param->ptr);
+			g_free ((void *)(uintptr_t)param->ptr);
 			ep_event_filter_desc_free (param);
 		}
 	}
@@ -6647,7 +6647,7 @@ mono_profiler_provider_params_get_value (
 	if (!param || !param->ptr || !param->size || !key)
 		return false;
 
-	const ep_char8_t *current = (ep_char8_t *)param->ptr;
+	const ep_char8_t *current = (ep_char8_t *)(uintptr_t)param->ptr;
 	const ep_char8_t *end = current + param->size;
 	bool found_key = false;
 

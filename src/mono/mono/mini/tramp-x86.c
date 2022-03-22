@@ -29,6 +29,8 @@
 
 #include <mono/metadata/components.h>
 
+MONO_PRAGMA_WARNING_DISABLE(4127) /* conditional expression is constant */
+
 /*
  * mono_arch_get_unbox_trampoline:
  * @m: method pointer
@@ -783,8 +785,8 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	x86_fst_membase (code, X86_ESI, MONO_STRUCT_OFFSET (CallContext, fret), TRUE, TRUE);
 
 	/* restore ESI, EDI which were saved below rbp */
-	x86_mov_reg_membase (code, X86_EDI, X86_EBP, - sizeof (target_mgreg_t), sizeof (target_mgreg_t));
-	x86_mov_reg_membase (code, X86_ESI, X86_EBP, - 2 * sizeof (target_mgreg_t), sizeof (target_mgreg_t));
+	x86_mov_reg_membase (code, X86_EDI, X86_EBP, - (gint32)sizeof (target_mgreg_t), sizeof (target_mgreg_t));
+	x86_mov_reg_membase (code, X86_ESI, X86_EBP, - (gint32)(2 * sizeof (target_mgreg_t)), sizeof (target_mgreg_t));
 	x86_mov_reg_reg (code, X86_ESP, X86_EBP);
 
 	x86_pop_reg (code, X86_EBP);

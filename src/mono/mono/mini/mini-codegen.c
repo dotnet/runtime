@@ -2189,12 +2189,12 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	 * arguments required by the fp opcodes are at the top of the stack.
 	 */
 	if (has_fp) {
-		MonoInst *prev = NULL;
 		MonoInst *fxch;
-		int tmp;
+		int fpstack_tmp;
 
 		g_assert (num_sregs <= 2);
 
+		prev = NULL;
 		for (ins = bb->code; ins; ins = ins->next) {
 			spec = ins_get_spec (ins->opcode);
 
@@ -2230,9 +2230,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					mono_bblock_insert_after_ins (bb, prev, fxch);
 					prev = fxch;
 
-					tmp = fpstack [sp - 1];
+					fpstack_tmp = fpstack [sp - 1];
 					fpstack [sp - 1] = fpstack [i];
-					fpstack [i] = tmp;
+					fpstack [i] = fpstack_tmp;
 				}
 
 				/* Then move it to %st(1) */
@@ -2244,9 +2244,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				mono_bblock_insert_after_ins (bb, prev, fxch);
 				prev = fxch;
 
-				tmp = fpstack [sp - 1];
+				fpstack_tmp = fpstack [sp - 1];
 				fpstack [sp - 1] = fpstack [sp - 2];
-				fpstack [sp - 2] = tmp;
+				fpstack [sp - 2] = fpstack_tmp;
 			}
 
 			if (sreg2_is_fp (spec)) {
@@ -2268,9 +2268,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					mono_bblock_insert_after_ins (bb, prev, fxch);
 					prev = fxch;
 
-					tmp = fpstack [sp - 1];
+					fpstack_tmp = fpstack [sp - 1];
 					fpstack [sp - 1] = fpstack [i];
-					fpstack [i] = tmp;
+					fpstack [i] = fpstack_tmp;
 				}
 
 				sp --;
@@ -2295,9 +2295,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					mono_bblock_insert_after_ins (bb, prev, fxch);
 					prev = fxch;
 
-					tmp = fpstack [sp - 1];
+					fpstack_tmp = fpstack [sp - 1];
 					fpstack [sp - 1] = fpstack [i];
-					fpstack [i] = tmp;
+					fpstack [i] = fpstack_tmp;
 				}
 
 				sp --;

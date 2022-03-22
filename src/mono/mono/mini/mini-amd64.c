@@ -6661,7 +6661,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			default:
 				size = 0;
-				break;
+				g_assert_not_reached ();
 			}
 
 			amd64_mov_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1, size);

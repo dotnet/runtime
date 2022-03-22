@@ -42,6 +42,8 @@
 #include "aot-runtime.h"
 #include "mini-runtime.h"
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (math, "System", "Math")
 
 
@@ -1180,7 +1182,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			mini_gc_set_slot_type_from_fp (cfg, - prev_offset, SLOT_NOREF);
 		}
 	}
-	cfg->locals_min_stack_offset = - (offset + locals_stack_size);
+	cfg->locals_min_stack_offset = - (offset + (gint)locals_stack_size);
 	cfg->locals_max_stack_offset = - offset;
 	/*
 	 * EBP is at alignment 8 % MONO_ARCH_FRAME_ALIGNMENT, so if we
@@ -1194,7 +1196,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
 		if (offsets [i] != -1) {
-			MonoInst *inst = cfg->varinfo [i];
+			inst = cfg->varinfo [i];
 			inst->opcode = OP_REGOFFSET;
 			inst->inst_basereg = X86_EBP;
 			inst->inst_offset = - (offset + offsets [i]);
@@ -1769,11 +1771,10 @@ if (ins->inst_true_bb->native_offset) { \
 	x86_branch (code, cond, cfg->native_code + ins->inst_true_bb->native_offset, sign); \
 } else { \
 	mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
-	if ((cfg->opt & MONO_OPT_BRANCH) && \
-            x86_is_imm8 (ins->inst_true_bb->max_offset - cpos)) \
+	if ((cfg->opt & MONO_OPT_BRANCH) && x86_is_imm8 (ins->inst_true_bb->max_offset - cpos)) \
 		x86_branch8 (code, cond, 0, sign); \
-        else \
-	        x86_branch32 (code, cond, 0, sign); \
+	else \
+		x86_branch32 (code, cond, 0, sign); \
 }
 
 /*
@@ -4263,6 +4264,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			case OP_ATOMIC_STORE_U4:
 				size = 4;
 				break;
+			default:
+				size = 0;
+				g_assert_not_reached ();
 			}
 
 			x86_mov_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1, size);
@@ -6162,7 +6166,6 @@ void
 mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 {
 	MonoInst *ins;
-	int vreg;
 
 	if (long_ins->opcode == OP_LNEG) {
 		ins = long_ins;
@@ -6174,7 +6177,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 	}
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
-
+	int vreg;
 	if (!(cfg->opt & MONO_OPT_SIMD))
 		return;
 

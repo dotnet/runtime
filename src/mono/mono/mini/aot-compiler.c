@@ -1616,6 +1616,8 @@ arm64_emit_gsharedvt_arg_trampoline (MonoAotCompile *acfg, int offset, int *tram
 
 #endif
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 #ifdef MONO_ARCH_AOT_SUPPORTED
 /*
  * arch_emit_direct_call:
@@ -2566,8 +2568,6 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 #endif
 }
 
-MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
-
 /*
  * arch_emit_imt_trampoline:
  *
@@ -2822,8 +2822,6 @@ arch_emit_imt_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 #endif
 }
 
-MONO_RESTORE_WARNING
-
 #if defined (TARGET_AMD64)
 
 static void
@@ -2987,6 +2985,8 @@ arch_emit_unbox_arbitrary_trampoline (MonoAotCompile *acfg, int offset, int *tra
 	g_error ("NOT IMPLEMENTED: needed for AOT<>interp mixed mode transition");
 #endif
 }
+
+MONO_RESTORE_WARNING
 
 /* END OF ARCH SPECIFIC CODE */
 
