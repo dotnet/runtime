@@ -543,10 +543,14 @@ bool Compiler::fgRemoveUnreachableBlocks()
 // Also, compute the list of return blocks `fgReturnBlocks` and set of enter blocks `fgEnterBlks`.
 // Delete unreachable blocks.
 //
+//  Arguments:
+//       computeDoms - Whether to compute doms or not.
+//       doRenumber  - Should it do block renumbering or not.
+//
 // Assumptions:
 //    Assumes the predecessor lists are computed and correct.
 //
-void Compiler::fgComputeReachability()
+void Compiler::fgComputeReachability(const bool computeDoms, const bool doRenumber)
 {
 #ifdef DEBUG
     if (verbose)
@@ -580,10 +584,13 @@ void Compiler::fgComputeReachability()
             noway_assert(!"Too many unreachable block removal loops");
         }
 
-        // Walk the flow graph, reassign block numbers to keep them in ascending order.
-        JITDUMP("\nRenumbering the basic blocks for fgComputeReachability pass #%u\n", passNum);
+        if (doRenumber)
+        {
+            // Walk the flow graph, reassign block numbers to keep them in ascending order.
+            JITDUMP("\nRenumbering the basic blocks for fgComputeReachability pass #%u\n", passNum);
+            fgRenumberBlocks();
+        }
         passNum++;
-        fgRenumberBlocks();
 
         //
         // Compute fgEnterBlks
@@ -614,14 +621,17 @@ void Compiler::fgComputeReachability()
     }
 
     fgVerifyHandlerTab();
-    fgDebugCheckBBlist(true);
+    fgDebugCheckBBlist(doRenumber);
 #endif // DEBUG
 
-    //
-    // Now, compute the dominators
-    //
+    if (computeDoms)
+    {
+        //
+        // Now, compute the dominators
+        //
 
-    fgComputeDoms();
+        fgComputeDoms();
+    }
 }
 
 //-------------------------------------------------------------

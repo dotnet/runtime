@@ -5776,7 +5776,8 @@ protected:
 
     bool fgRemoveUnreachableBlocks(); // Remove blocks determined to be unreachable by the bbReach sets.
 
-    void fgComputeReachability(); // Perform flow graph node reachability analysis.
+    void fgComputeReachability(bool computeDoms = true, bool doRenumber = true); // Perform flow graph node reachability
+                                                                                 // analysis.
 
     BasicBlock* fgIntersectDom(BasicBlock* a, BasicBlock* b); // Intersect two immediate dominator sets.
 
