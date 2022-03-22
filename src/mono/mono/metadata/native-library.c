@@ -1222,9 +1222,11 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_FreeLib (gpointer lib, Mo
 		g_hash_table_add (native_library_module_blocklist, module);
 		mono_dl_close (module);
 	} else {
-		MonoDl* raw_module = g_new0(MonoDl, 1);
-		raw_module->handle = lib;
-		mono_dl_close (raw_module);
+		MonoDl *raw_module = (MonoDl *) g_malloc0 (sizeof (MonoDl));
+		if (raw_module) {
+			raw_module->handle = lib;
+			mono_dl_close (raw_module);
+		}
 	}
 
 leave:
