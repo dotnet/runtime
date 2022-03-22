@@ -38,9 +38,7 @@ namespace Microsoft.Extensions.Options
 #else
             if (!_cache.TryGetValue(name, out value))
             {
-                // copying captured variables to locals avoids allocating a closure if we don't enter the if
-                Func<TOptions> localCreateOptions = createOptions;
-                value = _cache.GetOrAdd(name, new Lazy<TOptions>(localCreateOptions));
+                value = _cache.GetOrAdd(name, new Lazy<TOptions>(createOptions));
             }
 #endif
 
@@ -50,7 +48,10 @@ namespace Microsoft.Extensions.Options
         internal TOptions GetOrAdd<TArg>(string? name, Func<string, TArg, TOptions> createOptions, TArg factoryArgument)
         {
             // For compatibility, fall back to public GetOrAdd() if we're in a derived class.
+            // For simplicity, we do the same for older frameworks that don't support the factoryArgument overload of GetOrAdd().
+#if NET || NETSTANDARD2_1
             if (GetType() != typeof(OptionsCache<TOptions>))
+#endif
             {
                 // copying captured variables to locals avoids allocating a closure if we don't enter the if
                 string? localName = name;
@@ -59,23 +60,11 @@ namespace Microsoft.Extensions.Options
                 return GetOrAdd(name, () => localCreateOptions(localName ?? Options.DefaultName, localFactoryArgument));
             }
 
-            name ??= Options.DefaultName;
-            Lazy<TOptions> value;
-
 #if NET || NETSTANDARD2_1
-            value = _cache.GetOrAdd(name, static (name, arg) => new Lazy<TOptions>(arg.createOptions(name, arg.factoryArgument)), (createOptions, factoryArgument));
-#else
-            if (!_cache.TryGetValue(name, out value))
-            {
-                // copying captured variables to locals avoids allocating a closure if we don't enter the if
-                string? localName = name;
-                Func<string, TArg, TOptions> localCreateOptions = createOptions;
-                TArg localFactoryArgument = factoryArgument;
-                value = _cache.GetOrAdd(name, new Lazy<TOptions>(() => localCreateOptions(localName, localFactoryArgument)));
-            }
+            return _cache.GetOrAdd(
+                name ?? Options.DefaultName,
+                static (name, arg) => new Lazy<TOptions>(arg.createOptions(name, arg.factoryArgument)), (createOptions, factoryArgument)).Value;
 #endif
-
-            return value.Value;
         }
 
         /// <summary>
@@ -105,7 +94,7 @@ namespace Microsoft.Extensions.Options
         public virtual bool TryAdd(string? name, TOptions options!!)
         {
             return _cache.TryAdd(name ?? Options.DefaultName, new Lazy<TOptions>(
-#if NETSTANDARD2_0 || NETFRAMEWORK
+#if !(NET || NETSTANDARD2_1)
                 () =>
 #endif
                 options));
