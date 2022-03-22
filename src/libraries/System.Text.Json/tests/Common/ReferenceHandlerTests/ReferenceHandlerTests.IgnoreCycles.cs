@@ -13,8 +13,8 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class ReferenceHandlerTests_IgnoreCycles : SerializerTests
     {
-        public ReferenceHandlerTests_IgnoreCycles(JsonSerializerWrapperForString stringSerializer, JsonSerializerWrapperForStream streamSerializer)
-            : base(stringSerializer, streamSerializer)
+        public ReferenceHandlerTests_IgnoreCycles(JsonSerializerWrapper stringSerializer)
+            : base(stringSerializer)
         {
         }
 
@@ -249,7 +249,7 @@ namespace System.Text.Json.Serialization.Tests
             node.Next = node;
             string json = await SerializeWithPreserve(node);
 
-            node = await JsonSerializerWrapperForString.DeserializeWrapper<NodeWithExtensionData>(json, s_optionsIgnoreCycles);
+            node = await Serializer.DeserializeWrapper<NodeWithExtensionData>(json, s_optionsIgnoreCycles);
             Assert.True(node.MyOverflow.ContainsKey("$id"));
             Assert.True(node.Next.MyOverflow.ContainsKey("$ref"));
 
@@ -263,7 +263,7 @@ namespace System.Text.Json.Serialization.Tests
             dictionary.Add("self", dictionary);
             json = await SerializeWithPreserve(dictionary);
 
-            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<RecursiveDictionary>(json, s_optionsIgnoreCycles));
+            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<RecursiveDictionary>(json, s_optionsIgnoreCycles));
             using var ms2 = new MemoryStream(Encoding.UTF8.GetBytes(json));
             await Assert.ThrowsAsync<JsonException>(() => JsonSerializer.DeserializeAsync<RecursiveDictionary>(ms2, s_optionsIgnoreCycles).AsTask());
 
@@ -272,7 +272,7 @@ namespace System.Text.Json.Serialization.Tests
             list.Add(list);
             json = await SerializeWithPreserve(list);
 
-            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<RecursiveList>(json, s_optionsIgnoreCycles));
+            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<RecursiveList>(json, s_optionsIgnoreCycles));
             using var ms3 = new MemoryStream(Encoding.UTF8.GetBytes(json));
             await Assert.ThrowsAsync<JsonException>(() => JsonSerializer.DeserializeAsync<RecursiveList>(ms3, s_optionsIgnoreCycles).AsTask());
         }
@@ -288,7 +288,7 @@ namespace System.Text.Json.Serialization.Tests
             node.Next = node;
             string json = await SerializeWithPreserve(node);
 
-            node = await JsonSerializerWrapperForString.DeserializeWrapper<NodeWithObjectProperty>(json, s_optionsIgnoreCycles);
+            node = await Serializer.DeserializeWrapper<NodeWithObjectProperty>(json, s_optionsIgnoreCycles);
             JsonElement nodeAsJsonElement = Assert.IsType<JsonElement>(node.Next);
             Assert.True(nodeAsJsonElement.GetProperty("$ref").GetString() == "1");
 
@@ -302,13 +302,13 @@ namespace System.Text.Json.Serialization.Tests
             dictionary.Add("self", dictionary);
             json = await SerializeWithPreserve(dictionary);
 
-            dictionary = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, object>>(json, s_optionsIgnoreCycles);
+            dictionary = await Serializer.DeserializeWrapper<Dictionary<string, object>>(json, s_optionsIgnoreCycles);
         }
 
         private async Task<string> SerializeWithPreserve<T>(T value)
         {
             var opts = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };
-            return await JsonSerializerWrapperForString.SerializeWrapper(value, opts);
+            return await Serializer.SerializeWrapper(value, opts);
         }
 
         [Fact]
@@ -456,21 +456,11 @@ namespace System.Text.Json.Serialization.Tests
 
             if (objType != typeof(object))
             {
-                json = await JsonSerializerWrapperForString.SerializeWrapper(obj, options);
-                Assert.Equal(expected, json);
-
-                using var ms1 = new MemoryStream();
-                await JsonSerializerWrapperForStream.SerializeWrapper(ms1, obj, options).ConfigureAwait(false);
-                json = Encoding.UTF8.GetString(ms1.ToArray());
+                json = await Serializer.SerializeWrapper(obj, options);
                 Assert.Equal(expected, json);
             }
 
-            json = await JsonSerializerWrapperForString.SerializeWrapper(obj, objType, options);
-            Assert.Equal(expected, json);
-
-            using var ms2 = new MemoryStream();
-            await JsonSerializerWrapperForStream.SerializeWrapper(ms2, obj, objType, options).ConfigureAwait(false);
-            json = Encoding.UTF8.GetString(ms2.ToArray());
+            json = await Serializer.SerializeWrapper(obj, objType, options);
             Assert.Equal(expected, json);
         }
 
@@ -481,23 +471,12 @@ namespace System.Text.Json.Serialization.Tests
 
             if (objType != typeof(object))
             {
-                json = await JsonSerializerWrapperForString.SerializeWrapper(obj, options);
-                VerifySubstringExistsNTimes(json, expectedSubstring, expectedTimes);
-
-                using var ms1 = new MemoryStream();
-                await JsonSerializerWrapperForStream.SerializeWrapper(ms1, obj, options).ConfigureAwait(false);
-                json = Encoding.UTF8.GetString(ms1.ToArray());
+                json = await Serializer.SerializeWrapper(obj, options);
                 VerifySubstringExistsNTimes(json, expectedSubstring, expectedTimes);
             }
 
-            json = await JsonSerializerWrapperForString.SerializeWrapper(obj, objType, options);
+            json = await Serializer.SerializeWrapper(obj, objType, options);
             VerifySubstringExistsNTimes(json, expectedSubstring, expectedTimes);
-
-            using var ms2 = new MemoryStream();
-            await JsonSerializerWrapperForStream.SerializeWrapper(ms2, obj, objType, options).ConfigureAwait(false);
-            json = Encoding.UTF8.GetString(ms2.ToArray());
-            VerifySubstringExistsNTimes(json, expectedSubstring, expectedTimes);
-
 
             static void VerifySubstringExistsNTimes(string actualString, string expectedSubstring, int expectedTimes)
             {
