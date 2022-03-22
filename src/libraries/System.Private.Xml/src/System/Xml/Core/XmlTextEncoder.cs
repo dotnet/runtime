@@ -239,9 +239,7 @@ namespace System.Xml
                 _attrValue.Append(lowChar);
             }
 
-            _textWriter.Write("&#x");
-            _textWriter.Write(surrogateChar.ToString("X", NumberFormatInfo.InvariantInfo));
-            _textWriter.Write(';');
+            WriteIntEntityImpl(surrogateChar);
         }
 
         internal void Write(ReadOnlySpan<char> text)
@@ -477,16 +475,17 @@ namespace System.Xml
                 throw new ArgumentException(SR.Xml_InvalidSurrogateMissingLowChar);
             }
 
-            string strVal = ((int)ch).ToString("X", NumberFormatInfo.InvariantInfo);
+            Span<char> chAsSpan = stackalloc char[8];
+            ((int)ch).TryFormat(chAsSpan, out int charsWritten, "X", NumberFormatInfo.InvariantInfo);
             if (_cacheAttrValue)
             {
                 Debug.Assert(_attrValue != null);
                 _attrValue.Append("&#x");
-                _attrValue.Append(strVal);
+                _attrValue.Append(chAsSpan.Slice(0, charsWritten));
                 _attrValue.Append(';');
             }
 
-            WriteCharEntityImpl(strVal);
+            WriteCharEntityImpl(chAsSpan.Slice(0, charsWritten));
         }
 
         internal void WriteEntityRef(string name)
@@ -508,13 +507,22 @@ namespace System.Xml
 
         private void WriteCharEntityImpl(char ch)
         {
-            WriteCharEntityImpl(((int)ch).ToString("X", NumberFormatInfo.InvariantInfo));
+            WriteIntEntityImpl(ch);
         }
 
-        private void WriteCharEntityImpl(string strVal)
+        private void WriteIntEntityImpl(int value)
+        {
+            Span<char> chAsSpan = stackalloc char[8];
+            if (value.TryFormat(chAsSpan, out int charsWritten, "X", NumberFormatInfo.InvariantInfo))
+                WriteCharEntityImpl(chAsSpan.Slice(0, charsWritten));
+            else
+                WriteCharEntityImpl(value.ToString("X", NumberFormatInfo.InvariantInfo));
+        }
+
+        private void WriteCharEntityImpl(ReadOnlySpan<char> strSpan)
         {
             _textWriter.Write("&#x");
-            _textWriter.Write(strVal);
+            _textWriter.Write(strSpan);
             _textWriter.Write(';');
         }
 
