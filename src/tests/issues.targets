@@ -2122,13 +2122,10 @@
             <Issue>PInvoke IEnumerator/IEnumarable marshalling not supported on Mono</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalExpStruct/DelegatePInvoke/DelegatePInvokeTest/*">
-            <Issue>TODO: Marshaling struct using explicit layout including string type fails on Mono (struc marshals as blitable type)</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/65695</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalExpStruct/ReversePInvokeManaged/ReversePInvokeTest/*">
-            <Issue>TODO: Marshaling struct using explicit layout including string type fails on Mono (struct marshals as blitable type)</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/UnmanagedCallersOnly/UnmanagedCallersOnlyTest/*">
-            <Issue>TODO: Test depends on runtime exception handling implemented using SEH, only working on Windows using CoreCLR. Disable parts of test not working on Mono)</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/65695</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/WinRT/WinRT/*">
             <Issue>WinRT not supported on Mono</Issue>
@@ -2162,13 +2159,10 @@
     <!-- Known failures for mono runtime on Windows -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetsWindows)' == 'true'" >
         <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/*">
-            <Issue>TODO: Needs more investigation</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackStressTest_TargetWindows/*">
-            <Issue>TODO: Can be fixed by adding support for SEH exceptions in Windows exception handler</Issue>
+            <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/VBByRefStr/VBByRefStrTest/*">
-            <Issue>TODO: VBByRefStr not implemented for Unicode CharSet on Mono</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/65698</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/PlatformDefaultMemberFunction/PlatformDefaultMemberFunctionTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
@@ -2186,31 +2180,31 @@
             <Issue>https://github.com/dotnet/runtime/issues/10478</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/pinvoke/calli_excep/*">
-            <Issue>TODO: Needs support for SEH exceptions in Mono Windows runtime exception handler (AddVectoredExceptionHandler)</Issue>
+            <Issue>Mono doesn't support SEH exceptions in Mono Windows runtime exception handler (AddVectoredExceptionHandler)</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i37/*">
-            <Issue>TODO: Issues with tailcall, jump in GetSum2 have used stack for all converted parameters and will collapse frame, meaning that it will have pointers to stack garbage when calling native method. Probably OK on Unix since valuetype abi works differently)</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/65702</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i57/*">
-            <Issue>TODO: Issues with tailcall, jump in GetSum2 have used stack for all converted parameters and will collapse frame, meaning that it will have pointers to stack garbage when calling native method. Probably OK on Unix since valuetype abi works differently)</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/65702</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i67/*">
-            <Issue>TODO: Issues with tailcall, jump in GetSum2 have used stack for all converted parameters and will collapse frame, meaning that it will have pointers to stack garbage when calling native method. Probably OK on Unix since valuetype abi works differently)</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/65702</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i77/*">
-            <Issue>TODO: Issues with tailcall, jump in GetSum2 have used stack for all converted parameters and will collapse frame, meaning that it will have pointers to stack garbage when calling native method. Probably OK on Unix since valuetype abi works differently)</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/65702</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i87/*">
-            <Issue>TODO: Issues with tailcall, jump in GetSum2 have used stack for all converted parameters and will collapse frame, meaning that it will have pointers to stack garbage when calling native method. Probably OK on Unix since valuetype abi works differently)</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/65702</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_do/*">
-            <Issue>TODO: Finally block OP_START_HANDLER adjust RSP based on param_area (32 byte on Windows, 0 on Unix), brancing back to finally block will incorrectly decrement RSP on each iteration</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/65704</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_ro/*">
-            <Issue>TODO: Finally block OP_START_HANDLER adjust RSP based on param_area (32 byte on Windows, 0 on Unix), brancing back to finally block will incorrectly decrement RSP on each iteration</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/65704</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/v2.0-beta1/149926/149926/*">
-            <Issue>TODO: Triggers OOM issue on CI, pass on local test run</Issue>
+            <Issue>Triggers OOM issue on CI, pass on local test run</Issue>
         </ExcludeList>
     </ItemGroup>
 
