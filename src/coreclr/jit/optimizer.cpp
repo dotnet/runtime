@@ -4499,17 +4499,12 @@ bool Compiler::optIfConvert(BasicBlock* block)
 // Arm only for now.
 #ifdef TARGET_ARM64
 
-    // Don't optimise the block if it is inside a loop.
+    // Don't optimise the block if it is inside a loop
     // When inside a loop, branches are quicker than selects.
-    if (fgHasLoops)
+    // Detect via the block weight as that will be high when inside a loop.
+    if (block->getBBWeight(this) > BB_UNITY_WEIGHT)
     {
-        for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
-        {
-            if (optLoopTable[loopNum].lpContains(block))
-            {
-                return false;
-            }
-        }
+        return false;
     }
 
     // Does the block end by branching via a JTRUE after a compare?

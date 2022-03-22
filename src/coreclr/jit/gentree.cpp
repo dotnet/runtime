@@ -12949,6 +12949,12 @@ GenTree* Compiler::gtFoldExprConditional(GenTree* tree)
         DISPTREE(replacement);
         JITDUMP("\n");
 
+        // If we bashed to a compare, try to fold that.
+        if (replacement->OperIsCompare())
+        {
+            return gtFoldExprCompare(replacement);
+        }
+
         return replacement;
     }
 
