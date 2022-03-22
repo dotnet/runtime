@@ -613,27 +613,58 @@ namespace System
             {
                 if (offset < (nuint)(uint)length)
                 {
-                    lengthToExamine = GetByteVector128SpanLength(offset, length);
-
-                    // Mask to help find the first lane in compareResult that is set.
-                    // MSB 0x10 corresponds to 1st lane, 0x01 corresponds to 0th lane and so forth.
                     Vector128<byte> mask = Vector128.Create((ushort)0x1001).AsByte();
+                    Vector128<byte> values = Vector128.Create(value);
                     int matchedLane = 0;
 
-                    Vector128<byte> values = Vector128.Create(value);
-                    while (lengthToExamine > offset)
+                    // Try to process data using two Vector128 since we don't have Vector256 on ARM
+                    lengthToExamine = GetByteTwoVector128SpanLength(offset, length);
+                    if (lengthToExamine > offset)
+                    {
+                        while (lengthToExamine > offset)
+                        {
+                            // search2 comes first for better pipelining (should be improved in JIT)
+                            Vector128<byte> search2 = LoadVector128(ref searchSpace, offset + (nuint)Vector128<byte>.Count);
+                            Vector128<byte> search1 = LoadVector128(ref searchSpace, offset);
+                            Vector128<byte> compareResult1 = AdvSimd.CompareEqual(values, search1);
+                            Vector128<byte> compareResult2 = AdvSimd.CompareEqual(values, search2);
+
+                            // Fast path: no matches in both comparisons
+                            if ((compareResult1 | compareResult2) == Vector128<byte>.Zero)
+                            {
+                                offset += (nuint)Vector128<byte>.Count * 2;
+                                continue;
+                            }
+
+                            if (!TryFindFirstMatchedLane(mask, compareResult1, ref matchedLane))
+                            {
+                                // The match is in the second comparison
+                                offset += (nuint)Vector128<byte>.Count;
+                                bool found = TryFindFirstMatchedLane(mask, compareResult2, ref matchedLane);
+                                Debug.Assert(found);
+                            }
+                            return (int)(offset + (uint)matchedLane);
+                        }
+                    }
+
+                    // Single Vector128 path
+                    lengthToExamine = GetByteVector128SpanLength(offset, length);
+                    if (lengthToExamine > offset)
                     {
                         Vector128<byte> search = LoadVector128(ref searchSpace, offset);
-                        Vector128<byte> compareResult = AdvSimd.CompareEqual(values, search);
 
-                        if (!TryFindFirstMatchedLane(mask, compareResult, ref matchedLane))
+                        // Same method as above
+                        int matches = Sse2.MoveMask(Sse2.CompareEqual(values, search));
+                        if (matches == 0)
                         {
                             // Zero flags set so no matches
                             offset += (nuint)Vector128<byte>.Count;
-                            continue;
                         }
-
-                        return (int)(offset + (uint)matchedLane);
+                        else
+                        {
+                            // Find bitflag offset of first match and add to current offset
+                            return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
+                        }
                     }
 
                     if (offset < (nuint)(uint)length)
@@ -2212,6 +2243,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nuint GetByteVector128SpanLength(nuint offset, int length)
             => (nuint)(uint)((length - (int)offset) & ~(Vector128<byte>.Count - 1));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static nuint GetByteTwoVector128SpanLength(nuint offset, int length)
+            => (nuint)(uint)((length - (int)offset) & ~(Vector128<byte>.Count * 2 - 1));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nuint GetByteVector256SpanLength(nuint offset, int length)
