@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace Microsoft.Extensions.Configuration
@@ -11,12 +12,22 @@ namespace Microsoft.Extensions.Configuration
     /// </summary>
     public class ConfigurationKeyComparer : IComparer<string>
     {
-        private static readonly string[] _keyDelimiterArray = new[] { ConfigurationPath.KeyDelimiter };
+        private static ConcurrentDictionary<string, ConfigurationKeyComparer> _comparers = new ConcurrentDictionary<string, ConfigurationKeyComparer>();
+
+        public ConfigurationKeyComparer() : this(":") { }
+        public ConfigurationKeyComparer(string separator) => _keyDelimiterArray = new[] {separator};
+
+        private readonly string[] _keyDelimiterArray;
 
         /// <summary>
         /// The default instance.
         /// </summary>
-        public static ConfigurationKeyComparer Instance { get; } = new ConfigurationKeyComparer();
+        public static ConfigurationKeyComparer Instance { get; } = GetInstanceFor(":");
+
+        public static ConfigurationKeyComparer GetInstanceFor(string separator)
+        {
+            return _comparers.GetOrAdd(separator, new ConfigurationKeyComparer(separator));
+        }
 
         /// <summary>A comparer delegate with the default instance.</summary>
         internal static Comparison<string> Comparison { get; } = Instance.Compare;

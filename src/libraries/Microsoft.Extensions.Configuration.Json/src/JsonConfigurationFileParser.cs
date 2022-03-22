@@ -20,7 +20,6 @@ namespace Microsoft.Extensions.Configuration.Json
         private readonly Stack<string> _paths = new Stack<string>();
         private readonly string _separator;
 
-        //todo: need to pass separator here
         public static IDictionary<string, string?> Parse(Stream input, string separator = ":")
         {
             return new JsonConfigurationFileParser(separator).ParseStream(input);

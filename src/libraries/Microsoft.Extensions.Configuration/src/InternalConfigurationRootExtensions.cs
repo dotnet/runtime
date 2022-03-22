@@ -23,10 +23,6 @@ namespace Microsoft.Extensions.Configuration
             using ReferenceCountedProviders? reference = (root as ConfigurationManager)?.GetProvidersReference();
             IEnumerable<IConfigurationProvider> providers = reference?.Providers ?? root.Providers;
 
-            // todo: steve: each provider exposes their separator via 'GetDelimiter' (`ConfigurationProvider` only, not `IConfigurationProvider` as that would be a breaking change)
-            // So, we get not just the child key strings, but also the separator used by the provider.
-            // Then, when we get the 'ConfigurationSection', we can provide that with the correct separator.
-
             Dictionary<string, List<string>> lookupOfSeparatorToKeys = new Dictionary<string, List<string>>();
 
             HashSet<string> separators = new HashSet<string>();
@@ -54,11 +50,6 @@ namespace Microsoft.Extensions.Configuration
                     configurationSources.Add(root.GetSection(path == null ? key : ConfigurationPath.CombineWith(eachSeparator, path, key)));
                 }
             }
-
-            //IEnumerable<IConfigurationSection> children = providers
-            //    .Aggregate(Enumerable.Empty<string>(), (seed, source) => source.GetChildKeys(seed, path))
-            //    .Distinct(StringComparer.OrdinalIgnoreCase)
-            //    .Select(key => root.GetSection(path == null ? key : ConfigurationPath.CombineWith("`", path, key)));
 
             if (reference is null)
             {

@@ -40,7 +40,9 @@ namespace Microsoft.Extensions.Configuration
     public partial class ConfigurationKeyComparer : System.Collections.Generic.IComparer<string>
     {
         public ConfigurationKeyComparer() { }
+        public ConfigurationKeyComparer(string separator) { }
         public static Microsoft.Extensions.Configuration.ConfigurationKeyComparer Instance { get { throw null; } }
+        public static Microsoft.Extensions.Configuration.ConfigurationKeyComparer GetInstanceFor(string separator){ throw null; }
         public int Compare(string? x, string? y) { throw null; }
     }
     public sealed partial class ConfigurationManager : Microsoft.Extensions.Configuration.IConfiguration, Microsoft.Extensions.Configuration.IConfigurationBuilder, Microsoft.Extensions.Configuration.IConfigurationRoot, System.IDisposable
@@ -60,8 +62,8 @@ namespace Microsoft.Extensions.Configuration
     }
     public abstract partial class ConfigurationProvider : Microsoft.Extensions.Configuration.IConfigurationProvider
     {
-        public virtual string GetDelimiter() => ":";
         protected ConfigurationProvider() { }
+        public virtual string GetDelimiter() { throw null; }
         protected System.Collections.Generic.IDictionary<string, string?> Data { get { throw null; } set { } }
         public virtual System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string? parentPath) { throw null; }
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() { throw null; }

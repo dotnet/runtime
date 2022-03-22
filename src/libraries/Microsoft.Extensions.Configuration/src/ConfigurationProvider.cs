@@ -75,13 +75,13 @@ namespace Microsoft.Extensions.Configuration
             }
             else
             {
-                Debug.Assert(ConfigurationPath.KeyDelimiter == ":");
+                char delimiter = GetDelimiter()[0];
 
                 foreach (KeyValuePair<string, string?> kv in Data)
                 {
                     if (kv.Key.Length > parentPath.Length &&
                         kv.Key.StartsWith(parentPath, StringComparison.OrdinalIgnoreCase) &&
-                        kv.Key[parentPath.Length] == ':')
+                        kv.Key[parentPath.Length] == delimiter)
                     {
                         results.Add(Segment(kv.Key, parentPath.Length + 1));
                     }
@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.Configuration
 
             results.AddRange(earlierKeys);
 
-            results.Sort(ConfigurationKeyComparer.Comparison);
+            results.Sort(ConfigurationKeyComparer.GetInstanceFor(GetDelimiter()));
 
             return results;
         }

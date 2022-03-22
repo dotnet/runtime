@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Configuration.Json
     /// </summary>
     public class JsonConfigurationProvider : FileConfigurationProvider
     {
-        private readonly string _separator = "`";
+        private readonly string _separator;
 
         public override string GetDelimiter() => _separator;
 
@@ -55,13 +55,11 @@ namespace Microsoft.Extensions.Configuration.Json
             }
             else
             {
-                // Debug.Assert(ConfigurationPath.KeyDelimiter == ":");
-
                 foreach (KeyValuePair<string, string?> kv in Data)
                 {
                     if (kv.Key.Length > parentPath.Length &&
                         kv.Key.StartsWith(parentPath, StringComparison.OrdinalIgnoreCase) &&
-                        kv.Key[parentPath.Length] == _separator[0]) //todo: should be char or string?
+                        kv.Key[parentPath.Length] == _separator[0])
                     {
                         results.Add(Segment(kv.Key, parentPath.Length + 1));
                     }
@@ -70,7 +68,7 @@ namespace Microsoft.Extensions.Configuration.Json
 
             results.AddRange(earlierKeys);
 
-            results.Sort(Microsoft.Extensions.Configuration.ConfigurationKeyComparer.Instance.Compare);
+            results.Sort(Microsoft.Extensions.Configuration.ConfigurationKeyComparer.GetInstanceFor(_separator).Compare);
 
             return results;
         }
