@@ -3529,17 +3529,6 @@ llvmonly_reraise_exception (MonoException *e)
 	mini_llvmonly_rethrow_exception ((MonoObject*)e);
 }
 
-/*
- * mini_llvmonly_resume_exception:
- *
- *   Resume exception propagation.
- */
-void
-mini_llvmonly_resume_exception (void)
-{
-	mono_llvm_cpp_throw_exception ();
-}
-
 static G_GNUC_UNUSED void
 print_lmf_chain (MonoLMF *lmf)
 {
@@ -3678,67 +3667,6 @@ mini_llvmonly_clear_exception (void)
 	jit_tls->thrown_non_exc = 0;
 
 	mono_memory_barrier ();
-}
-
-/*
- * mini_llvmonly_match_exception:
- *
- *   Return the innermost clause containing REGION_START-REGION_END which can handle
- * the current exception.
- */
-gint32
-mini_llvmonly_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end, gpointer rgctx, MonoObject *this_obj)
-{
-	ERROR_DECL (error);
-	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
-	MonoObject *exc;
-	gint32 index = -1;
-
-	g_assert (jit_tls->thrown_exc);
-	exc = mono_gchandle_get_target_internal (jit_tls->thrown_exc);
-	if (jit_tls->thrown_non_exc) {
-		/*
-		 * Have to unwrap RuntimeWrappedExceptions if the
-		 * method's assembly doesn't have a RuntimeCompatibilityAttribute.
-		 */
-		if (!wrap_non_exception_throws (jinfo_get_method (jinfo)))
-			exc = mono_gchandle_get_target_internal (jit_tls->thrown_non_exc);
-	}
-
-	for (int i = 0; i < jinfo->num_clauses; i++) {
-		MonoJitExceptionInfo *ei = &jinfo->clauses [i];
-		MonoClass *catch_class;
-
-		if (! (ei->try_offset == region_start && ei->try_offset + ei->try_len == region_end) )
-			continue;
-
-		catch_class = ei->data.catch_class;
-		if (mono_class_is_open_constructed_type (m_class_get_byval_arg (catch_class))) {
-			MonoGenericContext context;
-			MonoType *inflated_type;
-
-			g_assert (rgctx || this_obj);
-			context = mono_get_generic_context_from_stack_frame (jinfo, rgctx ? rgctx : this_obj->vtable);
-			inflated_type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (catch_class), &context, error);
-			mono_error_assert_ok (error); /* FIXME don't swallow the error */
-
-			catch_class = mono_class_from_mono_type_internal (inflated_type);
-			mono_metadata_free_type (inflated_type);
-		}
-
-		// FIXME: Handle edge cases handled in get_exception_catch_class
-		if (ei->flags == MONO_EXCEPTION_CLAUSE_NONE && mono_object_isinst_checked (exc, catch_class, error)) {
-			index = ei->clause_index;
-			break;
-		} else
-			mono_error_assert_ok (error);
-
-		if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-			g_assert_not_reached ();
-		}
-	}
-
-	return index;
 }
 
 #if defined(ENABLE_LLVM) && defined(HAVE_UNWIND_H)
