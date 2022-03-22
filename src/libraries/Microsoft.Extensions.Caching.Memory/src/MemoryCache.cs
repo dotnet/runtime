@@ -282,6 +282,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// Gets a snapshot of the current statistics for the memory cache.
         /// </summary>
+        /// <returns>Returns <see langword="null"/> if statistics are not being tracked because <see cref="MemoryCacheOptions.TrackStatistics" /> is <see langword="false"/>.</returns>
         public MemoryCacheStatistics? GetCurrentStatistics()
         {
             if (_options.TrackStatistics)
