@@ -23,6 +23,7 @@ internal static partial class Interop
             name = PathInternal.EnsureExtendedPrefixIfNeeded(name);
             return GetFileAttributesExPrefixed(name, fileInfoLevel, ref lpFileInformation);
         }
+
         internal static bool GetFileAttributesExPrefixed(string? name, GET_FILEEX_INFO_LEVELS fileInfoLevel, ref WIN32_FILE_ATTRIBUTE_DATA lpFileInformation)
         {
             return GetFileAttributesExPrivate(name, fileInfoLevel, ref lpFileInformation);

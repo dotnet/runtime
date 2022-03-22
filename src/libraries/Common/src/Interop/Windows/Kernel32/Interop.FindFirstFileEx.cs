@@ -23,6 +23,7 @@ internal static partial class Interop
             // use FindExInfoBasic since we don't care about short name and it has better perf
             return FindFirstFilePrefixed(fileName, ref data);
         }
+
         internal static SafeFindHandle FindFirstFilePrefixed(string fileName, ref WIN32_FIND_DATA data)
         {
             // use FindExInfoBasic since we don't care about short name and it has better perf
