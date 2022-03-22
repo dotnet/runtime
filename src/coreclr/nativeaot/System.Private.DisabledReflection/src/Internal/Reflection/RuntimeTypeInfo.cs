@@ -53,7 +53,7 @@ namespace Internal.Reflection
         {
             get
             {
-                if (RuntimeAugments.TryGetBaseType(_typeHandle, out RuntimeTypeHandle baseTypeHandle))
+                if (RuntimeAugments.TryGetBaseType(_typeHandle, out RuntimeTypeHandle baseTypeHandle) && !baseTypeHandle.Equals(default))
                 {
                     return GetRuntimeTypeInfo(baseTypeHandle);
                 }
