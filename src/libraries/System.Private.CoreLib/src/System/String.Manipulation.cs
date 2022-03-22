@@ -995,11 +995,15 @@ namespace System
                 Vector<ushort> oldChars = new Vector<ushort>(oldChar);
                 Vector<ushort> newChars = new Vector<ushort>(newChar);
 
+                Vector<ushort> original;
+                Vector<ushort> equals;
+                Vector<ushort> results;
+
                 do
                 {
-                    Vector<ushort> original = Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<ushort, byte>(ref pSrc));
-                    Vector<ushort> equals = Vector.Equals(original, oldChars);
-                    Vector<ushort> results = Vector.ConditionalSelect(equals, newChars, original);
+                    original = Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<ushort, byte>(ref pSrc));
+                    equals = Vector.Equals(original, oldChars);
+                    results = Vector.ConditionalSelect(equals, newChars, original);
                     Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref pDst), results);
 
                     pSrc = ref Unsafe.Add(ref pSrc, Vector<ushort>.Count);
@@ -1007,6 +1011,20 @@ namespace System
                     remainingLength -= Vector<ushort>.Count;
                 }
                 while (remainingLength >= Vector<ushort>.Count);
+
+                // There are [0, Vector<ushort>.Count) elements remaining now.
+                // As the operation is idempotent, and we know that in total there are at least Vector<ushort>.Count
+                // elements available, we read a vector from the very end of the string, perform the replace
+                // and write to the destination at the very end.
+                // Thus we can eliminate the scalar processing of the remaining elements.
+                // We perform this operation even if there are 0 elements remaining, as it is cheaper than the
+                // additional check which would introduce a branch here.
+                original = Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref _firstChar, Length - Vector<ushort>.Count)));
+                equals = Vector.Equals(original, oldChars);
+                results = Vector.ConditionalSelect(equals, newChars, original);
+                Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref result._firstChar, result.Length - Vector<ushort>.Count)), results);
+
+                return result;
             }
 
             for (; remainingLength > 0; remainingLength--)
