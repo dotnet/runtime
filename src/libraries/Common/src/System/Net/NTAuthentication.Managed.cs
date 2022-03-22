@@ -299,6 +299,11 @@ namespace System.Net
 
         internal unsafe string? GetOutgoingBlob(string? incomingBlob)
         {
+            if (IsCompleted)
+            {
+                return null;
+            }
+
             byte[]? decodedIncomingBlob = null;
             if (incomingBlob != null && incomingBlob.Length > 0)
             {
@@ -320,7 +325,11 @@ namespace System.Net
             {
                 Debug.Assert(decodedIncomingBlob != null);
 
-                IsCompleted = true;
+                if (_isSpNego)
+                {
+                    IsCompleted = true;
+                }
+
                 decodedOutgoingBlob = _isSpNego ? ProcessSpNegoChallenge(decodedIncomingBlob) : ProcessChallenge(decodedIncomingBlob);
             }
 
@@ -881,21 +890,15 @@ namespace System.Net
                 throw new Win32Exception(NTE_FAIL, e.Message);
             }
 
-            // Mechanism should be set on first message. That means always
-            // as NTLM has only one challenege message.
-            if (!NtlmOid.Equals(mech))
-            {
-                throw new Win32Exception(NTE_FAIL, $"'{mech}' mechanism is not supported");
-            }
-
-            if (state != NegState.Unknown && state != NegState.AcceptIncomplete)
-            {
-                // If state was set, it should be AcceptIncomplete for us to proseed.
-                return Array.Empty<byte>();
-            }
-
             if (blob?.Length > 0)
             {
+                // Mechanism should be set on first message. In case of NTLM that's the only
+                // message with the challenge blob.
+                if (!NtlmOid.Equals(mech))
+                {
+                    throw new Win32Exception(NTE_FAIL, $"'{mech}' mechanism is not supported");
+                }
+
                 // Process decoded NTLM blob.
                 byte[]? response = ProcessChallenge(blob);
                 if (response?.Length > 0)
@@ -924,11 +927,13 @@ namespace System.Net
 
             if (mechListMIC != null)
             {
-                if (!VerifyMIC(_spnegoMechList, mechListMIC))
+                if (_spnegoMechList == null || state != NegState.AcceptCompleted || !VerifyMIC(_spnegoMechList, mechListMIC))
                 {
                     throw new Win32Exception(NTE_FAIL);
                 }
             }
+
+            IsCompleted = state == NegState.AcceptCompleted || state == NegState.Reject;
 
             return Array.Empty<byte>();
         }
