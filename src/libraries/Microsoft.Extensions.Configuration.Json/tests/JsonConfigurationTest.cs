@@ -53,13 +53,11 @@ namespace Microsoft.Extensions.Configuration
         [Fact]
         public void CanHaveColonsInKey()
         {
-            //var config = new ConfigurationBuilder()
-            //     .AddJsonFile("json_with_colons_in_keys.json", optional: false, reloadOnChange: true, separator: "`").Build();
             var config = new ConfigurationBuilder()
                  .AddJsonFile("json_with_colons_in_keys.json", optional: false, reloadOnChange: true, separator: "`").Build();
 
             var settings = new MyClass();
-            //config.Bind(settings, o => o.Separator = "`");
+
             config.Bind(settings);
             Assert.Equal("https://www.google.es", settings.Auths["http://google"].Uri);
         }
