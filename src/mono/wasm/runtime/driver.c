@@ -59,6 +59,8 @@ void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
 
+static void mono_wasm_init_finalizer_thread (void);
+
 // ?????????????
 
 #define gpointer void*
@@ -623,6 +625,10 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_initialize_internals();
 
 	mono_thread_set_main (mono_thread_current ());
+
+	// TODO: we can probably delay starting the finalizer thread even longer - maybe from JS
+	// once we're done with loading and are about to begin running some managed code.
+	mono_wasm_init_finalizer_thread ();
 }
 
 EMSCRIPTEN_KEEPALIVE MonoAssembly*
@@ -1315,3 +1321,11 @@ mono_wasm_load_profiler_aot (const char *desc)
 }
 
 #endif
+
+static void
+mono_wasm_init_finalizer_thread (void)
+{
+#ifdef __EMSCRIPTEN_PTHREADS__
+	mono_gc_init_finalizer_thread ();
+#endif
+}

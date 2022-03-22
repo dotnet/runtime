@@ -964,10 +964,7 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 #ifndef HOST_WIN32
 	add_exiting_thread (thread);
 
-// Skip on wasm until we figure out how to bring back the finalizer thread
-#ifndef HOST_WASM
 	mono_gc_finalize_notify ();
-#endif
 #endif
 
 	mono_gchandle_free_internal (thread->abort_state_handle);
@@ -4521,10 +4518,7 @@ mono_threads_add_joinable_runtime_thread (MonoThreadInfo *thread_info)
 
 		joinable_threads_unlock ();
 
-// Skip on wasm until we bring back the finalizer thread
-#ifndef HOST_WASM
 		mono_gc_finalize_notify ();
-#endif
 	}
 }
 
