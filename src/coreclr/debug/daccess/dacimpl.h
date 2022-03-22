@@ -822,7 +822,8 @@ class ClrDataAccess
       public ISOSDacInterface8,
       public ISOSDacInterface9,
       public ISOSDacInterface10,
-      public ISOSDacInterface11
+      public ISOSDacInterface11,
+      public ISOSDacInterface12
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1206,6 +1207,12 @@ public:
         CLRDATA_ADDRESS objAddr,
         CLRDATA_ADDRESS *taggedMemory,
         size_t *taggedMemorySizeInBytes);
+
+    // ISOSDacInterface12
+    virtual HRESULT STDMETHODCALLTYPE GetGlobalAllocationContext( 
+        CLRDATA_ADDRESS *allocPtr,
+        CLRDATA_ADDRESS *allocLimit);
+
     //
     // ClrDataAccess.
     //
