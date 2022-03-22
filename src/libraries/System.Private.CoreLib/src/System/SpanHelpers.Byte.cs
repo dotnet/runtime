@@ -611,23 +611,25 @@ namespace System
             }
             else if (AdvSimd.Arm64.IsSupported)
             {
+                Vector128<byte> mask = Vector128.Create((ushort)0x1001).AsByte();
+                // Mask to help find the first lane in compareResult that is set.
+                // MSB 0x10 corresponds to 1st lane, 0x01 corresponds to 0th lane and so forth.
+                Vector128<byte> values = Vector128.Create(value);
+                int matchedLane = 0;
+
                 if (offset < (nuint)(uint)length)
                 {
-                    Vector128<byte> mask = Vector128.Create((ushort)0x1001).AsByte();
-                    Vector128<byte> values = Vector128.Create(value);
-                    int matchedLane = 0;
-
                     // Try to process data using two Vector128 since we don't have Vector256 on ARM
                     lengthToExamine = GetByteTwoVector128SpanLength(offset, length);
                     if (lengthToExamine > offset)
                     {
                         while (lengthToExamine > offset)
                         {
-                            // search2 comes first for better pipelining (should be improved in JIT)
-                            Vector128<byte> search2 = LoadVector128(ref searchSpace, offset + (nuint)Vector128<byte>.Count);
-                            Vector128<byte> search1 = LoadVector128(ref searchSpace, offset);
-                            Vector128<byte> compareResult1 = AdvSimd.CompareEqual(values, search1);
-                            Vector128<byte> compareResult2 = AdvSimd.CompareEqual(values, search2);
+                            Vector128<byte> search1 = Vector128.LoadUnsafe(ref searchSpace, offset);
+                            Vector128<byte> search2 = Vector128.LoadUnsafe(ref searchSpace, offset + (nuint)Vector128<byte>.Count);
+
+                            Vector128<byte> compareResult1 = Vector128.Equals(values, search1);
+                            Vector128<byte> compareResult2 = Vector128.Equals(values, search2);
 
                             // Fast path: no matches in both comparisons
                             if ((compareResult1 | compareResult2) == Vector128<byte>.Zero)
@@ -646,25 +648,24 @@ namespace System
                             return (int)(offset + (uint)matchedLane);
                         }
                     }
+                }
 
-                    // Single Vector128 path
+                if (offset < (nuint)(uint)length)
+                {
                     lengthToExamine = GetByteVector128SpanLength(offset, length);
-                    if (lengthToExamine > offset)
+                    while (lengthToExamine > offset)
                     {
-                        Vector128<byte> search = LoadVector128(ref searchSpace, offset);
+                        Vector128<byte> search = Vector128.LoadUnsafe(ref searchSpace, offset);
+                        Vector128<byte> compareResult = Vector128.Equals(values, search);
 
-                        // Same method as above
-                        int matches = Sse2.MoveMask(Sse2.CompareEqual(values, search));
-                        if (matches == 0)
+                        if (!TryFindFirstMatchedLane(mask, compareResult, ref matchedLane))
                         {
                             // Zero flags set so no matches
                             offset += (nuint)Vector128<byte>.Count;
+                            continue;
                         }
-                        else
-                        {
-                            // Find bitflag offset of first match and add to current offset
-                            return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
-                        }
+
+                        return (int)(offset + (uint)matchedLane);
                     }
 
                     if (offset < (nuint)(uint)length)
