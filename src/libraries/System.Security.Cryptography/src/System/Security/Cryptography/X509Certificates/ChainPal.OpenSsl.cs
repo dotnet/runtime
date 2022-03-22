@@ -164,7 +164,12 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 if (OpenSslX509ChainProcessor.IsCompleteChain(status))
                 {
-                    if (status != Interop.Crypto.X509VerifyStatusCode.X509_V_OK)
+                    // Checking the validity period for the certificates in the chain is done after the
+                    // check for a trusted root, so accept expired (or not yet valid) as acceptable for
+                    // processing revocation.
+                    if (status != Interop.Crypto.X509VerifyStatusCode.X509_V_OK &&
+                        status != Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_NOT_YET_VALID &&
+                        status != Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_HAS_EXPIRED)
                     {
                         if (OpenSslX509ChainEventSource.Log.IsEnabled())
                         {
