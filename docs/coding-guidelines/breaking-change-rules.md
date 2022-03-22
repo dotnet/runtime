@@ -45,6 +45,12 @@ Breaking Change Rules
 
 * Changing the precision of a numerical return value
 
+* Removing a finalizer from an unsealed public type once it has one
+
+    Removing the finalizer once a type has taken that dependency causes the finalizer to not run on that type, which can lead to difficult-to-diagnose resource leaks.
+    Since sealed types cannot have inheritors, removing a finalizer can’t have such drastic consequences. For internal types, you are empowered to check on any derived types and move the finalizer as appropriate.
+
+
 ### Exceptions
 &#10003; **Allowed**
 * Throwing a more derived exception than an existing exception
