@@ -1287,32 +1287,6 @@ namespace System.Net.Http.Headers
                 return parser.SupportsMultipleValues || ParsedAndInvalidValues is null;
             }
 
-            private bool ContainsParsedValue()
-            {
-                if (ParsedAndInvalidValues is not null)
-                {
-                    if (ParsedAndInvalidValues is List<object> list)
-                    {
-                        foreach (object item in list)
-                        {
-                            if (item is not InvalidValue)
-                            {
-                                return true;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (ParsedAndInvalidValues is not InvalidValue)
-                        {
-                            return true;
-                        }
-                    }
-                }
-
-                return false;
-            }
-
             [Conditional("DEBUG")]
             public void AssertContainsNoInvalidValues()
             {
