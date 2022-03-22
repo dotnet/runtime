@@ -23,38 +23,35 @@ namespace Microsoft.Extensions.Configuration
             using ReferenceCountedProviders? reference = (root as ConfigurationManager)?.GetProvidersReference();
             IEnumerable<IConfigurationProvider> providers = reference?.Providers ?? root.Providers;
 
-            // todo: steve: if each provider exposes their delimiter, we can then use it
+            // todo: steve: each provider exposes their separator via 'GetDelimiter' (`ConfigurationProvider` only, not `IConfigurationProvider` as that would be a breaking change)
+            // So, we get not just the child key strings, but also the separator used by the provider.
+            // Then, when we get the 'ConfigurationSection', we can provide that with the correct separator.
 
-            // todo: ConfigurationProvider now does expose 'GetDelimiter' (not IConfigurationProvider as that would be a breaking change)
-            // so, we need to get not just the child key strings, but also the delimiter used by the provider.
-            // then, when we get the 'ConfigurationSection', we can provide that with the correct delimiter.
-            // We can likely then get rid of all the overloads (Load, Stream etc.) that take the 'separator' string.
+            Dictionary<string, List<string>> lookupOfSeparatorToKeys = new Dictionary<string, List<string>>();
 
-            Dictionary<string, List<string>> l = new Dictionary<string, List<string>>();
-
-            HashSet<string> delims = new HashSet<string>();
+            HashSet<string> separators = new HashSet<string>();
 
             foreach (var provider in providers)
             {
                 string delim = (provider as ConfigurationProvider)?.GetDelimiter() ?? ":";
-                delims.Add(delim);
+                separators.Add(delim);
 
-                if (!l.ContainsKey(delim))
+                if (!lookupOfSeparatorToKeys.ContainsKey(delim))
                 {
-                    l[delim] = new List<string>();
+                    lookupOfSeparatorToKeys[delim] = new List<string>();
                 }
 
-                List<string> strings = l[delim];
-                l[delim] = provider.GetChildKeys(strings, path).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                List<string> previousKeys = lookupOfSeparatorToKeys[delim];
+                lookupOfSeparatorToKeys[delim] = provider.GetChildKeys(previousKeys, path).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
             }
 
-            List<IConfigurationSection> cs = new List<IConfigurationSection>();
+            List<IConfigurationSection> configurationSources = new List<IConfigurationSection>();
 
-            foreach (string delim in delims)
+            foreach (string eachSeparator in separators)
             {
-                foreach (string key in l[delim])
+                foreach (string key in lookupOfSeparatorToKeys[eachSeparator])
                 {
-                    cs.Add(root.GetSection(path == null ? key : ConfigurationPath.CombineWith(delim, path, key)));
+                    configurationSources.Add(root.GetSection(path == null ? key : ConfigurationPath.CombineWith(eachSeparator, path, key)));
                 }
             }
 
@@ -65,23 +62,13 @@ namespace Microsoft.Extensions.Configuration
 
             if (reference is null)
             {
-                return cs;
+                return configurationSources;
             }
             else
             {
                 // Eagerly evaluate the IEnumerable before releasing the reference so we don't allow iteration over disposed providers.
-                return cs.ToList(); // todo: this is now, by default, eagerly evaluated - need to think about this...
+                return configurationSources.ToList(); // todo: this is now, by default, eagerly evaluated - need to think about this...
             }
-
-            //if (reference is null)
-            //{
-            //    return children;
-            //}
-            //else
-            //{
-            //    // Eagerly evaluate the IEnumerable before releasing the reference so we don't allow iteration over disposed providers.
-            //    return children.ToList();
-            //}
         }
     }
 }
