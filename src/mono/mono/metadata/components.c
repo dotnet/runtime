@@ -120,13 +120,12 @@ load_component_entrypoint (MonoComponentLibrary *component_lib, const MonoCompon
 {
 	char *component_init = component_init_name (component);
 	gpointer sym = NULL;
-	char *error_msg = mono_dl_symbol (component_lib->lib, component_init, &sym);
-	if (error_msg) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component %s library does not have symbol %s: %s", component->name, component_init, error_msg);
-		g_free (error_msg);
-		g_free (component_init);
-		return NULL;
-	}
+
+	ERROR_DECL (symbol_error);
+	sym = mono_dl_symbol (component_lib->lib, component_init, symbol_error);
+	if (!sym)
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component %s library does not have symbol %s: %s", component->name, component_init, mono_error_get_message_without_fields (symbol_error));
+	mono_error_cleanup (symbol_error);
 	g_free (component_init);
 	return sym;
 }

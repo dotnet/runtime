@@ -2940,8 +2940,9 @@ static SafeArrayCreateFunc safe_array_create_ms = NULL;
 static gboolean
 init_com_provider_ms (void)
 {
+	ERROR_DECL (error);
+
 	static gboolean initialized = FALSE;
-	char *error_msg;
 	MonoDl *module = NULL;
 	const char* scope = "liboleaut32.so";
 
@@ -2952,78 +2953,90 @@ init_com_provider_ms (void)
 		return TRUE;
 	}
 
-	module = mono_dl_open(scope, MONO_DL_LAZY, &error_msg);
-	if (error_msg) {
-		g_warning ("Error loading COM support library '%s': %s", scope, error_msg);
-		g_assert_not_reached ();
-		return FALSE;
-	}
-	error_msg = mono_dl_symbol (module, "SysAllocStringLen", (gpointer*)&sys_alloc_string_len_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SysAllocStringLen", scope, error_msg);
+	module = mono_dl_open (scope, MONO_DL_LAZY, error);
+	if (!module) {
+		g_warning ("Error loading COM support library '%s': %s", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}
 
-	error_msg = mono_dl_symbol (module, "SysStringLen", (gpointer*)&sys_string_len_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SysStringLen", scope, error_msg);
+	sys_alloc_string_len_ms = (SysAllocStringLenFunc)mono_dl_symbol (module, "SysAllocStringLen", error);
+	if (!sys_alloc_string_len_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SysAllocStringLen", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}
 
-	error_msg = mono_dl_symbol (module, "SysFreeString", (gpointer*)&sys_free_string_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SysFreeString", scope, error_msg);
+	sys_string_len_ms = (SysStringLenFunc)mono_dl_symbol (module, "SysStringLen", error);
+	if (!sys_string_len_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SysStringLen", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}
 
-	error_msg = mono_dl_symbol (module, "SafeArrayGetDim", (gpointer*)&safe_array_get_dim_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayGetDim", scope, error_msg);
+	sys_free_string_ms = (SysFreeStringFunc)mono_dl_symbol (module, "SysFreeString", error);
+	if (!sys_free_string_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SysFreeString", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}
 
-	error_msg = mono_dl_symbol (module, "SafeArrayGetLBound", (gpointer*)&safe_array_get_lbound_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayGetLBound", scope, error_msg);
+	safe_array_get_dim_ms = (SafeArrayGetDimFunc)mono_dl_symbol (module, "SafeArrayGetDim", error);
+	if (!safe_array_get_dim_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayGetDim", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}
 
-	error_msg = mono_dl_symbol (module, "SafeArrayGetUBound", (gpointer*)&safe_array_get_ubound_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayGetUBound", scope, error_msg);
+	safe_array_get_lbound_ms = (SafeArrayGetLBoundFunc)mono_dl_symbol (module, "SafeArrayGetLBound", error);
+	if (!safe_array_get_lbound_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayGetLBound", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}
 
-	error_msg = mono_dl_symbol (module, "SafeArrayPtrOfIndex", (gpointer*)&safe_array_ptr_of_index_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayPtrOfIndex", scope, error_msg);
+	safe_array_get_ubound_ms = (SafeArrayGetUBoundFunc)mono_dl_symbol (module, "SafeArrayGetUBound", error);
+	if (!safe_array_get_ubound_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayGetUBound", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}
 
-	error_msg = mono_dl_symbol (module, "SafeArrayDestroy", (gpointer*)&safe_array_destroy_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayDestroy", scope, error_msg);
+	safe_array_ptr_of_index_ms = (SafeArrayPtrOfIndexFunc)mono_dl_symbol (module, "SafeArrayPtrOfIndex", error);
+	if (!safe_array_ptr_of_index_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayPtrOfIndex", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}
 
-	error_msg = mono_dl_symbol (module, "SafeArrayPutElement", (gpointer*)&safe_array_put_element_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayPutElement", scope, error_msg);
+	safe_array_destroy_ms = (SafeArrayDestroyFunc)mono_dl_symbol (module, "SafeArrayDestroy", error);
+	if (!safe_array_destroy_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayDestroy", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}
 
-	error_msg = mono_dl_symbol (module, "SafeArrayCreate", (gpointer*)&safe_array_create_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayCreate", scope, error_msg);
+	safe_array_put_element_ms = (SafeArrayPutElementFunc)mono_dl_symbol (module, "SafeArrayPutElement", error);
+	if (!safe_array_put_element_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayPutElement", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
+		g_assert_not_reached ();
+		return FALSE;
+	}
+
+	safe_array_create_ms = (SafeArrayCreateFunc)mono_dl_symbol (module, "SafeArrayCreate", error);
+	if (!safe_array_create_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayCreate", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}

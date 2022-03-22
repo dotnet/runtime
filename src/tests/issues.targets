@@ -2091,9 +2091,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MarshalAPI/IUnknown/IUnknownTestInALC/*">
             <Issue>Requires COM support, disabled on all Mono platforms</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/API/NativeLibraryTests/*">
-            <Issue>TODO: Can be fixed by adding support for MonoError in mono-dl.h</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Varargs/VarargsTest/*">
             <Issue>PInvoke Varargs/ArgIterator marshalling not supported on Mono</Issue>
         </ExcludeList>
