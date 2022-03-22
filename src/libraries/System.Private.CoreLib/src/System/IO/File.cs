@@ -947,7 +947,7 @@ namespace System.IO
 
         private class DisposingFlagStreamReader : StreamReader
         {
-            private bool _isDisposed;
+            private volatile bool _isDisposed;
 
             public DisposingFlagStreamReader(string path, Encoding encoding) : base(
                 new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan),
