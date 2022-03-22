@@ -266,6 +266,7 @@
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$([MSBuild]::NormalizePath('$(RepositoryEngineeringDir)', 'common', 'cross', 'toolchain.cmake'))" />
       <_MonoBuildEnv Include="TARGET_BUILD_ARCH=ppc64le" />
       <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/powerpc64le-linux-gnu/pkgconfig" />
+    </ItemGroup>
 
     <!-- x64 FreeBSD cross build options -->
     <ItemGroup Condition="'$(TargetsFreeBSD)' == 'true' and '$(MonoCrossDir)' != ''">

@@ -11,8 +11,8 @@ namespace System.Runtime.InteropServices
         Arm64,
         Wasm,
         S390x,
-        PPC64le,
         LoongArch64,
         Armv6,
+        PPC64le,
     }
 }

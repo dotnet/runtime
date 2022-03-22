@@ -22,8 +22,10 @@ namespace System.Runtime.InteropServices
             => Architecture.S390x;
 #elif TARGET_LOONGARCH64
             => Architecture.LoongArch64;
+#elif TARGET_POWERPC64
+            => Architecture.PPC64le;
 #else
-#error Unknown Architecture
+#error Unknown Architecture;
 #endif
     }
 }
