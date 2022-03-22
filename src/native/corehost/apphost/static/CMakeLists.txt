@@ -241,4 +241,4 @@ target_link_libraries(
 )
 
 target_sources(singlefilehost
-    PRIVATE "$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:${CLR_SRC_NATIVE_DIR}/common/asansupport.cpp>")
+    PRIVATE "$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:${CLR_SRC_NATIVE_DIR}/minipal/asansupport.cpp>")

@@ -90,15 +90,12 @@ if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_ARM)
 endif()
 
 if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
-  create_gcinfo_lib(TARGET gcinfo_unix_arm64_nosanitizer OS unix ARCH arm64)
+  create_gcinfo_lib(TARGET gcinfo_universal_arm64_nosanitizer OS universal ARCH arm64)
   create_gcinfo_lib(TARGET gcinfo_unix_x64_nosanitizer OS unix ARCH x64)
-  create_gcinfo_lib(TARGET gcinfo_win_arm64_nosanitizer OS win ARCH arm64)
   create_gcinfo_lib(TARGET gcinfo_win_x64_nosanitizer OS win ARCH x64)
 endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
-create_gcinfo_lib(TARGET gcinfo_unix_armel_nosanitizer OS unix ARCH armel)
-create_gcinfo_lib(TARGET gcinfo_unix_arm_nosanitizer OS unix ARCH arm)
-create_gcinfo_lib(TARGET gcinfo_win_arm_nosanitizer OS win ARCH arm)
+create_gcinfo_lib(TARGET gcinfo_universal_arm_nosanitizer OS universal ARCH arm)
 create_gcinfo_lib(TARGET gcinfo_win_x86_nosanitizer OS win ARCH x86)
 
 if (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
