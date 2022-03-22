@@ -44,6 +44,7 @@ class Generics
         TestGenericRecursionFromNpgsql.Run();
         TestRecursionInGenericVirtualMethods.Run();
         TestRecursionThroughGenericLookups.Run();
+        TestGvmLookupDependency.Run();
 #if !CODEGEN_CPP
         TestNullableCasting.Run();
         TestVariantCasting.Run();
@@ -3145,6 +3146,26 @@ class Generics
             // There is a generic recursion in the above hierarchy. This just tests that we can compile.
             new ArrayHandler<object>().Write(null);
             new RangeHandler<object>().Write(default);
+        }
+    }
+
+    static class TestGvmLookupDependency
+    {
+        struct SmallCat<T> { }
+
+        interface ITechnique
+        {
+            void CatSlaps<T>() { /* Cannot reference T or it stops testing the thing it should */ }
+        }
+
+        struct Technique : ITechnique { }
+
+        static void CatConcepts<T, U>() where T : ITechnique => default(T).CatSlaps<SmallCat<U>>();
+
+        public static void Run()
+        {
+            CatConcepts<Technique, int>();
+            CatConcepts<Technique, object>();
         }
     }
 }
