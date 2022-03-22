@@ -66,6 +66,97 @@ Miscellaneous
     T &operator =(const T &) = delete
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Call counting
+
+typedef UINT16 CallCount;
+typedef DPTR(CallCount) PTR_CallCount;
+
+////////////////////////////////////////////////////////////////
+// CallCountingStub
+
+class CallCountingStub;
+typedef DPTR(const CallCountingStub) PTR_CallCountingStub;
+
+struct CallCountingStubData
+{
+    PTR_CallCount RemainingCallCountCell;
+    PCODE TargetForMethod;
+    PCODE TargetForThresholdReached;
+};
+
+typedef DPTR(CallCountingStubData) PTR_CallCountingStubData;
+
+class CallCountingStub
+{
+public:
+#if defined(TARGET_AMD64)
+    static const int CodeSize = 24;
+#elif defined(TARGET_X86)
+    static const int CodeSize = 24;
+#elif defined(TARGET_ARM64)
+    static const int CodeSize = 40;
+#elif defined(TARGET_ARM)
+    static const int CodeSize = 32;
+#elif defined(TARGET_LOONGARCH64)
+    static const int CodeSize = 40;
+#endif
+
+private:
+    UINT8 m_code[CodeSize];
+
+#if defined(TARGET_ARM64) && defined(TARGET_UNIX)
+    static void (*CallCountingStubCode)();
+#endif
+
+public:
+    static const SIZE_T Alignment = sizeof(void *);
+
+protected:
+    PTR_CallCountingStubData GetData() const
+    {
+        return dac_cast<PTR_CallCountingStubData>(dac_cast<TADDR>(this) + GetOsPageSize());
+    }
+
+#ifndef DACCESS_COMPILE
+    static const PCODE TargetForThresholdReached;
+
+    CallCountingStub() = default;
+
+public:
+    static const CallCountingStub *From(TADDR stubIdentifyingToken);
+
+    PCODE GetEntryPoint() const
+    {
+        WRAPPER_NO_CONTRACT;
+        return PINSTRToPCODE((TADDR)this);
+    }
+#endif // !DACCESS_COMPILE
+
+public:
+
+#ifndef DACCESS_COMPILE
+    void Initialize(PCODE targetForMethod, CallCount* remainingCallCountCell)
+    {
+        PTR_CallCountingStubData pStubData = GetData();
+        pStubData->RemainingCallCountCell = remainingCallCountCell;
+        pStubData->TargetForMethod = targetForMethod;
+        pStubData->TargetForThresholdReached = CallCountingStub::TargetForThresholdReached;
+    }
+
+    static void StaticInitialize();
+#endif // !DACCESS_COMPILE
+
+    static void GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX);
+
+    PTR_CallCount GetRemainingCallCountCell() const;
+    PCODE GetTargetForMethod() const;
+
+protected:
+
+    DISABLE_COPY(CallCountingStub);
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CallCountingManager
 
 class CallCountingManager;
@@ -277,6 +368,10 @@ public:
 
 public:
     static void StopAndDeleteAllCallCountingStubs();
+    static const CallCountingStub* GetCallCountingStub(CallCount *pCallCount)
+    {
+        return CallCountingInfo::From(pCallCount)->GetCallCountingStub();
+    }
 private:
     static void StopAllCallCounting(TieredCompilationManager *tieredCompilationManager);
     static void DeleteAllCallCountingStubs();
@@ -292,6 +387,35 @@ public:
 
     DISABLE_COPY(CallCountingManager);
 };
+
+////////////////////////////////////////////////////////////////
+// CallCountingStub definitions
+
+#ifndef DACCESS_COMPILE
+inline const CallCountingStub *CallCountingStub::From(TADDR stubIdentifyingToken)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(stubIdentifyingToken != NULL);
+
+    // The stubIdentifyingToken is the pointer to the CallCount
+    const CallCountingStub *stub = CallCountingManager::GetCallCountingStub((CallCount*)stubIdentifyingToken);
+
+    _ASSERTE(IS_ALIGNED(stub, Alignment));
+    return stub;
+}
+#endif
+
+inline PTR_CallCount CallCountingStub::GetRemainingCallCountCell() const
+{
+    WRAPPER_NO_CONTRACT;
+    return GetData()->RemainingCallCountCell;
+}
+
+inline PCODE CallCountingStub::GetTargetForMethod() const
+{
+    WRAPPER_NO_CONTRACT;
+    return GetData()->TargetForMethod;
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CallCountingManager::CallCountingStubManager

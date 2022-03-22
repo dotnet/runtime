@@ -742,7 +742,8 @@ namespace ILCompiler
                     .UseCompilationRoots(compilationRoots)
                     .UseMetadataManager(metadataManager)
                     .UseParallelism(_parallelism)
-                    .UseInteropStubManager(interopStubManager);
+                    .UseInteropStubManager(interopStubManager)
+                    .UseLogger(logger);
 
                 if (_scanDgmlLogFileName != null)
                     scannerBuilder.UseDependencyTracking(_generateFullScanDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
@@ -845,7 +846,7 @@ namespace ILCompiler
                 // Check that methods and types generated during compilation are a subset of method and types scanned
                 bool scanningFail = false;
                 DiffCompilationResults(ref scanningFail, compilationResults.CompiledMethodBodies, scanResults.CompiledMethodBodies,
-                    "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || method.Name == "ThrowPlatformNotSupportedException" || method.Name == "ThrowArgumentOutOfRangeException");
+                    "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || method.Name == "ThrowPlatformNotSupportedException" || method.Name == "ThrowArgumentOutOfRangeException" || method.Name == "ThrowArgumentException");
                 DiffCompilationResults(ref scanningFail, compilationResults.ConstructedEETypes, scanResults.ConstructedEETypes,
                     "EETypes", "compiled", "scanned", type => !(type.GetTypeDefinition() is EcmaType));
 

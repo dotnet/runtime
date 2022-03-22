@@ -8,7 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Version
     {
-        [GeneratedDllImport(Libraries.Version, EntryPoint = "VerQueryValueW", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Version, EntryPoint = "VerQueryValueW", StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool VerQueryValue(IntPtr pBlock, string lpSubBlock, out IntPtr lplpBuffer, out uint puLen);
     }
 }

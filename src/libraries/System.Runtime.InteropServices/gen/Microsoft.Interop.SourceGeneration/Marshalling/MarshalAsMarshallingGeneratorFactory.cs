@@ -13,7 +13,7 @@ namespace Microsoft.Interop
         private static readonly VariantBoolMarshaller s_variantBool = new();
 
         private static readonly Utf16CharMarshaller s_utf16Char = new();
-        private static readonly Utf16StringMarshaller s_utf16String = new();
+        private static readonly IMarshallingGenerator s_utf16String = new PinnableManagedValueMarshaller(new Utf16StringMarshaller());
         private static readonly Utf8StringMarshaller s_utf8String = new();
         private static readonly AnsiStringMarshaller s_ansiString = new AnsiStringMarshaller(s_utf8String);
 
@@ -76,7 +76,10 @@ namespace Microsoft.Interop
                     return s_blittable;
 
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: NoMarshallingInfo }:
-                    return s_winBool; // [Compat] Matching the default for the built-in runtime marshallers.
+                    throw new MarshallingNotSupportedException(info, context)
+                    {
+                        NotSupportedDetails = Resources.MarshallingBoolAsUndefinedNotSupported
+                    };
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1 or UnmanagedType.U1, _) }:
                     return s_byteBool;
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.U4 or UnmanagedType.Bool, _) }:

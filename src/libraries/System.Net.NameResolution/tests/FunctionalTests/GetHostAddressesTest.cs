@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -170,10 +171,13 @@ namespace System.Net.NameResolution.Tests
             OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Dns.GetHostAddressesAsync(TestSettings.LocalHost, cts.Token));
             Assert.Equal(cts.Token, oce.CancellationToken);
         }
+    }
 
-        [OuterLoop]
+    // Cancellation tests are sequential to reduce the chance of timing issues.
+    [Collection(nameof(DisableParallelization))]
+    public class GetHostAddressesTest_Cancellation
+    {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/43816")] // Race condition outlined below.
         [ActiveIssue("https://github.com/dotnet/runtime/issues/33378", TestPlatforms.AnyUnix)] // Cancellation of an outstanding getaddrinfo is not supported on *nix.
         public async Task DnsGetHostAddresses_PostCancelledToken_Throws()
         {
@@ -187,6 +191,36 @@ namespace System.Net.NameResolution.Tests
 
             OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
             Assert.Equal(cts.Token, oce.CancellationToken);
+        }
+
+        // This is a regression test for https://github.com/dotnet/runtime/issues/63552
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33378", TestPlatforms.AnyUnix)] // Cancellation of an outstanding getaddrinfo is not supported on *nix.
+        public async Task DnsGetHostAddresses_ResolveParallelCancelOnFailure_AllCallsReturn()
+        {
+            string invalidAddress = TestSettings.UncachedHost;
+            await ResolveManyAsync(invalidAddress);
+            await ResolveManyAsync(invalidAddress, TestSettings.LocalHost)
+                .WaitAsync(TestSettings.PassingTestTimeout);
+
+            static async Task ResolveManyAsync(params string[] addresses)
+            {
+                using CancellationTokenSource cts = new();
+                Task[] resolveTasks = addresses.Select(a => ResolveOneAsync(a, cts)).ToArray();
+                await Task.WhenAll(resolveTasks);
+            }
+
+            static async Task ResolveOneAsync(string address, CancellationTokenSource cancellationTokenSource)
+            {
+                try
+                {
+                    await Dns.GetHostAddressesAsync(address, cancellationTokenSource.Token);
+                }
+                catch (Exception)
+                {
+                    cancellationTokenSource.Cancel();
+                }
+            }
         }
     }
 }

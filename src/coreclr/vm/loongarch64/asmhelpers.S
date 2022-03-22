@@ -313,26 +313,6 @@ LOCAL_LABEL(Exit):
     jirl  $r0, $ra, 0
 WRITE_BARRIER_END JIT_WriteBarrier
 
-// ------------------------------------------------------------------
-// The call in fixup precode initally points to this function.
-// The pupose of this function is to load the MethodDesc and forward the call to prestub.
-NESTED_ENTRY PrecodeFixupThunk, _TEXT, NoHandler
-    //    $t2 = FixupPrecode *
-    // On Exit
-    //    $t2 = MethodDesc*
-    //    $t3, $t1, $t0 Trashed
-    // Inline computation done by FixupPrecode::GetMethodDesc()
-    ld.bu  $t3, $METHODDESC_REGISTER, Offset_PrecodeChunkIndex    //m_PrecodeChunkIndex
-    ld.bu  $t0, $METHODDESC_REGISTER, Offset_MethodDescChunkIndex  //m_MethodDescChunkIndex
-
-    slli.d  $t1, $t3, FixupPrecode_ALIGNMENT_SHIFT_1
-    add.d  $METHODDESC_REGISTER, $METHODDESC_REGISTER, $t1
-    ld.d  $t3, $METHODDESC_REGISTER, SIZEOF__FixupPrecode
-    alsl.d  $METHODDESC_REGISTER, $t0, $t3, MethodDesc_ALIGNMENT_SHIFT      // pMethodDesc
-
-    b  ThePreStub
-NESTED_END PrecodeFixupThunk, _TEXT
-
 NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
@@ -1083,6 +1063,7 @@ GenerateProfileHelper ProfileTailcall, PROFILE_TAILCALL
 
 
 #ifdef FEATURE_TIERED_COMPILATION
+
 NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 

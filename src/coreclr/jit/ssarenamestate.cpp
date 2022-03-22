@@ -44,11 +44,13 @@ void SsaRenameState::EnsureStacks()
 //
 unsigned SsaRenameState::Top(unsigned lclNum)
 {
-    DBG_SSA_JITDUMP("[SsaRenameState::Top] V%02u\n", lclNum);
-
     noway_assert(m_stacks != nullptr);
     StackNode* top = m_stacks[lclNum].Top();
     noway_assert(top != nullptr);
+
+    DBG_SSA_JITDUMP("[SsaRenameState::Top] " FMT_BB ", V%02u, ssaNum = %d\n", top->m_block->bbNum, lclNum,
+                    top->m_ssaNum);
+
     return top->m_ssaNum;
 }
 
@@ -62,7 +64,7 @@ unsigned SsaRenameState::Top(unsigned lclNum)
 //
 void SsaRenameState::Push(BasicBlock* block, unsigned lclNum, unsigned ssaNum)
 {
-    DBG_SSA_JITDUMP("[SsaRenameState::Push] " FMT_BB ", V%02u, count = %d\n", block->bbNum, lclNum, ssaNum);
+    DBG_SSA_JITDUMP("[SsaRenameState::Push] " FMT_BB ", V%02u, ssaNum = %d\n", block->bbNum, lclNum, ssaNum);
 
     EnsureStacks();
     Push(&m_stacks[lclNum], block, ssaNum);

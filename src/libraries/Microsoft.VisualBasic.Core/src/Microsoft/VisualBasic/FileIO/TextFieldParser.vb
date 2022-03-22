@@ -454,6 +454,7 @@ Namespace Microsoft.VisualBasic.FileIO
         '''  Closes the StreamReader
         ''' </summary>
         ''' <remarks></remarks>
+        <EditorBrowsable(EditorBrowsableState.Advanced)>
         Public Sub Close()
             CloseReader()
         End Sub

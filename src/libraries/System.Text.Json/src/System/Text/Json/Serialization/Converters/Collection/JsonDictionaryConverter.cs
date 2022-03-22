@@ -96,6 +96,7 @@ namespace System.Text.Json.Serialization
 
                 CreateCollection(ref reader, ref state);
 
+                state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
                 _valueConverter ??= GetConverter<TValue>(elementTypeInfo);
                 if (_valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
                 {
@@ -159,6 +160,7 @@ namespace System.Text.Json.Serialization
                     }
 
                     state.Current.ObjectState = StackFrameObjectState.StartToken;
+                    state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
                 }
 
                 // Handle the metadata properties.
@@ -239,7 +241,7 @@ namespace System.Text.Json.Serialization
                     {
                         state.Current.PropertyState = StackFramePropertyState.ReadValue;
 
-                        if (!SingleValueReadWithReadAhead(_valueConverter.ConverterStrategy, ref reader, ref state))
+                        if (!SingleValueReadWithReadAhead(_valueConverter.RequiresReadAhead, ref reader, ref state))
                         {
                             state.Current.DictionaryKey = key;
                             value = default;
@@ -311,10 +313,8 @@ namespace System.Text.Json.Serialization
                 writer.WriteStartObject();
                 if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
                 {
-                    if (JsonSerializer.WriteReferenceForObject(this, dictionary, ref state, writer) == MetadataPropertyName.Ref)
-                    {
-                        return true;
-                    }
+                    MetadataPropertyName propertyName = JsonSerializer.WriteReferenceForObject(this, ref state, writer);
+                    Debug.Assert(propertyName != MetadataPropertyName.Ref);
                 }
 
                 state.Current.JsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;

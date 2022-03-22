@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>StandaloneApp</AssemblyName>
-    <TargetFrameworks>net6.0</TargetFrameworks>
+    <TargetFramework>net6.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
   </PropertyGroup>

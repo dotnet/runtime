@@ -234,6 +234,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LoadLibrary)
     DllImportEntry(SystemNative_GetProcAddress)
     DllImportEntry(SystemNative_FreeLibrary)
+    DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle)
     DllImportEntry(SystemNative_SchedGetCpu)
     DllImportEntry(SystemNative_Exit)
     DllImportEntry(SystemNative_Abort)

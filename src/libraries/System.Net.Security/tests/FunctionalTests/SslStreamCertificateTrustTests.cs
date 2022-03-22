@@ -15,9 +15,11 @@ namespace System.Net.Security.Tests
 
     public class SslStreamCertificateTrustTest
     {
-        [Fact]
-        // not supported on Windows, not implemented elsewhere
-        [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.OSX)]
+        public static bool SupportsSendingCustomCANamesInTls => PlatformDetection.SupportsSendingCustomCANamesInTls;
+        public static bool DoesNotSupportSendingCustomCANamesInTls => !PlatformDetection.SupportsSendingCustomCANamesInTls;
+
+        [ConditionalFact(nameof(SupportsSendingCustomCANamesInTls))]
+        [SkipOnPlatform(TestPlatforms.Windows, "CertificateCollection-based SslCertificateTrust is not Supported on Windows")]
         public async Task SslStream_SendCertificateTrust_CertificateCollection()
         {
             (X509Certificate2 certificate, X509Certificate2Collection caCerts) = TestHelper.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
@@ -29,9 +31,7 @@ namespace System.Net.Security.Tests
             Assert.Equal(caCerts.Select(c => c.Subject), acceptableIssuers);
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65515", TestPlatforms.Windows)]
-        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.OSX)]
+        [ConditionalFact(nameof(SupportsSendingCustomCANamesInTls))]
         public async Task SslStream_SendCertificateTrust_CertificateStore()
         {
             using X509Store store = new X509Store("Root", StoreLocation.LocalMachine);
@@ -88,6 +88,27 @@ namespace System.Net.Security.Tests
 
                 return acceptableIssuers;
             }
+        }
+
+        [ConditionalFact(nameof(SupportsSendingCustomCANamesInTls))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void SslStream_SendCertificateTrust_CertificateCollection_ThrowsOnWindows()
+        {
+            (X509Certificate2 certificate, X509Certificate2Collection caCerts) = TestHelper.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
+
+            Assert.Throws<PlatformNotSupportedException>(() => SslCertificateTrust.CreateForX509Collection(caCerts, sendTrustInHandshake: true));
+        }
+
+        [ConditionalFact(nameof(DoesNotSupportSendingCustomCANamesInTls))]
+        [SkipOnPlatform(TestPlatforms.Windows, "Windows tested separately")]
+        public void SslStream_SendCertificateTrust_ThrowsOnUnsupportedPlatform()
+        {
+            (X509Certificate2 certificate, X509Certificate2Collection caCerts) = TestHelper.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
+
+            using X509Store store = new X509Store("Root", StoreLocation.LocalMachine);
+
+            Assert.Throws<PlatformNotSupportedException>(() => SslCertificateTrust.CreateForX509Collection(caCerts, sendTrustInHandshake: true));
+            Assert.Throws<PlatformNotSupportedException>(() => SslCertificateTrust.CreateForX509Store(store, sendTrustInHandshake: true));
         }
     }
 }

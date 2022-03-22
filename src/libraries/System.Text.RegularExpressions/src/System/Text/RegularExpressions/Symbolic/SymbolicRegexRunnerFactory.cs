@@ -9,63 +9,29 @@ namespace System.Text.RegularExpressions.Symbolic
     /// <summary><see cref="RegexRunnerFactory"/> for symbolic regexes.</summary>
     internal sealed class SymbolicRegexRunnerFactory : RegexRunnerFactory
     {
-        /// <summary>A SymbolicRegexMatcher of either ulong or BV depending on the number of minterms.</summary>
+        /// <summary>A SymbolicRegexMatcher of either ulong or <see cref="BitVector"/> depending on the number of minterms.</summary>
         internal readonly SymbolicRegexMatcher _matcher;
 
         /// <summary>Initializes the factory.</summary>
-        public SymbolicRegexRunnerFactory(RegexCode code, RegexOptions options, TimeSpan matchTimeout, CultureInfo culture)
+        public SymbolicRegexRunnerFactory(RegexTree regexTree, RegexOptions options, TimeSpan matchTimeout, CultureInfo culture)
         {
-            // RightToLeft and ECMAScript are currently not supported in conjunction with NonBacktracking.
-            if ((options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) != 0)
-            {
-                throw new NotSupportedException(
-                    SR.Format(SR.NotSupported_NonBacktrackingConflictingOption,
-                        (options & RegexOptions.RightToLeft) != 0 ? nameof(RegexOptions.RightToLeft) : nameof(RegexOptions.ECMAScript)));
-            }
+            Debug.Assert((options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) == 0);
 
-            var converter = new RegexNodeConverter(culture, code.Caps);
-            CharSetSolver solver = CharSetSolver.Instance;
-            SymbolicRegexNode<BDD> root = converter.ConvertToSymbolicRegexNode(code.Tree.Root, tryCreateFixedLengthMarker: true);
+            var bddBuilder = new SymbolicRegexBuilder<BDD>(CharSetSolver.Instance);
+            var converter = new RegexNodeConverter(bddBuilder, culture, regexTree.CaptureNumberSparseMapping);
 
-            BDD[] minterms = root.ComputeMinterms();
-            if (minterms.Length > 64)
-            {
-                // Use BV to represent a predicate
-                var algBV = new BVAlgebra(solver, minterms);
-                var builderBV = new SymbolicRegexBuilder<BV>(algBV)
-                {
-                    // The default constructor sets the following predicates to False; this update happens after the fact.
-                    // It depends on whether anchors where used in the regex whether the predicates are actually different from False.
-                    _wordLetterPredicateForAnchors = algBV.ConvertFromCharSet(solver, converter._builder._wordLetterPredicateForAnchors),
-                    _newLinePredicate = algBV.ConvertFromCharSet(solver, converter._builder._newLinePredicate)
-                };
+            SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(regexTree.Root, tryCreateFixedLengthMarker: true);
+            BDD[] minterms = rootNode.ComputeMinterms();
 
-                // Convert the BDD-based AST to BV-based AST
-                SymbolicRegexNode<BV> rootBV = converter._builder.Transform(root, builderBV, bdd => builderBV._solver.ConvertFromCharSet(solver, bdd));
-                _matcher = new SymbolicRegexMatcher<BV>(rootBV, code, minterms, matchTimeout);
-            }
-            else
-            {
-                // Use ulong to represent a predicate
-                var alg64 = new BV64Algebra(solver, minterms);
-                var builder64 = new SymbolicRegexBuilder<ulong>(alg64)
-                {
-                    // The default constructor sets the following predicates to False, this update happens after the fact
-                    // It depends on whether anchors where used in the regex whether the predicates are actually different from False
-                    _wordLetterPredicateForAnchors = alg64.ConvertFromCharSet(solver, converter._builder._wordLetterPredicateForAnchors),
-                    _newLinePredicate = alg64.ConvertFromCharSet(solver, converter._builder._newLinePredicate)
-                };
-
-                // Convert the BDD-based AST to ulong-based AST
-                SymbolicRegexNode<ulong> root64 = converter._builder.Transform(root, builder64, bdd => builder64._solver.ConvertFromCharSet(solver, bdd));
-                _matcher = new SymbolicRegexMatcher<ulong>(root64, code, minterms, matchTimeout);
-            }
+            _matcher = minterms.Length > 64 ?
+                SymbolicRegexMatcher<BitVector>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new BitVectorAlgebra(minterms), matchTimeout) :
+                SymbolicRegexMatcher<ulong>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new UInt64Algebra(minterms), matchTimeout);
         }
 
         /// <summary>Creates a <see cref="RegexRunner"/> object.</summary>
         protected internal override RegexRunner CreateInstance() => _matcher is SymbolicRegexMatcher<ulong> srmUInt64 ?
             new Runner<ulong>(srmUInt64) :
-            new Runner<BV>((SymbolicRegexMatcher<BV>)_matcher);
+            new Runner<BitVector>((SymbolicRegexMatcher<BitVector>)_matcher);
 
         /// <summary>Runner type produced by this factory.</summary>
         /// <remarks>

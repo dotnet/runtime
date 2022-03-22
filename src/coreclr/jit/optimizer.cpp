@@ -13,7 +13,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jitpch.h"
 #ifdef _MSC_VER
 #pragma hdrstop
-#pragma warning(disable : 4701)
 #endif
 
 /*****************************************************************************/
@@ -596,12 +595,12 @@ void Compiler::optClearLoopIterInfo()
     for (unsigned lnum = 0; lnum < optLoopCount; lnum++)
     {
         LoopDsc& loop = optLoopTable[lnum];
-        loop.lpFlags &= ~(LPFLG_ITER | LPFLG_VAR_INIT | LPFLG_CONST_INIT | LPFLG_SIMD_LIMIT | LPFLG_VAR_LIMIT |
-                          LPFLG_CONST_LIMIT | LPFLG_ARRLEN_LIMIT);
+        loop.lpFlags &= ~(LPFLG_ITER | LPFLG_CONST_INIT | LPFLG_SIMD_LIMIT | LPFLG_VAR_LIMIT | LPFLG_CONST_LIMIT |
+                          LPFLG_ARRLEN_LIMIT);
 
         loop.lpIterTree  = nullptr;
         loop.lpInitBlock = nullptr;
-        loop.lpConstInit = -1; // union with loop.lpVarInit
+        loop.lpConstInit = -1;
         loop.lpTestTree  = nullptr;
     }
 }
@@ -671,12 +670,8 @@ void Compiler::optPrintLoopInfo(const LoopDsc* loop, bool printVerbose /* = fals
             {
                 printf(" from %d", loop->lpConstInit);
             }
-            if (loop->lpFlags & LPFLG_VAR_INIT)
-            {
-                printf(" from V%02u", loop->lpVarInit);
-            }
 
-            if (loop->lpFlags & (LPFLG_CONST_INIT | LPFLG_VAR_INIT))
+            if (loop->lpFlags & LPFLG_CONST_INIT)
             {
                 if (loop->lpInitBlock != loop->lpHead)
                 {
@@ -777,22 +772,28 @@ void Compiler::optPrintLoopTable()
 
 //------------------------------------------------------------------------
 // optPopulateInitInfo: Populate loop init info in the loop table.
+// We assume the iteration variable is initialized already and check appropriately.
+// This only checks for the special case of a constant initialization.
 //
 // Arguments:
 //     loopInd   -  loop index
 //     initBlock -  block in which the initialization lives.
-//     init      -  the tree that is supposed to initialize the loop iterator.
+//     init      -  the tree that is supposed to initialize the loop iterator. Might be nullptr.
 //     iterVar   -  loop iteration variable.
 //
 // Return Value:
-//     "false" if the loop table could not be populated with the loop iterVar init info.
+//     "true" if a constant initializer was found.
 //
 // Operation:
-//     The 'init' tree is checked if its lhs is a local and rhs is either
-//     a const or a local.
+//     The 'init' tree is checked if its lhs is a local and rhs is a const.
 //
 bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenTree* init, unsigned iterVar)
 {
+    if (init == nullptr)
+    {
+        return false;
+    }
+
     // Operator should be =
     if (init->gtOper != GT_ASG)
     {
@@ -802,29 +803,34 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenT
     GenTree* lhs = init->AsOp()->gtOp1;
     GenTree* rhs = init->AsOp()->gtOp2;
     // LHS has to be local and should equal iterVar.
-    if (lhs->gtOper != GT_LCL_VAR || lhs->AsLclVarCommon()->GetLclNum() != iterVar)
+    if ((lhs->gtOper != GT_LCL_VAR) || (lhs->AsLclVarCommon()->GetLclNum() != iterVar))
     {
         return false;
     }
 
     // RHS can be constant or local var.
     // TODO-CQ: CLONE: Add arr length for descending loops.
-    if (rhs->gtOper == GT_CNS_INT && rhs->TypeGet() == TYP_INT)
-    {
-        optLoopTable[loopInd].lpFlags |= LPFLG_CONST_INIT;
-        optLoopTable[loopInd].lpConstInit = (int)rhs->AsIntCon()->gtIconVal;
-        optLoopTable[loopInd].lpInitBlock = initBlock;
-    }
-    else if (rhs->gtOper == GT_LCL_VAR)
-    {
-        optLoopTable[loopInd].lpFlags |= LPFLG_VAR_INIT;
-        optLoopTable[loopInd].lpVarInit   = rhs->AsLclVarCommon()->GetLclNum();
-        optLoopTable[loopInd].lpInitBlock = initBlock;
-    }
-    else
+    if ((rhs->gtOper != GT_CNS_INT) || (rhs->TypeGet() != TYP_INT))
     {
         return false;
     }
+
+    // We found an initializer in the `head` block. For this to be used, we need to make sure the
+    // "iterVar" initialization is never skipped. That is, every pred of ENTRY other than HEAD is in the loop.
+    for (BasicBlock* const predBlock : optLoopTable[loopInd].lpEntry->PredBlocks())
+    {
+        if ((predBlock != initBlock) && !optLoopTable[loopInd].lpContains(predBlock))
+        {
+            JITDUMP(FMT_LP ": initialization not guaranteed through `head` block; ignore constant initializer\n",
+                    loopInd);
+            return false;
+        }
+    }
+
+    optLoopTable[loopInd].lpFlags |= LPFLG_CONST_INIT;
+    optLoopTable[loopInd].lpConstInit = (int)rhs->AsIntCon()->gtIconVal;
+    optLoopTable[loopInd].lpInitBlock = initBlock;
+
     return true;
 }
 
@@ -1084,6 +1090,8 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
 //  Return Value:
 //      The results are put in "ppInit", "ppTest" and "ppIncr" if the method
 //      returns true. Returns false if the information can't be extracted.
+//      Extracting the `init` is optional; if one is not found, *ppInit is set
+//      to nullptr. Return value will never be false if `init` is not found.
 //
 //  Operation:
 //      Check if the "test" stmt is last stmt in the loop "bottom". If found good,
@@ -1150,39 +1158,42 @@ bool Compiler::optExtractInitTestIncr(
     // Find the last statement in the loop pre-header which we expect to be the initialization of
     // the loop iterator.
     Statement* phdrStmt = head->firstStmt();
-    if (phdrStmt == nullptr)
+    if (phdrStmt != nullptr)
     {
-        return false;
-    }
+        Statement* initStmt = phdrStmt->GetPrevStmt();
+        noway_assert(initStmt != nullptr && (initStmt->GetNextStmt() == nullptr));
 
-    Statement* initStmt = phdrStmt->GetPrevStmt();
-    noway_assert(initStmt != nullptr && (initStmt->GetNextStmt() == nullptr));
-
-    // If it is a duplicated loop condition, skip it.
-    if (initStmt->GetRootNode()->OperIs(GT_JTRUE))
-    {
-        bool doGetPrev = true;
+        // If it is a duplicated loop condition, skip it.
+        if (initStmt->GetRootNode()->OperIs(GT_JTRUE))
+        {
+            bool doGetPrev = true;
 #ifdef DEBUG
-        if (opts.optRepeat)
-        {
-            // Previous optimization passes may have inserted compiler-generated
-            // statements other than duplicated loop conditions.
-            doGetPrev = (initStmt->GetPrevStmt() != nullptr);
-        }
-        else
-        {
-            // Must be a duplicated loop condition.
-            noway_assert(initStmt->GetRootNode()->gtOper == GT_JTRUE);
-        }
+            if (opts.optRepeat)
+            {
+                // Previous optimization passes may have inserted compiler-generated
+                // statements other than duplicated loop conditions.
+                doGetPrev = (initStmt->GetPrevStmt() != nullptr);
+            }
+            else
+            {
+                // Must be a duplicated loop condition.
+                noway_assert(initStmt->GetRootNode()->gtOper == GT_JTRUE);
+            }
 #endif // DEBUG
-        if (doGetPrev)
-        {
-            initStmt = initStmt->GetPrevStmt();
+            if (doGetPrev)
+            {
+                initStmt = initStmt->GetPrevStmt();
+            }
+            noway_assert(initStmt != nullptr);
         }
-        noway_assert(initStmt != nullptr);
+
+        *ppInit = initStmt->GetRootNode();
+    }
+    else
+    {
+        *ppInit = nullptr;
     }
 
-    *ppInit = initStmt->GetRootNode();
     *ppTest = testStmt->GetRootNode();
     *ppIncr = incrStmt->GetRootNode();
 
@@ -1292,6 +1303,8 @@ bool Compiler::optRecordLoop(
     //        incremented (decremented or lsh, rsh, mul) with a constant value
     //     3. The iterator is incremented exactly once
     //     4. The loop condition must use the iterator.
+    //     5. Finding a constant initializer is optional; if the initializer is not found, or is not constant,
+    //        it is still considered a for-like loop.
     //
     if (bottom->bbJumpKind == BBJ_COND)
     {
@@ -1300,56 +1313,37 @@ bool Compiler::optRecordLoop(
         GenTree* incr;
         if (!optExtractInitTestIncr(head, bottom, top, &init, &test, &incr))
         {
+            JITDUMP(FMT_LP ": couldn't find init/test/incr; not LPFLG_ITER loop\n", loopInd);
             goto DONE_LOOP;
         }
 
         unsigned iterVar = BAD_VAR_NUM;
         if (!optComputeIterInfo(incr, head->bbNext, bottom, &iterVar))
         {
+            JITDUMP(FMT_LP ": increment expression not appropriate form, or not loop invariant; not LPFLG_ITER loop\n",
+                    loopInd);
             goto DONE_LOOP;
         }
 
-        // Make sure the "iterVar" initialization is never skipped,
-        // i.e. every pred of ENTRY other than HEAD is in the loop.
-        for (BasicBlock* const predBlock : entry->PredBlocks())
-        {
-            if ((predBlock != head) && !optLoopTable[loopInd].lpContains(predBlock))
-            {
-                goto DONE_LOOP;
-            }
-        }
-
-        if (!optPopulateInitInfo(loopInd, head, init, iterVar))
-        {
-            goto DONE_LOOP;
-        }
+        optPopulateInitInfo(loopInd, head, init, iterVar);
 
         // Check that the iterator is used in the loop condition.
         if (!optCheckIterInLoopTest(loopInd, test, head->bbNext, bottom, iterVar))
         {
+            JITDUMP(FMT_LP ": iterator not used in loop condition; not LPFLG_ITER loop\n", loopInd);
             goto DONE_LOOP;
         }
 
-        // We know the loop has an iterator at this point ->flag it as LPFLG_ITER
-        // Record the iterator, the pointer to the test node
-        // and the initial value of the iterator (constant or local var)
+        // We know the loop has an iterator at this point; flag it as LPFLG_ITER.
+        JITDUMP(FMT_LP ": setting LPFLG_ITER\n", loopInd);
         optLoopTable[loopInd].lpFlags |= LPFLG_ITER;
 
         // Record iterator.
         optLoopTable[loopInd].lpIterTree = incr;
 
 #if COUNT_LOOPS
-        // Save the initial value of the iterator - can be lclVar or constant
-        // Flag the loop accordingly.
-
         iterLoopCount++;
-#endif
 
-#if COUNT_LOOPS
-        simpleTestLoopCount++;
-#endif
-
-#if COUNT_LOOPS
         // Check if a constant iteration loop.
         if ((optLoopTable[loopInd].lpFlags & LPFLG_CONST_INIT) && (optLoopTable[loopInd].lpFlags & LPFLG_CONST_LIMIT))
         {
@@ -1357,31 +1351,6 @@ bool Compiler::optRecordLoop(
             constIterLoopCount++;
         }
 #endif
-
-#ifdef DEBUG
-        if (verbose && 0)
-        {
-            printf("\nConstant loop initializer:\n");
-            gtDispTree(init);
-
-            printf("\nConstant loop body:\n");
-
-            BasicBlock* block = head;
-            do
-            {
-                block = block->bbNext;
-                for (Statement* const stmt : block->Statements())
-                {
-                    if (stmt->GetRootNode() == incr)
-                    {
-                        break;
-                    }
-                    printf("\n");
-                    gtDispTree(stmt->GetRootNode());
-                }
-            } while (block != bottom);
-        }
-#endif // DEBUG
     }
 
 DONE_LOOP:
@@ -5543,13 +5512,30 @@ Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* dat
 {
     GenTree* tree = *pTree;
 
-    if (tree->OperIs(GT_ASG))
+    if (tree->OperIsSsaDef())
     {
-        GenTree*   dest     = tree->AsOp()->gtOp1;
-        genTreeOps destOper = dest->OperGet();
-
         isVarAssgDsc* desc = (isVarAssgDsc*)data->pCallbackData;
         assert(desc && desc->ivaSelf == desc);
+
+        GenTree* dest = nullptr;
+        if (tree->OperIs(GT_CALL))
+        {
+            desc->ivaMaskCall = optCallInterf(tree->AsCall());
+
+            dest = tree->AsCall()->GetLclRetBufArgNode();
+            if (dest == nullptr)
+            {
+                return WALK_CONTINUE;
+            }
+
+            dest = dest->AsOp()->gtOp1;
+        }
+        else
+        {
+            dest = tree->AsOp()->gtOp1;
+        }
+
+        genTreeOps destOper = dest->OperGet();
 
         if (destOper == GT_LCL_VAR)
         {
@@ -5594,13 +5580,6 @@ Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* dat
             varRefKinds refs = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
             desc->ivaMaskInd = varRefKinds(desc->ivaMaskInd | refs);
         }
-    }
-    else if (tree->gtOper == GT_CALL)
-    {
-        isVarAssgDsc* desc = (isVarAssgDsc*)data->pCallbackData;
-        assert(desc && desc->ivaSelf == desc);
-
-        desc->ivaMaskCall = optCallInterf(tree->AsCall());
     }
 
     return WALK_CONTINUE;
@@ -7365,9 +7344,9 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
             if (allValidProfileWeights)
             {
-                weight_t loopEnteredCount;
-                weight_t loopSkippedCount;
-                bool     useEdgeWeights = fgHaveValidEdgeWeights;
+                weight_t loopEnteredCount = 0;
+                weight_t loopSkippedCount = 0;
+                bool     useEdgeWeights   = fgHaveValidEdgeWeights;
 
                 if (useEdgeWeights)
                 {
@@ -9407,6 +9386,10 @@ void Compiler::optRemoveRedundantZeroInits()
 
                         break;
                     }
+                    // case GT_CALL:
+                    // TODO-CQ: Need to remove redundant zero-inits for "return buffer".
+                    // assert(!"Need to handle zero inits.\n");
+                    // break;
                     case GT_ASG:
                     {
                         GenTreeOp* treeOp = tree->AsOp();

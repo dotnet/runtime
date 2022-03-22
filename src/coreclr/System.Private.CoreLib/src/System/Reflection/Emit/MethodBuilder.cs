@@ -507,6 +507,7 @@ namespace System.Reflection.Emit
 
         public override Type[] GetGenericArguments() => m_inst ?? Type.EmptyTypes;
 
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
