@@ -4948,7 +4948,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     // Compute reachability and remove unreachable blocks, if any.
     //
-    auto computeReachability = [this]() { fgComputeReachability(/* computeDoms */ false, /* doRenumbering */ false); };
+    auto computeReachability = [this]() {
+
+        EnsureBasicBlockEpoch();
+        fgComputeReachability(/* computeDoms */ false, /* doRenumbering */ false);
+    };
     DoPhase(this, PHASE_COMPUTE_REACHABILITY, computeReachability);
 
     // Insert GC Polls
