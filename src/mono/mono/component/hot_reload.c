@@ -2218,10 +2218,10 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			default:
 				g_assert_not_reached (); /* unexpected func code */
 			}
-			uint32_t cols[MONO_PROPERTY_MAP_SIZE];
-			mono_metadata_decode_row (&image_base->tables [MONO_TABLE_PROPERTYMAP], token_index - 1, cols, MONO_PROPERTY_MAP_SIZE);
+			uint32_t prop_cols[MONO_PROPERTY_MAP_SIZE];
+			mono_metadata_decode_row (&image_base->tables [MONO_TABLE_PROPERTYMAP], token_index - 1, prop_cols, MONO_PROPERTY_MAP_SIZE);
 
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: propertymap parent = 0x%08x, props = 0x%08x\n", cols[MONO_PROPERTY_MAP_PARENT], cols [MONO_PROPERTY_MAP_PROPERTY_LIST]);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: propertymap parent = 0x%08x, props = 0x%08x\n", prop_cols [MONO_PROPERTY_MAP_PARENT], prop_cols [MONO_PROPERTY_MAP_PROPERTY_LIST]);
 			break;
 		}
 		case MONO_TABLE_PROPERTY: {
@@ -2271,10 +2271,10 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			default:
 				g_assert_not_reached (); /* unexpected func code */
 			}
-			uint32_t cols[MONO_EVENT_MAP_SIZE];
-			mono_metadata_decode_row (&image_base->tables [MONO_TABLE_EVENTMAP], token_index - 1, cols, MONO_EVENT_MAP_SIZE);
+			uint32_t prop_cols[MONO_EVENT_MAP_SIZE];
+			mono_metadata_decode_row (&image_base->tables [MONO_TABLE_EVENTMAP], token_index - 1, prop_cols, MONO_EVENT_MAP_SIZE);
 
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: eventmap parent = 0x%08x, evts = 0x%08x\n", cols[MONO_EVENT_MAP_PARENT], cols [MONO_EVENT_MAP_EVENTLIST]);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: eventmap parent = 0x%08x, evts = 0x%08x\n", prop_cols [MONO_EVENT_MAP_PARENT], prop_cols [MONO_EVENT_MAP_EVENTLIST]);
 			break;
 			
 		}

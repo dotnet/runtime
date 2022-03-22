@@ -1231,28 +1231,29 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 	if (assemblyb->culture) {
 		assembly->assembly.aname.culture = mono_string_to_utf8_checked_internal (assemblyb->culture, error);
 		return_if_nok (error);
-	} else
+	} else {
 		assembly->assembly.aname.culture = g_strdup ("");
+	}
 
-		if (assemblyb->version) {
-			char *vstr = mono_string_to_utf8_checked_internal (assemblyb->version, error);
-			if (mono_error_set_pending_exception (error))
-				return;
-			char **version = g_strsplit (vstr, ".", 4);
-			char **parts = version;
-			assembly->assembly.aname.major = atoi (*parts++);
-			assembly->assembly.aname.minor = atoi (*parts++);
-			assembly->assembly.aname.build = *parts != NULL ? atoi (*parts++) : 0;
-			assembly->assembly.aname.revision = *parts != NULL ? atoi (*parts) : 0;
+	if (assemblyb->version) {
+		char *vstr = mono_string_to_utf8_checked_internal (assemblyb->version, error);
+		if (mono_error_set_pending_exception (error))
+			return;
+		char **version = g_strsplit (vstr, ".", 4);
+		char **parts = version;
+		assembly->assembly.aname.major = atoi (*parts++);
+		assembly->assembly.aname.minor = atoi (*parts++);
+		assembly->assembly.aname.build = *parts != NULL ? atoi (*parts++) : 0;
+		assembly->assembly.aname.revision = *parts != NULL ? atoi (*parts) : 0;
 
-			g_strfreev (version);
-			g_free (vstr);
-		} else {
-			assembly->assembly.aname.major = 0;
-			assembly->assembly.aname.minor = 0;
-			assembly->assembly.aname.build = 0;
-			assembly->assembly.aname.revision = 0;
-		}
+		g_strfreev (version);
+		g_free (vstr);
+	} else {
+		assembly->assembly.aname.major = 0;
+		assembly->assembly.aname.minor = 0;
+		assembly->assembly.aname.build = 0;
+		assembly->assembly.aname.revision = 0;
+	}
 
 	if (assemblyb->public_key_token) {
 		for (mono_array_size_t i = 0; i < 8 && i < mono_array_length_internal (assemblyb->public_key_token); i++) {

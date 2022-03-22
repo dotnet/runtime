@@ -6349,8 +6349,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			break;
 		case CEE_CKFINITE: {
 			CHECK_STACK (td, 1);
-			int stack_type = td->sp [-1].type;
-			switch (stack_type) {
+			int ckfinite_stack_type = td->sp [-1].type;
+			switch (ckfinite_stack_type) {
 				case STACK_TYPE_R4: interp_add_ins (td, MINT_CKFINITE_R4); break;
 				case STACK_TYPE_R8: interp_add_ins (td, MINT_CKFINITE_R8); break;
 				default:
@@ -6358,7 +6358,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			}
 			td->sp--;
 			interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-			push_simple_type (td, stack_type);
+			push_simple_type (td, ckfinite_stack_type);
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 			++td->ip;
 			break;
