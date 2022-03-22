@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Configuration
 
             Dictionary<string, List<string>> l = new Dictionary<string, List<string>>();
 
-            List<string> delims = new List<string>();
+            HashSet<string> delims = new HashSet<string>();
 
             foreach (var provider in providers)
             {
@@ -58,10 +58,10 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
 
-            //IEnumerable<IConfigurationSection> children = providers
-            //    .Aggregate(Enumerable.Empty<string>(), (seed, source) => source.GetChildKeys(seed, path))
-            //    .Distinct(StringComparer.OrdinalIgnoreCase)
-            //    .Select(key => root.GetSection(path == null ? key : ConfigurationPath.CombineWith("`", path, key)));
+            IEnumerable<IConfigurationSection> children = providers
+                .Aggregate(Enumerable.Empty<string>(), (seed, source) => source.GetChildKeys(seed, path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Select(key => root.GetSection(path == null ? key : ConfigurationPath.CombineWith("`", path, key)));
 
             if (reference is null)
             {
